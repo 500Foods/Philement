@@ -33,6 +33,19 @@ bool load_terminal_config(json_t* root, AppConfig* config) {
         return false;
     }
 
+    // NEW: Initialize WebRoot and CORS fields
+    terminal->webroot = strdup("PAYLOAD:/terminal");  // Default WebRoot
+    if (!terminal->webroot) {
+        log_this(SR_TERMINAL, "Failed to allocate webroot string", LOG_LEVEL_ERROR);
+        free(terminal->web_path);
+        free(terminal->shell_command);
+        terminal->web_path = NULL;
+        terminal->shell_command = NULL;
+        return false;
+    }
+
+    terminal->cors_origin = strdup("*");  // NEW: Allow all origins by default
+
     // Process configuration values
     bool success = true;
 
@@ -45,6 +58,10 @@ bool load_terminal_config(json_t* root, AppConfig* config) {
         success = success && PROCESS_STRING(root, terminal, shell_command, SR_TERMINAL ".ShellCommand", SR_TERMINAL);
         success = success && PROCESS_INT(root, terminal, max_sessions, SR_TERMINAL ".MaxSessions", SR_TERMINAL);
         success = success && PROCESS_INT(root, terminal, idle_timeout_seconds, SR_TERMINAL ".IdleTimeoutSeconds", SR_TERMINAL);
+
+        // NEW: Process WebRoot and CORS fields
+        success = success && PROCESS_STRING(root, terminal, webroot, SR_TERMINAL ".WebRoot", SR_TERMINAL);
+        success = success && PROCESS_STRING(root, terminal, cors_origin, SR_TERMINAL ".CORSOrigin", SR_TERMINAL);
     
     return success;
 }
@@ -56,6 +73,8 @@ void cleanup_terminal_config(TerminalConfig* config) {
 
     free(config->web_path);
     free(config->shell_command);
+    free(config->webroot);           // NEW
+    free(config->cors_origin);       // NEW
     memset(config, 0, sizeof(TerminalConfig));
 }
 
@@ -89,5 +108,13 @@ void dump_terminal_config(const TerminalConfig* config) {
         snprintf(value_str, sizeof(value_str), "Idle Timeout: %d seconds",
                 config->idle_timeout_seconds);
         DUMP_TEXT("――", value_str);
+
+        // NEW: WebRoot
+        snprintf(value_str, sizeof(value_str), "WebRoot: %s",
+                config->webroot ? config->webroot : "(not set)");
+        DUMP_TEXT("――", value_str);
+
+        // NEW: CORS Origin
+        DUMP_STRING2("――", "CORS Origin", config->cors_origin);
     
 }

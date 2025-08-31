@@ -74,7 +74,7 @@ run_upload_test_parallel() {
             break
         fi
 
-        if "${GREP}" -q "Application started" "${log_file}" 2>/dev/null; then
+        if "${GREP}" -q "STARTUP COMPLETE" "${log_file}" 2>/dev/null; then
             startup_success=true
             break
         fi
@@ -490,8 +490,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # Display full server log section for this test
         log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
         if [[ -f "${log_file}" ]]; then
-            # Extract the full server runtime log section (from 2 lines after "Application started" to 1 line before "SIGINT received")
-            full_log_section=$("${GREP}" -A 10000 "Application started" "${log_file}" 2>/dev/null | tail -n +3 | "${GREP}" -B 10000 -A 3 "SIGINT received" | head -n -1 2>/dev/null || true)
+            # Extract the full server runtime log section (from 2 lines after "Press Ctrl+C to exit (SIGINT)" to 1 line before "SIGINT received")
+            full_log_section=$("${GREP}" -A 10000 "Press Ctrl+C to exit (SIGINT)" "${log_file}" 2>/dev/null | tail -n +2 | "${GREP}" -B 10000 -A 3 "SIGINT received" | head -n -1 2>/dev/null || true)
             if [[ -n "${full_log_section}" ]]; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Server Log: ..${log_file}" 
                 # Process each line following Test 15 pattern for consistent log formatting
