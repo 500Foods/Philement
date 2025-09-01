@@ -64,28 +64,28 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-09-01 09:11:56 UTC
+Last updated at 2025-09-01 11:14:19 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              331          12265          13512          45011
+C                              331          12292          13542          45153
 Markdown                       282           8063             58          25387
-Bourne Shell                    58           2629           3016          11637
+Bourne Shell                    58           2657           3043          11845
 C/C++ Header                   104           1230           3831           3303
 JSON                            33              0              0           3124
-SVG                              2              0              0           2936
+SVG                              2              0              0           2938
+HTML                             8            138             23            882
 CMake                            1            139            186            725
-HTML                             7            114             23            672
+CSS                              4             40             54            216
 Python                           1             36              9            195
 make                             4             41             16             80
-Text                             1              0              0             75
+Text                             2              0              0             78
 Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
-CSS                              2              3              2             38
 YAML                             2              8             13             37
-JavaScript                       1              3              0             25
+JavaScript                       4              3              3             28
 -------------------------------------------------------------------------------
-SUM:                           835          24566          20697          93383
+SUM:                           842          24682          20809          94129
 -------------------------------------------------------------------------------
 30 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
