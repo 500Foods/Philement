@@ -1,0 +1,3 @@
+xterm.js: latest
+xterm-addon-attach: latest
+xterm-addon-fit: latest
