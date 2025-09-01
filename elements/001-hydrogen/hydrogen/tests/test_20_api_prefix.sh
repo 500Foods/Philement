@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="API Prefix"
+TEST_NAME="Prefix"
 TEST_ABBR="PRE"
 TEST_NUMBER="20"
 TEST_COUNTER=0
