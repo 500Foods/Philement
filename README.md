@@ -64,17 +64,17 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-09-01 00:50:10 UTC
+Last updated at 2025-09-01 09:11:56 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              328          12038          13186          44163
-Markdown                       282           8074             58          25436
-Bourne Shell                    58           2629           3015          11638
-C/C++ Header                   101           1167           3526           3186
+C                              331          12265          13512          45011
+Markdown                       282           8063             58          25387
+Bourne Shell                    58           2629           3016          11637
+C/C++ Header                   104           1230           3831           3303
 JSON                            33              0              0           3124
-SVG                              2              0              0           2879
-CMake                            1            139            186            719
+SVG                              2              0              0           2936
+CMake                            1            139            186            725
 HTML                             7            114             23            672
 Python                           1             36              9            195
 make                             4             41             16             80
@@ -85,7 +85,7 @@ CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           829          24287          20065          92405
+SUM:                           835          24566          20697          93383
 -------------------------------------------------------------------------------
 30 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
