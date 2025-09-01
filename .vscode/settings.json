@@ -24,7 +24,8 @@
   "payload.h": "c",
   "registry_integration.h": "c",
   "landing.h": "c",
-  "cstdlib": "c"
+  "cstdlib": "c",
+  "terminal_session.h": "c"
 },
 "C_Cpp.default.compilerPath": "/usr/lib64/ccache/gcc"
 }
