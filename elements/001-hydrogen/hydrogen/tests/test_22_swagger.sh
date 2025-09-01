@@ -434,7 +434,7 @@ run_swagger_test_parallel() {
             if curl -s --max-time 10 --compressed "${base_url}${swagger_prefix}/swagger-ui.css" > "${css_file}"; then
                 if [[ -s "${css_file}" ]]; then
                     echo "CSS_FILE_TEST_PASSED" >> "${result_file}"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded CSS file ($(wc -c < "${css_file}") bytes)"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded CSS file ($(wc -c < "${css_file}" || true) bytes)"
                 else
                     echo "CSS_FILE_TEST_FAILED" >> "${result_file}"
                     all_tests_passed=false
@@ -450,7 +450,7 @@ run_swagger_test_parallel() {
             if curl -s --max-time 10 --compressed "${base_url}${swagger_prefix}/favicon-32x32.png" > "${png_file}"; then
                 if [[ -s "${png_file}" ]]; then
                     echo "PNG_FILE_TEST_PASSED" >> "${result_file}"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded PNG file ($(wc -c < "${png_file}") bytes)"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded PNG file ($(wc -c < "${png_file}" || true) bytes)"
                 else
                     echo "PNG_FILE_TEST_FAILED" >> "${result_file}"
                     all_tests_passed=false
@@ -466,7 +466,7 @@ run_swagger_test_parallel() {
             if curl -s -H "Accept-Encoding: br" --max-time 10 "${base_url}${swagger_prefix}/swagger-ui.css.br" > "${br_file}"; then
                 if [[ -s "${br_file}" ]]; then
                     echo "BR_FILE_TEST_PASSED" >> "${result_file}"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded Brotli compressed file ($(wc -c < "${br_file}") bytes)"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded Brotli compressed file ($(wc -c < "${br_file}" || true) bytes)"
                 else
                     echo "BR_FILE_TEST_FAILED" >> "${result_file}"
                     all_tests_passed=false
@@ -477,7 +477,7 @@ run_swagger_test_parallel() {
             fi
 
             # Test 404 error handling for non-existent files
-            local notfound_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_404.txt"
+            # local notfound_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_404.txt"
             print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl --silent --max-time 10 --write-out '%{http_code}' \"${base_url}${swagger_prefix}/nonexistent.file\""
 
             # Use curl with set +e/-e to avoid script exit on failure
