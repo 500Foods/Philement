@@ -250,7 +250,7 @@ get_latest_swaggerui_version() {
 generate_terminal_payload() {
     print_header "Generating Terminal Payload"
 
-    # Run the terminal generation script
+    # Run the terminal generation script (uncommented to ensure fresh generation)
     echo -e "${CYAN}${INFO} Running terminal-generate.sh...${NC}"
     if ! "${SCRIPT_DIR}/terminal-generate.sh" >/dev/null 2>&1; then
         echo -e "${RED}${FAIL} Terminal payload generation failed${NC}"
@@ -726,7 +726,7 @@ main() {
     # Execute main workflow
     print_header "Payload Generation Process"
     download_swaggerui
-    # generate_terminal_payload - REMOVED: Terminal files now automatically included from payload cache
+    generate_terminal_payload
     compress_static_assets
     create_tarball
 

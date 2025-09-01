@@ -59,6 +59,7 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                 char buf[256];
                 int auth_len = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
                 
+                // First try Authorization header
                 if (auth_len > 0 && auth_len < (int)sizeof(buf)) {
                     lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
                     
@@ -66,14 +67,72 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                         const char *key = buf + 4;
                         if (ws_context && strcmp(key, ws_context->auth_key) == 0) {
                             // Authentication successful, allow upgrade
-                            log_this(SR_WEBSOCKET, "HTTP upgrade authentication successful", LOG_LEVEL_STATE);
+                            log_this(SR_WEBSOCKET, "HTTP upgrade authentication successful (header)", LOG_LEVEL_STATE);
                             return 0;
                         }
                     }
                 }
                 
-                // Authentication failed
-                log_this(SR_WEBSOCKET, "HTTP upgrade authentication failed", LOG_LEVEL_ALERT);
+                // Fallback to query parameters for JavaScript WebSocket clients
+                char uri[512];
+                int uri_len = lws_hdr_total_length(wsi, WSI_TOKEN_GET_URI);
+                if (uri_len > 0 && uri_len < (int)sizeof(uri)) {
+                    lws_hdr_copy(wsi, uri, sizeof(uri), WSI_TOKEN_GET_URI);
+                    
+                    // Look for key parameter in query string
+                    char *query = strchr(uri, '?');
+                    if (query) {
+                        query++; // Skip the '?'
+                        char *key_param = strstr(query, "key=");
+                        if (key_param) {
+                            key_param += 4; // Skip "key="
+                            
+                            // Find end of key value (next & or end of string)
+                            char *key_end = strchr(key_param, '&');
+                            char key_value[256];
+                            if (key_end) {
+                                size_t key_len = (size_t)(key_end - key_param);
+                                if (key_len < sizeof(key_value)) {
+                                    strncpy(key_value, key_param, key_len);
+                                    key_value[key_len] = '\0';
+                                } else {
+                                    key_value[0] = '\0';
+                                }
+                            } else {
+                                strncpy(key_value, key_param, sizeof(key_value) - 1);
+                                key_value[sizeof(key_value) - 1] = '\0';
+                            }
+                            
+                            // URL decode the key value (handle %XX encoding)
+                            char decoded_key[256];
+                            size_t decoded_len = 0;
+                            for (size_t i = 0; key_value[i] && decoded_len < sizeof(decoded_key) - 1; i++) {
+                                if (key_value[i] == '%' && key_value[i+1] && key_value[i+2]) {
+                                    // Simple hex decode for %XX
+                                    unsigned int hex_val;
+                                    if (sscanf(&key_value[i+1], "%2x", &hex_val) == 1) {
+                                        decoded_key[decoded_len++] = (char)hex_val;
+                                        i += 2; // Skip next 2 chars
+                                    } else {
+                                        decoded_key[decoded_len++] = key_value[i];
+                                    }
+                                } else {
+                                    decoded_key[decoded_len++] = key_value[i];
+                                }
+                            }
+                            decoded_key[decoded_len] = '\0';
+                            
+                            if (ws_context && strcmp(decoded_key, ws_context->auth_key) == 0) {
+                                // Authentication successful, allow upgrade
+                                log_this(SR_WEBSOCKET, "HTTP upgrade authentication successful (query param)", LOG_LEVEL_STATE);
+                                return 0;
+                            }
+                        }
+                    }
+                }
+                
+                // Authentication failed - no valid header or query param
+                log_this(SR_WEBSOCKET, "Missing authorization header", LOG_LEVEL_ALERT);
                 return -1;
             }
             

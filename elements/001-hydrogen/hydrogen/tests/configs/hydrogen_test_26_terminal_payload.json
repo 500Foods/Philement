@@ -10,7 +10,7 @@
         "EnableIPv4": true,
         "EnableIPv6": true,
         "Port": 5261,
-        "Protocol": "hydrogen",
+        "Protocol": "terminal",
         "Key": "${env.WEBSOCKET_KEY}"
     },
     "Terminal": {
