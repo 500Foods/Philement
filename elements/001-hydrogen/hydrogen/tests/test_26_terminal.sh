@@ -23,7 +23,7 @@ TEST_NAME="Terminal"
 TEST_ABBR="TRM"
 TEST_NUMBER="26"
 TEST_COUNTER=0
-TEST_VERSION="2.0.0"
+TEST_VERSION="2.1.0"  # Updated version for WebSocket connection testing
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -32,6 +32,11 @@ setup_test_environment
 # Parallel execution configuration
 declare -a PARALLEL_PIDS
 declare -A TERMINAL_TEST_CONFIGS
+
+# Declare result variables to avoid unbound variable errors
+INDEX_TEST_RESULT=false
+SPECIFIC_FILE_TEST_RESULT=false
+CROSS_CONFIG_404_TEST_RESULT=false
 
 # Terminal test configuration - format: "config_file:log_suffix:description:expected_content"
 TERMINAL_TEST_CONFIGS=(
@@ -228,7 +233,7 @@ run_terminal_test_parallel() {
             else
                 other_file="terminal.html"
             fi
-            
+
             local cross_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_cross_${other_file}.html"
             curl -s --max-time 10 "${base_url}/terminal/${other_file}" > "${cross_file}" 2>/dev/null
             if "${GREP}" -q "404 Not Found" "${cross_file}"; then
@@ -238,7 +243,36 @@ run_terminal_test_parallel() {
                 # Note: This is expected behavior - files might be available in both configs
                 # Don't fail the test for this
             fi
-            
+
+            # Test WebSocket terminal connection
+            # Determine WebSocket port from configuration
+            local ws_port
+            ws_port=$(jq -r '.WebSocketServer.Port // 5261' "${config_file}" 2>/dev/null || echo "5261")
+            local ws_url="ws://localhost:${ws_port}"
+
+            local websocket_protocol
+            websocket_protocol=$(jq -r '.WebSocketServer.Protocol // "terminal"' "${config_file}" 2>/dev/null || echo "terminal")
+
+            # Test WebSocket terminal connection (basic connectivity test)
+            local websocket_test_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_websocket_connection.json"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if test_websocket_terminal_connection "${ws_url}" "${websocket_protocol}" '{"type": "ping"}' "${websocket_test_file}"; then
+                echo "WEBSOCKET_CONNECTION_TEST_PASSED" >> "${result_file}"
+            else
+                echo "WEBSOCKET_CONNECTION_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+
+            # Test WebSocket terminal protocol acceptance (ping test)
+            local websocket_ping_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_websocket_ping.json"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if test_websocket_terminal_status "${ws_url}" "${websocket_protocol}" "${websocket_ping_file}"; then
+                echo "WEBSOCKET_PING_TEST_PASSED" >> "${result_file}"
+            else
+                echo "WEBSOCKET_PING_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+
             if [[ "${all_tests_passed}" = true ]]; then
                 echo "ALL_TERMINAL_TESTS_PASSED" >> "${result_file}"
             else
@@ -326,6 +360,193 @@ analyze_terminal_test_results() {
     fi
 }
 
+# Function to test WebSocket terminal connection with proper authentication and retry logic
+test_websocket_terminal_connection() {
+    local ws_url="$1"
+    local protocol="$2"
+    local test_message="$3"
+    local response_file="$4"
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal connection with authentication using websocat"
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${test_message}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --exit-on-eof '${ws_url}'"
+
+    # Retry logic for WebSocket subsystem readiness (reduced for parallel execution to prevent thundering herd)
+    local max_attempts=5
+    local attempt=1
+    local websocat_output
+    local websocat_exitcode
+    local temp_file="${LOG_PREFIX}${TIMESTAMP}_${protocol}_terminal_echo.log"
+
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        if [[ "${attempt}" -gt 1 ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket connection attempt ${attempt} of ${max_attempts} (waiting for terminal subsystem initialization)..."
+            sleep 0.05  # Brief delay between attempts to prevent thundering herd
+        fi
+
+        # Test WebSocket connection with a 5-second timeout
+        echo "${test_message}" | "${TIMEOUT}" 5 websocat \
+            --protocol="${protocol}" \
+            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            --ping-interval=30 \
+            --exit-on-eof \
+            "${ws_url}" > "${temp_file}" 2>&1
+        websocat_exitcode=$?
+        websocat_output=$(cat "${temp_file}" 2>/dev/null || echo "")
+
+        # Analyze the results
+        if [[ "${websocat_exitcode}" -eq 0 ]]; then
+            if [[ "${attempt}" -gt 1 ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket connection successful (clean exit, succeeded on attempt ${attempt})"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket connection successful (clean exit)"
+            fi
+            if [[ -n "${websocat_output}" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server response: ${websocat_output}"
+            fi
+            return 0
+        elif [[ "${websocat_exitcode}" -eq 124 ]]; then
+            # Timeout occurred, but that's OK if connection was established
+            if [[ "${attempt}" -gt 1 ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket connection successful (timeout after successful connection, succeeded on attempt ${attempt})"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket connection successful (timeout after successful connection)"
+            fi
+            return 0
+        else
+            # Check for connection refused which might indicate WebSocket server not ready yet
+            if echo "${websocat_output}" | "${GREP}" -qi "connection refused"; then
+                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket connection failed: Connection refused after ${max_attempts} attempts"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server is not accepting Terminal WebSocket connections on the specified port"
+                    return 1
+                else
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket server not ready yet (connection refused), retrying..."
+                    attempt=$(( attempt + 1 ))
+                    continue
+                fi
+            fi
+
+            # Check for authentication errors
+            if echo "${websocat_output}" | "${GREP}" -qi "401\|forbidden\|unauthorized"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket connection failed: Authentication rejected"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server rejected the provided WebSocket key"
+                return 1
+            elif echo "${websocat_output}" | "${GREP}" -qi "protocol.*not.*supported"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket connection failed: Terminal protocol not supported"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server does not support the 'terminal' protocol"
+                return 1
+            else
+                # Unknown error - retry if we have attempts left
+                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket connection failed after ${max_attempts} attempts"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Error: ${websocat_output}"
+                    return 1
+                else
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket connection failed on attempt ${attempt}, retrying..."
+                    attempt=$(( attempt + 1 ))
+                    continue
+                fi
+            fi
+        fi
+    done
+
+    return 1
+}
+
+# Function to test WebSocket terminal status request
+test_websocket_terminal_status() {
+    local ws_url="$1"
+    local protocol="$2"
+    local response_file="$3"
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing Terminal WebSocket status request using websocat"
+
+    # JSON message to request status (terminal-specific)
+    local status_request='{"type": "ping"}'
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${status_request}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
+
+    # Retry logic for WebSocket subsystem readiness (reduced for parallel execution to prevent thundering herd)
+    local max_attempts=8
+    local attempt=1
+    local websocat_output
+    local websocat_exitcode
+    local temp_file="${LOG_PREFIX}${TIMESTAMP}_${protocol}_terminal_status.txt"
+
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        if [[ "${attempt}" -gt 1 ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket status request attempt ${attempt} of ${max_attempts}..."
+            sleep 0.05  # Brief delay between attempts to prevent thundering herd
+        fi
+
+        # Test WebSocket status request with a 3-second timeout
+        echo "${status_request}" | websocat \
+            --protocol="${protocol}" \
+            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            --ping-interval=30 \
+            --one-message \
+            "${ws_url}" > "${temp_file}" 2>&1
+        websocat_exitcode=$?
+        websocat_output=$(cat "${temp_file}" 2>/dev/null || echo "")
+
+        # For terminal protocol, we expect success (clean exit) - this tests that the protocol is accepted
+        if [[ "${websocat_exitcode}" -eq 0 ]]; then
+            if [[ "${attempt}" -gt 1 ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket status ping successful (succeeded on attempt ${attempt})"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket status ping successful"
+            fi
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal protocol accepted by WebSocket server"
+            return 0
+        elif [[ "${websocat_exitcode}" -eq 124 ]]; then
+            # Timeout occurred, but ping should respond quickly
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket ping timed out (protocol accepting but no response)"
+            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping failed - protocol accepted but no response"
+                return 1
+            else
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket ping attempt ${attempt} timed out, retrying..."
+                attempt=$(( attempt + 1 ))
+                continue
+            fi
+        else
+            # Check for connection issues that might indicate protocol incompatibility
+            if [[ "${websocat_exitcode}" -ne 0 ]] && [[ "${websocat_exitcode}" -ne 1 ]]; then
+                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping failed - connection error (${websocat_exitcode})"
+                    return 1
+                else
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket ping attempt ${attempt} failed, retrying..."
+                    attempt=$(( attempt + 1 ))
+                    continue
+                fi
+            fi
+
+            # For other errors, fail immediately as they're likely permanent
+            if echo "${websocat_output}" | "${GREP}" -qi "401\|forbidden\|unauthorized"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping failed: Authentication rejected"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server rejected the provided WebSocket key for terminal protocol"
+                return 1
+            elif echo "${websocat_output}" | "${GREP}" -qi "protocol.*not.*supported"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping failed: Terminal protocol not supported"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server does not support the 'terminal' protocol - likely configuration issue"
+                return 1
+            fi
+
+            # If we reach here, either got failure or timeout, retry if we have attempts left
+            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping failed after ${max_attempts} attempts"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Final error: ${websocat_output}"
+                return 1
+            else
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket ping attempt ${attempt} failed, retrying..."
+                attempt=$(( attempt + 1 ))
+            fi
+        fi
+    done
+
+    return 1
+}
+
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
@@ -334,7 +555,6 @@ HYDROGEN_BIN_BASE=''
 if find_hydrogen_binary "${PROJECT_DIR}"; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
@@ -360,17 +580,33 @@ done
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
 if [[ "${config_valid}" = true ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All configuration files validated successfully"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration file validation failed"
     EXIT_CODE=1
+fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate WEBSOCKET_KEY Environment Variable"
+if [[ -n "${WEBSOCKET_KEY}" ]]; then
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    if validate_websocket_key "WEBSOCKET_KEY" "${WEBSOCKET_KEY}"; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "WEBSOCKET_KEY is valid and ready for WebSocket authentication"
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "WEBSOCKET_KEY is invalid format"
+        EXIT_CODE=1
+        print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+        ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
+    fi
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "WEBSOCKET_KEY environment variable is not set"
+    EXIT_CODE=1
+    print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+    ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
 fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Test Artifacts"
 if [[ -f "tests/artifacts/terminal/index.html" ]] && [[ -f "tests/artifacts/terminal/xterm-test.html" ]]; then
     if "${GREP}" -q "HYDROGEN_TERMINAL_TEST_MARKER" "tests/artifacts/terminal/index.html" || "${GREP}" -q "Hydrogen Terminal Test Interface" "tests/artifacts/terminal/xterm-test.html"; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Test artifacts validated successfully"
-        PASS_COUNT=$(( PASS_COUNT + 1 ))
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Test artifact files found and validated"
     else
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Test markers not found in artifact files"
@@ -416,7 +652,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         IFS=':' read -r config_file log_suffix description expected_file <<< "${TERMINAL_TEST_CONFIGS[${test_config}]}"
         
         log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Server Log: ..${log_file}" 
+        result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Server Log: ..${log_file}"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Result File: ..${result_file}"
 
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if analyze_terminal_test_results "${test_config}" "${log_suffix}" "${description}" "${expected_file}"; then
@@ -424,7 +662,6 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal Index Access - ${description}"
             if [[ "${INDEX_TEST_RESULT}" = true ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal index page test passed"
-                PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal index page test failed"
                 EXIT_CODE=1
@@ -433,7 +670,6 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Specific File Access - ${description}"
             if [[ "${SPECIFIC_FILE_TEST_RESULT}" = true ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Specific file (${expected_file}) test passed"
-                PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Specific file (${expected_file}) test failed"
                 EXIT_CODE=1
@@ -442,11 +678,30 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Cross-Config 404 Test - ${description}"
             if [[ "${CROSS_CONFIG_404_TEST_RESULT}" = true ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Cross-config 404 test passed (proper file isolation)"
-                PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Cross-config file access detected (files available in both modes)"
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Cross-config test completed (informational)"
-                PASS_COUNT=$(( PASS_COUNT + 1 ))
+            fi
+
+            # Reconstruct result file path for WebSocket tests
+            result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
+
+            # Check WebSocket connection test results
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WebSocket Terminal Connection - ${description}"
+            if "${GREP}" -q "WEBSOCKET_CONNECTION_TEST_PASSED" "${result_file}" 2>/dev/null; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket connection test passed"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket connection test failed"
+                EXIT_CODE=1
+            fi
+
+            # Check WebSocket ping test results
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WebSocket Terminal Ping - ${description}"
+            if "${GREP}" -q "WEBSOCKET_PING_TEST_PASSED" "${result_file}" 2>/dev/null; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket ping test passed"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping test failed"
+                EXIT_CODE=1
             fi
             
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: All Terminal tests passed"

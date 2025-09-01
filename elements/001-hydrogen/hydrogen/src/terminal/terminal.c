@@ -3,6 +3,7 @@
 
 // Local includes
 #include "terminal.h"
+#include "terminal_session.h"
 #include "../payload/payload.h"
 #include "../payload/payload_cache.h"
 
@@ -97,6 +98,13 @@ bool init_terminal_support(TerminalConfig *config) {
         }
         return terminal_initialized;
     }
+
+    // Initialize terminal session manager for WebSocket integration
+    if (!init_session_manager(config->max_sessions, config->idle_timeout_seconds)) {
+        log_this(SR_TERMINAL, "Failed to initialize terminal session manager", LOG_LEVEL_ERROR);
+        return false;
+    }
+    log_this(SR_TERMINAL, "Terminal session manager initialized", LOG_LEVEL_STATE);
 
     // Determine serving mode based on WebRoot configuration
     bool is_payload_mode = false;
@@ -341,6 +349,9 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
         url_path++; // Skip leading slash for other paths
     }
 
+    // Note: WebSocket connections are handled by the WebSocket server on port 5261
+    // Client-side JavaScript will connect directly to port 5261 for terminal WebSocket connections
+
     // Log the URL processing for debugging
     log_this(SR_TERMINAL, "Request: Original URL: %s, Processed path: %s",
              LOG_LEVEL_STATE, url, url_path);
@@ -529,6 +540,10 @@ void cleanup_terminal_support(TerminalConfig *config __attribute__((unused))) {
     log_this(SR_TERMINAL, "Terminal subsystem cleanup called", LOG_LEVEL_STATE);
     terminal_initialized = false;
     global_terminal_config = NULL;
+
+    // Cleanup terminal session manager and all active sessions
+    cleanup_session_manager();
+    log_this(SR_TERMINAL, "Terminal session manager cleaned up", LOG_LEVEL_STATE);
 
     // Free terminal files array and allocated names
     if (terminal_files) {
