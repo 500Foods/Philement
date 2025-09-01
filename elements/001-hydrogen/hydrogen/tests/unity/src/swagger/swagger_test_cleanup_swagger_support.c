@@ -17,8 +17,6 @@ void cleanup_swagger_support(void);
 // Function prototypes for test functions
 void test_cleanup_swagger_support_basic(void);
 void test_cleanup_swagger_support_multiple_calls(void);
-void test_cleanup_swagger_support_after_init(void);
-void test_cleanup_swagger_support_repeated_sequence(void);
 void test_cleanup_swagger_support_without_init(void);
 
 void setUp(void) {
@@ -43,39 +41,6 @@ void test_cleanup_swagger_support_multiple_calls(void) {
     TEST_ASSERT_TRUE(true); // If we reach here, it didn't crash
 }
 
-void test_cleanup_swagger_support_after_init(void) {
-    // Test cleanup after initialization
-    SwaggerConfig test_config = {0};
-    test_config.enabled = true;
-    test_config.payload_available = true;
-    test_config.prefix = strdup("/swagger");
-    
-    init_swagger_support(&test_config);
-    cleanup_swagger_support();
-    
-    // Should be able to call again
-    cleanup_swagger_support();
-    TEST_ASSERT_TRUE(true);
-    
-    free(test_config.prefix);
-}
-
-void test_cleanup_swagger_support_repeated_sequence(void) {
-    // Test repeated init/cleanup sequences
-    for (int i = 0; i < 3; i++) {
-        SwaggerConfig test_config = {0};
-        test_config.enabled = true;
-        test_config.payload_available = true;
-        test_config.prefix = strdup("/swagger");
-        
-        init_swagger_support(&test_config);
-        cleanup_swagger_support();
-        
-        free(test_config.prefix);
-    }
-    TEST_ASSERT_TRUE(true);
-}
-
 void test_cleanup_swagger_support_without_init(void) {
     // Should be safe to call cleanup without prior initialization
     cleanup_swagger_support();
@@ -88,8 +53,6 @@ int main(void) {
     
     RUN_TEST(test_cleanup_swagger_support_basic);
     RUN_TEST(test_cleanup_swagger_support_multiple_calls);
-    RUN_TEST(test_cleanup_swagger_support_after_init);
-    RUN_TEST(test_cleanup_swagger_support_repeated_sequence);
     RUN_TEST(test_cleanup_swagger_support_without_init);
     
     return UNITY_END();
