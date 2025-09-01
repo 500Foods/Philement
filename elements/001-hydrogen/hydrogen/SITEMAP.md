@@ -65,6 +65,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 ### Folder: /docs/plans
 
+- [DATABASE_PLAN.md](docs/plans/DATABASE_PLAN.md): Implementation plan for Database feature
 - [TERMINAL_PLAN.md](docs/plans/TERMINAL_PLAN.md): Implementation plan for Terminal feature
 
 ### Folder: /docs/reference
