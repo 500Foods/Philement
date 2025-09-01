@@ -14,17 +14,25 @@ typedef struct {
     bool is_compressed; // Whether content is Brotli compressed
 } SwaggerFile;
 
+// Static function declarations
+static void free_swagger_files(void);
+
 // Global state
 static SwaggerFile *swagger_files = NULL;
 static size_t num_swagger_files = 0;
 static bool swagger_initialized = false;
 static const SwaggerConfig *global_swagger_config = NULL;  // Global config for validator
 
-// Forward declarations and wrapper functions
+/**
+ * Web server validator wrapper - matches MHD signature
+ */
 bool swagger_url_validator(const char *url) {
     return is_swagger_request(url, global_swagger_config);
 }
 
+/**
+ * Web server handler wrapper - matches MHD signature
+ */
 enum MHD_Result swagger_request_handler(void *cls,
                                       struct MHD_Connection *connection,
                                       const char *url,
@@ -37,9 +45,20 @@ enum MHD_Result swagger_request_handler(void *cls,
     return handle_swagger_request(connection, url, config);
 }
 
+
+
+
+/**
+ * Cleanup wrapper for shutdown
+ */
+void cleanup_swagger_support(void) {
+    free_swagger_files();
+}
+
+// Forward declarations for main implementation functions
+
 // Forward declaration for payload cache access
 bool get_payload_files_by_prefix(const char *prefix, PayloadFile **files, size_t *num_files, size_t *capacity);
-static void free_swagger_files(void);
 char* get_server_url(struct MHD_Connection *connection, const SwaggerConfig *config);
 char* create_dynamic_initializer(const char *base_content, const char *server_url, const SwaggerConfig *config);
 
@@ -476,9 +495,6 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     return ret;
 }
 
-void cleanup_swagger_support(void) {
-    free_swagger_files();
-}
 
 
 static void free_swagger_files(void) {
@@ -542,12 +558,7 @@ char* get_server_url(struct MHD_Connection *connection,
 }
 
 /**
- * Create a dynamic swagger-initializer.js with the correct server URL
- * 
- * @param base_content The original initializer content (unused as we generate content from scratch)
- * @param server_url The server's base URL from the incoming request
- * @param config The web server configuration containing the swagger prefix
- * @return Dynamically allocated string with the modified content, or NULL on error
+ * Cleanup wrapper for shutdown
  */
 char* create_dynamic_initializer(const char *base_content __attribute__((unused)),
                                       const char *server_url,
