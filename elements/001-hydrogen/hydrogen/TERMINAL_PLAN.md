@@ -444,127 +444,6 @@ Following `swagger-generate.sh` pattern:
 
 ## Phase 3: File Serving with WebRoot Support - ✅ **COMPLETED SUCCESSFULLY**
 
-
-
-## Phase 4: Terminal Subsystem Implementation
-
-### 4.1 Core Terminal Structure
-
-```c
-// src/terminal/terminal.h
-typedef struct TerminalSession {
-    int pty_master_fd;              // PTY master file descriptor
-    pid_t child_pid;                // Child process PID (tracked for shutdown cleanup)
-    uint8_t* io_buffer;             // Data buffer
-    size_t buffer_size;             // Buffer capacity
-    time_t last_activity;           // For timeout management
-    bool active;                    // Session state
-    uint32_t session_id;            // Unique identifier
-} TerminalSession;
-
-typedef struct TerminalConfig {
-    // ... config fields from Phase 1 ...
-
-    // Runtime session management
-    TerminalSession* sessions;      // Array of active PTY sessions
-    size_t session_count;          // Current number of active sessions
-    size_t max_sessions;           // Configured maximum sessions
-    pid_t* child_pids;             // Array of all child process PIDs for shutdown
-    size_t pid_count;              // Number of tracked child processes
-    pthread_mutex_t session_lock;   // Thread safety for session operations
-
-    // Shutdown cleanup tracking
-    bool shutting_down;            // Flag to prevent new sessions during shutdown
-    volatile sig_atomic_t cleanup_complete; // Atomic flag for shutdown coordination
-} TerminalConfig;
-
-// PID tracking functions
-void track_child_pid(TerminalConfig* config, pid_t pid);
-void cleanup_child_processes(TerminalConfig* config);
-void remove_child_pid(TerminalConfig* config, pid_t pid);
-```
-
-### 4.2 PTY Management
-
-```c
-// src/terminal/terminal_pt-shell.c
-
-// Process lifecycle
-pid_t spawn_pty_shell(const char* shell_cmd,
-                      int* master_fd,
-                      struct termios* term_settings);
-
-// I/O handling
-enum MHD_Result handle_pty_io(TerminalSession* session,
-                             struct MHD_Connection* connection);
-
-// Cleanup
-void terminate_session(TerminalSession* session,
-                       bool force_kill);
-```
-
-### 4.3 WebSocket Implementation
-
-```c
-// src/terminal/terminal_websocket.c
-
-// WebSocket upgrade handling
-enum MHD_Result upgrade_websocket_connection(struct MHD_Connection* connection,
-                                           TerminalConfig* config);
-
-// Message framing
-bool send_websocket_data(int client_fd,
-                        const uint8_t* data,
-                        size_t data_len,
-                        bool is_text);
-
-// Real-time data flow
-void handle_websocket_message(const uint8_t* payload,
-                             size_t payload_len,
-                             int master_fd);
-```
-
-## Phase 5: Testing Infrastructure
-
-### 5.1 Test Artifacts Creation
-
-```
-tests/artifacts/swagger/index.html:
-    <!DOCTYPE html>
-    <html><body><h1>HYDROGEN_SWAGGER_TEST_MARKER</h1></body></html>
-
-tests/artifacts/terminal/terminal.html:
-    <!DOCTYPE html>
-    <html><body><h1>HYDROGEN_TERMINAL_TEST_MARKER</h1></body></html>
-```
-
-### 5.2 Test Configuration Files
-
-```
-tests/configs/hydrogen_test_22_swagger_webroot.json:
-    {
-        "Swagger": {
-            "WebRoot": "tests/artifacts/swagger",  // Relative to server working directory
-            "Enabled": true
-        }
-    }
-
-tests/configs/hydrogen_test_26_terminal_webroot.json:
-    {
-        "Terminal": {
-            "WebRoot": "tests/artifacts/terminal",  // Relative to server working directory
-            "Enabled": true
-        }
-    }
-```
-
-### 5.3 Test Script Updates
-
-- **test_22_swagger.sh**: Add WebRoot configuration tests + Range request testing
-- **test_26_terminal.sh**: Complete terminal functionality testing + Range request testing (following parallel test patterns)
-- Both scripts validate specific markers from artifacts directory
- PRESERVE Range request subtest in Test 26 structure
-
 ## Phase 6: Integration and Build System
 
 ### 6.1 Launch/Landing Files Creation
@@ -745,7 +624,39 @@ Subsystem subsystems[] = {
 - Update swagger system for new pattern ✅ IMPLEMENTED
 - Endpoint routing updates ✅ IMPLEMENTED
 
-## Phase 4 (Terminal Core Implementation) - CURRENT STATUS: ❌ **CRITICAL MISSING COMPONENT**
+## Phase 4 (Testing Infrastructure) - 3 days - ✅ **COMPLETED SUCCESSFULLY**
+
+### Assessment: Test Framework Implemented and Working
+
+**TESTING COMPONENTS COMPLETED:**
+
+1. **Test 26 Terminal Script**: ✅ Complete and functional for file serving validation
+2. **Test Artifacts**: ✅ `tests/artifacts/terminal/` with proper markers
+3. **Parallel Execution**: ✅ Follows Test 22/Swagger patterns
+4. **Configuration Testing**: ✅ Both payload and filesystem modes
+5. **Endpoint Validation**: ✅ Marker-based content verification
+
+### What Currently Works
+
+- ✅ Terminal HTML file serving validation
+- ✅ CORS header testing
+- ✅ WebRoot configuration switching
+- ✅ Both payload (`PAYLOAD:/terminal`) and filesystem modes
+- ✅ Parallel test execution with proper cleanup
+- ✅ Server lifecycle management in tests
+
+### Test Status
+
+```bash
+# Test 26 passes for file serving functionality
+test_26_terminal.sh validates:
+- Terminal endpoint serves HTML interface ✅
+- xterm.js assets load correctly ✅  
+- CORS policies function properly ✅
+- WebRoot switching works ✅
+```
+
+## Phase 5 (Terminal Core Implementation) - CURRENT STATUS: ❌ **CRITICAL MISSING COMPONENT**
 
 ### Assessment: PTY/WebSocket Functionality Not Implemented
 
@@ -756,14 +667,15 @@ Subsystem subsystems[] = {
 3. **No Session Management**: No actual terminal session lifecycle handling
 4. **No Real-Time Data Flow**: No bidirectional I/O between web client and shell
 
-### What Currently Exists:
-- ✅ File serving from payload/memory (Phase 3 implementation)  
-- ✅ WebServer endpoint registration
-- ✅ CORS support
+### What Currently Exists
+
+- ✅ File serving from payload/memory (Phase 3 implementation)
 - ✅ Launch/landing subsystem integration
 - ✅ Basic request validation
+- ✅ WebServer endpoint registration
 
-### What Is Missing:
+### What Is Missing
+
 - ❌ Actual terminal process spawning (forkpty, exec)
 - ❌ WebSocket upgrade and message handling
 - ❌ PTY I/O forwarding between client and shell
@@ -771,30 +683,29 @@ Subsystem subsystems[] = {
 - ❌ Session lifecycle management
 - ❌ Signal propagation and cleanup
 
-### Next Step Required:
-**Implement Phase 4 Terminal Core** - PTY process management and WebSocket bridging
+### Next Step Required
 
-### Phase 4 (Testing) - 3 days
+**Implement Phase 5 Terminal Core** - PTY process management and WebSocket bridging
 
 - Create test artifacts and configurations
 - Update test_22_swagger.sh
 - Create test_26_terminal.sh
 - Validation and debugging
 
-### Phase 5 (Terminal Core) - 5 days
+### Phase 5 (Terminal Core Implementation) - ❌ **CRITICAL MISSING COMPONENT**
 
 - PTY process management
 - WebSocket communication
 - Session lifecycle handling
 - Error recovery mechanisms
 
-### Phase 6 (Integration) - 2 days
+### Phase 6 (Integration and Documentation) - 3 days
 
 - Build system updates (CMake)
 - Documentation updates
 - Final validation and testing
 
-**Total Timeline**: ~12 working days remaining (Phase 3 already completed)
+**Total Timeline**: Remaining work focused on Phase 5 Terminal Core implementation
 
 ---
 
