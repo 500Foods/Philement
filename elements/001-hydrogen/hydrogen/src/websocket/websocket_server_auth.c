@@ -69,5 +69,9 @@ void ws_clear_authentication(WebSocketSessionData *session)
 {
     if (session) {
         session->authenticated = false;
+        if (session->authenticated_key) {
+            free(session->authenticated_key);
+            session->authenticated_key = NULL;
+        }
     }
 }

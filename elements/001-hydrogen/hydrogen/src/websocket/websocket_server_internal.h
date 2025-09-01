@@ -57,6 +57,7 @@ typedef struct {
     bool authenticated;                // Authentication state
     time_t connection_time;           // Connection establishment time
     bool status_response_sent;         // Flag for status response completion
+    char *authenticated_key;           // Stored authenticated key for protocol filtering
 } WebSocketSessionData;
 
 // Initialize the server context

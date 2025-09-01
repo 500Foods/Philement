@@ -56,17 +56,23 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         case LWS_CALLBACK_HTTP:
             // Handle HTTP requests and WebSocket upgrade
             {
+                // log_this(SR_WEBSOCKET, "HTTP callback invoked for WebSocket upgrade", LOG_LEVEL_DEBUG);
                 char buf[256];
                 int auth_len = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
                 
                 // First try Authorization header
                 if (auth_len > 0 && auth_len < (int)sizeof(buf)) {
                     lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
-                    
+
                     if (strncmp(buf, "Key ", 4) == 0) {
                         const char *key = buf + 4;
                         if (ws_context && strcmp(key, ws_context->auth_key) == 0) {
-                            // Authentication successful, allow upgrade
+                            // Authentication successful, store key for later use during protocol filtering
+                            void *user_data = lws_wsi_user(wsi);
+                            if (user_data) {
+                                WebSocketSessionData *session = (WebSocketSessionData *)user_data;
+                                session->authenticated_key = strdup(key);  // Store the authenticated key
+                            }
                             log_this(SR_WEBSOCKET, "HTTP upgrade authentication successful (header)", LOG_LEVEL_STATE);
                             return 0;
                         }
@@ -123,7 +129,12 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                             decoded_key[decoded_len] = '\0';
                             
                             if (ws_context && strcmp(decoded_key, ws_context->auth_key) == 0) {
-                                // Authentication successful, allow upgrade
+                                // Authentication successful, store key for later use during protocol filtering
+                                void *user_data = lws_wsi_user(wsi);
+                                if (user_data) {
+                                    WebSocketSessionData *session = (WebSocketSessionData *)user_data;
+                                    session->authenticated_key = strdup(decoded_key);  // Store the authenticated key
+                                }
                                 log_this(SR_WEBSOCKET, "HTTP upgrade authentication successful (query param)", LOG_LEVEL_STATE);
                                 return 0;
                             }
