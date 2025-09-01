@@ -40,7 +40,7 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="System Endpoints"
+TEST_NAME="Endpoints"
 TEST_ABBR="SYS"
 TEST_NUMBER="21"
 TEST_COUNTER=0

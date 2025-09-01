@@ -14,11 +14,6 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [STRUCTURE.md](STRUCTURE.md): An index to all of the files in the project
 - [COMPLETE.svg](COMPLETE.svg): Latest Test Suite Results table rendered as SVG
 - [COVERAGE.svg](COVERAGE.svg): Latest Test Suite Coverage table rendered as SVG
-- [TERMINAL_PLAN.md](TERMINAL_PLAN.md): Implementation plan for Terminal feature
-
-## Folder: /extras
-
-- [README.md](extras/README.md): Build scripts and diagnostic tools
 
 ## Folder: /cmake
 
@@ -67,6 +62,10 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [home-workshop.md](docs/guides/use-cases/home-workshop.md)
 - [print-farm.md](docs/guides/use-cases/print-farm.md)
+
+### Folder: /docs/plans
+
+- [TERMINAL_PLAN.md](docs/plans/TERMINAL_PLAN.md): Implementation plan for Terminal feature
 
 ### Folder: /docs/reference
 
@@ -206,6 +205,10 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ## Folder: /examples
 
 - [README.md](examples/README.md)
+
+## Folder: /extras
+
+- [README.md](extras/README.md): Build scripts and diagnostic tools
 
 ## Folder: /payloads
 
