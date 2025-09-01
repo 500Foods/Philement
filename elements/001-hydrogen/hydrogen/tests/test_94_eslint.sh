@@ -43,7 +43,7 @@ JS_COUNT=${#JS_FILES[@]}
 
 if [[ "${JS_COUNT}" -gt 0 ]]; then
     TEMP_LOG="${LOG_PREFIX}${TIMESTAMP}_temp.log"
-    
+
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running eslint on ${JS_COUNT} JavaScript files..."
     TEST_NAME="${TEST_NAME} {BLUE}(eslint: ${JS_COUNT} files){RESET}"
 
@@ -51,8 +51,8 @@ if [[ "${JS_COUNT}" -gt 0 ]]; then
     if [[ -f ".eslintrc.js" ]] || [[ -f ".eslintrc.json" ]] || [[ -f "eslint.config.js" ]]; then
         eslint "${JS_FILES[@]}" > "${TEMP_LOG}" 2>&1 || true
     else
-        # Use recommended rules if no config
-        eslint --no-eslintrc --config '{"extends": ["eslint:recommended"], "env": {"browser": true, "es6": true}, "parserOptions": {"ecmaVersion": 2020}}' "${JS_FILES[@]}" > "${TEMP_LOG}" 2>&1 || true
+        # Run ESLint with no config (defaults will apply)
+        eslint --no-config-lookup "${JS_FILES[@]}" > "${TEMP_LOG}" 2>&1 || true
     fi
     
     ISSUE_COUNT=$(wc -l < "${TEMP_LOG}")
