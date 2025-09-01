@@ -4,6 +4,7 @@
 # Performs CSS validation using stylelint
 
 # CHANGELOG
+# 3.2.0 - 2025-09-01 - Fixed syntax error in ISSUE_COUNT calculation that could cause parsing issues
 # 3.1.0 - 2025-08-13 - Reviewed - removed mktemp call, not much else
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
@@ -18,7 +19,7 @@ TEST_NAME="CSS Lint"
 TEST_ABBR="CSS"
 TEST_NUMBER="95"
 TEST_COUNTER=0
-TEST_VERSION="3.1.0"
+TEST_VERSION="3.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -55,7 +56,11 @@ if [[ "${CSS_COUNT}" -gt 0 ]]; then
     fi
     
     # Count actual issues (stylelint usually reports errors/warnings)
-    ISSUE_COUNT=$("${GREP}" -c "✖" "${TEMP_LOG}" 2>/dev/null || wc -l < "${TEMP_LOG}")
+    if "${GREP}" -q "✖" "${TEMP_LOG}" 2>/dev/null; then
+        ISSUE_COUNT=$(${GREP} -c "✖" "${TEMP_LOG}" 2>/dev/null)
+    else
+        ISSUE_COUNT=0
+    fi
     
     if [[ "${ISSUE_COUNT}" -gt 0 ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "stylelint found ${ISSUE_COUNT} issues:"

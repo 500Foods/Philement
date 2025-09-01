@@ -266,23 +266,6 @@ file(GLOB_RECURSE HYDROGEN_SOURCES
 # Remove files that should not be linked (from .trial-ignore)
 list(REMOVE_ITEM HYDROGEN_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/not_hydrogen.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/oidc/config_oidc.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/oidc/config_oidc_endpoints.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/oidc/config_oidc_keys.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/oidc/config_oidc_security.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/oidc/config_oidc_tokens.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/print/config_print_buffers.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/print/config_print_priorities.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/print/config_print_queue.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/print/config_print_timeouts.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/resources/config_resources.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/security/keys.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/types/config_string.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/webserver/config_webserver.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/websocket/config_websocket.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/print/print_queue_manager.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/websocket/websocket_dynamic.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/api/system/system_service.c"
 )
 
 # Function to add an executable target with specific build configuration using clean directory structure

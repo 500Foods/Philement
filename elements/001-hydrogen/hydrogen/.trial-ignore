@@ -1,27 +1,5 @@
 # Still working through the configuration 
-./config/oidc/config_oidc_endpoints.c
-./config/oidc/config_oidc_keys.c
-./config/oidc/config_oidc_security.c
-./config/oidc/config_oidc_tokens.c
-./config/print/config_print_buffers.c
-./config/print/config_print_priorities.c
-./config/print/config_print_queue.c
-./config/print/config_print_timeouts.c
-./config/resources/config_resources.c
-./config/security/keys.c
-./config/types/config_string.c
-./config/webserver/config_webserver.c
-./config/websocket/config_websocket.c
 
 # This is used to test that unlinked code doesn't make it into the final executables
 ./not_hydrogen.c
 
-# Printing subsystem not implemented
-./print/print_queue_manager.c
-
-# Websockets not iimplemented
-# ./websocket/websocket_dynamic.c
-
-# There's nothing yet common in the system service endpoints that is shared, so this
-# is just a placeholder to mirror the structure of the other services
-./api/system/system_service.c
