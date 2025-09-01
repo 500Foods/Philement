@@ -190,6 +190,7 @@ pkg_check_modules(JANSSON REQUIRED jansson)
 pkg_check_modules(MICROHTTPD REQUIRED libmicrohttpd)
 pkg_check_modules(WEBSOCKETS REQUIRED libwebsockets)
 pkg_check_modules(BROTLI REQUIRED libbrotlienc libbrotlidec)
+pkg_check_modules(UUID REQUIRED uuid)
 
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
@@ -244,6 +245,7 @@ set(HYDROGEN_BASE_LIBS
     OpenSSL::Crypto
     ${WEBSOCKETS_LIBRARIES}
     ${BROTLI_LIBRARIES}
+    ${UUID_LIBRARIES}
 )
 
 # Include directories
@@ -253,6 +255,7 @@ set(HYDROGEN_INCLUDE_DIRS
     ${MICROHTTPD_INCLUDE_DIRS}
     ${WEBSOCKETS_INCLUDE_DIRS}
     ${BROTLI_INCLUDE_DIRS}
+    ${UUID_INCLUDE_DIRS}
 )
 
 # Source file discovery
@@ -312,7 +315,7 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
         add_custom_command(
             OUTPUT ${OUTPUT_OBJ}
             COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
-            COMMAND ${CMAKE_C_COMPILER} 
+            COMMAND ${CMAKE_C_COMPILER}
                 ${HYDROGEN_BASE_CFLAGS}
                 ${extra_cflags_list}
                 -DVERSION='"${HYDROGEN_VERSION}"'
@@ -323,6 +326,7 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
                 ${MICROHTTPD_CFLAGS}
                 ${WEBSOCKETS_CFLAGS}
                 ${BROTLI_CFLAGS}
+                ${UUID_CFLAGS}
                 -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
             DEPENDS ${SOURCE_FILE}
             COMMENT "Compiling ${REL_PATH} to ${target_name} object file"
@@ -434,7 +438,7 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
     add_custom_command(
         OUTPUT ${OUTPUT_OBJ}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
-        COMMAND ${CMAKE_C_COMPILER} 
+        COMMAND ${CMAKE_C_COMPILER}
             ${HYDROGEN_BASE_CFLAGS}
             -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
             -DHYDROGEN_COVERAGE_BUILD
@@ -446,6 +450,7 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
             ${MICROHTTPD_CFLAGS}
             ${WEBSOCKETS_CFLAGS}
             ${BROTLI_CFLAGS}
+            ${UUID_CFLAGS}
             -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
         DEPENDS ${SOURCE_FILE}
         COMMENT "Compiling ${REL_PATH} to coverage object file"
@@ -821,6 +826,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             ${MICROHTTPD_CFLAGS}
             ${WEBSOCKETS_CFLAGS}
             ${BROTLI_CFLAGS}
+            ${UUID_CFLAGS}
             -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
         DEPENDS ${SOURCE_FILE}
         COMMENT "Compiling ${REL_PATH} to Unity object file"
