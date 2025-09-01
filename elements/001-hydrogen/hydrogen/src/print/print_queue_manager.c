@@ -129,7 +129,7 @@ void* print_queue_manager(void* arg) {
 // 2. Allows current job to complete
 // 3. Preserves remaining jobs in queue
 // 4. Performs resource cleanup
-void shutdown_print_queue() {
+void shutdown_print_queue(void) {
     log_this(SR_QUEUES, "Shutdown: Initiating Print Queue shutdown", LOG_LEVEL_STATE);
 
     print_queue_shutdown = 1;
