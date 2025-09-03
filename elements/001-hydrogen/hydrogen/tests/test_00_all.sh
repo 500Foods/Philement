@@ -55,6 +55,7 @@ commands=(
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint" "swagger-cli"
     "${OH}" "${TABLES}" 
     "coverage_table.sh" "github-sitemap.sh"
+    "db2level" "mysql_config" "pg_config" "sqlite3"
 )
 
 # Array to store results
