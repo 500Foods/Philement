@@ -4,91 +4,36 @@ Hydrogen is a C project that implements a comprehensive suite of capabilities
 
 - REST API with Swagger provided by embedded payload
 - Web, WebSocket, SMTP, mDNS, and other services are included
-- Blackbox and Unity unit tests with gcov for coverage reporting
+- Blackbox (Integration) and Unity unit tests with gcov for coverage reporting
 
-## CRITICAL INSTRUCTIONS
+## ⚠️ CRITICAL INSTRUCTIONS
 
-- After ANY C coding change, run `mkt` to verify compilation/linting - do not attempt completion until it passes
+- After ANY C coding change, run `mkt` to perform a test build - can be run from any directory
 - The trial build outputs minimal text - typically only error messages - greatly reducing AI token usage
-- End tasks by checking/updating RELEASES.md if changes warrant it, following the instructions there closely
-- Do NOT run full tests; humans handle comprehensive testing beyond `mkt`
+- Once test build succeeds, run `mka` to perform build against all targets - can be run from any directory
+- Working with unit tests, after `mkt` use `mku <base test name without .c>` to build and run the test fro any directory
+- When making only script changes, there is no need to run `mkt` - that is for changes to C code only
 
-## AI-SPECIFIC GUIDANCE
+## ⚠️ ADDITINAL GUIDANCE
 
-- Use full commands from the USEFUL ALIASES section if shell aliases are not available
-- Always work from the project root and use relative paths like `elements/001-hydrogen/hydrogen/`
 - When searching code, use tools like grep to find patterns efficiently
-- Follow the C and Bash coding requirements strictly to avoid linting errors
+- Follow the C and Bash coding requirements strictly to avoid linting errors detected by cppcheck and shellcheck
 - Use the repository structure diagram to quickly understand the codebase organization
-- For configuration changes, refer to the CONFIGURATION section and update JSON files accordingly
-
-## ⚠️ IMPORTANT BUILD INSTRUCTIONS
-
-**ALWAYS USE THE `mkt` COMMAND FOR BUILDING:**
-
-```bash
-cd elements/001-hydrogen/hydrogen
-extras/make-trial.sh
-```
-
-**DO NOT USE `cmake` directly** unless you are an expert familiar with the project's specific build requirements. The `mkt` command handles all the necessary steps:
-
-- Cleaning build directories
-- Configuring CMake with proper settings
-- Building all targets including Unity tests
-- Running basic validation tests
-- Source code checking
-
-The `mkt` command is the **only supported way** to build this project and ensures consistency across all development environments.
-
-## USEFUL ALIASES
-
-These all assume that the repository has been cloned into a Projects folder off of the user's home directory. Adjust accordingly.  These also assume zsh - adding them to ~/.zshrc is the recommended approach.
-
-Most commands should likely be prefixed with `cdp && <command>` to ensure that you're in the correct working directory all the time.
-
-### cdp - Change to the root of the Hydrogen project
-
-`alias cdp='cd ~/Projects/Philement/elements/001-hydrogen/hydrogen/'`
-
-Full command: `cd elements/001-hydrogen/hydrogen/`
-
-### mka - Build all variants
-
-`alias mka='cdp && extras/make-all.sh && cd - > /dev/null 2>&1'`
-
-Full command: `cd elements/001-hydrogen/hydrogen && ./extras/make-all.sh`
-
-### mkb - Build all variants and run all tests
-
-`alias mkb='cdp && cd tests && ./test_00_all.sh && cd - > /dev/null 2>&1'`
-
-Full command: `cd elements/001-hydrogen/hydrogen && cd tests && ./test_00_all.sh`
-
-### mkc - Clean the project
-
-`alias mkc='cdp && extras/make-clean.sh && cd - > /dev/null 2>&1'`
-
-Full command: `cd elements/001-hydrogen/hydrogen && ./extras/make-clean.sh`
-
-### mkl - Run the Markdown Links Check, aka github-sitemap.sh
-
-`alias mkl='cdp && tests/lib/github-sitemap.sh README.md --quiet --noreport && cd - > /dev/null 2>&1'`
-
-Full command: `cd elements/001-hydrogen/hydrogen && ./tests/lib/github-sitemap.sh README.md --quiet --noreport`
-
-### mkt - Run the Trial Build
-
-`alias mkt='cdp && extras/make-trial.sh && cd - > /dev/null 2>&1'`
-
-Full command: `cd elements/001-hydrogen/hydrogen && ./extras/make-trial.sh`
 
 ## REPOSITORY STRUCTURE
 
 ```directory
+build/          Temporary build artifacts
+cmake/          cmake/CMakeLists.tst for all builds
+configs/        JSON configuration files
+docs/           Documentation including release notes
+examples/       Example code
+extras/         Helpful scripts and code snippets
+payloads/       Payload definitions
 src/
  ├─api/          API endpoints
  ├─config/       Config management
+ ├─database/       Database management
  ├─landing/      Shutdown handlers
  ├─launch/       Startup handlers
  ├─logging/      Logging system
@@ -100,17 +45,12 @@ src/
  ├─queue/        Thread-safe queues
  ├─registry/     Subsystem registry
  ├─state/        System state
+ ├─state/        Terminal
  ├─threads/      Thread management
  ├─utils/        Utilities
  ├─webserver/    HTTP server
  ├─websocket/    WebSocket
  └─hydrogen.c    Main entry
-cmake/          cmake/CMakeLists.tst for all builds
-configs/        JSON configuration files
-docs/           Documentation including release notes
-examples/       Example code
-extras/         Helpful scripts and code snippets
-payloads/       Payload definitions
 tests/          Test framework
 ```
 
@@ -135,6 +75,8 @@ tests/          Test framework
 - tests/test_22_swagger.sh - Checks that Swagger files are served up from payload
 - tests/test_23_websockets.sh - Retrieves status from WebSockets interface
 - tests/test_24_uploads.sh - Upload file to server
+- tests/test_25_mdns.sh - mDNS announcements
+- tests/test_26_terminal.sh - Testing xterm.js implementation
 - tests/test_90_markdownlint.sh - Lint for Markdown
 - tests/test_91_cppcheck.sh - Lint for C
 - tests/test_92_shellcheck.sh - Lint for Bash
@@ -151,29 +93,28 @@ tests/          Test framework
 - RELEASES.md - release history and update instructions
 - SITEMAP.md - links to all markdown docs
 - STRUCTURE.md - links to all files
+- tests/README.md - blackbox/integration tests tests
+- tests/UNITY.md - Unity unit tests
 - cmake/README.md - cmake build information
-- tests/README.md - blackbox and Unity unit tests
 
 ## C CODING REQUIREMENTS
 
-- Function Prototypes at top of every .c file
+- src/hydrogen.h is included first in all .c source files
+- Function Prototypes declared for every function
+- cppcheck configured with all directives enabled
 - Grouped/commented include files at the top of every .c/.h file
-- cmake/CMakeLists.txt is used for main project builds
-- tests/unity/CMakeLists.txt is used for building unity unit tests
+- src/config/config_defaults.c contains many useful subsystem defaults
 - Use `log_this` when outputing anything to the log
+- cmake/CMakeLists.txt is used for all project builds including Unity
+- Don't change CMakeLists.txt without explicit confirmation
 
 ## BASH CODING REQUIREMENTS
 
-- Update CHANGELOG and SCRIPT_VER at top of every script file after every change
+- Update CHANGELOG and TEST_VERSION at top of every script after every change
 - ALWAYS use `jq` for JSON parsing, filtering, and validation
 - NEVER use `grep` or text manipulation tools for JSON data
 - Try to reduce external calls wherever possible to increase performance
-- Compliance with shellcheck --enable=all directives
-  - SC2292: Prefer [[ ]] over [ ]
-  - SC2250: Braces around variable preferences even when not strictly required
-  - SC2312: Invoke commands separately to avoid masking return values (or use `|| true` to ignore)
-  - SC2248: Add double quotes even when variables don't contain special characters
-
+  
 ## LINTING GUIDANCE
 
 ### cppcheck
@@ -182,18 +123,22 @@ tests/          Test framework
 
 ### shellcheck
 
-- Quote vars (e.g., echo "$VAR")
-- Avoid shellcheck errors like SC2086
-- Directives/exceptions require justification
+- Compliance with shellcheck --enable=all directives
+- SC2292: Prefer [[ ]] over [ ]
+- SC2250: Braces around variable preferences even when not strictly required
+- SC2312: Invoke commands separately to avoid masking return values (or use `|| true` to ignore)
+- SC2248: Add double quotes even when variables don't contain special characters
 
 ### Markdown
 
-- Use consistent headings (# H1, ## H2), valid links;
+- Use consistent headings (# H1, ## H2), valid links
 - Fix common markdown issues such as these
 - MD009/no-trailing-spaces: Trailing spaces
 - MD012/no-multiple-blanks: Multiple consecutive blank lines
 - MD022/blanks-around-headings: Headings should be surrounded by blank lines
 - MD032/blanks-around-lists: Lists should be surrounded by blank lines
+- Unique headings
+- Label code snippets
 
 ## LOGGING
 
@@ -206,6 +151,7 @@ log_this("Component", "Failed: reason", LOG_LEVEL_ERROR, true, true, true);
 ## CONFIGURATION
 
 App uses a JSON-based configuration with robust fallback handling. Details in src/config/config.c comments.
+src/config/config_defaults.c has definition of what is used when no JSON configuration file is provided.
 
 A. Server
 B. Network
@@ -249,14 +195,12 @@ App uses subsystems and a launch/landing system to control them. Details in src/
 
 ## LAUNCH / LANDING
 
-- Registry first in, last out
-- Phases: Readiness > Plan > Execute > Review
-- Landing reverses launch exactly
-- SIGHUP triggers landing then re-launch
-- Everything allocated during launch is freed during landing
+- Launch Phases: Readiness > Plan > Launch <subsystem> > Review
+- Landing PHases: Readiness > Plan > Landing <subsystem> > Review
 
 ## RESOURCES
 
+- Payload Cache
 - Token Hash Cache
 - SQL Query Cache
 - AI Prompt Cache
