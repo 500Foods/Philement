@@ -1,752 +1,994 @@
-# 🚀 DATABASE SUBSYSTEM IMPLEMENTATION PLAN
+# DATABASE SUBSYSTEM IMPLEMENTATION PLAN
 
-## REQUIRED: Complete understanding required
+## ESSENTIAL PREREQUISITES
 
-- [**RECIPE.md**](../..//RECIPE.md) - Critical development guide with C programming requirements, build configurations, and Hydrogen development patterns
-- [**README.md**](../..//README.md) - Project overview, architecture, and testing status information
-- [**tests/README.md**](../../tests/README.md) - Complete testing framework documentation and test suite structure
-- [**docs/reference/database_architecture.md**](../reference/database_architecture.md) - Existing database architecture specification
-- [**docs/reference/database_configuration.md**](../reference/database_configuration.md) - Database configuration documentation
+**Required Reading:**
 
-## RECOMMENDED: Understanding context and inspiration
+- [RECIPE.md](../../RECIPE.md) - C development standards and build processes
+- [tests/README.md](../../tests/README.md) - Testing framework overview
+- [docs/reference/database_architecture.md](../reference/database_architecture.md) - Architecture specs
 
-- [**src/queue/queue.c**](../../src/queue/queue.c) - Existing queue implementation we can extend for database queues
-- [**src/landing/landing_database.c**](../../src/landing/landing_database.c) - Current minimal database subsystem (configuration handler)
-- [**CMAKE/README.md**](../../cmake/README.md) - Build system for new database engine libraries
-- [**docs/plans/TERMINAL_PLAN.md**](./TERMINAL_PLAN.md) - Parallel PTY/WebSocket implementation we can learn from
+**Key Dependencies:**
 
-## Hydrogen Multi-Element Database Architecture
+- [src/queue/queue.c](../../src/queue/queue.c) - Queue infrastructure to extend
+- [src/config/config_databases.c](../../src/config/config_databases.c) - Existing config system
+- [CMAKE/README.md](../../cmake/README.md) - Build system for database engines
 
-**🎯 Core Philosophy**: Hydrogen serves as a "database gateway" requiring minimal schema knowledge while supporting diverse databases through intelligent queuing and caching.
+## ARCHITECTURE OVERVIEW
 
-### Hydrogen's Role: Database Query Gateway
+Hydrogen serves as a database gateway supporting PostgreSQL, SQLite, MySQL, DB2 with AI-ready query architecture. Key patterns:
 
-- **🎯 Gateway Pattern**: Database abstraction layer with engine-agnostic Queuing
-- **🔄 Connection Pooling**: Queue-based pooling (slow/medium/fast queues per database)
-- **📋 Query ID Caching**: REST API passes query numbers + parameters for true schema-independence
-- **🧰 Multi-Engine Ready**: PostgreSQL, SQLite, MySQL, DB2, future AI models
-- **🏗️ Schema Agnostic**: Minimal assumptions about database contents
+- **Queue-Based Processing**: slow/medium/fast queues per database with priority routing
+- **Query ID System**: REST API passes query numbers + parameters for schema independence
+- **Cross-Database Hosting**: One database can serve queries for multiple downstream databases
+- **Lead Queue Pattern**: Dedicated admin queue for cache management and triggers
 
-### Database Types & Schema Support
-
-**Our Schemas (Known)**:
-
-- **Acuranzo** - Core Hydrogen application database (prepared query templates cached)
-- **Canvas** - Canvas LMS integration support
-- **Helium** - Database service layer (just another schema for helium element)
-
-**Third-Party Schemas (Minimal Insight)**:
-
-- **MantisBT** - Issue/bug tracking
-- **Zabbix** - Monitoring system
-- **Drupal** - CMS integration
-- **Custom API** - Flexible REST + DB proxy
-
-### Query Processing Pipeline
-
-```flow
-GET /api/query/42/{"param1":"value1","param2":"value2"}
-
-    │
-    ▼
-
-Query ID 42 → Cache Lookup → {"SELECT name from users WHERE id=? AND active=?"}
-
-    │
-    ▼
-
-Parameter Injection → Query Execution → JSON Results → Response
-```
-
-### AI-Ready Query Architecture
-
-Future AI integration as "queriable endpoints":
-
-- **Query 421**: "Grok-code-fast-1 reasoning mode"
-- **Query 422**: "OpenAI-4-turbo query understanding"
-- **Parameter**: Natural language → AI interpretation → JSON results
-
-## Existing Database Subsystem State
+## EXISTING SUBSYSTEM STATE
 
 ```c
-// src/config/config_databases.c - ✅ COMPLETE (Configuration Handler)
-typedef struct DatabaseConfig {
-    char* default_workers;           // Worker count per database
-    DatabaseConnection connections[5]; // Acuranzo, Log, OIDC, Helium, Canvas
-} DatabaseConfig;
-
-// src/launch/launch_database.c - ✅ COMPLETE (Subsystem Integration)
-LaunchReadiness check_database_launch_readiness(void); // Config validation
-int launch_database_subsystem(void); // Minimal state management
-
-// docs/reference/database_architecture.md - ✅ COMPLETE (Detailed Specs)
-// Complete architectural documentation exists
-// Specifies connection pooling, worker threads, security considerations
+// Current stubs (need enhancement)
+src/launch/launch_database.c        // Basic connectivity validation
+src/landing/landing_database.c      // Config cleanup only
+src/config/config_defaults.c        // Basic database defaults
 ```
 
-### What's Working vs. What's Documentation
+## IMPLEMENTATION PHASES
 
-| Component | Current State | Documentation | Gap Analysis |
-|-----------|---------------|---------------|--------------|
-| Configuration | ✅ JSON parsing | ✅ Complete | None |
-| Subsystem Launch | ✅ Integration | ✅ Complete | None |
-| Connection Pooling | ❓ None | ✅ Specified | Needs Implementation |
-| Query Queues | ❓ Based on templates | ✅ Specified | Needs Queue Integration |
-| Health Monitoring | ❓ None | ✅ Specified | Needs Runtime Monitoring |
-| Query Caching | ❓ None | ✅ Specified | Needs Parameter Injection |
+### Phase 1: Queue Infrastructure
 
-## 🏗️ ARCHITECTURAL DECISIONS ALREADY MADE
-
-### Core Implementation Approach
-
-**🎯 Resource Gateway Pattern**: Hydrogen becomes the query gateway requiring minimal schema insight
-
-**🗂️ Queue-Based Pooling**: Each database gets multiple worker queues (slow/fast prioritization naturally evolves from queue management)
-
-**⚡ Smart Query Caching**: REST API passes query number + parameters. System caches query templates and populates parameters for true API genericity.
-
-**🏛️ Engine Abstraction**: Generic database interface supporting PostgreSQL → AI models
-
-**🔗 Helium Integration**: Optional REST API client to separate Helium database service
-
-### Major Technical Decisions Resolved
-
-- **Queue First Development**: Start with queue management, add engines incrementally
-- **Acuranzo Focus**: Begin with Acuranzo prepared queries (known schema, platform performance-critical)
-- **Engine Pluggability**: Clean abstraction allows engine addition without API changes
-- **Health-First Design**: Connection monitoring and automatic recovery built-in
-- **Schema Field Relaxation**: Value-first over perfection (working system > theoretically perfect)
-- **Helium Independence**: Core database functionality works without Helium element
-
-## 🎯 IMPLEMENTATION PREPARATION CHECKLIST
-
-### Required Development Environment
-
-- [ ] Multi-database access: PostgreSQL, SQLite, MySQL containers for testing
-- [ ] Build system extension: CMake library targets for database engine connectors
-- [ ] Testing framework familiarization: `test_00_all.sh` patterns for database integration tests
-- [ ] Thread debugging: gdb with thread support for queue debugging
-- [ ] Payload system understanding: Query template caching following swagger payload patterns
-
-### Suggested Code Review Priority Order
-
-**Essential Understanding** (Must Read First):
-
-1. `TERMINAL_PLAN.md` - Parallel implementation methodology and C coding patterns
-2. `src/queue/queue.c` - Existing queue infrastructure we'll extend
-3. `src/config/config_databases.c` - Current configuration system we'll enhance
-4. `docs/reference/database_architecture.md` - Design specifications to implement
-
-**Reference Implementation Patterns**:
-
-1. `src/terminal/terminal_pt-shell.c` - Process spawning and monitoring patterns
-2. `src/swagger/swagger.c` - Payload-based file serving and caching
-3. `src/websocket/websocket.c` - Concurrent session management
-4. `src/payload/` - File caching and compression patterns
-
-### Development Workflow Reminders
-
-- **Build Testing**: `mkt` command is ONLY supported build method without exceptions
-- **Code Style**: Follow RECIPE.md C requirements (prototypes, commenting, GOTO-free, thread safety)
-- **Error Handling**: All memory allocation with free() pairs, comprehensive cleanup paths
-- **Thread Safety**: Mutex protection for all shared structures, atomic operations where possible
-- **Logging**: SR_DATABASE subsystem tag, proper log levels, structured output
-
----
-
-## 📁 WORK DIRECTORY STRUCTURE FOR DATABASE SUBSYSTEM ENHANCEMENT
-
-```directory
-elements/001-hydrogen/hydrogen/
-├── RECIPE.md                                    # Existing: Development requirements
-├── docs/plans/DATABASE_PLAN.md                  # THIS PLAN DOCUMENT
-├── docs/reference/
-│   ├── database_architecture.md                 # Existing: Detailed architecture spec
-│   ├── database_configuration.md                # Existing: Configuration guidance
-│   └── data_structures.md                       # Enhanced: New data structure docs
-├── src/
-│   ├── config/
-│   │   ├── config_databases.c                   # ✅ EXISTS: Configuration handler
-│   │   └── config_databases.h                   # ✅ EXISTS: Configuration interface
-│   └── database/                                # 🏗️ NEW: Enhanced database subsystem
-│       ├── database.c                           # 🏗️ NEW: Main database interface
-│       ├── database.h                           # 🏗️ NEW: Public API & types
-│       ├── database_config.c                    # Extension: Engine configuration
-│       ├── database_queue_manager.c             # 🏗️ NEW: Multi-queue gateway
-│       ├── database_query_cache.c               # 🏗️ NEW: Query ID system
-│       ├── database_connection_pool.c           # 🏗️ NEW: Health/retry handling
-│       └── engines/                             # 🏗️ NEW: Database engines
-│           ├── postgres.c                        # PostgreSQL implementation
-│           ├── sqlite.c                          # SQLite implementation
-│           ├── mysql.c                           # MySQL/MariaDB implementation
-│           ├── db2.c                             # IBM DB2 implementation
-│           └── ai.c                              # AI API endpoints
-├── tests/
-│   ├── configs/
-│   │   ├── hydrogen_test_27_databases.json                # 🏗️ NEW: All database test config
-│   │   ├── hydrogen_test_28_database_postgres.json        # 🏗️ NEW: PostgreSQL specific tests
-│   │   ├── hydrogen_test_29_database_all_engines.json     # 🏗️ NEW: Multi-engine connectivity
-│   │   ├── hydrogen_test_30_database_queues.json          # 🏗️ NEW: Queue performance
-│   │   └── hydrogen_test_31_database_performance.json     # 🏗️ NEW: Performance benchmarks
-│   └── database_tests/                                   # 🏗️ NEW: Database test suite
-│       └── test_27_databases_parallel_engine_tests.sh    # 🏗️ NEW: Single comprehensive test for all 5 engines
-└── payloads/                                 # Enhanced query templates
-    ├── querying-generate.sh                 # Generate query templates
-    └── query_templates/                     # Cached SQL templates
-        ├── acuranzo/
-        │   ├── 001_user_auth.sql            # Cached template
-        │   └── 002_print_jobs.sql           # Parameterized queries
-        └── canvas/
-            └── 001_course_enrollment.sql
-```
-
-## 🎯 DETAILED IMPLEMENTATION PHASES
-
-## Phase 1: Queue Infrastructure - Foundation Layer
-
-### Objectives
-
-- [ ] Implement multi-queue system per database (slow/medium/fast)
-- [ ] Thread-safe query submission and result handling
-- [ ] Round-robin queue distribution initially
-
-### Implementation Pattern
+**Core Components:**
 
 ```c
-// src/database/database_queue_manager.c
-
 typedef struct DatabaseQueue {
-    char* name;                       // "acuranzo_slow", "acuranzo_fast"
-    Queue* queue;                     // Existing queue.c integration
+    char* name;
+    Queue* queue;
     pthread_mutex_t lock;
-    pthread_cond_t work_available;
-    DatabaseConnection* connection;   // Per-queue connection
-} DatabaseQueue;
-
-typedef struct DatabaseQueueManager {
-    DatabaseQueue* queues;            // Array of per-database queues
-    int queue_count;
-    pthread_mutex_t submission_lock;  // Protect queue assignment
-} DatabaseQueueManager;
-
-// Worker thread function
-void* database_queue_worker(void* queue_void) {
-    DatabaseQueue* queue = (DatabaseQueue*)queue_void;
-    while (!shutdown_requested) {
-        // Process queries from queue using persistent connections
-        QueryRequest* req = dequeue_with_timeout(queue->queue);
-        if (req) {
-            QueryResult* result = execute_query(req, queue->connection);
-            // Store result for retrieval
-        }
-    }
-}
+    DatabaseConnection* connection;
+};
 ```
 
-### Success Criteria
+**Key Implementation:**
 
-- [ ] 3 queues per database (slow/medium/fast)
-- [ ] Thread-safe query submission
-- [ ] Connection persistence
-- [ ] Round-robin distribution
-- [ ] Memory-safe cleanup
+- Multi-queue system per database (slow/medium/fast/cache)
+- Thread-safe query submission and round-robin distribution
+- Worker threads with persistent connections
 
-## Phase 2: PostgreSQL Engine Integration
+### Phase 2: Multi-Engine Interface Layer
 
-### PostgreSQL Objectives
-
-- [ ] Implement PostgreSQL engine using libpq
-- [ ] Connection pool management per database
-- [ ] Prepared statement preparation
-- [ ] Result serialization to JSON
-
-### PostgreSQL Pattern
+**Database Engine Abstraction Interface:**
 
 ```c
-// src/database/engines/postgres.c
+typedef struct DatabaseEngine {
+    char* name;                           // Engine identifier ("postgresql", "sqlite", etc.)
+    bool (*connect)(ConnectionConfig*, DatabaseConnection**);
+    bool (*disconnect)(DatabaseConnection*);
+    bool (*execute_query)(DatabaseConnection*, QueryRequest*, QueryResult**);
+    bool (*execute_prepared)(DatabaseConnection*, PreparedStatement*, QueryResult**);
+    bool (*begin_transaction)(DatabaseConnection*, IsolationLevel);
+    bool (*commit_transaction)(DatabaseConnection*, Transaction*);
+    bool (*rollback_transaction)(DatabaseConnection*, Transaction*);
+    bool (*health_check)(DatabaseConnection*);     // Connection validation
+    bool (*reset_connection)(DatabaseConnection*); // Recovery after errors
+};
 
+typedef struct DatabaseConnection {
+    DatabaseEngine* engine;
+    void* connection_handle;              // Engine-specific handle (PGconn, sqlite3, etc.)
+    ConnectionState state;
+    time_t connected_since;
+    Transaction* current_transaction;
+    QueryCache* prepared_statements;      // Prepared statement cache
+    SubscriptionManager* triggers;        // Active triggers/subscriptions
+};
+```
+
+**Engine-Specific Connection Strings:**
+
+- **PostgreSQL**: `postgresql://user:password@host:port/database?sslmode=required`
+- **SQLite**: `/path/to/database.db` or `:memory:`
+- **MySQL/MariaDB**: `mysql://user:password@host:port/database?charset=utf8mb4`
+- **IBM DB2**: Uses iSeries connection format with dead-locked detection
+
+**Engine Implementation Examples:**
+
+**PostgreSQL Engine:**
+
+```c
 typedef struct PostgresConnection {
     PGconn* connection;
     bool in_transaction;
-    PreparedStatementCache* statements;  // Cache for performance
-} PostgresConnection;
-
-bool postgres_execute_query(QueryRequest* req, QueryResult* result) {
-    PostgresConnection* conn = get_connection(req->database);
-
-    // Prepare statement on first use
-    if (!statement_prepared(conn, req->query_id)) {
-        const char* template = load_query_template("postgresql", req->query_id);
-        prepare_statement(conn, req->query_id, template);
-    }
-
-    // Execute with parameters
-    PGresult* pg_result = execute_prepared_with_params(conn, req->query_id, req->params);
-
-    // Convert to JSON result
-    result->success = (PQresultStatus(pg_result) == PGRES_TUPLES_OK);
-    if (result->success) {
-        result->rows = convert_postgres_to_json(pg_result);
-        result->row_count = PQntuples(pg_result);
-    } else {
-        result->error_message = strdup(PQresultErrorMessage(pg_result));
-    }
-
-    PQclear(pg_result);
-    return result->success;
-}
-```
-
-### PostgreSQL Success Criteria
-
-- [ ] Successful connection to PostgreSQL databases
-- [ ] Prepared statement caching working
-- [ ] Parameter injection functioning
-- [ ] JSON result generation
-- [ ] Memory leak prevention
-
-## Phase 3: Query Caching System
-
-### Caching Objectives
-
-- [ ] Cache query templates by ID
-- [ ] Parameter injection system
-- [ ] Payload-based cache storage
-- [ ] Cache invalidation/reload system
-
-### Caching Implementation Pattern
-
-```c
-// src/database/database_query_cache.c
-
-typedef struct QueryTemplate {
-    int query_id;
-    char* sql_template;          // "SELECT * FROM users WHERE id=$1"
-    char* database_type;         // "postgresql", "mysql", etc.
-    char* schema_type;           // "acuranzo", "canvas", etc.
-    time_t last_modified;
-} QueryTemplate;
-
-// Query cache loaded from payload system
-static QueryTemplate* query_cache = NULL;
-static int query_cache_count = 0;
-
-char* inject_query_parameters(int query_id, const json_t* parameters) {
-    QueryTemplate* template = get_query_template(query_id);
-    if (!template) {
-        log_this(SR_DATABASE, "Query template not found", LOG_LEVEL_ERROR);
-        return NULL;
-    }
-
-    // Parameter injection logic
-    // $1, $2 → actual JSON parameter values
-    return resolve_parameters(template->sql_template, parameters);
-}
-
-bool load_query_templates_from_payload() {
-    // Load from payload system following swagger pattern
-    char* payload_path = get_payload_subdirectory_path(payload, "query_templates", config);
-    if (!payload_path) return false;
-
-    // Parse JSON/YAML query definitions into cache
-    query_cache = parse_query_files(payload_path);
-    return (query_cache != NULL);
-}
-```
-
-### Caching Success Criteria
-
-- [ ] Query templates cached at startup
-- [ ] Parameter injection working correctly
-- [ ] $1 → actual parameter substitution
-- [ ] Cache reload capability
-- [ ] Memory-efficient storage
-
-## Phase 4: Acuranzo Query Templates
-
-### Acuranzo Objectives
-
-- [ ] Define Acuranzo query templates (our schema)
-- [ ] Create query template payload generation
-- [ ] Test with actual Acuranzo PostgreSQL database
-- [ ] Validate parameter injection
-
-### Acuranzo Implementation Pattern
-
-Example Acuranzo query templates (`payloads/query_templates/acuranzo/001_user_auth.sql`):
-
-```sql
-SELECT
-  u.username,
-  u.email,
-  u.role
-FROM users u
-WHERE u.id = $1
-  AND u.active = $2
-ORDER BY u.last_login DESC
-```
-
-And corresponding system integration:
-
-```c
-// REST API endpoint: GET /api/query/1/{"user_id":42,"active_only":true}
-QueryRequest req = {
-    .query_id = atoi(path_segment),     // 1
-    .parameters = parse_json_parameters(path_segment), // {"user_id":42,"active_only":true}
-    .database_type = "acuranzo",
-    .engine_type = "postgresql"
+    PreparedStatementCache* statements;
 };
 
-// Gets template, injects parameters: SELECT ... WHERE u.id = 42 AND u.active = true
-char* sql = inject_query_parameters(req.query_id, req.parameters);
-// Execute via queue system
+bool postgres_execute_query(QueryRequest* req, QueryResult* result) {
+    // libpq integration with prepared statements and transaction handling
+}
 ```
 
-### Acuranzo Success Criteria
+**SQLite Engine:**
 
-- [ ] Query payload generation script working
-- [ ] Acuranzo database connectivity established
-- [ ] Template parameter injection validated
-- [ ] Query results returned as JSON
-- [ ] Web API endpoint responding correctly
+```c
+typedef struct SQLiteConnection {
+    sqlite3* db;
+    char* db_path;
+    PreparedStatementCache* statements;
+};
 
----
+bool sqlite_execute_query(QueryRequest* req, QueryResult* result) {
+    // sqlite3_step integration with WAL mode and thread safety
+}
+```
 
-## 📊 SUCCESS CRITERIA & VALIDATION
+**MySQL/MariaDB Engine:**
 
-### Connection Gateway Working
+```c
+typedef struct MySQLConnection {
+    MYSQL* connection;
+    my_bool reconnect;
+    PreparedStatementCache* statements;
+};
 
-- [ ] Multi-database engine detection and loading
-- [ ] Queue per-database detection (slow/medium/fast)
-- [ ] Query template loading on startup
-- [ ] Connection health monitoring
-- [ ] Thread-safe queue submissions
+bool mysql_execute_query(QueryRequest* req, QueryResult* result) {
+    // mysql_real_query with auto-reconnect capability
+}
+```
 
-### Query Processing Pipeline Working
+**IBM DB2 Engine:**
 
-- [ ] REST API `/api/query/:id/:json_params` endpoint
-- [ ] Query ID lookup in cache system
-- [ ] Parameter injection into templates
-- [ ] Queue submission and result retrieval
-- [ ] JSON result formatting
-- [ ] Error handling and validation
+```c
+typedef struct DB2Connection {
+    SQLHDBC connection;
+    SQLHANDLE environment;
+    PreparedStatementCache* statements;
+};
 
-### Acuranzo Database Working
+bool db2_execute_query(QueryRequest* req, QueryResult* result) {
+    // SQLExecDirect with deadlock detection and iSeries integration
+}
+```
 
-- [ ] PostgreSQL connection established
-- [ ] Prepared statements working with parameters
-- [ ] Result set conversion to JSON
-- [ ] Connection pooling per database
-- [ ] Health monitoring and recovery
+### Phase 3: Query Caching & Bootstrap
 
-### Testing Framework Validation
+**Cache Management:**
 
-- [ ] Test 28 validates all database engines
-- [ ] Test 29 validates queue performance
-- [ ] Multi-database configuration working
-- [ ] Connection stability under load
-- [ ] Memory leak prevention
-- [ ] Performance benchmarks passing
+```c
+typedef struct QueryTemplate {
+    int query_id;
+    char* sql_template;
+    char* database_type;
+    time_t last_modified;
+};
+```
+
+**Bootstrap System:**
+
+- **Tier 1**: Direct SQL bootstrap for self-contained databases
+- **Tier 2**: Cross-hosted bootstrap using host database queries
+- **Cache Consistency**: Trigger-based invalidation across dependent databases
+
+#### Database Trigger Implementation
+
+**Cross-Engine Trigger Architecture:**
+
+```c
+typedef struct DatabaseTrigger {
+    char* trigger_name;
+    DatabaseEngine* engine;
+    TriggerType type;              // TABLE_CHANGE, CUSTOM_EVENT, DEADLOCK_DETECTED
+    char* target_table;
+    char* notification_channel;    // PostgreSQL: LISTEN channel, others: equivalent
+    DatabaseCallback callback;     // C function to invoke on trigger
+    void* user_data;              // Passed to callback
+    SubscriptionState state;
+};
+
+typedef struct TriggerManager {
+    DatabaseConnection* connection;
+    TriggerSubscription* subscriptions;    // Array of active subscriptions
+    pthread_t listener_thread;             // Thread monitoring for trigger events
+    CallbackQueue* event_queue;            // Queue for processing trigger events
+    bool shutdown;                         // Graceful shutdown flag
+};
+```
+
+**Engine-Specific Trigger Implementations:**
+
+**PostgreSQL Triggers:**
+
+```sql
+-- Database-level trigger setup
+CREATE OR REPLACE FUNCTION notify_table_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  PERFORM pg_notify('table_updates',
+    json_build_object(
+      'table', TG_TABLE_NAME,
+      'operation', TG_OP,
+      'modified_at', NOW()
+    )::text
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Register trigger
+CREATE TRIGGER {trigger_name}_notification
+  AFTER INSERT OR UPDATE OR DELETE ON {table_name}
+  FOR EACH ROW EXECUTE FUNCTION notify_table_change();
+
+-- Listen in C code
+PQexec(connection, "LISTEN table_updates");
+```
+
+```c
+// PostgreSQL listener implementation
+void* postgres_trigger_listener(void* arg) {
+    TriggerManager* mgr = (TriggerManager*)arg;
+    PGconn* conn = (PGconn*)mgr->connection->connection_handle;
+
+    PGnotify* notify;
+    while (!mgr->shutdown) {
+        PQconsumeInput(conn);
+        while ((notify = PQnotifies(conn)) != NULL) {
+            // Parse notification payload and dispatch callback
+            trigger_dispatch_event(mgr, notify->relname, notify->payload);
+            PQfreemem(notify);
+        }
+        // Poll with timeout
+        struct pollfd pfd = { .fd = PQsocket(conn), .events = POLLIN };
+        poll(&pfd, 1, 1000);  // 1 second timeout
+    }
+    return NULL;
+}
+```
+
+**SQLite Triggers:**
+
+```sql
+-- SQLite trigger for table changes
+CREATE TRIGGER {trigger_name}_notification
+  AFTER INSERT OR UPDATE OR DELETE ON {table_name}
+BEGIN
+  INSERT INTO trigger_events (table_name, operation, timestamp)
+  VALUES ('{table_name}', CASE
+    WHEN NEW IS NULL THEN 'DELETE'
+    WHEN OLD IS NULL THEN 'INSERT'
+    ELSE 'UPDATE'
+  END, strftime('%Y-%m-%d %H:%M:%f', 'now'));
+END;
+```
+
+```c
+// SQLite trigger polling approach (no built-in NOTIFY)
+void* sqlite_trigger_poller(void* arg) {
+    TriggerManager* mgr = (TriggerManager*)arg;
+    sqlite3* db = (sqlite3*)mgr->connection->connection_handle;
+    char* last_timestamp = get_last_processed_timestamp(mgr);
+
+    while (!mgr->shutdown) {
+        // Poll trigger_events table for new entries
+        char* sql = "SELECT * FROM trigger_events WHERE timestamp > ? ORDER BY timestamp";
+        sqlite3_stmt* stmt = prepare_statement(db, sql);
+
+        // Process new entries and dispatch callbacks
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            trigger_dispatch_event(mgr,
+                sqlite3_column_text(stmt, 0),  // table_name
+                sqlite3_column_text(stmt, 1),  // operation
+                sqlite3_column_text(stmt, 2)); // timestamp
+        }
+        sqlite3_finalize(stmt);
+        sleep(1);  // Poll interval
+    }
+    return NULL;
+}
+```
+
+**MySQL/MariaDB Triggers:**
+
+```sql
+-- MySQL trigger setup
+DELIMITER //
+CREATE TRIGGER {trigger_name}_notification
+  AFTER INSERT ON {table_name}
+  FOR EACH ROW
+BEGIN
+  INSERT INTO trigger_events (table_name, operation, data, timestamp)
+  VALUES ('{table_name}', 'INSERT', JSON_OBJECT('id', NEW.id), NOW());
+END//
+
+CREATE TRIGGER {trigger_name}_notification_update
+  AFTER UPDATE ON {table_name}
+  FOR EACH ROW
+BEGIN
+  INSERT INTO trigger_events (table_name, operation, data, timestamp)
+  VALUES ('{table_name}', 'UPDATE', JSON_OBJECT('id', NEW.id), NOW());
+END//
+
+DELIMITER ;
+```
+
+```c
+// MySQL trigger polling implementation
+void* mysql_trigger_poller(void* arg) {
+    TriggerManager* mgr = (TriggerManager*)arg;
+    MYSQL* conn = (MYSQL*)mgr->connection->connection_handle;
+
+    while (!mgr->shutdown) {
+        // Poll trigger_events table for new entries
+        char* query = "SELECT table_name, operation, data, timestamp "
+                      "FROM trigger_events WHERE processed = FALSE "
+                      "ORDER BY timestamp LIMIT 100";
+
+        if (mysql_query(conn, query) == 0) {
+            MYSQL_RES* result = mysql_store_result(conn);
+            MYSQL_ROW row;
+            while ((row = mysql_fetch_row(result))) {
+                trigger_dispatch_event(mgr,
+                    row[0], // table_name
+                    row[1], // operation
+                    row[2]); // data
+                // Mark as processed
+                mark_trigger_event_processed(conn, row[3]); // timestamp
+            }
+            mysql_free_result(result);
+        }
+        sleep(1);  // Poll interval
+    }
+    return NULL;
+}
+```
+
+**IBM DB2 Triggers:**
+
+```sql
+-- DB2 trigger setup
+CREATE TRIGGER {trigger_name}_INSERT_NOTIFICATION
+  AFTER INSERT ON {table_name}
+  REFERENCING NEW AS N
+  FOR EACH ROW
+  INSERT INTO trigger_events (table_name, operation, id, timestamp)
+  VALUES ('{table_name}', 'INSERT', N.ID, CURRENT_TIMESTAMP);
+
+CREATE TRIGGER {trigger_name}_UPDATE_NOTIFICATION
+  AFTER UPDATE ON {table_name}
+  REFERENCING NEW AS N
+  FOR EACH ROW
+  INSERT INTO trigger_events (table_name, operation, id, timestamp)
+  VALUES ('{table_name}', 'UPDATE', N.ID, CURRENT_TIMESTAMP);
+
+CREATE TRIGGER {trigger_name}_DELETE_NOTIFICATION
+  AFTER DELETE ON {table_name}
+  REFERENCING OLD AS O
+  FOR EACH ROW
+  INSERT INTO trigger_events (table_name, operation, id, timestamp)
+  VALUES ('{table_name}', 'DELETE', O.ID, CURRENT_TIMESTAMP);
+```
+
+```c
+// DB2 trigger polling with deadlock detection
+void* db2_trigger_poller(void* arg) {
+    TriggerManager* mgr = (TriggerManager*)arg;
+    SQLHDBC hdbc = (SQLHDBC)mgr->connection->connection_handle;
+
+    while (!mgr->shutdown) {
+        SQLCHAR query[] = "SELECT table_name, operation, id, timestamp "
+                         "FROM trigger_events WHERE processed = 0 "
+                         "ORDER BY timestamp FETCH FIRST 100 ROWS ONLY";
+
+        SQLHSTMT hstmt;
+        SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+        if (ret == SQL_SUCCESS) {
+            // Execute query with deadlock detection
+            ret = SQLExecDirect(hstmt, query, SQL_NTS);
+
+            if (ret == SQL_ERROR) {
+                SQLCHAR sqlstate[6];
+                SQLINTEGER native_error;
+                SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error,
+                              NULL, 0, NULL);
+                // Handle deadlock detection and retry
+                if (strcmp((char*)sqlstate, "40001") == 0) {
+                    handle_db2_deadlock(mgr);
+                }
+            } else {
+                // Process results
+                SQLBindCol(hstmt, 1, SQL_C_CHAR, table_name, sizeof(table_name), NULL);
+                while (SQLFetch(hstmt) == SQL_SUCCESS) {
+                    trigger_dispatch_event(mgr, table_name, operation, id);
+                    mark_trigger_processed(hdbc, timestamp);
+                }
+            }
+            SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+        }
+        sleep(1);  // Poll interval
+    }
+    return NULL;
+}
+```
+
+**Unified Trigger Management Interface:**
+
+```c
+typedef struct TriggerInterface {
+    bool (*create_trigger)(DatabaseConnection*, TriggerConfig*, DatabaseTrigger**);
+    bool (*drop_trigger)(DatabaseConnection*, const char* trigger_name);
+    bool (*start_listener)(TriggerManager*, callback_func_t);
+    bool (*stop_listener)(TriggerManager*);
+
+    // Event dispatch system
+    void (*dispatch_event)(TriggerManager*, const char* channel, const char* payload);
+    bool (*register_callback)(TriggerManager*, const char* event_type, callback_func_t);
+};
+
+// Factory function to create engine-specific trigger interface
+TriggerInterface* create_trigger_interface(DatabaseEngine* engine) {
+    switch (engine->type) {
+        case ENGINE_POSTGRESQL: return create_postgresql_trigger_interface();
+        case ENGINE_SQLITE:     return create_sqlite_trigger_interface();
+        case ENGINE_MYSQL:      return create_mysql_trigger_interface();
+        case ENGINE_DB2:        return create_db2_trigger_interface();
+        default: return NULL;
+    }
+}
+```
+
+**Trigger Event Processing:**
+
+```c
+typedef struct TriggerEvent {
+    char* table_name;
+    char* operation;     // INSERT, UPDATE, DELETE
+    char* data;         // JSON payload of changed data
+    time_t timestamp;
+    uint64_t sequence_id; // For ordering guarantees
+};
+
+void trigger_dispatch_event(TriggerManager* mgr, TriggerEvent* event) {
+    // Add to event queue for processing by callback thread
+    event_queue_push(mgr->event_queue, event);
+
+    // Invoke registered callbacks
+    List* callbacks = get_callbacks_for_table(mgr, event->table_name);
+    for (ListItem* item = callbacks->first; item; item = item->next) {
+        DatabaseCallback cb = (DatabaseCallback)item->data;
+        cb(event, mgr->user_data);
+    }
+
+    // Handle cache invalidation for affected queries
+    invalidate_cache_for_table(event->table_name, event->operation);
+}
+
+// Example cache invalidation callback
+void cache_invalidation_callback(TriggerEvent* event, void* user_data) {
+    QueryCache* cache = (QueryCache*)user_data;
+
+    // Invalidate cached results for this table
+    query_cache_invalidate_table(cache, event->table_name);
+
+    log_this("DATABASE", "Cache invalidated due to trigger event",
+             LOG_LEVEL_DEBUG, true, true, true);
+}
+```
+
+**Trigger Lifecycle Management:**
+
+```c
+bool register_database_trigger(DatabaseConnection* conn, DatabaseTrigger* trigger) {
+    TriggerInterface* iface = create_trigger_interface(conn->engine);
+
+    if (!iface) return false;
+
+    // Create trigger in database
+    if (!iface->create_trigger(conn, &trigger->config, &trigger)) {
+        return false;
+    }
+
+    // Start listener thread if needed
+    if (trigger->needs_listener) {
+        return iface->start_listener(trigger->manager, trigger_callback_router);
+    }
+
+    return true;
+}
+
+void unregister_database_trigger(DatabaseTrigger* trigger) {
+    TriggerInterface* iface = create_trigger_interface(trigger->connection->engine);
+
+    // Stop listener
+    if (trigger->needs_listener) {
+        iface->stop_listener(trigger->manager);
+    }
+
+    // Drop trigger from database
+    iface->drop_trigger(trigger->connection, trigger->name);
+
+    // Cleanup resources
+    free(trigger);
+}
+```
+
+**Performance Considerations:**
+
+- **Polling Intervals**: Configurable polling frequency (1-5 seconds typically)
+- **Event Batching**: Group multiple events for efficient processing
+- **Connection Reuse**: Maintain dedicated connection for trigger polling
+- **Deadlock Handling**: Automatic retry with exponential backoff for DB2
+- **Memory Management**: Event queue size limits and cleanup policies
+
+### Phase 4: Acuranzo Integration & Testing
+
+- Query template system with payload storage
+- Parameter injection for SQL generation
+- End-to-end integration with PostgreSQL backend
+
+### Phase 5: Multi-Engine Expansion
+
+- Engines: SQLite, MySQL/MariaDB, IBM DB2, AI endpoints
+
+### Phase 6: Production Hardening
+
+- Security hardening
+- Performance monitoring
+
+## LAUNCH & LANDING INTEGRATION
+
+**Launch Sequence:**
+
+1. Configuration validation
+2. Database engine initialization
+3. Queue manager setup
+4. Query definition loading
+5. Worker thread startup
+6. Trigger registration
+7. Admin thread activation
+
+**Landing Sequence:**
+
+1. Stop accepting new queries
+2. Wait for active query completion
+3. Shutdown admin thread
+4. Terminate worker threads
+5. Unregister database triggers
+6. Close all connections
+7. Cleanup in-memory resources
+
+**Enhanced Launch Requirements:**
+
+```c
+int launch_database_subsystem(void) {
+    // Phase 1-7: Validation through admin thread startup
+    // Return 1 on success, 0 on failure with logging
+}
+```
+
+## TESTING STRATEGY
+
+### Blackbox Integration (Test 27.1-27.4)
+
+**Test 27.1: Engine Connectivity** *(25-30% coverage)*
+
+- Basic connectivity validation for all engines
+- Error scenario handling
+
+**Test 27.2: Queue Operations** *(40-50% combined coverage)*
+
+- Multi-queue distribution
+- Thread-safe submission testing
+
+**Test 27.3: Full Processing Pipeline** *(60-70% combined coverage)*
+
+- Query ID caching end-to-end
+- API-to-result workflow
+
+**Test 27.4: Performance & Stress** *(75-85% final coverage)*
+
+- Load testing
+- Memory leak verification with Valgrind
+
+### Unit Testing (Test 10 Unity Framework)
+
+**Coverage Strategy:**
+
+- **Production Code**: Pure business logic (no testing infrastructure)
+- **Unit Tests**: External files calling production functions
+- **Combined Coverage**: Files <100 lines: >50%, Files >100 lines: >75%
+
+**Coverage Matrix:**
+
+| Component | Blackbox (Test 27) | Unity (Test 10) | Combined Target |
+|-----------|-------------------|----------------|-------------|
+| Engine Connection | ~85% | ~10% | 95% |
+| Queue Management | ~70% | ~25% | 95% |
+| Query Processing | ~65% | ~30% | 95% |
+| Cache Operations | ~60% | ~35% | 95% |
+| Bootstrap Logic | ~90% | ~5% | 95% |
+| **Overall** | **~62%** | **~18%** | **~80%** |
 
 ## ⚠️ RISK ANALYSIS & MITIGATION
 
-### 🔴 High-Risk Areas
+**High-Risk Areas:**
 
-1. **Query Template Caching Complexity**
+1. **Query Template Caching**: Strict parameter enforcement, validation on reload
+2. **Multi-Threaded Queue Synchronization**: Follow existing patterns, atomic operations
+3. **Database Engine Abstraction**: Start with PostgreSQL, interface contracts upfront
 
-   **Risk**: Parameter injection, template validation, reload coordination
-   **Mitigation**:
-   - Strict parameter type enforcement
-   - Template validation on reload
-   - Comprehensive testing for edge cases
-   - Graceful fallbacks for missing templates
+**Medium-Risk Areas:**
 
-1. **Multi-Threaded Queue Synchronization**
-
-   **Risk**: Race conditions, deadlocks, resource starvation
-   **Mitigation**:
-   - Follow existing thread safety patterns from WebSocket
-   - Extensive lock hierarchy documentation
-   - Atomic operations where possible
-   - Thread sanitizer validation in testing
-
-1. **Database Engine Abstraction**
-
-   **Risk**: SQL dialect differences, feature availability, error handling variance
-   **Mitigation**:
-   - Start with PostgreSQL (widest feature set)
-   - Interface contracts defined upfront
-   - Error normalization across engines
-   - Fallback behavior for unsupported features
-
-### 🟡 Medium-Risk Areas
-
-1. **Memory Management Complexity**
-
-   **Risk**: Connection objects, query templates, result sets, thread stacks
-   **Mitigation**:
-   - Consistent allocation/deallocation pattern
-   - Existing memory leak test (`test_11_leaks_like_a_sieve`) validates
-   - Compile-time analysis tools
-   - Resource monitoring integration
-
-1. **Schema Evolution Handling**
-
-   **Risk**: Breaking changes, schema drift, query template invalidation
-   **Mitigation**:
-   - Semi-manual template update process
-   - Version metadata in templates
-   - Gradual rollout strategy
-   - Comprehensive validation before deployment
-
-1. **Performance Scaling**
-
-   **Risk**: Resource exhaustion, queue backlog, connection limits
-   **Mitigation**:
-   - Configurable limits everywhere
-   - Monitoring and alerting integration
-   - Graceful degradation strategies
-   - Horizontal scaling patterns
+1. **Memory Management**: Consistent patterns, existing leak tests
+2. **Schema Evolution**: Semi-manual template updates, version metadata
+3. **Performance Scaling**: Configurable limits, graceful degradation
 
 ## 🚀 IMPLEMENTATION ROADMAP
 
-### Phase 1 (Queue Infrastructure) - 2-3 weeks
+### Phase 1: Queue Infrastructure (2-3 weeks)
 
 - Queue manager implementation
-- ASPNET Core per-database queues
-- Thread-safe submission system
-- Basic ROUND-robin distribution
+- Multi-queue system
+- Thread-safe submission
 - Memory management validation
 
-### Phase 2 (PostgreSQL Engine) - 2 weeks
+### Phase 2: PostgreSQL Engine (2 weeks)
 
-- PostgreSQL libpq integration
-- Connection management per-database
-- Prepared statement preparation
-- Result JSON serialization
-- Parameter injection validation
+- libpq integration
+- Connection management
+- Prepared statements
+- JSON result serialization
 
-### Phase 3 (Query Caching) - 1-2 weeks
+### Phase 3: Query Caching (1-2 weeks)
 
-- Template cache loading system
+- Template cache loading
 - Parameter injection engine
-- Cache reload/refiembrie validation system
 
-### Phase 4 (Acuranzo Integration) - 2 weeks
+### Phase 4: Acuranzo Integration (2 weeks)
 
-- Acuranzo query template creation
-- Integration with actual database
-- All-database connectivity
-- Performance optimization
+- Query template creation
+- End-to-end integration
 
-### Phase 5 (Multi-Engine Expansion) - 3-4 weeks
+### Phase 5: Multi-Engine Expansion (3-4 weeks)
 
-- Remaining engines (MySQL, SQLite, DB2)
-- AI API framework
+- Remaining engines
 - Engine-specific optimizations
-- Comprehensive testing
 
-### Phase 6 (Production Hardening) - 2 weeks
+### Phase 6: Production Hardening (2 weeks)
 
-- Helium integration optionalization
 - Security hardening
-- Documentation updates
 - Performance monitoring
 
 ## ✅ ARCHITECTURAL DECISIONS RESOLVED
 
-### 🎯 Core Architecture Decisions
+### Core Decisions
 
-**Queue Strategy**: ✅ **RESOLVED** - Multiple queue paths (slow, medium, fast, cache) available to client selection
+**Queue Strategy**: Multiple queue paths (slow/medium/fast/cache) with routing logic
 
-- Each queue path (slow/medium/fast/cache) can have multiple physical queues
-- Request specifies queue path preference
-- Routing logic: shortest queue → round-robin if tied → fallback behavior
-- Configurable allocation: e.g., "5 queues for fast, 2 for others" or "1 queue handling all paths"
+**Connection Strategy**: Persistent per-queue connections, scaling through server instances
 
-**Connection Strategy**: ✅ **RESOLVED** - Persistent per-queue connections, no dynamic pooling
+**Schema Evolution**: Client responsibility, queries assume compatibility
 
-- Each queue maintains persistent connection to specified database
-- Scaling achieved through multiple server instances (not queue reallocation)
-- Connection lifecycle tied to queue lifecycle
+**Third-Party Schemas**: Explicitly supported, cross-schema queries allowed
 
-### 💾 Schema Handling Decisions
+### Integration Decisions
 
-**Schema Evolution**: ✅ **RESOLVED** - "Not our problem" - client responsibility
+**Helium Relationship**: Standard database access via mechanisms
 
-- Schema changes managed through query template updates
-- Version information available through dedicated queries if needed
-- No automatic migration or compatibility detection
+**API Surface**: Main endpoint `/api/query/:database/:query_id/:queue_path/:params`
 
-**Third-Party Schemas**: ✅ **RESOLVED** - Cross-schema queries explicitly supported
+**Query Optimization**: Basic caching with configurable expiration
 
-- Queries can be designed to run against different databases than their schema origin
-- Example: Acuranzo query executed against Canvas database
-- No schema validation - queries assume responsibility for compatibility
+**Resource Limits**: Queue depth limits trigger scaling events
 
-### 🔗 Integration Decisions
-
-**Helium Relationship**: ✅ **RESOLVED** - Just another database accessed via standard mechanisms
-
-- May use SQLite or other engine depending on requirements
-- No special treatment - integrated like PostgreSQL, MySQL, DB2
-- Tables and queries managed through same query indexing system
-
-**API Surface**: ✅ **RESOLVED** - Primary query endpoint only, leverage existing health
-
-- Main endpoint: `/api/query/:database/:query_id/:queue_path/:params`
-- Parameters: database, query number, queue path (slow/fast/...), query parameters
-- No separate health endpoint - utilize existing Hydrogen health monitoring
-- Results returned as JSON
-
-### ⚡ Performance Decisions
-
-**Query Optimization**: ✅ **RESOLVED** - Basic result caching with configurable expiration
-
-```json
-// Cache queue paths could support:
-// • cache_1min (1 minute expiration)
-// • cache_10min (10 minute expiration)
-// • cache_1hour (1 hour expiration)
-// Or configurable: cache_minutes:60
-```
-
-**Resource Limits**: ✅ **RESOLVED** - Queue depth limits trigger scaling events
-
-- Example: Queue limit of 100 pending queries
-- Response: "Sorry, can't talk now" when limit reached
-- Scaling: Launch additional server instances based on queue depth
-- Load balancing distributes across server instances
-
-## 🔄 TESTING & VALIDATION APPROACH
+## TESTING & VALIDATION APPROACH
 
 ### Query Processing Tests
 
-- [ ] Template parameter injection validation
-- [ ] Query ID to SQL transformation
-- [ ] Result JSON formatting accuracy
-- [ ] Connection pooling under load
-- [ ] Queue processing performance
+- Template parameter injection
+- Query ID transformation
+- JSON result formatting
+- Queue performance
 
 ### Integration Tests
 
-- [ ] REST API endpoint functionality
-- [ ] Database engine compatibility
-- [ ] Schema type support validation
-- [ ] Helium client integration (optional)
+- REST API functionality
+- Engine compatibility
+- Schema support
 
 ### Performance Tests
 
-- [ ] Connection pool efficiency
-- [ ] Query throughput benchmarking
-- [ ] Memory usage monitoring
-- [ ] Queue bottleneck identification
+- Connection efficiency
+- Throughput benchmarking
+- Memory monitoring
 
 ## 🧪 SINGLE COMPREHENSIVE DATABASE TEST
 
-### **test_27_databases_parallel_engine_tests.sh** - "All Engines Parallel Operational Test"
+**test_27_databases_parallel_engine_tests.sh** - All Engines Parallel Operational Test
 
-**Objective**: Single unified test that validates all 5 database engine support in parallel
+**Flow:**
 
-#### 🎯 **Test Test Flow**
+1. Verify engine libraries available
+2. Identify test datasources (local files, containers, remote)
+3. Connect to all 5 engines simultaneously
+4. Execute complex fixed queries
+5. Utilize queuing system
+6. Analyze database state before/after
+7. Free resources and validate responses
+8. Comprehensive cleanup
 
-```bash
-# Main test execution structure
-test_27_databases_parallel_engine_tests.sh
+**Success Criteria:**
 
-├── check_engine_libraries_available()
-│   ├── Verify libpq-dev (PostgreSQL) installed
-│   ├── Check mysql-client libraries available
-│   ├── Validate SQLite is accessible
-│   ├── Confirm IBM DB2 client availability
-│   └── Ensure AI HTTP client libraries present
-│
-├── identify_test_datasources()
-│   ├── Local files: tests/artifacts/test_database.db (SQLite)
-│   ├── Docker containers: postgres, mysql, db2
-│   ├── Remote: GitHub API (AI "database" mock)
-│   ├── Validate connectivity to each test instance
-│   └── Report available datasources with status
-│
-├── connect_database_directly()
-│   ├── Parallel connection to all 5 engines simultaneously
-│   ├── PostgreSQL: libpq PQconnectdb() with test credentials
-│   ├── MySQL: mysql_real_connect() with test host/port
-│   ├── SQLite: sqlite3_open() with test database path
-│   ├── DB2: SQLConnect() with test DSN configuration
-│   └── AI: HTTP client initialization for mock endpoints
-│
-├── execute_complex_fixed_queries()
-│   ├── Same complex query against all 5 engines
-│   ├── Various datatypes: INTEGER, VARCHAR, DATE, DECIMAL, BLOB
-│   ├── JOIN operations for multi-table complexity
-│   ├── Aggregation functions (COUNT, SUM, AVG)
-│   ├── Conditional logic with CASE statements
-│
-├── utilize_queuing_system()
-│   ├── Submit queries through database queue managers
-│   ├── Validate queue processing and result retrieval
-│   ├── Test worker thread assignment
-│   ├── Monitor queue utilization metrics
-│   └── Ensure thread-safe operation
-│
-├── analyze_database_state()
-│   ├── Before/after snapshots using engine-specific tools
-│   ├── PostgreSQL: psql -c 'SELECT * FROM pg_stat_statements'
-│   ├── MySQL: mysql -e 'SHOW ENGINE INNODB STATUS'
-│   ├── SQLite: .schema and .tables commands
-│   ├── DB2: db2pd -d [database] for statistics
-│   └── Compare connection counts, locks, performance metrics
-│
-├── free_resources_verify_response()
-│   ├── Proper connection cleanup across all engines
-│   ├── Thread-safe resource deallocation
-│   ├── Memory leak validation using test infrastructure
-│   ├── Confirm databases remain accessible for follow-up tests
-│   └── Generate resource utilization report
-│
-├── validate_engine_responses()
-│   ├── Ensure all engines returned expected result format
-│   ├── Validate JSON serialization consistency
-│   ├── Cross-engine result comparison for equivalence
-│   ├── Error handling verification for edge cases
-│   └── Response time profiling and reporting
-│
-└── comprehensive_cleanup()
-    └── System-wide cleanup validation
-```
-
-#### 🎪 **Success Criteria**
-
-- [ ] All 5 database engines successfully establish connections
-- [ ] Same complex query executes successfully on all engines
-- [ ] Queue system processes queries correctly for all engines
-- [ ] Resource cleanup verified with no memory leaks
-- [ ] Database state analysis shows clean before/after
-- [ ] Consistent JSON result formatting across engines
-- [ ] All operations complete within reasonable time limits
-- [ ] Comprehensive logging for troubleshooting
-
-## 📈 TESTING SUCCESS METRICS
-
-### Single Test Coverage Goals
-
-| Component | Target Coverage | Success Measurement |
-|-----------|----------------|-------------------|
-| **Engine Libraries** | 100% all 5 engines | Library detection + loading |
-| **Connection Tests** | 100% successful connects | Parallel connection success |
-| **Query Execution** | 100% query completion | Complex fixed query success |
-| **Queue Integration** | 100% queue processing | Worker thread assignment |
-| **State Analysis** | Engine-specific validation | Before/after tool comparison |
-| **Resource Cleanup** | 100% leak-free | Memory monitoring verification |
-| **Response Validation** | 100% consistent formatting | Cross-engine result comparison |
+- All 5 engines establish connections
+- Same query executes on all engines
+- Queue processing works correctly
+- Clean resource cleanup
+- Consistent JSON formatting
 
 ### Test Infrastructure Requirements
 
-- [ ] Docker containers for external databases (PostgreSQL, MySQL, DB2)
-- [ ] SQLite local file creation and cleanup automation
-- [ ] AI mock endpoint running locally or remotely
-- [ ] Database analysis tools pre-installed
-- [ ] Memory monitoring and leak detection
-- [ ] Parallel execution control for simultaneous testing
-- [ ] Result comparison and validation framework
+- Docker containers for databases
+- SQLite local file management
+- AI mock endpoints
+- Memory monitoring tools
+
+## 🚀 LAUNCH AND LANDING INTEGRATION
+
+### Current State Analysis
+
+**Existing Files:**
+
+- `src/launch/launch_database.c` - Config validation stub
+- `src/landing/landing_database.c` - Cleanup stub
+- `src/config/config_defaults.c` - Basic defaults
+
+**Limitations:**
+
+- Launch: Only config validation
+- Landing: Only config cleanup
+- Treat database as configuration handler
+
+### Bootstrap Configuration Architecture
+
+#### Tier 1: Direct Bootstrap
+
+- Use case: Self-contained databases
+- Direct SQL execution from environment variables
+
+#### Tier 2: Parameterized Bootstrap
+
+- Use case: Cross-hosted databases, legacy integration
+- Host database query with parameters
+
+**Query Cache Consistency:**
+
+- Trigger-based invalidation across databases
+- Lead queue manages admin tasks
+
+### Enhanced Database Defaults Structure
+
+**JSON Configuration:**
+
+```json
+{
+  "Databases": {
+    "DefaultWorkers": 2,
+    "ConnectionCount": 5,
+    "MaxConnectionsPerPool": 16,
+    "Connections": [
+      {
+        "Enabled": true,
+        "Name": "Acuranzo",
+        "Type": "${env.ACURANZO_TYPE}",
+        "Workers": {"Slow":1, "Medium":2, "Fast":4, "Cache":1},
+        "ConnectionPooling": {"MaxConnections":16, "MinConnections":2},
+        "QueryTables": {"PrimaryTable":"acuranzo_queries"}
+      }
+    ]
+  }
+}
+```
+
+**Environment Variables Template:**
+
+```bash
+# Primary Database
+ACURANZO_TYPE=postgresql
+ACURANZO_HOST=localhost
+ACURANZO_USER=hydrogen_user
+
+# Secondary Databases
+CANVAS_TYPE=mysql
+CANVAS_HOST=example.com
+HELIUM_TYPE=sqlite
+```
+
+## 📈 IMPLEMENTATION PRIORITIES
+
+### Phase 6A: Launch/Landing Enhancement
+
+1. Validate current stubs
+2. Enhance launch_database.c
+3. Enhance landing_database.c
+4. Update config_defaults.c
+5. Enhance launch readiness
+
+### Phase 6B: Configuration Framework
+
+1. Design JSON structure
+2. Implement config defaults
+3. Environment variable validation
+4. Configuration validation
+
+## 🧪 UNITY FRAMEWORK UNIT TESTING STRATEGY
+
+**Coverage Goals:**
+
+- Blackbox (Test 27): Majority coverage via integration testing
+- Unity (Test 10): Fill gaps for error paths and internal logic
+- Target: 50-60% for files <100 lines, 75-85% for larger files
+
+**Unity Test Structure:**
+
+- External to production codebase
+- External directory: `tests/unity/database/`
+- Files: `database_connection_unittest.c`, `database_queue_unittest.c`, etc.
+
+**Test Pattern:**
+
+```c
+#include "../../src/database/database_connection.h"
+
+TEST_GROUP(DatabaseConnectionTests);
+TEST(DatabaseConnectionTests, connect_with_valid_credentials);
+TEST(DatabaseConnectionTests, handle_connection_timeout);
+```
+
+**Testing Timeline:**
+
+1. Start blackbox tests (Test 27.1-27.4)
+2. Fill coverage gaps with Unity tests
+3. Maintain combined coverage thresholds
+
+## 🏗️ ARCHITECTURAL CONTEXT & TROUBLESHOOTING GUIDANCE
+
+### Key Architectural Principles
+
+**Queue-Based Architecture Rationale:**
+
+- **Multi-Queue Strategy**: Each database supports slow/medium/fast/cache queues to handle different query priorities and performance requirements
+- **Persistent Connections**: Each queue maintains dedicated connections rather than pooling to ensure predictable performance
+- **Thread Safety**: All queue operations use consistent locking patterns from existing WebSocket implementation
+
+**Engine Abstraction Framework:**
+
+- **PostgreSQL Foundation**: Chosen as first engine due to widest feature set and SQL standard compliance
+- **Interface Contracts**: All engines implement the same result format and error handling for seamless switching
+- **SQL Dialect Handling**: Query templates include engine-specific variants handled by load-time injection
+
+**Bootstrap System Design:**
+
+- **Bootstrapping Chicken & Egg**: Need database to load queries, but need queries to access database
+- **Tier System**: Tier 1 (direct SQL from env vars), Tier 2 (cross-hosted via host database)
+- **Trigger-Based Consistency**: Database triggers propagate changes across dependent databases automatically
+
+**API Surface Simplification:**
+
+- **Query ID System**: Client-side SQL templates referenced by IDs eliminate schema-dependent payload changes
+- **Queue Path Selection**: Client specifies performance preference (slow/fast) that maps to physical queues
+- **JSON Result Standardization**: All database engines convert results to consistent JSON format
+
+### Common Implementation Traps & Solutions
+
+**Synchronization Issues:**
+
+- **Trap**: Race conditions between queue threads and admin tasks
+- **Solution**: Use consistent lock hierarchy from existing patterns; atomic operations for counters
+- **Guidance**: Follow WebSocket subsystem's thread-safe patterns exactly
+
+**Connection Pooling Confusion:**
+
+- **Trap**: Attempting to add dynamic pooling when design specifies persistent connections
+- **Solution**: Stick to the resolved design - persistent connections per queue for predictability
+- **Guidance**: Scaling handled by multiple server instances, not within-queue scaling
+
+**Bootstrap Dependency Cycles:**
+
+- **Trap**: Infinite loops when databases depend on each other for bootstrap
+- **Solution**: Always have at least one direct SQL bootstrap database (Tier 1)
+- **Guidance**: Use env vars for initial bootstrap, transition to full cross-hosted after first database operational
+
+**Engine Feature Parity Assumptions:**
+
+- **Trap**: Assuming all engines support same SQL features (procedures, triggers, etc.)
+- **Solution**: Interface contracts define what features are required/guaranteed vs. optional
+- **Guidance**: Start with PostgreSQL ecosystem, handle feature gaps gracefully
+
+**Testing Pattern Misalignment:**
+
+- **Trap**: Unity tests with internal hook patterns vs. external-only strategy
+- **Solution**: Keep all unit tests external, no production code changes for testing
+- **Guidance**: Match coverage strategy - Blackbox (Test 27) provides broad coverage, Unity fills specific gaps
+
+**Schema Evolution Over-Synchronization:**
+
+- **Trap**: Manual schema changes causing extended downtime during template reload
+- **Solution**: Semi-manual update process with version-aware templates and gradual rollout
+- **Guidance**: Treat schema changes as deployment events, not runtime operations
+
+### Performance Considerations
+
+**Queue Depth Management:**
+
+- **Trigger Scaling**: Queue overflow should trigger automatic scaling (additional server instances)
+- **Resource Limits**: Configurable depth limits prevent resource exhaustion
+- **Load Balancing**: Client-side distribution to avoid queue hotspots
+
+**Cache Effectiveness:**
+
+- **Expiration Design**: Basic time-based expiration (minutes) configurable per query
+- **Trigger Integration**: Database triggers invalidate cache entries automatically
+- **Cross-Database Consistency**: Leader queue coordinates cache invalidation across database instances
+
+**Connection Optimization:**
+
+- **Persistent Strategy**: No connection pooling overhead, guaranteed response times
+- **Health Monitoring**: Leader thread performs periodic health checks and reconnections
+- **Resource Cleanup**: Comprehensive shutdown sequences prevent connection leaks
+
+**Measurement Points:**
+
+- **Throughput**: Queries per second across different queue paths
+- **Latency**: End-to-end time from API call to result return
+- **Resource Usage**: Memory, CPU, and network consumption patterns
+
+### Integration Patterns
+
+**Helium Relationship:**
+
+- **Non-Special Treatment**: Just another database through standard mechanisms
+- **Shared Query System**: Uses same query indexing as PostgreSQL, MySQL, etc.
+- **Deployment Flexibility**: Can be SQLite file or full standalone database depending on requirements
+
+**Multitenant Considerations:**
+
+- **Host Database Pattern**: One master database (usually a fast PostgreSQL) hosts queries for multiple tenants
+- **Trigger Propagation**: Changes in host database trigger cache invalidation in dependent databases
+- **Bootstrap Coordination**: Tier 2 bootstrap ensures consistent startup across compressed systems
+
+**Deployment Flexibility:**
+
+- **Environment-Driven**: All configuration through environment variables for 12-factor compliance
+- **Docker Ready**: Test infrastructure uses containers for consistent environments
+- **Scaling Strategy**: Horizontal scaling through additional server instances, not vertical within servers
+
+### Debugging Checklists
+
+**Launch Sequence Issues:**
+
+- ✓ Environment variables loaded correctly
+- ✓ Database connectivity validated
+- ✓ Query table structure exists and populated
+- ✓ Trigger creation permissions granted
+- ✓ Worker thread startup without deadlocks
+- ✓ Admin thread initialization successful
+
+**Query Execution Problems:**
+
+- ✓ Query ID resolves to template
+- ✓ Parameter injection successful
+- ✓ Connection available in worker thread
+- ✓ Result serialization handles all datatypes
+- ✓ Queue routing matches client expectations
+
+**Cache Consistency Failures:**
+
+- ✓ Trigger registration captured changes
+- ✓ Cross-database notification sent
+- ✓ Cache invalidation propagated
+- ✓ Bootstrap query completed successfully
+- ✓ Template reload didn't break parsing
+
+**Performance Degradation:**
+
+- ✓ Queue depth monitoring in place
+- ✓ Cross-thread synchronization not blocking
+- ✓ Connection pool not exhausted
+- ✓ Cache effectiveness above 80%
+- ✓ Memory usage within bounds
