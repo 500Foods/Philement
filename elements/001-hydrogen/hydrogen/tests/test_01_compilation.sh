@@ -25,7 +25,7 @@ TEST_NAME="Compilation"
 TEST_ABBR="CMP"
 TEST_NUMBER="01"
 TEST_COUNTER=0
-TEST_VERSION="3.1.2"
+TEST_VERSION="3.1.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
