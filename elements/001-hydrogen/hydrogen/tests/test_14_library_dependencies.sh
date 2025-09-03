@@ -7,6 +7,7 @@
 # check_dependency_log()
 
 # CHANGELOG
+# 4.1.1 - 2025-09-03 - Added checks for database dependencies
 # 4.0.0 - 2025-08-26 - Modified to start Hydrogen WITHOUT a config file to test default configuration
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.1.1 - 2025-07-06 - Added missing shellcheck justifications
@@ -22,7 +23,7 @@ TEST_NAME="Library Dependencies"
 TEST_ABBR="DEP"
 TEST_NUMBER="14"
 TEST_COUNTER=0
-TEST_VERSION="4.0.0"
+TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -222,6 +223,12 @@ check_dependency_log "libwebsockets" "${LOG_FILE}"
 check_dependency_log "OpenSSL" "${LOG_FILE}"
 check_dependency_log "libbrotlidec" "${LOG_FILE}"
 check_dependency_log "libtar" "${LOG_FILE}"
+
+# Check database dependencies (using system commands)
+check_dependency_log "DB2" "${LOG_FILE}"
+check_dependency_log "PostgreSQL" "${LOG_FILE}"
+check_dependency_log "MySQL" "${LOG_FILE}"
+check_dependency_log "SQLite" "${LOG_FILE}"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

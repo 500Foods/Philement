@@ -8,7 +8,15 @@
  #include "utils_dependency.h"
  
  extern const char *jansson_version_str(void);
- 
+
+// Database dependency configuration
+typedef struct {
+    const char *name;
+    const char *command;
+    const char *expected;
+    bool required;
+} DatabaseDependencyConfig;
+
  typedef struct {
      const char *name;
      const char **paths;
@@ -33,7 +41,15 @@
  static const char *openssl_funcs[] = {"OpenSSL_version", "SSLeay_version", NULL};
  static const char *brotli_funcs[] = {"BrotliDecoderVersion", NULL};
  static const char *libtar_funcs[] = {"libtar_version", NULL};
- 
+
+// Database configurations
+static const DatabaseDependencyConfig db_configs[] = {
+    {"DB2", "db2level", "11.1.3.3", false},
+    {"PostgreSQL", "pg_config --version", "17.6", false},
+    {"MySQL", "mysql_config --version", "8.0.42", false},
+    {"SQLite", "sqlite3 --version", "3.46.1", false}
+};
+
  static const LibConfig lib_configs[] = {
      {"pthreads", pthread_paths, NULL, "1.0", true, true},
      {"jansson", jansson_paths, jansson_funcs, "2.13.1", false, true},
@@ -71,6 +87,101 @@
               method, get_status_string(status));
  }
  
+ static const char *parse_db2_version(const char *output, char *buffer, size_t size) {
+     // Parse DB2 output: Look for pattern in "DB2 v11.1.3.3"
+     const char *version_start = strstr(output, "DB2 v");
+     if (version_start) {
+         version_start += 5; // Skip "DB2 v"
+         size_t i = 0;
+         // Copy until we hit space, newline, carriage return, quote, or comma
+         while (i < size - 1 && version_start[i] &&
+                version_start[i] != ' ' && version_start[i] != '\n' &&
+                version_start[i] != '\r' && version_start[i] != '"' &&
+                version_start[i] != ',') {
+             buffer[i] = version_start[i];
+             i++;
+         }
+         buffer[i] = '\0';
+         // Remove any trailing quotes or commas that might be copied
+         while (i > 0 && (buffer[i-1] == '"' || buffer[i-1] == ',')) {
+             buffer[--i] = '\0';
+         }
+         return buffer;
+     }
+     return "None";
+ }
+
+ static const char *parse_postgresql_version(const char *output, char *buffer, size_t size) {
+     // Parse PostgreSQL output: "PostgreSQL 17.6"
+     const char *version_start = strstr(output, "PostgreSQL ");
+     if (version_start) {
+         version_start += 11; // Skip "PostgreSQL "
+         size_t i = 0;
+         while (i < size - 1 && version_start[i] && version_start[i] != ' ' &&
+                version_start[i] != '\n' && version_start[i] != '\r') {
+             buffer[i] = version_start[i];
+             i++;
+         }
+         buffer[i] = '\0';
+         return buffer;
+     }
+     return "None";
+ }
+
+ static const char *parse_mysql_version(const char *output, char *buffer, size_t size) {
+     // Parse MySQL output: "8.0.42"
+     // MySQL output is just the version number, no prefix
+     size_t i = 0;
+     while (i < size - 1 && output[i] && output[i] != ' ' &&
+            output[i] != '\n' && output[i] != '\r') {
+         buffer[i] = output[i];
+         i++;
+     }
+     buffer[i] = '\0';
+     return buffer;
+ }
+
+ static const char *parse_sqlite_version(const char *output, char *buffer, size_t size) {
+     // Parse SQLite output: "3.46.1 2024-08-13 09:16:08..."
+     // Take only the version number before the first space
+     size_t i = 0;
+     while (i < size - 1 && output[i] && output[i] != ' ' &&
+            output[i] != '\n' && output[i] != '\r') {
+         buffer[i] = output[i];
+         i++;
+     }
+     buffer[i] = '\0';
+     return buffer;
+ }
+
+ static const char *get_database_version(const DatabaseDependencyConfig *config, char *buffer, size_t size) {
+     if (!config || !buffer || !size) return "None";
+     buffer[0] = '\0';
+
+     FILE *fp = popen(config->command, "r");
+     if (!fp) return "None";
+
+     char output[1024];
+     size_t bytes_read = fread(output, 1, sizeof(output) - 1, fp);
+     output[bytes_read] = '\0';
+     pclose(fp);
+
+     if (bytes_read == 0) return "None";
+
+     // Parse based on database type
+     if (strcmp(config->name, "DB2") == 0) {
+         return parse_db2_version(output, buffer, size);
+     } else if (strcmp(config->name, "PostgreSQL") == 0) {
+         return parse_postgresql_version(output, buffer, size);
+     } else if (strcmp(config->name, "MySQL") == 0) {
+         return parse_mysql_version(output, buffer, size);
+     } else if (strcmp(config->name, "SQLite") == 0) {
+         return parse_sqlite_version(output, buffer, size);
+     }
+
+     return "None";
+ }
+
  static const char *get_version(const LibConfig *config, char *buffer, size_t size, const char **method) {
      if (!config || !buffer || !size || !method) return "None";
      buffer[0] = '\0';
@@ -259,6 +370,18 @@
          log_status(lib.name, lib.expected, found, method, status);
          if (status == LIB_STATUS_CRITICAL && lib.required) critical_count++;
      }
+
+     // Check database dependencies
+     for (size_t i = 0; i < sizeof(db_configs) / sizeof(db_configs[0]); i++) {
+         DatabaseDependencyConfig db = db_configs[i];
+
+         char buffer[256];
+         const char *found = get_database_version(&db, buffer, sizeof(buffer));
+         LibraryStatus status = determine_status(db.expected, found, db.required);
+         log_status(db.name, db.expected, found, "CMD", status);
+         if (status == LIB_STATUS_CRITICAL && db.required) critical_count++;
+     }
+
      log_this(SR_DEPCHECK, "Completed dependency check, critical issues: %d", LOG_LEVEL_STATE, critical_count);
      return critical_count;
  }
