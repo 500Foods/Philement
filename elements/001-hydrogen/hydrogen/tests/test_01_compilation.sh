@@ -7,6 +7,7 @@
 # download_unity_framework()
 
 # CHANGELOG
+# 3.2.0 - 2025-09-05 - Added CMock framework check and download alongside Unity framework
 # 3.1.3 - 2025-08-23 - Added console dumps to give a more nuanced progress update
 # 3.1.2 - 2025-08-08 - Commented out somee of the print_command calls for "cd"
 # 3.1.1 - 2025-08-03 - Removed extraneous command -v calls
@@ -25,7 +26,7 @@ TEST_NAME="Compilation"
 TEST_ABBR="CMP"
 TEST_NUMBER="01"
 TEST_COUNTER=0
-TEST_VERSION="3.1.3"
+TEST_VERSION="3.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -36,7 +37,7 @@ download_unity_framework() {
     local unity_dir="${SCRIPT_DIR}/unity"
     local framework_dir="${unity_dir}/framework"
     local unity_framework_dir="${framework_dir}/Unity"
-    
+
     if [[ ! -d "${unity_framework_dir}" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unity framework not found in ${unity_framework_dir}. Downloading now..."
         mkdir -p "${framework_dir}"
@@ -49,6 +50,28 @@ download_unity_framework() {
         fi
     else
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unity framework already exists in ${unity_framework_dir}"
+        return 0
+    fi
+}
+
+# Function to download CMock framework if missing
+download_cmock_framework() {
+    local unity_dir="${SCRIPT_DIR}/unity"
+    local framework_dir="${unity_dir}/framework"
+    local cmock_framework_dir="${framework_dir}/CMock"
+
+    if [[ ! -d "${cmock_framework_dir}" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "CMock framework not found in ${cmock_framework_dir}. Downloading now..."
+        mkdir -p "${framework_dir}"
+        if curl -L https://github.com/ThrowTheSwitch/CMock/archive/refs/heads/master.zip -o "${framework_dir}/cmock.zip"; then
+            unzip "${framework_dir}/cmock.zip" -d "${framework_dir}/"
+            mv "${framework_dir}/CMock-master" "${cmock_framework_dir}"
+            rm "${framework_dir}/cmock.zip"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "CMock framework downloaded and extracted successfully to ${cmock_framework_dir}"
+            return 0
+        fi
+    else
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "CMock framework already exists in ${cmock_framework_dir}"
         return 0
     fi
 }
@@ -89,6 +112,17 @@ else
     EXIT_CODE=1
 fi
 evaluate_test_result_silent "Unity framework check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Check CMock Framework"
+
+# shellcheck disable=SC2310 # We want to continue even if the test fails
+if download_cmock_framework; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "CMock framework check passed"
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "CMock framework check failed"
+    EXIT_CODE=1
+fi
+evaluate_test_result_silent "CMock framework check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "CMake Configuration"
 #print_command "${TEST_NUMBER}" "cd cmake"

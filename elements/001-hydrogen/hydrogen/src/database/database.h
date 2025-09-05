@@ -21,10 +21,18 @@
 #include "../hydrogen.h"
 #include "database_queue.h"
 
-// Subsystem name for logging
-#define SR_DATABASE "DATABASE"
+// Subsystem name for logging (defined in globals.h)
 
 // Note: land_database_subsystem() is already declared in landing.h
+
+// Forward declarations
+typedef struct ConnectionConfig ConnectionConfig;
+typedef struct QueryRequest QueryRequest;
+typedef struct QueryResult QueryResult;
+typedef struct PreparedStatement PreparedStatement;
+typedef struct Transaction Transaction;
+typedef struct DatabaseHandle DatabaseHandle;
+typedef struct DatabaseEngineInterface DatabaseEngineInterface;
 
 // Database connection status
 typedef enum {
@@ -54,9 +62,117 @@ typedef enum {
     DB_QUERY_CONNECTION_LOST
 } DatabaseQueryStatus;
 
-// Forward declarations
-typedef struct DatabaseConnection DatabaseConnection;
-typedef struct DatabaseEngineInterface DatabaseEngineInterface;
+// Transaction isolation levels
+typedef enum {
+    DB_ISOLATION_READ_UNCOMMITTED = 0,
+    DB_ISOLATION_READ_COMMITTED,
+    DB_ISOLATION_REPEATABLE_READ,
+    DB_ISOLATION_SERIALIZABLE
+} DatabaseIsolationLevel;
+
+// Connection configuration
+struct ConnectionConfig {
+    char* host;
+    int port;
+    char* database;
+    char* username;
+    char* password;
+    char* connection_string;  // Alternative to individual fields
+    int timeout_seconds;
+    bool ssl_enabled;
+    char* ssl_cert_path;
+    char* ssl_key_path;
+    char* ssl_ca_path;
+};
+
+// Query request structure
+struct QueryRequest {
+    char* query_id;
+    char* sql_template;
+    char* parameters_json;
+    int timeout_seconds;
+    DatabaseIsolationLevel isolation_level;
+    bool use_prepared_statement;
+    char* prepared_statement_name;
+};
+
+// Query result structure
+struct QueryResult {
+    bool success;
+    char* data_json;          // JSON result data
+    size_t row_count;
+    size_t column_count;
+    char** column_names;
+    char* error_message;
+    time_t execution_time_ms;
+    int affected_rows;
+};
+
+// Prepared statement structure
+struct PreparedStatement {
+    char* name;
+    char* sql_template;
+    void* engine_specific_handle;  // Engine-specific prepared statement handle
+    time_t created_at;
+    volatile int usage_count;
+};
+
+// Transaction structure
+struct Transaction {
+    char* transaction_id;
+    DatabaseIsolationLevel isolation_level;
+    time_t started_at;
+    bool active;
+    void* engine_specific_handle;  // Engine-specific transaction handle
+};
+
+// Database connection handle structure
+struct DatabaseHandle {
+    DatabaseEngine engine_type;
+    void* connection_handle;              // Engine-specific handle (PGconn, sqlite3, etc.)
+    ConnectionConfig* config;
+    DatabaseConnectionStatus status;
+    time_t connected_since;
+    Transaction* current_transaction;
+    PreparedStatement** prepared_statements;  // Array of prepared statements
+    size_t prepared_statement_count;
+    pthread_mutex_t connection_lock;      // Thread safety for connection operations
+    volatile bool in_use;                 // Connection pool management
+    time_t last_health_check;
+    int consecutive_failures;
+};
+
+// Database engine interface structure
+struct DatabaseEngineInterface {
+    DatabaseEngine engine_type;
+    char* name;                           // Engine identifier ("postgresql", "sqlite", etc.)
+
+    // Core connection management
+    bool (*connect)(ConnectionConfig* config, DatabaseHandle** connection);
+    bool (*disconnect)(DatabaseHandle* connection);
+    bool (*health_check)(DatabaseHandle* connection);
+    bool (*reset_connection)(DatabaseHandle* connection);
+
+    // Query execution
+    bool (*execute_query)(DatabaseHandle* connection, QueryRequest* request, QueryResult** result);
+    bool (*execute_prepared)(DatabaseHandle* connection, PreparedStatement* stmt, QueryRequest* request, QueryResult** result);
+
+    // Transaction management
+    bool (*begin_transaction)(DatabaseHandle* connection, DatabaseIsolationLevel level, Transaction** transaction);
+    bool (*commit_transaction)(DatabaseHandle* connection, Transaction* transaction);
+    bool (*rollback_transaction)(DatabaseHandle* connection, Transaction* transaction);
+
+    // Prepared statement management
+    bool (*prepare_statement)(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+    bool (*unprepare_statement)(DatabaseHandle* connection, PreparedStatement* stmt);
+
+    // Engine-specific utilities
+    char* (*get_connection_string)(ConnectionConfig* config);
+    bool (*validate_connection_string)(const char* connection_string);
+    char* (*escape_string)(DatabaseHandle* connection, const char* input);
+};
+
+
 
 // Main database subsystem structure
 typedef struct {
@@ -169,5 +285,44 @@ time_t database_get_query_age(const char* query_id);
 
 // Cleanup old query results
 void database_cleanup_old_results(time_t max_age_seconds);
+
+/*
+ * Database Engine Interface Management (Phase 2)
+ */
+
+// Initialize database engine registry
+bool database_engine_init(void);
+
+// Register a database engine
+bool database_engine_register(DatabaseEngineInterface* engine);
+
+// Get engine interface by type
+DatabaseEngineInterface* database_engine_get(DatabaseEngine engine_type);
+
+// Get engine interface by name
+DatabaseEngineInterface* database_engine_get_by_name(const char* name);
+
+// Create database connection using engine
+bool database_engine_connect(DatabaseEngine engine_type, ConnectionConfig* config, DatabaseHandle** connection);
+
+// Execute query using engine abstraction
+bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, QueryResult** result);
+
+// Health check using engine abstraction
+bool database_engine_health_check(DatabaseHandle* connection);
+
+// Transaction management using engine abstraction
+bool database_engine_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel level, Transaction** transaction);
+bool database_engine_commit_transaction(DatabaseHandle* connection, Transaction* transaction);
+bool database_engine_rollback_transaction(DatabaseHandle* connection, Transaction* transaction);
+
+// Connection string utilities
+char* database_engine_build_connection_string(DatabaseEngine engine_type, ConnectionConfig* config);
+bool database_engine_validate_connection_string(DatabaseEngine engine_type, const char* connection_string);
+
+// Cleanup functions
+void database_engine_cleanup_connection(DatabaseHandle* connection);
+void database_engine_cleanup_result(QueryResult* result);
+void database_engine_cleanup_transaction(Transaction* transaction);
 
 #endif // DATABASE_H
