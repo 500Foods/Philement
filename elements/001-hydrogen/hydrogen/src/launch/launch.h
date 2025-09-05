@@ -102,6 +102,12 @@ void cleanup_readiness_messages(LaunchReadiness* readiness);
 void process_subsystem_readiness(ReadinessResults* results, size_t* index,
                                       const char* name, LaunchReadiness readiness);
 
+// General library version extraction function for use in all launch files
+char* get_library_version(void* handle, const char* lib_name);
+
+// Version comparison utility function
+int version_matches(const char* loaded_version, const char* expected_version);
+
 // Forward declarations for validation helpers for launch_resources.c
 bool validate_memory_limits(const ResourceConfig* config, int* msg_count, const char** messages);
 bool validate_queue_settings(const ResourceConfig* config, int* msg_count, const char** messages);

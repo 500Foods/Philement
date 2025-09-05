@@ -114,29 +114,16 @@ void initialize_config_defaults_network(AppConfig* config) {
 // C. Database Configuration Defaults
 void initialize_config_defaults_database(AppConfig* config) {
     if (config) {
-        config->databases.default_workers = 1;
-        config->databases.connection_count = 1; // Start with 1 connection (Acuranzo)
+        // No default databases configured - all database configuration comes from JSON config files
+        config->databases.default_workers = 2;        // Default 2 workers per database (when configured)
+        config->databases.connection_count = 0;       // No databases configured by default
 
-        // Initialize Acuranzo connection (first connection)
-        DatabaseConnection* acuranzo = &config->databases.connections[0];
-        memset(acuranzo, 0, sizeof(DatabaseConnection));
-        acuranzo->enabled = true;
-        acuranzo->workers = 1;
-        acuranzo->name = strdup("Acuranzo");
-        acuranzo->connection_name = strdup("Acuranzo");
-        acuranzo->type = strdup("${env.ACURANZO_DB_TYPE}");
-        acuranzo->database = strdup("${env.ACURANZO_DATABASE}");
-        acuranzo->host = strdup("${env.ACURANZO_DB_HOST}");
-        acuranzo->port = strdup("${env.ACURANZO_DB_PORT}");
-        acuranzo->user = strdup("${env.ACURANZO_DB_USER}");
-        acuranzo->pass = strdup("${env.ACURANZO_DB_PASS}");
-
-        // Initialize remaining connections to NULL state
-        for (int i = 1; i < 5; i++) {
+        // Clear all database connection slots
+        for (int i = 0; i < 5; i++) {
             memset(&config->databases.connections[i], 0, sizeof(DatabaseConnection));
         }
-        
-        log_this(SR_CONFIG, "Applied config defaults for Database", LOG_LEVEL_STATE);        
+
+        log_this(SR_CONFIG, "Applied config defaults for Database (no default connections)", LOG_LEVEL_STATE);
     }
 }
 

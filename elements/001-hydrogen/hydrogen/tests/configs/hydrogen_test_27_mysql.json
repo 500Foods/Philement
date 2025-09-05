@@ -1,0 +1,26 @@
+{
+    "ServerName": "hydrogen-test-27-mysql",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "WebServer": {
+        "Enabled": false,
+        "EnableIPv6": false,
+        "Port": 5271
+    },
+    "Databases": {
+        "ConnectionCount": 1,
+        "DefaultWorkers": 2,
+        "Connections": [
+            {
+                "Name": "Canvas",
+                "Engine": "mysql",
+                "Enabled": true,
+                "Workers": 2,
+                "Host": "localhost",
+                "Port": "3306",
+                "Database": "canvas_test",
+                "User": "test_user",
+                "Pass": "test_pass"
+            }
+        ]
+    }
+}

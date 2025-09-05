@@ -1,0 +1,26 @@
+{
+    "ServerName": "hydrogen-test-27-postgres",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "WebServer": {
+        "Enabled": true,
+        "EnableIPv6": false,
+        "Port": 5270
+    },
+    "Databases": {
+        "ConnectionCount": 1,
+        "DefaultWorkers": 2,
+        "Connections": [
+            {
+                "Name": "Acuranzo",
+                "Engine": "postgresql",
+                "Enabled": true,
+                "Workers": 2,
+                "Host": "localhost",
+                "Port": "5432",
+                "Database": "acuranzo_test",
+                "User": "test_user",
+                "Pass": "test_pass"
+            }
+        ]
+    }
+}

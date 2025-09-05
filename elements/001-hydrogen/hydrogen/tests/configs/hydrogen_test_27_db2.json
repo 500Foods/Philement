@@ -1,0 +1,26 @@
+{
+    "ServerName": "hydrogen-test-27-db2",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "WebServer": {
+        "Enabled": false,
+        "EnableIPv6": false,
+        "Port": 5273
+    },
+    "Databases": {
+        "ConnectionCount": 1,
+        "DefaultWorkers": 2,
+        "Connections": [
+            {
+                "Name": "DB2",
+                "Engine": "db2",
+                "Enabled": true,
+                "Workers": 2,
+                "Host": "localhost",
+                "Port": "50000",
+                "Database": "SAMPLE",
+                "User": "db2test",
+                "Pass": "test_pass"
+            }
+        ]
+    }
+}
