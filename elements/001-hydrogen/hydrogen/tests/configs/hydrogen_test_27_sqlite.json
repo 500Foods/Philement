@@ -1,0 +1,22 @@
+{
+    "ServerName": "hydrogen-test-27-sqlite",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "WebServer": {
+        "Enabled": false,
+        "EnableIPv6": false,
+        "Port": 5272
+    },
+    "Databases": {
+        "ConnectionCount": 1,
+        "DefaultWorkers": 2,
+        "Connections": [
+            {
+                "Name": "Helium",
+                "Engine": "sqlite",
+                "Enabled": true,
+                "Workers": 1,
+                "Database": "/tmp/hydrogen_helium_test.db"
+            }
+        ]
+    }
+}

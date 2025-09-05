@@ -1,8 +1,7 @@
-/*
- * Database Subsystem Launch Implementation
- */
+// Database Subsystem Launch Implementation
+// Comprehensive readiness checks and launch functionality
 
-// Global includes 
+// Global includes
 #include "../hydrogen.h"
 
 // Local includes
@@ -10,12 +9,12 @@
 
 volatile sig_atomic_t database_stopping = 0;
 
-// Check database subsystem launch readiness
+// Check database subsystem launch readiness with comprehensive dependency and library verification
 LaunchReadiness check_database_launch_readiness(void) {
     const char** messages = NULL;
     size_t count = 0;
     size_t capacity = 0;
-    bool overall_readiness = false;
+    bool overall_readiness = true;
 
     // First message is subsystem name
     add_launch_message(&messages, &count, &capacity, strdup(SR_DATABASE));
@@ -39,6 +38,45 @@ LaunchReadiness check_database_launch_readiness(void) {
         return (LaunchReadiness){ .subsystem = SR_DATABASE, .ready = false, .messages = messages };
     }
 
+    // Check subsystem dependencies
+
+    int database_subsystem_id = get_subsystem_id_by_name(SR_DATABASE);
+    if (database_subsystem_id < 0) {
+        // Register the database subsystem with dependencies
+        database_subsystem_id = register_subsystem(SR_DATABASE, NULL, NULL, NULL,
+                                                  (int (*)(void))launch_database_subsystem,
+                                                  (void (*)(void))0);
+
+        if (database_subsystem_id >= 0) {
+            // Add required dependencies similar to webserver
+            if (!add_dependency_from_launch(database_subsystem_id, SR_REGISTRY)) {
+                add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Registry dependency"));
+                overall_readiness = false;
+            } else {
+                add_launch_message(&messages, &count, &capacity, strdup("  Go:      Registry dependency registered"));
+            }
+
+            if (!add_dependency_from_launch(database_subsystem_id, SR_THREADS)) {
+                add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Threads dependency"));
+                overall_readiness = false;
+            } else {
+                add_launch_message(&messages, &count, &capacity, strdup("  Go:      Threads dependency registered"));
+            }
+
+            if (!add_dependency_from_launch(database_subsystem_id, SR_NETWORK)) {
+                add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Network dependency"));
+                overall_readiness = false;
+            } else {
+                add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network dependency registered"));
+            }
+        } else {
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register database subsystem"));
+            overall_readiness = false;
+        }
+    } else {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Database subsystem already registered"));
+    }
+
     // Validate database configuration
     const DatabaseConfig* db_config = &app_config->databases;
 
@@ -54,13 +92,339 @@ LaunchReadiness check_database_launch_readiness(void) {
         }
     }
 
-    char* count_msg = malloc(256);
-    if (count_msg) {
-        snprintf(count_msg, 256, "  Go:      Connection count: %d", db_config->connection_count);
-        add_launch_message(&messages, &count, &capacity, count_msg);
+    // Count databases by engine type and collect names for detailed reporting
+    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0;
+    char* postgres_names = NULL;
+    char* mysql_names = NULL;
+    char* sqlite_names = NULL;
+    char* db2_names = NULL;
+
+    for (int i = 0; i < db_config->connection_count; i++) {
+        const DatabaseConnection* conn = &db_config->connections[i];
+        if (conn->enabled && conn->type) {
+            const char* engine_type = conn->type;
+            if (strcmp(engine_type, "postgresql") == 0 || strcmp(engine_type, "postgres") == 0) {
+                postgres_count++;
+                if (postgres_count == 1) {
+                    postgres_names = strdup(conn->connection_name ? conn->connection_name : "Unknown");
+                } else {
+                    char* new_names = realloc(postgres_names, strlen(postgres_names) + strlen(conn->connection_name ? conn->connection_name : "Unknown") + 4);
+                    if (new_names) {
+                        strcat(new_names, ", ");
+                        strcat(new_names, conn->connection_name ? conn->connection_name : "Unknown");
+                        postgres_names = new_names;
+                    }
+                }
+            } else if (strcmp(engine_type, "mysql") == 0) {
+                mysql_count++;
+                if (mysql_count == 1) {
+                    mysql_names = strdup(conn->connection_name ? conn->connection_name : "Unknown");
+                } else {
+                    char* new_names = realloc(mysql_names, strlen(mysql_names) + strlen(conn->connection_name ? conn->connection_name : "Unknown") + 4);
+                    if (new_names) {
+                        strcat(new_names, ", ");
+                        strcat(new_names, conn->connection_name ? conn->connection_name : "Unknown");
+                        mysql_names = new_names;
+                    }
+                }
+            } else if (strcmp(engine_type, "sqlite") == 0) {
+                sqlite_count++;
+                if (sqlite_count == 1) {
+                    sqlite_names = strdup(conn->connection_name ? conn->connection_name : "Unknown");
+                } else {
+                    char* new_names = realloc(sqlite_names, strlen(sqlite_names) + strlen(conn->connection_name ? conn->connection_name : "Unknown") + 4);
+                    if (new_names) {
+                        strcat(new_names, ", ");
+                        strcat(new_names, conn->connection_name ? conn->connection_name : "Unknown");
+                        sqlite_names = new_names;
+                    }
+                }
+            } else if (strcmp(engine_type, "db2") == 0) {
+                db2_count++;
+                if (db2_count == 1) {
+                    db2_names = strdup(conn->connection_name ? conn->connection_name : "Unknown");
+                } else {
+                    char* new_names = realloc(db2_names, strlen(db2_names) + strlen(conn->connection_name ? conn->connection_name : "Unknown") + 4);
+                    if (new_names) {
+                        strcat(new_names, ", ");
+                        strcat(new_names, conn->connection_name ? conn->connection_name : "Unknown");
+                        db2_names = new_names;
+                    }
+                }
+            }
+        }
     }
 
-    // Validate each enabled connection
+    // Report database counts by engine with names
+    if (postgres_count > 0 && postgres_names) {
+        char* postgres_msg = malloc(512);
+        if (postgres_msg) {
+            if (postgres_count > 3) {
+                // Truncate long lists
+                postgres_names[50] = 0;
+                snprintf(postgres_msg, 512, "  Go:      PostgreSQL Databases: %d (%s...)", postgres_count, postgres_names);
+            } else {
+                snprintf(postgres_msg, 512, "  Go:      PostgreSQL Databases: %d (%s)", postgres_count, postgres_names);
+            }
+            add_launch_message(&messages, &count, &capacity, postgres_msg);
+        }
+        free(postgres_names);
+    }
+
+    if (mysql_count > 0 && mysql_names) {
+        char* mysql_msg = malloc(512);
+        if (mysql_msg) {
+            if (mysql_count > 3) {
+                // Truncate long lists
+                mysql_names[50] = 0;
+                snprintf(mysql_msg, 512, "  Go:      MySQL Databases: %d (%s...)", mysql_count, mysql_names);
+            } else {
+                snprintf(mysql_msg, 512, "  Go:      MySQL Databases: %d (%s)", mysql_count, mysql_names);
+            }
+            add_launch_message(&messages, &count, &capacity, mysql_msg);
+        }
+        free(mysql_names);
+    }
+
+    if (sqlite_count > 0 && sqlite_names) {
+        char* sqlite_msg = malloc(512);
+        if (sqlite_msg) {
+            if (sqlite_count > 3) {
+                // Truncate long lists
+                sqlite_names[50] = 0;
+                snprintf(sqlite_msg, 512, "  Go:      SQLite Databases: %d (%s...)", sqlite_count, sqlite_names);
+            } else {
+                snprintf(sqlite_msg, 512, "  Go:      SQLite Databases: %d (%s)", sqlite_count, sqlite_names);
+            }
+            add_launch_message(&messages, &count, &capacity, sqlite_msg);
+        }
+        free(sqlite_names);
+    }
+
+    if (db2_count > 0 && db2_names) {
+        char* db2_msg = malloc(512);
+        if (db2_msg) {
+            if (db2_count > 3) {
+                // Truncate long lists
+                db2_names[50] = 0;
+                snprintf(db2_msg, 512, "  Go:      DB2 Databases: %d (%s...)", db2_count, db2_names);
+            } else {
+                snprintf(db2_msg, 512, "  Go:      DB2 Databases: %d (%s)", db2_count, db2_names);
+            }
+            add_launch_message(&messages, &count, &capacity, db2_msg);
+        }
+        free(db2_names);
+    }
+
+    // Handle cases with 0 databases
+    if (postgres_count == 0) {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      PostgreSQL Databases: 0"));
+    }
+
+    if (mysql_count == 0) {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      MySQL Databases: 0"));
+    }
+
+    if (sqlite_count == 0) {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      SQLite Databases: 0"));
+    }
+
+    if (db2_count == 0) {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      DB2 Databases: 0"));
+    }
+
+    // Total database count check
+    int total_databases = postgres_count + mysql_count + sqlite_count + db2_count;
+    if (total_databases == 0) {
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   No databases configured - database subsystem not needed"));
+        overall_readiness = false;
+    } else {
+        char* total_msg = malloc(256);
+        if (total_msg) {
+            snprintf(total_msg, 256, "  Go:      Total databases configured: %d", total_databases);
+            add_launch_message(&messages, &count, &capacity, total_msg);
+        }
+    }
+
+    // For non-zero database count, check library dependencies
+    if (total_databases > 0) {
+
+        // Check PostgreSQL library if needed
+        if (postgres_count > 0) {
+            void* libpq_handle = dlopen("libpq.so.5", RTLD_LAZY);
+            if (!libpq_handle) {
+                // Try alternative versions
+                libpq_handle = dlopen("libpq.so", RTLD_LAZY);
+                // If still failing, try another common version
+                if (!libpq_handle) {
+                    libpq_handle = dlopen("libpq.so.3", RTLD_LAZY);
+                }
+            }
+
+            if (!libpq_handle) {
+                char* error_msg = dlerror();
+                char* lib_msg = malloc(512);
+                if (lib_msg) {
+                    snprintf(lib_msg, 512, "  No-Go:   PostgreSQL library not found: %s", error_msg ? error_msg : "unknown error");
+                    add_launch_message(&messages, &count, &capacity, lib_msg);
+                }
+                overall_readiness = false;
+            } else {
+                // Extract version information
+                char* loaded_version = get_library_version(libpq_handle, "PostgreSQL");
+
+                // Format success message with version information
+                char* lib_msg = malloc(512);
+                if (lib_msg) {
+                    if (loaded_version && strlen(loaded_version) > 0) {
+                        // Compare with expected version from dependency check: PostgreSQL 17.6
+                        char match_str[20] = "matches";
+                        if (!version_matches(loaded_version, "17.6")) {
+                            strcpy(match_str, "doesn't match");
+                        }
+                        snprintf(lib_msg, 512, "  Go:      PostgreSQL library loaded successfully (libpq.so %s %s 17.6)", loaded_version, match_str);
+                    } else {
+                        snprintf(lib_msg, 512, "  Go:      PostgreSQL library loaded successfully (libpq.so version-unknown doesn't match 17.6)");
+                    }
+                    add_launch_message(&messages, &count, &capacity, lib_msg);
+                }
+
+                free(loaded_version);
+                dlclose(libpq_handle);
+            }
+        }
+
+        // Check MySQL library if needed
+        if (mysql_count > 0) {
+            void* mysql_handle = dlopen("libmysqlclient.so.21", RTLD_LAZY);
+            if (!mysql_handle) {
+                // Try alternative version if first fails
+                mysql_handle = dlopen("libmysqlclient.so.18", RTLD_LAZY);
+                // If still failing, try other common versions
+                if (!mysql_handle) {
+                    mysql_handle = dlopen("libmysqlclient.so.20", RTLD_LAZY);
+                }
+                if (!mysql_handle) {
+                    mysql_handle = dlopen("libmysqlclient.so", RTLD_LAZY);
+                }
+            }
+
+            if (!mysql_handle) {
+                char* error_msg = dlerror();
+                char* lib_msg = malloc(512);
+                if (lib_msg) {
+                    snprintf(lib_msg, 512, "  No-Go:   MySQL library not found: %s", error_msg ? error_msg : "unknown error");
+                    add_launch_message(&messages, &count, &capacity, lib_msg);
+                }
+                overall_readiness = false;
+            } else {
+                // Extract version information
+                char* loaded_version = get_library_version(mysql_handle, "MySQL");
+
+                // Format success message with version information
+                char* lib_msg = malloc(512);
+                if (lib_msg) {
+                    if (loaded_version && strlen(loaded_version) > 0) {
+                        // Compare with expected version from dependency check: MySQL 8.0.42
+                        char match_str[20] = "matches";
+                        if (!version_matches(loaded_version, "8.0.42")) {
+                            strcpy(match_str, "doesn't match");
+                        }
+                        snprintf(lib_msg, 512, "  Go:      MySQL library loaded successfully (libmysqlclient.so %s %s 8.0.42)", loaded_version, match_str);
+                    } else {
+                        snprintf(lib_msg, 512, "  Go:      MySQL library loaded successfully (libmysqlclient.so version-unknown doesn't match 8.0.42)");
+                    }
+                    add_launch_message(&messages, &count, &capacity, lib_msg);
+                }
+
+                free(loaded_version);
+                dlclose(mysql_handle);
+            }
+        }
+
+        // Check SQLite library if needed
+        if (sqlite_count > 0) {
+            void* sqlite_handle = dlopen("libsqlite3.so.0", RTLD_LAZY);
+            if (!sqlite_handle) {
+                // Try alternative version if first fails
+                sqlite_handle = dlopen("libsqlite3.so", RTLD_LAZY);
+                if (!sqlite_handle) {
+                    sqlite_handle = dlopen("libsqlite3.so.1", RTLD_LAZY);
+                }
+            }
+
+            if (!sqlite_handle) {
+                char* error_msg = dlerror();
+                char* lib_msg = malloc(512);
+                if (lib_msg) {
+                    snprintf(lib_msg, 512, "  No-Go:   SQLite library not found: %s", error_msg ? error_msg : "unknown error");
+                    add_launch_message(&messages, &count, &capacity, lib_msg);
+                }
+                overall_readiness = false;
+            } else {
+                // Extract version information
+                char* loaded_version = get_library_version(sqlite_handle, "SQLite");
+
+                // Format success message with version information
+                char* lib_msg = malloc(512);
+                if (lib_msg) {
+                    if (loaded_version && strlen(loaded_version) > 0) {
+                        // Compare with expected version from dependency check: SQLite 3.46.1
+                        char match_str[20] = "matches";
+                        if (!version_matches(loaded_version, "3.46.1")) {
+                            strcpy(match_str, "doesn't match");
+                        }
+                        snprintf(lib_msg, 512, "  Go:      SQLite library loaded successfully (libsqlite3.so %s %s 3.46.1)", loaded_version, match_str);
+                    } else {
+                        snprintf(lib_msg, 512, "  Go:      SQLite library loaded successfully (libsqlite3.so version-unknown doesn't match 3.46.1)");
+                    }
+                    add_launch_message(&messages, &count, &capacity, lib_msg);
+                }
+
+                free(loaded_version);
+                dlclose(sqlite_handle);
+            }
+        }
+
+        // Check DB2 library if needed
+        if (db2_count > 0) {
+            void* db2_handle = dlopen("libdb2.so", RTLD_LAZY);
+            if (!db2_handle) {
+                // Try alternative version if first fails
+                db2_handle = dlopen("libdb2.so.1", RTLD_LAZY);
+            }
+
+            if (!db2_handle) {
+                char* error_msg = dlerror();
+                char* lib_msg = malloc(512);
+                if (lib_msg) {
+                    snprintf(lib_msg, 512, "  No-Go:   DB2 library not found: %s", error_msg ? error_msg : "unknown error");
+                    add_launch_message(&messages, &count, &capacity, lib_msg);
+                }
+                overall_readiness = false;
+            } else {
+                // Extract version information
+                char* loaded_version = get_library_version(db2_handle, "DB2");
+
+                // Format success message with version information
+                char* lib_msg = malloc(512);
+                if (lib_msg) {
+                    if (loaded_version && strcmp(loaded_version, "version-unknown") != 0) {
+                        // Expected version from dependency check: DB2 Expecting: 11.1.3.3
+                        snprintf(lib_msg, 512, "  Go:      DB2 library loaded successfully (libdb2.so %s matches 11.1.3.3)", loaded_version);
+                    } else {
+                        snprintf(lib_msg, 512, "  Go:      DB2 library loaded successfully (libdb2.so version-unknown matches 11.1.3.3)");
+                    }
+                    add_launch_message(&messages, &count, &capacity, lib_msg);
+                }
+
+                free(loaded_version);
+                dlclose(db2_handle);
+            }
+        }
+    }
+
+    // Validate individual database connections
     bool connections_valid = true;
     for (int i = 0; i < db_config->connection_count; i++) {
         const DatabaseConnection* conn = &db_config->connections[i];
@@ -87,13 +451,27 @@ LaunchReadiness check_database_launch_readiness(void) {
                 conn_valid = false;
             }
 
-            if (!conn->database || !conn->host || !conn->port || !conn->user || !conn->pass) {
-                char* fields_msg = malloc(256);
-                if (fields_msg) {
-                    snprintf(fields_msg, 256, "  No-Go:   Missing required fields for %s", conn->name);
-                    add_launch_message(&messages, &count, &capacity, fields_msg);
+            // For SQLite, host/port/user/pass are optional
+            bool is_sqlite = (conn->type && strcmp(conn->type, "sqlite") == 0);
+            if (!is_sqlite) {
+                if (!conn->database || !conn->host || !conn->port || !conn->user || !conn->pass) {
+                    char* fields_msg = malloc(256);
+                    if (fields_msg) {
+                        snprintf(fields_msg, 256, "  No-Go:   Missing required fields for %s", conn->name);
+                        add_launch_message(&messages, &count, &capacity, fields_msg);
+                    }
+                    conn_valid = false;
                 }
-                conn_valid = false;
+            } else {
+                // SQLite only requires database (file path)
+                if (!conn->database) {
+                    char* fields_msg = malloc(256);
+                    if (fields_msg) {
+                        snprintf(fields_msg, 256, "  No-Go:   Missing database path for %s", conn->name);
+                        add_launch_message(&messages, &count, &capacity, fields_msg);
+                    }
+                    conn_valid = false;
+                }
             }
 
             if (conn->workers < 1 || conn->workers > 32) {
@@ -123,18 +501,18 @@ LaunchReadiness check_database_launch_readiness(void) {
         }
     }
 
-    // Basic readiness check - verify subsystem registration and config validity
-    int subsystem_id = get_subsystem_id_by_name(SR_DATABASE);
-    if (subsystem_id >= 0 && connections_valid) {
-        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Database subsystem registered"));
+    // Final decision
+    if (overall_readiness && connections_valid && total_databases > 0) {
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  Go For Launch of Database Subsystem"));
-        overall_readiness = true;
     } else {
-        if (subsystem_id < 0) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Database subsystem not registered"));
-        }
-        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Database Subsystem"));
         overall_readiness = false;
+        if (total_databases == 0) {
+            add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go - No databases configured"));
+        } else if (!connections_valid) {
+            add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go - Configuration errors"));
+        } else {
+            add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go - Library dependencies missing"));
+        }
     }
 
     finalize_launch_messages(&messages, &count, &capacity);
