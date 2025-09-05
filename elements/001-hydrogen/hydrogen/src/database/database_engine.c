@@ -14,6 +14,9 @@
 #include "database.h"
 #include "database_queue.h"
 
+// Forward declaration for PostgreSQL engine
+DatabaseEngineInterface* database_engine_postgresql_get_interface(void);
+
 // Global engine registry
 static DatabaseEngineInterface* engine_registry[DB_ENGINE_MAX] = {NULL};
 static pthread_mutex_t engine_registry_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -32,6 +35,15 @@ bool database_engine_init(void) {
 
     // Initialize registry to NULL
     memset(engine_registry, 0, sizeof(engine_registry));
+
+    // Register PostgreSQL engine
+    DatabaseEngineInterface* postgresql_engine = database_engine_postgresql_get_interface();
+    if (postgresql_engine) {
+        engine_registry[DB_ENGINE_POSTGRESQL] = postgresql_engine;
+        log_this(SR_DATABASE, "PostgreSQL engine registered", LOG_LEVEL_STATE, true, true, true);
+    } else {
+        log_this(SR_DATABASE, "Failed to get PostgreSQL engine interface", LOG_LEVEL_ERROR, true, true, true);
+    }
 
     engine_system_initialized = true;
 

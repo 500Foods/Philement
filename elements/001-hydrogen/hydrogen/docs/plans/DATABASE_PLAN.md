@@ -23,7 +23,7 @@ Hydrogen serves as a database gateway supporting PostgreSQL, SQLite, MySQL, DB2 
 - **Cross-Database Hosting**: One database can serve queries for multiple downstream databases
 - **Lead Queue Pattern**: Dedicated admin queue for cache management and triggers
 
-## EXISTING SUBSYSTEM STATE (PHASE 2 INTERFACE LAYER COMPLETED 9/5/2025)
+## EXISTING SUBSYSTEM STATE (PHASE 2.1 POSTGRESQL ENGINE COMPLETED 9/5/2025)
 
 ```c
 // Configuration Layer - ENHANCED
@@ -138,6 +138,8 @@ typedef struct DatabaseQueueManager {
 - `src/database/database.h` - Main subsystem header with future expansion points
 
 ### Phase 2: Multi-Engine Interface Layer ✅ **COMPLETED 9/5/2025**
+
+### Phase 2.1: PostgreSQL Engine ✅ **COMPLETED 9/5/2025**
 
 **Database Engine Abstraction Interface (Implemented):**
 
@@ -549,7 +551,7 @@ int launch_database_subsystem(void) {
 - Engine registry system
 - Thread-safe operations and cleanup
 
-### Phase 2.1: PostgreSQL Engine (1-2 weeks) **IN PROGRESS**
+### Phase 2.1: PostgreSQL Engine (1-2 weeks) ✅ **COMPLETED 9/5/2025**
 
 - libpq integration
 - Connection management
@@ -885,3 +887,83 @@ TEST(DatabaseConnectionTests, handle_connection_timeout);
 - ✓ Connection pool not exhausted
 - ✓ Cache effectiveness above 80%
 - ✓ Memory usage within bounds
+
+## 🚀 LESSONS LEARNED & BEST PRACTICES
+
+### Dynamic Library Loading Strategy ✅ **CRITICAL INSIGHT**
+
+Key Decision: Use dlopen/dlsym for ALL database libraries
+
+- **✅ DO NOT** modify CMakeLists.txt to link database libraries statically
+- **✅ DO** load all database client libraries dynamically at runtime using `dlopen()`
+- **✅ DO** implement proper error handling when libraries are not available
+- **✅ DO** allow the system to function even when specific database libraries are missing
+
+**Implementation Pattern:**
+
+```c
+// Load library dynamically
+void* lib_handle = dlopen("libpq.so.5", RTLD_LAZY);
+if (!lib_handle) {
+    // Graceful degradation - log warning but continue
+    log_this(SR_DATABASE, "PostgreSQL library not available", LOG_LEVEL_WARN);
+    return false;
+}
+
+// Load function pointers
+PQconnectdb_ptr = (PQconnectdb_t)dlsym(lib_handle, "PQconnectdb");
+// ... load all required functions
+
+// Use function pointers instead of direct calls
+void* conn = PQconnectdb_ptr(conninfo);
+```
+
+**Benefits:**
+
+- System remains functional even without specific database installations
+- No static linking dependencies in build system
+- Runtime flexibility for different deployment environments
+- Proper error handling and graceful degradation
+
+### Build System Philosophy
+
+**CMake Strategy:**
+
+- Keep CMakeLists.txt clean and minimal
+- Avoid adding database-specific library dependencies
+- Use pkg-config only for core system libraries
+- Let the application handle optional dependencies dynamically
+
+**Testing Approach:**
+
+- Test both with and without database libraries present
+- Ensure graceful degradation when libraries are missing
+- Validate that core functionality works regardless of database availability
+
+### Future Database Engine Implementation
+
+**Template for New Engines:**
+
+1. Create `database_engine_[name].c` with dynamic loading
+2. Implement `DatabaseEngineInterface` with function pointers
+3. Register engine in `database_engine_init()`
+4. Add library detection in launch readiness checks
+5. Test both presence and absence of libraries
+
+**Standard Engine Structure:**
+
+```c
+// Function pointer types
+typedef void* (*EngineConnect_t)(ConnectionConfig*);
+
+// Dynamic loading
+static EngineConnect_t engine_connect_ptr = NULL;
+
+// Load functions
+engine_connect_ptr = (EngineConnect_t)dlsym(lib_handle, "engine_connect");
+
+// Use through pointer
+void* conn = engine_connect_ptr(config);
+```
+
+This approach ensures consistent, maintainable, and deployment-flexible database engine implementations.

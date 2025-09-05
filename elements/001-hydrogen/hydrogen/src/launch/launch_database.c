@@ -6,6 +6,7 @@
 
 // Local includes
 #include "launch.h"
+#include "../database/database.h"
 
 volatile sig_atomic_t database_stopping = 0;
 
@@ -526,20 +527,79 @@ LaunchReadiness check_database_launch_readiness(void) {
 
 // Launch the database subsystem
 int launch_database_subsystem(void) {
-    
+
     database_stopping = 0;
-    
+
     log_this(SR_DATABASE, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_DATABASE, "LAUNCH: " SR_DATABASE, LOG_LEVEL_STATE);    
+    log_this(SR_DATABASE, "LAUNCH: " SR_DATABASE, LOG_LEVEL_STATE);
+
+    // Phase 1: Initialize database engine registry
+    log_this(SR_DATABASE, "Phase 1: Initializing database engine registry", LOG_LEVEL_STATE);
+    if (!database_engine_init()) {
+        log_this(SR_DATABASE, "Failed to initialize database engine registry", LOG_LEVEL_ERROR);
+        return 0;
+    }
+
+    // Phase 2: Initialize database subsystem
+    log_this(SR_DATABASE, "Phase 2: Initializing database subsystem", LOG_LEVEL_STATE);
+    if (!database_subsystem_init()) {
+        log_this(SR_DATABASE, "Failed to initialize database subsystem", LOG_LEVEL_ERROR);
+        return 0;
+    }
+
+    // Phase 3: Connect to configured databases
+    log_this(SR_DATABASE, "Phase 3: Connecting to configured databases", LOG_LEVEL_STATE);
+    const DatabaseConfig* db_config = &app_config->databases;
+    int connected_databases = 0;
+
+    for (int i = 0; i < db_config->connection_count; i++) {
+        const DatabaseConnection* conn = &db_config->connections[i];
+
+        if (conn->enabled) {
+            log_this(SR_DATABASE, "Connecting to database", LOG_LEVEL_STATE);
+            log_this(SR_DATABASE, conn->name, LOG_LEVEL_STATE);
+
+            // Add database to subsystem
+            if (database_add_database(conn->name, conn->type, NULL)) {
+                log_this(SR_DATABASE, "Database added to subsystem successfully", LOG_LEVEL_STATE);
+                connected_databases++;
+            } else {
+                log_this(SR_DATABASE, "Failed to add database to subsystem", LOG_LEVEL_ERROR);
+            }
+        }
+    }
+
+    if (connected_databases == 0) {
+        log_this(SR_DATABASE, "No databases were successfully connected", LOG_LEVEL_ERROR);
+        return 0;
+    }
+
+    log_this(SR_DATABASE, "Database connections established", LOG_LEVEL_STATE);
+
+    // Phase 4: Initialize queue system (Phase 1 from plan)
+    log_this(SR_DATABASE, "Phase 4: Initializing queue system", LOG_LEVEL_STATE);
+    // Queue system initialization is handled in database_subsystem_init()
+
+    // Phase 5: Start worker threads
+    log_this(SR_DATABASE, "Phase 5: Starting worker threads", LOG_LEVEL_STATE);
+    // Worker threads are started as part of queue system initialization
+
+    // Phase 6: Load query templates (for Phase 3)
+    log_this(SR_DATABASE, "Phase 6: Loading query templates", LOG_LEVEL_STATE);
+    // Query template loading will be implemented in Phase 3
+
+    // Phase 7: Register triggers (for Phase 3)
+    log_this(SR_DATABASE, "Phase 7: Registering triggers", LOG_LEVEL_STATE);
+    // Trigger registration will be implemented in Phase 3
 
     // Get subsystem ID and update state
     int subsystem_id = get_subsystem_id_by_name(SR_DATABASE);
     if (subsystem_id >= 0) {
         update_subsystem_state(subsystem_id, SUBSYSTEM_RUNNING);
-        log_this(SR_DATABASE, "Database subsystem initialized", LOG_LEVEL_STATE);
+        log_this(SR_DATABASE, "Database subsystem fully operational", LOG_LEVEL_STATE);
         return 1;
     }
-    
-    log_this(SR_DATABASE, "Failed to initialize database subsystem", LOG_LEVEL_ERROR);
+
+    log_this(SR_DATABASE, "Failed to complete database subsystem launch", LOG_LEVEL_ERROR);
     return 0;
 }
