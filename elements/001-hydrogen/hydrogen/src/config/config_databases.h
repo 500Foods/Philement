@@ -11,6 +11,24 @@
 // Forward declarations
 struct AppConfig;
 
+// Structure for individual queue scaling configuration
+typedef struct QueueScalingConfig {
+    int start;             // Initial worker count
+    int min;               // Minimum workers
+    int max;               // Maximum workers
+    int up;                // Queue length to trigger scale up
+    int down;              // Queue length to trigger scale down
+    int inactivity;        // Seconds of inactivity before scale down
+} QueueScalingConfig;
+
+// Structure for database queue configuration
+typedef struct DatabaseQueues {
+    QueueScalingConfig slow;     // Slow queue scaling config
+    QueueScalingConfig medium;   // Medium queue scaling config
+    QueueScalingConfig fast;     // Fast queue scaling config
+    QueueScalingConfig cache;    // Cache queue scaling config
+} DatabaseQueues;
+
 // Structure for individual database connection
 typedef struct DatabaseConnection {
     char* name;             // Database name from KNOWN_DATABASES
@@ -22,13 +40,13 @@ typedef struct DatabaseConnection {
     char* port;            // Database port
     char* user;            // Database user
     char* pass;            // Database password
-    int workers;           // Number of worker threads
+    DatabaseQueues queues; // Queue configuration for this connection
 } DatabaseConnection;
 
 // Structure for overall database configuration
 typedef struct DatabaseConfig {
-    int default_workers;                      // Default number of worker threads
-    int connection_count;                     // Number of configured connections
+    DatabaseQueues default_queues;            // Default queue configuration
+    int connection_count;                     // Number of configured connections (auto-calculated)
     DatabaseConnection connections[5];        // Array of database connections (max 5)
 } DatabaseConfig;
 

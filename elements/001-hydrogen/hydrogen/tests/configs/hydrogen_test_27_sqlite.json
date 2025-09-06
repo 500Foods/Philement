@@ -8,14 +8,46 @@
     },
     "Databases": {
         "ConnectionCount": 1,
-        "DefaultWorkers": 2,
         "Connections": [
             {
                 "Name": "Helium",
                 "Engine": "sqlite",
                 "Enabled": true,
-                "Workers": 1,
-                "Database": "/tmp/hydrogen_helium_test.db"
+                "Database": "/tmp/hydrogen_helium_test.db",
+                "Queues": {
+                    "Slow": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 10,
+                        "down": 2,
+                        "inactivity": 300
+                    },
+                    "Medium": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 15,
+                        "down": 3,
+                        "inactivity": 240
+                    },
+                    "Fast": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 20,
+                        "down": 5,
+                        "inactivity": 180
+                    },
+                    "Cache": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 5,
+                        "down": 1,
+                        "inactivity": 600
+                    }
+                }
             }
         ]
     }

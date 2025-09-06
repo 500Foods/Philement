@@ -83,9 +83,10 @@ fi
 
 # Start cloc analysis in background to run in parallel with file processing
 CLOC_OUTPUT="${LOG_PREFIX}${TIMESTAMP}_cloc.txt"
+CLOC_DATA="${LOG_PREFIX}${TIMESTAMP}_cloc.json"
 CLOC_PID=""
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting cloc analysis in background..."
-run_cloc_analysis "." ".lintignore" "${CLOC_OUTPUT}" &
+run_cloc_analysis "." ".lintignore" "${CLOC_OUTPUT}" "${CLOC_DATA}" &
 CLOC_PID=$!
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Source Code File Analysis"
@@ -226,15 +227,15 @@ if [[ -n "${CLOC_PID}" ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for cloc analysis to complete..."
     wait "${CLOC_PID}"
     CLOC_EXIT_CODE=$?
-    
-    if [[ "${CLOC_EXIT_CODE}" -eq 0 ]] && [[ -s "${CLOC_OUTPUT}" ]]; then
+
+    if [[ "${CLOC_EXIT_CODE}" -eq 0 ]] && [[ -s "${CLOC_OUTPUT}" ]] && [[ -s "${CLOC_DATA}" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Code line count analysis results:"
         while IFS= read -r line; do
             print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
         done < "${CLOC_OUTPUT}"
-        
-        # Extract summary statistics
-        STATS=$(extract_cloc_stats "${CLOC_OUTPUT}")
+
+        # Extract summary statistics from JSON data
+        STATS=$(extract_cloc_stats "${CLOC_DATA}")
         if [[ -n "${STATS}" ]]; then
             IFS=',' read -r files_part lines_part <<< "${STATS}"
             FILES_COUNT=$(echo "${files_part}" | cut -d':' -f2)
@@ -242,7 +243,7 @@ if [[ -n "${CLOC_PID}" ]]; then
             LOCCOUNT=$("${PRINTF}" "%'d" "${CODE_LINES}")
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Found $("${PRINTF}" "%'d" "${FILES_COUNT}" || true) files with ${LOCCOUNT} lines of code"
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to parse cloc output"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to parse cloc data"
             EXIT_CODE=1
         fi
     else
@@ -258,8 +259,9 @@ print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Line counts: ..${SOURCE_FILES_L
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Large files: ..${LARGE_FILES_LIST}"
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Line counts: ..${LINE_COUNT_FILE}"
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Cloc output: ..${CLOC_OUTPUT}"
+print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Cloc data: ..${CLOC_DATA}"
 
-TEST_NAME="${TEST_NAME} {BLUE}(lines: ${LOCCOUNT}){RESET}"
+#TEST_NAME="${TEST_NAME} {BLUE}(lines: ${LOCCOUNT}){RESET}"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

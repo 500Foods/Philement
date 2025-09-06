@@ -92,8 +92,7 @@ bool database_add_database(const char* name, const char* engine, const char* con
     log_this(SR_DATABASE, name, LOG_LEVEL_DEBUG);
     log_this(SR_DATABASE, engine, LOG_LEVEL_DEBUG);
 
-    // For now, just validate that we can get the engine interface
-    // This proves the engine registration is working
+    // Validate that we can get the engine interface
     DatabaseEngineInterface* engine_interface = NULL;
 
     if (strcmp(engine, "postgresql") == 0 || strcmp(engine, "postgres") == 0) {
@@ -114,14 +113,83 @@ bool database_add_database(const char* name, const char* engine, const char* con
 
     log_this(SR_DATABASE, "Database engine interface found", LOG_LEVEL_DEBUG);
 
-    // TODO: Implement full database addition logic
-    // This would involve:
-    // 1. Creating a DatabaseQueue for the database
-    // 2. Setting up connection pools with actual connection config
-    // 3. Starting worker threads
-    // 4. Adding to queue manager
+    // Get queue configuration from app config
+    const DatabaseConfig* db_config = &app_config->databases;
+    const DatabaseConnection* conn_config = NULL;
 
-    // For now, we successfully validated the engine is available
+    // Find the connection configuration for this database
+    for (int i = 0; i < db_config->connection_count; i++) {
+        if (strcmp(db_config->connections[i].name, name) == 0) {
+            conn_config = &db_config->connections[i];
+            break;
+        }
+    }
+
+    if (!conn_config) {
+        log_this(SR_DATABASE, "Database configuration not found", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, name, LOG_LEVEL_ERROR);
+        return false;
+    }
+
+    // Create database queue with connection string
+    char* conn_str = NULL;
+    if (strcmp(engine, "sqlite") == 0) {
+        // For SQLite, use the database path directly
+        conn_str = strdup(conn_config->database ? conn_config->database : ":memory:");
+    } else {
+        // For other engines, build connection string from config
+        // This is a simplified version - full implementation would use the engine's connection string builder
+        size_t conn_str_len = 256;
+        conn_str = malloc(conn_str_len);
+        if (conn_str) {
+            snprintf(conn_str, conn_str_len, "%s://%s:%s@%s:%s/%s",
+                    engine,
+                    conn_config->user ? conn_config->user : "",
+                    conn_config->pass ? conn_config->pass : "",
+                    conn_config->host ? conn_config->host : "localhost",
+                    conn_config->port ? conn_config->port : "5432",
+                    conn_config->database ? conn_config->database : "test");
+        }
+    }
+
+    if (!conn_str) {
+        log_this(SR_DATABASE, "Failed to create connection string", LOG_LEVEL_ERROR);
+        return false;
+    }
+
+    DatabaseQueue* db_queue = database_queue_create(name, conn_str);
+    free(conn_str);
+
+    if (!db_queue) {
+        log_this(SR_DATABASE, "Failed to create database queue", LOG_LEVEL_ERROR);
+        return false;
+    }
+
+    // Start worker threads based on queue configuration
+    if (!database_queue_start_workers(db_queue)) {
+        log_this(SR_DATABASE, "Failed to start worker threads", LOG_LEVEL_ERROR);
+        database_queue_destroy(db_queue);
+        return false;
+    }
+
+    // Add to queue manager
+    if (!database_subsystem->queue_manager) {
+        database_subsystem->queue_manager = database_queue_manager_create(10); // Max 10 databases
+        if (!database_subsystem->queue_manager) {
+            log_this(SR_DATABASE, "Failed to create queue manager", LOG_LEVEL_ERROR);
+            database_queue_destroy(db_queue);
+            return false;
+        }
+    }
+
+    if (!database_queue_manager_add_database(database_subsystem->queue_manager, db_queue)) {
+        log_this(SR_DATABASE, "Failed to add database to queue manager", LOG_LEVEL_ERROR);
+        database_queue_destroy(db_queue);
+        return false;
+    }
+
+    log_this(SR_DATABASE, "Database added successfully", LOG_LEVEL_STATE);
+
     return true;
 }
 

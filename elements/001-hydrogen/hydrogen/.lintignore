@@ -35,3 +35,6 @@ tests/results/repository_info.md
 # if this is removed, that test will fail. As a fnunny side note, AI tools
 # like to correct the error in the file whenever they get a chance!
 tests/configs/hydrogen_test_json.json
+
+# We don't mind cmake/scripts as we made those, but anything else? Nah.
+cmake/CMakeFiles/*
