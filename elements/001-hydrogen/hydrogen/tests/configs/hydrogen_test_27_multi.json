@@ -8,47 +8,178 @@
     },
     "Databases": {
         "ConnectionCount": 4,
-        "DefaultWorkers": 2,
         "Connections": [
             {
                 "Name": "Acuranzo",
                 "Engine": "postgresql",
                 "Enabled": true,
-                "Workers": 2,
                 "Host": "localhost",
                 "Port": "5432",
                 "Database": "acuranzo_test",
                 "User": "test_user",
-                "Pass": "test_pass"
+                "Pass": "test_pass",
+                "Queues": {
+                    "Slow": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 10,
+                        "down": 2,
+                        "inactivity": 300
+                    },
+                    "Medium": {
+                        "start": 2,
+                        "min": 1,
+                        "max": 8,
+                        "up": 15,
+                        "down": 3,
+                        "inactivity": 240
+                    },
+                    "Fast": {
+                        "start": 4,
+                        "min": 2,
+                        "max": 16,
+                        "up": 20,
+                        "down": 5,
+                        "inactivity": 180
+                    },
+                    "Cache": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 5,
+                        "down": 1,
+                        "inactivity": 600
+                    }
+                }
             },
             {
                 "Name": "Canvas",
                 "Engine": "mysql",
                 "Enabled": true,
-                "Workers": 2,
                 "Host": "localhost",
                 "Port": "3306",
                 "Database": "canvas_test",
                 "User": "test_user",
-                "Pass": "test_pass"
+                "Pass": "test_pass",
+                "Queues": {
+                    "Slow": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 10,
+                        "down": 2,
+                        "inactivity": 300
+                    },
+                    "Medium": {
+                        "start": 2,
+                        "min": 1,
+                        "max": 8,
+                        "up": 15,
+                        "down": 3,
+                        "inactivity": 240
+                    },
+                    "Fast": {
+                        "start": 4,
+                        "min": 2,
+                        "max": 16,
+                        "up": 20,
+                        "down": 5,
+                        "inactivity": 180
+                    },
+                    "Cache": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 5,
+                        "down": 1,
+                        "inactivity": 600
+                    }
+                }
             },
             {
                 "Name": "Helium",
                 "Engine": "sqlite",
                 "Enabled": true,
-                "Workers": 1,
-                "Database": "/tmp/hydrogen_helium_test_multi.db"
+                "Database": "/tmp/hydrogen_helium_test_multi.db",
+                "Queues": {
+                    "Slow": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 10,
+                        "down": 2,
+                        "inactivity": 300
+                    },
+                    "Medium": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 15,
+                        "down": 3,
+                        "inactivity": 240
+                    },
+                    "Fast": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 20,
+                        "down": 5,
+                        "inactivity": 180
+                    },
+                    "Cache": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 5,
+                        "down": 1,
+                        "inactivity": 600
+                    }
+                }
             },
             {
                 "Name": "DB2",
                 "Engine": "db2",
                 "Enabled": true,
-                "Workers": 2,
                 "Host": "localhost",
                 "Port": "50000",
                 "Database": "SAMPLE",
                 "User": "db2test",
-                "Pass": "test_pass"
+                "Pass": "test_pass",
+                "Queues": {
+                    "Slow": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 10,
+                        "down": 2,
+                        "inactivity": 300
+                    },
+                    "Medium": {
+                        "start": 2,
+                        "min": 1,
+                        "max": 8,
+                        "up": 15,
+                        "down": 3,
+                        "inactivity": 240
+                    },
+                    "Fast": {
+                        "start": 4,
+                        "min": 2,
+                        "max": 16,
+                        "up": 20,
+                        "down": 5,
+                        "inactivity": 180
+                    },
+                    "Cache": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 5,
+                        "down": 1,
+                        "inactivity": 600
+                    }
+                }
             }
         ]
     }

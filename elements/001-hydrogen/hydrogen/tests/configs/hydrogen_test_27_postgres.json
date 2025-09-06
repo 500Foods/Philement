@@ -7,19 +7,21 @@
         "Port": 5270
     },
     "Databases": {
-        "ConnectionCount": 1,
-        "DefaultWorkers": 2,
         "Connections": [
             {
-                "Name": "Acuranzo",
-                "Engine": "postgresql",
                 "Enabled": true,
-                "Workers": 2,
-                "Host": "localhost",
-                "Port": "5432",
-                "Database": "acuranzo_test",
-                "User": "test_user",
-                "Pass": "test_pass"
+                "Name": "${env.ACURANZO_DB_NAME}",
+                "Engine": "${env.ACURANZO_DB_TYPE}",
+                "Host": "${env.ACURANZO_DB_HOST}",
+                "Port": "${env.ACURANZO_DB_PORT}",
+                "Database": "${env.ACURANZO_DB_NAME}",
+                "User": "${env.ACURANZO_DB_USER}",
+                "Pass": "${env.ACURANZO_DB_PASS}",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
             }
         ]
     }
