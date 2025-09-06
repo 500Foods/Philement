@@ -75,6 +75,42 @@ check_database_connectivity() {
     return 1
 }
 
+# Function to count expected queues from configuration
+count_expected_queues() {
+    local config_file="$1"
+    local expected_queues=0
+
+    # Read the JSON config and count queues with start > 0
+    # Use jq if available, otherwise parse with grep/awk
+    if command -v jq >/dev/null 2>&1; then
+        # Use jq for precise JSON parsing
+        local slow_start
+        local medium_start
+        local fast_start
+        local cache_start
+
+        slow_start=$(jq -r '.Databases.Connections[0].Queues.Slow.start // 0' "${config_file}" 2>/dev/null || echo "0")
+        medium_start=$(jq -r '.Databases.Connections[0].Queues.Medium.start // 0' "${config_file}" 2>/dev/null || echo "0")
+        fast_start=$(jq -r '.Databases.Connections[0].Queues.Fast.start // 0' "${config_file}" 2>/dev/null || echo "0")
+        cache_start=$(jq -r '.Databases.Connections[0].Queues.Cache.start // 0' "${config_file}" 2>/dev/null || echo "0")
+
+        # Count queues with start > 0, plus Lead queue (always present)
+        [[ "${slow_start}" -gt 0 ]] && ((expected_queues++))
+        [[ "${medium_start}" -gt 0 ]] && ((expected_queues++))
+        [[ "${fast_start}" -gt 0 ]] && ((expected_queues++))
+        [[ "${cache_start}" -gt 0 ]] && ((expected_queues++))
+        # Lead queue is always present
+        ((expected_queues++))
+    else
+        # Fallback: use grep to count non-zero start values
+        local queue_starts
+        queue_starts=$(grep -o '"start":[[:space:]]*[0-9]\+' "${config_file}" | grep -c  -v '"start":[[:space:]]*0' )
+        expected_queues=$((queue_starts + 1)) # +1 for Lead queue
+    fi
+
+    echo "${expected_queues}"
+}
+
 # Function to test database subsystem with a specific configuration in parallel
 run_database_test_parallel() {
     local test_name="$1"
@@ -89,6 +125,11 @@ run_database_test_parallel() {
     # Clear result file
     true > "${result_file}"
 
+    # Count expected queues from configuration
+    local expected_queues
+    expected_queues=$(count_expected_queues "${config_file}")
+    echo "EXPECTED_QUEUES=${expected_queues}" >> "${result_file}"
+
     # Start hydrogen server
     "${HYDROGEN_BIN}" "${config_file}" > "${log_file}" 2>&1 &
     local hydrogen_pid=$!
@@ -99,6 +140,7 @@ run_database_test_parallel() {
     # Wait for startup and check database connectivity
     local startup_success=false
     local database_ready=false
+    local queues_started=0
     local start_time
     start_time=${SECONDS}
 
@@ -123,6 +165,11 @@ run_database_test_parallel() {
         if check_database_connectivity "${log_file}" "${engine_name}"; then
             echo "DATABASE_READY" >> "${result_file}"
             database_ready=true
+
+            # Count actual queues started by checking log for queue creation messages
+            # Look for patterns like "Q1 [Lead, Slow] Connected" or similar
+            queues_started=$(grep -c "Q[0-9]*.*Connected" "${log_file}" 2>/dev/null || echo "0")
+            echo "QUEUES_STARTED=${queues_started}" >> "${result_file}"
         else
             echo "DATABASE_NOT_READY" >> "${result_file}"
         fi
@@ -181,6 +228,23 @@ analyze_database_test_results() {
     if ! "${GREP}" -q "DATABASE_READY" "${result_file}" 2>/dev/null; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Database subsystem not ready for ${description} test"
         return 1
+    fi
+
+    # Check queue count correlation
+    local expected_queues
+    local actual_queues
+    expected_queues=$(grep "EXPECTED_QUEUES=" "${result_file}" | cut -d'=' -f2)
+    actual_queues=$(grep "QUEUES_STARTED=" "${result_file}" | cut -d'=' -f2)
+
+    if [[ -n "${expected_queues}" ]] && [[ -n "${actual_queues}" ]]; then
+        if [[ "${expected_queues}" != "${actual_queues}" ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Queue count mismatch for ${description}: expected ${expected_queues}, got ${actual_queues}"
+            return 1
+        else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Queue count verified: ${actual_queues} queues started as expected"
+        fi
+    else
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Queue count verification skipped (values not found)"
     fi
 
     # Check test completion

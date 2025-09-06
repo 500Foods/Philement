@@ -81,17 +81,8 @@ LaunchReadiness check_database_launch_readiness(void) {
     // Validate database configuration
     const DatabaseConfig* db_config = &app_config->databases;
 
-    // Check default workers
-    if (db_config->default_workers < 1 || db_config->default_workers > 32) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid default worker count"));
-        overall_readiness = false;
-    } else {
-        char* worker_msg = malloc(256);
-        if (worker_msg) {
-            snprintf(worker_msg, 256, "  Go:      Default worker count valid: %d", db_config->default_workers);
-            add_launch_message(&messages, &count, &capacity, worker_msg);
-        }
-    }
+    // Queue configuration is validated during JSON parsing
+    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Queue configuration validated during JSON parsing"));
 
     // Count databases by engine type and collect names for detailed reporting
     int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0;
@@ -475,14 +466,8 @@ LaunchReadiness check_database_launch_readiness(void) {
                 }
             }
 
-            if (conn->workers < 1 || conn->workers > 32) {
-                char* worker_count_msg = malloc(256);
-                if (worker_count_msg) {
-                    snprintf(worker_count_msg, 256, "  No-Go:   Invalid worker count for %s", conn->name);
-                    add_launch_message(&messages, &count, &capacity, worker_count_msg);
-                }
-                conn_valid = false;
-            }
+            // Queue configuration validation is handled during JSON parsing
+            // Individual queue parameters are validated there
 
             if (conn_valid) {
                 char* valid_msg = malloc(256);
@@ -547,10 +532,11 @@ int launch_database_subsystem(void) {
         return 0;
     }
 
-    // Phase 3: Connect to configured databases
-    log_this(SR_DATABASE, "Phase 3: Connecting to configured databases", LOG_LEVEL_STATE);
+    // Phase 3: Connect to configured databases and start queues
+    log_this(SR_DATABASE, "Phase 3: Connecting to configured databases and starting queues", LOG_LEVEL_STATE);
     const DatabaseConfig* db_config = &app_config->databases;
     int connected_databases = 0;
+    int total_queues_started = 0;
 
     for (int i = 0; i < db_config->connection_count; i++) {
         const DatabaseConnection* conn = &db_config->connections[i];
@@ -559,10 +545,28 @@ int launch_database_subsystem(void) {
             log_this(SR_DATABASE, "Connecting to database", LOG_LEVEL_STATE);
             log_this(SR_DATABASE, conn->name, LOG_LEVEL_STATE);
 
-            // Add database to subsystem
+            // Count queues that should be started for this database
+            int queues_for_db = 0;
+            if (conn->queues.slow.start > 0) queues_for_db++;
+            if (conn->queues.medium.start > 0) queues_for_db++;
+            if (conn->queues.fast.start > 0) queues_for_db++;
+            if (conn->queues.cache.start > 0) queues_for_db++;
+            queues_for_db++; // Always include Lead queue
+
+            log_this(SR_DATABASE, "Expected queues for database", LOG_LEVEL_DEBUG);
+            char queue_count_msg[64];
+            snprintf(queue_count_msg, sizeof(queue_count_msg), "%d queues", queues_for_db);
+            log_this(SR_DATABASE, queue_count_msg, LOG_LEVEL_DEBUG);
+
+            // Add database to subsystem (this will create queues based on config)
             if (database_add_database(conn->name, conn->type, NULL)) {
                 log_this(SR_DATABASE, "Database added to subsystem successfully", LOG_LEVEL_STATE);
                 connected_databases++;
+                total_queues_started += queues_for_db;
+
+                // Log queue startup for this database
+                log_this(SR_DATABASE, "Queues started for database", LOG_LEVEL_DEBUG);
+                log_this(SR_DATABASE, conn->name, LOG_LEVEL_DEBUG);
             } else {
                 log_this(SR_DATABASE, "Failed to add database to subsystem", LOG_LEVEL_ERROR);
             }
@@ -575,6 +579,9 @@ int launch_database_subsystem(void) {
     }
 
     log_this(SR_DATABASE, "Database connections established", LOG_LEVEL_STATE);
+    char total_queues_msg[128];
+    snprintf(total_queues_msg, sizeof(total_queues_msg), "Total queues started across all databases: %d", total_queues_started);
+    log_this(SR_DATABASE, total_queues_msg, LOG_LEVEL_STATE);
 
     // Phase 4: Initialize queue system (Phase 1 from plan)
     log_this(SR_DATABASE, "Phase 4: Initializing queue system", LOG_LEVEL_STATE);

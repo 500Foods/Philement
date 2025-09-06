@@ -23,7 +23,39 @@ bool load_database_config(json_t* root, AppConfig* config) {
 
     // Initialize database config with no defaults
     memset(db_config, 0, sizeof(DatabaseConfig));
-    db_config->default_workers = 2;  // Default worker count only
+
+    // Set default queue scaling configurations
+    // Slow queue: conservative scaling
+    db_config->default_queues.slow.start = 1;
+    db_config->default_queues.slow.min = 1;
+    db_config->default_queues.slow.max = 4;
+    db_config->default_queues.slow.up = 10;
+    db_config->default_queues.slow.down = 2;
+    db_config->default_queues.slow.inactivity = 300;
+
+    // Medium queue: moderate scaling
+    db_config->default_queues.medium.start = 2;
+    db_config->default_queues.medium.min = 1;
+    db_config->default_queues.medium.max = 8;
+    db_config->default_queues.medium.up = 15;
+    db_config->default_queues.medium.down = 3;
+    db_config->default_queues.medium.inactivity = 240;
+
+    // Fast queue: aggressive scaling
+    db_config->default_queues.fast.start = 4;
+    db_config->default_queues.fast.min = 2;
+    db_config->default_queues.fast.max = 16;
+    db_config->default_queues.fast.up = 20;
+    db_config->default_queues.fast.down = 5;
+    db_config->default_queues.fast.inactivity = 180;
+
+    // Cache queue: minimal scaling
+    db_config->default_queues.cache.start = 1;
+    db_config->default_queues.cache.min = 1;
+    db_config->default_queues.cache.max = 4;
+    db_config->default_queues.cache.up = 5;
+    db_config->default_queues.cache.down = 1;
+    db_config->default_queues.cache.inactivity = 600;
 
     // Get Databases section
     json_t* databases_obj = json_object_get(root, "Databases");
@@ -41,11 +73,6 @@ bool load_database_config(json_t* root, AppConfig* config) {
         db_config->connection_count = 5;  // Default to max supported
     }
 
-    // Process DefaultWorkers
-    json_t* default_workers_obj = json_object_get(databases_obj, "DefaultWorkers");
-    if (default_workers_obj && json_is_integer(default_workers_obj)) {
-        db_config->default_workers = (int)json_integer_value(default_workers_obj);
-    }
 
     // Get Connections section
     json_t* connections_obj = json_object_get(databases_obj, "Connections");
@@ -59,7 +86,6 @@ bool load_database_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_SECTION(root, "Databases.Connections");
 
     // Log top-level database settings during config load (consistent with other sections)
-    success = success && PROCESS_INT(root, db_config, default_workers, "Databases.DefaultWorkers", "Databases");
     success = success && PROCESS_INT(root, db_config, connection_count, "Databases.ConnectionCount", "Databases");
 
     // Handle array-based connections (the format you're using)
@@ -80,17 +106,21 @@ bool load_database_config(json_t* root, AppConfig* config) {
             // Extract database details
             json_t* name_obj = json_object_get(conn_obj, "Name");
             if (name_obj && json_is_string(name_obj)) {
-                conn->name = strdup(json_string_value(name_obj));
-                conn->connection_name = strdup(json_string_value(name_obj));
+                const char* name_str = json_string_value(name_obj);
+                char* resolved_name = process_env_variable_string(name_str);
+                if (resolved_name) {
+                    conn->name = resolved_name;
+                    conn->connection_name = strdup(resolved_name);
+                } else {
+                    conn->name = strdup(name_str);
+                    conn->connection_name = strdup(name_str);
+                }
             }
 
             json_t* enabled_obj = json_object_get(conn_obj, "Enabled");
             conn->enabled = (enabled_obj && json_is_boolean(enabled_obj)) ?
                             json_boolean_value(enabled_obj) : false;
 
-            json_t* workers_obj = json_object_get(conn_obj, "Workers");
-            conn->workers = (workers_obj && json_is_integer(workers_obj)) ?
-                           (int)json_integer_value(workers_obj) : db_config->default_workers;
 
             // Try Engine first, then Type
             json_t* engine_obj = json_object_get(conn_obj, "Engine");
@@ -130,6 +160,114 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 if (pass_obj && json_is_string(pass_obj)) {
                     conn->pass = strdup(json_string_value(pass_obj));
                 }
+            }
+
+            // Process queue configuration with defaults
+            json_t* queues_obj = json_object_get(conn_obj, "Queues");
+            if (queues_obj && json_is_object(queues_obj)) {
+                // Process each queue type
+                json_t* slow_obj = json_object_get(queues_obj, "Slow");
+                if (slow_obj && json_is_object(slow_obj)) {
+                    json_t* start_obj = json_object_get(slow_obj, "start");
+                    conn->queues.slow.start = (start_obj && json_is_integer(start_obj)) ?
+                                             (int)json_integer_value(start_obj) : db_config->default_queues.slow.start;
+                    json_t* min_obj = json_object_get(slow_obj, "min");
+                    conn->queues.slow.min = (min_obj && json_is_integer(min_obj)) ?
+                                           (int)json_integer_value(min_obj) : db_config->default_queues.slow.min;
+                    json_t* max_obj = json_object_get(slow_obj, "max");
+                    conn->queues.slow.max = (max_obj && json_is_integer(max_obj)) ?
+                                           (int)json_integer_value(max_obj) : db_config->default_queues.slow.max;
+                    json_t* up_obj = json_object_get(slow_obj, "up");
+                    conn->queues.slow.up = (up_obj && json_is_integer(up_obj)) ?
+                                          (int)json_integer_value(up_obj) : db_config->default_queues.slow.up;
+                    json_t* down_obj = json_object_get(slow_obj, "down");
+                    conn->queues.slow.down = (down_obj && json_is_integer(down_obj)) ?
+                                            (int)json_integer_value(down_obj) : db_config->default_queues.slow.down;
+                    json_t* inactivity_obj = json_object_get(slow_obj, "inactivity");
+                    conn->queues.slow.inactivity = (inactivity_obj && json_is_integer(inactivity_obj)) ?
+                                                  (int)json_integer_value(inactivity_obj) : db_config->default_queues.slow.inactivity;
+                } else {
+                    // Use defaults
+                    conn->queues.slow = db_config->default_queues.slow;
+                }
+
+                // Process Medium queue
+                json_t* medium_obj = json_object_get(queues_obj, "Medium");
+                if (medium_obj && json_is_object(medium_obj)) {
+                    json_t* start_obj = json_object_get(medium_obj, "start");
+                    conn->queues.medium.start = (start_obj && json_is_integer(start_obj)) ?
+                                               (int)json_integer_value(start_obj) : db_config->default_queues.medium.start;
+                    json_t* min_obj = json_object_get(medium_obj, "min");
+                    conn->queues.medium.min = (min_obj && json_is_integer(min_obj)) ?
+                                             (int)json_integer_value(min_obj) : db_config->default_queues.medium.min;
+                    json_t* max_obj = json_object_get(medium_obj, "max");
+                    conn->queues.medium.max = (max_obj && json_is_integer(max_obj)) ?
+                                             (int)json_integer_value(max_obj) : db_config->default_queues.medium.max;
+                    json_t* up_obj = json_object_get(medium_obj, "up");
+                    conn->queues.medium.up = (up_obj && json_is_integer(up_obj)) ?
+                                            (int)json_integer_value(up_obj) : db_config->default_queues.medium.up;
+                    json_t* down_obj = json_object_get(medium_obj, "down");
+                    conn->queues.medium.down = (down_obj && json_is_integer(down_obj)) ?
+                                              (int)json_integer_value(down_obj) : db_config->default_queues.medium.down;
+                    json_t* inactivity_obj = json_object_get(medium_obj, "inactivity");
+                    conn->queues.medium.inactivity = (inactivity_obj && json_is_integer(inactivity_obj)) ?
+                                                    (int)json_integer_value(inactivity_obj) : db_config->default_queues.medium.inactivity;
+                } else {
+                    conn->queues.medium = db_config->default_queues.medium;
+                }
+
+                // Process Fast queue
+                json_t* fast_obj = json_object_get(queues_obj, "Fast");
+                if (fast_obj && json_is_object(fast_obj)) {
+                    json_t* start_obj = json_object_get(fast_obj, "start");
+                    conn->queues.fast.start = (start_obj && json_is_integer(start_obj)) ?
+                                             (int)json_integer_value(start_obj) : db_config->default_queues.fast.start;
+                    json_t* min_obj = json_object_get(fast_obj, "min");
+                    conn->queues.fast.min = (min_obj && json_is_integer(min_obj)) ?
+                                           (int)json_integer_value(min_obj) : db_config->default_queues.fast.min;
+                    json_t* max_obj = json_object_get(fast_obj, "max");
+                    conn->queues.fast.max = (max_obj && json_is_integer(max_obj)) ?
+                                           (int)json_integer_value(max_obj) : db_config->default_queues.fast.max;
+                    json_t* up_obj = json_object_get(fast_obj, "up");
+                    conn->queues.fast.up = (up_obj && json_is_integer(up_obj)) ?
+                                          (int)json_integer_value(up_obj) : db_config->default_queues.fast.up;
+                    json_t* down_obj = json_object_get(fast_obj, "down");
+                    conn->queues.fast.down = (down_obj && json_is_integer(down_obj)) ?
+                                            (int)json_integer_value(down_obj) : db_config->default_queues.fast.down;
+                    json_t* inactivity_obj = json_object_get(fast_obj, "inactivity");
+                    conn->queues.fast.inactivity = (inactivity_obj && json_is_integer(inactivity_obj)) ?
+                                                  (int)json_integer_value(inactivity_obj) : db_config->default_queues.fast.inactivity;
+                } else {
+                    conn->queues.fast = db_config->default_queues.fast;
+                }
+
+                // Process Cache queue
+                json_t* cache_obj = json_object_get(queues_obj, "Cache");
+                if (cache_obj && json_is_object(cache_obj)) {
+                    json_t* start_obj = json_object_get(cache_obj, "start");
+                    conn->queues.cache.start = (start_obj && json_is_integer(start_obj)) ?
+                                              (int)json_integer_value(start_obj) : db_config->default_queues.cache.start;
+                    json_t* min_obj = json_object_get(cache_obj, "min");
+                    conn->queues.cache.min = (min_obj && json_is_integer(min_obj)) ?
+                                            (int)json_integer_value(min_obj) : db_config->default_queues.cache.min;
+                    json_t* max_obj = json_object_get(cache_obj, "max");
+                    conn->queues.cache.max = (max_obj && json_is_integer(max_obj)) ?
+                                            (int)json_integer_value(max_obj) : db_config->default_queues.cache.max;
+                    json_t* up_obj = json_object_get(cache_obj, "up");
+                    conn->queues.cache.up = (up_obj && json_is_integer(up_obj)) ?
+                                           (int)json_integer_value(up_obj) : db_config->default_queues.cache.up;
+                    json_t* down_obj = json_object_get(cache_obj, "down");
+                    conn->queues.cache.down = (down_obj && json_is_integer(down_obj)) ?
+                                             (int)json_integer_value(down_obj) : db_config->default_queues.cache.down;
+                    json_t* inactivity_obj = json_object_get(cache_obj, "inactivity");
+                    conn->queues.cache.inactivity = (inactivity_obj && json_is_integer(inactivity_obj)) ?
+                                                   (int)json_integer_value(inactivity_obj) : db_config->default_queues.cache.inactivity;
+                } else {
+                    conn->queues.cache = db_config->default_queues.cache;
+                }
+            } else {
+                // No queue configuration provided, use all defaults
+                conn->queues = db_config->default_queues;
             }
 
             // Emit configuration logging for this connection (array-based format)
@@ -173,9 +311,6 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 snprintf(kpath, sizeof(kpath), "%s.Pass", cpath);
                 PROCESS_SENSITIVE(NULL, conn, pass, kpath, "Databases");
 
-                // Workers (int)
-                snprintf(kpath, sizeof(kpath), "%s.Workers", cpath);
-                PROCESS_INT(root, conn, workers, kpath, "Databases");
             } while (0);
 
             valid_connections++;
@@ -233,8 +368,6 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 snprintf(path, sizeof(path), "Databases.Connections.%s.Pass", key);
                 success = success && PROCESS_SENSITIVE(root, conn, pass, path, "Databases");
 
-                snprintf(path, sizeof(path), "Databases.Connections.%s.Workers", key);
-                success = success && PROCESS_INT(root, conn, workers, path, "Databases");
 
                 db_index++;
             }
@@ -288,7 +421,6 @@ void dump_database_config(const DatabaseConfig* config) {
     }
 
     // Dump global settings
-    log_this(SR_CONFIG_CURRENT, "――― DefaultWorkers: %d", LOG_LEVEL_STATE, config->default_workers);
     log_this(SR_CONFIG_CURRENT, "――― ConnectionCount: %d", LOG_LEVEL_STATE, config->connection_count);
 
     // Dump connections header
@@ -381,8 +513,33 @@ void dump_database_config(const DatabaseConfig* config) {
                      conn->user ? conn->user : "(not set)");
             log_this(SR_CONFIG_CURRENT, "――― Pass: %s", LOG_LEVEL_STATE,
                      conn->pass ? "****" : "(not set)");
-            log_this(SR_CONFIG_CURRENT, "――― Workers: %d", LOG_LEVEL_STATE,
-                     conn->workers);
+
+            // Dump queue configurations
+            log_this(SR_CONFIG_CURRENT, "――― Queues", LOG_LEVEL_STATE);
+
+            // Slow queue
+            log_this(SR_CONFIG_CURRENT, "―――   Slow: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d",
+                     LOG_LEVEL_STATE, conn->queues.slow.start, conn->queues.slow.min,
+                     conn->queues.slow.max, conn->queues.slow.up, conn->queues.slow.down,
+                     conn->queues.slow.inactivity);
+
+            // Medium queue
+            log_this(SR_CONFIG_CURRENT, "―――   Medium: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d",
+                     LOG_LEVEL_STATE, conn->queues.medium.start, conn->queues.medium.min,
+                     conn->queues.medium.max, conn->queues.medium.up, conn->queues.medium.down,
+                     conn->queues.medium.inactivity);
+
+            // Fast queue
+            log_this(SR_CONFIG_CURRENT, "―――   Fast: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d",
+                     LOG_LEVEL_STATE, conn->queues.fast.start, conn->queues.fast.min,
+                     conn->queues.fast.max, conn->queues.fast.up, conn->queues.fast.down,
+                     conn->queues.fast.inactivity);
+
+            // Cache queue
+            log_this(SR_CONFIG_CURRENT, "―――   Cache: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d",
+                     LOG_LEVEL_STATE, conn->queues.cache.start, conn->queues.cache.min,
+                     conn->queues.cache.max, conn->queues.cache.up, conn->queues.cache.down,
+                     conn->queues.cache.inactivity);
         }
     }
 }

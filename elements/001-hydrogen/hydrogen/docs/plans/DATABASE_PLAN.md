@@ -21,7 +21,11 @@ Hydrogen serves as a database gateway supporting PostgreSQL, SQLite, MySQL, DB2 
 - **Queue-Based Processing**: slow/medium/fast queues per database with priority routing
 - **Query ID System**: REST API passes query numbers + parameters for schema independence
 - **Cross-Database Hosting**: One database can serve queries for multiple downstream databases
-- **Lead Queue Pattern**: Dedicated admin queue for cache management and triggers
+- **Lead Queue Pattern**: Dedicated admin queue for cache management, triggers, and system heartbeats
+  - **Automatic Creation**: Lead queue is always created automatically for each database
+  - **Non-Scalable**: Cannot be scaled down or disabled - always maintains one worker
+  - **Management Role**: Handles connection heartbeats, trigger monitoring, and cross-queue coordination
+  - **Tag Assignment**: Always tagged with "Lead" and inherits tags from disabled queues
 
 ## EXISTING SUBSYSTEM STATE (PHASE 2.1 POSTGRESQL ENGINE COMPLETED 9/5/2025)
 
@@ -72,12 +76,24 @@ tests/artifacts/database/db2/       // DB2 test scripts
   "Databases": {
     "ConnectionCount": 5,
     "DefaultWorkers": 2,
+    "Queues": {
+      "Slow": 1,
+      "Medium": 2,
+      "Fast": 4,
+      "Cache": 1
+    },
     "Connections": [
       {
         "Name": "Acuranzo",
         "Type": "${env.ACURANZO_DB_TYPE:postgresql}",
         "Enabled": true,
-        "Workers": 2
+        "Workers": 2,
+        "Queues": {
+          "Slow": 2,
+          "Medium": 0,
+          "Fast": 4,
+          "Cache": 1
+        }
       },
       {
         "Name": "Helium",
@@ -111,6 +127,9 @@ typedef struct DatabaseQueue {
     Queue* queue_medium;                   // For standard business logic
     Queue* queue_fast;                     // For quick lookups, simple operations
     Queue* queue_cache;                    // For cached queries, templates
+    char** tags;                           // Array of tags: "Lead", "Slow", "Medium", "Fast", "Cache"
+    size_t tag_count;                      // Number of tags assigned
+    QueueState state;                      // Current state: CONNECTING, CONNECTED, ERROR, etc.
     // Worker threads and synchronization primitives
 };
 
@@ -130,6 +149,15 @@ typedef struct DatabaseQueueManager {
 - ✅ Statistics monitoring (queue depth, health checks)
 - ✅ Integration with existing queue system and launch/landing
 - ✅ Compilation tested and integrated into build system
+
+**Queue State Management:**
+
+- **State Tracking**: Each queue maintains a state value (CONNECTING, CONNECTED, ERROR, DISCONNECTED)
+- **State Reporting**: State changes logged with format: `<database> <queue#> [tags] <state>`
+  - Example: `Acuranzo Q1 [Lead, Slow] Connected`
+  - Example: `Helium Q2 [Medium] Error: Connection timeout`
+- **Connection Establishment**: Each queue attempts database connection on launch
+- **Heartbeat Monitoring**: Lead queue manages periodic connection health checks
 
 **Files Created:**
 
@@ -477,6 +505,14 @@ int launch_database_subsystem(void) {
 }
 ```
 
+**Queue Configuration Logic:**
+
+- **Default Behavior**: If no queue configuration specified, create one of each: Slow, Medium, Fast, Cache
+- **Zero Assignment**: If a queue type is configured with 0 workers, assign that tag to the Lead queue
+- **Lead Queue**: Always created automatically with "Lead" tag, cannot be disabled
+- **Tag Inheritance**: Lead queue inherits tags from queues set to 0 workers
+- **Thread Launch**: Each queue launches in its own thread using same database credentials
+
 ## TESTING STRATEGY
 
 ### Blackbox Integration (Test 27.1-27.4)
@@ -694,12 +730,24 @@ int launch_database_subsystem(void) {
     "DefaultWorkers": 2,
     "ConnectionCount": 5,
     "MaxConnectionsPerPool": 16,
+    "DefaultQueues": {
+      "Slow": 1,
+      "Medium": 2,
+      "Fast": 4,
+      "Cache": 1
+    },
     "Connections": [
       {
         "Enabled": true,
         "Name": "Acuranzo",
         "Type": "${env.ACURANZO_TYPE}",
-        "Workers": {"Slow":1, "Medium":2, "Fast":4, "Cache":1},
+        "Workers": 2,
+        "Queues": {
+          "Slow": 2,
+          "Medium": 0,
+          "Fast": 4,
+          "Cache": 1
+        },
         "ConnectionPooling": {"MaxConnections":16, "MinConnections":2},
         "QueryTables": {"PrimaryTable":"acuranzo_queries"}
       }

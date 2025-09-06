@@ -379,37 +379,76 @@ DatabaseQuery* database_queue_process_next(DatabaseQueue* db_queue, int queue_ty
 }
 
 /*
- * Start worker threads for each queue
+ * Start worker threads for each queue based on configuration
  *
- * Creates dedicated worker threads per queue type as specified in Phase 1.
+ * Creates dedicated worker threads only for queues that are configured to start.
  */
 bool database_queue_start_workers(DatabaseQueue* db_queue) {
     if (!db_queue) return false;
 
-    // Create threads for each queue type
-    if (pthread_create(&db_queue->worker_threads_slow, NULL, database_queue_worker_thread_slow, db_queue) != 0) {
+    // Get queue configuration from app config
+    const DatabaseConfig* db_config = &app_config->databases;
+    const DatabaseConnection* conn_config = NULL;
+
+    // Find the connection configuration for this database
+    for (int i = 0; i < db_config->connection_count; i++) {
+        if (strcmp(db_config->connections[i].name, db_queue->database_name) == 0) {
+            conn_config = &db_config->connections[i];
+            break;
+        }
+    }
+
+    if (!conn_config) {
+        log_this(SR_DATABASE, "No configuration found for database: %s", LOG_LEVEL_ERROR, true, true, true, db_queue->database_name);
         return false;
     }
 
-    if (pthread_create(&db_queue->worker_threads_medium, NULL, database_queue_worker_thread_medium, db_queue) != 0) {
-        pthread_cancel(db_queue->worker_threads_slow);
-        return false;
+    int threads_started = 0;
+
+    // Start worker threads based on configuration
+    if (conn_config->queues.slow.start > 0) {
+        if (pthread_create(&db_queue->worker_threads_slow, NULL, database_queue_worker_thread_slow, db_queue) != 0) {
+            log_this(SR_DATABASE, "Failed to start slow queue worker for %s", LOG_LEVEL_ERROR, true, true, true, db_queue->database_name);
+            return false;
+        }
+        threads_started++;
+        log_this(SR_DATABASE, "Started slow queue worker for %s", LOG_LEVEL_DEBUG, true, true, true, db_queue->database_name);
     }
 
-    if (pthread_create(&db_queue->worker_threads_fast, NULL, database_queue_worker_thread_fast, db_queue) != 0) {
-        pthread_cancel(db_queue->worker_threads_slow);
-        pthread_cancel(db_queue->worker_threads_medium);
-        return false;
+    if (conn_config->queues.medium.start > 0) {
+        if (pthread_create(&db_queue->worker_threads_medium, NULL, database_queue_worker_thread_medium, db_queue) != 0) {
+            if (conn_config->queues.slow.start > 0) pthread_cancel(db_queue->worker_threads_slow);
+            log_this(SR_DATABASE, "Failed to start medium queue worker for %s", LOG_LEVEL_ERROR, true, true, true, db_queue->database_name);
+            return false;
+        }
+        threads_started++;
+        log_this(SR_DATABASE, "Started medium queue worker for %s", LOG_LEVEL_DEBUG, true, true, true, db_queue->database_name);
     }
 
-    if (pthread_create(&db_queue->worker_threads_cache, NULL, database_queue_worker_thread_cache, db_queue) != 0) {
-        pthread_cancel(db_queue->worker_threads_slow);
-        pthread_cancel(db_queue->worker_threads_medium);
-        pthread_cancel(db_queue->worker_threads_fast);
-        return false;
+    if (conn_config->queues.fast.start > 0) {
+        if (pthread_create(&db_queue->worker_threads_fast, NULL, database_queue_worker_thread_fast, db_queue) != 0) {
+            if (conn_config->queues.slow.start > 0) pthread_cancel(db_queue->worker_threads_slow);
+            if (conn_config->queues.medium.start > 0) pthread_cancel(db_queue->worker_threads_medium);
+            log_this(SR_DATABASE, "Failed to start fast queue worker for %s", LOG_LEVEL_ERROR, true, true, true, db_queue->database_name);
+            return false;
+        }
+        threads_started++;
+        log_this(SR_DATABASE, "Started fast queue worker for %s", LOG_LEVEL_DEBUG, true, true, true, db_queue->database_name);
     }
 
-    log_this(SR_DATABASE, "Started worker threads for database: %s", LOG_LEVEL_STATE, true, true, true, db_queue->database_name);
+    if (conn_config->queues.cache.start > 0) {
+        if (pthread_create(&db_queue->worker_threads_cache, NULL, database_queue_worker_thread_cache, db_queue) != 0) {
+            if (conn_config->queues.slow.start > 0) pthread_cancel(db_queue->worker_threads_slow);
+            if (conn_config->queues.medium.start > 0) pthread_cancel(db_queue->worker_threads_medium);
+            if (conn_config->queues.fast.start > 0) pthread_cancel(db_queue->worker_threads_fast);
+            log_this(SR_DATABASE, "Failed to start cache queue worker for %s", LOG_LEVEL_ERROR, true, true, true, db_queue->database_name);
+            return false;
+        }
+        threads_started++;
+        log_this(SR_DATABASE, "Started cache queue worker for %s", LOG_LEVEL_DEBUG, true, true, true, db_queue->database_name);
+    }
+
+    log_this(SR_DATABASE, "Started %d worker threads for database: %s", LOG_LEVEL_STATE, true, true, true, threads_started, db_queue->database_name);
     return true;
 }
 

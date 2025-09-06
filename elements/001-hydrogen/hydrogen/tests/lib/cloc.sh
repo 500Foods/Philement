@@ -12,6 +12,8 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 4.0.0 - 2025-09-06 - Use TABLES program for formatting, thousands separators, JSON-based processing
+# 3.0.0 - 2025-09-06 - Added separate 'Unit Tests' language for tests/unity/src files
 # 2.0.0 - 2025-08-14 - Added instrumentation data to output
 # 1.1.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
@@ -25,7 +27,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="1.1.1"
+CLOC_VERSION="4.0.0"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
@@ -60,7 +62,7 @@ generate_cloc_exclude_list() {
         local clean_pattern="${pattern%/\*}"
         echo "${clean_pattern}" >> "${exclude_list_file}"
     done
-    
+
     return 0
 }
 
@@ -69,14 +71,14 @@ run_cloc_analysis() {
     local base_dir="${1:-.}"           # Base directory to analyze (default: current directory)
     local lint_ignore_file="${2:-.lintignore}"  # Lintignore file path (default: .lintignore)
     local output_file="${3:-}"             # Optional output file (if not provided, outputs to stdout)
+    local data_json="${4:-}"             # Optional output file (if not provided, outputs to stdout)
     
     # Create temporary files
-    local cloc_output
     local exclude_list
     local enhanced_output
-    cloc_output=$(mktemp) || return 1
     exclude_list=$(mktemp) || return 1
-    enhanced_output=$(mktemp) || return 1
+    #enhanced_output=$(mktemp) || return 1
+    enhanced_output=${output_file}
        
     # Generate exclude list
     # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -85,131 +87,267 @@ run_cloc_analysis() {
         return 1
     fi
     
-    # Run cloc with proper environment and parameters
-    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" . --quiet --force-lang="C,inc" --exclude-list-file="${exclude_list}" > "${cloc_output}" 2>&1); then
-        # Skip the first line (header) and process the results
-        tail -n +2 "${cloc_output}" > "${enhanced_output}"
-        
-        # Calculate CodeDoc and CodeComment ratios
-        local c_code=0 c_comment=0
-        local header_code=0 header_comment=0
-        local cmake_code=0 cmake_comment=0
-        local shell_code=0 shell_comment=0
-        local markdown_code=0
-        
-        # Parse cloc output to extract values
-        while IFS= read -r line; do
-            # Skip empty lines and separator lines
-            [[ -z "${line}" || "${line}" =~ ^-+$ ]] && continue
-            
-            # Skip SUM line for now (we'll process it separately if needed)
-            [[ "${line}" =~ ^SUM: ]] && continue
-            
-            # Use awk to parse the line more reliably
-            local lang files comment code
-            # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
-            lang=$(echo "${line}" | "${AWK}" '{$1=$1; for(i=1;i<=NF-4;i++) printf "%s ", $i; print ""}' | "${SED}" 's/ *$//' || true)
-            # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
-            files=$(echo "${line}" | "${AWK}" '{print $(NF-3)}')
-            # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
-            comment=$(echo "${line}" | "${AWK}" '{print $(NF-1)}')
-            # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
-            code=$(echo "${line}" | "${AWK}" '{print $NF}')
-            
-            # Only process lines that have numeric values
-            if [[ "${files}" =~ ^[0-9]+$ && "${code}" =~ ^[0-9]+$ && "${comment}" =~ ^[0-9]+$ ]]; then
-                case "${lang}" in
-                    "C") 
-                        c_code=${code}
-                        c_comment=${comment}
-                        ;;
-                    "C/C++ Header")
-                        header_code=${code}
-                        header_comment=${comment}
-                        ;;
-                    "CMake")
-                        cmake_code=${code}
-                        cmake_comment=${comment}
-                        ;;
-                    "Bourne Shell")
-                        shell_code=${code}
-                        shell_comment=${comment}
-                        ;;
-                    "Markdown")
-                        markdown_code=${code}
-                        ;;
-                    *)  ;;
-                esac
+    # Run cloc twice with JSON output
+    local core_json test_json
+    core_json=$(mktemp) || return 1
+    test_json=$(mktemp) || return 1
+
+    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" . --quiet --json --exclude-list-file="${exclude_list}" --not-match-d='tests/unity' --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${core_json}" 2>&1); then
+        if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" tests/unity/src --quiet --json --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${test_json}" 2>&1); then
+            # Extract cloc version from core JSON
+            local cloc_header
+            cloc_header=$(jq -r '.header | if type == "object" then "\(.cloc_url) v \(.cloc_version)" else . end // "cloc"' "${core_json}" 2>/dev/null || echo "cloc")
+
+            # Create layout JSON for TABLES program
+            local layout_json
+            layout_json=$(mktemp) || return 1
+            cat > "${layout_json}" << EOF
+{
+    "title": "{BOLD}{WHITE}${cloc_header}{RESET}",
+    "columns": [
+        {
+            "header": "Language",
+            "key": "language",
+            "datatype": "text",
+            "justification": "left"
+        },
+        {
+            "header": "Files",
+            "key": "files",
+            "datatype": "int",
+            "justification": "right",
+            "summary": "sum"
+        },
+        {
+            "header": "Blank",
+            "key": "blank",
+            "datatype": "int",
+            "justification": "right",
+            "summary": "sum"
+        },
+        {
+            "header": "Comment",
+            "key": "comment",
+            "datatype": "int",
+            "justification": "right",
+            "summary": "sum"
+        },
+        {
+            "header": "Code",
+            "key": "code",
+            "datatype": "int",
+            "justification": "right",
+            "summary": "sum"
+        },
+        {
+            "header": "Lines",
+            "key": "lines",
+            "datatype": "int",
+            "justification": "right",
+            "summary": "sum"
+        }
+    ]
+}
+EOF
+
+            # Create data JSON for TABLES program using jq
+            jq -n '
+                # Process core JSON
+                input as $core |
+                # Process test JSON
+                input as $test |
+                # Build the data array
+                [
+                    # Core C entry
+                    (if $core.C then
+                        {
+                            language: "Core C/Headers",
+                            files: ($core.C.nFiles // 0),
+                            blank: ($core.C.blank // 0),
+                            comment: ($core.C.comment // 0),
+                            code: ($core.C.code // 0),
+                            lines: (($core.C.blank // 0) + ($core.C.comment // 0) + ($core.C.code // 0))
+                        }
+                    else empty end),
+                    # Test C entry
+                    (if $test.C then
+                        {
+                            language: "Test C/Headers",
+                            files: ($test.C.nFiles // 0),
+                            blank: ($test.C.blank // 0),
+                            comment: ($test.C.comment // 0),
+                            code: ($test.C.code // 0),
+                            lines: (($test.C.blank // 0) + ($test.C.comment // 0) + ($test.C.code // 0))
+                        }
+                    else empty end),
+                    # Other languages from core
+                    ($core | to_entries[] | select(.key != "C" and .key != "header" and .key != "SUM") |
+                        {
+                            language: .key,
+                            files: (.value.nFiles // 0),
+                            blank: (.value.blank // 0),
+                            comment: (.value.comment // 0),
+                            code: (.value.code // 0),
+                            lines: ((.value.blank // 0) + (.value.comment // 0) + (.value.code // 0))
+                        }
+                    )
+                ] | map(select(. != null))
+            ' "${core_json}" "${test_json}" > "${data_json}"
+
+            # Calculate totals from the generated JSON data
+            local total_files total_code
+            total_files=$(jq -r 'map(.files // 0) | add' "${data_json}" 2>/dev/null || echo 0)
+            total_code=$(jq -r 'map(.code // 0) | add' "${data_json}" 2>/dev/null || echo 0)
+
+            # Calculate extended statistics before creating tables
+            # Extract language statistics using jq
+            # Note: With --force-lang options, all C-related files are now categorized as "C"
+            local c_code c_comment header_code header_comment cmake_code cmake_comment shell_code shell_comment markdown_code
+            c_code=$(jq -r '.C.code // 0' "${core_json}" 2>/dev/null || echo 0)
+            c_comment=$(jq -r '.C.comment // 0' "${core_json}" 2>/dev/null || echo 0)
+            # No separate header category since --force-lang combines them
+            header_code=0
+            header_comment=0
+            cmake_code=$(jq -r '.CMake.code // 0' "${core_json}" 2>/dev/null || echo 0)
+            cmake_comment=$(jq -r '.CMake.comment // 0' "${core_json}" 2>/dev/null || echo 0)
+            shell_code=$(jq -r '."Bourne Shell".code // 0' "${core_json}" 2>/dev/null || echo 0)
+            shell_comment=$(jq -r '."Bourne Shell".comment // 0' "${core_json}" 2>/dev/null || echo 0)
+            markdown_code=$(jq -r '.Markdown.code // 0' "${core_json}" 2>/dev/null || echo 0)
+
+            # Calculate totals for the 4 code languages
+            local total_code_stats=$((c_code + header_code + cmake_code + shell_code))
+            local total_comment=$((c_comment + header_comment + cmake_comment + shell_comment))
+
+            # Calculate ratios
+            local codedoc_ratio codecomment_ratio docscode_ratio commentscode_ratio
+            if [[ "${markdown_code}" -gt 0 ]]; then
+                codedoc_ratio=$(printf "%.1f" "$(bc -l <<< "scale=2; ${total_code_stats} / ${markdown_code}" || true)")
+                docscode_ratio=$(printf "%.1f" "$(bc -l <<< "scale=2; ${markdown_code} / ${total_code_stats}" || true)")
+            else
+                codedoc_ratio="N/A"
+                docscode_ratio="N/A"
             fi
-        done < "${enhanced_output}"
-        
-        # Calculate totals for the 4 code languages
-        local total_code=$((c_code + header_code + cmake_code + shell_code))
-        local total_comment=$((c_comment + header_comment + cmake_comment + shell_comment))
-        
-        # Calculate ratios
-        local codedoc_ratio=""
-        local codecomment_ratio=""
-        local docscode_ratio=""
-        local commentscode_ratio=""
-        
-        if [[ "${markdown_code}" -gt 0 ]]; then
-            codedoc_ratio=$("${AWK}" "BEGIN {printf \"%.1f\", ${total_code} / ${markdown_code}}")
-            docscode_ratio=$("${AWK}" "BEGIN {printf \"%.1f\", ${markdown_code} / ${total_code}}")
-        else
-            codedoc_ratio="N/A"
-            docscode_ratio="N/A"
-        fi
-        
-        if [[ "${total_comment}" -gt 0 ]]; then
-            codecomment_ratio=$("${AWK}" "BEGIN {printf \"%.1f\", ${total_code} / ${total_comment}}")
-            commentscode_ratio=$("${AWK}" "BEGIN {printf \"%.1f\", ${total_comment} / ${total_code}}")
-        else
-            codecomment_ratio="N/A"
-            commentscode_ratio="N/A"
-        fi
 
-        # Let's get some mre accurate stats happening
-        if [[ -f "${PROJECT_DIR}/build/tests/results/coverage_unity.info" ]]; then
-            instrumented_both=$("${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info" || true)
-        else
-            instrumented_both=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/unity" --output-file "${PROJECT_DIR}/build/tests/results/coverage_unity.info" --ignore-errors empty >/dev/null 2>&1 && "${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info")
-        fi
-        if [[ -f "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" ]]; then
-            instrumented_code=$("${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" || true)
-        else
-            instrumented_code=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/coverage" --output-file "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" --ignore-errors empty >/dev/null 2>&1 && "${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info")
-        fi
+            if [[ "${total_comment}" -gt 0 ]]; then
+                codecomment_ratio=$(printf "%.1f" "$(bc -l <<< "scale=2; ${total_code_stats} / ${total_comment}" || true)")
+                commentscode_ratio=$(printf "%.1f" "$(bc -l <<< "scale=2; ${total_comment} / ${total_code_stats}" || true)")
+            else
+                codecomment_ratio="N/A"
+                commentscode_ratio="N/A"
+            fi
 
-        # Do the math. Why the -10? Dunno. Just what lcov calculates differently than gcov somehow. Probably an extra file that isn't being filtered 
-        # with lcov that does get filtered somehow with our more complex gcov approach. Something to keep an eye on in case it deviates in future.
-        # Perhaps lcov isn't as fancy with the branching logic (the * in the numbers) that we sorted out with gcov previously.
-        instrumented_test=$(( instrumented_both - instrumented_code ))
-        format_code=$("${PRINTF}" "%'7d" "$(( instrumented_code - 10 ))")
-        format_test=$("${PRINTF}" "%'7d" "$(( instrumented_test - 10 ))")
-        unity_code=$(bc -l <<< "scale=2; 100 * (${instrumented_test} - 10) / (${instrumented_code} - 10)")
-        ratio_code=$(bc -l <<< "scale=2; 100 * (${instrumented_test} - 10) / (${c_code} + ${header_code})")
+            # Calculate coverage statistics
+            local instrumented_both instrumented_code instrumented_test format_code format_test unity_code
+            if [[ -f "${PROJECT_DIR}/build/tests/results/coverage_unity.info" ]]; then
+                instrumented_both=$("${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info" || true)
+            else
+                instrumented_both=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/unity" --output-file "${PROJECT_DIR}/build/tests/results/coverage_unity.info" --ignore-errors empty >/dev/null 2>&1 && "${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info")
+            fi
+            if [[ -f "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" ]]; then
+                instrumented_code=$("${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" || true)
+            else
+                instrumented_code=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/coverage" --output-file "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" --ignore-errors empty >/dev/null 2>&1 && "${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info")
+            fi
 
-        # Output the original cloc results
-        if [[ -n "${output_file}" ]]; then
-            {
-                cat "${enhanced_output}"
-                echo ""
-                echo "Code/Docs: ${codedoc_ratio}   Code/Comments: ${codecomment_ratio}   Instrumented Code: ${format_code}   Ratio: ${ratio_code}"
-                echo "Docs/Code: ${docscode_ratio}   Comments/Code: ${commentscode_ratio}   Instrumented Test: ${format_test}   Unity: ${unity_code}"
+            instrumented_test=$(( instrumented_both - instrumented_code ))
+            format_code=$("${PRINTF}" "%'7d" "$(( instrumented_code - 10 ))")
+            format_test=$("${PRINTF}" "%'7d" "$(( instrumented_test - 10 ))")
+            unity_code=$(printf "%.1f" "$(bc -l <<< "scale=2; 100 * (${instrumented_test} - 10) / (${instrumented_code} - 10)" || true)")
 
-            } > "${output_file}"
+            # Use TABLES program to format the output
+            # shellcheck disable=SC2154 # TABLES defined externally in framework.sh
+            if ! "${TABLES}" "${layout_json}" "${data_json}" > "${enhanced_output}"; then
+                echo "TABLES command failed" >&2
+                return 1
+            fi
+
+            # Create second table for extended statistics
+            local stats_layout_json stats_data_json
+            stats_layout_json=$(mktemp) || return 1
+            stats_data_json=$(mktemp) || return 1
+
+            cat > "${stats_layout_json}" << EOF
+{
+    "title": "{BOLD}{WHITE}Extended Statistics{RESET}",
+    "columns": [
+        {
+            "header": "Metric",
+            "key": "metric",
+            "datatype": "text",
+            "justification": "left"
+        },
+        {
+            "header": "Value",
+            "key": "value",
+            "datatype": "text",
+            "justification": "right"
+        },
+        {
+            "header": "Description",
+            "key": "description",
+            "datatype": "text",
+            "justification": "left"
+        }
+    ]
+}
+EOF
+
+            # Create data for extended statistics table
+            cat > "${stats_data_json}" << EOF
+[
+    {
+        "metric": "Code/Docs",
+        "value": "${codedoc_ratio}",
+        "description": "Ratio of code lines to documentation lines"
+    },
+    {
+        "metric": "Docs/Code",
+        "value": "${docscode_ratio}",
+        "description": "Ratio of documentation lines to code lines"
+    },
+    {
+        "metric": "Code/Comments",
+        "value": "${codecomment_ratio}",
+        "description": "Ratio of code lines to comment lines"
+    },
+    {
+        "metric": "Comments/Code",
+        "value": "${commentscode_ratio}",
+        "description": "Ratio of comment lines to code lines"
+    },
+    {
+        "metric": "Instrumented Black",
+        "value": "${format_code}",
+        "description": "Lines of code with coverage - Blackbox"
+    },
+    {
+        "metric": "Instrumented Unity",
+        "value": "${format_test}",
+        "description": "Lines of code with coverage - Unity"
+    },
+    {
+        "metric": "Unity Ratio",
+        "value": "${unity_code}%",
+        "description": "Unity instrumented / Blackbox instrumented"
+    }
+]
+EOF
+
+            # Generate second table and append to output
+            "${TABLES}" "${stats_layout_json}" "${stats_data_json}" >> "${enhanced_output}"
+
+            #return 0
         else
-            cat "${enhanced_output}"
-            echo ""
-            echo "Code/Docs: ${codedoc_ratio}   Code/Comments: ${codecomment_ratio}   Instrumented Code: ${format_code}   Ratio: ${ratio_code}"
-            echo "Docs/Code: ${docscode_ratio}   Comments/Code: ${commentscode_ratio}   Instrumented Test: ${format_test}   Unity: ${unity_code}"
+            echo "Test cloc command failed"
+            return 1
         fi
-        return 0
     else
-        echo "cloc command failed"
+        echo "Core cloc command failed"
         return 1
     fi
+
+
+    return 0
 }
 
 # Function to generate cloc output for README.md format
@@ -228,30 +366,25 @@ generate_cloc_for_readme() {
     return 0
 }
 
-# Function to extract cloc statistics from output
+# Function to extract cloc statistics from JSON data
 extract_cloc_stats() {
-    local cloc_output_file="$1"
-    
-    if [[ ! -f "${cloc_output_file}" ]]; then
-        echo "Error: cloc output file not found: ${cloc_output_file}" >&2
+    local cloc_data_file="$1"
+
+    if [[ ! -f "${cloc_data_file}" ]]; then
+        echo "Error: cloc data file not found: ${cloc_data_file}" >&2
         return 1
     fi
-    
-    # Extract summary statistics from the SUM line
-    local stats_line
-    stats_line=$("${GREP}" "SUM:" "${cloc_output_file}")
-    
-    if [[ -n "${stats_line}" ]]; then
-        local files_count code_lines
-        # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
-        files_count=$(echo "${stats_line}" | "${AWK}" '{print $2}')
-        # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
-        code_lines=$(echo "${stats_line}" | "${AWK}" '{print $5}')
-        
-        echo "files:${files_count},lines:${code_lines}"
+
+    # Sum files and code from all entries in the JSON array
+    local total_files total_code
+    total_files=$(jq -r 'map(.files // 0) | add' "${cloc_data_file}" 2>/dev/null || echo 0)
+    total_code=$(jq -r 'map(.code // 0) | add' "${cloc_data_file}" 2>/dev/null || echo 0)
+
+    if [[ -n "${total_files}" && -n "${total_code}" ]]; then
+        echo "files:${total_files},lines:${total_code}"
         return 0
     else
-        echo "Error: Failed to parse cloc output" >&2
+        echo "Error: Failed to parse cloc data" >&2
         return 1
     fi
 }

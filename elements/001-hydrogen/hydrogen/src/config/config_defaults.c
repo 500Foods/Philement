@@ -115,8 +115,40 @@ void initialize_config_defaults_network(AppConfig* config) {
 void initialize_config_defaults_database(AppConfig* config) {
     if (config) {
         // No default databases configured - all database configuration comes from JSON config files
-        config->databases.default_workers = 2;        // Default 2 workers per database (when configured)
         config->databases.connection_count = 0;       // No databases configured by default
+
+        // Set default queue scaling configurations
+        // Slow queue: conservative scaling
+        config->databases.default_queues.slow.start = 1;
+        config->databases.default_queues.slow.min = 1;
+        config->databases.default_queues.slow.max = 4;
+        config->databases.default_queues.slow.up = 10;
+        config->databases.default_queues.slow.down = 2;
+        config->databases.default_queues.slow.inactivity = 300;
+
+        // Medium queue: moderate scaling
+        config->databases.default_queues.medium.start = 2;
+        config->databases.default_queues.medium.min = 1;
+        config->databases.default_queues.medium.max = 8;
+        config->databases.default_queues.medium.up = 15;
+        config->databases.default_queues.medium.down = 3;
+        config->databases.default_queues.medium.inactivity = 240;
+
+        // Fast queue: aggressive scaling
+        config->databases.default_queues.fast.start = 4;
+        config->databases.default_queues.fast.min = 2;
+        config->databases.default_queues.fast.max = 16;
+        config->databases.default_queues.fast.up = 20;
+        config->databases.default_queues.fast.down = 5;
+        config->databases.default_queues.fast.inactivity = 180;
+
+        // Cache queue: minimal scaling
+        config->databases.default_queues.cache.start = 1;
+        config->databases.default_queues.cache.min = 1;
+        config->databases.default_queues.cache.max = 4;
+        config->databases.default_queues.cache.up = 5;
+        config->databases.default_queues.cache.down = 1;
+        config->databases.default_queues.cache.inactivity = 600;
 
         // Clear all database connection slots
         for (int i = 0; i < 5; i++) {
