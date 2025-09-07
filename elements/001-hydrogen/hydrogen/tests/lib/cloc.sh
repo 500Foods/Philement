@@ -77,8 +77,15 @@ run_cloc_analysis() {
     local exclude_list
     local enhanced_output
     exclude_list=$(mktemp) || return 1
-    #enhanced_output=$(mktemp) || return 1
-    enhanced_output=${output_file}
+
+    # Handle output destination
+    if [[ -n "${output_file}" ]]; then
+        enhanced_output="${output_file}"
+        data_json_file="${data_json:-$(mktemp)}"
+    else
+        enhanced_output=$(mktemp) || return 1
+        data_json_file=$(mktemp) || return 1
+    fi
        
     # Generate exclude list
     # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -192,12 +199,12 @@ EOF
                         }
                     )
                 ] | map(select(. != null))
-            ' "${core_json}" "${test_json}" > "${data_json}"
+            ' "${core_json}" "${test_json}" > "${data_json_file}"
 
             # Calculate totals from the generated JSON data
             local total_files total_code
-            total_files=$(jq -r 'map(.files // 0) | add' "${data_json}" 2>/dev/null || echo 0)
-            total_code=$(jq -r 'map(.code // 0) | add' "${data_json}" 2>/dev/null || echo 0)
+            total_files=$(jq -r 'map(.files // 0) | add' "${data_json_file}" 2>/dev/null || echo 0)
+            total_code=$(jq -r 'map(.code // 0) | add' "${data_json_file}" 2>/dev/null || echo 0)
 
             # Calculate extended statistics before creating tables
             # Extract language statistics using jq
@@ -256,7 +263,7 @@ EOF
 
             # Use TABLES program to format the output
             # shellcheck disable=SC2154 # TABLES defined externally in framework.sh
-            if ! "${TABLES}" "${layout_json}" "${data_json}" > "${enhanced_output}"; then
+            if ! "${TABLES}" "${layout_json}" "${data_json_file}" > "${enhanced_output}"; then
                 echo "TABLES command failed" >&2
                 return 1
             fi
@@ -336,6 +343,12 @@ EOF
             # Generate second table and append to output
             "${TABLES}" "${stats_layout_json}" "${stats_data_json}" >> "${enhanced_output}"
 
+            # If no output_file was provided, output to stdout and clean up
+            if [[ -z "${output_file}" ]]; then
+                cat "${enhanced_output}"
+                rm -f "${enhanced_output}" "${data_json_file}"
+            fi
+
             #return 0
         else
             echo "Test cloc command failed"
@@ -354,15 +367,28 @@ EOF
 generate_cloc_for_readme() {
     local base_dir="${1:-.}"           # Base directory to analyze (default: current directory)
     local lint_ignore_file="${2:-.lintignore}"  # Lintignore file path (default: .lintignore)
-    
-    echo '```cloc'
-    
+
+    # Create cloc output files in diagnostics directory like Test 98 does
+    # shellcheck disable=SC2154 # LOG_PREFIX and TIMESTAMP defined in framework.sh
+    local cloc_output="${LOG_PREFIX}_${TIMESTAMP}_cloc.txt"
+    local cloc_data="${LOG_PREFIX}_${TIMESTAMP}_cloc.json"
+
+    # Run the enhanced cloc analysis
     # shellcheck disable=SC2310 # We want to continue even if the test fails
-    if ! run_cloc_analysis "${base_dir}" "${lint_ignore_file}"; then
-        echo "cloc command failed"
+    if ! run_cloc_analysis "${base_dir}" "${lint_ignore_file}" "${cloc_output}" "${cloc_data}"; then
+        echo "Enhanced cloc analysis failed"
+        return 1
     fi
-    
+
+    # Output the results wrapped in code block for proper README formatting
+    echo '```cloc'
+    if [[ -f "${cloc_output}" ]]; then
+        cat "${cloc_output}"
+    else
+        echo "Error: cloc output file not found: ${cloc_output}"
+    fi
     echo '```'
+
     return 0
 }
 
@@ -398,9 +424,9 @@ run_cloc_with_stats() {
     temp_output=$(mktemp) || return 1
     
     # shellcheck disable=SC2310 # We want to continue even if the test fails
-    if run_cloc_analysis "${base_dir}" "${lint_ignore_file}" "${temp_output}"; then
+    if run_cloc_analysis "${base_dir}" "${lint_ignore_file}" "${temp_output}" "${temp_output}.json"; then
         # Extract and return statistics
-        extract_cloc_stats "${temp_output}"
+        extract_cloc_stats "${temp_output}.json"
         return 0
     else
         return 1
