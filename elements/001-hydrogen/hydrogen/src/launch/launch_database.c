@@ -7,6 +7,8 @@
 // Local includes
 #include "launch.h"
 #include "../database/database.h"
+#include "../database/database_queue.h"
+#include "../queue/queue.h"
 
 volatile sig_atomic_t database_stopping = 0;
 
@@ -585,7 +587,11 @@ int launch_database_subsystem(void) {
 
     // Phase 4: Initialize queue system (Phase 1 from plan)
     log_this(SR_DATABASE, "Phase 4: Initializing queue system", LOG_LEVEL_STATE);
-    // Queue system initialization is handled in database_subsystem_init()
+
+    if (!database_queue_system_init()) {
+        log_this(SR_DATABASE, "Failed to initialize database queue system", LOG_LEVEL_ERROR);
+        return 0;
+    }
 
     // Phase 5: Start worker threads
     log_this(SR_DATABASE, "Phase 5: Starting worker threads", LOG_LEVEL_STATE);

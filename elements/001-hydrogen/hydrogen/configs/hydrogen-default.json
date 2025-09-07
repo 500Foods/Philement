@@ -1,0 +1,416 @@
+{
+    "Server": {
+      "ServerName": "Philement/hydrogen",
+      "PayloadKey": "${env.PAYLOAD_KEY}",
+      "LogFile": "/var/log/hydrogen.log",
+      "StartupDelay": 5
+    },
+    "Notify": {
+        "Enabled": false,
+        "Notifier":"SMTP",
+        "SMTP": {
+            "Host": "${env.SMTP_SERVER1_HOST}",
+            "Port": "${env.SMTP_SERVER1_PORT}",
+            "Username": "${env.SMTP_SERVER1_USER}",
+            "Password": "${env.SMTP_SERVER1_PASS}",
+            "UseTLS": true
+        }
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": true,
+        "Port": 5000,
+        "WebRoot": "/var/www/html",
+        "UploadPath": "/api/upload",
+        "UploadDir": "/tmp/hydrogen_uploads",
+        "MaxUploadSize": 2147483648
+    },
+    "API":{
+      "Enabled": true,
+      "Prefix": "/api",
+      "JWTSecret":"${env.JWT_SECRET}"
+    },
+    "WebSocketServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": true,
+        "LibLogLevel": 2,
+        "Port": 5001,
+        "Protocol": "hydrogen",
+        "Key": "${env.WEBSOCKET_KEY}",
+        "MaxMessageSize": 2048,
+        "ConnectionTimeouts": {
+            "ShutdownWaitSeconds": 2,
+            "ServiceLoopDelayMs": 50,
+            "ConnectionCleanupMs": 500,
+            "ExitWaitSeconds": 3
+        }
+    },
+    "Network": {
+        "Interfaces": {
+            "MaxInterfaces": 16,
+            "MaxIPsPerInterface": 8,
+            "MaxInterfaceNameLength": 16,
+            "MaxIPAddressLength": 46
+        },
+        "PortAllocation": {
+            "StartPort": 5000,
+            "EndPort": 65535,
+            "ReservedPorts": [22, 80, 443],
+            "RetryAttempts": 5
+        },
+        "Available": {
+            "lo": true,
+            "wg0": false,
+            "vnet0": false,
+            "vnet1": false,
+            "vnet2": false,
+            "vnet3": false,
+            "vnet4": false
+        }
+    },
+    "Resources": {
+        "Queues": {
+            "MaxQueueBlocks": 128,
+            "QueueHashSize": 256,
+            "DefaultQueueCapacity": 1024
+        },
+        "Buffers": {
+            "DefaultMessageBuffer": 1024,
+            "MaxLogMessageSize": 2048,
+            "PathBufferSize": 256,
+            "LineBufferSize": 512
+        }
+    },
+    "Monitoring": {
+        "Intervals": {
+            "StatusUpdateMs": 1000,
+            "ResourceCheckMs": 5000,
+            "MetricsUpdateMs": 2000
+        },
+        "Thresholds": {
+            "MemoryWarningPercent": 90,
+            "DiskSpaceWarningPercent": 85,
+            "LoadAverageWarning": 5.0
+        }
+    },
+    "Print": {
+        "Enabled": true,
+        "QueueSettings": {
+            "DefaultPriority": 1,
+            "EmergencyPriority": 0,
+            "MaintenancePriority": 2,
+            "SystemPriority": 3
+        },
+        "Timeouts": {
+            "ShutdownWaitMs": 500,
+            "JobProcessingTimeoutMs": 1000
+        },
+        "Buffers": {
+            "JobMessageSize": 256,
+            "StatusMessageSize": 256
+        }
+    },
+    "Logging": {
+        "Levels": [
+            "TRACING",
+            "DEBUGGING",
+            "STATING",
+            "CHECKING",
+            "ALERTING",
+            "ERRORING",
+            "FATALITY"
+        ],
+        "Console": {
+            "Enabled": true,
+            "DefaultLevel": 0,
+            "Subsystems": {
+                "API": 0,
+                "Beryllium": 0,
+                "Configuration": 0,
+                "Database": 0,
+                "DepCheck": 2,
+                "Initialization": 0,
+                "Kubernetes": 0,
+                "LogQueueManager": 0,
+                "Main": 0,
+                "MailRelay": 0,
+                "MemoryMetrics": 0,
+                "Network": 0,
+                "PrintQueue": 0,
+                "QueueSystem": 0,
+                "Shutdown": 1,
+                "Startup": 1,
+                "SystemService": 0,
+                "ThreadMgmt": 0,
+                "Threads": 1,
+                "Utils": 0,
+                "WebServer": 0,
+                "WebSocket": 6,
+                "WebSocket-Lib": 0,
+                "mDNSClient": 0,
+                "mDNSServer": 6
+            }
+        },
+        "Database": {
+            "Enabled": false,
+            "DefaultLevel": 4,
+            "Subsystems": {
+                "API": 4,
+                "Beryllium": 4,
+                "Configuration": 4,
+                "Database": 4,
+                "DepCheck": 4,
+                "Initialization": 4,
+                "Kubernetes": 4,
+                "LogQueueManager": 4,
+                "Main": 4,
+                "MailRelay": 4,
+                "MemoryMetrics": 4,
+                "Network": 4,
+                "PrintQueue": 4,
+                "QueueSystem": 4,
+                "Shutdown": 1,
+                "Startup": 1,
+                "SystemService": 4,
+                "ThreadMgmt": 4,
+                "Threads": 1,
+                "Utils": 4,
+                "WebServer": 4,
+                "WebSocket": 4,
+                "WebSocket-Lib": 4,
+                "mDNSClient": 4,
+                "mDNSServer": 4
+            }
+        },
+        "File": {
+            "Enabled": false,
+            "DefaultLevel": 1,
+            "Subsystems": {
+                "API": 1,
+                "Beryllium": 1,
+                "Configuration": 1,
+                "Database": 1,
+                "DepCheck": 1,
+                "Initialization": 1,
+                "Kubernetes": 1,
+                "LogQueueManager": 1,
+                "Main": 1,
+                "MailRelay": 1,
+                "MemoryMetrics": 1,
+                "Network": 1,
+                "PrintQueue": 1,
+                "QueueSystem": 1,
+                "Shutdown": 1,
+                "Startup": 1,
+                "SystemService": 1,
+                "ThreadMgmt": 1,
+                "Threads": 1,
+                "Utils": 1,
+                "WebServer": 1,
+                "WebSocket": 1,
+                "WebSocket-Lib": 1,
+                "mDNSClient": 1,
+                "mDNSServer": 1
+            }
+        },
+        "Notify": {
+            "Enabled": false,
+            "DefaultLevel": 1,
+            "Subsystems": {
+                "API": 1,
+                "Beryllium": 1,
+                "Configuration": 1,
+                "Database": 1,
+                "DepCheck": 1,
+                "Initialization": 1,
+                "Kubernetes": 1,
+                "LogQueueManager": 1,
+                "Main": 1,
+                "MailRelay": 1,
+                "MemoryMetrics": 1,
+                "Network": 1,
+                "PrintQueue": 1,
+                "QueueSystem": 1,
+                "Shutdown": 1,
+                "Startup": 1,
+                "SystemService": 1,
+                "ThreadMgmt": 1,
+                "Threads": 1,
+                "Utils": 1,
+                "WebServer": 1,
+                "WebSocket": 1,
+                "WebSocket-Lib": 1,
+                "mDNSClient": 1,
+                "mDNSServer": 1
+            }
+        }        
+    },
+    "Swagger": {
+        "Enabled": true,
+        "Prefix": "/apidocs",
+        "UIOptions": {
+            "TryItEnabled": true,
+            "AlwaysExpanded": true,
+            "DisplayOperationId": false,
+            "DefaultModelsExpandDepth": 1,
+            "DefaultModelExpandDepth": 1,
+            "ShowExtensions": false,
+            "ShowCommonExtensions": true,
+            "DocExpansion": "list",
+            "SyntaxHighlightTheme": "agate"
+        },
+        "Metadata": {
+            "Title": "Hydrogen REST API",
+            "Description": "A powerful and flexible API for controlling 3D printers and managing print jobs.\n\n## Features\n\n- Complete printer control and monitoring\n- Print job queue management\n- Real-time status updates via WebSocket\n- OpenID Connect integration\n- Extensive configuration options",
+            "Version": "1.0.0",
+            "Contact": {
+                "Name": "Philement Support",
+                "Email": "api@example.com",
+                "Url": "https://philement.com/support"
+            },
+            "License": {
+                "Name": "MIT",
+                "Url": "https://opensource.org/licenses/MIT"
+            }
+        }
+    },
+    "Terminal": {
+        "Enabled": true,
+        "WebPath": "/terminal",
+        "ShellCommand": "/bin/bash",
+        "MaxSessions": 4,
+        "IdleTimeoutSeconds": 600,
+        "BufferSize": 4096
+    },
+    "Databases": {
+        "DefaultWorkers": 1,
+        "Connections": {
+            "Acuranzo": {
+                "Enabled": true,
+                "Type": "postgres",
+                "Host": "${env.ACURANZO_DB_HOST}",
+                "Port": "${env.ACURANZO_DB_PORT}",
+                "Database": "${env.ACURANZO_DB_NAME}",
+                "User": "${env.ACURANZO_DB_USER}",
+                "Pass": "${env.ACURANZO_DB_PASS}",
+                "Workers": 1
+            },
+            "Log": {
+                "Enabled": true,
+                "Type": "postgres",
+                "Host": "${env.LOG_DB_HOST}",
+                "Port": "${env.LOG_DB_PORT}",
+                "Database": "${env.LOG_DB_NAME}",
+                "User": "${env.LOG_DB_USER}",
+                "Pass": "${env.LOG_DB_PASS}",
+                "Workers": 1
+            },
+            "OIDC": {
+                "Enabled": true,
+                "Type": "postgres",
+                "Host": "${env.OIDC_DB_HOST}",
+                "Port": "${env.OIDC_DB_PORT}",
+                "Database": "${env.OIDC_DB_NAME}",
+                "User": "${env.OIDC_DB_USER}",
+                "Pass": "${env.OIDC_DB_PASS}",
+                "Workers": 1
+            },
+            "Helium": {
+                "Enabled": true,
+                "Type": "postgres",
+                "Host": "${env.HELIUM_DB_HOST}",
+                "Port": "${env.HELIUM_DB_PORT}",
+                "Database": "${env.HELIUM_DB_NAME}",
+                "User": "${env.HELIUM_DB_USER}",
+                "Pass": "${env.HELIUM_DB_PASS}",
+                "Workers": 1
+            },
+            "Canvas": {
+                "Enabled": true,
+                "Type": "postgres",
+                "Host": "${env.CANVAS_DB_HOST}",
+                "Port": "${env.CANVAS_DB_PORT}",
+                "User": "${env.CANVAS_DB_USER}",
+                "Pass": "${env.CANVAS_DB_PASS}",
+                "Workers": 1
+            }
+        }
+    },
+    "MailRelay": {
+        "Enabled": true,
+        "ListenPort": 587,
+        "Workers": 2,
+        "QueueSettings": {
+            "MaxQueueSize": 1000,
+            "RetryAttempts": 3,            "RetryDelaySeconds": 300
+        },
+        "OutboundServers": [
+            {
+                "Host": "${env.SMTP_SERVER1_HOST}",
+                "Port": "${env.SMTP_SERVER1_PORT}",
+                "Username": "${env.SMTP_SERVER1_USER}",
+                "Password": "${env.SMTP_SERVER1_PASS}",
+                "UseTLS": true
+            },
+            {
+                "Host": "${env.SMTP_SERVER2_HOST}",
+                "Port": "${env.SMTP_SERVER2_PORT}",
+                "Username": "${env.SMTP_SERVER2_USER}",
+                "Password": "${env.SMTP_SERVER2_PASS}",
+                "UseTLS": true
+            }
+        ]
+    },
+    "mDNSClient": {
+        "Enabled": true,
+        "EnableIPv6": true,
+        "ScanIntervalMs": 5000,
+        "ServiceTypes": [
+            "_http._tcp",
+            "_octoprint._tcp",
+            "_websocket._tcp",
+            "_hydrogen._tcp"
+        ],
+        "MonitoredServices": {
+            "OwnServices": true,
+            "LoadBalancers": true,
+            "PrinterServices": true,
+            "CustomServices": []
+        },
+        "HealthCheck": {
+            "Enabled": true,
+            "IntervalMs": 30000,
+            "TimeoutMs": 5000,
+            "RetryCount": 3
+        }
+    },
+    "mDNSServer": {
+        "Enabled": true,
+        "EnableIPv6": true,
+        "DeviceId": "hydrogen-printer",
+        "FriendlyName": "Hydrogen 3D Printer",
+        "Model": "Hydrogen",
+        "Manufacturer": "Philement",
+        "Version": "0.1.0",
+        "Services": [
+            {
+                "Name": "Hydrogen_Web_Interface",
+                "Type": "_http._tcp",
+                "Port": 5000,
+                "TxtRecords": "path=/api/upload"
+            },
+            {
+                "Name": "Hydrogen_OctoPrint_Emulation",
+                "Type": "_octoprint._tcp",
+                "Port": 5000,
+                "TxtRecords": "path=/api,version=1.1.0"
+            },
+            {
+                "Name": "Hydrogen_WebSocket",
+                "Type": "_websocket._tcp",
+                "Port": 5001,
+                "TxtRecords": "path=/websocket"
+            }
+        ]
+    }
+}

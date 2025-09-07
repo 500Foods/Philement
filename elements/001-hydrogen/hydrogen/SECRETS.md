@@ -60,6 +60,18 @@ export PAYLOAD_LOCK=$(cat public_key.pem | base64 -w 0)
 export PAYLOAD_KEY=$(cat private_key.pem | base64 -w 0)
 ```
 
+### INSTALLER KEYS
+
+```bash
+openssl genrsa -out HYDROGEN_INSTALLER_KEY.pem 2048  # Private key (keep the key)
+openssl rsa -in HYDROGEN_INSTALLER_KEY.pem -pubout -out HYDROGEN_INSTALLER_LOCK.pem  # Public key (share the lock)
+export HYDROGEN_INSTALLER_KEY=$(cat HYDROGEN_INSTALLER_KEY.pem | base64 -w 0)
+export HYDROGEN_INSTALLER_LOCK=$(cat HYDROGEN_INSTALLER_LOCK.pem | base64 -w 0)
+echo $HYDROGEN_INSTALLER_KEY
+echo $HYDROGEN_INSTALLER_LOCK
+
+```
+
 What does this do? It reads the contents of your key files, turns them into a format Hydrogen can understand, and stores them in PAYLOAD_LOCK and PAYLOAD_KEY.
 
 If you want these settings to stick around even after restarting your computer, you’ll need to add them to a special file:

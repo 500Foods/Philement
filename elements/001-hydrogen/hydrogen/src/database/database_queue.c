@@ -77,6 +77,13 @@ DatabaseQueue* database_queue_create(const char* database_name, const char* conn
         return NULL;
     }
 
+    // Initialize the global queue system if not already done
+    extern int queue_system_initialized;
+    if (!queue_system_initialized) {
+        queue_system_init();
+        log_this(SR_DATABASE, "Global queue system initialized on demand", LOG_LEVEL_DEBUG, true, true, true);
+    }
+
     DatabaseQueue* db_queue = malloc(sizeof(DatabaseQueue));
     if (!db_queue) {
         return NULL;
