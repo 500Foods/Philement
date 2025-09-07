@@ -38,3 +38,6 @@ tests/configs/hydrogen_test_json.json
 
 # We don't mind cmake/scripts as we made those, but anything else? Nah.
 cmake/CMakeFiles/*
+
+# LICENSE.md isn't really a markdown file but plain text 
+LICENSE.md
