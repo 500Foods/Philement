@@ -234,6 +234,27 @@ if [[ -n "${CLOC_PID}" ]]; then
             print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
         done < "${CLOC_OUTPUT}"
 
+        # Also display the extended statistics table
+        cloc_stats="${CLOC_OUTPUT%.txt}_stats.txt"
+        if [[ -f "${cloc_stats}" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Extended statistics:"
+            while IFS= read -r line; do
+                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
+            done < "${cloc_stats}"
+        fi
+
+        # Generate SVGs from the table files using Oh.sh
+        # shellcheck disable=SC2154 # OH defined in framework.sh
+        if [[ -f "${CLOC_OUTPUT}" ]]; then
+            ("${OH}" -i "${CLOC_OUTPUT}" -o "${PROJECT_DIR}/CLOC_CODE.svg" 2>/dev/null) &
+        fi
+
+        # Check for stats table file
+        cloc_stats="${CLOC_OUTPUT%.txt}_stats.txt"
+        if [[ -f "${cloc_stats}" ]]; then
+            ("${OH}" -i "${cloc_stats}" -o "${PROJECT_DIR}/CLOC_STAT.svg" 2>/dev/null) &
+        fi
+
         # Extract summary statistics from JSON data
         STATS=$(extract_cloc_stats "${CLOC_DATA}")
         if [[ -n "${STATS}" ]]; then

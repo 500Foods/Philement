@@ -641,10 +641,8 @@ SCRIPT_SCALE=$("${PRINTF}" "%'d" "$(cd "${SCRIPT_DIR}" && "${FIND}" . -type f -n
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "${TOTAL_ELAPSED}")
 TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "${TOTAL_RUNNING_TIME}")
 
-# Update README.md with test results (only if not in skip mode)
-if [[ "${SKIP_TESTS}" = false ]]; then
-    update_readme_with_results
-fi
+# README.md is updated by individual tests (Test 98 generates SVGs)
+# No need to update README from orchestrator
 
 # Create layout JSON string
 # shellcheck disable=SC2154 # TC_ORC_DSP defined externally in framework.sh

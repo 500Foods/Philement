@@ -111,6 +111,8 @@ run_cloc_analysis() {
             cat > "${layout_json}" << EOF
 {
     "title": "{BOLD}{WHITE}${cloc_header}{RESET}",
+    "footer": "{CYAN}Completed{WHITE} ${TIMESTAMP_DISPLAY}{RESET}",
+    "footer_position": "right",
     "columns": [
         {
             "header": "Language",
@@ -261,7 +263,7 @@ EOF
             format_test=$("${PRINTF}" "%'7d" "$(( instrumented_test - 10 ))")
             unity_code=$(printf "%.1f" "$(bc -l <<< "scale=2; 100 * (${instrumented_test} - 10) / (${instrumented_code} - 10)" || true)")
 
-            # Use TABLES program to format the output
+            # Use TABLES program to format the main code table
             # shellcheck disable=SC2154 # TABLES defined externally in framework.sh
             if ! "${TABLES}" "${layout_json}" "${data_json_file}" > "${enhanced_output}"; then
                 echo "TABLES command failed" >&2
@@ -269,13 +271,22 @@ EOF
             fi
 
             # Create second table for extended statistics
-            local stats_layout_json stats_data_json
+            local stats_layout_json stats_data_json stats_output
             stats_layout_json=$(mktemp) || return 1
             stats_data_json=$(mktemp) || return 1
+
+            # Create separate output file for stats table
+            if [[ -n "${output_file}" ]]; then
+                stats_output="${output_file%.txt}_stats.txt"
+            else
+                stats_output=$(mktemp) || return 1
+            fi
 
             cat > "${stats_layout_json}" << EOF
 {
     "title": "{BOLD}{WHITE}Extended Statistics{RESET}",
+    "footer": "{CYAN}Completed{WHITE} ${TIMESTAMP_DISPLAY}{RESET}",
+    "footer_position": "right",
     "columns": [
         {
             "header": "Metric",
@@ -340,13 +351,15 @@ EOF
 ]
 EOF
 
-            # Generate second table and append to output
-            "${TABLES}" "${stats_layout_json}" "${stats_data_json}" >> "${enhanced_output}"
+            # Generate second table to separate file
+            "${TABLES}" "${stats_layout_json}" "${stats_data_json}" > "${stats_output}"
 
-            # If no output_file was provided, output to stdout and clean up
+            # If no output_file was provided, output both tables to stdout and clean up
             if [[ -z "${output_file}" ]]; then
                 cat "${enhanced_output}"
-                rm -f "${enhanced_output}" "${data_json_file}"
+                echo ""
+                cat "${stats_output}"
+                rm -f "${enhanced_output}" "${data_json_file}" "${stats_output}"
             fi
 
             #return 0
@@ -363,34 +376,6 @@ EOF
     return 0
 }
 
-# Function to generate cloc output for README.md format
-generate_cloc_for_readme() {
-    local base_dir="${1:-.}"           # Base directory to analyze (default: current directory)
-    local lint_ignore_file="${2:-.lintignore}"  # Lintignore file path (default: .lintignore)
-
-    # Create cloc output files in diagnostics directory like Test 98 does
-    # shellcheck disable=SC2154 # LOG_PREFIX and TIMESTAMP defined in framework.sh
-    local cloc_output="${LOG_PREFIX}_${TIMESTAMP}_cloc.txt"
-    local cloc_data="${LOG_PREFIX}_${TIMESTAMP}_cloc.json"
-
-    # Run the enhanced cloc analysis
-    # shellcheck disable=SC2310 # We want to continue even if the test fails
-    if ! run_cloc_analysis "${base_dir}" "${lint_ignore_file}" "${cloc_output}" "${cloc_data}"; then
-        echo "Enhanced cloc analysis failed"
-        return 1
-    fi
-
-    # Output the results wrapped in code block for proper README formatting
-    echo '```cloc'
-    if [[ -f "${cloc_output}" ]]; then
-        cat "${cloc_output}"
-    else
-        echo "Error: cloc output file not found: ${cloc_output}"
-    fi
-    echo '```'
-
-    return 0
-}
 
 # Function to extract cloc statistics from JSON data
 extract_cloc_stats() {

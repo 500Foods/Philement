@@ -73,6 +73,9 @@ FRAMEWORK_NAME="Framework Library"
 FRAMEWORK_VERSION="2.8.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
+# Use this once
+TIMESTAMP_DISPLAY=$(date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
+
 # Function to find a command, preferring GNU version
 find_command() {
     local gnu_cmd=$1 std_cmd=$2 var_name=$3
@@ -237,7 +240,6 @@ setup_orchestration_environment() {
 
     # Starting point
     TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
-    TIMESTAMP_DISPLAY=$("${DATE}" '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
 
     # All tests that run hydrogen run with a config that starts with hydrogen_test so we can
     # ensure nothing else is running by killing those processes at the start and at the end
