@@ -35,10 +35,11 @@
 #include "hydrogen.h"
 #include "utils/utils.h"
 
-// System headers - must come first after feature test macros 
+// System headers - must come first after feature test macros
 #include <locale.h>       /* Locale settings */
 #include <features.h>     /* GNU/glibc features */
 #include <ucontext.h>     /* Context handling */
+#include <string.h>       /* String functions */
 
 // Extended POSIX headers 
 #include <sys/ucontext.h> /* Context handling */
@@ -387,6 +388,39 @@ int main(int argc, char *argv[]) {
     // Initialize locale
     setlocale(LC_NUMERIC, "");
 
+    // Handle command-line options
+    char* config_path = NULL;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--help") == 0) {
+            printf("Hydrogen ver %s rel %s\n", VERSION, RELEASE);
+            printf("\n");
+            printf("hydrogen [JSON config file] [options]\n");
+            printf("\n");
+            printf("--help    This screen\n");
+            printf("--version Version information\n");
+            printf("\n");
+            return 0;
+        } else if (strcmp(argv[i], "--version") == 0) {
+            printf("Hydrogen ver %s rel %s\n", VERSION, RELEASE);
+            return 0;
+        } else if (argv[i][0] == '-') {
+            // Unknown option
+            fprintf(stderr, "Unknown option: %s\n", argv[i]);
+            fprintf(stderr, "Use --help for usage information\n");
+            return 1;
+        } else {
+            // First non-option argument is the config file
+            if (config_path == NULL) {
+                config_path = argv[i];
+            } else {
+                // Multiple config files specified
+                fprintf(stderr, "Multiple config files specified\n");
+                fprintf(stderr, "Use --help for usage information\n");
+                return 1;
+            }
+        }
+    }
+
     // Get the executable size
     get_executable_size(argv);
 
@@ -464,7 +498,6 @@ int main(int argc, char *argv[]) {
          log_this(SR_STARTUP, "Failed to set config dump signal handler: %s", LOG_LEVEL_ERROR, strerror(errno));
      }
 
-     char* config_path = (argc > 1) ? argv[1] : NULL;
      if (!startup_hydrogen(config_path)) {
          return 1;
      }

@@ -10,7 +10,7 @@ set -euo pipefail
 # Set by build system
 VERSION="HYDROGEN_VERSION"
 RELEASE="HYDROGEN_RELEASE"
-SIGNATURE="HYDROGEN_SIGNATURE"
+LOCK="HYDROGEN_INSTALLER_LOCK"
 
 # Color definitions
 RED='\033[0;31m'
@@ -208,7 +208,7 @@ display_message "${WHITE}" "This installer will guide you through setting up Hyd
 
 display_title "${GREEN}" "${MAGENTA}" "Initial Installer Checks"
 
-if [[ -n "${SIGNATURE}" ]]; then
+if [[ -n "${LOCK}" ]]; then
     display_message "${WHITE}" "  ✅ Installer Public Key Available"
 fi
 display_message "${RESET}" "  ✅ Executable Payload Available"
@@ -268,10 +268,10 @@ display_message "${BOLD}${WHITE}" "Installation complete."
 
 exit 0
 
-### HYDROGEN LICENSE
-
 ### HYDROGEN EXECUTABLE
 
-### HYDROGEN CONFIGURATION 
+### HYDROGEN CONFIGURATION
+
+### HYDROGEN LICENSE
 
 ### HYDROGEN SIGNATURE

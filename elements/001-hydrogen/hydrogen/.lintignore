@@ -41,3 +41,6 @@ cmake/CMakeFiles/*
 
 # LICENSE.md isn't really a markdown file but plain text 
 LICENSE.md
+
+# We know the installers are huge so let's try to not pay attention to them
+installer/hydrogen_installer_*
