@@ -89,7 +89,7 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
     if [[ "${processed_files}" -gt 0 ]]; then
 
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running markdownlint on ${processed_files} files..."
-        markdownlint --config ".lintignore-markdown" "${to_process_files[@]}" 2> "${TEMP_NEW_LOG}"
+        markdownlint --config ".lintignore-markdown" "${to_process_files[@]}" 2> "${TEMP_NEW_LOG}" || true
        
         # Cache new results
         for file in "${to_process_files[@]}"; do
