@@ -16,6 +16,7 @@
 # capture_process_diagnostics() {
 
 # CHANGELOG
+# 1.7.0 - 2025-09-07 - Find hydrogen updated to include 'hydrogen' so it doesn't find the installer :-(
 # 1.6.1 - 2025-08-08 - Removed validate_config_filees() - useed only oncee
 # 1.6.0 - 2025-08-08 - Removed an extra copies of the logs being generated
 # 1.5.0 - 2025-08-07 - Added better checks for showing shutdown time and total elapsed time
@@ -38,7 +39,7 @@ export LIFECYCLE_GUARD="true"
 
 # Library metadata
 LIFECYCLE_NAME="Lifecycle Management Library"
-LIFECYCLE_VERSION="1.6.1"
+LIFECYCLE_VERSION="1.7.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${LIFECYCLE_NAME} ${LIFECYCLE_VERSION}" "info"
 
@@ -69,14 +70,20 @@ find_hydrogen_binary() {
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using debug build for testing: hydrogen"
             # If none found, search for binary in possible build directories
             else
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Searching for Hydrogen binary in subdirectories..."
-                # shellcheck disable=SC2154 # FIND defined externally in framework.sh
-                hydrogen_bin=$("${FIND}" "${hydrogen_dir}" -type f -executable -name "hydrogen*" -print -quit 2>/dev/null)
-                if [[ -n "${hydrogen_bin}" ]]; then
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found Hydrogen binary at: ${hydrogen_bin}"
+                hydrogen_bin="${hydrogen_dir}/hydrogen"
+                if [[ -f "${hydrogen_bin}" ]]; then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using debug build for testing: hydrogen"
+                # If none found, search for binary in possible build directories
                 else
-                    print_error "${TEST_NUMBER}" "${TEST_COUNTER}" "No Hydrogen binary found in ${hydrogen_dir} or subdirectories"
-                    return 1
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Searching for Hydrogen binary in subdirectories..."
+                    # shellcheck disable=SC2154 # FIND defined externally in framework.sh
+                    hydrogen_bin=$("${FIND}" "${hydrogen_dir}" -type f -executable -name "hydrogen*" ! -name "*hydrogen_installer*" -print -quit 2>/dev/null)
+                    if [[ -n "${hydrogen_bin}" ]]; then
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found Hydrogen binary at: ${hydrogen_bin}"
+                    else
+                        print_error "${TEST_NUMBER}" "${TEST_COUNTER}" "No Hydrogen binary found in ${hydrogen_dir} or subdirectories"
+                        return 1
+                    fi
                 fi
             fi
         fi
