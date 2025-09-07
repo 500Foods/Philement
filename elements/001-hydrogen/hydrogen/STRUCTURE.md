@@ -307,7 +307,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <summary><b>Configuration Files</b></summary>
 
 - [configs/hydrogen.json](configs/hydrogen.json) - Main configuration file for the Hydrogen server
-- [configs/hydrogen-env.json](configs/hydrogen-env.json) - Environment-specific configuration
+- [configs/hydrogen_env.json](configs/hydrogen_env.json) - Environment-specific configuration
+- [configs/hydrogen_default.json](configs/hydrogen_default.json) - Version included in the installer
 
 </details>
 
@@ -571,6 +572,7 @@ hydrogen/
 │   ├── C/                    # C examples
 │   └── JavaScript/           # JavaScript examples
 ├── extras/                   # Extra utilities
+├── installer/                # Installer wrapper and scripts
 ├── payloads/                 # Payload definitions
 └── tests/                    # Test framework
     ├── configs/              # Test configurations

@@ -176,8 +176,8 @@ add_custom_target(check_version
 math(EXPR HYDROGEN_BUILD_NUMBER "${GIT_COMMIT_COUNT} + 1000")
 set(HYDROGEN_VERSION "${HYDROGEN_VERSION_MAJOR}.${HYDROGEN_VERSION_MINOR}.${HYDROGEN_VERSION_PATCH}.${HYDROGEN_BUILD_NUMBER}")
 
-# Release timestamp in ISO 8601 format
-string(TIMESTAMP HYDROGEN_RELEASE "%Y-%m-%d" )
+# Release timestamp in YYYYMMDD format
+string(TIMESTAMP HYDROGEN_RELEASE "%Y%m%d" )
 
 message(STATUS "Hydrogen Version: ${HYDROGEN_VERSION}")
 message(STATUS "Release Timestamp: ${HYDROGEN_RELEASE}")
