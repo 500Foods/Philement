@@ -64,7 +64,7 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-09-07 06:05:14 UTC
+Last updated at 2025-09-07 06:05:37 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -88,13 +88,13 @@ JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
 SUM:                           863          25932          21838          99695
 -------------------------------------------------------------------------------
-39 Files were skipped (duplicate, binary, or without source code):
-  pem: 6
+35 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
   jpg: 3
   png: 3
   dproj: 2
   json: 2
+  pem: 2
   3mf: 1
   detailed: 1
   disabled: 1
