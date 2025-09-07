@@ -768,8 +768,8 @@ fi
 
 # Generate SVGs from generated tables
 # shellcheck disable=SC2154 # OH defined externally in framework.sh
-("${OH}" -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
+("${OH}" --width 108 -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
 # shellcheck disable=SC2154 # OH defined externally in framework.sh
-("${OH}" -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
+("${OH}" --width 108 -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
 
 exit "${OVERALL_EXIT_CODE}"
