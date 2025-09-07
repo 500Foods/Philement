@@ -79,7 +79,7 @@ Hydrogen is currently designed for technical users who:
 
 ## Repository Information
 
-<div style="display: flex; flex-direction: column; align-items: start; gap: 0px;">
-  <img src="CLOC_CODE.svg" alt="First SVG" style="margin: -25px 0px 0px -20px;">
-  <img src="CLOC_STAT.svg" alt="Second SVG" style="margin: -25px 0px 0px -20px;">
+<div style="display: flex; background: none !important; border: none !impoertant; flex-direction: column; align-items: start; gap: 0px;">
+  <img src="CLOC_CODE.svg" alt="First SVG" style=" background: none !important; border: none !impoertant; margin: -25px 0px 0px -20px;">
+  <img src="CLOC_STAT.svg" alt="Second SVG" style=" background: none !important; border: none !impoertant; margin: -25px 0px 0px -20px;">
 </div>
