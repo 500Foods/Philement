@@ -2,14 +2,9 @@
 
 ## ESSENTIAL PREREQUISITES
 
-**Required Reading:**
-
 - [RECIPE.md](../../RECIPE.md) - C development standards and build processes
 - [tests/README.md](../../tests/README.md) - Testing framework overview
 - [docs/reference/database_architecture.md](../reference/database_architecture.md) - Architecture specs
-
-**Key Dependencies:**
-
 - [src/queue/queue.c](../../src/queue/queue.c) - Queue infrastructure to extend
 - [src/config/config_databases.c](../../src/config/config_databases.c) - Existing config system
 - [CMAKE/README.md](../../cmake/README.md) - Build system for database engines
@@ -451,14 +446,6 @@ void unregister_database_trigger(DatabaseTrigger* trigger) {
 }
 ```
 
-**Performance Considerations:**
-
-- **Polling Intervals**: Configurable polling frequency (1-5 seconds typically)
-- **Event Batching**: Group multiple events for efficient processing
-- **Connection Reuse**: Maintain dedicated connection for trigger polling
-- **Deadlock Handling**: Automatic retry with exponential backoff for DB2
-- **Memory Management**: Event queue size limits and cleanup policies
-
 ### Phase 4: Acuranzo Integration & Testing
 
 - Query template system with payload storage
@@ -495,15 +482,6 @@ void unregister_database_trigger(DatabaseTrigger* trigger) {
 5. Unregister database triggers
 6. Close all connections
 7. Cleanup in-memory resources
-
-**Enhanced Launch Requirements:**
-
-```c
-int launch_database_subsystem(void) {
-    // Phase 1-7: Validation through admin thread startup
-    // Return 1 on success, 0 on failure with logging
-}
-```
 
 **Queue Configuration Logic:**
 
