@@ -61,10 +61,10 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 - Prefer JSON rather than YAML or other file formats.
 
 ## Repository Information 
-NOTE: Refer to individual projects for a more nuanced breakdown. While this list is 
-accurate and complete, each project has its own customized list that may report
-more meaningful statistics.
-[![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
+[![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml) 
+
+NOTE: Please refer to individual projects for a more nuanced breakdown. 
+The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
 Last updated at 2025-09-07 06:13:32 UTC
