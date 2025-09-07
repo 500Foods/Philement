@@ -91,9 +91,9 @@ for cmd in "${commands[@]}"; do
         if [[ "${current_path}" = "${cached_path}" ]]; then
             cached=$((cached + 1))
             if [[ -n "${cached_version}" ]]; then
-                results+=("0|${cmd} @ ${cached_path}|${cached_version}")
+                results+=("0|${cmd##*/} @ ${cached_path}|${cached_version}")
             else
-                results+=("0|${cmd} @ ${cached_path}|no version found")
+                results+=("0|${cmd##*/} @ ${cached_path}|no version found")
             fi
             continue
         fi
