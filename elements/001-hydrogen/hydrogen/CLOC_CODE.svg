@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="712.00" height="376.00" viewBox="0 0 712.00 376.00">
   <defs><style>.terminal-text { font-family: 'Consolas', 'Consolas', 'Monaco', 'Courier New', monospace; }</style></defs>
-  <rect width="100%" height="100%" fill="transparent" rx="6"/>
-  <text x="20.00" y="34.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="294.00" lengthAdjust="spacingAndGlyphs" fill="transparent">╭─────────────────────────────────╮</text>
-  <text x="20.00" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="16.80" lengthAdjust="spacingAndGlyphs" fill="transparent">│ </text>
+  <rect width="100%" height="100%" rx="6"/>
+  <text x="20.00" y="34.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="294.00" lengthAdjust="spacingAndGlyphs" fill="#cd3131">╭─────────────────────────────────╮</text>
+  <text x="20.00" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="16.80" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│ </text>
   <text x="36.80" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="260.40" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5">github.com/AlDanial/cloc v 2.06</text>
   <text x="297.20" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
   <text x="305.60" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
@@ -169,7 +169,7 @@
   <text x="20.00" y="319.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="537.60" lengthAdjust="spacingAndGlyphs" fill="#cd3131">╰────────────────┴──┬────┴────────┴─────────┴────────┴─────────┤</text>
   <text x="20.00" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="184.80" lengthAdjust="spacingAndGlyphs" fill="#cd3131">                    │ </text>
   <text x="204.80" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">Completed</text>
-  <text x="280.40" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="260.40" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 2025-Sep-07 (Sun) 10:29:37 PDT</text>
+  <text x="280.40" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="260.40" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 2025-Sep-07 (Sun) 10:34:16 PDT</text>
   <text x="540.80" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
   <text x="549.20" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="20.00" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="537.60" lengthAdjust="spacingAndGlyphs" fill="#cd3131">                    ╰──────────────────────────────────────────╯</text>
