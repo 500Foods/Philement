@@ -208,7 +208,7 @@ display_message "${WHITE}" "This installer will guide you through setting up Hyd
 
 display_title "${GREEN}" "${MAGENTA}" "Initial Installer Checks"
 
-if [[ -n "{SIGNATURE}" ]]; then
+if [[ -n "${SIGNATURE}" ]]; then
     display_message "${WHITE}" "  ✅ Installer Public Key Available"
 fi
 display_message "${RESET}" "  ✅ Executable Payload Available"
