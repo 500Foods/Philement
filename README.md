@@ -64,12 +64,12 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-09-07 06:05:37 UTC
+Last updated at 2025-09-07 06:09:03 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              338          12989          14285          48132
-Markdown                       283           8328             58          26193
+Markdown                       284           8332             58          26210
 Bourne Shell                    64           2871           3259          12966
 C/C++ Header                   106           1326           3951           3573
 JSON                            39              0              0           3527
@@ -86,9 +86,9 @@ YAML                             2              8             13             37
 SQL                              4              4              0             33
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           863          25932          21838          99695
+SUM:                           864          25936          21838          99712
 -------------------------------------------------------------------------------
-35 Files were skipped (duplicate, binary, or without source code):
+34 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
   jpg: 3
   png: 3
@@ -105,7 +105,6 @@ SUM:                           863          25932          21838          99695
   html: 1
   ico: 1
   js: 1
-  license: 1
   lintignore-bash: 1
   lintignore-c: 1
   lintignore-markdown: 1
