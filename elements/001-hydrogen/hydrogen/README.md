@@ -72,65 +72,10 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: 2025-Sep-07 (Sun) 09:40:57 PDT
-
-### Summary
-
-| Metric | Value |
-| ------ | ----- |
-| Total Tests | 30 |
-| Passed | 29 |
-| Failed | 0 |
-| Total Subtests | 431 |
-| Passed Subtests | 421 |
-| Failed Subtests | 0 |
-| Elapsed Time | 00:01:43.873 |
-| Cumulative Time | 00:02:16.168 |
-
-[Test Suite Results](COMPLETE.svg) | [Test Suite Coverage](COVERAGE.svg)
-
-### Test Coverage
-
-| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |
-| --------- | ----------- | ----------- | ----------- | ----------- | -------- |
-| Unity Tests | 99 | 139 | 5,009 | 16,103 | 31.106% |
-| Blackbox Tests | 122 | 139 | 8,964 | 16,103 | 55.667% |
-| Combined Tests | 123 | 139 | 10,001 | 16,103 | 62.106% |
-
-### Individual Test Results
-
-| Status | Time | Test | Test Name | Tests | Pass | Fail |
-| ------ | ---- | -- | ---- | ----- | ---- | ---- |
-| ✅ | 00:01:23.165 | 01-CMP | Compilation (source code: 410 files) | 17 | 17 | 0 |
-| ✅ | 00:00:00.159 | 02-ENV | Environment Variables (secrets: 5) | 9 | 9 | 0 |
-| ✅ | 00:00:07.603 | 04-LNK | Markdown Links Check (github-sitemap) | 3 | 3 | 0 |
-| ✅ | 00:00:05.206 | 10-UNT | Unity (1,338 / 1,338 unit tests passed) | 173 | 173 | 0 |
-| ✅ | 00:00:00.817 | 11-SIV | Memory Leak Detection | 4 | 4 | 0 |
-| ✅ | 00:00:01.627 | 12-VAR | Env Var Substitution | 15 | 15 | 0 |
-| ✅ | 00:00:01.672 | 13-BUG | Crash Handler | 37 | 37 | 0 |
-| ✅ | 00:00:01.062 | 14-DEP | Library Dependencies | 17 | 17 | 0 |
-| ✅ | 00:00:00.445 | 15-JSN | JSON Error Handling | 4 | 4 | 0 |
-| ✅ | 00:00:00.696 | 16-SHD | Shutdown | 5 | 5 | 0 |
-| ✅ | 00:00:01.317 | 17-UPD | Startup/Shutdown | 9 | 9 | 0 |
-| ✅ | 00:00:03.755 | 18-SIG | Signal Handling | 9 | 9 | 0 |
-| ✅ | 00:00:01.371 | 19-SCK | Socket Rebinding | 8 | 8 | 0 |
-| ✅ | 00:00:00.904 | 20-PRE | Prefix | 11 | 11 | 0 |
-| ✅ | 00:00:01.067 | 21-SYS | Endpoints | 11 | 11 | 0 |
-| ✅ | 00:00:01.057 | 22-SWG | Swagger | 15 | 15 | 0 |
-| ✅ | 00:00:01.390 | 23-WSS | WebSockets | 13 | 13 | 0 |
-| ✅ | 00:00:01.281 | 24-UPL | Uploads | 13 | 13 | 0 |
-| ✅ | 00:00:02.628 | 25-DNS | mDNS | 7 | 7 | 0 |
-| ✅ | 00:00:01.131 | 26-TRM | Terminal | 17 | 17 | 0 |
-| ❌ | 00:00:01.173 | 27-DBS | Databases | 18 | 8 | 10 |
-| ✅ | 00:00:01.218 | 90-MKD | Markdown Lint (markdownlint: 254 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.990 | 91-GCC | C Lint (cppcheck: 412 files) | 1 | 1 | 0 |
-| ✅ | 00:00:09.528 | 92-BSH | Bash Lint (shellheck: 61 files) | 2 | 2 | 0 |
-| ✅ | 00:00:00.653 | 93-JSN | JSON Lint (jsonlint: 36 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.088 | 94-JAV | JavaScript Lint (eslint: 0 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.657 | 95-CSS | CSS Lint (stylelint: 1 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.267 | 96-HTM | HTML Lint (htmlhint: 5 files) | 1 | 1 | 0 |
-| ✅ | 00:00:03.025 | 98-SIZ | Code Size Analysis | 4 | 4 | 0 |
-| ✅ | 00:00:00.216 | 99-COV | Test Suite Coverage (coverage_table) | 4 | 4 | 0 |
+<div style="display: flex; flex-direction: column; align-items: start; gap: 0px;">
+  <img src="COMPLETE.svg" alt="First SVG" style="margin: -25px 0px 0px -20px;">
+  <img src="COVERAGE.svg" alt="Second SVG" style="margin: -25px 0px 0px -20px;">
+</div>
 
 ## Repository Information
 
