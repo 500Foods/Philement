@@ -57,13 +57,14 @@ pthread_t websocket_thread;
 pthread_t mdns_server_thread;
 pthread_t print_queue_thread;
 
-// Thread tracking structures 
+// Thread tracking structures
 
 ServiceThreads logging_threads;
 ServiceThreads webserver_threads;
 ServiceThreads websocket_threads;
 ServiceThreads mdns_server_threads;
 ServiceThreads print_threads;
+ServiceThreads database_threads;
 
 // Shared resource handles
 mdns_server_t *mdns_server = NULL;

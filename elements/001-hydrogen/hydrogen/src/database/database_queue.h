@@ -23,23 +23,25 @@
 #define QUEUE_TYPE_FAST    "fast"
 #define QUEUE_TYPE_CACHE   "cache"
 
+// Forward declaration for self-referencing structure
+typedef struct DatabaseQueue DatabaseQueue;
+
 // Database-specific queue wrapper that manages multiple queues
-typedef struct DatabaseQueue {
+struct DatabaseQueue {
     char* database_name;           // Database identifier (e.g., "Acuranzo")
     char* connection_string;       // Database connection string
-
-    // Individual queues for different priority levels
-    Queue* queue_slow;             // For complex queries, reports
-    Queue* queue_medium;           // For standard business logic
-    Queue* queue_fast;             // For quick lookups, simple operations
-    Queue* queue_cache;            // For cached queries, templates
-
-    // Worker thread management
-    pthread_t worker_threads_slow;
-    pthread_t worker_threads_medium;
-    pthread_t worker_threads_fast;
-    pthread_t worker_threads_cache;
-
+    char* queue_type;              // Queue type: "Lead", "slow", "medium", "fast", "cache"
+    
+    // Single queue instance - type determined by queue_type
+    Queue* queue;                  // The actual queue for this worker
+    
+    // Worker thread management - single thread per queue
+    pthread_t worker_thread;
+    
+    // Queue role flags
+    volatile bool is_lead_queue;   // True if this is the Lead queue for the database
+    volatile bool can_spawn_queues; // True if this queue can create additional queues
+    
     // Queue statistics
     volatile int active_connections;
     volatile int total_queries_processed;
@@ -49,10 +51,16 @@ typedef struct DatabaseQueue {
     pthread_mutex_t queue_access_lock;
     sem_t worker_semaphore;        // Controls worker thread operation
 
+    // Lead queue management (only used by Lead queues)
+    DatabaseQueue** child_queues;  // Array of spawned queues (slow/medium/fast/cache)
+    int child_queue_count;         // Number of active child queues
+    int max_child_queues;          // Maximum child queues allowed
+    pthread_mutex_t children_lock; // Protects child queue operations
+
     // Flags
     volatile bool shutdown_requested;
     volatile bool is_connected;
-} DatabaseQueue;
+};
 
 // Database queue manager that coordinates multiple databases
 typedef struct DatabaseQueueManager {
@@ -94,6 +102,9 @@ typedef enum {
     DB_QUEUE_MAX_TYPES
 } DatabaseQueueType;
 
+// External reference to global queue manager
+extern DatabaseQueueManager* global_queue_manager;
+
 // Function prototypes
 
 // Initialize database queue infrastructure
@@ -101,7 +112,8 @@ bool database_queue_system_init(void);
 void database_queue_system_destroy(void);
 
 // Database queue management
-DatabaseQueue* database_queue_create(const char* database_name, const char* connection_string);
+DatabaseQueue* database_queue_create_lead(const char* database_name, const char* connection_string);
+DatabaseQueue* database_queue_create_worker(const char* database_name, const char* connection_string, const char* queue_type);
 void database_queue_destroy(DatabaseQueue* db_queue);
 
 // Queue manager operations
@@ -112,13 +124,18 @@ DatabaseQueue* database_queue_manager_get_database(DatabaseQueueManager* manager
 
 // Query operations
 bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query);
-DatabaseQuery* database_queue_process_next(DatabaseQueue* db_queue, int queue_type);
+DatabaseQuery* database_queue_process_next(DatabaseQueue* db_queue);
 DatabaseQuery* database_queue_await_result(DatabaseQueue* db_queue, const char* query_id, int timeout_seconds);
 
-// Worker thread management
+// Worker thread management (single generic worker)
 void* database_queue_worker_thread(void* arg);
-bool database_queue_start_workers(DatabaseQueue* db_queue);
-void database_queue_stop_workers(DatabaseQueue* db_queue);
+bool database_queue_start_worker(DatabaseQueue* db_queue);
+void database_queue_stop_worker(DatabaseQueue* db_queue);
+
+// Lead queue management
+bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* queue_type);
+bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* queue_type);
+void database_queue_manage_child_queues(DatabaseQueue* lead_queue);
 
 // Statistics and monitoring
 size_t database_queue_get_depth(DatabaseQueue* db_queue);
