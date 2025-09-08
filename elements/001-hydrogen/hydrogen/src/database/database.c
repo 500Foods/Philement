@@ -23,26 +23,22 @@ static pthread_mutex_t database_subsystem_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Initialize the database subsystem
 bool database_subsystem_init(void) {
-    log_this(SR_DATABASE, "Phase 2.1: Starting database subsystem structure initialization", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Starting database subsystem initialization", LOG_LEVEL_STATE);
 
-    log_this(SR_DATABASE, "Phase 2.2: Attempting to lock database subsystem mutex", LOG_LEVEL_STATE);
     pthread_mutex_lock(&database_subsystem_mutex);
 
     if (database_subsystem) {
-        log_this(SR_DATABASE, "Phase 2.3: Database subsystem already exists, unlocking and returning", LOG_LEVEL_STATE);
         pthread_mutex_unlock(&database_subsystem_mutex);
         return true; // Already initialized
     }
 
-    log_this(SR_DATABASE, "Phase 2.4: Allocating database subsystem structure", LOG_LEVEL_STATE);
     database_subsystem = calloc(1, sizeof(DatabaseSubsystem));
     if (!database_subsystem) {
-        log_this(SR_DATABASE, "Phase 2.5: Failed to allocate database subsystem", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to allocate database subsystem", LOG_LEVEL_ERROR);
         pthread_mutex_unlock(&database_subsystem_mutex);
         return false;
     }
 
-    log_this(SR_DATABASE, "Phase 2.6: Initializing subsystem fields", LOG_LEVEL_STATE);
     // Initialize subsystem
     database_subsystem->initialized = false;
     database_subsystem->shutdown_requested = false;
@@ -58,20 +54,15 @@ bool database_subsystem_init(void) {
 
     // Initialize engine registry
     memset(database_subsystem->engines, 0, sizeof(database_subsystem->engines));
-    log_this(SR_DATABASE, "Phase 2.7: Engine registry initialized", LOG_LEVEL_STATE);
 
     database_subsystem->initialized = true;
-    log_this(SR_DATABASE, "Phase 2.8: Subsystem initialization flag set", LOG_LEVEL_STATE);
-
-    log_this(SR_DATABASE, "Phase 2.9: Unlocking database subsystem mutex", LOG_LEVEL_STATE);
     pthread_mutex_unlock(&database_subsystem_mutex);
 
     // Initialize database thread tracking
     extern ServiceThreads database_threads;
     init_service_threads(&database_threads, SR_DATABASE);
-    log_this(SR_DATABASE, "Phase 2.11: Database thread tracking initialized", LOG_LEVEL_STATE);
 
-    log_this(SR_DATABASE, "Phase 2.12: Database subsystem initialization completed successfully", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Database subsystem initialization completed successfully", LOG_LEVEL_STATE);
     return true;
 }
 
@@ -98,16 +89,12 @@ void database_subsystem_shutdown(void) {
 
 // Add a database configuration
 bool database_add_database(const char* name, const char* engine, const char* connection_string __attribute__((unused))) {
-    log_this(SR_DATABASE, "Phase 3.44: ENTERING database_add_database function", LOG_LEVEL_STATE);
-    log_this(SR_DATABASE, "Phase 3.6: Starting database addition for: %s", LOG_LEVEL_STATE, name);
-    log_this(SR_DATABASE, "Phase 3.6.1: Parameter validation beginning", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Starting database addition for: %s", LOG_LEVEL_STATE, name);
 
     if (!database_subsystem || !name || !engine) {
-        log_this(SR_DATABASE, "Phase 3.7: Invalid parameters for database addition", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Invalid parameters for database addition", LOG_LEVEL_ERROR);
         return false;
     }
-
-    log_this(SR_DATABASE, "Phase 3.8: Parameters validated - name: %s, engine: %s", LOG_LEVEL_STATE, name, engine);
 
     // Validate that we can get the engine interface
     DatabaseEngineInterface* engine_interface = NULL;
@@ -128,7 +115,7 @@ bool database_add_database(const char* name, const char* engine, const char* con
         return false;
     }
 
-    log_this(SR_DATABASE, "Database engine interface found", LOG_LEVEL_DEBUG);
+    // log_this(SR_DATABASE, "Database engine interface found", LOG_LEVEL_DEBUG);
 
     // Get queue configuration from app config
     const DatabaseConfig* db_config = &app_config->databases;
@@ -150,22 +137,49 @@ bool database_add_database(const char* name, const char* engine, const char* con
 
     // Create database queue with connection string
     char* conn_str = NULL;
-    if (strcmp(engine, "sqlite") == 0) {
-        // For SQLite, use the database path directly
-        conn_str = strdup(conn_config->database ? conn_config->database : ":memory:");
+    if (engine_interface && engine_interface->get_connection_string) {
+        // Use the engine's connection string builder
+        ConnectionConfig temp_config = {
+            .host = conn_config->host,
+            .port = conn_config->port ? atoi(conn_config->port) : 5432,
+            .database = conn_config->database,
+            .username = conn_config->user,
+            .password = conn_config->pass,
+            .connection_string = NULL,  // Not available in DatabaseConnection
+            .timeout_seconds = 30
+        };
+        conn_str = engine_interface->get_connection_string(&temp_config);
     } else {
-        // For other engines, build connection string from config
-        // This is a simplified version - full implementation would use the engine's connection string builder
-        size_t conn_str_len = 256;
-        conn_str = malloc(conn_str_len);
-        if (conn_str) {
-            snprintf(conn_str, conn_str_len, "%s://%s:%s@%s:%s/%s",
-                    engine,
-                    conn_config->user ? conn_config->user : "",
-                    conn_config->pass ? conn_config->pass : "",
-                    conn_config->host ? conn_config->host : "localhost",
-                    conn_config->port ? conn_config->port : "5432",
-                    conn_config->database ? conn_config->database : "test");
+        // Fallback connection string building
+        if (strcmp(engine, "sqlite") == 0) {
+            // For SQLite, use the database path directly
+            conn_str = strdup(conn_config->database ? conn_config->database : ":memory:");
+        } else {
+            // For other engines, build connection string from config
+            size_t conn_str_len = 256;
+            conn_str = malloc(conn_str_len);
+            if (conn_str) {
+                if (strcmp(engine, "mysql") == 0) {
+                    snprintf(conn_str, conn_str_len, "mysql://%s:%s@%s:%s/%s",
+                            conn_config->user ? conn_config->user : "",
+                            conn_config->pass ? conn_config->pass : "",
+                            conn_config->host ? conn_config->host : "localhost",
+                            conn_config->port ? conn_config->port : "3306",
+                            conn_config->database ? conn_config->database : "");
+                } else if (strcmp(engine, "db2") == 0) {
+                    // DB2 uses database name as DSN
+                    conn_str = strdup(conn_config->database ? conn_config->database : "SAMPLE");
+                } else {
+                    // Default PostgreSQL-style
+                    snprintf(conn_str, conn_str_len, "%s://%s:%s@%s:%s/%s",
+                            engine,
+                            conn_config->user ? conn_config->user : "",
+                            conn_config->pass ? conn_config->pass : "",
+                            conn_config->host ? conn_config->host : "localhost",
+                            conn_config->port ? conn_config->port : "5432",
+                            conn_config->database ? conn_config->database : "test");
+                }
+            }
         }
     }
 
@@ -191,15 +205,14 @@ bool database_add_database(const char* name, const char* engine, const char* con
     }
 
     // Add to global queue manager - launch responsibility ends here
-    log_this(SR_DATABASE, "Phase 3.44: Adding DQM to global queue manager", LOG_LEVEL_STATE);
     if (!global_queue_manager) {
-        log_this(SR_DATABASE, "Phase 3.45: Global queue manager not initialized", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Global queue manager not initialized", LOG_LEVEL_ERROR);
         database_queue_destroy(db_queue);
         return false;
     }
 
     if (!database_queue_manager_add_database(global_queue_manager, db_queue)) {
-        log_this(SR_DATABASE, "Phase 3.46: Failed to add DQM to queue manager", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to add DQM to queue manager", LOG_LEVEL_ERROR);
         database_queue_destroy(db_queue);
         return false;
     }
@@ -208,8 +221,7 @@ bool database_add_database(const char* name, const char* engine, const char* con
     database_subsystem->queue_manager = global_queue_manager;
 
     // Launch complete - DQM is now independent and handles its own database work
-    log_this(SR_DATABASE, "Phase 3.47: DQM launched successfully for %s", LOG_LEVEL_STATE, name);
-    log_this(SR_DATABASE, "Phase 3.48: Database launch completed - DQM is now independent", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "DQM launched successfully for %s", LOG_LEVEL_STATE, name);
 
     return true;
 }
