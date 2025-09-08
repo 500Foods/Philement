@@ -282,7 +282,7 @@ print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Line counts: ..${LINE_COUNT_FIL
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Cloc output: ..${CLOC_OUTPUT}"
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Cloc data: ..${CLOC_DATA}"
 
-#TEST_NAME="${TEST_NAME} {BLUE}(lines: ${LOCCOUNT}){RESET}"
+TEST_NAME="${TEST_NAME} {BLUE}(lines: ${LOCCOUNT}){RESET}"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

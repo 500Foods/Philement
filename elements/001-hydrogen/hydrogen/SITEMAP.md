@@ -262,5 +262,6 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_94_eslint.md](tests/docs/test_94_eslint.md): JavaScript linting tests
 - [test_95_stylelint.md](tests/docs/test_95_stylelint.md): CSS linting tests
 - [test_96_htmlhint.md](tests/docs/test_96_htmlhint.md): HTML validation tests
+- [test_97_xmllint.md](tests/docs/test_97_xmllint.md): XML/SVG validation tests
 - [test_98_code_size.md](tests/docs/test_98_code_size.md): Code size analysis and metrics
 - [test_99_coverage.md](tests/docs/test_99_coverage.md): Build system coverage information

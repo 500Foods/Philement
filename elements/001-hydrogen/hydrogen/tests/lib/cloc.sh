@@ -99,7 +99,7 @@ run_cloc_analysis() {
     core_json=$(mktemp) || return 1
     test_json=$(mktemp) || return 1
 
-    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" . --quiet --json --exclude-list-file="${exclude_list}" --not-match-d='tests/unity' --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${core_json}" 2>&1); then
+    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" . --quiet --json --exclude-list-file="${exclude_list}" --not-match-d='tests/unity' --not-match-f='hydrogen_installer' --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${core_json}" 2>&1); then
         if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" tests/unity/src --quiet --json --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${test_json}" 2>&1); then
             # Extract cloc version from core JSON
             local cloc_header
