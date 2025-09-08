@@ -52,7 +52,7 @@ commands=(
     "tshark" "zsh"
     "cmake" "gcc" "ninja" "curl" "websocat" "wscat" 
     "${GIT}" "${MD5SUM}" "${CLOC}"
-    "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "xmllint" "jsonlint" "swagger-cli"
+    "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "xmlstarlet" "jsonlint" "swagger-cli"
     "${OH}" "${TABLES}" 
     "coverage_table.sh" "github-sitemap.sh"
     "db2level" "mysql_config" "pg_config" "sqlite3"
