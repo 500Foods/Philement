@@ -220,7 +220,7 @@ The project uses automated linting tools to enforce code quality and consistency
 6. **HTML Files (htmlhint)**
    - Validates HTML syntax
 
-7. **XML/SVG Files (xmllint)**
+7. **XML/SVG Files (xmlstarlet)**
    - Validates XML/SVG syntax and structure
    - Enforces accessibility standards
    - Checks for common markup issues

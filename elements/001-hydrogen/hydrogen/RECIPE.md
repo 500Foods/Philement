@@ -84,7 +84,7 @@ tests/          Test framework
 - tests/test_94_eslint.sh - Lint for JavaScript
 - tests/test_95_stylelint.sh - Lint for CSS
 - tests/test_96_htmlhint.sh - Lint for HTML
-- tests/test_97_xmllint.sh - Lint for XML/SVG
+- tests/test_97_xmlstarlet.sh - Lint for XML/SVG (xmlstarlet)
 - tests/test_98_code_size.sh - Checks limits on source code, runs cloc
 - tests/test_99_coverage.sh - Shows Unity and Blackbox test coverage
 

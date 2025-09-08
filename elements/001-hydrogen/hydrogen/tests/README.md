@@ -85,7 +85,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_94_eslint.sh](docs/test_94_eslint.md)**: Lints JavaScript files using eslint.
 - **[test_95_stylelint.sh](docs/test_95_stylelint.md)**: Validates CSS files using stylelint.
 - **[test_96_htmlhint.sh](docs/test_96_htmlhint.md)**: Validates HTML files using htmlhint.
-- **[test_97_xmllint.sh](docs/test_97_xmllint.md)**: Validates XML/SVG files using xmllint.
+- **[test_97_xmlstarlet.sh](docs/test_97_xmlstarlet.md)**: Validates XML/SVG files using xmlstarlet.
 - **[test_98_code_size.sh](docs/test_98_code_size.md)**: Analyzes code size metrics and file distribution.
 - **[test_99_coverage.sh](docs/test_99_coverage.md)**: Performs comprehensive coverge analysis.
 
