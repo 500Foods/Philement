@@ -34,33 +34,26 @@ static DatabaseQuery* deserialize_query_from_json(const char* json);
  * Sets up global queue manager for coordinating all database connections.
  */
 bool database_queue_system_init(void) {
-    log_this(SR_DATABASE, "Phase 3.1.1: Initializing database queue system", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Initializing database queue system", LOG_LEVEL_STATE);
 
     if (global_queue_manager != NULL) {
-        log_this(SR_DATABASE, "Phase 3.1.2: Database queue system already initialized", LOG_LEVEL_STATE);
         return true;
     }
 
     // Ensure the global queue system is initialized first
     extern int queue_system_initialized;
-    log_this(SR_DATABASE, "Phase 3.1.3: Checking global queue system status", LOG_LEVEL_STATE);
     if (!queue_system_initialized) {
-        log_this(SR_DATABASE, "Phase 3.1.4: Initializing global queue system", LOG_LEVEL_STATE);
         queue_system_init();
-        log_this(SR_DATABASE, "Phase 3.1.5: Global queue system initialized successfully", LOG_LEVEL_STATE);
-    } else {
-        log_this(SR_DATABASE, "Phase 3.1.6: Global queue system already initialized", LOG_LEVEL_STATE);
     }
 
     // Create global queue manager with capacity for up to 8 databases
-    log_this(SR_DATABASE, "Phase 3.1.7: Creating global queue manager", LOG_LEVEL_STATE);
     global_queue_manager = database_queue_manager_create(8);
     if (!global_queue_manager) {
-        log_this(SR_DATABASE, "Phase 3.1.8: Failed to create database queue manager", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to create database queue manager", LOG_LEVEL_ERROR);
         return false;
     }
 
-    log_this(SR_DATABASE, "Phase 3.1.9: Database queue system initialized successfully", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Database queue system initialized successfully", LOG_LEVEL_STATE);
     return true;
 }
 
@@ -88,29 +81,22 @@ void database_queue_system_destroy(void) {
  * Create a Lead queue for a database - this is the primary queue that manages other queues
  */
 DatabaseQueue* database_queue_create_lead(const char* database_name, const char* connection_string) {
-    log_this(SR_DATABASE, "Phase 3.9: Creating Lead queue for database: %s", LOG_LEVEL_STATE, database_name);
+    log_this(SR_DATABASE, "Creating Lead queue for database: %s", LOG_LEVEL_STATE, database_name);
 
     if (!database_name || !connection_string || strlen(database_name) == 0) {
-        log_this(SR_DATABASE, "Phase 3.10: Invalid parameters for Lead queue creation", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Invalid parameters for Lead queue creation", LOG_LEVEL_ERROR);
         return NULL;
     }
 
-    log_this(SR_DATABASE, "Phase 3.11: Parameters validated for database: %s", LOG_LEVEL_STATE, database_name);
-
     // Initialize the global queue system if not already done
     extern int queue_system_initialized;
-    log_this(SR_DATABASE, "Phase 3.12: Checking queue system initialization", LOG_LEVEL_STATE);
     if (!queue_system_initialized) {
-        log_this(SR_DATABASE, "Phase 3.13: Initializing global queue system", LOG_LEVEL_STATE);
         queue_system_init();
-        log_this(SR_DATABASE, "Phase 3.14: Global queue system initialized", LOG_LEVEL_STATE);
-    } else {
-        log_this(SR_DATABASE, "Phase 3.15: Queue system already initialized", LOG_LEVEL_STATE);
     }
 
     DatabaseQueue* db_queue = malloc(sizeof(DatabaseQueue));
     if (!db_queue) {
-        log_this(SR_DATABASE, "Phase 3.16: Failed to allocate Lead queue", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to allocate Lead queue", LOG_LEVEL_ERROR);
         return NULL;
     }
 
@@ -136,7 +122,6 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     db_queue->can_spawn_queues = true;
 
     // Create the Lead queue with descriptive name
-    log_this(SR_DATABASE, "Phase 3.16: Creating Lead queue", LOG_LEVEL_STATE);
     char lead_queue_name[256];
     snprintf(lead_queue_name, sizeof(lead_queue_name), "%s_lead", database_name);
 
@@ -145,7 +130,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     db_queue->queue = queue_create(lead_queue_name, &queue_attrs);
 
     if (!db_queue->queue) {
-        log_this(SR_DATABASE, "Phase 3.17: Failed to create Lead queue", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to create Lead queue", LOG_LEVEL_ERROR);
         free(db_queue->queue_type);
         free(db_queue->connection_string);
         free(db_queue->database_name);
@@ -153,18 +138,17 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
         return NULL;
     }
 
-    log_this(SR_DATABASE, "Phase 3.18: Lead queue created successfully", LOG_LEVEL_STATE);
-    log_this(SR_DATABASE, "Phase 3.19: Initializing synchronization primitives", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Lead queue created successfully", LOG_LEVEL_STATE);
 
     // Initialize synchronization primitives
     if (pthread_mutex_init(&db_queue->queue_access_lock, NULL) != 0) {
-        log_this(SR_DATABASE, "Phase 3.20: Failed to initialize queue access mutex", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to initialize queue access mutex", LOG_LEVEL_ERROR);
         database_queue_destroy(db_queue);
         return NULL;
     }
 
     if (sem_init(&db_queue->worker_semaphore, 0, 0) != 0) {
-        log_this(SR_DATABASE, "Phase 3.21: Failed to initialize worker semaphore", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to initialize worker semaphore", LOG_LEVEL_ERROR);
         pthread_mutex_destroy(&db_queue->queue_access_lock);
         database_queue_destroy(db_queue);
         return NULL;
@@ -172,7 +156,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
 
     // Initialize Lead queue management
     if (pthread_mutex_init(&db_queue->children_lock, NULL) != 0) {
-        log_this(SR_DATABASE, "Phase 3.22: Failed to initialize children mutex", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to initialize children mutex", LOG_LEVEL_ERROR);
         sem_destroy(&db_queue->worker_semaphore);
         pthread_mutex_destroy(&db_queue->queue_access_lock);
         database_queue_destroy(db_queue);
@@ -183,7 +167,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     db_queue->max_child_queues = 4;
     db_queue->child_queues = calloc((size_t)db_queue->max_child_queues, sizeof(DatabaseQueue*));
     if (!db_queue->child_queues) {
-        log_this(SR_DATABASE, "Phase 3.23: Failed to allocate child queue array", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to allocate child queue array", LOG_LEVEL_ERROR);
         pthread_mutex_destroy(&db_queue->children_lock);
         sem_destroy(&db_queue->worker_semaphore);
         pthread_mutex_destroy(&db_queue->queue_access_lock);
@@ -199,7 +183,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     db_queue->current_queue_depth = 0;
     db_queue->child_queue_count = 0;
 
-    log_this(SR_DATABASE, "Phase 3.24: Lead queue creation completed successfully", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Lead queue creation completed successfully", LOG_LEVEL_STATE);
     return db_queue;
 }
 
@@ -343,25 +327,20 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
  * Implements round-robin distribution and centralized statistics.
  */
 DatabaseQueueManager* database_queue_manager_create(size_t max_databases) {
-    log_this(SR_DATABASE, "Phase 3.51: Starting queue manager creation", LOG_LEVEL_STATE);
-
     DatabaseQueueManager* manager = malloc(sizeof(DatabaseQueueManager));
     if (!manager) {
-        log_this(SR_DATABASE, "Phase 3.52: Failed to malloc queue manager", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to malloc queue manager", LOG_LEVEL_ERROR);
         return NULL;
     }
-    log_this(SR_DATABASE, "Phase 3.53: Queue manager struct allocated", LOG_LEVEL_STATE);
 
     memset(manager, 0, sizeof(DatabaseQueueManager));
-    log_this(SR_DATABASE, "Phase 3.54: Queue manager struct initialized", LOG_LEVEL_STATE);
 
     manager->databases = calloc(max_databases, sizeof(DatabaseQueue*));
     if (!manager->databases) {
-        log_this(SR_DATABASE, "Phase 3.55: Failed to calloc database array", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to calloc database array", LOG_LEVEL_ERROR);
         free(manager);
         return NULL;
     }
-    log_this(SR_DATABASE, "Phase 3.56: Database array allocated", LOG_LEVEL_STATE);
 
     manager->database_count = 0;
     manager->max_databases = max_databases;
@@ -371,18 +350,16 @@ DatabaseQueueManager* database_queue_manager_create(size_t max_databases) {
     manager->total_queries = 0;
     manager->successful_queries = 0;
     manager->failed_queries = 0;
-    log_this(SR_DATABASE, "Phase 3.57: Statistics initialized", LOG_LEVEL_STATE);
 
     if (pthread_mutex_init(&manager->manager_lock, NULL) != 0) {
-        log_this(SR_DATABASE, "Phase 3.58: Failed to initialize manager mutex", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to initialize manager mutex", LOG_LEVEL_ERROR);
         free(manager->databases);
         free(manager);
         return NULL;
     }
-    log_this(SR_DATABASE, "Phase 3.59: Manager mutex initialized", LOG_LEVEL_STATE);
 
     manager->initialized = true;
-    log_this(SR_DATABASE, "Phase 3.60: Queue manager creation completed successfully", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Queue manager creation completed successfully", LOG_LEVEL_STATE);
     return manager;
 }
 
@@ -413,36 +390,25 @@ void database_queue_manager_destroy(DatabaseQueueManager* manager) {
  * Add a database queue to the manager
  */
 bool database_queue_manager_add_database(DatabaseQueueManager* manager, DatabaseQueue* db_queue) {
-    log_this(SR_DATABASE, "Phase 3.46.1: Validating parameters for add database", LOG_LEVEL_STATE);
     if (!manager || !db_queue) {
-        log_this(SR_DATABASE, "Phase 3.46.2: Invalid parameters - manager: %s, db_queue: %s", LOG_LEVEL_ERROR,
-                manager ? "OK" : "NULL", db_queue ? "OK" : "NULL");
+        log_this(SR_DATABASE, "Invalid parameters for add database", LOG_LEVEL_ERROR);
         return false;
     }
 
-    log_this(SR_DATABASE, "Phase 3.46.3: About to lock manager mutex", LOG_LEVEL_STATE);
     pthread_mutex_lock(&manager->manager_lock);
-    log_this(SR_DATABASE, "Phase 3.46.4: Manager mutex locked successfully", LOG_LEVEL_STATE);
-
-    log_this(SR_DATABASE, "Phase 3.46.5: Checking capacity - current: %zu, max: %zu", LOG_LEVEL_STATE,
-            manager->database_count, manager->max_databases);
     if (manager->database_count >= manager->max_databases) {
         pthread_mutex_unlock(&manager->manager_lock);
         log_this(SR_DATABASE, "Cannot add database: maximum capacity reached", LOG_LEVEL_ALERT, true, true, true);
         return false;
     }
 
-    log_this(SR_DATABASE, "Phase 3.46.6: Adding database to array at index %zu", LOG_LEVEL_STATE, manager->database_count);
     manager->databases[manager->database_count++] = db_queue;
-    
-    log_this(SR_DATABASE, "Phase 3.46.7: About to unlock manager mutex", LOG_LEVEL_STATE);
     pthread_mutex_unlock(&manager->manager_lock);
-    log_this(SR_DATABASE, "Phase 3.46.8: Manager mutex unlocked successfully", LOG_LEVEL_STATE);
 
     // Create DQM component name for logging
     char dqm_component[64];
     snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", db_queue->database_name);
-    
+
     log_this(dqm_component, "Added to global queue manager", LOG_LEVEL_STATE, true, true, true);
     return true;
 }
@@ -496,8 +462,7 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
             return database_queue_submit_query(target_child, query);
         } else {
             // No appropriate child queue exists, use Lead queue itself for now
-            log_this(SR_DATABASE, "No %s child queue found, using Lead queue for query: %s",
-                    LOG_LEVEL_DEBUG, target_queue_type, query->query_id);
+            // log_this(SR_DATABASE, "No %s child queue found, using Lead queue for query: %s", LOG_LEVEL_DEBUG, target_queue_type, query->query_id);
         }
     }
 
@@ -520,9 +485,7 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
         __sync_fetch_and_add(&db_queue->current_queue_depth, 1);
         query->submitted_at = time(NULL);
 
-        log_this(SR_DATABASE, "Submitted query %s to %s queue %s",
-                 LOG_LEVEL_DEBUG, true, true, true, query->query_id,
-                 db_queue->queue_type, db_queue->database_name);
+        // log_this(SR_DATABASE, "Submitted query %s to %s queue %s", LOG_LEVEL_DEBUG, true, true, true, query->query_id, db_queue->queue_type, db_queue->database_name);
     }
 
     return success;
@@ -637,8 +600,7 @@ void* database_queue_worker_thread(void* arg) {
                 // Process next query from this queue
                 DatabaseQuery* query = database_queue_process_next(db_queue);
                 if (query) {
-                    log_this(dqm_component, "%s queue processing query: %s", LOG_LEVEL_DEBUG,
-                            db_queue->queue_type, query->query_id ? query->query_id : "unknown");
+                    // log_this(dqm_component, "%s queue processing query: %s", LOG_LEVEL_DEBUG, db_queue->queue_type, query->query_id ? query->query_id : "unknown");
                     
                     // TODO: Actual database query execution will be implemented in Phase 2
                     // For now, just simulate processing time based on queue type
@@ -833,8 +795,7 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
             lead_queue->child_queues[i]->queue_type &&
             strcmp(lead_queue->child_queues[i]->queue_type, queue_type) == 0) {
             pthread_mutex_unlock(&lead_queue->children_lock);
-            log_this(SR_DATABASE, "Child queue %s already exists for database %s",
-                    LOG_LEVEL_DEBUG, queue_type, lead_queue->database_name);
+            // log_this(SR_DATABASE, "Child queue %s already exists for database %s", LOG_LEVEL_DEBUG, queue_type, lead_queue->database_name);
             return true; // Already exists
         }
     }
@@ -842,8 +803,7 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
     // Check if we have space for more child queues
     if (lead_queue->child_queue_count >= lead_queue->max_child_queues) {
         pthread_mutex_unlock(&lead_queue->children_lock);
-        log_this(SR_DATABASE, "Cannot spawn %s queue: maximum child queues reached for %s",
-                LOG_LEVEL_ERROR, queue_type, lead_queue->database_name);
+        // log_this(SR_DATABASE, "Cannot spawn %s queue: maximum child queues reached for %s", LOG_LEVEL_ERROR, queue_type, lead_queue->database_name);
         return false;
     }
 
@@ -904,8 +864,7 @@ bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* 
 
     if (target_index == -1) {
         pthread_mutex_unlock(&lead_queue->children_lock);
-        log_this(SR_DATABASE, "Child queue %s not found for database %s",
-                LOG_LEVEL_DEBUG, queue_type, lead_queue->database_name);
+        // log_this(SR_DATABASE, "Child queue %s not found for database %s", LOG_LEVEL_DEBUG, queue_type, lead_queue->database_name);
         return false;
     }
 
