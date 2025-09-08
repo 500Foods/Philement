@@ -20,7 +20,7 @@ These tools are required when building or developing with the Hydrogen codebase:
 - [eslint](https://eslint.org/) - JavaScript code linting and style checking
 - [stylelint](https://stylelint.io/) - CSS/SCSS linting and style checking
 - [htmlhint](https://htmlhint.com/) - HTML code linting and validation
-- [xmllint](https://xmlsoft.org/xmllint.html) - XML/SVG validation
+- [xmlstarlet](https://xmlstar.sourceforge.net/) - XML/SVG validation
 - [jsonlint](https://github.com/zaach/jsonlint) - JSON file validation and formatting
 - [websocat](https://github.com/vi/websocat) - Testing websocket connections
 - [cmake](https://cmake.org/) - Build system
