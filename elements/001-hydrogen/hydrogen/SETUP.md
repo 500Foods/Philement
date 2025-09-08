@@ -20,6 +20,7 @@ These tools are required when building or developing with the Hydrogen codebase:
 - [eslint](https://eslint.org/) - JavaScript code linting and style checking
 - [stylelint](https://stylelint.io/) - CSS/SCSS linting and style checking
 - [htmlhint](https://htmlhint.com/) - HTML code linting and validation
+- [xmllint](https://xmlsoft.org/xmllint.html) - XML/SVG validation
 - [jsonlint](https://github.com/zaach/jsonlint) - JSON file validation and formatting
 - [websocat](https://github.com/vi/websocat) - Testing websocket connections
 - [cmake](https://cmake.org/) - Build system
@@ -39,7 +40,7 @@ A handful of other projects are directly included in the tests/lib folder of thi
 sudo apt update
 sudo apt install -y build-essential wget curl jq nodejs npm cloc ninja-build upx-ucl brotli
 sudo apt install -y libjansson-dev libmicrohttpd-dev libssl-dev libwebsockets-dev libbrotli-dev libcurl-openssl-dev
-sudp apt install -y valgrind cppcheck eslint
+sudo apt install -y valgrind cppcheck libxml2-utils
 npm install -g markdownlint jsonlint stylelint htmlhint swagger-cli
 ```
 
@@ -60,7 +61,7 @@ With that all installed, perform the following steps.
 - `brew install jq`
 - `brew install coreutils findutils cmake ccache stylelint jsonlint`
 - `brew install node`
-- `brew install jansson`
+- `brew install jansson libxml2`
 - `npm install -g swagger-cli eslint htmlhint`
 - `brew install markdownlint-cli`
 - Add to ~/.zshrc, set OhMyZsh to auto-update while you're at it
