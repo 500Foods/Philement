@@ -22,15 +22,17 @@ Hydrogen serves as a database gateway supporting PostgreSQL, SQLite, MySQL, DB2 
   - **Management Role**: Handles connection heartbeats, trigger monitoring, and cross-queue coordination
   - **Tag Assignment**: Always tagged with "Lead" and inherits tags from disabled queues
 
-## EXISTING SUBSYSTEM STATE (PHASE 2.1 POSTGRESQL ENGINE COMPLETED 9/5/2025)
+## EXISTING SUBSYSTEM STATE (UPDATED 9/8/2025 - DQM ARCHITECTURE IMPLEMENTED)
+
+**ARCHITECTURAL CHANGE:** The subsystem has evolved from the planned multi-queue-per-database approach to a **Database Queue Manager (DQM)** architecture where each database gets a single **Lead queue** that dynamically spawns **child worker queues** for different priority levels (slow/medium/fast/cache).
 
 ```c
 // Configuration Layer - ENHANCED
 src/config/config_defaults.c        // Multi-engine configuration defaults
-                                     // Support for PostgreSQL, MySQL, SQLite, DB2
-                                     // 5 database connection slots available
-                                     // Environment variable configuration
-                                     // Selective enable/disable per database
+                                      // Support for PostgreSQL, MySQL, SQLite, DB2
+                                      // 5 database connection slots available
+                                      // Environment variable configuration
+                                      // Selective enable/disable per database
 
 // Launch Readiness Checks ✅ COMPLETED 9/5/2025
 src/config/config_databases.c       // Launch readiness validation implementation
@@ -40,129 +42,99 @@ src/launch/launch_databases.c       // Database readiness checks in launch seque
 src/launch/launch_database.c        // Basic connectivity validation
 src/landing/landing_database.c      // Config cleanup only
 
+// DQM (Database Queue Manager) Architecture ✅ COMPLETED 9/8/2025
+src/database/database_queue.h       // DQM infrastructure and Lead queue definitions
+src/database/database_queue.c       // Full DQM implementation (~960 lines)
+                                      // Lead queue spawns child queues dynamically
+                                      // Thread-safe queue management and worker threads
+                                      // Hierarchical queue architecture (Lead + children)
+
 // Multi-Engine Interface Layer ✅ COMPLETED 9/5/2025
 src/database/database.h             // DatabaseEngineInterface with function pointers
 src/database/database_engine.h      // Engine abstraction layer header
 src/database/database_engine.c      // Engine registry and unified API (~280 lines)
-                                     // Support for PostgreSQL, SQLite, MySQL, DB2, AI engines
-                                     // Connection management, query execution, transactions
-                                     // Health checks and connection reset functionality
+                                      // Support for PostgreSQL, SQLite, MySQL, DB2, AI engines
+                                      // Connection management, query execution, transactions
+                                      // Health checks and connection reset functionality
 
-// Test Infrastructure - EXISTING/ENHANCED
-tests/artifacts/database/postgres/  // PostgreSQL test scripts
-tests/artifacts/database/mysql/     // MySQL test scripts
-tests/artifacts/database/sqlite/    // SQLite test scripts
-tests/artifacts/database/db2/       // DB2 test scripts
+// Core Database Subsystem ✅ COMPLETED 9/8/2025
+src/database/database.c             // Database subsystem core (~408 lines)
+                                      // DQM integration and database management
+                                      // PostgreSQL engine fully implemented and working
+                                      // SQLite, MySQL, DB2 engines have placeholder implementations
 ```
-
-## CONFIGURATION IMMEDIATEWORK INTEGRATION (9/4/2025)
-
-**Multi-Engine Configuration Support Added:**
-
-```json
-// Enhanced defaults now support:
-// - Primary: Acuranzo PostgreSQL (enabled by default)
-// - Test1: Helium SQLite (disabled by default)
-// - Test2: Canvas MySQL (disabled by default)
-// - Test3: DB2 Enterprise (disabled by default)
-// - Test4: Available for future expansion
-
-{
-  "Databases": {
-    "ConnectionCount": 5,
-    "DefaultWorkers": 2,
-    "Queues": {
-      "Slow": 1,
-      "Medium": 2,
-      "Fast": 4,
-      "Cache": 1
-    },
-    "Connections": [
-      {
-        "Name": "Acuranzo",
-        "Type": "${env.ACURANZO_DB_TYPE:postgresql}",
-        "Enabled": true,
-        "Workers": 2,
-        "Queues": {
-          "Slow": 2,
-          "Medium": 0,
-          "Fast": 4,
-          "Cache": 1
-        }
-      },
-      {
-        "Name": "Helium",
-        "Type": "sqlite",
-        "Enabled": false,
-        "Workers": 1
-      }
-    ]
-  }
-}
-```
-
-**Test 27 Integration Ready:**
-
-- Database selection during launch readiness checks
-- Environment-driven configuration for test scenarios
-- Safe defaults (only Acuranzo enabled by default)
-- Support for test 27.1-27.4 (engine connectivity, queue operations, pipeline, performance)
 
 ## IMPLEMENTATION PHASES
 
-### Phase 1: Queue Infrastructure ✅ **COMPLETED 9/4/2025**
+### Phase 1: DQM (Database Queue Manager) Infrastructure ✅ **COMPLETED 9/8/2025**
+
+**ARCHITECTURAL EVOLUTION:** Changed from multiple static queues per database to dynamic **Database Queue Manager (DQM)** architecture.
 
 **Core Components (Implemented):**
 
 ```c
 typedef struct DatabaseQueue {
-    char* database_name;                    // Database identifier (e.g., "Acuranzo")
-    char* connection_string;               // Database connection string
-    Queue* queue_slow;                     // For complex queries, reports
-    Queue* queue_medium;                   // For standard business logic
-    Queue* queue_fast;                     // For quick lookups, simple operations
-    Queue* queue_cache;                    // For cached queries, templates
-    char** tags;                           // Array of tags: "Lead", "Slow", "Medium", "Fast", "Cache"
-    size_t tag_count;                      // Number of tags assigned
-    QueueState state;                      // Current state: CONNECTING, CONNECTED, ERROR, etc.
-    // Worker threads and synchronization primitives
+    char* database_name;           // Database identifier (e.g., "Acuranzo")
+    char* connection_string;       // Database connection string
+    char* queue_type;              // Queue type: "Lead", "slow", "medium", "fast", "cache"
+
+    // Single queue instance - type determined by queue_type
+    Queue* queue;                  // The actual queue for this worker
+
+    // Lead queue management (only used by Lead queues)
+    DatabaseQueue** child_queues;  // Array of spawned queues (slow/medium/fast/cache)
+    int child_queue_count;         // Number of active child queues
+    int max_child_queues;          // Maximum child queues allowed
+    pthread_mutex_t children_lock; // Protects child queue operations
+
+    // Queue role flags
+    volatile bool is_lead_queue;   // True if this is the Lead queue for the database
+    volatile bool can_spawn_queues; // True if this queue can create additional queues
+
+    // Worker thread management - single thread per queue
+    pthread_t worker_thread;
+
+    // Queue statistics
+    volatile int active_connections;
+    volatile int total_queries_processed;
+    volatile int current_queue_depth;
+
+    // Thread synchronization
+    pthread_mutex_t queue_access_lock;
+    sem_t worker_semaphore;        // Controls worker thread operation
+
+    // Flags
+    volatile bool shutdown_requested;
+    volatile bool is_connected;
 };
 
 typedef struct DatabaseQueueManager {
-    DatabaseQueue** databases;    // Manages multiple database queues
-    size_t database_count;        // With round-robin distribution
-    // Thread synchronization and statistics
+    DatabaseQueue** databases;      // Array of database Lead queues
+    size_t database_count;          // Number of databases managed
+    size_t max_databases;           // Maximum supported databases
+    // Round-robin distribution state and thread synchronization
 };
 ```
 
 **Key Implementation (Completed):**
 
-- ✅ Multi-queue system per database (slow/medium/fast/cache) with priority routing
-- ✅ Thread-safe query submission with round-robin distribution
-- ✅ Worker thread framework for connection management
-- ✅ DatabaseQueueManager for coordinating multiple databases
-- ✅ Statistics monitoring (queue depth, health checks)
-- ✅ Integration with existing queue system and launch/landing
-- ✅ Compilation tested and integrated into build system
+- ✅ **DQM Architecture**: Each database gets one Lead queue that spawns child worker queues
+- ✅ **Dynamic Queue Spawning**: Lead queues can spawn/destroy child queues based on workload
+- ✅ **Hierarchical Management**: Lead queue coordinates child queues and manages database connections
+- ✅ **Thread-Safe Operations**: All queue operations use proper synchronization primitives
+- ✅ **Single Worker Thread Pattern**: Each queue (Lead or child) has exactly one worker thread
+- ✅ **Statistics Monitoring**: Comprehensive queue depth, health checks, and performance metrics
+- ✅ **Integration with Existing Systems**: Works with existing queue infrastructure and launch/landing
 
-**Queue State Management:**
+**DQM State Management:**
 
-- **State Tracking**: Each queue maintains a state value (CONNECTING, CONNECTED, ERROR, DISCONNECTED)
-- **State Reporting**: State changes logged with format: `<database> <queue#> [tags] <state>`
-  - Example: `Acuranzo Q1 [Lead, Slow] Connected`
-  - Example: `Helium Q2 [Medium] Error: Connection timeout`
-- **Connection Establishment**: Each queue attempts database connection on launch
-- **Heartbeat Monitoring**: Lead queue manages periodic connection health checks
-
-**Files Created:**
-
-- `src/database/database_queue.h` - Core infrastructure and APIs
-- `src/database/database_queue.c` - Full implementation (~600 lines)
-- `src/database/database.h` - Main subsystem header with future expansion points
+- **State Tracking**: Each queue maintains state (CONNECTING, CONNECTED, ERROR, DISCONNECTED)
+- **State Reporting**: Enhanced logging with DQM component names: `DQM-Acuranzo [Lead] Connected`
+- **Connection Establishment**: Lead queue handles database connection, child queues inherit connection string
+- **Heartbeat Monitoring**: Lead queue manages periodic connection health checks for entire database
+- **Child Queue Lifecycle**: Lead queue can spawn/destroy child queues dynamically based on configuration
 
 ### Phase 2: Multi-Engine Interface Layer ✅ **COMPLETED 9/5/2025**
-
-### Phase 2.1: PostgreSQL Engine ✅ **COMPLETED 9/5/2025**
 
 **Database Engine Abstraction Interface (Implemented):**
 
@@ -232,8 +204,6 @@ typedef struct DatabaseHandle {
 
 **Engine Implementation Examples:**
 
-**PostgreSQL Engine:**
-
 ```c
 typedef struct PostgresConnection {
     PGconn* connection;
@@ -245,8 +215,6 @@ bool postgres_execute_query(QueryRequest* req, QueryResult* result) {
     // libpq integration with prepared statements and transaction handling
 }
 ```
-
-**SQLite Engine:**
 
 ```c
 typedef struct SQLiteConnection {
@@ -260,8 +228,6 @@ bool sqlite_execute_query(QueryRequest* req, QueryResult* result) {
 }
 ```
 
-**MySQL/MariaDB Engine:**
-
 ```c
 typedef struct MySQLConnection {
     MYSQL* connection;
@@ -274,8 +240,6 @@ bool mysql_execute_query(QueryRequest* req, QueryResult* result) {
 }
 ```
 
-**IBM DB2 Engine:**
-
 ```c
 typedef struct DB2Connection {
     SQLHDBC connection;
@@ -287,6 +251,31 @@ bool db2_execute_query(QueryRequest* req, QueryResult* result) {
     // SQLExecDirect with deadlock detection and iSeries integration
 }
 ```
+
+## CURRENT IMPLEMENTATION STATUS (9/8/2025)
+
+**PostgreSQL Engine:**
+
+- Full implementation with libpq integration
+- Working database launch through DQM architecture
+- Connection management and health monitoring
+- Thread-safe operations
+- Successfully tested with first database launch
+
+**DQM (Database Queue Manager) Architecture:**
+
+- Lead queue spawns child worker queues dynamically
+- Hierarchical queue management (Lead + children)
+- Thread-safe queue operations
+- Statistics monitoring and health checks
+- Integration with launch/landing system
+
+**Implementation Pattern for Each Engine:**
+
+- Add engine-specific connection handling in `database_engine.c`
+- Update `database_add_database()` to handle engine-specific connection strings
+- Test library loading and basic connectivity
+- Integrate with existing DQM architecture
 
 ### Phase 3: Query Caching & Bootstrap
 
@@ -550,12 +539,13 @@ void unregister_database_trigger(DatabaseTrigger* trigger) {
 
 ## 🚀 IMPLEMENTATION ROADMAP
 
-### Phase 1: Queue Infrastructure Implementation ✅ **COMPLETED 9/4/2025**
+### Phase 1: DQM Infrastructure Implementation ✅ **COMPLETED 9/8/2025**
 
-- Queue manager implementation
-- Multi-queue system
-- Thread-safe submission
-- Memory management validation
+- Database Queue Manager (DQM) architecture
+- Lead queue with dynamic child spawning
+- Hierarchical queue management
+- Thread-safe operations and synchronization
+- Integration with existing queue system
 
 ### Phase 2: Multi-Engine Interface Layer Implementation ✅ **COMPLETED 9/5/2025**
 
@@ -565,12 +555,37 @@ void unregister_database_trigger(DatabaseTrigger* trigger) {
 - Engine registry system
 - Thread-safe operations and cleanup
 
-### Phase 2.1: PostgreSQL Engine (1-2 weeks) ✅ **COMPLETED 9/5/2025**
+### Phase 2.1.0: PostgreSQL Engine ✅ **COMPLETED & WORKING 9/8/2025**
 
-- libpq integration
-- Connection management
-- Prepared statements
+- libpq integration with dynamic loading
+- Connection management and health monitoring
+- Prepared statements and transaction support
 - JSON result serialization
+- Full DQM integration and working database launch
+
+### Phase 2.2: SQLite Engine Implementation (1-2 weeks)
+
+- SQLite3 integration with dynamic loading
+- File-based database support
+- WAL mode configuration
+- Connection pooling for concurrent access
+- DQM integration and testing
+
+### Phase 2.3: MySQL Engine Implementation (1-2 weeks)
+
+- MySQL/MariaDB client integration
+- Auto-reconnect capability
+- Connection pooling
+- Prepared statement support
+- DQM integration and testing
+
+### Phase 2.4: DB2 Engine Implementation (2-3 weeks)
+
+- IBM DB2 client integration
+- Deadlock detection and handling
+- iSeries connection support
+- Advanced transaction management
+- DQM integration and testing
 
 ### Phase 3: Query Caching (1-2 weeks)
 
@@ -950,46 +965,3 @@ void* conn = PQconnectdb_ptr(conninfo);
 - No static linking dependencies in build system
 - Runtime flexibility for different deployment environments
 - Proper error handling and graceful degradation
-
-### Build System Philosophy
-
-**CMake Strategy:**
-
-- Keep CMakeLists.txt clean and minimal
-- Avoid adding database-specific library dependencies
-- Use pkg-config only for core system libraries
-- Let the application handle optional dependencies dynamically
-
-**Testing Approach:**
-
-- Test both with and without database libraries present
-- Ensure graceful degradation when libraries are missing
-- Validate that core functionality works regardless of database availability
-
-### Future Database Engine Implementation
-
-**Template for New Engines:**
-
-1. Create `database_engine_[name].c` with dynamic loading
-2. Implement `DatabaseEngineInterface` with function pointers
-3. Register engine in `database_engine_init()`
-4. Add library detection in launch readiness checks
-5. Test both presence and absence of libraries
-
-**Standard Engine Structure:**
-
-```c
-// Function pointer types
-typedef void* (*EngineConnect_t)(ConnectionConfig*);
-
-// Dynamic loading
-static EngineConnect_t engine_connect_ptr = NULL;
-
-// Load functions
-engine_connect_ptr = (EngineConnect_t)dlsym(lib_handle, "engine_connect");
-
-// Use through pointer
-void* conn = engine_connect_ptr(config);
-```
-
-This approach ensures consistent, maintainable, and deployment-flexible database engine implementations.

@@ -509,7 +509,7 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
     PQclear_ptr(pg_result);
     *result = db_result;
 
-    log_this(SR_DATABASE, "PostgreSQL query executed successfully", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "PostgreSQL query executed successfully", LOG_LEVEL_DEBUG, true, true, true);
     return true;
 }
 
@@ -593,7 +593,7 @@ bool postgresql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationL
     *transaction = tx;
     connection->current_transaction = tx;
 
-    log_this(SR_DATABASE, "PostgreSQL transaction started", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "PostgreSQL transaction started", LOG_LEVEL_DEBUG, true, true, true);
     return true;
 }
 
@@ -619,7 +619,7 @@ bool postgresql_commit_transaction(DatabaseHandle* connection, Transaction* tran
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    log_this(SR_DATABASE, "PostgreSQL transaction committed", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "PostgreSQL transaction committed", LOG_LEVEL_DEBUG, true, true, true);
     return true;
 }
 
@@ -645,7 +645,7 @@ bool postgresql_rollback_transaction(DatabaseHandle* connection, Transaction* tr
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    log_this(SR_DATABASE, "PostgreSQL transaction rolled back", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "PostgreSQL transaction rolled back", LOG_LEVEL_DEBUG, true, true, true);
     return true;
 }
 
@@ -702,7 +702,7 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
 
     *stmt = prepared_stmt;
 
-    log_this(SR_DATABASE, "PostgreSQL prepared statement created", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "PostgreSQL prepared statement created", LOG_LEVEL_DEBUG, true, true, true);
     return true;
 }
 
@@ -736,7 +736,7 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
     free(stmt->sql_template);
     free(stmt);
 
-    log_this(SR_DATABASE, "PostgreSQL prepared statement removed", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "PostgreSQL prepared statement removed", LOG_LEVEL_DEBUG, true, true, true);
     return true;
 }
 
