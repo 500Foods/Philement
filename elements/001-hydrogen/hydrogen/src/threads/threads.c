@@ -23,6 +23,8 @@
 // This will be set just before logging the final "Shutdown complete" message
 volatile sig_atomic_t final_shutdown_mode = 0;
 
+// Note: All ServiceThreads structures are defined in state.c
+
 // Internal state
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -220,15 +222,20 @@ void report_thread_status(void) {
              mdns_server_threads.thread_count);
     
     // Report print threads
-    log_this(SR_THREADS, "  Print Threads: %d active", LOG_LEVEL_STATE, 
+    log_this(SR_THREADS, "  Print Threads: %d active", LOG_LEVEL_STATE,
              print_threads.thread_count);
-    
+
+    // Report database threads
+    log_this(SR_THREADS, "  Database Threads: %d active", LOG_LEVEL_STATE,
+             database_threads.thread_count);
+
     // Calculate total threads
     int total_threads = logging_threads.thread_count +
                        webserver_threads.thread_count +
                        websocket_threads.thread_count +
                        mdns_server_threads.thread_count +
-                       print_threads.thread_count;
+                       print_threads.thread_count +
+                       database_threads.thread_count;
     
     log_this(SR_THREADS, "Total Active Threads: %d", LOG_LEVEL_STATE, total_threads);
     
@@ -256,6 +263,9 @@ void free_threads_resources(void) {
     
     // Clean up print threads
     init_service_threads(&print_threads, SR_PRINT);
-    
+
+    // Clean up database threads
+    init_service_threads(&database_threads, SR_DATABASE);
+
     pthread_mutex_unlock(&thread_mutex);
 }

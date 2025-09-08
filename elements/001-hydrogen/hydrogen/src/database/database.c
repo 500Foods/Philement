@@ -23,20 +23,26 @@ static pthread_mutex_t database_subsystem_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Initialize the database subsystem
 bool database_subsystem_init(void) {
+    log_this(SR_DATABASE, "Phase 2.1: Starting database subsystem structure initialization", LOG_LEVEL_STATE);
+
+    log_this(SR_DATABASE, "Phase 2.2: Attempting to lock database subsystem mutex", LOG_LEVEL_STATE);
     pthread_mutex_lock(&database_subsystem_mutex);
 
     if (database_subsystem) {
+        log_this(SR_DATABASE, "Phase 2.3: Database subsystem already exists, unlocking and returning", LOG_LEVEL_STATE);
         pthread_mutex_unlock(&database_subsystem_mutex);
         return true; // Already initialized
     }
 
+    log_this(SR_DATABASE, "Phase 2.4: Allocating database subsystem structure", LOG_LEVEL_STATE);
     database_subsystem = calloc(1, sizeof(DatabaseSubsystem));
     if (!database_subsystem) {
-        log_this(SR_DATABASE, "Failed to allocate database subsystem", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Phase 2.5: Failed to allocate database subsystem", LOG_LEVEL_ERROR);
         pthread_mutex_unlock(&database_subsystem_mutex);
         return false;
     }
 
+    log_this(SR_DATABASE, "Phase 2.6: Initializing subsystem fields", LOG_LEVEL_STATE);
     // Initialize subsystem
     database_subsystem->initialized = false;
     database_subsystem->shutdown_requested = false;
@@ -52,12 +58,20 @@ bool database_subsystem_init(void) {
 
     // Initialize engine registry
     memset(database_subsystem->engines, 0, sizeof(database_subsystem->engines));
+    log_this(SR_DATABASE, "Phase 2.7: Engine registry initialized", LOG_LEVEL_STATE);
 
     database_subsystem->initialized = true;
+    log_this(SR_DATABASE, "Phase 2.8: Subsystem initialization flag set", LOG_LEVEL_STATE);
 
+    log_this(SR_DATABASE, "Phase 2.9: Unlocking database subsystem mutex", LOG_LEVEL_STATE);
     pthread_mutex_unlock(&database_subsystem_mutex);
 
-    log_this(SR_DATABASE, "Database subsystem initialized successfully", LOG_LEVEL_STATE);
+    // Initialize database thread tracking
+    extern ServiceThreads database_threads;
+    init_service_threads(&database_threads, SR_DATABASE);
+    log_this(SR_DATABASE, "Phase 2.11: Database thread tracking initialized", LOG_LEVEL_STATE);
+
+    log_this(SR_DATABASE, "Phase 2.12: Database subsystem initialization completed successfully", LOG_LEVEL_STATE);
     return true;
 }
 
@@ -84,13 +98,16 @@ void database_subsystem_shutdown(void) {
 
 // Add a database configuration
 bool database_add_database(const char* name, const char* engine, const char* connection_string __attribute__((unused))) {
+    log_this(SR_DATABASE, "Phase 3.44: ENTERING database_add_database function", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Phase 3.6: Starting database addition for: %s", LOG_LEVEL_STATE, name);
+    log_this(SR_DATABASE, "Phase 3.6.1: Parameter validation beginning", LOG_LEVEL_STATE);
+
     if (!database_subsystem || !name || !engine) {
+        log_this(SR_DATABASE, "Phase 3.7: Invalid parameters for database addition", LOG_LEVEL_ERROR);
         return false;
     }
 
-    log_this(SR_DATABASE, "Adding database to subsystem", LOG_LEVEL_DEBUG);
-    log_this(SR_DATABASE, name, LOG_LEVEL_DEBUG);
-    log_this(SR_DATABASE, engine, LOG_LEVEL_DEBUG);
+    log_this(SR_DATABASE, "Phase 3.8: Parameters validated - name: %s, engine: %s", LOG_LEVEL_STATE, name, engine);
 
     // Validate that we can get the engine interface
     DatabaseEngineInterface* engine_interface = NULL;
@@ -157,38 +174,42 @@ bool database_add_database(const char* name, const char* engine, const char* con
         return false;
     }
 
-    DatabaseQueue* db_queue = database_queue_create(name, conn_str);
+    // Create Lead queue for this database instead of multiple queues
+    DatabaseQueue* db_queue = database_queue_create_lead(name, conn_str);
     free(conn_str);
 
     if (!db_queue) {
-        log_this(SR_DATABASE, "Failed to create database queue", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to create Lead database queue", LOG_LEVEL_ERROR);
         return false;
     }
 
-    // Start worker threads based on queue configuration
-    if (!database_queue_start_workers(db_queue)) {
-        log_this(SR_DATABASE, "Failed to start worker threads", LOG_LEVEL_ERROR);
+    // Start the Lead queue worker thread
+    if (!database_queue_start_worker(db_queue)) {
+        log_this(SR_DATABASE, "Failed to start Lead queue worker thread", LOG_LEVEL_ERROR);
         database_queue_destroy(db_queue);
         return false;
     }
 
-    // Add to queue manager
-    if (!database_subsystem->queue_manager) {
-        database_subsystem->queue_manager = database_queue_manager_create(10); // Max 10 databases
-        if (!database_subsystem->queue_manager) {
-            log_this(SR_DATABASE, "Failed to create queue manager", LOG_LEVEL_ERROR);
-            database_queue_destroy(db_queue);
-            return false;
-        }
-    }
-
-    if (!database_queue_manager_add_database(database_subsystem->queue_manager, db_queue)) {
-        log_this(SR_DATABASE, "Failed to add database to queue manager", LOG_LEVEL_ERROR);
+    // Add to global queue manager - launch responsibility ends here
+    log_this(SR_DATABASE, "Phase 3.44: Adding DQM to global queue manager", LOG_LEVEL_STATE);
+    if (!global_queue_manager) {
+        log_this(SR_DATABASE, "Phase 3.45: Global queue manager not initialized", LOG_LEVEL_ERROR);
         database_queue_destroy(db_queue);
         return false;
     }
 
-    log_this(SR_DATABASE, "Database added successfully", LOG_LEVEL_STATE);
+    if (!database_queue_manager_add_database(global_queue_manager, db_queue)) {
+        log_this(SR_DATABASE, "Phase 3.46: Failed to add DQM to queue manager", LOG_LEVEL_ERROR);
+        database_queue_destroy(db_queue);
+        return false;
+    }
+
+    // Store reference to global queue manager in subsystem
+    database_subsystem->queue_manager = global_queue_manager;
+
+    // Launch complete - DQM is now independent and handles its own database work
+    log_this(SR_DATABASE, "Phase 3.47: DQM launched successfully for %s", LOG_LEVEL_STATE, name);
+    log_this(SR_DATABASE, "Phase 3.48: Database launch completed - DQM is now independent", LOG_LEVEL_STATE);
 
     return true;
 }

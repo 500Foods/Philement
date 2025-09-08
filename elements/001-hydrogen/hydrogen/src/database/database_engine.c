@@ -27,29 +27,37 @@ static bool engine_system_initialized = false;
  */
 
 bool database_engine_init(void) {
+    log_this(SR_DATABASE, "Phase 1.1: Starting database engine registry initialization", LOG_LEVEL_STATE);
+
     if (engine_system_initialized) {
+        log_this(SR_DATABASE, "Phase 1.2: Database engine registry already initialized", LOG_LEVEL_STATE);
         return true;
     }
 
+    log_this(SR_DATABASE, "Phase 1.3: Locking engine registry for initialization", LOG_LEVEL_STATE);
     pthread_mutex_lock(&engine_registry_lock);
 
     // Initialize registry to NULL
     memset(engine_registry, 0, sizeof(engine_registry));
+    log_this(SR_DATABASE, "Phase 1.4: Engine registry memory initialized", LOG_LEVEL_STATE);
 
     // Register PostgreSQL engine
+    log_this(SR_DATABASE, "Phase 1.5: Retrieving PostgreSQL engine interface", LOG_LEVEL_STATE);
     DatabaseEngineInterface* postgresql_engine = database_engine_postgresql_get_interface();
     if (postgresql_engine) {
         engine_registry[DB_ENGINE_POSTGRESQL] = postgresql_engine;
-        log_this(SR_DATABASE, "PostgreSQL engine registered", LOG_LEVEL_STATE, true, true, true);
+        log_this(SR_DATABASE, "Phase 1.6: PostgreSQL engine registered successfully", LOG_LEVEL_STATE);
     } else {
-        log_this(SR_DATABASE, "Failed to get PostgreSQL engine interface", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "Phase 1.7: Failed to get PostgreSQL engine interface", LOG_LEVEL_ERROR);
     }
 
     engine_system_initialized = true;
+    log_this(SR_DATABASE, "Phase 1.8: Engine system initialization flag set", LOG_LEVEL_STATE);
 
     pthread_mutex_unlock(&engine_registry_lock);
+    log_this(SR_DATABASE, "Phase 1.9: Engine registry lock released", LOG_LEVEL_STATE);
 
-    log_this(SR_DATABASE, "Database engine system initialized", LOG_LEVEL_STATE, true, true, true);
+    log_this(SR_DATABASE, "Phase 1.10: Database engine registry initialization completed", LOG_LEVEL_STATE);
     return true;
 }
 

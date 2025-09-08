@@ -15,13 +15,13 @@
 #include "database_queue.h"
 
 // Global queue manager instance
-static DatabaseQueueManager* global_queue_manager = NULL;
+DatabaseQueueManager* global_queue_manager = NULL;
 
-// Forward declaration for worker thread
-static void* database_queue_worker_thread_slow(void* arg);
-static void* database_queue_worker_thread_medium(void* arg);
-static void* database_queue_worker_thread_fast(void* arg);
-static void* database_queue_worker_thread_cache(void* arg);
+// External references
+extern volatile sig_atomic_t database_stopping;
+
+// Forward declaration for generic worker thread
+void* database_queue_worker_thread(void* arg);
 
 // Placeholder functions for JSON serialization (defined at bottom normally but moved here to avoid implicit function declaration)
 static char* serialize_query_to_json(DatabaseQuery* query);
@@ -34,21 +34,33 @@ static DatabaseQuery* deserialize_query_from_json(const char* json);
  * Sets up global queue manager for coordinating all database connections.
  */
 bool database_queue_system_init(void) {
-    log_this(SR_DATABASE, "Initializing database queue system", LOG_LEVEL_STATE, true, true, true);
+    log_this(SR_DATABASE, "Phase 3.1.1: Initializing database queue system", LOG_LEVEL_STATE);
 
     if (global_queue_manager != NULL) {
-        log_this(SR_DATABASE, "Database queue system already initialized", LOG_LEVEL_ALERT, true, true, true);
+        log_this(SR_DATABASE, "Phase 3.1.2: Database queue system already initialized", LOG_LEVEL_STATE);
         return true;
     }
 
+    // Ensure the global queue system is initialized first
+    extern int queue_system_initialized;
+    log_this(SR_DATABASE, "Phase 3.1.3: Checking global queue system status", LOG_LEVEL_STATE);
+    if (!queue_system_initialized) {
+        log_this(SR_DATABASE, "Phase 3.1.4: Initializing global queue system", LOG_LEVEL_STATE);
+        queue_system_init();
+        log_this(SR_DATABASE, "Phase 3.1.5: Global queue system initialized successfully", LOG_LEVEL_STATE);
+    } else {
+        log_this(SR_DATABASE, "Phase 3.1.6: Global queue system already initialized", LOG_LEVEL_STATE);
+    }
+
     // Create global queue manager with capacity for up to 8 databases
+    log_this(SR_DATABASE, "Phase 3.1.7: Creating global queue manager", LOG_LEVEL_STATE);
     global_queue_manager = database_queue_manager_create(8);
     if (!global_queue_manager) {
-        log_this(SR_DATABASE, "Failed to create database queue manager", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "Phase 3.1.8: Failed to create database queue manager", LOG_LEVEL_ERROR);
         return false;
     }
 
-    log_this(SR_DATABASE, "Database queue system initialized successfully", LOG_LEVEL_STATE, true, true, true);
+    log_this(SR_DATABASE, "Phase 3.1.9: Database queue system initialized successfully", LOG_LEVEL_STATE);
     return true;
 }
 
@@ -72,20 +84,33 @@ void database_queue_system_destroy(void) {
  * Implements the core Phase 1 requirement: 4-queue system per database
  * (slow/medium/fast/cache) for different query priorities.
  */
-DatabaseQueue* database_queue_create(const char* database_name, const char* connection_string) {
+/*
+ * Create a Lead queue for a database - this is the primary queue that manages other queues
+ */
+DatabaseQueue* database_queue_create_lead(const char* database_name, const char* connection_string) {
+    log_this(SR_DATABASE, "Phase 3.9: Creating Lead queue for database: %s", LOG_LEVEL_STATE, database_name);
+
     if (!database_name || !connection_string || strlen(database_name) == 0) {
+        log_this(SR_DATABASE, "Phase 3.10: Invalid parameters for Lead queue creation", LOG_LEVEL_ERROR);
         return NULL;
     }
 
+    log_this(SR_DATABASE, "Phase 3.11: Parameters validated for database: %s", LOG_LEVEL_STATE, database_name);
+
     // Initialize the global queue system if not already done
     extern int queue_system_initialized;
+    log_this(SR_DATABASE, "Phase 3.12: Checking queue system initialization", LOG_LEVEL_STATE);
     if (!queue_system_initialized) {
+        log_this(SR_DATABASE, "Phase 3.13: Initializing global queue system", LOG_LEVEL_STATE);
         queue_system_init();
-        log_this(SR_DATABASE, "Global queue system initialized on demand", LOG_LEVEL_DEBUG, true, true, true);
+        log_this(SR_DATABASE, "Phase 3.14: Global queue system initialized", LOG_LEVEL_STATE);
+    } else {
+        log_this(SR_DATABASE, "Phase 3.15: Queue system already initialized", LOG_LEVEL_STATE);
     }
 
     DatabaseQueue* db_queue = malloc(sizeof(DatabaseQueue));
     if (!db_queue) {
+        log_this(SR_DATABASE, "Phase 3.16: Failed to allocate Lead queue", LOG_LEVEL_ERROR);
         return NULL;
     }
 
@@ -105,54 +130,155 @@ DatabaseQueue* database_queue_create(const char* database_name, const char* conn
         return NULL;
     }
 
-    // Create individual queues with descriptive names
-    char slow_queue_name[256], medium_queue_name[256], fast_queue_name[256], cache_queue_name[256];
+    // Set queue type and role
+    db_queue->queue_type = strdup("Lead");
+    db_queue->is_lead_queue = true;
+    db_queue->can_spawn_queues = true;
 
-    snprintf(slow_queue_name, sizeof(slow_queue_name), "%s_slow", database_name);
-    snprintf(medium_queue_name, sizeof(medium_queue_name), "%s_medium", database_name);
-    snprintf(fast_queue_name, sizeof(fast_queue_name), "%s_fast", database_name);
-    snprintf(cache_queue_name, sizeof(cache_queue_name), "%s_cache", database_name);
+    // Create the Lead queue with descriptive name
+    log_this(SR_DATABASE, "Phase 3.16: Creating Lead queue", LOG_LEVEL_STATE);
+    char lead_queue_name[256];
+    snprintf(lead_queue_name, sizeof(lead_queue_name), "%s_lead", database_name);
 
-    db_queue->queue_slow = queue_create(slow_queue_name, NULL);
-    db_queue->queue_medium = queue_create(medium_queue_name, NULL);
-    db_queue->queue_fast = queue_create(fast_queue_name, NULL);
-    db_queue->queue_cache = queue_create(cache_queue_name, NULL);
+    // Initialize queue attributes (required by queue_create)
+    QueueAttributes queue_attrs = {0};
+    db_queue->queue = queue_create(lead_queue_name, &queue_attrs);
 
-    if (!db_queue->queue_slow || !db_queue->queue_medium ||
-        !db_queue->queue_fast || !db_queue->queue_cache) {
-        // Clean up on failure
-        if (db_queue->queue_slow) queue_destroy(db_queue->queue_slow);
-        if (db_queue->queue_medium) queue_destroy(db_queue->queue_medium);
-        if (db_queue->queue_fast) queue_destroy(db_queue->queue_fast);
-        if (db_queue->queue_cache) queue_destroy(db_queue->queue_cache);
+    if (!db_queue->queue) {
+        log_this(SR_DATABASE, "Phase 3.17: Failed to create Lead queue", LOG_LEVEL_ERROR);
+        free(db_queue->queue_type);
         free(db_queue->connection_string);
         free(db_queue->database_name);
         free(db_queue);
         return NULL;
     }
 
+    log_this(SR_DATABASE, "Phase 3.18: Lead queue created successfully", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Phase 3.19: Initializing synchronization primitives", LOG_LEVEL_STATE);
+
     // Initialize synchronization primitives
     if (pthread_mutex_init(&db_queue->queue_access_lock, NULL) != 0) {
+        log_this(SR_DATABASE, "Phase 3.20: Failed to initialize queue access mutex", LOG_LEVEL_ERROR);
         database_queue_destroy(db_queue);
         return NULL;
     }
 
     if (sem_init(&db_queue->worker_semaphore, 0, 0) != 0) {
+        log_this(SR_DATABASE, "Phase 3.21: Failed to initialize worker semaphore", LOG_LEVEL_ERROR);
         pthread_mutex_destroy(&db_queue->queue_access_lock);
         database_queue_destroy(db_queue);
         return NULL;
     }
 
-    // Initialize flags
+    // Initialize Lead queue management
+    if (pthread_mutex_init(&db_queue->children_lock, NULL) != 0) {
+        log_this(SR_DATABASE, "Phase 3.22: Failed to initialize children mutex", LOG_LEVEL_ERROR);
+        sem_destroy(&db_queue->worker_semaphore);
+        pthread_mutex_destroy(&db_queue->queue_access_lock);
+        database_queue_destroy(db_queue);
+        return NULL;
+    }
+
+    // Allocate child queue array (max 4: slow, medium, fast, cache)
+    db_queue->max_child_queues = 4;
+    db_queue->child_queues = calloc((size_t)db_queue->max_child_queues, sizeof(DatabaseQueue*));
+    if (!db_queue->child_queues) {
+        log_this(SR_DATABASE, "Phase 3.23: Failed to allocate child queue array", LOG_LEVEL_ERROR);
+        pthread_mutex_destroy(&db_queue->children_lock);
+        sem_destroy(&db_queue->worker_semaphore);
+        pthread_mutex_destroy(&db_queue->queue_access_lock);
+        database_queue_destroy(db_queue);
+        return NULL;
+    }
+
+    // Initialize flags and statistics
     db_queue->shutdown_requested = false;
     db_queue->is_connected = false;
+    db_queue->active_connections = 0;
+    db_queue->total_queries_processed = 0;
+    db_queue->current_queue_depth = 0;
+    db_queue->child_queue_count = 0;
 
-    // Initialize zero values for statistics
+    log_this(SR_DATABASE, "Phase 3.24: Lead queue creation completed successfully", LOG_LEVEL_STATE);
+    return db_queue;
+}
+
+/*
+ * Create a worker queue for a specific queue type (slow, medium, fast, cache)
+ */
+DatabaseQueue* database_queue_create_worker(const char* database_name, const char* connection_string, const char* queue_type) {
+    log_this(SR_DATABASE, "Creating %s worker queue for database: %s", LOG_LEVEL_STATE, queue_type, database_name);
+
+    if (!database_name || !connection_string || !queue_type) {
+        log_this(SR_DATABASE, "Invalid parameters for worker queue creation", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    DatabaseQueue* db_queue = malloc(sizeof(DatabaseQueue));
+    if (!db_queue) {
+        return NULL;
+    }
+
+    memset(db_queue, 0, sizeof(DatabaseQueue));
+
+    // Store database name, connection string, and queue type
+    db_queue->database_name = strdup(database_name);
+    db_queue->connection_string = strdup(connection_string);
+    db_queue->queue_type = strdup(queue_type);
+
+    if (!db_queue->database_name || !db_queue->connection_string || !db_queue->queue_type) {
+        if (db_queue->database_name) free(db_queue->database_name);
+        if (db_queue->connection_string) free(db_queue->connection_string);
+        if (db_queue->queue_type) free(db_queue->queue_type);
+        free(db_queue);
+        return NULL;
+    }
+
+    // Set queue role (worker queues cannot spawn other queues)
+    db_queue->is_lead_queue = false;
+    db_queue->can_spawn_queues = false;
+
+    // Create the worker queue
+    char worker_queue_name[256];
+    snprintf(worker_queue_name, sizeof(worker_queue_name), "%s_%s", database_name, queue_type);
+
+    QueueAttributes queue_attrs = {0};
+    db_queue->queue = queue_create(worker_queue_name, &queue_attrs);
+
+    if (!db_queue->queue) {
+        log_this(SR_DATABASE, "Failed to create %s worker queue", LOG_LEVEL_ERROR, queue_type);
+        free(db_queue->queue_type);
+        free(db_queue->connection_string);
+        free(db_queue->database_name);
+        free(db_queue);
+        return NULL;
+    }
+
+    // Initialize synchronization primitives (workers need these too)
+    if (pthread_mutex_init(&db_queue->queue_access_lock, NULL) != 0 ||
+        sem_init(&db_queue->worker_semaphore, 0, 0) != 0) {
+        log_this(SR_DATABASE, "Failed to initialize synchronization for %s worker", LOG_LEVEL_ERROR, queue_type);
+        queue_destroy(db_queue->queue);
+        free(db_queue->queue_type);
+        free(db_queue->connection_string);
+        free(db_queue->database_name);
+        free(db_queue);
+        return NULL;
+    }
+
+    // Initialize flags and statistics
+    db_queue->shutdown_requested = false;
+    db_queue->is_connected = false;
     db_queue->active_connections = 0;
     db_queue->total_queries_processed = 0;
     db_queue->current_queue_depth = 0;
 
-    log_this(SR_DATABASE, "Created database queue for: %s", LOG_LEVEL_STATE, true, true, true, database_name);
+    // No child queues for workers
+    db_queue->child_queues = NULL;
+    db_queue->child_queue_count = 0;
+    db_queue->max_child_queues = 0;
+
+    log_this(SR_DATABASE, "%s worker queue created successfully", LOG_LEVEL_STATE, queue_type);
     return db_queue;
 }
 
@@ -164,19 +290,40 @@ DatabaseQueue* database_queue_create(const char* database_name, const char* conn
 void database_queue_destroy(DatabaseQueue* db_queue) {
     if (!db_queue) return;
 
-    log_this(SR_DATABASE, "Destroying database queue: %s", LOG_LEVEL_STATE, true, true, true, db_queue->database_name);
+    // Create DQM component name for logging
+    char dqm_component[64];
+    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s",
+             db_queue->database_name ? db_queue->database_name : "unknown");
+
+    log_this(dqm_component, "Destroying %s queue", LOG_LEVEL_STATE, true, true, true,
+             db_queue->queue_type ? db_queue->queue_type : "unknown");
 
     // Signal shutdown to worker threads
     db_queue->shutdown_requested = true;
 
-    // Wait for worker threads to finish (implementation needed)
-    database_queue_stop_workers(db_queue);
+    // Wait for worker thread to finish
+    database_queue_stop_worker(db_queue);
 
-    // Clean up individual queues
-    if (db_queue->queue_slow) queue_destroy(db_queue->queue_slow);
-    if (db_queue->queue_medium) queue_destroy(db_queue->queue_medium);
-    if (db_queue->queue_fast) queue_destroy(db_queue->queue_fast);
-    if (db_queue->queue_cache) queue_destroy(db_queue->queue_cache);
+    // If this is a Lead queue, clean up child queues first
+    if (db_queue->is_lead_queue && db_queue->child_queues) {
+        pthread_mutex_lock(&db_queue->children_lock);
+        for (int i = 0; i < db_queue->child_queue_count; i++) {
+            if (db_queue->child_queues[i]) {
+                database_queue_destroy(db_queue->child_queues[i]);
+                db_queue->child_queues[i] = NULL;
+            }
+        }
+        db_queue->child_queue_count = 0;
+        pthread_mutex_unlock(&db_queue->children_lock);
+        
+        free(db_queue->child_queues);
+        pthread_mutex_destroy(&db_queue->children_lock);
+    }
+
+    // Clean up the single queue
+    if (db_queue->queue) {
+        queue_destroy(db_queue->queue);
+    }
 
     // Clean up synchronization primitives
     pthread_mutex_destroy(&db_queue->queue_access_lock);
@@ -185,6 +332,7 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
     // Free strings
     free(db_queue->database_name);
     free(db_queue->connection_string);
+    free(db_queue->queue_type);
 
     free(db_queue);
 }
@@ -195,16 +343,25 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
  * Implements round-robin distribution and centralized statistics.
  */
 DatabaseQueueManager* database_queue_manager_create(size_t max_databases) {
+    log_this(SR_DATABASE, "Phase 3.51: Starting queue manager creation", LOG_LEVEL_STATE);
+
     DatabaseQueueManager* manager = malloc(sizeof(DatabaseQueueManager));
-    if (!manager) return NULL;
+    if (!manager) {
+        log_this(SR_DATABASE, "Phase 3.52: Failed to malloc queue manager", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+    log_this(SR_DATABASE, "Phase 3.53: Queue manager struct allocated", LOG_LEVEL_STATE);
 
     memset(manager, 0, sizeof(DatabaseQueueManager));
+    log_this(SR_DATABASE, "Phase 3.54: Queue manager struct initialized", LOG_LEVEL_STATE);
 
     manager->databases = calloc(max_databases, sizeof(DatabaseQueue*));
     if (!manager->databases) {
+        log_this(SR_DATABASE, "Phase 3.55: Failed to calloc database array", LOG_LEVEL_ERROR);
         free(manager);
         return NULL;
     }
+    log_this(SR_DATABASE, "Phase 3.56: Database array allocated", LOG_LEVEL_STATE);
 
     manager->database_count = 0;
     manager->max_databases = max_databases;
@@ -214,14 +371,18 @@ DatabaseQueueManager* database_queue_manager_create(size_t max_databases) {
     manager->total_queries = 0;
     manager->successful_queries = 0;
     manager->failed_queries = 0;
+    log_this(SR_DATABASE, "Phase 3.57: Statistics initialized", LOG_LEVEL_STATE);
 
     if (pthread_mutex_init(&manager->manager_lock, NULL) != 0) {
+        log_this(SR_DATABASE, "Phase 3.58: Failed to initialize manager mutex", LOG_LEVEL_ERROR);
         free(manager->databases);
         free(manager);
         return NULL;
     }
+    log_this(SR_DATABASE, "Phase 3.59: Manager mutex initialized", LOG_LEVEL_STATE);
 
     manager->initialized = true;
+    log_this(SR_DATABASE, "Phase 3.60: Queue manager creation completed successfully", LOG_LEVEL_STATE);
     return manager;
 }
 
@@ -252,20 +413,37 @@ void database_queue_manager_destroy(DatabaseQueueManager* manager) {
  * Add a database queue to the manager
  */
 bool database_queue_manager_add_database(DatabaseQueueManager* manager, DatabaseQueue* db_queue) {
-    if (!manager || !db_queue) return false;
+    log_this(SR_DATABASE, "Phase 3.46.1: Validating parameters for add database", LOG_LEVEL_STATE);
+    if (!manager || !db_queue) {
+        log_this(SR_DATABASE, "Phase 3.46.2: Invalid parameters - manager: %s, db_queue: %s", LOG_LEVEL_ERROR,
+                manager ? "OK" : "NULL", db_queue ? "OK" : "NULL");
+        return false;
+    }
 
+    log_this(SR_DATABASE, "Phase 3.46.3: About to lock manager mutex", LOG_LEVEL_STATE);
     pthread_mutex_lock(&manager->manager_lock);
+    log_this(SR_DATABASE, "Phase 3.46.4: Manager mutex locked successfully", LOG_LEVEL_STATE);
 
+    log_this(SR_DATABASE, "Phase 3.46.5: Checking capacity - current: %zu, max: %zu", LOG_LEVEL_STATE,
+            manager->database_count, manager->max_databases);
     if (manager->database_count >= manager->max_databases) {
         pthread_mutex_unlock(&manager->manager_lock);
         log_this(SR_DATABASE, "Cannot add database: maximum capacity reached", LOG_LEVEL_ALERT, true, true, true);
         return false;
     }
 
+    log_this(SR_DATABASE, "Phase 3.46.6: Adding database to array at index %zu", LOG_LEVEL_STATE, manager->database_count);
     manager->databases[manager->database_count++] = db_queue;
+    
+    log_this(SR_DATABASE, "Phase 3.46.7: About to unlock manager mutex", LOG_LEVEL_STATE);
     pthread_mutex_unlock(&manager->manager_lock);
+    log_this(SR_DATABASE, "Phase 3.46.8: Manager mutex unlocked successfully", LOG_LEVEL_STATE);
 
-    log_this(SR_DATABASE, "Added database to manager: %s", LOG_LEVEL_STATE, true, true, true, db_queue->database_name);
+    // Create DQM component name for logging
+    char dqm_component[64];
+    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", db_queue->database_name);
+    
+    log_this(dqm_component, "Added to global queue manager", LOG_LEVEL_STATE, true, true, true);
     return true;
 }
 
@@ -296,27 +474,36 @@ DatabaseQueue* database_queue_manager_get_database(DatabaseQueueManager* manager
 bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) {
     if (!db_queue || !query || !query->query_template) return false;
 
-    // Select target queue based on query characteristics
-    Queue* target_queue = NULL;
-    switch (query->queue_type_hint) {
-        case DB_QUEUE_SLOW:
-            target_queue = db_queue->queue_slow;
-            break;
-        case DB_QUEUE_MEDIUM:
-            target_queue = db_queue->queue_medium;
-            break;
-        case DB_QUEUE_FAST:
-            target_queue = db_queue->queue_fast;
-            break;
-        case DB_QUEUE_CACHE:
-            target_queue = db_queue->queue_cache;
-            break;
-        default:
-            target_queue = db_queue->queue_medium;  // Default to medium for unknown types
+    // For Lead queues, route queries to appropriate child queues
+    if (db_queue->is_lead_queue) {
+        // Find appropriate child queue based on query type hint
+        const char* target_queue_type = database_queue_type_to_string(query->queue_type_hint);
+        
+        pthread_mutex_lock(&db_queue->children_lock);
+        DatabaseQueue* target_child = NULL;
+        for (int i = 0; i < db_queue->child_queue_count; i++) {
+            if (db_queue->child_queues[i] &&
+                db_queue->child_queues[i]->queue_type &&
+                strcmp(db_queue->child_queues[i]->queue_type, target_queue_type) == 0) {
+                target_child = db_queue->child_queues[i];
+                break;
+            }
+        }
+        pthread_mutex_unlock(&db_queue->children_lock);
+
+        if (target_child) {
+            // Route to child queue
+            return database_queue_submit_query(target_child, query);
+        } else {
+            // No appropriate child queue exists, use Lead queue itself for now
+            log_this(SR_DATABASE, "No %s child queue found, using Lead queue for query: %s",
+                    LOG_LEVEL_DEBUG, target_queue_type, query->query_id);
+        }
     }
 
-    if (!target_queue) {
-        log_this(SR_DATABASE, "No target queue available for query: %s", LOG_LEVEL_ERROR, true, true, true, query->query_id);
+    // Submit to this queue's single queue
+    if (!db_queue->queue) {
+        log_this(SR_DATABASE, "No queue available for query: %s", LOG_LEVEL_ERROR, true, true, true, query->query_id);
         return false;
     }
 
@@ -325,7 +512,7 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
     if (!query_json) return false;
 
     // Submit to queue with priority based on queue type
-    bool success = queue_enqueue(target_queue, query_json, strlen(query_json), query->queue_type_hint);
+    bool success = queue_enqueue(db_queue->queue, query_json, strlen(query_json), query->queue_type_hint);
 
     free(query_json);
 
@@ -333,9 +520,9 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
         __sync_fetch_and_add(&db_queue->current_queue_depth, 1);
         query->submitted_at = time(NULL);
 
-        log_this(SR_DATABASE, "Submitted query %s to queue %s",
+        log_this(SR_DATABASE, "Submitted query %s to %s queue %s",
                  LOG_LEVEL_DEBUG, true, true, true, query->query_id,
-                 database_queue_type_to_string(query->queue_type_hint));
+                 db_queue->queue_type, db_queue->database_name);
     }
 
     return success;
@@ -344,31 +531,15 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
 /*
  * Process next query from specified queue type
  */
-DatabaseQuery* database_queue_process_next(DatabaseQueue* db_queue, int queue_type) {
-    if (!db_queue || queue_type < 0 || queue_type >= DB_QUEUE_MAX_TYPES) return NULL;
+DatabaseQuery* database_queue_process_next(DatabaseQueue* db_queue) {
+    if (!db_queue || !db_queue->queue) return NULL;
 
-    Queue* target_queue = NULL;
-    switch (queue_type) {
-        case DB_QUEUE_SLOW:
-            target_queue = db_queue->queue_slow;
-            break;
-        case DB_QUEUE_MEDIUM:
-            target_queue = db_queue->queue_medium;
-            break;
-        case DB_QUEUE_FAST:
-            target_queue = db_queue->queue_fast;
-            break;
-        case DB_QUEUE_CACHE:
-            target_queue = db_queue->queue_cache;
-            break;
-    }
+    if (queue_size(db_queue->queue) == 0) return NULL;
 
-    if (!target_queue || queue_size(target_queue) == 0) return NULL;
-
-    // Dequeue query (implementation will be expanded with JSON deserialization)
+    // Dequeue query from this queue's single queue
     size_t data_size;
     int priority;
-    char* query_data = queue_dequeue(target_queue, &data_size, &priority);
+    char* query_data = queue_dequeue(db_queue->queue, &data_size, &priority);
 
     if (!query_data) return NULL;
 
@@ -390,125 +561,120 @@ DatabaseQuery* database_queue_process_next(DatabaseQueue* db_queue, int queue_ty
  *
  * Creates dedicated worker threads only for queues that are configured to start.
  */
-bool database_queue_start_workers(DatabaseQueue* db_queue) {
-    if (!db_queue) return false;
+/*
+ * Start a single worker thread for this queue
+ */
+bool database_queue_start_worker(DatabaseQueue* db_queue) {
+    // Create DQM component name for logging
+    char dqm_component[64];
+    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", db_queue->database_name);
+    
+    log_this(dqm_component, "Starting %s worker thread", LOG_LEVEL_STATE, db_queue->queue_type);
 
-    // Get queue configuration from app config
-    const DatabaseConfig* db_config = &app_config->databases;
-    const DatabaseConnection* conn_config = NULL;
-
-    // Find the connection configuration for this database
-    for (int i = 0; i < db_config->connection_count; i++) {
-        if (strcmp(db_config->connections[i].name, db_queue->database_name) == 0) {
-            conn_config = &db_config->connections[i];
-            break;
-        }
-    }
-
-    if (!conn_config) {
-        log_this(SR_DATABASE, "No configuration found for database: %s", LOG_LEVEL_ERROR, true, true, true, db_queue->database_name);
+    if (!db_queue) {
+        log_this(dqm_component, "Invalid database queue parameter", LOG_LEVEL_ERROR);
         return false;
     }
 
-    int threads_started = 0;
-
-    // Start worker threads based on configuration
-    if (conn_config->queues.slow.start > 0) {
-        if (pthread_create(&db_queue->worker_threads_slow, NULL, database_queue_worker_thread_slow, db_queue) != 0) {
-            log_this(SR_DATABASE, "Failed to start slow queue worker for %s", LOG_LEVEL_ERROR, true, true, true, db_queue->database_name);
-            return false;
-        }
-        threads_started++;
-        log_this(SR_DATABASE, "Started slow queue worker for %s", LOG_LEVEL_DEBUG, true, true, true, db_queue->database_name);
+    // Create the single worker thread
+    if (pthread_create(&db_queue->worker_thread, NULL, database_queue_worker_thread, db_queue) != 0) {
+        log_this(dqm_component, "Failed to start %s worker thread", LOG_LEVEL_ERROR, db_queue->queue_type);
+        return false;
     }
 
-    if (conn_config->queues.medium.start > 0) {
-        if (pthread_create(&db_queue->worker_threads_medium, NULL, database_queue_worker_thread_medium, db_queue) != 0) {
-            if (conn_config->queues.slow.start > 0) pthread_cancel(db_queue->worker_threads_slow);
-            log_this(SR_DATABASE, "Failed to start medium queue worker for %s", LOG_LEVEL_ERROR, true, true, true, db_queue->database_name);
-            return false;
-        }
-        threads_started++;
-        log_this(SR_DATABASE, "Started medium queue worker for %s", LOG_LEVEL_DEBUG, true, true, true, db_queue->database_name);
-    }
+    // Register thread with thread tracking system
+    extern ServiceThreads database_threads;
+    add_service_thread(&database_threads, db_queue->worker_thread);
 
-    if (conn_config->queues.fast.start > 0) {
-        if (pthread_create(&db_queue->worker_threads_fast, NULL, database_queue_worker_thread_fast, db_queue) != 0) {
-            if (conn_config->queues.slow.start > 0) pthread_cancel(db_queue->worker_threads_slow);
-            if (conn_config->queues.medium.start > 0) pthread_cancel(db_queue->worker_threads_medium);
-            log_this(SR_DATABASE, "Failed to start fast queue worker for %s", LOG_LEVEL_ERROR, true, true, true, db_queue->database_name);
-            return false;
-        }
-        threads_started++;
-        log_this(SR_DATABASE, "Started fast queue worker for %s", LOG_LEVEL_DEBUG, true, true, true, db_queue->database_name);
-    }
-
-    if (conn_config->queues.cache.start > 0) {
-        if (pthread_create(&db_queue->worker_threads_cache, NULL, database_queue_worker_thread_cache, db_queue) != 0) {
-            if (conn_config->queues.slow.start > 0) pthread_cancel(db_queue->worker_threads_slow);
-            if (conn_config->queues.medium.start > 0) pthread_cancel(db_queue->worker_threads_medium);
-            if (conn_config->queues.fast.start > 0) pthread_cancel(db_queue->worker_threads_fast);
-            log_this(SR_DATABASE, "Failed to start cache queue worker for %s", LOG_LEVEL_ERROR, true, true, true, db_queue->database_name);
-            return false;
-        }
-        threads_started++;
-        log_this(SR_DATABASE, "Started cache queue worker for %s", LOG_LEVEL_DEBUG, true, true, true, db_queue->database_name);
-    }
-
-    log_this(SR_DATABASE, "Started %d worker threads for database: %s", LOG_LEVEL_STATE, true, true, true, threads_started, db_queue->database_name);
+    log_this(dqm_component, "%s worker thread created and registered successfully", LOG_LEVEL_STATE, db_queue->queue_type);
     return true;
 }
 
 /*
- * Stop worker threads and wait for completion
+ * Stop worker thread and wait for completion
  */
-void database_queue_stop_workers(DatabaseQueue* db_queue) {
+void database_queue_stop_worker(DatabaseQueue* db_queue) {
     if (!db_queue) return;
+
+    // Create DQM component name for logging
+    char dqm_component[64];
+    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", db_queue->database_name);
+
+    log_this(dqm_component, "Stopping %s worker thread", LOG_LEVEL_STATE, db_queue->queue_type);
 
     db_queue->shutdown_requested = true;
 
-    // Cancel and join worker threads
-    pthread_cancel(db_queue->worker_threads_slow);
-    pthread_cancel(db_queue->worker_threads_medium);
-    pthread_cancel(db_queue->worker_threads_fast);
-    pthread_cancel(db_queue->worker_threads_cache);
+    // Cancel and join worker thread
+    pthread_cancel(db_queue->worker_thread);
+    pthread_join(db_queue->worker_thread, NULL);
 
-    pthread_join(db_queue->worker_threads_slow, NULL);
-    pthread_join(db_queue->worker_threads_medium, NULL);
-    pthread_join(db_queue->worker_threads_fast, NULL);
-    pthread_join(db_queue->worker_threads_cache, NULL);
-
-    log_this(SR_DATABASE, "Stopped worker threads for database: %s", LOG_LEVEL_STATE, true, true, true, db_queue->database_name);
+    log_this(dqm_component, "Stopped %s worker thread", LOG_LEVEL_STATE, db_queue->queue_type);
 }
 
 /*
- * Worker thread functions (stub implementations - will be expanded in Phase 2)
+ * Single generic worker thread function that works for all queue types
  */
-static void* database_queue_worker_thread_slow(void* arg) {
+void* database_queue_worker_thread(void* arg) {
     DatabaseQueue* db_queue = (DatabaseQueue*)arg;
-    log_this(SR_DATABASE, "Started slow queue worker for %s", LOG_LEVEL_STATE, true, true, true, db_queue->database_name);
-    // Implementation will process slow queries
-    return NULL;
-}
+    
+    // Create DQM component name for logging
+    char dqm_component[64];
+    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", db_queue->database_name);
+    
+    log_this(dqm_component, "%s queue worker thread started", LOG_LEVEL_STATE, db_queue->queue_type);
 
-static void* database_queue_worker_thread_medium(void* arg) {
-    DatabaseQueue* db_queue = (DatabaseQueue*)arg;
-    log_this(SR_DATABASE, "Started medium queue worker for %s", LOG_LEVEL_STATE, true, true, true, db_queue->database_name);
-    // Implementation will process medium queries
-    return NULL;
-}
+    // Main worker loop - stay alive until shutdown is requested
+    while (!db_queue->shutdown_requested && !database_stopping) {
+        // Wait for work with a timeout to check shutdown periodically
+        struct timespec timeout;
+        clock_gettime(CLOCK_REALTIME, &timeout);
+        timeout.tv_sec += 1; // 1 second timeout
 
-static void* database_queue_worker_thread_fast(void* arg) {
-    DatabaseQueue* db_queue = (DatabaseQueue*)arg;
-    log_this(SR_DATABASE, "Started fast queue worker for %s", LOG_LEVEL_STATE, true, true, true, db_queue->database_name);
-    // Implementation will process fast queries
-    return NULL;
-}
+        // Try to wait for work signal
+        if (sem_timedwait(&db_queue->worker_semaphore, &timeout) == 0) {
+            // Check again if we should still process (avoid race conditions)
+            if (!db_queue->shutdown_requested && !database_stopping) {
+                // Process next query from this queue
+                DatabaseQuery* query = database_queue_process_next(db_queue);
+                if (query) {
+                    log_this(dqm_component, "%s queue processing query: %s", LOG_LEVEL_DEBUG,
+                            db_queue->queue_type, query->query_id ? query->query_id : "unknown");
+                    
+                    // TODO: Actual database query execution will be implemented in Phase 2
+                    // For now, just simulate processing time based on queue type
+                    if (strcmp(db_queue->queue_type, "slow") == 0) {
+                        usleep(500000); // 500ms for slow queries
+                    } else if (strcmp(db_queue->queue_type, "medium") == 0) {
+                        usleep(200000); // 200ms for medium queries
+                    } else if (strcmp(db_queue->queue_type, "fast") == 0) {
+                        usleep(50000);  // 50ms for fast queries
+                    } else if (strcmp(db_queue->queue_type, "cache") == 0) {
+                        usleep(10000);  // 10ms for cache queries
+                    } else if (strcmp(db_queue->queue_type, "Lead") == 0) {
+                        usleep(100000); // 100ms for Lead queue queries
+                        // Lead queue can also manage child queues here
+                        if (db_queue->is_lead_queue) {
+                            database_queue_manage_child_queues(db_queue);
+                        }
+                    }
+                    
+                    // Clean up query
+                    if (query->query_id) free(query->query_id);
+                    if (query->query_template) free(query->query_template);
+                    if (query->parameter_json) free(query->parameter_json);
+                    if (query->error_message) free(query->error_message);
+                    free(query);
+                }
+            }
+        }
+        // Continue loop - timeout is expected and normal
+    }
 
-static void* database_queue_worker_thread_cache(void* arg) {
-    DatabaseQueue* db_queue = (DatabaseQueue*)arg;
-    log_this(SR_DATABASE, "Started cache queue worker for %s", LOG_LEVEL_STATE, true, true, true, db_queue->database_name);
-    // Implementation will process cached queries
+    // Clean up thread tracking before exit
+    extern ServiceThreads database_threads;
+    remove_service_thread(&database_threads, pthread_self());
+
+    log_this(dqm_component, "%s queue worker thread exiting", LOG_LEVEL_STATE, db_queue->queue_type);
     return NULL;
 }
 
@@ -516,13 +682,20 @@ static void* database_queue_worker_thread_cache(void* arg) {
  * Get total queue depth across all queues
  */
 size_t database_queue_get_depth(DatabaseQueue* db_queue) {
-    if (!db_queue) return 0;
+    if (!db_queue || !db_queue->queue) return 0;
 
-    size_t total_depth = 0;
-    total_depth += queue_size(db_queue->queue_slow);
-    total_depth += queue_size(db_queue->queue_medium);
-    total_depth += queue_size(db_queue->queue_fast);
-    total_depth += queue_size(db_queue->queue_cache);
+    size_t total_depth = queue_size(db_queue->queue);
+
+    // If this is a Lead queue, include child queue depths
+    if (db_queue->is_lead_queue && db_queue->child_queues) {
+        pthread_mutex_lock(&db_queue->children_lock);
+        for (int i = 0; i < db_queue->child_queue_count; i++) {
+            if (db_queue->child_queues[i]) {
+                total_depth += database_queue_get_depth(db_queue->child_queues[i]);
+            }
+        }
+        pthread_mutex_unlock(&db_queue->children_lock);
+    }
 
     return total_depth;
 }
@@ -533,18 +706,26 @@ size_t database_queue_get_depth(DatabaseQueue* db_queue) {
 void database_queue_get_stats(DatabaseQueue* db_queue, char* buffer, size_t buffer_size) {
     if (!db_queue || !buffer || buffer_size == 0) return;
 
-    size_t slow_depth = queue_size(db_queue->queue_slow);
-    size_t medium_depth = queue_size(db_queue->queue_medium);
-    size_t fast_depth = queue_size(db_queue->queue_fast);
-    size_t cache_depth = queue_size(db_queue->queue_cache);
+    size_t queue_depth = db_queue->queue ? queue_size(db_queue->queue) : 0;
 
-    snprintf(buffer, buffer_size,
-             "Database %s - Active: %s, Queries: %d, Total Depth: %zu (%zu/%zu/%zu/%zu)",
-             db_queue->database_name,
-             db_queue->is_connected ? "YES" : "NO",
-             db_queue->total_queries_processed,
-             database_queue_get_depth(db_queue),
-             slow_depth, medium_depth, fast_depth, cache_depth);
+    if (db_queue->is_lead_queue) {
+        snprintf(buffer, buffer_size,
+                 "Database %s [%s] - Active: %s, Queries: %d, Depth: %zu (Lead + %d children)",
+                 db_queue->database_name,
+                 db_queue->queue_type,
+                 db_queue->is_connected ? "YES" : "NO",
+                 db_queue->total_queries_processed,
+                 database_queue_get_depth(db_queue),
+                 db_queue->child_queue_count);
+    } else {
+        snprintf(buffer, buffer_size,
+                 "Database %s [%s] - Active: %s, Queries: %d, Depth: %zu",
+                 db_queue->database_name,
+                 db_queue->queue_type,
+                 db_queue->is_connected ? "YES" : "NO",
+                 db_queue->total_queries_processed,
+                 queue_depth);
+    }
 }
 
 /*
@@ -630,4 +811,152 @@ static DatabaseQuery* deserialize_query_from_json(const char* json) {
     query->query_template = strdup("parsed_template");
 
     return query;
+}
+
+/*
+ * Lead Queue Management Functions
+ */
+
+/*
+ * Spawn a child queue of the specified type
+ */
+bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* queue_type) {
+    if (!lead_queue || !lead_queue->is_lead_queue || !queue_type) {
+        return false;
+    }
+
+    pthread_mutex_lock(&lead_queue->children_lock);
+
+    // Check if we already have a child queue of this type
+    for (int i = 0; i < lead_queue->child_queue_count; i++) {
+        if (lead_queue->child_queues[i] &&
+            lead_queue->child_queues[i]->queue_type &&
+            strcmp(lead_queue->child_queues[i]->queue_type, queue_type) == 0) {
+            pthread_mutex_unlock(&lead_queue->children_lock);
+            log_this(SR_DATABASE, "Child queue %s already exists for database %s",
+                    LOG_LEVEL_DEBUG, queue_type, lead_queue->database_name);
+            return true; // Already exists
+        }
+    }
+
+    // Check if we have space for more child queues
+    if (lead_queue->child_queue_count >= lead_queue->max_child_queues) {
+        pthread_mutex_unlock(&lead_queue->children_lock);
+        log_this(SR_DATABASE, "Cannot spawn %s queue: maximum child queues reached for %s",
+                LOG_LEVEL_ERROR, queue_type, lead_queue->database_name);
+        return false;
+    }
+
+    // Create the child worker queue
+    DatabaseQueue* child_queue = database_queue_create_worker(
+        lead_queue->database_name,
+        lead_queue->connection_string,
+        queue_type
+    );
+
+    if (!child_queue) {
+        pthread_mutex_unlock(&lead_queue->children_lock);
+        log_this(SR_DATABASE, "Failed to create %s child queue for %s",
+                LOG_LEVEL_ERROR, queue_type, lead_queue->database_name);
+        return false;
+    }
+
+    // Start the worker thread for the child queue
+    if (!database_queue_start_worker(child_queue)) {
+        pthread_mutex_unlock(&lead_queue->children_lock);
+        database_queue_destroy(child_queue);
+        log_this(SR_DATABASE, "Failed to start worker for %s child queue for %s",
+                LOG_LEVEL_ERROR, queue_type, lead_queue->database_name);
+        return false;
+    }
+
+    // Add to child queue array
+    lead_queue->child_queues[lead_queue->child_queue_count] = child_queue;
+    lead_queue->child_queue_count++;
+
+    pthread_mutex_unlock(&lead_queue->children_lock);
+
+    log_this(SR_DATABASE, "Spawned %s child queue for database %s",
+            LOG_LEVEL_STATE, queue_type, lead_queue->database_name);
+    return true;
+}
+
+/*
+ * Shutdown a child queue of the specified type
+ */
+bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* queue_type) {
+    if (!lead_queue || !lead_queue->is_lead_queue || !queue_type) {
+        return false;
+    }
+
+    pthread_mutex_lock(&lead_queue->children_lock);
+
+    // Find the child queue to shutdown
+    int target_index = -1;
+    for (int i = 0; i < lead_queue->child_queue_count; i++) {
+        if (lead_queue->child_queues[i] &&
+            lead_queue->child_queues[i]->queue_type &&
+            strcmp(lead_queue->child_queues[i]->queue_type, queue_type) == 0) {
+            target_index = i;
+            break;
+        }
+    }
+
+    if (target_index == -1) {
+        pthread_mutex_unlock(&lead_queue->children_lock);
+        log_this(SR_DATABASE, "Child queue %s not found for database %s",
+                LOG_LEVEL_DEBUG, queue_type, lead_queue->database_name);
+        return false;
+    }
+
+    // Destroy the child queue
+    DatabaseQueue* child_queue = lead_queue->child_queues[target_index];
+    database_queue_destroy(child_queue);
+
+    // Compact the array by moving the last element to the removed position
+    if (target_index < lead_queue->child_queue_count - 1) {
+        lead_queue->child_queues[target_index] = lead_queue->child_queues[lead_queue->child_queue_count - 1];
+    }
+    lead_queue->child_queues[lead_queue->child_queue_count - 1] = NULL;
+    lead_queue->child_queue_count--;
+
+    pthread_mutex_unlock(&lead_queue->children_lock);
+
+    log_this(SR_DATABASE, "Shutdown %s child queue for database %s",
+            LOG_LEVEL_STATE, queue_type, lead_queue->database_name);
+    return true;
+}
+
+/*
+ * Manage child queues based on workload and configuration
+ * This function is called by the Lead queue worker thread periodically
+ */
+void database_queue_manage_child_queues(DatabaseQueue* lead_queue) {
+    if (!lead_queue || !lead_queue->is_lead_queue) {
+        return;
+    }
+
+    // TODO: Implement intelligent queue management based on:
+    // - Current queue depths
+    // - Processing rates
+    // - Configuration settings
+    // - System load
+    
+    // For now, this is a placeholder that could spawn queues based on simple rules
+    // Real implementation will be added in Phase 2
+
+    // Example logic (commented out for now):
+    /*
+    size_t lead_depth = queue_size(lead_queue->queue);
+    if (lead_depth > 10) {
+        // High load - consider spawning a medium queue if not exists
+        database_queue_spawn_child_queue(lead_queue, "medium");
+    }
+    */
+
+    // Create DQM component name for logging
+    char dqm_component[64];
+    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", lead_queue->database_name);
+    
+    log_this(dqm_component, "Lead queue managing child queues (placeholder)", LOG_LEVEL_TRACE);
 }
