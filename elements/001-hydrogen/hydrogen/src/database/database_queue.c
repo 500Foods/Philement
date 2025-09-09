@@ -546,6 +546,9 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
         return false;
     }
 
+    // Mark thread as started
+    db_queue->worker_thread_started = true;
+
     // Register thread with thread tracking system
     extern ServiceThreads database_threads;
     add_service_thread(&database_threads, db_queue->worker_thread);
@@ -569,10 +572,11 @@ void database_queue_stop_worker(DatabaseQueue* db_queue) {
     db_queue->shutdown_requested = true;
 
     // Cancel and join worker thread only if it was started
-    if (db_queue->worker_thread != 0) {
+    if (db_queue->worker_thread_started) {
         pthread_cancel(db_queue->worker_thread);
         pthread_join(db_queue->worker_thread, NULL);
         db_queue->worker_thread = 0;  // Reset to indicate thread is stopped
+        db_queue->worker_thread_started = false;  // Reset flag
     }
 
     log_this(dqm_component, "Stopped %s worker thread", LOG_LEVEL_STATE, db_queue->queue_type);

@@ -768,6 +768,12 @@ set(UNITY_FRAMEWORK_SOURCES
     ${UNITY_FRAMEWORK_DIR}/src/unity.c
 )
 
+# Add mock sources for Unity tests
+set(UNITY_MOCK_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libwebsockets.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libmicrohttpd.c
+)
+
 # Create Unity test object files in build/unity/src directory structure (same as original)
 # Include hydrogen.c for coverage instrumentation consistency, but don't link it into test executables
 set(UNITY_HYDROGEN_SOURCES ${HYDROGEN_SOURCES})
@@ -776,6 +782,42 @@ list(REMOVE_ITEM UNITY_HYDROGEN_SOURCES_FOR_LINKING "${CMAKE_CURRENT_SOURCE_DIR}
 
 set(UNITY_OBJECT_FILES "")
 set(UNITY_OBJECT_FILES_FOR_LINKING "")
+
+# Add mock object files
+foreach(MOCK_SOURCE ${UNITY_MOCK_SOURCES})
+    get_filename_component(MOCK_BASENAME ${MOCK_SOURCE} NAME_WE)
+    set(MOCK_OUTPUT_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${MOCK_BASENAME}.o")
+
+    # Create custom command to compile mock source file to object file
+    add_custom_command(
+        OUTPUT ${MOCK_OUTPUT_OBJ}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src
+        COMMAND ${CMAKE_C_COMPILER}
+            ${HYDROGEN_BASE_CFLAGS}
+            -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+            -DVERSION='"${HYDROGEN_VERSION}"'
+            -DRELEASE='"${HYDROGEN_RELEASE}"'
+            -DBUILD_TYPE='"Unity"'
+            -DUNITY_INCLUDE_DOUBLE
+            -DUSE_MOCK_LIBWEBSOCKETS
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../src
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks
+            -I${UNITY_FRAMEWORK_DIR}/src
+            ${JANSSON_CFLAGS}
+            ${MICROHTTPD_CFLAGS}
+            ${WEBSOCKETS_CFLAGS}
+            ${BROTLI_CFLAGS}
+            ${UUID_CFLAGS}
+            -c ${MOCK_SOURCE} -o ${MOCK_OUTPUT_OBJ}
+        DEPENDS ${MOCK_SOURCE}
+        COMMENT "Compiling ${MOCK_BASENAME} mock to Unity object file"
+    )
+
+    list(APPEND UNITY_OBJECT_FILES ${MOCK_OUTPUT_OBJ})
+    list(APPEND UNITY_OBJECT_FILES_FOR_LINKING ${MOCK_OUTPUT_OBJ})
+endforeach()
+
 foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     # Get relative path from src directory
     file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../src" ${SOURCE_FILE})
@@ -791,6 +833,20 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     endif()
     
+    # Check if this is a websocket source file to include mock headers
+    string(FIND "${SOURCE_FILE}" "websocket" IS_WEBSOCKET_SOURCE)
+    string(FIND "${SOURCE_FILE}" "terminal" IS_TERMINAL_SOURCE)
+    if(IS_WEBSOCKET_SOURCE GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS")
+    elseif(IS_TERMINAL_SOURCE GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_LIBMICROHTTPD")
+    else()
+        set(MOCK_INCLUDES "")
+        set(MOCK_DEFINES "")
+    endif()
+
     # Create custom command to compile source file to object file with Unity-specific flags
     add_custom_command(
         OUTPUT ${OUTPUT_OBJ}
@@ -802,9 +858,11 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             -DRELEASE='"${HYDROGEN_RELEASE}"'
             -DBUILD_TYPE='"Unity"'
             -DUNITY_INCLUDE_DOUBLE
+            ${MOCK_DEFINES}
             -I${CMAKE_CURRENT_SOURCE_DIR}/../src
             -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
             -I${UNITY_FRAMEWORK_DIR}/src
+            ${MOCK_INCLUDES}
             ${JANSSON_CFLAGS}
             ${MICROHTTPD_CFLAGS}
             ${WEBSOCKETS_CFLAGS}
@@ -873,6 +931,20 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(TEST_OUTPUT_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${TEST_BASENAME}.o")
     endif()
     
+    # Check if this is a websocket or terminal test to include mock headers
+    string(FIND "${TEST_SOURCE}" "websocket" IS_WEBSOCKET_TEST)
+    string(FIND "${TEST_SOURCE}" "terminal" IS_TERMINAL_TEST)
+    if(IS_WEBSOCKET_TEST GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS")
+    elseif(IS_TERMINAL_TEST GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_LIBMICROHTTPD")
+    else()
+        set(MOCK_INCLUDES "")
+        set(MOCK_DEFINES "")
+    endif()
+
     # Create custom command to compile test source file to object file
     add_custom_command(
         OUTPUT ${TEST_OUTPUT_OBJ}
@@ -884,9 +956,11 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
             -DRELEASE='"${HYDROGEN_RELEASE}"'
             -DBUILD_TYPE='"Coverage"'
             -DUNITY_INCLUDE_DOUBLE
+            ${MOCK_DEFINES}
             -I${CMAKE_CURRENT_SOURCE_DIR}/../src
             -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
             -I${UNITY_FRAMEWORK_DIR}/src
+            ${MOCK_INCLUDES}
             ${JANSSON_CFLAGS}
             ${MICROHTTPD_CFLAGS}
             ${WEBSOCKETS_CFLAGS}
