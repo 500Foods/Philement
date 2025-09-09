@@ -5,6 +5,18 @@ any code at all to our release build that has any kind of intsrumentation in it,
 
 IMPORTANT: The main purpose of the Unity Framework Testing in this project is to improve overall code quality. This means sometimes that when adding new tests in particular, bugs or shortcomings in the codebase will be uncovered and need to be addressed. This is an expected and normal outcome of building tests. Sometimes the tests themselves make incorrect assumptions or aggressive assumptions that don't match the code and will need to be adjusted. In other instances they make perfectly valid assumptions and the code is just not dealing with it the way it should so the code will neeed to be adjusted.
 
+## GENERAL FILE/FOLDER CONVENTIONS
+
+Original source files are in src/
+
+Other folders use the same file and folder conventions:
+
+- Unity tests are in tests/unity/src/
+- Unity gcov results are in build/unity/src/
+- Blacbox gcov results are in build/coverage/src/
+
+gcov files are named <source.c.gcov>`
+
 ## Source Code Organization and Naming Convention
 
 **Location**: Unity test files are organized to **mirror the source directory structure** in `tests/unity/src/`

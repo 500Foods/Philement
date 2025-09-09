@@ -10,8 +10,6 @@
 
 volatile sig_atomic_t logging_stopping = 0;
 
-
-
 // Check logging subsystem launch readiness
 LaunchReadiness check_logging_launch_readiness(void) {
     const char** messages = NULL;

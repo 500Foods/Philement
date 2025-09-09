@@ -772,6 +772,7 @@ set(UNITY_FRAMEWORK_SOURCES
 set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libwebsockets.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libmicrohttpd.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_launch.c
 )
 
 # Create Unity test object files in build/unity/src directory structure (same as original)

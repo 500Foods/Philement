@@ -230,6 +230,34 @@ int terminate_all_sessions(void);
  */
 bool session_manager_has_capacity(void);
 
+/**
+ * Test control functions - for making the code more testable
+ *
+ * These functions allow tests to control the behavior of the session manager
+ * to make testing more reliable and faster.
+ */
+
+/**
+ * Set cleanup thread sleep interval for testing
+ *
+ * @param seconds Sleep interval in seconds (default is 30)
+ */
+void terminal_session_set_test_cleanup_interval(int seconds);
+
+/**
+ * Disable cleanup thread for testing
+ *
+ * Prevents the cleanup thread from starting, which avoids hanging tests
+ */
+void terminal_session_disable_cleanup_thread(void);
+
+/**
+ * Enable cleanup thread
+ *
+ * Re-enables the cleanup thread (default behavior)
+ */
+void terminal_session_enable_cleanup_thread(void);
+
 #ifdef __cplusplus
 }
 #endif
