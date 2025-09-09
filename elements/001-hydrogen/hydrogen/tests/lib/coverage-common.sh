@@ -412,6 +412,7 @@ load_ignore_patterns() {
     IGNORE_PATTERNS=()
     
     # Add hardcoded filters
+    IGNORE_PATTERNS+=("mock_")
     IGNORE_PATTERNS+=("jansson")
     IGNORE_PATTERNS+=("microhttpd")
     IGNORE_PATTERNS+=("src/unity.c")

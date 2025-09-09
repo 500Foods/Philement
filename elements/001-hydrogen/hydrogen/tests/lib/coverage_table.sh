@@ -262,7 +262,7 @@ EOF
     cat > "${data_json}" << EOF
 [
     {
-        "status": "No source file coverage data available. Run Test 11 (Unity) or other Tests to generate gcov data"
+        "status": "No source file coverage data available. Run Test 10 (Unity) or other Tests to generate gcov data"
     }
 ]
 EOF
