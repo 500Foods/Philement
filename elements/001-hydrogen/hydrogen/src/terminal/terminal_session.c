@@ -29,6 +29,10 @@
 // Global session manager instance
 SessionManager *global_session_manager = NULL;
 
+// Test-friendly configuration
+static int test_mode_cleanup_interval = 30; // Default 30 seconds
+static bool test_mode_disable_cleanup_thread = false;
+
 /**
  * Background cleanup thread function
  *
@@ -40,8 +44,8 @@ static void *session_cleanup_thread(void *arg) {
     log_this(SR_TERMINAL, "Session cleanup thread started", LOG_LEVEL_STATE);
 
     while (global_session_manager && global_session_manager->cleanup_thread_running) {
-        // Sleep for 30 seconds between cleanup runs
-        sleep(30);
+        // Sleep for configurable interval (default 30 seconds, shorter for testing)
+        sleep((unsigned int)test_mode_cleanup_interval);
 
         if (!global_session_manager || !global_session_manager->cleanup_thread_running) {
             break;
@@ -118,13 +122,17 @@ bool init_session_manager(int max_sessions, int idle_timeout_seconds) {
         return false;
     }
 
-    // Start cleanup thread
-    global_session_manager->cleanup_thread_running = true;
-    if (pthread_create(&global_session_manager->cleanup_thread, NULL,
-                      session_cleanup_thread, NULL) != 0) {
-        log_this(SR_TERMINAL, "Failed to create cleanup thread", LOG_LEVEL_ERROR);
+    // Start cleanup thread (unless disabled for testing)
+    if (!test_mode_disable_cleanup_thread) {
+        global_session_manager->cleanup_thread_running = true;
+        if (pthread_create(&global_session_manager->cleanup_thread, NULL,
+                          session_cleanup_thread, NULL) != 0) {
+            log_this(SR_TERMINAL, "Failed to create cleanup thread", LOG_LEVEL_ERROR);
+            global_session_manager->cleanup_thread_running = false;
+            // Continue without cleanup thread - not critical
+        }
+    } else {
         global_session_manager->cleanup_thread_running = false;
-        // Continue without cleanup thread - not critical
     }
 
     log_this(SR_TERMINAL, "Session manager initialized - max_sessions: %d, idle_timeout: %d seconds",
@@ -398,7 +406,8 @@ bool resize_terminal_session(TerminalSession *session, int rows, int cols) {
 
     bool success = false;
     if (session->pty_shell) {
-        success = pty_set_size(session->pty_shell, (unsigned short)rows, (unsigned short)cols);
+        success = pty_set_size(session->pty_shell, rows > 0 ? (unsigned short)rows : 24,
+                              cols > 0 ? (unsigned short)cols : 80);
     }
 
     pthread_mutex_unlock(&session->session_mutex);
@@ -550,4 +559,19 @@ bool session_manager_has_capacity(void) {
     }
 
     return (size_t)global_session_manager->session_count < (size_t)global_session_manager->max_sessions;
+}
+
+/**
+ * Test control functions - for making the code more testable
+ */
+void terminal_session_set_test_cleanup_interval(int seconds) {
+    test_mode_cleanup_interval = seconds;
+}
+
+void terminal_session_disable_cleanup_thread(void) {
+    test_mode_disable_cleanup_thread = true;
+}
+
+void terminal_session_enable_cleanup_thread(void) {
+    test_mode_disable_cleanup_thread = false;
 }
