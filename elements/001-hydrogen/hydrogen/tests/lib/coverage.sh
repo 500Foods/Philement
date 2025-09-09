@@ -294,6 +294,7 @@ calculate_coverage_generic() {
             
             # Skip system libraries and external dependencies
             if [[ "${basename_file}" == *"jansson"* ]] || \
+               [[ "${basename_file}" == *"mock"* ]] || \
                [[ "${basename_file}" == *"json"* ]] || \
                [[ "${basename_file}" == *"curl"* ]] || \
                [[ "${basename_file}" == *"ssl"* ]] || \

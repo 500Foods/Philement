@@ -1,5 +1,5 @@
-# Still working through the configuration 
+# Still working through the configuration
 
-# This is used to test that unlinked code doesn't make it into the final executables
+## This is used to test that unlinked code doesn't make it into the final executables
+
 ./not_hydrogen.c
-

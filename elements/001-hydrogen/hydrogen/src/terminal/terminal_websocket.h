@@ -10,7 +10,11 @@
 #define TERMINAL_WEBSOCKET_H
 
 #include <stdbool.h>
+#ifdef USE_MOCK_LIBMICROHTTPD
+#include "../../../../tests/unity/mocks/mock_libmicrohttpd.h"
+#else
 #include <microhttpd.h>
+#endif
 #include <stddef.h>
 #include <sys/types.h>
 

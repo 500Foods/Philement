@@ -212,9 +212,9 @@ void test_database_queue_comprehensive_all_functions(void) {
     // database_queue_manage_child_queues(lead_queue); // Should not crash
     // database_queue_manage_child_queues(NULL); // Should not crash with NULL
 
-    // Clean up
+    // Clean up - worker_queue was not added to manager, so destroy it separately
+    // lead_queue was added to manager, so manager will destroy it
     database_queue_destroy(worker_queue);
-    database_queue_destroy(lead_queue);
     database_queue_manager_destroy(manager);
 
     // Test database_queue_system_destroy

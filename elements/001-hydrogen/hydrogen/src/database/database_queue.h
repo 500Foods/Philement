@@ -37,7 +37,8 @@ struct DatabaseQueue {
     
     // Worker thread management - single thread per queue
     pthread_t worker_thread;
-    
+    volatile bool worker_thread_started; // True if worker thread has been started
+
     // Queue role flags
     volatile bool is_lead_queue;   // True if this is the Lead queue for the database
     volatile bool can_spawn_queues; // True if this queue can create additional queues
