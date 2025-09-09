@@ -67,16 +67,16 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-09-08 23:52:44 UTC
+Last updated at 2025-09-09 02:28:08 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              340          13319          14788          49275
+C                              357          13680          15120          50300
 Markdown                       286           8335             58          26178
 Bourne Shell                    68           3012          35110          13648
 C/C++ Header                   106           1331           3956           3581
 JSON                            39              0              0           3527
-SVG                              4              0              0           3382
+SVG                              4              0              0           3376
 HTML                             8            138             23            882
 CMake                            1            139            186            708
 Python                           1             36              9            195
@@ -89,15 +89,16 @@ YAML                             2              8             13             37
 SQL                              4              4              0             33
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           874          26415          54197         101844
+SUM:                           891          26776          54529         102863
 -------------------------------------------------------------------------------
-33 Files were skipped (duplicate, binary, or without source code):
+34 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
   jpg: 3
   png: 3
   dproj: 2
   json: 2
   sh: 2
+  1634275: 1
   3mf: 1
   detailed: 1
   disabled: 1
