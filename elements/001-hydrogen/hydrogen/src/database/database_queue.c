@@ -63,7 +63,7 @@ bool database_queue_system_init(void) {
  * Ensures all queues are properly drained and all threads terminated.
  */
 void database_queue_system_destroy(void) {
-    log_this(SR_DATABASE, "Destroying database queue system", LOG_LEVEL_STATE, true, true, true);
+    log_this(SR_DATABASE, "Destroying database queue system", LOG_LEVEL_STATE);
 
     if (global_queue_manager) {
         database_queue_manager_destroy(global_queue_manager);
@@ -279,8 +279,8 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
     snprintf(dqm_component, sizeof(dqm_component), "DQM-%s",
              db_queue->database_name ? db_queue->database_name : "unknown");
 
-    log_this(dqm_component, "Destroying %s queue", LOG_LEVEL_STATE, true, true, true,
-             db_queue->queue_type ? db_queue->queue_type : "unknown");
+    const char* queue_type_name = db_queue->queue_type ? db_queue->queue_type : "unknown";
+    log_this(dqm_component, "Destroying %s queue", LOG_LEVEL_STATE, queue_type_name);
 
     // Signal shutdown to worker threads
     db_queue->shutdown_requested = true;
@@ -398,7 +398,7 @@ bool database_queue_manager_add_database(DatabaseQueueManager* manager, Database
     pthread_mutex_lock(&manager->manager_lock);
     if (manager->database_count >= manager->max_databases) {
         pthread_mutex_unlock(&manager->manager_lock);
-        log_this(SR_DATABASE, "Cannot add database: maximum capacity reached", LOG_LEVEL_ALERT, true, true, true);
+        log_this(SR_DATABASE, "Cannot add database: maximum capacity reached", LOG_LEVEL_ALERT);
         return false;
     }
 
@@ -409,7 +409,7 @@ bool database_queue_manager_add_database(DatabaseQueueManager* manager, Database
     char dqm_component[64];
     snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", db_queue->database_name);
 
-    log_this(dqm_component, "Added to global queue manager", LOG_LEVEL_STATE, true, true, true);
+    log_this(dqm_component, "Added to global queue manager", LOG_LEVEL_STATE);
     return true;
 }
 
@@ -468,7 +468,7 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
 
     // Submit to this queue's single queue
     if (!db_queue->queue) {
-        log_this(SR_DATABASE, "No queue available for query: %s", LOG_LEVEL_ERROR, true, true, true, query->query_id);
+        log_this(SR_DATABASE, "No queue available for query: %s", LOG_LEVEL_ERROR, query->query_id);
         return false;
     }
 
@@ -528,16 +528,17 @@ DatabaseQuery* database_queue_process_next(DatabaseQueue* db_queue) {
  * Start a single worker thread for this queue
  */
 bool database_queue_start_worker(DatabaseQueue* db_queue) {
-    // Create DQM component name for logging
-    char dqm_component[64];
-    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", db_queue->database_name);
-    
-    log_this(dqm_component, "Starting %s worker thread", LOG_LEVEL_STATE, db_queue->queue_type);
-
     if (!db_queue) {
-        log_this(dqm_component, "Invalid database queue parameter", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Invalid database queue parameter", LOG_LEVEL_ERROR);
         return false;
     }
+
+    // Create DQM component name for logging
+    char dqm_component[64];
+    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s",
+             db_queue->database_name ? db_queue->database_name : "unknown");
+
+    log_this(dqm_component, "Starting %s worker thread", LOG_LEVEL_STATE, db_queue->queue_type);
 
     // Create the single worker thread
     if (pthread_create(&db_queue->worker_thread, NULL, database_queue_worker_thread, db_queue) != 0) {
@@ -567,9 +568,12 @@ void database_queue_stop_worker(DatabaseQueue* db_queue) {
 
     db_queue->shutdown_requested = true;
 
-    // Cancel and join worker thread
-    pthread_cancel(db_queue->worker_thread);
-    pthread_join(db_queue->worker_thread, NULL);
+    // Cancel and join worker thread only if it was started
+    if (db_queue->worker_thread != 0) {
+        pthread_cancel(db_queue->worker_thread);
+        pthread_join(db_queue->worker_thread, NULL);
+        db_queue->worker_thread = 0;  // Reset to indicate thread is stopped
+    }
 
     log_this(dqm_component, "Stopped %s worker thread", LOG_LEVEL_STATE, db_queue->queue_type);
 }
@@ -702,7 +706,7 @@ bool database_queue_health_check(DatabaseQueue* db_queue) {
     // Check if queues are responding (placeholder - expand with actual connection testing)
     size_t total_depth = database_queue_get_depth(db_queue);
     if (total_depth > 10000) {  // Arbitrary high watermark
-        log_this(SR_DATABASE, "Queue depth too high: %zu for %s", LOG_LEVEL_ALERT, true, true, true, total_depth, db_queue->database_name);
+        log_this(SR_DATABASE, "Queue depth too high: %zu for %s", LOG_LEVEL_ALERT, total_depth, db_queue->database_name);
     }
 
     return true;
