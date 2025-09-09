@@ -201,7 +201,7 @@ verify_multi_restart() {
         current_count=$((current_count + 1))
 
         # Brief delay between restarts to avoid overwhelming the server
-        sleep 0.5
+        sleep 0.25
     done
 
     # Report final results
