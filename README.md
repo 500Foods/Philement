@@ -67,18 +67,18 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-09-09 02:28:08 UTC
+Last updated at 2025-09-09 05:17:00 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              357          13680          15120          50300
-Markdown                       286           8335             58          26178
-Bourne Shell                    68           3012          35110          13648
-C/C++ Header                   106           1331           3956           3581
+C                              375          14250          15656          52114
+Markdown                       286           8335             58          26179
+Bourne Shell                    68           3012          35110          13650
+C/C++ Header                   108           1348           3981           3662
 JSON                            39              0              0           3527
-SVG                              4              0              0           3376
+SVG                              4              0              0           3372
 HTML                             8            138             23            882
-CMake                            1            139            186            708
+CMake                            1            146            191            770
 Python                           1             36              9            195
 CSS                              3             14              7             80
 make                             4             41             16             80
@@ -89,7 +89,7 @@ YAML                             2              8             13             37
 SQL                              4              4              0             33
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           891          26776          54529         102863
+SUM:                           911          27370          55095         104819
 -------------------------------------------------------------------------------
 34 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
