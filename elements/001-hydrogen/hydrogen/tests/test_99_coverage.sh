@@ -35,11 +35,11 @@ if [[ -f "${UNITY_COVERAGE_FILE}" ]] && [[ -f "${UNITY_COVERAGE_FILE}.detailed" 
     unity_total_lines_count=0
     IFS=',' read -r _ _ unity_covered_lines_count unity_total_lines_count unity_instrumented_files_count unity_covered_files_count < "${UNITY_COVERAGE_FILE}.detailed"
     
-    # Format numbers with thousands separators
-    formatted_unity_covered_files=$("${PRINTF}" "%'d" "${unity_covered_files_count}")
-    formatted_unity_instrumented_files=$("${PRINTF}" "%'d" "${unity_instrumented_files_count}")
-    formatted_unity_covered_lines=$("${PRINTF}" "%'d" "${unity_covered_lines_count}")
-    formatted_unity_total_lines=$("${PRINTF}" "%'d" "${unity_total_lines_count}")
+    # Format numbers without commas to avoid JSON parsing issues
+    formatted_unity_covered_files=${unity_covered_files_count}
+    formatted_unity_instrumented_files=${unity_instrumented_files_count}
+    formatted_unity_covered_lines=${unity_covered_lines_count}
+    formatted_unity_total_lines=${unity_total_lines_count}
     
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Files instrumented: ${formatted_unity_covered_files} of ${formatted_unity_instrumented_files} source files have coverage"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Lines instrumented: ${formatted_unity_covered_lines} of ${formatted_unity_total_lines} executable lines covered"
@@ -70,11 +70,11 @@ if [[ -d "${BLACKBOX_COVERAGE_DIR}" ]]; then
             IFS=',' read -r _ _ covered_lines total_lines instrumented_files covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
         fi
         
-        # Format numbers with thousands separators
-        formatted_covered_files=$("${PRINTF}" "%'d" "${covered_files}")
-        formatted_instrumented_files=$("${PRINTF}" "%'d" "${instrumented_files}")
-        formatted_covered_lines=$("${PRINTF}" "%'d" "${covered_lines}")
-        formatted_total_lines=$("${PRINTF}" "%'d" "${total_lines}")
+        # Format numbers without commas to avoid JSON parsing issues
+        formatted_covered_files=${covered_files}
+        formatted_instrumented_files=${instrumented_files}
+        formatted_covered_lines=${covered_lines}
+        formatted_total_lines=${total_lines}
         
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Files instrumented: ${formatted_covered_files} of ${formatted_instrumented_files} source files have coverage"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Lines instrumented: ${formatted_covered_lines} of ${formatted_total_lines} executable lines covered"
@@ -139,9 +139,9 @@ if [[ -f "${UNITY_COVERAGE_FILE}.detailed" ]] && [[ -f "${BLACKBOX_COVERAGE_FILE
         combined_coverage=$("${AWK}" "BEGIN {printf \"%.3f\", (${combined_total_covered} / ${combined_total_instrumented}) * 100}")
     fi
     
-    # Format numbers with thousands separators
-    formatted_covered=$("${PRINTF}" "%'d" "${combined_total_covered}")
-    formatted_total=$("${PRINTF}" "%'d" "${combined_total_instrumented}")
+    # Format numbers without commas to avoid JSON parsing issues
+    formatted_covered=${combined_total_covered}
+    formatted_total=${combined_total_instrumented}
     
     # Store the combined coverage value for other scripts to use
     echo "${combined_coverage}" > "${COMBINED_COVERAGE_FILE}"
@@ -204,12 +204,231 @@ fi
 # Calculate uncovered count from our data
 uncovered_count=$((blackbox_instrumented_files - blackbox_covered_files))
 
-# Format numbers with thousands separators
-formatted_covered_files=$("${PRINTF}" "%'d" "${blackbox_covered_files}")
-formatted_instrumented_files=$("${PRINTF}" "%'d" "${blackbox_instrumented_files}")
-formatted_uncovered_count=$("${PRINTF}" "%'d" "${uncovered_count}")
+# Format numbers without commas to avoid JSON parsing issues
+formatted_covered_files=${blackbox_covered_files}
+formatted_instrumented_files=${blackbox_instrumented_files}
+formatted_uncovered_count=${uncovered_count}
 
 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Coverage analysis: ${formatted_covered_files} of ${formatted_instrumented_files} source files covered, ${formatted_uncovered_count} uncovered"
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Unity Test Counts"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Validating unity test counts from multiple sources..."
+
+# Get Test 10's total executed test count from the separate unity tests file
+test10_total_executed=0
+if [[ -f "${RESULTS_DIR}/unity_test_count.txt" ]]; then
+    test10_total_executed=$(cat "${RESULTS_DIR}/unity_test_count.txt" 2>/dev/null || echo "0")
+fi
+
+# Parse Test 10's individual test execution results
+declare -A test10_executed_counts
+
+# Look for Test 10's diagnostic files to parse individual test results
+if [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
+    # Find the most recent Test 10 diagnostic directory
+    latest_test10_dir=$("${FIND}" "${BUILD_DIR}/tests/diagnostics" -name "test_10_*" -type d 2>/dev/null | sort -r | head -1 || true)
+
+    if [[ -n "${latest_test10_dir}" ]]; then
+        # Parse individual test execution results from diagnostic files
+        while IFS= read -r -d '' diag_file; do
+            if [[ "${diag_file}" =~ \.txt$ ]]; then
+                # Extract test name from file path
+                test_name=$(basename "${diag_file}" .txt)
+
+                # Parse the test output to get executed test count
+                if [[ -f "${diag_file}" ]]; then
+                    # Look for "X Tests Y Failures Z Ignored" pattern
+                    test_line=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${diag_file}" 2>/dev/null | head -1 || true)
+                    if [[ -n "${test_line}" ]]; then
+                        # shellcheck disable=SC2016 # This is an awk script, not bash
+                        executed_count=$("${AWK}" '{print $1}' <<< "${test_line}" || echo "0")
+                        test10_executed_counts["${test_name}"]=${executed_count}
+                    fi
+                fi
+            fi
+        done < <("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -print0 2>/dev/null || true)
+    fi
+fi
+
+# Calculate coverage_table.sh style count (sum of RUN_TEST calls mapped to source files)
+coverage_table_count=0
+declare -A unity_test_counts
+declare -A grep_test_counts
+
+# Count Unity tests per test file using grep
+if [[ -d "tests/unity/src" ]]; then
+    while IFS= read -r -d '' test_file; do
+        # Skip if not a .c file
+        [[ "${test_file}" =~ \.c$ ]] || continue
+
+        # Get relative path from tests/unity/src/
+        rel_path="${test_file#tests/unity/src/}"
+
+        # Extract test file name
+        test_basename=$(basename "${rel_path}" .c)
+
+        # Count RUN_TEST occurrences in the test file
+        test_count=$("${GREP}" -c "RUN_TEST(" "${test_file}" 2>/dev/null || echo "0")
+        ignore_count=$("${GREP}" -Ec "if \(0\) RUN_TEST\(" "${test_file}" 2>/dev/null || echo "0")
+
+        # Ensure they are valid numbers
+        if ! [[ "${test_count}" =~ ^[0-9]+$ ]]; then
+            test_count=0
+        fi
+        if ! [[ "${ignore_count}" =~ ^[0-9]+$ ]]; then
+            ignore_count=0
+        fi
+
+        # Store grep count for this test file
+        grep_count=$((test_count - ignore_count))
+        grep_test_counts["${test_basename}"]=${grep_count}
+
+        # Map test file to source file based on naming convention
+        source_file=""
+        if [[ "${test_basename}" =~ _test ]]; then
+            source_name="${test_basename%%_test*}"
+            source_dir=$("${DIRNAME}" "${rel_path}")
+
+            # Handle directory mapping
+            if [[ "${source_dir}" == "." ]]; then
+                # Test file is in root of unity/src, map to src/
+                source_file="src/${source_name}.c"
+            else
+                # Test file is in subdirectory, map to corresponding src subdirectory
+                source_file="src/${source_dir}/${source_name}.c"
+            fi
+
+            # Add to existing count for this source file
+            current_count=$(( ${unity_test_counts[${source_file}]:-0} ))
+            unity_test_counts["${source_file}"]=$((current_count + grep_count))
+        fi
+    done < <("${FIND}" "tests/unity/src" -name "*test*.c" -type f -print0 2>/dev/null || true)
+
+    # Sum all the counts
+    for count in "${unity_test_counts[@]}"; do
+        coverage_table_count=$((coverage_table_count + count))
+    done
+fi
+
+# Get raw RUN_TEST count using grep
+raw_runtest_count=0
+if [[ -d "tests/unity/src" ]]; then
+    raw_runtest_count=$("${GREP}" -r "RUN_TEST(" "tests/unity/src" 2>/dev/null | "${GREP}" -v "if (0)" | wc -l || echo "0")
+fi
+
+# Format numbers without commas to avoid JSON parsing issues
+formatted_test10=${test10_total_executed}
+formatted_coverage_table=${coverage_table_count}
+formatted_raw=${raw_runtest_count}
+
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Test counts comparison:"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Test 10 (executed): ${formatted_test10} tests"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Coverage table (mapped): ${formatted_coverage_table} tests"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Raw RUN_TEST (all): ${formatted_raw} tests"
+
+# Check for per-file discrepancies
+per_file_discrepancies=()
+total_discrepancies=0
+
+for test_file in "${!grep_test_counts[@]}"; do
+    grep_count=${grep_test_counts[${test_file}]}
+    executed_count=${test10_executed_counts[${test_file}]:-0}
+
+    if [[ ${grep_count} -ne ${executed_count} ]]; then
+        diff=$((executed_count - grep_count))
+        per_file_discrepancies+=("${test_file}: executed ${executed_count}, grep ${grep_count} (diff: ${diff})")
+        total_discrepancies=$((total_discrepancies + 1))
+    fi
+done
+
+# Check for discrepancies
+discrepancy_found=false
+discrepancy_details=""
+
+if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]]; then
+    discrepancy_found=true
+    test10_diff=$((test10_total_executed - coverage_table_count))
+    if [[ ${test10_diff} -gt 0 ]]; then
+        discrepancy_details+="Test 10 has ${test10_diff} more tests than coverage table mapping. "
+    else
+        discrepancy_details+="Coverage table has $((coverage_table_count - test10_total_executed)) more tests than Test 10 executed. "
+    fi
+fi
+
+if [[ "${coverage_table_count}" -ne "${raw_runtest_count}" ]]; then
+    discrepancy_found=true
+    raw_diff=$((raw_runtest_count - coverage_table_count))
+    if [[ ${raw_diff} -gt 0 ]]; then
+        discrepancy_details+="Raw count has ${raw_diff} more RUN_TEST calls than mapped tests. "
+    else
+        discrepancy_details+="Mapped tests have $((coverage_table_count - raw_runtest_count)) more tests than raw RUN_TEST calls. "
+    fi
+fi
+
+if [[ ${total_discrepancies} -gt 0 ]]; then
+    discrepancy_found=true
+    discrepancy_details+="Found ${total_discrepancies} per-file discrepancies. "
+fi
+
+if [[ "${discrepancy_found}" = true ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Test count discrepancies found: ${discrepancy_details}"
+
+    # Show per-file discrepancies
+    if [[ ${total_discrepancies} -gt 0 ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Per-file discrepancies (showing first 10):"
+        for i in "${!per_file_discrepancies[@]}"; do
+            if [[ ${i} -lt 10 ]]; then
+                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${per_file_discrepancies[${i}]}"
+            fi
+        done
+        if [[ ${total_discrepancies} -gt 10 ]]; then
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ... and $((total_discrepancies - 10)) more"
+        fi
+    fi
+
+    # Try to identify problematic test files
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Investigating potential causes..."
+
+    # Check for test files that don't follow naming convention
+    if [[ -d "tests/unity/src" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Test files not following naming convention:"
+        while IFS= read -r -d '' test_file; do
+            if [[ "${test_file}" =~ \.c$ ]]; then
+                basename_file=$(basename "${test_file}")
+                if [[ ! "${basename_file}" =~ _test ]]; then
+                    rel_path="${test_file#tests/unity/src/}"
+                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${rel_path} (missing '_test' in filename)"
+                fi
+            fi
+        done < <("${FIND}" "tests/unity/src" -name "*.c" -type f -print0 2>/dev/null || true)
+
+        # Check for RUN_TEST calls in non-test files
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "RUN_TEST calls in non-test files:"
+        while IFS= read -r -d '' non_test_file; do
+            if [[ "${non_test_file}" =~ \.c$ ]]; then
+                basename_file=$(basename "${non_test_file}")
+                if [[ ! "${basename_file}" =~ _test ]]; then
+                    runtest_count=$("${GREP}" -c "RUN_TEST(" "${non_test_file}" 2>/dev/null || echo "0")
+                    if [[ "${runtest_count}" -gt 0 ]]; then
+                        rel_path="${non_test_file#tests/unity/src/}"
+                        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${rel_path}: ${runtest_count} RUN_TEST calls"
+                    fi
+                fi
+            fi
+        done < <("${FIND}" "tests/unity/src" -name "*.c" -type f -print0 2>/dev/null || true)
+    fi
+
+    # Check for test files with no mapped source files
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Test files with potential mapping issues:"
+    for test_file in "${!unity_test_counts[@]}"; do
+        if [[ "${unity_test_counts[${test_file}]}" -eq 0 ]]; then
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${test_file}: 0 tests mapped (check naming convention)"
+        fi
+    done
+
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All test counts match: ${formatted_test10} tests consistently reported"
+fi
 
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

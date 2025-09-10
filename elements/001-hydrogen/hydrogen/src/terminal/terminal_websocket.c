@@ -38,23 +38,6 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-/**
- * Terminal WebSocket connection context
- */
-typedef struct TerminalWSConnection {
-    struct lws *wsi;                  /**< Libwebsockets connection instance */
-    TerminalSession *session;         /**< Associated terminal session */
-    char session_id[64];              /**< Session ID for validation */
-
-    // Buffer for incoming data
-    char *incoming_buffer;            /**< Buffer for partial messages */
-    size_t incoming_size;             /**< Current size of incoming buffer */
-    size_t incoming_capacity;         /**< Total capacity of incoming buffer */
-
-    // Connection state
-    bool active;                      /**< Whether connection is active */
-    bool authenticated;               /**< Whether session is authenticated */
-} TerminalWSConnection;
 
 /**
  * Check if WebSocket upgrade request is for terminal
@@ -183,6 +166,14 @@ enum MHD_Result handle_terminal_websocket_upgrade(struct MHD_Connection *connect
 
     log_this(SR_TERMINAL, "WebSocket upgrade accepted for session %s", LOG_LEVEL_STATE, session->session_id);
 
+    // Start I/O bridge thread for this connection
+    if (!start_terminal_websocket_bridge(ws_conn)) {
+        log_this(SR_TERMINAL, "Failed to start I/O bridge thread for session %s", LOG_LEVEL_ERROR, session->session_id);
+        remove_terminal_session(session);
+        free(ws_conn);
+        return MHD_NO;
+    }
+
     // Return continuation - WebSocket server will handle the actual protocol
     return MHD_YES;
 }
@@ -199,15 +190,14 @@ enum MHD_Result handle_terminal_websocket_upgrade(struct MHD_Connection *connect
  * @return true on success, false on error
  */
 bool process_terminal_websocket_message(TerminalWSConnection *connection,
-                                       const char *message,
-                                       size_t message_size) {
+                                        const char *message,
+                                        size_t message_size) {
     if (!connection || !connection->active || !message) {
         return false;
     }
 
     // Validate session
     if (!connection->session) {
-        log_this(SR_TERMINAL, "WebSocket message received for sessionless connection", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -227,8 +217,6 @@ bool process_terminal_websocket_message(TerminalWSConnection *connection,
                 if (input_len > 0) {
                     int bytes_sent = send_data_to_session(connection->session, input_data, input_len);
                     if (bytes_sent < 0) {
-                        log_this(SR_TERMINAL, "Failed to send input data to session %s",
-                               LOG_LEVEL_ERROR, connection->session_id);
                         json_decref(json_msg);
                         return false;
                     }
@@ -326,6 +314,7 @@ bool send_terminal_websocket_output(TerminalWSConnection *connection,
 static void *terminal_io_bridge_thread(void *arg) {
     TerminalWSConnection *connection = (TerminalWSConnection *)arg;
     if (!connection || !connection->session) {
+        log_this(SR_TERMINAL, "I/O bridge thread failed: invalid connection or session", LOG_LEVEL_ERROR);
         return NULL;
     }
 
@@ -336,9 +325,30 @@ static void *terminal_io_bridge_thread(void *arg) {
     struct timeval timeout;
 
     while (connection->active && connection->session && connection->session->active) {
+        // Check if PTY shell is available (NULL check to prevent crashes)
         if (!connection->session->pty_shell) {
+            log_this(SR_TERMINAL, "I/O bridge thread: PTY shell is NULL for session %s, skipping iteration", LOG_LEVEL_DEBUG, connection->session_id);
+            sleep(1); // Wait before checking again
+            continue;
+        }
+
+        // Check if the WebSocket connection has been closed (coordination with other threads)
+        if (!connection->session->connected) {
+            log_this(SR_TERMINAL, "I/O bridge thread exiting: WebSocket connection closed for session %s", LOG_LEVEL_STATE, connection->session_id);
             break;
         }
+
+        // Additional safety check - verify session is still valid
+        if (strlen(connection->session->session_id) == 0) {
+            log_this(SR_TERMINAL, "I/O bridge thread exiting: Session ID is invalid", LOG_LEVEL_ALERT);
+            break;
+        }
+
+        // Debug: Check PTY state before select
+        log_this(SR_TERMINAL, "I/O bridge checking PTY for session %s: running=%d, master_fd=%d",
+                LOG_LEVEL_DEBUG, connection->session_id,
+                connection->session->pty_shell->running,
+                connection->session->pty_shell->master_fd);
 
         // Set up select for non-blocking read
         FD_ZERO(&readfds);
@@ -355,19 +365,23 @@ static void *terminal_io_bridge_thread(void *arg) {
         if (result > 0 && FD_ISSET(connection->session->pty_shell->master_fd, &readfds)) {
             // Data available, proceed with reading
             // Data available from PTY
+            log_this(SR_TERMINAL, "I/O bridge reading from PTY for session %s", LOG_LEVEL_DEBUG, connection->session_id);
             int bytes_read = pty_read_data(connection->session->pty_shell, buffer, sizeof(buffer));
+            log_this(SR_TERMINAL, "I/O bridge read result for session %s: bytes_read=%d", LOG_LEVEL_DEBUG, connection->session_id, bytes_read);
 
             if (bytes_read > 0) {
                 // Send data to client
+                log_this(SR_TERMINAL, "I/O bridge sending %d bytes to WebSocket for session %s", LOG_LEVEL_DEBUG, bytes_read, connection->session_id);
                 if (!send_terminal_websocket_output(connection, buffer, (size_t)bytes_read)) {
                     log_this(SR_TERMINAL, "Failed to send PTY output to WebSocket client", LOG_LEVEL_ERROR);
                 }
             } else if (bytes_read == 0) {
                 // No data available, continue
+                log_this(SR_TERMINAL, "I/O bridge: no data available from PTY for session %s", LOG_LEVEL_DEBUG, connection->session_id);
                 continue;
             } else {
                 // Error reading from PTY
-                log_this(SR_TERMINAL, "Error reading from PTY for session %s", LOG_LEVEL_ERROR, connection->session_id);
+                log_this(SR_TERMINAL, "Error reading from PTY for session %s (bytes_read=%d)", LOG_LEVEL_ERROR, connection->session_id, bytes_read);
                 break;
             }
         } else if (result == 0) {
@@ -428,10 +442,19 @@ void handle_terminal_websocket_close(TerminalWSConnection *connection) {
 
     log_this(SR_TERMINAL, "Handling WebSocket close for session %s", LOG_LEVEL_STATE, connection->session_id);
 
+    // Signal connection closure first (before cleanup)
     connection->active = false;
+    if (connection->session) {
+        connection->session->connected = false;
+        log_this(SR_TERMINAL, "Marked session %s as disconnected", LOG_LEVEL_DEBUG, connection->session_id);
+    }
+
+    // Give threads a moment to detect the closure signal
+    usleep(50000); // 50ms - increased delay
 
     // Stop session if it exists
     if (connection->session) {
+        log_this(SR_TERMINAL, "Removing terminal session %s during WebSocket close", LOG_LEVEL_DEBUG, connection->session_id);
         remove_terminal_session(connection->session);
         connection->session = NULL;
     }
@@ -443,6 +466,7 @@ void handle_terminal_websocket_close(TerminalWSConnection *connection) {
     }
 
     // Free WebSocket connection context
+    log_this(SR_TERMINAL, "Freeing WebSocket connection context for session", LOG_LEVEL_DEBUG);
     free(connection);
 }
 

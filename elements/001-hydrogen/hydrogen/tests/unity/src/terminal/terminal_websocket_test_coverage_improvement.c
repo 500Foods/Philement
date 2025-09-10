@@ -12,30 +12,13 @@
 #include "../../../../src/config/config_terminal.h"
 #include "../../../../src/terminal/terminal_websocket.h"
 #include "../../../../src/terminal/terminal_session.h"
+#include "../../../../src/terminal/terminal.h"
 
 // Include mocks for external dependencies
 #include "../../../../tests/unity/mocks/mock_libwebsockets.h"
 #include "../../../../tests/unity/mocks/mock_libmicrohttpd.h"
 
-// Mock TerminalWSConnection structure for testing
-typedef struct TerminalWSConnection {
-    struct lws *wsi;                  /**< Libwebsockets connection instance */
-    TerminalSession *session;         /**< Associated terminal session */
-    char session_id[64];              /**< Session ID for validation */
-    char *incoming_buffer;            /**< Buffer for partial messages */
-    size_t incoming_size;             /**< Current size of incoming buffer */
-    size_t incoming_capacity;         /**< Total capacity of incoming buffer */
-    bool active;                      /**< Whether connection is active */
-    bool authenticated;               /**< Whether session is authenticated */
-} TerminalWSConnection;
-
-// Forward declarations for functions being tested
-bool is_terminal_websocket_request(struct MHD_Connection *connection, const char *method, const char *url, const TerminalConfig *config);
-enum MHD_Result handle_terminal_websocket_upgrade(struct MHD_Connection *connection, const char *url, const char *method, const TerminalConfig *config, void **websocket_handle);
-bool process_terminal_websocket_message(TerminalWSConnection *connection, const char *message, size_t message_size);
-bool send_terminal_websocket_output(TerminalWSConnection *connection, const char *data, size_t data_size);
-bool start_terminal_websocket_bridge(TerminalWSConnection *connection);
-void handle_terminal_websocket_close(TerminalWSConnection *connection);
+// Functions being tested are declared in terminal_websocket.h
 
 // Function prototypes for test functions
 void test_process_terminal_websocket_message_json_input_command(void);
