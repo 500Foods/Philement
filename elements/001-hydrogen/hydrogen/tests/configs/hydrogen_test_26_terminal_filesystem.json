@@ -17,7 +17,7 @@
         "Enabled": true,
         "WebRoot": "tests/artifacts/terminal",
         "ShellCommand": "/bin/bash",
-        "MaxSessions": 2,
+        "MaxSessions": 10,
         "IdleTimeoutSeconds": 300,
         "BufferSize": 2048
     },

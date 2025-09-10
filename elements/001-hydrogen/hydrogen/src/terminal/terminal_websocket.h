@@ -23,13 +23,25 @@ extern "C" {
 #endif
 
 // Forward declarations
-struct TerminalWSConnection;
 struct TerminalConfig;
 
 /**
- * TerminalWSConnection structure definition (implementation in terminal_websocket.c)
+ * Terminal WebSocket connection context
  */
-typedef struct TerminalWSConnection TerminalWSConnection;
+typedef struct TerminalWSConnection {
+    struct lws *wsi;                  /**< Libwebsockets connection instance */
+    struct TerminalSession *session;  /**< Associated terminal session */
+    char session_id[64];              /**< Session ID for validation */
+
+    // Buffer for incoming data
+    char *incoming_buffer;            /**< Buffer for partial messages */
+    size_t incoming_size;             /**< Current size of incoming buffer */
+    size_t incoming_capacity;         /**< Total capacity of incoming buffer */
+
+    // Connection state
+    bool active;                      /**< Whether connection is active */
+    bool authenticated;               /**< Whether session is authenticated */
+} TerminalWSConnection;
 
 /**
  * Check if WebSocket upgrade request is for terminal

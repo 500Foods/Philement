@@ -16,7 +16,7 @@
     "Terminal": {
         "Enabled": true,
         "ShellCommand": "/bin/bash",
-        "MaxSessions": 2,
+        "MaxSessions": 10,
         "IdleTimeoutSeconds": 300,
         "BufferSize": 2048
     },

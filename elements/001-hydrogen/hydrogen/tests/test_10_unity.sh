@@ -328,7 +328,10 @@ run_unity_tests() {
     # Display summary in two parts
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unity test execution: ${total_tests} test files ran in ${batch_num} batches"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unity test results: $("${PRINTF}" "%'d" "${TOTAL_UNITY_TESTS}" || true) unit tests, $("${PRINTF}" "%'d" "${TOTAL_UNITY_PASSED}" || true) passing, $("${PRINTF}" "%'d" "${total_failed}" || true) failing"
-    
+
+    # Store the total unity test count for other tests to use
+    echo "${TOTAL_UNITY_TESTS}" > "${RESULTS_DIR}/unity_test_count.txt"
+
     return "${overall_result}"
 }
 

@@ -273,7 +273,7 @@ int main(void) {
     RUN_TEST(test_check_logging_launch_readiness_invalid_console_level);
     RUN_TEST(test_check_logging_launch_readiness_invalid_file_level);
     if (0) RUN_TEST(test_check_logging_launch_readiness_console_disabled);
-    if (0)  RUN_TEST(test_check_logging_launch_readiness_file_disabled);
+    if (0) RUN_TEST(test_check_logging_launch_readiness_file_disabled);
     RUN_TEST(test_check_logging_launch_readiness_no_destinations_enabled);
     RUN_TEST(test_check_logging_launch_readiness_subsystem_not_registered);
     if (0) RUN_TEST(test_check_logging_launch_readiness_successful);

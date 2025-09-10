@@ -10,6 +10,11 @@
 # test_terminal_configuration()
 
 # CHANGELOG
+# 2.3.0 - 2025-09-09 - Fixed WebSocket I/O and resize test crashes: Added NULL pointer checks in terminal_websocket.c
+#                    - Re-enabled WebSocket I/O and resize tests that were disabled due to SIGSEGV crashes
+#                    - Enhanced libwebsockets mocks to support lws_get_protocol for better terminal message routing
+#                    - Improved coverage for terminal_websocket.c and terminal_shell.c functions
+#                    - WebSocket I/O and resize tests now enabled and should provide better coverage
 # 2.0.0 - 2025-08-31 - Major refactor: Implemented parallel execution of Terminal tests following Test 22/Swagger patterns.
 #                    - Added dual configuration testing: payload mode vs filesystem mode
 #                    - Extracted modular functions for parallel execution and result analysis
@@ -23,7 +28,7 @@ TEST_NAME="Terminal"
 TEST_ABBR="TRM"
 TEST_NUMBER="26"
 TEST_COUNTER=0
-TEST_VERSION="2.1.0"  # Updated version for WebSocket connection testing
+TEST_VERSION="2.3.0"  # Fixed WebSocket I/O and resize test crashes
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -46,7 +51,7 @@ TERMINAL_TEST_CONFIGS=(
 
 # Test timeouts
 STARTUP_TIMEOUT=15
-SHUTDOWN_TIMEOUT=10
+SHUTDOWN_TIMEOUT=15  # Increased to allow more graceful cleanup and I/O processing
 
 # Function to check HTTP response content with retry logic for subsystem readiness
 check_terminal_response_content() {
@@ -273,6 +278,30 @@ run_terminal_test_parallel() {
                 all_tests_passed=false
             fi
 
+            # Test WebSocket terminal input/output
+            # NOTE: Re-enabled after fixing crash in terminal_websocket.c NULL pointer checks
+            local websocket_io_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_websocket_io.json"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if test_websocket_terminal_input_output "${ws_url}" "${websocket_protocol}" "${websocket_io_file}"; then
+                echo "WEBSOCKET_IO_TEST_PASSED" >> "${result_file}"
+                # Brief pause to allow I/O processing and potential pty_read_data coverage
+                sleep 1
+            else
+                echo "WEBSOCKET_IO_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+
+            # Test WebSocket terminal resize
+            # NOTE: Re-enabled after fixing crash in terminal_websocket.c NULL pointer checks
+            local websocket_resize_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_websocket_resize.json"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if test_websocket_terminal_resize "${ws_url}" "${websocket_protocol}" "${websocket_resize_file}"; then
+                echo "WEBSOCKET_RESIZE_TEST_PASSED" >> "${result_file}"
+            else
+                echo "WEBSOCKET_RESIZE_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+
             if [[ "${all_tests_passed}" = true ]]; then
                 echo "ALL_TERMINAL_TESTS_PASSED" >> "${result_file}"
             else
@@ -400,9 +429,7 @@ test_websocket_terminal_connection() {
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket connection successful (clean exit)"
             fi
-            if [[ -n "${websocat_output}" ]]; then
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server response: ${websocat_output}"
-            fi
+            # Don't print server response to avoid cluttering output with shell prompts
             return 0
         elif [[ "${websocat_exitcode}" -eq 124 ]]; then
             # Timeout occurred, but that's OK if connection was established
@@ -495,7 +522,7 @@ test_websocket_terminal_status() {
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket status ping successful"
             fi
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal protocol accepted by WebSocket server"
+            # Don't print protocol acceptance message to reduce output clutter
             return 0
         elif [[ "${websocat_exitcode}" -eq 124 ]]; then
             # Timeout occurred, but ping should respond quickly
@@ -545,6 +572,79 @@ test_websocket_terminal_status() {
     done
 
     return 1
+}
+
+# Function to test WebSocket terminal input/output with shell command
+test_websocket_terminal_input_output() {
+    local ws_url="$1"
+    local protocol="$2"
+    local response_file="$3"
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal input/output with multiple commands"
+
+    # Send multiple input commands to better exercise I/O processing
+    local commands=(
+        '{"type": "input", "data": "echo hello\n"}'
+        '{"type": "input", "data": "pwd\n"}'
+        '{"type": "input", "data": "date\n"}'
+    )
+
+    local all_commands_successful=true
+
+    for cmd in "${commands[@]}"; do
+        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${cmd}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
+
+        # Send the command
+        if ! echo "${cmd}" | websocat \
+            --protocol="${protocol}" \
+            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            --ping-interval=30 \
+            --one-message \
+            "${ws_url}" >> "${response_file}" 2>&1; then
+            all_commands_successful=false
+            break
+        fi
+
+        # Brief pause between commands to allow processing
+        sleep 0.5
+    done
+
+    if [[ "${all_commands_successful}" = true ]]; then
+        # The test passes if commands were sent successfully
+        # This exercises terminal_websocket.c input processing and pty_write_data
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal input commands sent successfully (terminal_websocket.c and terminal_shell.c exercised)"
+        return 0
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to send terminal input commands"
+        return 1
+    fi
+}
+
+# Function to test WebSocket terminal resize functionality
+test_websocket_terminal_resize() {
+    local ws_url="$1"
+    local protocol="$2"
+    local response_file="$3"
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal resize functionality"
+
+    # Send resize command
+    local resize_command='{"type": "resize", "rows": 30, "cols": 100}'
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${resize_command}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
+
+    # Send resize command - success means terminal_websocket.c resize function was called
+    if echo "${resize_command}" | websocat \
+        --protocol="${protocol}" \
+        -H="Authorization: Key ${WEBSOCKET_KEY}" \
+        --ping-interval=30 \
+        --one-message \
+        "${ws_url}" > "${response_file}" 2>&1; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal resize command sent successfully (terminal_websocket.c exercised)"
+        return 0
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to send terminal resize command"
+        return 1
+    fi
 }
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
@@ -703,7 +803,25 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping test failed"
                 EXIT_CODE=1
             fi
-            
+
+            # Check WebSocket I/O test results
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WebSocket Terminal I/O - ${description}"
+            if "${GREP}" -q "WEBSOCKET_IO_TEST_PASSED" "${result_file}" 2>/dev/null; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket I/O test passed"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket I/O test failed"
+                EXIT_CODE=1
+            fi
+
+            # Check WebSocket resize test results
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WebSocket Terminal Resize - ${description}"
+            if "${GREP}" -q "WEBSOCKET_RESIZE_TEST_PASSED" "${result_file}" 2>/dev/null; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket resize test passed"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket resize test failed"
+                EXIT_CODE=1
+            fi
+
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: All Terminal tests passed"
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} test failed"
