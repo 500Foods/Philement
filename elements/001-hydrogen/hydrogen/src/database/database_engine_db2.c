@@ -80,7 +80,7 @@ typedef struct DB2Connection {
  */
 
 // Connection management
-bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection);
+bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);
 bool db2_disconnect(DatabaseHandle* connection);
 bool db2_health_check(DatabaseHandle* connection);
 bool db2_reset_connection(DatabaseHandle* connection);
@@ -202,7 +202,7 @@ static void destroy_prepared_statement_cache(PreparedStatementCache* cache) {
  * Connection Management
  */
 
-bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection) {
+bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator) {
     if (!config || !connection) {
         log_this(SR_DATABASE, "Invalid parameters for DB2 connection", LOG_LEVEL_ERROR, true, true, true);
         return false;
@@ -283,6 +283,9 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection) {
         return false;
     }
 
+    // Store designator for future use (disconnect, etc.)
+    db_handle->designator = designator ? strdup(designator) : NULL;
+
     // Initialize database handle
     db_handle->engine_type = DB_ENGINE_DB2;
     db_handle->connection_handle = db2_wrapper;
@@ -299,7 +302,9 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection) {
 
     *connection = db_handle;
 
-    log_this(SR_DATABASE, "DB2 connection established successfully", LOG_LEVEL_STATE, true, true, true);
+    // Use designator for logging if provided, otherwise use generic Database subsystem
+    const char* log_subsystem = designator ? designator : SR_DATABASE;
+    log_this(log_subsystem, "DB2 connection established successfully", LOG_LEVEL_STATE, true, true, true);
     return true;
 }
 
@@ -322,7 +327,10 @@ bool db2_disconnect(DatabaseHandle* connection) {
     }
 
     connection->status = DB_CONNECTION_DISCONNECTED;
-    log_this(SR_DATABASE, "DB2 connection closed", LOG_LEVEL_STATE, true, true, true);
+
+    // Use stored designator for logging if available
+    const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(log_subsystem, "DB2 connection closed", LOG_LEVEL_STATE, true, true, true);
     return true;
 }
 

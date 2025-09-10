@@ -131,12 +131,16 @@ DatabaseEngineInterface* database_engine_get_by_name(const char* name) {
  */
 
 bool database_engine_connect(DatabaseEngine engine_type, ConnectionConfig* config, DatabaseHandle** connection) {
+    return database_engine_connect_with_designator(engine_type, config, connection, NULL);
+}
+
+bool database_engine_connect_with_designator(DatabaseEngine engine_type, ConnectionConfig* config, DatabaseHandle** connection, const char* designator) {
     DatabaseEngineInterface* engine = database_engine_get(engine_type);
     if (!engine || !engine->connect || !config || !connection) {
         return false;
     }
 
-    return engine->connect(config, connection);
+    return engine->connect(config, connection, designator);
 }
 
 bool database_engine_health_check(DatabaseHandle* connection) {
@@ -295,6 +299,11 @@ void database_engine_cleanup_connection(DatabaseHandle* connection) {
     if (connection->config) {
         // Note: ConnectionConfig cleanup would be implemented here
         free(connection->config);
+    }
+
+    // Clean up designator
+    if (connection->designator) {
+        free(connection->designator);
     }
 
     pthread_mutex_destroy(&connection->connection_lock);
