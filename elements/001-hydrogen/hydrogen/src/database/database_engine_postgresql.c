@@ -79,7 +79,7 @@ typedef struct PostgresConnection {
  */
 
 // Connection management
-bool postgresql_connect(ConnectionConfig* config, DatabaseHandle** connection);
+bool postgresql_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);
 bool postgresql_disconnect(DatabaseHandle* connection);
 bool postgresql_health_check(DatabaseHandle* connection);
 bool postgresql_reset_connection(DatabaseHandle* connection);
@@ -263,7 +263,7 @@ static bool remove_prepared_statement(PreparedStatementCache* cache, const char*
  * Connection Management
  */
 
-bool postgresql_connect(ConnectionConfig* config, DatabaseHandle** connection) {
+bool postgresql_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator) {
     if (!config || !connection) {
         log_this(SR_DATABASE, "Invalid parameters for PostgreSQL connection", LOG_LEVEL_ERROR, true, true, true);
         return false;
@@ -324,6 +324,9 @@ bool postgresql_connect(ConnectionConfig* config, DatabaseHandle** connection) {
         return false;
     }
 
+    // Store designator for future use (disconnect, etc.)
+    db_handle->designator = designator ? strdup(designator) : NULL;
+
     // Initialize database handle
     db_handle->engine_type = DB_ENGINE_POSTGRESQL;
     db_handle->connection_handle = pg_wrapper;
@@ -340,7 +343,9 @@ bool postgresql_connect(ConnectionConfig* config, DatabaseHandle** connection) {
 
     *connection = db_handle;
 
-    log_this(SR_DATABASE, "PostgreSQL connection established successfully", LOG_LEVEL_STATE, true, true, true);
+    // Use designator for logging if provided, otherwise use generic Database subsystem
+    const char* log_subsystem = designator ? designator : SR_DATABASE;
+    log_this(log_subsystem, "PostgreSQL connection established successfully", LOG_LEVEL_STATE, true, true, true);
     return true;
 }
 
@@ -359,7 +364,10 @@ bool postgresql_disconnect(DatabaseHandle* connection) {
     }
 
     connection->status = DB_CONNECTION_DISCONNECTED;
-    log_this(SR_DATABASE, "PostgreSQL connection closed", LOG_LEVEL_STATE, true, true, true);
+
+    // Use stored designator for logging if available
+    const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(log_subsystem, "PostgreSQL connection closed", LOG_LEVEL_STATE, true, true, true);
     return true;
 }
 

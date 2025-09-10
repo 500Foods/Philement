@@ -87,7 +87,7 @@ typedef struct SQLiteConnection {
  */
 
 // Connection management
-bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection);
+bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);
 bool sqlite_disconnect(DatabaseHandle* connection);
 bool sqlite_health_check(DatabaseHandle* connection);
 bool sqlite_reset_connection(DatabaseHandle* connection);
@@ -215,7 +215,7 @@ static void destroy_prepared_statement_cache(PreparedStatementCache* cache) {
  * Connection Management
  */
 
-bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection) {
+bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator) {
     if (!config || !connection) {
         log_this(SR_DATABASE, "Invalid parameters for SQLite connection", LOG_LEVEL_ERROR, true, true, true);
         return false;
@@ -271,6 +271,9 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection) {
         return false;
     }
 
+    // Store designator for future use (disconnect, etc.)
+    db_handle->designator = designator ? strdup(designator) : NULL;
+
     // Initialize database handle
     db_handle->engine_type = DB_ENGINE_SQLITE;
     db_handle->connection_handle = sqlite_wrapper;
@@ -287,7 +290,9 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection) {
 
     *connection = db_handle;
 
-    log_this(SR_DATABASE, "SQLite connection established successfully", LOG_LEVEL_STATE, true, true, true);
+    // Use designator for logging if provided, otherwise use generic Database subsystem
+    const char* log_subsystem = designator ? designator : SR_DATABASE;
+    log_this(log_subsystem, "SQLite connection established successfully", LOG_LEVEL_STATE, true, true, true);
     return true;
 }
 
@@ -307,7 +312,10 @@ bool sqlite_disconnect(DatabaseHandle* connection) {
     }
 
     connection->status = DB_CONNECTION_DISCONNECTED;
-    log_this(SR_DATABASE, "SQLite connection closed", LOG_LEVEL_STATE, true, true, true);
+
+    // Use stored designator for logging if available
+    const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(log_subsystem, "SQLite connection closed", LOG_LEVEL_STATE, true, true, true);
     return true;
 }
 

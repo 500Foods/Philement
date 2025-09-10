@@ -131,6 +131,7 @@ struct DatabaseHandle {
     DatabaseEngine engine_type;
     void* connection_handle;              // Engine-specific handle (PGconn, sqlite3, etc.)
     ConnectionConfig* config;
+    char* designator;                     // DQM designator for logging (e.g., "DQM-ACZ-00-SMFC")
     DatabaseConnectionStatus status;
     time_t connected_since;
     Transaction* current_transaction;
@@ -148,7 +149,7 @@ struct DatabaseEngineInterface {
     char* name;                           // Engine identifier ("postgresql", "sqlite", etc.)
 
     // Core connection management
-    bool (*connect)(ConnectionConfig* config, DatabaseHandle** connection);
+    bool (*connect)(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);
     bool (*disconnect)(DatabaseHandle* connection);
     bool (*health_check)(DatabaseHandle* connection);
     bool (*reset_connection)(DatabaseHandle* connection);
@@ -304,6 +305,7 @@ DatabaseEngineInterface* database_engine_get_by_name(const char* name);
 
 // Create database connection using engine
 bool database_engine_connect(DatabaseEngine engine_type, ConnectionConfig* config, DatabaseHandle** connection);
+bool database_engine_connect_with_designator(DatabaseEngine engine_type, ConnectionConfig* config, DatabaseHandle** connection, const char* designator);
 
 // Execute query using engine abstraction
 bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, QueryResult** result);
