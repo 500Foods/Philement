@@ -76,6 +76,10 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_24_uploads.sh](docs/test_24_uploads.md)**: Tests uploading a file to the server
 - **[test_25_mdns.sh](docs/test_25_mdns.md)**: Tests mDNS server and client functionality and integration
 
+### Database Tests
+
+- **[test_27_databases_parallel_engine_tests.sh](docs/test_27_databases_parallel_engine_tests.md)**: All Engines Parallel Operational Test
+
 ### Static Analysis & Code Quality Tests
 
 - **[test_90_markdownlint.sh](docs/test_90_markdownlint.md)**: Lints Markdown documentation using markdownlint.

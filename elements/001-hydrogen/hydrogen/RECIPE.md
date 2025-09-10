@@ -77,6 +77,7 @@ tests/          Test framework
 - tests/test_24_uploads.sh - Upload file to server
 - tests/test_25_mdns.sh - mDNS announcements
 - tests/test_26_terminal.sh - Testing xterm.js implementation
+- tests/test_27_databases_parallel_engine_tests.sh - All Engines Parallel Operational Test
 - tests/test_90_markdownlint.sh - Lint for Markdown
 - tests/test_91_cppcheck.sh - Lint for C
 - tests/test_92_shellcheck.sh - Lint for Bash
