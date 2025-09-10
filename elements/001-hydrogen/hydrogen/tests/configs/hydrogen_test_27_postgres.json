@@ -10,7 +10,7 @@
         "Connections": [
             {
                 "Enabled": true,
-                "Name": "${env.ACURANZO_DB_NAME}",
+                "Name": "ACZ",
                 "Engine": "${env.ACURANZO_DB_TYPE}",
                 "Host": "${env.ACURANZO_DB_HOST}",
                 "Port": "${env.ACURANZO_DB_PORT}",

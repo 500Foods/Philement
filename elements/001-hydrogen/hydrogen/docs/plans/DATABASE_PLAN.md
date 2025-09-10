@@ -134,6 +134,71 @@ typedef struct DatabaseQueueManager {
 - **Heartbeat Monitoring**: Lead queue manages periodic connection health checks for entire database
 - **Child Queue Lifecycle**: Lead queue can spawn/destroy child queues dynamically based on configuration
 
+**DQM Operational Specifications:**
+
+- **Logging Label Format**: `DQM-<Database>-<QueueNumber>-<TagLetters>`
+  - Queue number: Two-digit zero-padded integer (00, 01, 02, etc.)
+  - Tag letters: One letter per assigned tag (L=Lead, S=Slow, M=Medium, F=Fast, C=Cache)
+  - Examples: `DQM-Acuranzo-00-LSMFC` (Lead with all tags), `DQM-Acuranzo-01-F` (Fast queue)
+
+- **Tag Management Logic**:
+  - Lead DQM always retains 'L' tag (there can be only one Lead)
+  - Initially, Lead gets all tags: LSMFC
+  - When spawning child DQMs, Lead loses tags to children but keeps 'L'
+  - Child DQMs get specific tags (e.g., Fast queue gets 'F')
+  - If only one DQM exists, it handles all tags
+
+- **Timer Loop Implementation**:
+  - **Heartbeat Interval**: Default 30 seconds, configurable
+  - **Immediate Check**: Connection validation starts immediately on DQM launch
+  - **Startup Sequence**: DQM logs startup, then immediately attempts database connection
+  - **Connection Retry**: If initial connection fails, retries every 30 seconds
+  - **Heartbeat Messages**: Periodic logging of connection health status
+  - **Event-Driven**: Thread can be woken by various events:
+    - Other DQMs signaling queue full/empty
+    - Database trigger notifications
+    - Query completion notifications
+  - **Health Check**: Tests database connectivity, attempts reconnection if failed
+
+- **Dynamic Scaling Conditions**:
+  - **Configuration**: Min/max counts specified per tag type
+  - **Initial Launch**: Lead launches DQMs to meet minimum requirements
+  - **Scale Up**: When all queues for a tag are non-empty and max not reached
+  - **Scale Down**: When all queues for a tag become empty, reduce to minimum
+  - **Notifications**: Lead DQM notified on query assignment/completion for scaling decisions
+
+**DQM Architecture & Tag Flow Diagram:**
+
+```mermaid
+graph TD
+    A[Database Launch] --> B[Lead DQM Created]
+    B --> C[Lead DQM: 00-LSMFC]
+    C --> D{Config Check}
+    D --> E[Launch Min DQMs]
+    E --> F[Fast DQM: 01-F]
+    E --> G[Slow DQM: 02-S]
+    F --> H[Lead Loses F Tag]
+    G --> I[Lead Loses S Tag]
+    H --> J[Lead Now: 00-LMC]
+    I --> J
+    J --> K[Heartbeat Timer<br/>30s interval]
+    K --> L{DB Connected?}
+    L -->|Yes| M[Monitor Queues]
+    L -->|No| N[Attempt Reconnect]
+    N --> O[Log Connection Issue]
+    M --> P{All Fast Queues<br/>Non-Empty?}
+    P -->|Yes| Q[Spawn Additional<br/>Fast DQM: 03-F]
+    P -->|No| R{All Fast Queues<br/>Empty?}
+    R -->|Yes| S[Terminate Fast DQMs<br/>to Minimum]
+    R -->|No| T[Continue Monitoring]
+
+    style B fill:#e1f5fe
+    style C fill:#b3e5fc
+    style J fill:#81d4fa
+    style K fill:#4fc3f7
+    style M fill:#29b6f6
+```
+
 ### Phase 2: Multi-Engine Interface Layer ✅ **COMPLETED 9/5/2025**
 
 **Database Engine Abstraction Interface (Implemented):**

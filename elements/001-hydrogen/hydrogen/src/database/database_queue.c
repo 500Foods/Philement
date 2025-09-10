@@ -8,8 +8,43 @@
  * - Worker threads with persistent connection management
  */
 
+/*
+ * ⚠️ CRITICAL COMPILER OPTIMIZATION ISSUE & RESOLUTION ⚠️
+ *
+ * ISSUE: NULL POINTER DEREFERENCE WITH -O3 OPTIMIZATIONS
+ *
+ * Problem: When building with aggressive optimizations (-O3 -finline-functions -funroll-loops),
+ * the compiler creates function partitions (e.g., database_queue_destroy.part.0) that lose
+ * track of null pointer checks performed earlier in the function. This results in false
+ * positive null pointer dereference warnings treated as errors by -Werror=null-dereference.
+ *
+ * Symptoms:
+ * - Build fails on performance target with error like:
+ *   "In function 'database_queue_destroy.part.0': null pointer dereference [-Werror=null-dereference]"
+ * - Error occurs even when explicit null checks are present
+ * - Only affects optimized builds (perf target), not debug builds
+ *
+ * Root Cause:
+ * - Aggressive inlining and loop unrolling can cause the compiler to split functions
+ * - Function partitioning can separate null checks from the code that uses the pointer
+ * - Static analysis loses the connection between the early return and later pointer usage
+ *
+ * RESOLUTION:
+ * 1. Restructured database_queue_destroy() to call database_queue_stop_worker() first
+ * 2. This moves the shutdown_requested assignment into the stop_worker function
+ * 3. Eliminated direct assignment that was triggering the false positive
+ * 4. Maintained same functionality while satisfying compiler's static analysis
+ *
+ * LESSONS LEARNED:
+ * - Be aware of function partitioning with aggressive optimizations
+ * - Structure code to minimize distance between null checks and pointer usage
+ * - Consider moving problematic assignments into called functions
+ * - Test both debug and optimized builds to catch these issues early
+ */
+
 // Global includes
 #include "../hydrogen.h"
+#include <assert.h>
 
 // Local includes
 #include "database_queue.h"
@@ -121,6 +156,15 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     db_queue->is_lead_queue = true;
     db_queue->can_spawn_queues = true;
 
+    // Initialize tag management - Lead starts with all tags
+    db_queue->tags = strdup("LSMFC");  // Lead, Slow, Medium, Fast, Cache
+    db_queue->queue_number = 0;  // Lead is always queue 00
+
+    // Initialize heartbeat management
+    db_queue->heartbeat_interval_seconds = 30;  // Default 30 seconds
+    db_queue->last_heartbeat = 0;
+    db_queue->last_connection_attempt = 0;
+
     // Create the Lead queue with descriptive name
     char lead_queue_name[256];
     snprintf(lead_queue_name, sizeof(lead_queue_name), "%s_lead", database_name);
@@ -222,6 +266,27 @@ DatabaseQueue* database_queue_create_worker(const char* database_name, const cha
     db_queue->is_lead_queue = false;
     db_queue->can_spawn_queues = false;
 
+    // Initialize tag management - workers start with specific tag based on queue type
+    char initial_tag[2] = {0};
+    if (strcmp(queue_type, QUEUE_TYPE_SLOW) == 0) {
+        initial_tag[0] = 'S';
+    } else if (strcmp(queue_type, QUEUE_TYPE_MEDIUM) == 0) {
+        initial_tag[0] = 'M';
+    } else if (strcmp(queue_type, QUEUE_TYPE_FAST) == 0) {
+        initial_tag[0] = 'F';
+    } else if (strcmp(queue_type, QUEUE_TYPE_CACHE) == 0) {
+        initial_tag[0] = 'C';
+    }
+    db_queue->tags = strdup(initial_tag);
+
+    // Queue number will be assigned when added to Lead queue
+    db_queue->queue_number = -1;  // Will be set by Lead queue
+
+    // Initialize heartbeat management
+    db_queue->heartbeat_interval_seconds = 30;
+    db_queue->last_heartbeat = 0;
+    db_queue->last_connection_attempt = 0;
+
     // Create the worker queue
     char worker_queue_name[256];
     snprintf(worker_queue_name, sizeof(worker_queue_name), "%s_%s", database_name, queue_type);
@@ -274,18 +339,12 @@ DatabaseQueue* database_queue_create_worker(const char* database_name, const cha
 void database_queue_destroy(DatabaseQueue* db_queue) {
     if (!db_queue) return;
 
-    // Create DQM component name for logging
-    char dqm_component[64];
-    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s",
-             db_queue->database_name ? db_queue->database_name : "unknown");
+    // Create DQM component name with full label for logging
+    char* dqm_label = database_queue_generate_label(db_queue);
+    log_this(dqm_label, "Destroying queue", LOG_LEVEL_STATE);
+    free(dqm_label);
 
-    const char* queue_type_name = db_queue->queue_type ? db_queue->queue_type : "unknown";
-    log_this(dqm_component, "Destroying %s queue", LOG_LEVEL_STATE, queue_type_name);
-
-    // Signal shutdown to worker threads
-    db_queue->shutdown_requested = true;
-
-    // Wait for worker thread to finish
+    // Wait for worker thread to finish (this will set shutdown_requested internally)
     database_queue_stop_worker(db_queue);
 
     // If this is a Lead queue, clean up child queues first
@@ -317,6 +376,7 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
     free(db_queue->database_name);
     free(db_queue->connection_string);
     free(db_queue->queue_type);
+    free(db_queue->tags);
 
     free(db_queue);
 }
@@ -405,11 +465,10 @@ bool database_queue_manager_add_database(DatabaseQueueManager* manager, Database
     manager->databases[manager->database_count++] = db_queue;
     pthread_mutex_unlock(&manager->manager_lock);
 
-    // Create DQM component name for logging
-    char dqm_component[64];
-    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", db_queue->database_name);
-
-    log_this(dqm_component, "Added to global queue manager", LOG_LEVEL_STATE);
+    // Create DQM component name with full label for logging
+    char* dqm_label = database_queue_generate_label(db_queue);
+    log_this(dqm_label, "Added to global queue manager", LOG_LEVEL_STATE);
+    free(dqm_label);
     return true;
 }
 
@@ -533,16 +592,16 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
         return false;
     }
 
-    // Create DQM component name for logging
-    char dqm_component[64];
-    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s",
-             db_queue->database_name ? db_queue->database_name : "unknown");
-
-    log_this(dqm_component, "Starting %s worker thread", LOG_LEVEL_STATE, db_queue->queue_type);
+    // Create DQM component name with full label for logging
+    char* dqm_label = database_queue_generate_label(db_queue);
+    log_this(dqm_label, "Starting worker thread", LOG_LEVEL_STATE);
+    free(dqm_label);
 
     // Create the single worker thread
     if (pthread_create(&db_queue->worker_thread, NULL, database_queue_worker_thread, db_queue) != 0) {
-        log_this(dqm_component, "Failed to start %s worker thread", LOG_LEVEL_ERROR, db_queue->queue_type);
+        char* dqm_label_error = database_queue_generate_label(db_queue);
+        log_this(dqm_label_error, "Failed to start worker thread", LOG_LEVEL_ERROR);
+        free(dqm_label_error);
         return false;
     }
 
@@ -553,7 +612,9 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
     extern ServiceThreads database_threads;
     add_service_thread(&database_threads, db_queue->worker_thread);
 
-    log_this(dqm_component, "%s worker thread created and registered successfully", LOG_LEVEL_STATE, db_queue->queue_type);
+    char* dqm_label_success = database_queue_generate_label(db_queue);
+    log_this(dqm_label_success, "Worker thread created and registered successfully", LOG_LEVEL_STATE);
+    free(dqm_label_success);
     return true;
 }
 
@@ -563,11 +624,10 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
 void database_queue_stop_worker(DatabaseQueue* db_queue) {
     if (!db_queue) return;
 
-    // Create DQM component name for logging
-    char dqm_component[64];
-    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", db_queue->database_name);
-
-    log_this(dqm_component, "Stopping %s worker thread", LOG_LEVEL_STATE, db_queue->queue_type);
+    // Create DQM component name with full label for logging
+    char* dqm_label = database_queue_generate_label(db_queue);
+    log_this(dqm_label, "Stopping worker thread", LOG_LEVEL_STATE);
+    free(dqm_label);
 
     db_queue->shutdown_requested = true;
 
@@ -579,7 +639,9 @@ void database_queue_stop_worker(DatabaseQueue* db_queue) {
         db_queue->worker_thread_started = false;  // Reset flag
     }
 
-    log_this(dqm_component, "Stopped %s worker thread", LOG_LEVEL_STATE, db_queue->queue_type);
+    char* dqm_label_stop = database_queue_generate_label(db_queue);
+    log_this(dqm_label_stop, "Stopped worker thread", LOG_LEVEL_STATE);
+    free(dqm_label_stop);
 }
 
 /*
@@ -588,14 +650,22 @@ void database_queue_stop_worker(DatabaseQueue* db_queue) {
 void* database_queue_worker_thread(void* arg) {
     DatabaseQueue* db_queue = (DatabaseQueue*)arg;
     
-    // Create DQM component name for logging
-    char dqm_component[64];
-    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", db_queue->database_name);
-    
-    log_this(dqm_component, "%s queue worker thread started", LOG_LEVEL_STATE, db_queue->queue_type);
+    // Create DQM component name with full label for logging
+    char* dqm_label = database_queue_generate_label(db_queue);
+    log_this(dqm_label, "Worker thread started", LOG_LEVEL_STATE);
+
+    // Start heartbeat monitoring immediately
+    database_queue_start_heartbeat(db_queue);
+    free(dqm_label);
 
     // Main worker loop - stay alive until shutdown is requested
     while (!db_queue->shutdown_requested && !database_stopping) {
+        // Perform heartbeat check if interval has elapsed
+        time_t current_time = time(NULL);
+        if (current_time - db_queue->last_heartbeat >= db_queue->heartbeat_interval_seconds) {
+            database_queue_perform_heartbeat(db_queue);
+        }
+
         // Wait for work with a timeout to check shutdown periodically
         struct timespec timeout;
         clock_gettime(CLOCK_REALTIME, &timeout);
@@ -644,7 +714,9 @@ void* database_queue_worker_thread(void* arg) {
     extern ServiceThreads database_threads;
     remove_service_thread(&database_threads, pthread_self());
 
-    log_this(dqm_component, "%s queue worker thread exiting", LOG_LEVEL_STATE, db_queue->queue_type);
+    char* dqm_label_exit = database_queue_generate_label(db_queue);
+    log_this(dqm_label_exit, "Worker thread exiting", LOG_LEVEL_STATE);
+    free(dqm_label_exit);
     return NULL;
 }
 
@@ -824,17 +896,35 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
 
     if (!child_queue) {
         pthread_mutex_unlock(&lead_queue->children_lock);
-        log_this(SR_DATABASE, "Failed to create %s child queue for %s",
-                LOG_LEVEL_ERROR, queue_type, lead_queue->database_name);
+        char* dqm_label = database_queue_generate_label(lead_queue);
+        log_this(dqm_label, "Failed to create child queue", LOG_LEVEL_ERROR);
+        free(dqm_label);
         return false;
     }
+
+    // Assign queue number (find next available number)
+    int next_queue_number = 1;  // Start from 01 (Lead is 00)
+    bool number_taken = true;
+    while (number_taken) {
+        number_taken = false;
+        for (int i = 0; i < lead_queue->child_queue_count; i++) {
+            if (lead_queue->child_queues[i] &&
+                lead_queue->child_queues[i]->queue_number == next_queue_number) {
+                number_taken = true;
+                next_queue_number++;
+                break;
+            }
+        }
+    }
+    child_queue->queue_number = next_queue_number;
 
     // Start the worker thread for the child queue
     if (!database_queue_start_worker(child_queue)) {
         pthread_mutex_unlock(&lead_queue->children_lock);
         database_queue_destroy(child_queue);
-        log_this(SR_DATABASE, "Failed to start worker for %s child queue for %s",
-                LOG_LEVEL_ERROR, queue_type, lead_queue->database_name);
+        char* dqm_label = database_queue_generate_label(lead_queue);
+        log_this(dqm_label, "Failed to start worker for child queue", LOG_LEVEL_ERROR);
+        free(dqm_label);
         return false;
     }
 
@@ -842,10 +932,22 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
     lead_queue->child_queues[lead_queue->child_queue_count] = child_queue;
     lead_queue->child_queue_count++;
 
+    // Update Lead queue tags - remove the tag that was assigned to child
+    char tag_to_remove = '\0';
+    if (strcmp(queue_type, QUEUE_TYPE_SLOW) == 0) tag_to_remove = 'S';
+    else if (strcmp(queue_type, QUEUE_TYPE_MEDIUM) == 0) tag_to_remove = 'M';
+    else if (strcmp(queue_type, QUEUE_TYPE_FAST) == 0) tag_to_remove = 'F';
+    else if (strcmp(queue_type, QUEUE_TYPE_CACHE) == 0) tag_to_remove = 'C';
+
+    if (tag_to_remove != '\0') {
+        database_queue_remove_tag(lead_queue, tag_to_remove);
+    }
+
     pthread_mutex_unlock(&lead_queue->children_lock);
 
-    log_this(SR_DATABASE, "Spawned %s child queue for database %s",
-            LOG_LEVEL_STATE, queue_type, lead_queue->database_name);
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    log_this(dqm_label, "Spawned child queue", LOG_LEVEL_STATE);
+    free(dqm_label);
     return true;
 }
 
@@ -921,9 +1023,211 @@ void database_queue_manage_child_queues(DatabaseQueue* lead_queue) {
     }
     */
 
-    // Create DQM component name for logging
-    char dqm_component[64];
-    snprintf(dqm_component, sizeof(dqm_component), "DQM-%s", lead_queue->database_name);
+    // Create DQM component name with full label for logging
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    log_this(dqm_label, "Lead queue managing child queues", LOG_LEVEL_TRACE);
+    free(dqm_label);
+
+    // Implement scaling logic based on queue utilization
+    pthread_mutex_lock(&lead_queue->children_lock);
+
+    // Check each child queue for scaling decisions
+    for (int i = 0; i < lead_queue->child_queue_count; i++) {
+        if (lead_queue->child_queues[i]) {
+            DatabaseQueue* child = lead_queue->child_queues[i];
+            size_t queue_depth = database_queue_get_depth(child);
+
+            // Scale up: if all queues of this type are non-empty
+            if (queue_depth > 0) {
+                // Check if we can spawn another queue of this type
+                int same_type_count = 0;
+                for (int j = 0; j < lead_queue->child_queue_count; j++) {
+                    if (lead_queue->child_queues[j] &&
+                        strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
+                        same_type_count++;
+                    }
+                }
+
+                // If we have fewer than max queues of this type, consider scaling up
+                if (same_type_count < 3) {  // Configurable max per type
+                    database_queue_spawn_child_queue(lead_queue, child->queue_type);
+                }
+            }
+            // Scale down: if all queues of this type are empty
+            else if (queue_depth == 0) {
+                // Count empty queues of this type
+                int empty_count = 0;
+                int total_count = 0;
+                for (int j = 0; j < lead_queue->child_queue_count; j++) {
+                    if (lead_queue->child_queues[j] &&
+                        strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
+                        total_count++;
+                        if (database_queue_get_depth(lead_queue->child_queues[j]) == 0) {
+                            empty_count++;
+                        }
+                    }
+                }
+
+                // If all queues of this type are empty and we have more than minimum, scale down
+                if (empty_count == total_count && total_count > 1) {  // Keep at least 1
+                    database_queue_shutdown_child_queue(lead_queue, child->queue_type);
+                }
+            }
+        }
+    }
+
+    pthread_mutex_unlock(&lead_queue->children_lock);
+}
+
+/*
+ * Tag Management Functions
+ */
+
+/*
+ * Set tags for a database queue
+ */
+bool database_queue_set_tags(DatabaseQueue* db_queue, const char* tags) {
+    if (!db_queue || !tags) return false;
+
+    free(db_queue->tags);
+    db_queue->tags = strdup(tags);
+    return db_queue->tags != NULL;
+}
+
+/*
+ * Get current tags for a database queue
+ */
+char* database_queue_get_tags(DatabaseQueue* db_queue) {
+    if (!db_queue || !db_queue->tags) return NULL;
+    return strdup(db_queue->tags);
+}
+
+/*
+ * Add a tag to a database queue
+ */
+bool database_queue_add_tag(DatabaseQueue* db_queue, char tag) {
+    if (!db_queue || !db_queue->tags) return false;
+
+    // Check if tag already exists
+    if (strchr(db_queue->tags, tag)) return true;
+
+    // Add tag to the end
+    size_t new_len = strlen(db_queue->tags) + 2; // +1 for new tag, +1 for null
+    char* new_tags = realloc(db_queue->tags, new_len);
+    if (!new_tags) return false;
+
+    db_queue->tags = new_tags;
+    db_queue->tags[strlen(db_queue->tags)] = tag;
+    db_queue->tags[strlen(db_queue->tags) + 1] = '\0';
+
+    return true;
+}
+
+/*
+ * Remove a tag from a database queue
+ */
+bool database_queue_remove_tag(DatabaseQueue* db_queue, char tag) {
+    if (!db_queue || !db_queue->tags) return false;
+
+    char* tag_pos = strchr(db_queue->tags, tag);
+    if (!tag_pos) return false;
+
+    // Remove the tag by shifting remaining characters
+    memmove(tag_pos, tag_pos + 1, strlen(tag_pos));
+
+    return true;
+}
+
+/*
+ * Generate the full DQM label for logging
+ */
+char* database_queue_generate_label(DatabaseQueue* db_queue) {
+    if (!db_queue) return NULL;
+
+    char label[128];
+    snprintf(label, sizeof(label), "DQM-%s-%02d-%s",
+             db_queue->database_name ? db_queue->database_name : "unknown",
+             db_queue->queue_number >= 0 ? db_queue->queue_number : 0,
+             db_queue->tags ? db_queue->tags : "");
+
+    return strdup(label);
+}
+
+/*
+ * Heartbeat and Connection Management Functions
+ */
+
+/*
+ * Start heartbeat monitoring for a database queue
+ */
+void database_queue_start_heartbeat(DatabaseQueue* db_queue) {
+    if (!db_queue) return;
+
+    db_queue->last_heartbeat = time(NULL);
+    db_queue->last_connection_attempt = time(NULL);
+
+    // Perform immediate connection check and log initial status
+    bool is_connected = database_queue_check_connection(db_queue);
     
-    log_this(dqm_component, "Lead queue managing child queues (placeholder)", LOG_LEVEL_TRACE);
+    char* dqm_label = database_queue_generate_label(db_queue);
+    log_this(dqm_label, "Heartbeat monitoring started: initial connection %s",
+             LOG_LEVEL_STATE, is_connected ? "OK" : "FAILED");
+    free(dqm_label);
+}
+
+/*
+ * Check database connection and update status
+ */
+bool database_queue_check_connection(DatabaseQueue* db_queue) {
+    if (!db_queue) return false;
+
+    char* dqm_label = database_queue_generate_label(db_queue);
+    log_this(dqm_label, "Checking database connection", LOG_LEVEL_DEBUG);
+    free(dqm_label);
+
+    // TODO: Implement actual database connection check
+    // For now, simulate connection check
+    bool is_connected = true;  // Placeholder
+
+    db_queue->is_connected = is_connected;
+    db_queue->last_connection_attempt = time(NULL);
+
+    return is_connected;
+}
+
+/*
+ * Perform heartbeat operations
+ */
+void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
+    if (!db_queue) return;
+
+    time_t current_time = time(NULL);
+    db_queue->last_heartbeat = current_time;
+
+    char* dqm_label = database_queue_generate_label(db_queue);
+
+    // Check connection status
+    bool was_connected = db_queue->is_connected;
+    bool is_connected = database_queue_check_connection(db_queue);
+
+    // Always log heartbeat activity to show the DQM is alive
+    log_this(dqm_label, "Heartbeat: connection %s, queue depth: %zu",
+             LOG_LEVEL_STATE, is_connected ? "OK" : "FAILED",
+             database_queue_get_depth(db_queue));
+
+    // Log connection status changes
+    if (was_connected != is_connected) {
+        if (is_connected) {
+            log_this(dqm_label, "Database connection established", LOG_LEVEL_STATE);
+        } else {
+            log_this(dqm_label, "Database connection lost - will retry", LOG_LEVEL_ALERT);
+        }
+    }
+
+    free(dqm_label);
+
+    // If Lead queue, manage child queues
+    if (db_queue->is_lead_queue) {
+        database_queue_manage_child_queues(db_queue);
+    }
 }
