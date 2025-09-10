@@ -2,8 +2,8 @@
 
 # Test: Database Subsystem - DQM Startup Verification
 # Tests that the Database Queue Manager (DQM) starts correctly
-# Specifically checks for the "DQM-{DatabaseName} Lead queue worker thread started" log message
-# This verifies that the DQM architecture is working as intended
+# Specifically checks for the "DQM-{DatabaseName}-00-{TagLetters} Worker thread started" log message
+# This verifies that the DQM architecture is working as intended with the new logging format
 
 # FUNCTIONS
 # check_database_connectivity()
@@ -12,6 +12,9 @@
 # test_database_configuration()
 
 # CHANGELOG
+# 1.2.1 - 2025-09-10 - Updated to check for new DQM logging format with queue numbers and tags
+#                    - Changed from "DQM-{DatabaseName} Lead queue worker thread started" to
+#                      "DQM-{DatabaseName}-00-{TagLetters} Worker thread started" format
 # 1.2.0 - 2025-09-08 - Updated to check for DQM Lead queue worker thread startup
 #                    - Changed from generic database initialization checks to specific DQM startup verification
 #                    - Now looks for "[ DQM-{DatabaseName} ] Lead queue worker thread started" message
@@ -28,7 +31,7 @@ TEST_NAME="Databases"
 TEST_ABBR="DBS"
 TEST_NUMBER="27"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="1.2.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -57,9 +60,10 @@ check_dqm_startup() {
 
     print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking for DQM startup message in: ${log_file}"
 
-    # Look for any DQM Lead queue worker thread startup message
-    if "${GREP}" -q "DQM-.*Lead queue worker thread started" "${log_file}" 2>/dev/null; then
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✅ DQM Lead queue worker thread started"
+    # Look for any DQM worker thread startup message with the new format
+    # New format: DQM-<Database>-<QueueNumber>-<TagLetters>
+    if "${GREP}" -q "DQM-.*-00-.*Worker thread started" "${log_file}" 2>/dev/null; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✅ DQM Lead queue (00) worker thread started"
         return 0
     else
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "❌ DQM startup message not found"
@@ -221,7 +225,7 @@ analyze_database_test_results() {
     if [[ "${test_name}" == "MULTI" ]]; then
         local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
         local dqm_launches
-        dqm_launches=$(grep "DQM-.*Lead queue worker thread started" "${log_file}" 2>/dev/null | sed 's/.*\(DQM-[^ ]*\).*/\1/' | sort | uniq)
+        dqm_launches=$(grep "DQM-.*-00-.*Worker thread started" "${log_file}" 2>/dev/null | sed 's/.*\(DQM-[^]]*\).*/\1/' | sort | uniq)
 
         if [[ -n "${dqm_launches}" ]]; then
             local dqm_count=0
@@ -243,7 +247,7 @@ analyze_database_test_results() {
         # For single engine configurations, extract the database name from the log
         local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
         local dqm_name
-        dqm_name=$(grep "DQM-.*Lead queue worker thread started" "${log_file}" 2>/dev/null | head -1 | sed 's/.*\(DQM-[^ ]*\).*/\1/')
+        dqm_name=$(grep "DQM-.*-00-.*Worker thread started" "${log_file}" 2>/dev/null | head -1 | sed 's/.*\[\s*\([^]]*\)\s*\].*/\1/')
 
         if [[ -n "${dqm_name}" ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${dqm_name} Launch Confirmed"

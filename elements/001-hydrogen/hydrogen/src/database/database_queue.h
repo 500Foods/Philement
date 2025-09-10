@@ -31,10 +31,10 @@ struct DatabaseQueue {
     char* database_name;           // Database identifier (e.g., "Acuranzo")
     char* connection_string;       // Database connection string
     char* queue_type;              // Queue type: "Lead", "slow", "medium", "fast", "cache"
-    
+
     // Single queue instance - type determined by queue_type
     Queue* queue;                  // The actual queue for this worker
-    
+
     // Worker thread management - single thread per queue
     pthread_t worker_thread;
     volatile bool worker_thread_started; // True if worker thread has been started
@@ -42,7 +42,11 @@ struct DatabaseQueue {
     // Queue role flags
     volatile bool is_lead_queue;   // True if this is the Lead queue for the database
     volatile bool can_spawn_queues; // True if this queue can create additional queues
-    
+
+    // Tag management for logging and identification
+    char* tags;                    // Current tags assigned to this DQM (e.g., "LSMFC", "F", "L")
+    int queue_number;              // Sequential queue number for this database (00, 01, 02, etc.)
+
     // Queue statistics
     volatile int active_connections;
     volatile int total_queries_processed;
@@ -57,6 +61,11 @@ struct DatabaseQueue {
     int child_queue_count;         // Number of active child queues
     int max_child_queues;          // Maximum child queues allowed
     pthread_mutex_t children_lock; // Protects child queue operations
+
+    // Timer loop management for heartbeat and monitoring
+    volatile time_t last_heartbeat; // Timestamp of last heartbeat check
+    volatile time_t last_connection_attempt; // Timestamp of last connection attempt
+    volatile int heartbeat_interval_seconds; // Configurable heartbeat interval (default 30)
 
     // Flags
     volatile bool shutdown_requested;
@@ -147,5 +156,17 @@ bool database_queue_health_check(DatabaseQueue* db_queue);
 const char* database_queue_type_to_string(int queue_type);
 int database_queue_type_from_string(const char* type_str);
 DatabaseQueueType database_queue_select_type(const char* queue_path_hint);
+
+// Tag management functions
+bool database_queue_set_tags(DatabaseQueue* db_queue, const char* tags);
+char* database_queue_get_tags(DatabaseQueue* db_queue);
+bool database_queue_add_tag(DatabaseQueue* db_queue, char tag);
+bool database_queue_remove_tag(DatabaseQueue* db_queue, char tag);
+char* database_queue_generate_label(DatabaseQueue* db_queue);
+
+// Timer and heartbeat functions
+void database_queue_start_heartbeat(DatabaseQueue* db_queue);
+bool database_queue_check_connection(DatabaseQueue* db_queue);
+void database_queue_perform_heartbeat(DatabaseQueue* db_queue);
 
 #endif // DATABASE_QUEUE_H

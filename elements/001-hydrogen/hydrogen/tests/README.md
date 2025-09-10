@@ -78,7 +78,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 
 ### Database Tests
 
-- **[test_27_databases_parallel_engine_tests.sh](docs/test_27_databases_parallel_engine_tests.md)**: All Engines Parallel Operational Test
+- **[test_27_database.sh](docs/test_27_database.md)**: All Engines Parallel Operational Test
 
 ### Static Analysis & Code Quality Tests
 
