@@ -22,6 +22,7 @@ static int mock_lws_service_result = 0;
 static struct lws_context* mock_lws_create_context_result = NULL;
 static int mock_lws_is_final_fragment_result = 1; // Default to final fragment
 static int mock_lws_write_result = 0;
+static const char* mock_lws_protocol_name = "hydrogen"; // Default protocol name
 
 // Mock header data for lws_hdr_copy
 static char mock_header_data[256] = "";
@@ -129,6 +130,16 @@ int mock_lws_write(struct lws *wsi, unsigned char *buf, size_t len, enum lws_wri
     return mock_lws_write_result;
 }
 
+const struct lws_protocols *mock_lws_get_protocol(struct lws *wsi)
+{
+    (void)wsi;
+
+    // Return a mock protocol structure with the configured name
+    static struct lws_protocols mock_protocol;
+    mock_protocol.name = mock_lws_protocol_name;
+    return &mock_protocol;
+}
+
 // Mock control functions for tests
 void mock_lws_set_hdr_copy_result(int result)
 {
@@ -193,6 +204,11 @@ void mock_lws_set_write_result(int result)
     mock_lws_write_result = result;
 }
 
+void mock_lws_set_protocol_name(const char* name)
+{
+    mock_lws_protocol_name = name ? name : "hydrogen";
+}
+
 int mock_lws_get_is_final_fragment_result(void)
 {
     return mock_lws_is_final_fragment_result;
@@ -209,6 +225,7 @@ void mock_lws_reset_all(void)
     mock_lws_create_context_result = NULL;
     mock_lws_is_final_fragment_result = 1; // Default to final fragment
     mock_lws_write_result = 0;
+    mock_lws_protocol_name = "hydrogen"; // Reset to default
     mock_header_data[0] = '\0';
     mock_header_data_len = 0;
 }

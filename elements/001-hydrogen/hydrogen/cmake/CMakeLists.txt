@@ -773,6 +773,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libwebsockets.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libmicrohttpd.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_launch.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_status.c
 )
 
 # Create Unity test object files in build/unity/src directory structure (same as original)
@@ -937,7 +938,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     string(FIND "${TEST_SOURCE}" "terminal" IS_TERMINAL_TEST)
     if(IS_WEBSOCKET_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
-        set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS")
+        set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS -DUSE_MOCK_STATUS")
     elseif(IS_TERMINAL_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LIBMICROHTTPD")

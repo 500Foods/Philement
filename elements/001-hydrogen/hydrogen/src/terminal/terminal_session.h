@@ -36,6 +36,7 @@ typedef struct TerminalSession {
 
     // WebSocket connection state (to be populated later)
     void *websocket_connection;   /**< WebSocket connection handle */
+    void *pty_bridge_context;     /**< PTY bridge context for cleanup */
 
     // Session configuration
     int terminal_rows;            /**< Current terminal rows */

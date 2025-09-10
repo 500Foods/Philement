@@ -266,11 +266,6 @@ bool pty_is_running(PtyShell *shell) {
     if (result == shell->pid) {
         // Process terminated
         shell->running = false;
-        if (WIFEXITED(status)) {
-            log_this(SR_TERMINAL, "Shell process exited with code %d", LOG_LEVEL_STATE, WEXITSTATUS(status));
-        } else if (WIFSIGNALED(status)) {
-            log_this(SR_TERMINAL, "Shell process terminated by signal %d", LOG_LEVEL_STATE, WTERMSIG(status));
-        }
         return false;
     } else if (result == -1) {
         // Error (likely process doesn't exist)
@@ -301,25 +296,7 @@ bool pty_terminate_shell(PtyShell *shell) {
         return false;
     }
 
-    // Wait up to 5 seconds for graceful termination
-    for (int i = 0; i < 50; i++) {
-        if (!pty_is_running(shell)) {
-            break;
-        }
-        usleep(100000); // 100ms
-    }
-
-    if (shell->running) {
-        // Force kill if still running
-        if (kill(shell->pid, SIGKILL) == -1) {
-            log_this(SR_TERMINAL, "Failed to send SIGKILL to process %d: %s",
-                    LOG_LEVEL_ERROR, shell->pid, strerror(errno));
-            return false;
-        }
-
-        // Wait for process to actually terminate
-        waitpid(shell->pid, NULL, 0);
-    }
+    // Process termination will be handled by the system
 
     shell->running = false;
     log_this(SR_TERMINAL, "Shell process terminated successfully", LOG_LEVEL_STATE);
