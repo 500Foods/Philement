@@ -152,7 +152,7 @@ struct DatabaseEngineInterface {
 
     // Query execution
     bool (*execute_query)(DatabaseHandle* connection, QueryRequest* request, QueryResult** result);
-    bool (*execute_prepared)(DatabaseHandle* connection, PreparedStatement* stmt, QueryRequest* request, QueryResult** result);
+    bool (*execute_prepared)(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result);
 
     // Transaction management
     bool (*begin_transaction)(DatabaseHandle* connection, DatabaseIsolationLevel level, Transaction** transaction);
@@ -164,9 +164,9 @@ struct DatabaseEngineInterface {
     bool (*unprepare_statement)(DatabaseHandle* connection, PreparedStatement* stmt);
 
     // Engine-specific utilities
-    char* (*get_connection_string)(ConnectionConfig* config);
+    char* (*get_connection_string)(const ConnectionConfig* config);
     bool (*validate_connection_string)(const char* connection_string);
-    char* (*escape_string)(DatabaseHandle* connection, const char* input);
+    char* (*escape_string)(const DatabaseHandle* connection, const char* input);
 };
 
 
@@ -261,7 +261,7 @@ void database_get_supported_engines(char* buffer, size_t buffer_size);
 
 // For API subsystem integration
 bool database_process_api_query(const char* database, const char* query_path,
-                               const char* parameters, char* result_buffer, size_t buffer_size);
+                               const char* parameters, const char* result_buffer, size_t buffer_size);
 
 // For launch/landing subsystem integration
 int launch_database_subsystem(void);     // Already in launch_database.c
