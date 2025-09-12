@@ -1,0 +1,17 @@
+/*
+ * SQLite Database Engine - Utility Functions Header
+ *
+ * Header file for SQLite utility functions.
+ */
+
+#ifndef SQLITE_UTILS_H
+#define SQLITE_UTILS_H
+
+#include "../database.h"
+
+// Utility functions
+char* sqlite_get_connection_string(ConnectionConfig* config);
+bool sqlite_validate_connection_string(const char* connection_string);
+char* sqlite_escape_string(DatabaseHandle* connection, const char* input);
+
+#endif // SQLITE_UTILS_H
