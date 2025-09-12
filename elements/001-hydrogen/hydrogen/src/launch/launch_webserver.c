@@ -128,7 +128,8 @@ LaunchReadiness check_webserver_launch_readiness(void) {
         }
 
         // 4 & 5. Check interface availability
-        struct ifaddrs *ifaddr, *ifa;
+        struct ifaddrs *ifaddr;
+        const struct ifaddrs *ifa;
         bool ipv4_available = false;
         bool ipv6_available = false;
 

@@ -37,7 +37,7 @@ static double calc_elapsed_time(const struct timespec *end, const struct timespe
 
 // Format time as ISO 8601 UTC timestamp
 static void format_iso_time(time_t t, char *buffer, size_t buflen) {
-    struct tm *tm = gmtime(&t);
+    const struct tm *tm = gmtime(&t);
     strftime(buffer, buflen, "%Y-%m-%dT%H:%M:%SZ", tm);
 }
 

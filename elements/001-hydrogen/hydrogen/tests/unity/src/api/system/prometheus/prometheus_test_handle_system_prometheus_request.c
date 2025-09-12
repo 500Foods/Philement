@@ -238,7 +238,7 @@ void test_setup_prometheus_headers_null_response(void) {
 
 // Test setting up Prometheus headers with valid response
 void test_setup_prometheus_headers_valid_response(void) {
-    void *mock_response = (void *)0x12345678; // Mock response pointer
+    const void *mock_response = (void *)0x12345678; // Mock response pointer
 
     int result = setup_prometheus_headers(mock_response);
 

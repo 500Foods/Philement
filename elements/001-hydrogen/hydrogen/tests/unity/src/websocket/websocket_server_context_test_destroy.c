@@ -60,14 +60,14 @@ void test_ws_context_destroy_parameter_validation(void) {
     // We test the logical conditions without calling actual libwebsockets functions
     
     // Test NULL parameter handling
-    WebSocketServerContext *null_context = NULL;
+    const WebSocketServerContext *null_context = NULL;
     bool is_null = (null_context == NULL);
     TEST_ASSERT_TRUE(is_null);
-    
+
     // Test valid pointer logic
     WebSocketServerContext mock_context;
     memset(&mock_context, 0, sizeof(mock_context));
-    WebSocketServerContext *valid_context = &mock_context;
+    const WebSocketServerContext *valid_context = &mock_context;
     bool is_valid = (valid_context != NULL);
     TEST_ASSERT_TRUE(is_valid);
 }

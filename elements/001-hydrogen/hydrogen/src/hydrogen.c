@@ -103,6 +103,7 @@ pthread_t main_thread_id;
  * @note This handler is async-signal-safe and uses only async-signal-safe functions
  * @note The generated core file can be analyzed with: gdb -q executable corefile
  */
+// cppcheck-suppress[constParameterCallback] - Signal handler callback signature requires void*
 static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     /* Step 1: Get executable path and create core file name */
     char exe_path[PATH_MAX];
@@ -149,7 +150,8 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     /* Step 3: Locate stack and code segments in memory map */
     unsigned long stack_start = 0, stack_end = 0;
     unsigned long code_start = 0, code_end = 0;
-    char line[256], *base = basename(exe_path);
+    char line[256];
+    const char *base = basename(exe_path);
     while (fgets(line, sizeof(line), maps)) {
         unsigned long start, end;
         char perms[5], path[256] = "";
@@ -233,7 +235,7 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
      * - Signal information and pending signals
      * - Process hierarchy information (PID, PPID, etc.)
      */
-    ucontext_t *uc = (ucontext_t *)ucontext;
+    const ucontext_t *uc = (const ucontext_t *)ucontext;
     if (!uc) {
         log_this(SR_CRASH, "Invalid ucontext in crash handler", LOG_LEVEL_ERROR, 0);
         fclose(mem);
@@ -388,7 +390,7 @@ int main(int argc, char *argv[]) {
     setlocale(LC_NUMERIC, "");
 
     // Handle command-line options
-    char* config_path = NULL;
+    const char* config_path = NULL;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--help") == 0) {
             printf("Hydrogen ver %s rel %s\n", VERSION, RELEASE);

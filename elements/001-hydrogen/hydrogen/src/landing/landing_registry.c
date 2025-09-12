@@ -21,7 +21,7 @@ void report_registry_landing_status(void) {
     int total_active = 0;
     
     for (int i = 0; i < subsystem_registry.count; i++) {
-        SubsystemInfo* info = &subsystem_registry.subsystems[i];
+        const SubsystemInfo* info = &subsystem_registry.subsystems[i];
         if (info->state != SUBSYSTEM_INACTIVE) {
             total_active++;
         }
@@ -60,7 +60,7 @@ LaunchReadiness check_registry_landing_readiness(void) {
     // Count active subsystems
     int active_subsystems = 0;
     for (int i = 0; i < subsystem_registry.count; i++) {
-        SubsystemInfo* info = &subsystem_registry.subsystems[i];
+        const SubsystemInfo* info = &subsystem_registry.subsystems[i];
         // Skip the registry itself
         if (strcmp(info->name, SR_REGISTRY) == 0) continue;
         

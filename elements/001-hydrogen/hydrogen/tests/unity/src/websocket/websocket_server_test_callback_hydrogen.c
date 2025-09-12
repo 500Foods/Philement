@@ -79,7 +79,7 @@ void test_callback_hydrogen_protocol_init_reason(void) {
 
 void test_callback_hydrogen_session_validation_logic(void) {
     // Test the session validation logic conditions
-    WebSocketSessionData *session = NULL;
+    const WebSocketSessionData *session = NULL;
     enum lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
     
     // Test the condition: !session && reason != LWS_CALLBACK_PROTOCOL_INIT
@@ -160,7 +160,7 @@ void test_callback_hydrogen_callback_reason_categories(void) {
 
 void test_callback_hydrogen_session_validation_conditions(void) {
     // Test session validation conditions
-    WebSocketSessionData *session = NULL;
+    const WebSocketSessionData *session = NULL;
     enum lws_callback_reasons safe_reason = LWS_CALLBACK_PROTOCOL_INIT;
     enum lws_callback_reasons unsafe_reason = LWS_CALLBACK_ESTABLISHED;
     

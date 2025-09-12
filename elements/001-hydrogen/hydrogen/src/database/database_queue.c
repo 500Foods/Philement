@@ -176,7 +176,7 @@ char* database_queue_generate_label(DatabaseQueue* db_queue) {
     if (!db_queue) return NULL;
 
     char label[128];
-    char* tags_to_show = db_queue->tags;
+    const char* tags_to_show = db_queue->tags;
 
     // For queue 00 (Lead), exclude 'L' from tags as it's implied
     char filtered_tags[16] = {0};

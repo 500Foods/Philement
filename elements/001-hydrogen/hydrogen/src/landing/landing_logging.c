@@ -27,7 +27,7 @@ extern AppConfig* app_config;
 // Check if all other subsystems have completed shutdown
 static bool check_other_subsystems_complete(void) {
     for (int i = 0; i < subsystem_registry.count; i++) {
-        SubsystemInfo* info = &subsystem_registry.subsystems[i];
+        const SubsystemInfo* info = &subsystem_registry.subsystems[i];
         // Skip logging subsystem itself
         if (strcmp(info->name, SR_LOGGING) == 0) continue;
         

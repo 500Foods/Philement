@@ -152,7 +152,7 @@ bool init_terminal_support(TerminalConfig *config) {
 
         for (size_t i = 0; i < num_payload_files; i++) {
             // Clean the file name to remove prefixes (e.g., "terminal/terminal.html" -> "terminal.html")
-            char *clean_name = payload_files[i].name;
+            const char *clean_name = payload_files[i].name;
             if (strncmp(payload_files[i].name, "terminal/", 9) == 0) {
                 clean_name = payload_files[i].name + 9; // Skip "terminal/" prefix
             }
