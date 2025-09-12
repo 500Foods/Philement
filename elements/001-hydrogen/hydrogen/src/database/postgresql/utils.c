@@ -14,7 +14,7 @@
 extern PQescapeStringConn_t PQescapeStringConn_ptr;
 
 // Utility Functions
-char* postgresql_get_connection_string(ConnectionConfig* config) {
+char* postgresql_get_connection_string(const ConnectionConfig* config) {
     if (!config) return NULL;
 
     char* conn_str = calloc(1, 1024);
@@ -42,7 +42,7 @@ bool postgresql_validate_connection_string(const char* connection_string) {
     return strncmp(connection_string, "postgresql://", 13) == 0;
 }
 
-char* postgresql_escape_string(DatabaseHandle* connection, const char* input) {
+char* postgresql_escape_string(const DatabaseHandle* connection, const char* input) {
     if (!connection || !input || connection->engine_type != DB_ENGINE_POSTGRESQL) {
         return NULL;
     }

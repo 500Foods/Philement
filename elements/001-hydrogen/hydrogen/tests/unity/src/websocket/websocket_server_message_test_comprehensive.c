@@ -13,7 +13,7 @@
 #include "../../../../src/websocket/websocket_server.h"
 
 // Forward declarations for functions being tested
-int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, size_t len);
+int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len);
 int ws_write_json_response(struct lws *wsi, json_t *json);
 
 // Function prototypes for test functions

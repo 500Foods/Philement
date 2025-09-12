@@ -35,7 +35,7 @@ void test_database_comprehensive_all_functions(void) {
     // Test database_add_database - this requires complex setup, but let's try with minimal params
     // Note: This will likely fail due to missing app_config, but it will still execute the function
     bool add_result = database_add_database("testdb", "sqlite", NULL);
-    // We don't assert the result since it may fail due to missing config, but the function should be called
+    (void)add_result; // Mark as intentionally unused - function execution is the test
 
     // Test database_remove_database
     bool remove_result = database_remove_database("nonexistent");
@@ -47,7 +47,7 @@ void test_database_comprehensive_all_functions(void) {
 
     // Test database_health_check
     bool health_result = database_health_check();
-    // Result depends on subsystem state, but function should execute
+    (void)health_result; // Mark as intentionally unused - function execution is the test
 
     // Test database_submit_query
     bool submit_result = database_submit_query("testdb", "query1", "SELECT 1", "{}", 0);

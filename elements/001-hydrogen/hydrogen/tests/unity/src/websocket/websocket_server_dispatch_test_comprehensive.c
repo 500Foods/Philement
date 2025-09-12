@@ -13,7 +13,7 @@
 
 // Forward declarations for functions being tested
 int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
-                        void *user, void *in, size_t len);
+                        void *user, const void *in, size_t len);
 
 // Function prototypes for test functions
 void test_dispatch_protocol_init_callback(void);

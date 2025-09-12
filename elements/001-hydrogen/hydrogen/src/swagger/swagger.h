@@ -67,7 +67,7 @@ bool swagger_url_validator(const char *url);
  * @param con_cls Connection-specific data
  * @return MHD_YES if handled successfully, MHD_NO otherwise
  */
-enum MHD_Result swagger_request_handler(const void *cls,
+enum MHD_Result swagger_request_handler(void *cls,
                                        struct MHD_Connection *connection,
                                        const char *url,
                                        const char *method,

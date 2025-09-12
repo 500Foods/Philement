@@ -46,7 +46,7 @@ void cleanup_oidc_client_registry(OIDCClientContext *client_context);
  */
 OIDCKeyContext* init_oidc_key_management(const char *storage_path, bool encryption_enabled, int rotation_interval_days);
 void cleanup_oidc_key_management(OIDCKeyContext *key_context);
-char* oidc_generate_jwks(OIDCKeyContext *key_context);
+char* oidc_generate_jwks(const OIDCKeyContext *key_context);
 
 /*
  * Token Service Functions
