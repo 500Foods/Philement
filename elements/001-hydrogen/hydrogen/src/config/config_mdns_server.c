@@ -43,7 +43,7 @@ static bool process_txt_records(json_t* txt_records, mdns_server_service_t* serv
         service->num_txt_records = 1;
         service->txt_records = malloc(sizeof(char*));
         if (!service->txt_records) {
-            log_this(SR_CONFIG, "Failed to allocate memory for TXT record", LOG_LEVEL_ERROR);
+            log_this(SR_CONFIG, "Failed to allocate memory for TXT record", LOG_LEVEL_ERROR, 0);
             return false;
         }
         service->txt_records[0] = strdup(json_string_value(txt_records));
@@ -54,7 +54,7 @@ static bool process_txt_records(json_t* txt_records, mdns_server_service_t* serv
         service->num_txt_records = json_array_size(txt_records);
         service->txt_records = malloc(service->num_txt_records * sizeof(char*));
         if (!service->txt_records) {
-            log_this(SR_CONFIG, "Failed to allocate memory for TXT records array", LOG_LEVEL_ERROR);
+            log_this(SR_CONFIG, "Failed to allocate memory for TXT records array", LOG_LEVEL_ERROR, 0);
             return false;
         }
 
@@ -109,12 +109,12 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
         json_t* services = mdns_section ? json_object_get(mdns_section, "Services") : NULL;
         if (json_is_array(services)) {
             mdns_config->num_services = json_array_size(services);
-            log_this(SR_CONFIG, "――― Services: %zu configured", LOG_LEVEL_STATE, mdns_config->num_services);
+            log_this(SR_CONFIG, "――― Services: %zu configured", LOG_LEVEL_STATE, 1, mdns_config->num_services);
 
             if (mdns_config->num_services > 0) {
                 mdns_config->services = calloc(mdns_config->num_services, sizeof(mdns_server_service_t));
                 if (!mdns_config->services) {
-                    log_this(SR_CONFIG, "Failed to allocate memory for mDNS services array", LOG_LEVEL_ERROR);
+                    log_this(SR_CONFIG, "Failed to allocate memory for mDNS services array", LOG_LEVEL_ERROR, 0);
                     cleanup_mdns_server_config(mdns_config);
                     return false;
                 }
@@ -137,12 +137,10 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
                             success = false;
                             break;
                         }
-                        log_this(SR_CONFIG, "――― Service[%zu].Name: %s", LOG_LEVEL_STATE,
-                                valid_services, mdns_config->services[valid_services].name);
+                        log_this(SR_CONFIG, "――― Service[%zu].Name: %s", LOG_LEVEL_STATE, 2, valid_services, mdns_config->services[valid_services].name);
                     } else {
                         mdns_config->services[valid_services].name = strdup("hydrogen");
-                        log_this(SR_CONFIG, "――― Service[%zu].Name: %s (*)", LOG_LEVEL_STATE,
-                                valid_services, mdns_config->services[valid_services].name);
+                        log_this(SR_CONFIG, "――― Service[%zu].Name: %s (*)", LOG_LEVEL_STATE, 2, valid_services, mdns_config->services[valid_services].name);
                     }
 
                     // Process type
@@ -153,24 +151,20 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
                             success = false;
                             break;
                         }
-                        log_this(SR_CONFIG, "――― Service[%zu].Type: %s", LOG_LEVEL_STATE,
-                                valid_services, mdns_config->services[valid_services].type);
+                        log_this(SR_CONFIG, "――― Service[%zu].Type: %s", LOG_LEVEL_STATE, 2, valid_services, mdns_config->services[valid_services].type);
                     } else {
                         mdns_config->services[valid_services].type = strdup("_http._tcp.local");
-                        log_this(SR_CONFIG, "――― Service[%zu].Type: %s (*)", LOG_LEVEL_STATE,
-                                valid_services, mdns_config->services[valid_services].type);
+                        log_this(SR_CONFIG, "――― Service[%zu].Type: %s (*)", LOG_LEVEL_STATE, 2, valid_services, mdns_config->services[valid_services].type);
                     }
 
                     // Process port
                     json_t* port = json_object_get(service, "Port");
                     if (json_is_integer(port)) {
                         mdns_config->services[valid_services].port = (int)json_integer_value(port);
-                        log_this(SR_CONFIG, "――― Service[%zu].Port: %d", LOG_LEVEL_STATE,
-                                valid_services, mdns_config->services[valid_services].port);
+                        log_this(SR_CONFIG, "――― Service[%zu].Port: %d", LOG_LEVEL_STATE, 2, valid_services, mdns_config->services[valid_services].port);
                     } else {
                         mdns_config->services[valid_services].port = 80;
-                        log_this(SR_CONFIG, "――― Service[%zu].Port: %d (*)", LOG_LEVEL_STATE,
-                                valid_services, mdns_config->services[valid_services].port);
+                        log_this(SR_CONFIG, "――― Service[%zu].Port: %d (*)", LOG_LEVEL_STATE, 2, valid_services, mdns_config->services[valid_services].port);
                     }
 
                     // Process TXT records

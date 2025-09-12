@@ -128,8 +128,8 @@ static bool load_libdb2_functions(void) {
         libdb2_handle = dlopen("libdb2.so.1", RTLD_LAZY);
     }
     if (!libdb2_handle) {
-        log_this(SR_DATABASE, "Failed to load libdb2 library", LOG_LEVEL_ERROR, true, true, true);
-        log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "Failed to load libdb2 library", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, 0);
         pthread_mutex_unlock(&libdb2_mutex);
         return false;
     }
@@ -154,7 +154,7 @@ static bool load_libdb2_functions(void) {
 
     // Check if all functions were loaded
     if (!SQLAllocHandle_ptr || !SQLConnect_ptr || !SQLExecDirect_ptr) {
-        log_this(SR_DATABASE, "Failed to load all required libdb2 functions", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "Failed to load all required libdb2 functions", LOG_LEVEL_ERROR, 0);
         dlclose(libdb2_handle);
         libdb2_handle = NULL;
         pthread_mutex_unlock(&libdb2_mutex);
@@ -162,7 +162,7 @@ static bool load_libdb2_functions(void) {
     }
 
     pthread_mutex_unlock(&libdb2_mutex);
-    log_this(SR_DATABASE, "Successfully loaded libdb2 library", LOG_LEVEL_STATE, true, true, true);
+    log_this(SR_DATABASE, "Successfully loaded libdb2 library", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -204,27 +204,27 @@ static void destroy_prepared_statement_cache(PreparedStatementCache* cache) {
 
 bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator) {
     if (!config || !connection) {
-        log_this(SR_DATABASE, "Invalid parameters for DB2 connection", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "Invalid parameters for DB2 connection", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Load libdb2 library if not already loaded
     if (!load_libdb2_functions()) {
-        log_this(SR_DATABASE, "DB2 library not available", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "DB2 library not available", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Allocate environment handle
     void* env_handle = NULL;
     if (SQLAllocHandle_ptr(SQL_HANDLE_ENV, NULL, &env_handle) != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 environment allocation failed", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "DB2 environment allocation failed", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Allocate connection handle
     void* conn_handle = NULL;
     if (SQLAllocHandle_ptr(SQL_HANDLE_DBC, env_handle, &conn_handle) != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 connection allocation failed", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "DB2 connection allocation failed", LOG_LEVEL_ERROR, 0);
         // SQLFreeHandle_ptr(SQL_HANDLE_ENV, env_handle);
         return false;
     }
@@ -246,7 +246,7 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     );
 
     if (result != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 connection failed", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "DB2 connection failed", LOG_LEVEL_ERROR, 0);
         // SQLFreeHandle_ptr(SQL_HANDLE_DBC, conn_handle);
         // SQLFreeHandle_ptr(SQL_HANDLE_ENV, env_handle);
         return false;
@@ -304,7 +304,7 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
 
     // Use designator for logging if provided, otherwise use generic Database subsystem
     const char* log_subsystem = designator ? designator : SR_DATABASE;
-    log_this(log_subsystem, "DB2 connection established successfully", LOG_LEVEL_STATE, true, true, true);
+    log_this(log_subsystem, "DB2 connection established successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -330,7 +330,7 @@ bool db2_disconnect(DatabaseHandle* connection) {
 
     // Use stored designator for logging if available
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(log_subsystem, "DB2 connection closed", LOG_LEVEL_STATE, true, true, true);
+    log_this(log_subsystem, "DB2 connection closed", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -361,7 +361,7 @@ bool db2_reset_connection(DatabaseHandle* connection) {
     connection->connected_since = time(NULL);
     connection->consecutive_failures = 0;
 
-    log_this(SR_DATABASE, "DB2 connection reset successfully", LOG_LEVEL_STATE, true, true, true);
+    log_this(SR_DATABASE, "DB2 connection reset successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -382,14 +382,14 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
     // Allocate statement handle
     void* stmt_handle = NULL;
     if (SQLAllocHandle_ptr(SQL_HANDLE_STMT, db2_conn->connection, &stmt_handle) != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 statement allocation failed", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "DB2 statement allocation failed", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Execute query
     int exec_result = SQLExecDirect_ptr(stmt_handle, (char*)request->sql_template, SQL_NTS);
     if (exec_result != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 query execution failed", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "DB2 query execution failed", LOG_LEVEL_ERROR, 0);
         // SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         return false;
     }
@@ -412,7 +412,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
     // SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
     *result = db_result;
 
-    // log_this(SR_DATABASE, "DB2 query executed (placeholder implementation)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "DB2 query executed (placeholder implementation)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -454,7 +454,7 @@ bool db2_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel le
     *transaction = tx;
     connection->current_transaction = tx;
 
-    // log_this(SR_DATABASE, "DB2 transaction started (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "DB2 transaction started (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -473,7 +473,7 @@ bool db2_commit_transaction(DatabaseHandle* connection, Transaction* transaction
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    // log_this(SR_DATABASE, "DB2 transaction committed (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "DB2 transaction committed (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -492,7 +492,7 @@ bool db2_rollback_transaction(DatabaseHandle* connection, Transaction* transacti
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    // log_this(SR_DATABASE, "DB2 transaction rolled back (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "DB2 transaction rolled back (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -518,7 +518,7 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
 
     *stmt = prepared_stmt;
 
-    // log_this(SR_DATABASE, "DB2 prepared statement created (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "DB2 prepared statement created (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -532,7 +532,7 @@ bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt
     free(stmt->sql_template);
     free(stmt);
 
-    // log_this(SR_DATABASE, "DB2 prepared statement removed (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "DB2 prepared statement removed (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 

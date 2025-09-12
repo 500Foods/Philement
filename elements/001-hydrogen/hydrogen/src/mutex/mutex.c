@@ -1,0 +1,308 @@
+/*
+ * Mutex Utility Library Implementation
+ *
+ * Provides consistent, timeout-aware mutex operations with deadlock detection
+ * and comprehensive logging for the entire Hydrogen codebase.
+ */
+
+#define _POSIX_C_SOURCE 200809L
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <time.h>
+
+#include "../hydrogen.h"
+#include "mutex.h"
+
+// Global state for deadlock detection
+static bool deadlock_detection_enabled = true;
+static MutexLockAttempt* active_lock_attempts = NULL;
+static size_t active_lock_count = 0;
+static size_t active_lock_capacity = 0;
+static pthread_mutex_t deadlock_detection_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// Forward declarations
+static void detect_potential_deadlock(MutexId* current_id);
+
+// Statistics
+static MutexStats global_stats = {0};
+static pthread_mutex_t stats_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * Core mutex lock with timeout and identification
+ */
+MutexResult mutex_lock_with_timeout(
+    pthread_mutex_t* mutex,
+    MutexId* id,
+    int timeout_ms
+) {
+    if (!mutex || !id) {
+        return MUTEX_ERROR;
+    }
+
+    // Convert milliseconds to timespec
+    struct timespec timeout;
+    clock_gettime(CLOCK_REALTIME, &timeout);
+    timeout.tv_sec += timeout_ms / 1000;
+    timeout.tv_nsec += (timeout_ms % 1000) * 1000000;
+
+    // Normalize nanoseconds
+    if (timeout.tv_nsec >= 1000000000) {
+        timeout.tv_sec += timeout.tv_nsec / 1000000000;
+        timeout.tv_nsec %= 1000000000;
+    }
+
+    // DEBUG: Log lock attempt
+    log_this(id->subsystem, "MUTEX REQ: %s in %s() [%s:%d]", LOG_LEVEL_DEBUG, 4, id->name, id->function, id->file, id->line);
+
+    // Record lock attempt for deadlock detection
+    if (deadlock_detection_enabled) {
+        pthread_mutex_lock(&deadlock_detection_mutex);
+
+        // Expand capacity if needed
+        if (active_lock_count >= active_lock_capacity) {
+            active_lock_capacity = active_lock_capacity == 0 ? 16 : active_lock_capacity * 2;
+            MutexLockAttempt* new_attempts = realloc(active_lock_attempts,
+                active_lock_capacity * sizeof(MutexLockAttempt));
+            if (!new_attempts) {
+                pthread_mutex_unlock(&deadlock_detection_mutex);
+                return MUTEX_ERROR;
+            }
+            active_lock_attempts = new_attempts;
+        }
+
+        // Add lock attempt
+        active_lock_attempts[active_lock_count].id = *id;
+        active_lock_attempts[active_lock_count].thread_id = pthread_self();
+        active_lock_attempts[active_lock_count].attempt_start = time(NULL);
+        active_lock_attempts[active_lock_count].is_write_lock = false;
+        active_lock_count++;
+
+        pthread_mutex_unlock(&deadlock_detection_mutex);
+    }
+
+    // Attempt to lock with timeout
+    int result = pthread_mutex_timedlock(mutex, &timeout);
+
+    // Remove from active attempts
+    if (deadlock_detection_enabled) {
+        pthread_mutex_lock(&deadlock_detection_mutex);
+        // Find and remove this attempt
+        for (size_t i = 0; i < active_lock_count; i++) {
+            if (pthread_equal(active_lock_attempts[i].thread_id, pthread_self()) &&
+                strcmp(active_lock_attempts[i].id.name, id->name) == 0) {
+                // Shift remaining elements
+                memmove(&active_lock_attempts[i], &active_lock_attempts[i + 1],
+                    (active_lock_count - i - 1) * sizeof(MutexLockAttempt));
+                active_lock_count--;
+                break;
+            }
+        }
+        pthread_mutex_unlock(&deadlock_detection_mutex);
+    }
+
+    // Update statistics
+    pthread_mutex_lock(&stats_mutex);
+    global_stats.total_locks++;
+
+    if (result == 0) {
+        // Success
+        pthread_mutex_unlock(&stats_mutex);
+        return MUTEX_SUCCESS;
+    } else if (result == ETIMEDOUT) {
+        // Timeout - potential deadlock
+        global_stats.total_timeouts++;
+        global_stats.last_timeout_time = time(NULL);
+        pthread_mutex_unlock(&stats_mutex);
+
+        // Log timeout with full context
+        log_this(id->subsystem, "MUTEX EXP: %s in %s() [%s:%d] - timeout after %dms", LOG_LEVEL_ERROR, 5, id->name, id->function, id->file, id->line, timeout_ms);
+
+        // Check for potential deadlock
+        if (deadlock_detection_enabled) {
+            detect_potential_deadlock(id);
+        }
+
+        return MUTEX_TIMEOUT;
+    } else {
+        // Other error
+        global_stats.total_errors++;
+        pthread_mutex_unlock(&stats_mutex);
+
+        log_this(id->subsystem, "MUTEX ERR: %s in %s() [%s:%d] - error %d (%s)", LOG_LEVEL_ERROR, 4, id->name, id->function, id->file, id->line, result, strerror(result));
+
+        return MUTEX_ERROR;
+    }
+}
+
+/*
+ * Try to lock mutex without blocking
+ */
+MutexResult mutex_try_lock(
+    pthread_mutex_t* mutex,
+    MutexId* id
+) {
+    if (!mutex || !id) {
+        return MUTEX_ERROR;
+    }
+
+    int result = pthread_mutex_trylock(mutex);
+
+    if (result == 0) {
+        return MUTEX_SUCCESS;
+    } else if (result == EBUSY) {
+        return MUTEX_TIMEOUT; // Treat as timeout for consistency
+    } else {
+        log_this(id->subsystem, "MUTEX TRY: %s in %s() [%s:%d] - error %d (%s)", LOG_LEVEL_ERROR, 5, id->name, id->function, id->file, id->line, result, strerror(result));
+        return MUTEX_ERROR;
+    }
+}
+
+/*
+ * Unlock mutex with error checking
+ */
+MutexResult mutex_unlock(pthread_mutex_t* mutex) {
+    if (!mutex) {
+        return MUTEX_ERROR;
+    }
+
+    int result = pthread_mutex_unlock(mutex);
+
+    if (result == 0) {
+        // DEBUG: Log successful unlock
+        log_this(SR_DATABASE, "MUTEX REL: Mutex at %p", LOG_LEVEL_DEBUG, 1, (void*)mutex);
+        return MUTEX_SUCCESS;
+    } else {
+        // This is a serious error - log it
+        log_this(SR_DATABASE, "MUTEX ERR: Failed to unlock mutex - error %d (%s)", LOG_LEVEL_ERROR, 2, result, strerror(result));
+        return MUTEX_ERROR;
+    }
+}
+
+/*
+ * Deadlock detection helper
+ */
+static void detect_potential_deadlock(MutexId* current_id) {
+    pthread_mutex_lock(&deadlock_detection_mutex);
+
+    // Look for threads waiting for mutexes we might hold
+    for (size_t i = 0; i < active_lock_count; i++) {
+        MutexLockAttempt* attempt = &active_lock_attempts[i];
+
+        // Check if this thread is waiting for a mutex
+        // In a real deadlock detection algorithm, we'd check the actual
+        // mutex ownership, but this is a simplified version
+        if (strcmp(attempt->id.subsystem, current_id->subsystem) == 0) {
+            log_this(SR_DATABASE, "DEADLOCK: Thread waiting for %s while we wait for %s", LOG_LEVEL_ERROR, 2, attempt->id.name, current_id->name);
+
+            global_stats.total_deadlocks_detected++;
+            global_stats.last_deadlock_time = time(NULL);
+        }
+    }
+
+    pthread_mutex_unlock(&deadlock_detection_mutex);
+}
+
+/*
+ * Deadlock detection control
+ */
+void mutex_enable_deadlock_detection(bool enable) {
+    deadlock_detection_enabled = enable;
+}
+
+bool mutex_is_deadlock_detection_enabled(void) {
+    return deadlock_detection_enabled;
+}
+
+/*
+ * Log all currently active lock attempts
+ */
+void mutex_log_active_locks(void) {
+    pthread_mutex_lock(&deadlock_detection_mutex);
+
+    if (active_lock_count == 0) {
+        log_this(SR_DATABASE, "No active mutex lock attempts", LOG_LEVEL_DEBUG, 0);
+    } else {
+        log_this(SR_DATABASE, "Active mutex lock attempts: %zu", LOG_LEVEL_DEBUG, 1, active_lock_count);
+
+        for (size_t i = 0; i < active_lock_count; i++) {
+            MutexLockAttempt* attempt = &active_lock_attempts[i];
+            time_t duration = time(NULL) - attempt->attempt_start;
+
+            log_this(SR_DATABASE,"  [%zu] %s in %s() [%s:%d] - waiting %ld seconds", LOG_LEVEL_DEBUG, 6, i, attempt->id.name, attempt->id.function, attempt->id.file, attempt->id.line, duration);
+        }
+    }
+
+    pthread_mutex_unlock(&deadlock_detection_mutex);
+}
+
+/*
+ * Statistics functions
+ */
+void mutex_get_stats(MutexStats* stats) {
+    if (!stats) return;
+
+    pthread_mutex_lock(&stats_mutex);
+    *stats = global_stats;
+    pthread_mutex_unlock(&stats_mutex);
+}
+
+void mutex_reset_stats(void) {
+    pthread_mutex_lock(&stats_mutex);
+    memset(&global_stats, 0, sizeof(MutexStats));
+    pthread_mutex_unlock(&stats_mutex);
+}
+
+/*
+ * System initialization and cleanup
+ */
+bool mutex_system_init(void) {
+    // Initialize deadlock detection structures
+    active_lock_attempts = calloc(16, sizeof(MutexLockAttempt));
+    if (!active_lock_attempts) {
+        return false;
+    }
+    active_lock_capacity = 16;
+    active_lock_count = 0;
+
+    // Reset statistics
+    memset(&global_stats, 0, sizeof(MutexStats));
+
+    log_this(SR_DATABASE, "Mutex system initialized", LOG_LEVEL_STATE, 0);
+    return true;
+}
+
+void mutex_system_cleanup(void) {
+    // Clean up deadlock detection structures
+    pthread_mutex_lock(&deadlock_detection_mutex);
+    free(active_lock_attempts);
+    active_lock_attempts = NULL;
+    active_lock_count = 0;
+    active_lock_capacity = 0;
+    pthread_mutex_unlock(&deadlock_detection_mutex);
+
+    log_this(SR_DATABASE, "Mutex system cleanup completed", LOG_LEVEL_STATE, 0);
+}
+
+/*
+ * Utility functions
+ */
+const char* mutex_result_to_string(MutexResult result) {
+    switch (result) {
+        case MUTEX_SUCCESS: return "SUCCESS";
+        case MUTEX_TIMEOUT: return "TIMEOUT";
+        case MUTEX_DEADLOCK_DETECTED: return "DEADLOCK_DETECTED";
+        case MUTEX_ERROR: return "ERROR";
+        default: return "UNKNOWN";
+    }
+}
+
+void mutex_log_result(MutexResult result, MutexId* id, int timeout_ms) {
+    if (result == MUTEX_SUCCESS) {
+        log_this(id->subsystem, "MUTEX ADD: %s locked in %s() [%s:%d]", LOG_LEVEL_DEBUG, 4, id->name, id->function, id->file, id->line);
+    } else {
+        log_this(id->subsystem, "MUTEX %s: %s in %s() [%s:%d] timeout=%dms", LOG_LEVEL_ERROR, 6, mutex_result_to_string(result), id->name, id->function, id->file, id->line, timeout_ms);
+    }
+}

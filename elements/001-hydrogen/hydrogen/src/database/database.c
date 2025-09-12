@@ -5,9 +5,11 @@
  * subsystem initialization, database management, and API functions.
  */
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <time.h>
 
 #include "../hydrogen.h"
 #include "database.h"
@@ -23,18 +25,21 @@ static pthread_mutex_t database_subsystem_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Initialize the database subsystem
 bool database_subsystem_init(void) {
-    log_this(SR_DATABASE, "Starting database subsystem initialization", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Starting database subsystem initialization", LOG_LEVEL_STATE, 0);
 
-    pthread_mutex_lock(&database_subsystem_mutex);
+    MutexResult result = MUTEX_LOCK(&database_subsystem_mutex, SR_DATABASE);
+    if (result != MUTEX_SUCCESS) {
+        return false;
+    }
 
     if (database_subsystem) {
-        pthread_mutex_unlock(&database_subsystem_mutex);
+        mutex_unlock(&database_subsystem_mutex);
         return true; // Already initialized
     }
 
     database_subsystem = calloc(1, sizeof(DatabaseSubsystem));
     if (!database_subsystem) {
-        log_this(SR_DATABASE, "Failed to allocate database subsystem", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to allocate database subsystem", LOG_LEVEL_ERROR, 0);
         pthread_mutex_unlock(&database_subsystem_mutex);
         return false;
     }
@@ -62,16 +67,19 @@ bool database_subsystem_init(void) {
     extern ServiceThreads database_threads;
     init_service_threads(&database_threads, SR_DATABASE);
 
-    log_this(SR_DATABASE, "Database subsystem initialization completed successfully", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Database subsystem initialization completed successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
 // Shut down the database subsystem
 void database_subsystem_shutdown(void) {
-    pthread_mutex_lock(&database_subsystem_mutex);
+    MutexResult result = MUTEX_LOCK(&database_subsystem_mutex, SR_DATABASE);
+    if (result != MUTEX_SUCCESS) {
+        return;
+    }
 
     if (!database_subsystem) {
-        pthread_mutex_unlock(&database_subsystem_mutex);
+        mutex_unlock(&database_subsystem_mutex);
         return;
     }
 
@@ -84,15 +92,15 @@ void database_subsystem_shutdown(void) {
 
     pthread_mutex_unlock(&database_subsystem_mutex);
 
-    log_this(SR_DATABASE, "Database subsystem shutdown complete", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Database subsystem shutdown complete", LOG_LEVEL_STATE, 0);
 }
 
 // Add a database configuration
 bool database_add_database(const char* name, const char* engine, const char* connection_string __attribute__((unused))) {
-    log_this(SR_DATABASE, "Starting database addition for: %s", LOG_LEVEL_STATE, name);
+    log_this(SR_DATABASE, "Starting database addition for: %s", LOG_LEVEL_STATE, 1, name);
 
     if (!database_subsystem || !name || !engine) {
-        log_this(SR_DATABASE, "Invalid parameters for database addition", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Invalid parameters for database addition", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -110,12 +118,12 @@ bool database_add_database(const char* name, const char* engine, const char* con
     }
 
     if (!engine_interface) {
-        log_this(SR_DATABASE, "Database engine not available", LOG_LEVEL_ERROR);
-        log_this(SR_DATABASE, engine, LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Database engine not available", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, engine, LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    // log_this(SR_DATABASE, "Database engine interface found", LOG_LEVEL_DEBUG);
+    // log_this(SR_DATABASE, "Database engine interface found", LOG_LEVEL_DEBUG, 0);
 
     // Get queue configuration from app config
     const DatabaseConfig* db_config = &app_config->databases;
@@ -130,8 +138,8 @@ bool database_add_database(const char* name, const char* engine, const char* con
     }
 
     if (!conn_config) {
-        log_this(SR_DATABASE, "Database configuration not found", LOG_LEVEL_ERROR);
-        log_this(SR_DATABASE, name, LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Database configuration not found", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, name, LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -184,35 +192,35 @@ bool database_add_database(const char* name, const char* engine, const char* con
     }
 
     if (!conn_str) {
-        log_this(SR_DATABASE, "Failed to create connection string", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to create connection string", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Create Lead queue for this database instead of multiple queues
-    DatabaseQueue* db_queue = database_queue_create_lead(name, conn_str);
+    DatabaseQueue* db_queue = database_queue_create_lead(name, conn_str, conn_config->bootstrap_query);
     free(conn_str);
 
     if (!db_queue) {
-        log_this(SR_DATABASE, "Failed to create Lead database queue", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to create Lead database queue", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Start the Lead queue worker thread
     if (!database_queue_start_worker(db_queue)) {
-        log_this(SR_DATABASE, "Failed to start Lead queue worker thread", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to start Lead queue worker thread", LOG_LEVEL_ERROR, 0);
         database_queue_destroy(db_queue);
         return false;
     }
 
     // Add to global queue manager - launch responsibility ends here
     if (!global_queue_manager) {
-        log_this(SR_DATABASE, "Global queue manager not initialized", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Global queue manager not initialized", LOG_LEVEL_ERROR, 0);
         database_queue_destroy(db_queue);
         return false;
     }
 
     if (!database_queue_manager_add_database(global_queue_manager, db_queue)) {
-        log_this(SR_DATABASE, "Failed to add DQM to queue manager", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to add DQM to queue manager", LOG_LEVEL_ERROR, 0);
         database_queue_destroy(db_queue);
         return false;
     }
@@ -221,7 +229,7 @@ bool database_add_database(const char* name, const char* engine, const char* con
     database_subsystem->queue_manager = global_queue_manager;
 
     // Launch complete - DQM is now independent and handles its own database work
-    log_this(SR_DATABASE, "DQM launched successfully for %s", LOG_LEVEL_STATE, name);
+    log_this(SR_DATABASE, "DQM launched successfully for %s", LOG_LEVEL_STATE, 1, name);
 
     return true;
 }
@@ -233,7 +241,7 @@ bool database_remove_database(const char* name) {
     }
 
     // TODO: Implement database removal logic
-    log_this(SR_DATABASE, "Database removal not yet implemented", LOG_LEVEL_DEBUG);
+    log_this(SR_DATABASE, "Database removal not yet implemented", LOG_LEVEL_DEBUG, 0);
     return false;
 }
 
@@ -281,7 +289,7 @@ bool database_submit_query(const char* database_name __attribute__((unused)),
     }
 
     // TODO: Implement query submission to queue system
-    log_this(SR_DATABASE, "Query submission not yet implemented", LOG_LEVEL_DEBUG);
+    log_this(SR_DATABASE, "Query submission not yet implemented", LOG_LEVEL_DEBUG, 0);
     return false;
 }
 
@@ -326,7 +334,7 @@ bool database_reload_config(void) {
     }
 
     // TODO: Implement configuration reload
-    log_this(SR_DATABASE, "Configuration reload not yet implemented", LOG_LEVEL_DEBUG);
+    log_this(SR_DATABASE, "Configuration reload not yet implemented", LOG_LEVEL_DEBUG, 0);
     return false;
 }
 
@@ -337,7 +345,7 @@ bool database_test_connection(const char* database_name) {
     }
 
     // TODO: Implement connection testing
-    log_this(SR_DATABASE, "Connection testing not yet implemented", LOG_LEVEL_DEBUG);
+    log_this(SR_DATABASE, "Connection testing not yet implemented", LOG_LEVEL_DEBUG, 0);
     return false;
 }
 
@@ -370,7 +378,7 @@ bool database_process_api_query(const char* database __attribute__((unused)), co
     }
 
     // TODO: Implement API query processing
-    log_this(SR_DATABASE, "API query processing not yet implemented", LOG_LEVEL_DEBUG);
+    log_this(SR_DATABASE, "API query processing not yet implemented", LOG_LEVEL_DEBUG, 0);
     return false;
 }
 
@@ -416,5 +424,5 @@ void database_cleanup_old_results(time_t max_age_seconds __attribute__((unused))
     }
 
     // TODO: Implement result cleanup
-    log_this(SR_DATABASE, "Result cleanup not yet implemented", LOG_LEVEL_DEBUG);
+    log_this(SR_DATABASE, "Result cleanup not yet implemented", LOG_LEVEL_DEBUG, 0);
 }

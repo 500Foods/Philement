@@ -139,6 +139,12 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 conn->database = strdup(json_string_value(database_obj));
             }
 
+            // Extract Bootstrap query
+            json_t* bootstrap_obj = json_object_get(conn_obj, "Bootstrap");
+            if (bootstrap_obj && json_is_string(bootstrap_obj)) {
+                conn->bootstrap_query = strdup(json_string_value(bootstrap_obj));
+            }
+
             // Only extract network fields for non-SQLite databases
             if (conn->type && strcmp(conn->type, "sqlite") != 0) {
                 json_t* host_obj = json_object_get(conn_obj, "Host");
@@ -311,6 +317,10 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 snprintf(kpath, sizeof(kpath), "%s.Pass", cpath);
                 PROCESS_SENSITIVE(NULL, conn, pass, kpath, "Databases");
 
+                // Bootstrap query
+                snprintf(kpath, sizeof(kpath), "%s.Bootstrap", cpath);
+                PROCESS_STRING(NULL, conn, bootstrap_query, kpath, "Databases");
+
             } while (0);
 
             valid_connections++;
@@ -396,6 +406,7 @@ void cleanup_database_connection(DatabaseConnection* conn) {
     free(conn->port);
     free(conn->user);
     free(conn->pass);
+    free(conn->bootstrap_query);
 
     // Zero out the structure
     memset(conn, 0, sizeof(DatabaseConnection));
@@ -416,15 +427,15 @@ void cleanup_database_config(DatabaseConfig* config) {
 
 void dump_database_config(const DatabaseConfig* config) {
     if (!config) {
-        log_this(SR_CONFIG_CURRENT, "Cannot dump NULL database config", LOG_LEVEL_TRACE);
+        log_this(SR_CONFIG_CURRENT, "Cannot dump NULL database config", LOG_LEVEL_TRACE, 0);
         return;
     }
 
     // Dump global settings
-    log_this(SR_CONFIG_CURRENT, "――― ConnectionCount: %d", LOG_LEVEL_STATE, config->connection_count);
+    log_this(SR_CONFIG_CURRENT, "――― ConnectionCount: %d", LOG_LEVEL_STATE, 1, config->connection_count);
 
     // Dump connections header
-    log_this(SR_CONFIG_CURRENT, "――― Connections", LOG_LEVEL_STATE);
+    log_this(SR_CONFIG_CURRENT, "――― Connections", LOG_LEVEL_STATE, 0);
 
     // Count databases by type for summary
     int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0;
@@ -460,85 +471,90 @@ void dump_database_config(const DatabaseConfig* config) {
     // Dump database counts with names
     if (postgres_count > 0) {
         if (strlen(postgres_name) > 0) {
-            log_this(SR_CONFIG_CURRENT, "――― PostgreSQL Databases: %d", LOG_LEVEL_STATE, postgres_count);
+            log_this(SR_CONFIG_CURRENT, "――― PostgreSQL Databases: %d", LOG_LEVEL_STATE, 1, postgres_count);
         } else {
-            log_this(SR_CONFIG_CURRENT, "――― PostgreSQL Databases: %d", LOG_LEVEL_STATE, postgres_count);
+            log_this(SR_CONFIG_CURRENT, "――― PostgreSQL Databases: %d", LOG_LEVEL_STATE, 1, postgres_count);
         }
     } else {
-        log_this(SR_CONFIG_CURRENT, "――― PostgreSQL Databases: 0", LOG_LEVEL_STATE);
+        log_this(SR_CONFIG_CURRENT, "――― PostgreSQL Databases: 0", LOG_LEVEL_STATE, 0);
     }
 
     if (mysql_count > 0) {
-        log_this(SR_CONFIG_CURRENT, "――― MySQL Databases: %d", LOG_LEVEL_STATE, mysql_count);
+        log_this(SR_CONFIG_CURRENT, "――― MySQL Databases: %d", LOG_LEVEL_STATE, 1, mysql_count);
     } else {
-        log_this(SR_CONFIG_CURRENT, "――― MySQL Databases: 0", LOG_LEVEL_STATE);
+        log_this(SR_CONFIG_CURRENT, "――― MySQL Databases: 0", LOG_LEVEL_STATE, 0);
     }
 
     if (sqlite_count > 0) {
-        log_this(SR_CONFIG_CURRENT, "――― SQLite Databases: %d", LOG_LEVEL_STATE, sqlite_count);
+        log_this(SR_CONFIG_CURRENT, "――― SQLite Databases: %d", LOG_LEVEL_STATE, 1, sqlite_count);
     } else {
-        log_this(SR_CONFIG_CURRENT, "――― SQLite Databases: 0", LOG_LEVEL_STATE);
+        log_this(SR_CONFIG_CURRENT, "――― SQLite Databases: 0", LOG_LEVEL_STATE, 0);
     }
 
     if (db2_count > 0) {
-        log_this(SR_CONFIG_CURRENT, "――― DB2 Databases: %d", LOG_LEVEL_STATE, db2_count);
+        log_this(SR_CONFIG_CURRENT, "――― DB2 Databases: %d", LOG_LEVEL_STATE, 1, db2_count);
     } else {
-        log_this(SR_CONFIG_CURRENT, "――― DB2 Databases: 0", LOG_LEVEL_STATE);
+        log_this(SR_CONFIG_CURRENT, "――― DB2 Databases: 0", LOG_LEVEL_STATE, 0);
     }
 
     int total_databases = postgres_count + mysql_count + sqlite_count + db2_count;
-    log_this(SR_CONFIG_CURRENT, "――― Total databases configured: %d", LOG_LEVEL_STATE, total_databases);
+    log_this(SR_CONFIG_CURRENT, "――― Total databases configured: %d", LOG_LEVEL_STATE, 1, total_databases);
 
     // Dump each connection details
     for (int i = 0; i < config->connection_count; i++) {
         const DatabaseConnection* conn = &config->connections[i];
 
         // Create section header for each database
-        log_this(SR_CONFIG_CURRENT, "――― %s", LOG_LEVEL_STATE,
-                 conn->connection_name ? conn->connection_name : "Unknown");
+        log_this(SR_CONFIG_CURRENT, "――― %s", LOG_LEVEL_STATE, 1, conn->connection_name ? conn->connection_name : "Unknown");
 
         // Dump connection details
-        log_this(SR_CONFIG_CURRENT, "――― Enabled: %s", LOG_LEVEL_STATE,
-                 conn->enabled ? "true" : "false");
+        log_this(SR_CONFIG_CURRENT, "――― Enabled: %s", LOG_LEVEL_STATE, 1, conn->enabled ? "true" : "false");
         if (conn->enabled) {
-            log_this(SR_CONFIG_CURRENT, "――― Type: %s", LOG_LEVEL_STATE,
-                     conn->type ? conn->type : "(not set)");
-            log_this(SR_CONFIG_CURRENT, "――― Database: %s", LOG_LEVEL_STATE,
-                     conn->database ? conn->database : "(not set)");
-            log_this(SR_CONFIG_CURRENT, "――― Host: %s", LOG_LEVEL_STATE,
-                     conn->host ? conn->host : "(not set)");
-            log_this(SR_CONFIG_CURRENT, "――― Port: %s", LOG_LEVEL_STATE,
-                     conn->port ? conn->port : "(not set)");
-            log_this(SR_CONFIG_CURRENT, "――― User: %s", LOG_LEVEL_STATE,
-                     conn->user ? conn->user : "(not set)");
-            log_this(SR_CONFIG_CURRENT, "――― Pass: %s", LOG_LEVEL_STATE,
-                     conn->pass ? "****" : "(not set)");
+            log_this(SR_CONFIG_CURRENT, "――― Type: %s", LOG_LEVEL_STATE, 1, conn->type ? conn->type : "(not set)");
+            log_this(SR_CONFIG_CURRENT, "――― Database: %s", LOG_LEVEL_STATE, 1, conn->database ? conn->database : "(not set)");
+            log_this(SR_CONFIG_CURRENT, "――― Host: %s", LOG_LEVEL_STATE, 1, conn->host ? conn->host : "(not set)");
+            log_this(SR_CONFIG_CURRENT, "――― Port: %s", LOG_LEVEL_STATE, 1, conn->port ? conn->port : "(not set)");
+            log_this(SR_CONFIG_CURRENT, "――― User: %s", LOG_LEVEL_STATE, 1, conn->user ? conn->user : "(not set)");
+            log_this(SR_CONFIG_CURRENT, "――― Pass: %s", LOG_LEVEL_STATE, 1, conn->pass ? "****" : "(not set)");
+            log_this(SR_CONFIG_CURRENT, "――― Bootstrap: %s", LOG_LEVEL_STATE,1, conn->bootstrap_query ? conn->bootstrap_query : "(not set)");
 
             // Dump queue configurations
-            log_this(SR_CONFIG_CURRENT, "――― Queues", LOG_LEVEL_STATE);
+            log_this(SR_CONFIG_CURRENT, "――― Queues", LOG_LEVEL_STATE, 0);
 
             // Slow queue
-            log_this(SR_CONFIG_CURRENT, "―――   Slow: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d",
-                     LOG_LEVEL_STATE, conn->queues.slow.start, conn->queues.slow.min,
-                     conn->queues.slow.max, conn->queues.slow.up, conn->queues.slow.down,
+            log_this(SR_CONFIG_CURRENT, "―――   Slow: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d", LOG_LEVEL_STATE, 6,
+                     conn->queues.slow.start, 
+                     conn->queues.slow.min,
+                     conn->queues.slow.max, 
+                     conn->queues.slow.up, 
+                     conn->queues.slow.down,
                      conn->queues.slow.inactivity);
 
             // Medium queue
-            log_this(SR_CONFIG_CURRENT, "―――   Medium: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d",
-                     LOG_LEVEL_STATE, conn->queues.medium.start, conn->queues.medium.min,
-                     conn->queues.medium.max, conn->queues.medium.up, conn->queues.medium.down,
+            log_this(SR_CONFIG_CURRENT, "―――   Medium: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d", LOG_LEVEL_STATE, 6,
+                     conn->queues.medium.start, 
+                     conn->queues.medium.min,
+                     conn->queues.medium.max, 
+                     conn->queues.medium.up, 
+                     conn->queues.medium.down,
                      conn->queues.medium.inactivity);
 
             // Fast queue
-            log_this(SR_CONFIG_CURRENT, "―――   Fast: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d",
-                     LOG_LEVEL_STATE, conn->queues.fast.start, conn->queues.fast.min,
-                     conn->queues.fast.max, conn->queues.fast.up, conn->queues.fast.down,
+            log_this(SR_CONFIG_CURRENT, "―――   Fast: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d", LOG_LEVEL_STATE, 6,
+                     conn->queues.fast.start, 
+                     conn->queues.fast.min,
+                     conn->queues.fast.max, 
+                     conn->queues.fast.up, 
+                     conn->queues.fast.down,
                      conn->queues.fast.inactivity);
 
             // Cache queue
-            log_this(SR_CONFIG_CURRENT, "―――   Cache: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d",
-                     LOG_LEVEL_STATE, conn->queues.cache.start, conn->queues.cache.min,
-                     conn->queues.cache.max, conn->queues.cache.up, conn->queues.cache.down,
+            log_this(SR_CONFIG_CURRENT, "―――   Cache: start=%d, min=%d, max=%d, up=%d, down=%d, inactivity=%d", LOG_LEVEL_STATE, 6,
+                     conn->queues.cache.start, 
+                     conn->queues.cache.min,
+                     conn->queues.cache.max, 
+                     conn->queues.cache.up, 
+                     conn->queues.cache.down,
                      conn->queues.cache.inactivity);
         }
     }

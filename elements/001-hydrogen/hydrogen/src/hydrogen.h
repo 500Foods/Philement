@@ -103,6 +103,7 @@
 // Project includes
 #include "config/config.h"
 #include "logging/logging.h"
+#include "mutex/mutex.h"
 #include "network/network.h"
 #include "payload/payload.h"
 #include "queue/queue.h"

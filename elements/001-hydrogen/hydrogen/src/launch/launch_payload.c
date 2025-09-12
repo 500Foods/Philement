@@ -139,46 +139,46 @@ LaunchReadiness check_payload_launch_readiness(void) {
  */
 int launch_payload_subsystem(void) {
     // Begin LAUNCH: PAYLOAD section
-    log_this(SR_PAYLOAD, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_PAYLOAD, "LAUNCH: " SR_PAYLOAD, LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    log_this(SR_PAYLOAD, "LAUNCH: " SR_PAYLOAD, LOG_LEVEL_STATE, 0);
 
     // Step 1: Verify explicit dependencies
-    log_this(SR_PAYLOAD, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE, 0);
 
     // Check Registry dependency
     if (is_subsystem_running_by_name("Registry")) {
-        log_this(SR_PAYLOAD, "    Registry dependency verified (running)", LOG_LEVEL_STATE);
-        log_this(SR_PAYLOAD, "    All dependencies verified", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "    Registry dependency verified (running)", LOG_LEVEL_STATE, 0);
+        log_this(SR_PAYLOAD, "    All dependencies verified", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_PAYLOAD, "    Registry dependency not met", LOG_LEVEL_ERROR);
-        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Failed: Registry dependency not met", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "    Registry dependency not met", LOG_LEVEL_ERROR, 0);
+        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Failed: Registry dependency not met", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     // Step 2: Initialize and load payload cache
-    log_this(SR_PAYLOAD, "  Step 2: Initializing payload cache", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "  Step 2: Initializing payload cache", LOG_LEVEL_STATE, 0);
     bool cache_initialized = initialize_payload_cache();
     if (!cache_initialized) {
-        log_this(SR_PAYLOAD, "    Payload cache initialization failed", LOG_LEVEL_ERROR);
-        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Failed: Cache initialization failed", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "    Payload cache initialization failed", LOG_LEVEL_ERROR, 0);
+        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Failed: Cache initialization failed", LOG_LEVEL_STATE, 0);
         return 0;
     }
-    log_this(SR_PAYLOAD, "    Payload cache initialized successfully", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "    Payload cache initialized successfully", LOG_LEVEL_STATE, 0);
 
     // Load payload into cache
-    log_this(SR_PAYLOAD, "    Loading payload into cache", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "    Loading payload into cache", LOG_LEVEL_STATE, 0);
     bool success = load_payload_cache(app_config, PAYLOAD_MARKER);
     if (!success) {
-        log_this(SR_PAYLOAD, "    Payload cache loading failed", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "    Payload cache loading failed", LOG_LEVEL_ERROR, 0);
         cleanup_payload_cache();
-        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Failed: Cache loading failed", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Failed: Cache loading failed", LOG_LEVEL_STATE, 0);
         return 0;
     }
-    log_this(SR_PAYLOAD, "    Payload cache loaded successfully", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "    Payload cache loaded successfully", LOG_LEVEL_STATE, 0);
 
     // List cached files
     if (is_payload_cache_available()) {
-        log_this(SR_PAYLOAD, "    Available cached payload files:", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "    Available cached payload files:", LOG_LEVEL_STATE, 0);
         PayloadFile *files = NULL;
         size_t num_files = 0;
         size_t capacity = 0;
@@ -186,33 +186,32 @@ int launch_payload_subsystem(void) {
         bool files_retrieved = get_payload_files_by_prefix("", &files, &num_files, &capacity);
         if (files_retrieved && files && num_files > 0) {
             for (size_t i = 0; i < num_files; i++) {
-                log_this(SR_PAYLOAD, "      -> %s", LOG_LEVEL_STATE, files[i].name);
+                log_this(SR_PAYLOAD, "      -> %s", LOG_LEVEL_STATE, 1, files[i].name);
             }
             free(files);
         } else {
-            log_this(SR_PAYLOAD, "      -> No files currently available", LOG_LEVEL_STATE);
+            log_this(SR_PAYLOAD, "      -> No files currently available", LOG_LEVEL_STATE, 0);
         }
     } else {
-        log_this(SR_PAYLOAD, "    Cache not yet available - will be initialized on first access", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "    Cache not yet available - will be initialized on first access", LOG_LEVEL_STATE, 0);
     }
 
     if (success) {
-        log_this(SR_PAYLOAD, "    Payload processing completed successfully", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "    Payload processing completed successfully", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_PAYLOAD, "    Payload processing failed", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "    Payload processing failed", LOG_LEVEL_ERROR, 0);
     }
 
     // Step 3: Update registry and verify state
-    log_this(SR_PAYLOAD, "  Step 3: Updating subsystem registry", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "  Step 3: Updating subsystem registry", LOG_LEVEL_STATE, 0);
     update_subsystem_on_startup(SR_PAYLOAD, success);
 
     SubsystemState final_state = get_subsystem_state(payload_subsystem_id);
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Successfully launched and running", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Successfully launched and running", LOG_LEVEL_STATE, 0);
         return 1;
     } else {
-        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
-                subsystem_state_to_string(final_state));
+        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
         return 0;
     }
 }

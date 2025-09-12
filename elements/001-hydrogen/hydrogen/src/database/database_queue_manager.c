@@ -19,7 +19,7 @@ DatabaseQueueManager* global_queue_manager = NULL;
  * Initialize database queue infrastructure
  */
 bool database_queue_system_init(void) {
-    log_this(SR_DATABASE, "Initializing database queue system", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Initializing database queue system", LOG_LEVEL_STATE, 0);
 
     if (global_queue_manager != NULL) {
         return true;
@@ -34,11 +34,11 @@ bool database_queue_system_init(void) {
     // Create global queue manager with capacity for up to 8 databases
     global_queue_manager = database_queue_manager_create(8);
     if (!global_queue_manager) {
-        log_this(SR_DATABASE, "Failed to create database queue manager", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Failed to create database queue manager", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    log_this(SR_DATABASE, "Database queue system initialized successfully", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Database queue system initialized successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -46,7 +46,7 @@ bool database_queue_system_init(void) {
  * Clean shutdown of database queue infrastructure
  */
 void database_queue_system_destroy(void) {
-    log_this(SR_DATABASE, "Destroying database queue system", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Destroying database queue system", LOG_LEVEL_STATE, 0);
 
     if (global_queue_manager) {
         database_queue_manager_destroy(global_queue_manager);
@@ -59,14 +59,14 @@ void database_queue_system_destroy(void) {
  */
 bool database_queue_manager_add_database(DatabaseQueueManager* manager, DatabaseQueue* db_queue) {
     if (!manager || !db_queue) {
-        log_this(SR_DATABASE, "Invalid parameters for add database", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Invalid parameters for add database", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     pthread_mutex_lock(&manager->manager_lock);
     if (manager->database_count >= manager->max_databases) {
         pthread_mutex_unlock(&manager->manager_lock);
-        log_this(SR_DATABASE, "Cannot add database: maximum capacity reached", LOG_LEVEL_ALERT);
+        log_this(SR_DATABASE, "Cannot add database: maximum capacity reached", LOG_LEVEL_ALERT, 0);
         return false;
     }
 
@@ -75,7 +75,7 @@ bool database_queue_manager_add_database(DatabaseQueueManager* manager, Database
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
-    log_this(dqm_label, "Added to global queue manager", LOG_LEVEL_STATE);
+    log_this(dqm_label, "Added to global queue manager", LOG_LEVEL_STATE, 0);
     free(dqm_label);
     return true;
 }

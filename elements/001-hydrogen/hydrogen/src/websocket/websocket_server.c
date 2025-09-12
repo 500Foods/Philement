@@ -60,7 +60,7 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
         case LWS_CALLBACK_HTTP:
             // Handle HTTP requests and WebSocket upgrade
             {
-                // log_this(SR_WEBSOCKET, "HTTP callback invoked for WebSocket upgrade", LOG_LEVEL_DEBUG);
+                // log_this(SR_WEBSOCKET, "HTTP callback invoked for WebSocket upgrade", LOG_LEVEL_DEBUG, 0);
                 char buf[256];
                 int auth_len = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
                 
@@ -77,7 +77,7 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                                 WebSocketSessionData *session = (WebSocketSessionData *)user_data;
                                 session->authenticated_key = strdup(key);  // Store the authenticated key
                             }
-                            log_this(SR_WEBSOCKET, "HTTP upgrade authentication successful (header)", LOG_LEVEL_STATE);
+                            log_this(SR_WEBSOCKET, "HTTP upgrade authentication successful (header)", LOG_LEVEL_STATE, 0);
                             return 0;
                         }
                     }
@@ -139,7 +139,7 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                                     WebSocketSessionData *session = (WebSocketSessionData *)user_data;
                                     session->authenticated_key = strdup(decoded_key);  // Store the authenticated key
                                 }
-                                log_this(SR_WEBSOCKET, "HTTP upgrade authentication successful (query param)", LOG_LEVEL_STATE);
+                                log_this(SR_WEBSOCKET, "HTTP upgrade authentication successful (query param)", LOG_LEVEL_STATE, 0);
                                 return 0;
                             }
                         }
@@ -147,13 +147,13 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                 }
                 
                 // Authentication failed - no valid header or query param
-                log_this(SR_WEBSOCKET, "Missing authorization header", LOG_LEVEL_ALERT);
+                log_this(SR_WEBSOCKET, "Missing authorization header", LOG_LEVEL_ALERT, 0);
                 return -1;
             }
             
         case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
             // Confirm the WebSocket upgrade
-            log_this(SR_WEBSOCKET, "Confirming WebSocket upgrade", LOG_LEVEL_STATE);
+            log_this(SR_WEBSOCKET, "Confirming WebSocket upgrade", LOG_LEVEL_STATE, 0);
             return 0;
             
         default:
@@ -199,15 +199,13 @@ int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
             // Protocol lifecycle
             case LWS_CALLBACK_PROTOCOL_INIT:
             case LWS_CALLBACK_PROTOCOL_DESTROY:
-                log_this(SR_WEBSOCKET, "Protocol lifecycle callback during shutdown: %d", 
-                        LOG_LEVEL_STATE, true, true, true, reason);
+                log_this(SR_WEBSOCKET, "Protocol lifecycle callback during shutdown: %d", LOG_LEVEL_STATE, 1, reason);
                 return ws_callback_dispatch(wsi, reason, user, in, len);
 
             // Connection cleanup
             case LWS_CALLBACK_WSI_DESTROY:
             case LWS_CALLBACK_CLOSED:
-                log_this(SR_WEBSOCKET, "Connection cleanup callback during shutdown: %d", 
-                        LOG_LEVEL_STATE, true, true, true, reason);
+                log_this(SR_WEBSOCKET, "Connection cleanup callback during shutdown: %d", LOG_LEVEL_STATE, 1, reason);
                 return ws_callback_dispatch(wsi, reason, user, in, len);
 
             // System callbacks
@@ -239,8 +237,7 @@ int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
 
             // Log and allow other callbacks during shutdown
             default:
-                log_this(SR_WEBSOCKET, "Unhandled callback during shutdown: %d", 
-                        LOG_LEVEL_STATE, true, true, true, reason);
+                log_this(SR_WEBSOCKET, "Unhandled callback during shutdown: %d", LOG_LEVEL_STATE, 1, reason);
                 return ws_callback_dispatch(wsi, reason, user, in, len);
         }
 #pragma GCC diagnostic pop
@@ -249,7 +246,7 @@ int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
     // Cast and validate session data for other callbacks
     WebSocketSessionData *session = (WebSocketSessionData *)user;
     if (!session && reason != LWS_CALLBACK_PROTOCOL_INIT) {
-        log_this(SR_WEBSOCKET, "Invalid session data for callback %d", LOG_LEVEL_DEBUG, reason);
+        log_this(SR_WEBSOCKET, "Invalid session data for callback %d", LOG_LEVEL_DEBUG, 1, reason);
         return -1;
     }
 
@@ -265,7 +262,7 @@ void custom_lws_log(int level, const char *line)
     if (ws_context && ws_context->shutdown) {
         int priority = (level == LLL_ERR) ? LOG_LEVEL_DEBUG : 
                       (level == LLL_WARN) ? LOG_LEVEL_ALERT : LOG_LEVEL_STATE;
-        log_this(SR_WEBSOCKET, line, priority);
+        log_this(SR_WEBSOCKET, line, priority, 0);
         return;
     }
 
@@ -287,11 +284,11 @@ void custom_lws_log(int level, const char *line)
             log_line[len-1] = '\0';
         }
         
-        log_this(SR_WEBSOCKET, log_line, priority);
+        log_this(SR_WEBSOCKET, log_line, priority, 0);
         free(log_line);
     } else {
         // If memory allocation fails, use the original line
-        log_this(SR_WEBSOCKET, line, priority);
+        log_this(SR_WEBSOCKET, line, priority, 0);
     }
 }
 
@@ -301,7 +298,7 @@ static void *websocket_server_run(void *arg)
     (void)arg;  // Unused parameter
 
     if (!ws_context || ws_context->shutdown) {
-        log_this(SR_WEBSOCKET, "Invalid context or shutdown state", LOG_LEVEL_DEBUG);
+        log_this(SR_WEBSOCKET, "Invalid context or shutdown state", LOG_LEVEL_DEBUG, 0);
         return NULL;
     }
 
@@ -309,7 +306,7 @@ static void *websocket_server_run(void *arg)
     extern ServiceThreads websocket_threads;
     add_service_thread(&websocket_threads, pthread_self());
 
-    log_this(SR_WEBSOCKET, "Server thread starting", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "Server thread starting", LOG_LEVEL_STATE, 0);
 
     // Enable thread cancellation
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -331,7 +328,7 @@ static void *websocket_server_run(void *arg)
         int n = lws_service(ws_context->lws_context, 50);
         
         if (n < 0 && !ws_context->shutdown) {
-            log_this(SR_WEBSOCKET, "Service error %d", LOG_LEVEL_DEBUG, n);
+            log_this(SR_WEBSOCKET, "Service error %d", LOG_LEVEL_DEBUG, 1, n);
             break;
         }
 
@@ -343,8 +340,7 @@ static void *websocket_server_run(void *arg)
             if (ws_context->active_connections == 0 || shutdown_wait >= max_shutdown_wait) {
                 // Force close any remaining connections
                 if (ws_context->active_connections > 0) {
-                    log_this(SR_WEBSOCKET, "Forcing close of %d remaining connections", 
-                            LOG_LEVEL_ALERT, true, true, true, ws_context->active_connections);
+                    log_this(SR_WEBSOCKET, "Forcing close of %d remaining connections", LOG_LEVEL_ALERT, 1, ws_context->active_connections);
                     lws_cancel_service(ws_context->lws_context);
                     ws_context->active_connections = 0;  // Force reset
                 }
@@ -363,8 +359,7 @@ static void *websocket_server_run(void *arg)
             
             // Log first wait for debugging
             if (shutdown_wait == 0) {
-                log_this(SR_WEBSOCKET, "Waiting for %d connections to close", 
-                        LOG_LEVEL_STATE, true, true, true, ws_context->active_connections);
+                log_this(SR_WEBSOCKET, "Waiting for %d connections to close", LOG_LEVEL_STATE, 1, ws_context->active_connections);
             }
             
             // Wait for condition or timeout
@@ -374,9 +369,10 @@ static void *websocket_server_run(void *arg)
             // Increment counter and log periodic updates
             shutdown_wait++;
             if (shutdown_wait % 10 == 0) {
-                log_this(SR_WEBSOCKET, "Still waiting for %d connections to close (wait: %d/%d)", 
-                        LOG_LEVEL_STATE, true, true, true, 
-                        ws_context->active_connections, shutdown_wait, max_shutdown_wait);
+                log_this(SR_WEBSOCKET, "Still waiting for %d connections to close (wait: %d/%d)", LOG_LEVEL_STATE, 3,
+                    ws_context->active_connections, 
+                    shutdown_wait, 
+                    max_shutdown_wait);
             }
             
             pthread_mutex_unlock(&ws_context->mutex);
@@ -391,7 +387,7 @@ static void *websocket_server_run(void *arg)
         usleep(1000);  // 1ms sleep
     }
 
-    log_this(SR_WEBSOCKET, "Server thread exiting", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "Server thread exiting", LOG_LEVEL_STATE, 0);
     return NULL;
 }
 
@@ -402,13 +398,13 @@ int start_websocket_server(void)
     extern pthread_t websocket_thread;
     
     if (!ws_context) {
-        log_this(SR_WEBSOCKET, "Server not initialized", LOG_LEVEL_DEBUG);
+        log_this(SR_WEBSOCKET, "Server not initialized", LOG_LEVEL_DEBUG, 0);
         return -1;
     }
 
     ws_context->shutdown = 0;
     if (pthread_create(&ws_context->server_thread, NULL, websocket_server_run, NULL)) {
-        log_this(SR_WEBSOCKET, "Failed to create server thread", LOG_LEVEL_DEBUG);
+        log_this(SR_WEBSOCKET, "Failed to create server thread", LOG_LEVEL_DEBUG, 0);
         return -1;
     }
 
@@ -416,7 +412,7 @@ int start_websocket_server(void)
     websocket_thread = ws_context->server_thread;
     add_service_thread(&websocket_threads, ws_context->server_thread);
     
-    log_this(SR_WEBSOCKET, "Server thread created and registered for tracking", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "Server thread created and registered for tracking", LOG_LEVEL_STATE, 0);
 
     return 0;
 }

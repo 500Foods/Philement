@@ -40,6 +40,7 @@ typedef struct DatabaseConnection {
     char* port;            // Database port
     char* user;            // Database user
     char* pass;            // Database password
+    char* bootstrap_query; // Bootstrap query to run after connection (loads QTC)
     DatabaseQueues queues; // Queue configuration for this connection
 } DatabaseConnection;
 

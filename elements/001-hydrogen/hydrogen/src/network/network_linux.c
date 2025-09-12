@@ -107,8 +107,7 @@ bool test_network_interfaces(network_info_t *info) {
         
         // Skip if explicitly disabled in config
         if (is_configured && !is_available) {
-            log_this(SR_NETWORK, "Interface %s: skipped (disabled in config)", LOG_LEVEL_STATE,
-                    iface->name);
+            log_this(SR_NETWORK, "Interface %s: skipped (disabled in config)", LOG_LEVEL_STATE, 1, iface->name);
             continue;
         }
 
@@ -126,12 +125,12 @@ bool test_network_interfaces(network_info_t *info) {
             
             if (interface_up) {
                 success = true;
-                log_this(SR_NETWORK, "Interface %s (%s): up, MTU %d", LOG_LEVEL_STATE,
+                log_this(SR_NETWORK, "Interface %s (%s): up, MTU %d", LOG_LEVEL_STATE, 3,
                         iface->name,
                         iface->is_ipv6[j] ? "IPv6" : "IPv4",
                         mtu);
             } else {
-                log_this(SR_NETWORK, "Interface %s (%s): down", LOG_LEVEL_STATE,
+                log_this(SR_NETWORK, "Interface %s (%s): down", LOG_LEVEL_STATE, 2,
                         iface->name,
                         iface->is_ipv6[j] ? "IPv6" : "IPv4");
             }
@@ -173,7 +172,7 @@ network_info_t *get_network_info(void) {
 
     struct ifaddrs *ifaddr;
     if (getifaddrs(&ifaddr) == -1) {
-        log_this(SR_NETWORK, "getifaddrs failed: %s", LOG_LEVEL_ERROR, strerror(errno));
+        log_this(SR_NETWORK, "getifaddrs failed: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
         free(info);
         return NULL;
     }
@@ -260,7 +259,7 @@ int find_available_port(int start_port) {
     struct sockaddr_in addr;
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
-        log_this(SR_NETWORK, "Failed to create socket: %s", LOG_LEVEL_ERROR, strerror(errno));
+        log_this(SR_NETWORK, "Failed to create socket: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
         return -1;
     }
 
@@ -276,7 +275,7 @@ int find_available_port(int start_port) {
     }
 
     close(sock);
-    log_this(SR_NETWORK, "No available ports found", LOG_LEVEL_DEBUG);
+    log_this(SR_NETWORK, "No available ports found", LOG_LEVEL_DEBUG, 0);
     return -1;
 }
 
@@ -289,7 +288,7 @@ network_info_t *filter_enabled_interfaces(const network_info_t *raw_net_info, co
 
     network_info_t *filtered_info = malloc(sizeof(network_info_t));
     if (!filtered_info) {
-        log_this(SR_NETWORK, "Failed to allocate filtered network info", LOG_LEVEL_ERROR);
+        log_this(SR_NETWORK, "Failed to allocate filtered network info", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -315,8 +314,7 @@ network_info_t *filter_enabled_interfaces(const network_info_t *raw_net_info, co
 
         // Skip if explicitly disabled in config
         if (is_configured && !is_available) {
-            log_this(SR_NETWORK, "Interface %s: filtered out (disabled in config)", LOG_LEVEL_STATE,
-                    iface->name);
+            log_this(SR_NETWORK, "Interface %s: filtered out (disabled in config)", LOG_LEVEL_STATE, 1, iface->name);
             continue;
         }
 
@@ -342,7 +340,7 @@ network_info_t *filter_enabled_interfaces(const network_info_t *raw_net_info, co
             filtered_iface->mac[sizeof(filtered_iface->mac) - 1] = '\0';
         }
 
-        log_this(SR_NETWORK, "Interface %s: enabled and included", LOG_LEVEL_STATE, iface->name);
+        log_this(SR_NETWORK, "Interface %s: enabled and included", LOG_LEVEL_STATE, 1, iface->name);
 
         // Set primary index if not set yet
         if (filtered_info->primary_index == -1) {
@@ -352,8 +350,7 @@ network_info_t *filter_enabled_interfaces(const network_info_t *raw_net_info, co
         filtered_info->count++;
     }
 
-    log_this(SR_NETWORK, "Filtered %d interfaces, %d remaining", LOG_LEVEL_STATE,
-            raw_net_info->count, filtered_info->count);
+    log_this(SR_NETWORK, "Filtered %d interfaces, %d remaining", LOG_LEVEL_STATE, 2, raw_net_info->count, filtered_info->count);
 
     return filtered_info;
 }
@@ -379,12 +376,12 @@ network_info_t *filter_enabled_interfaces(const network_info_t *raw_net_info, co
 //    - Status updates
 //    - Final verification
 bool network_shutdown(void) {
-    log_this(SR_NETWORK, "Starting network shutdown...", LOG_LEVEL_STATE);
+    log_this(SR_NETWORK, "Starting network shutdown...", LOG_LEVEL_STATE, 0);
 
     // Get current network interfaces for status reporting
     network_info_t *info = get_network_info();
     if (!info) {
-        log_this(SR_NETWORK, "Failed to get network info for shutdown", LOG_LEVEL_ERROR);
+        log_this(SR_NETWORK, "Failed to get network info for shutdown", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -395,14 +392,13 @@ bool network_shutdown(void) {
             continue;
         }
 
-        log_this(SR_NETWORK, "Interface %s: cleaning up application resources",
-                LOG_LEVEL_STATE, info->interfaces[i].name);
+        log_this(SR_NETWORK, "Interface %s: cleaning up application resources",LOG_LEVEL_STATE, 1, info->interfaces[i].name);
     }
 
     // Clean up network info
     free_network_info(info);
 
     // Report successful shutdown - we don't modify system interfaces
-    log_this(SR_NETWORK, "Network subsystem shutdown completed successfully", LOG_LEVEL_STATE);
+    log_this(SR_NETWORK, "Network subsystem shutdown completed successfully", LOG_LEVEL_STATE, 0);
     return true;
 }

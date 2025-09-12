@@ -82,9 +82,12 @@ static const DatabaseDependencyConfig db_configs[] = {
      int level = (status == LIB_STATUS_GOOD) ? LOG_LEVEL_STATE :
                  (status == LIB_STATUS_WARNING) ? LOG_LEVEL_ALERT :
                  (status == LIB_STATUS_CRITICAL) ? LOG_LEVEL_FATAL : LOG_LEVEL_ERROR;
-     log_this(SR_DEPCHECK, "%s Expecting: %s Found: %s (%s) Status: %s",
-              level, name, expected ? expected : "(default)", found ? found : "None",
-              method, get_status_string(status));
+     log_this(SR_DEPCHECK, "%s Expecting: %s Found: %s (%s) Status: %s", level, 5,
+        name, 
+        expected ? expected : "(default)", 
+        found ? found : "None",
+        method, 
+        get_status_string(status));
  }
  
  static const char *parse_db2_version(const char *output, char *buffer, size_t size) {
@@ -195,7 +198,7 @@ static const DatabaseDependencyConfig db_configs[] = {
      for (const char **path = config->paths; *path; path++) {
          void *handle = dlopen(*path, RTLD_LAZY);
          if (!handle) {
-//             log_this(SR_DEPCHECK, "Failed to open %s at %s: %s", LOG_LEVEL_DEBUG, config->name, *path, dlerror());
+//             log_this(SR_DEPCHECK, "Failed to open %s at %s: %s", LOG_LEVEL_DEBUG, 3, config->name, *path, dlerror());
              continue;
          }
  
@@ -213,7 +216,7 @@ static const DatabaseDependencyConfig db_configs[] = {
                              buffer[len] = '\0';
                              version = buffer;
                              *method = "API";
-//                             log_this(SR_DEPCHECK, "%s: Found version %s via direct call", LOG_LEVEL_DEBUG, config->name, version);
+//                             log_this(SR_DEPCHECK, "%s: Found version %s via direct call", LOG_LEVEL_DEBUG, 2, config->name, version);
                              dlclose(handle);
                              return version;
                          }
@@ -225,31 +228,31 @@ static const DatabaseDependencyConfig db_configs[] = {
                  void *func_ptr = dlsym(handle, *func_name);
                  const char *err = dlerror();
                  if (err || !func_ptr) {
-//                     log_this(SR_DEPCHECK, "%s: dlsym(%s) failed: %s", LOG_LEVEL_DEBUG, config->name, *func_name, err ? err : "NULL");
+//                     log_this(SR_DEPCHECK, "%s: dlsym(%s) failed: %s", LOG_LEVEL_DEBUG, 2, config->name, *func_name, err ? err : "NULL");
                      continue;
                  }
  
                  if (strcmp(config->name, "libtar") == 0 && strcmp(*func_name, "libtar_version") == 0) {
                      const char *version_str = (const char *)func_ptr;
-//                     log_this(SR_DEPCHECK, "%s: Raw version_str at %p", LOG_LEVEL_DEBUG, config->name, func_ptr);
+//                     log_this(SR_DEPCHECK, "%s: Raw version_str at %p", LOG_LEVEL_DEBUG, 2, config->name, func_ptr);
                      if (version_str) {
                          volatile char probe = *version_str; // Force read to catch segfault
                          if (probe != '\0') {
                              size_t len = strnlen(version_str, size - 1);
-//                             log_this(SR_DEPCHECK, "%s: Version string length: %zu", LOG_LEVEL_DEBUG, config->name, len);
+//                             log_this(SR_DEPCHECK, "%s: Version string length: %zu", LOG_LEVEL_DEBUG, 2, config->name, len);
                              if (len > 0 && len < size - 1) {
                                  strncpy(buffer, version_str, len);
                                  buffer[len] = '\0';
                                  version = buffer;
                                  *method = "SYM";
-//                                 log_this(SR_DEPCHECK, "%s: Found version %s via %s (data symbol)", LOG_LEVEL_DEBUG, config->name, version, *func_name);
+//                                 log_this(SR_DEPCHECK, "%s: Found version %s via %s (data symbol)", LOG_LEVEL_DEBUG, 3, config->name, version, *func_name);
                                  dlclose(handle);
                                  return version;
                              }
                          }
                      }
                      version = "NoVersionFound";
-//                     log_this(SR_DEPCHECK, "%s: %s is empty or inaccessible", LOG_LEVEL_DEBUG, config->name, *func_name);
+//                     log_this(SR_DEPCHECK, "%s: %s is empty or inaccessible", LOG_LEVEL_DEBUG, 2, config->name, *func_name);
                      dlclose(handle);
                      return version;
                  }
@@ -262,7 +265,7 @@ static const DatabaseDependencyConfig db_configs[] = {
                               ver >> 24, (ver >> 12) & 0xFFF, ver & 0xFFF);
                      version = buffer;
                      *method = "SYM";
-//                     log_this(SR_DEPCHECK, "%s: Found version %s via %s", LOG_LEVEL_DEBUG, config->name, version, *func_name);
+//                     log_this(SR_DEPCHECK, "%s: Found version %s via %s", LOG_LEVEL_DEBUG, 2, config->name, version, *func_name);
                      dlclose(handle);
                      return version;
                  }
@@ -281,7 +284,7 @@ static const DatabaseDependencyConfig db_configs[] = {
                      temp = func.void_func();
                  }
                  if (!temp) {
-//                     log_this(SR_DEPCHECK, "%s: Version function %s returned NULL", LOG_LEVEL_DEBUG, config->name, *func_name);
+//                     log_this(SR_DEPCHECK, "%s: Version function %s returned NULL", LOG_LEVEL_DEBUG, 2, config->name, *func_name);
                      continue;
                  }
  
@@ -301,7 +304,7 @@ static const DatabaseDependencyConfig db_configs[] = {
                          buffer[len] = '\0';
                          version = buffer;
                          *method = "SYM";
-//                         log_this(SR_DEPCHECK, "%s: Found version %s via %s", LOG_LEVEL_DEBUG, config->name, version, *func_name);
+//                         log_this(SR_DEPCHECK, "%s: Found version %s via %s", LOG_LEVEL_DEBUG, 3, config->name, version, *func_name);
                          dlclose(handle);
                          return version;
                      }
@@ -313,7 +316,7 @@ static const DatabaseDependencyConfig db_configs[] = {
          return version;
      }
      if (strcmp(config->name, "libtar") == 0) {
-//         log_this(SR_DEPCHECK, "libtar not found; installed at /usr/lib64/libtar.so.1? Run 'ldd ./hydrogen' and 'sudo ldconfig'", LOG_LEVEL_DEBUG);
+//         log_this(SR_DEPCHECK, "libtar not found; installed at /usr/lib64/libtar.so.1? Run 'ldd ./hydrogen' and 'sudo ldconfig'", LOG_LEVEL_DEBUG, 0);
      }
      return "None";
  }
@@ -346,8 +349,8 @@ static const DatabaseDependencyConfig db_configs[] = {
  }
  
  int check_library_dependencies(const AppConfig *config) {
-     log_this(SR_DEPCHECK, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-     log_this(SR_DEPCHECK, "DEPENDENCY CHECK", LOG_LEVEL_STATE);
+     log_this(SR_DEPCHECK, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+     log_this(SR_DEPCHECK, "DEPENDENCY CHECK", LOG_LEVEL_STATE, 0);
      int critical_count = 0;
  
      bool web = config ? (config->webserver.enable_ipv4 || config->webserver.enable_ipv6) : false;
@@ -382,7 +385,7 @@ static const DatabaseDependencyConfig db_configs[] = {
          if (status == LIB_STATUS_CRITICAL && db.required) critical_count++;
      }
 
-     log_this(SR_DEPCHECK, "Completed dependency check, critical issues: %d", LOG_LEVEL_STATE, critical_count);
+     log_this(SR_DEPCHECK, "Completed dependency check, critical issues: %d", 1, LOG_LEVEL_STATE, critical_count);
      return critical_count;
  }
  

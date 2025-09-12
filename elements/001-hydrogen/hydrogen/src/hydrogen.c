@@ -110,29 +110,28 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
 
     ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
     if (len == -1) {
-        log_this(SR_CRASH, "Failed to read /proc/self/exe: %s", LOG_LEVEL_ERROR, strerror(errno), NULL);
+        log_this(SR_CRASH, "Failed to read /proc/self/exe: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
         _exit(128 + sig);
     }
     exe_path[len] = '\0';
 
     int pid = getpid();
     if (strnlen(exe_path, PATH_MAX) + 32 >= sizeof(core_name)) {
-        log_this(SR_CRASH, "Path too long for core filename", LOG_LEVEL_ERROR, NULL);
+        log_this(SR_CRASH, "Path too long for core filename", LOG_LEVEL_ERROR, 0);
         _exit(128 + sig);
     }
     size_t needed = strlen(exe_path) + strlen(".core.") + 20; // 20 for PID digits + null terminator
     if (needed >= sizeof(core_name)) {
-        log_this(SR_CRASH, "Path too long for core filename", LOG_LEVEL_ERROR, NULL);
+        log_this(SR_CRASH, "Path too long for core filename", LOG_LEVEL_ERROR, 0);
         _exit(128 + sig);
     }
     snprintf(core_name, sizeof(core_name), "%.*s.core.%d", (int)(sizeof(core_name) - 20), exe_path, pid);
 
-    log_this(SR_CRASH, "Signal %d received (cause: %d), generating core dump at %s",
-             LOG_LEVEL_ERROR, sig, info->si_code, core_name);
+    log_this(SR_CRASH, "Signal %d received (cause: %d), generating core dump at %s", LOG_LEVEL_ERROR, 3, sig, info->si_code, core_name);
 
     FILE *out = fopen(core_name, "w");
     if (!out) {
-        log_this(SR_CRASH, "Failed to open %s: %s", LOG_LEVEL_ERROR, core_name, strerror(errno), NULL);
+        log_this(SR_CRASH, "Failed to open %s: %s", LOG_LEVEL_ERROR, 2, core_name, strerror(errno));
         _exit(128 + sig);
     }
 
@@ -140,7 +139,7 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     FILE *maps = fopen("/proc/self/maps", "r");
     FILE *mem = fopen("/proc/self/mem", "r");
     if (!maps || !mem) {
-        log_this(SR_CRASH, "Failed to open /proc/self/{maps,mem}: %s", LOG_LEVEL_ERROR, strerror(errno), NULL);
+        log_this(SR_CRASH, "Failed to open /proc/self/{maps,mem}: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
         if (maps) fclose(maps);
         if (mem) fclose(mem);
         fclose(out);
@@ -236,7 +235,7 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
      */
     ucontext_t *uc = (ucontext_t *)ucontext;
     if (!uc) {
-        log_this(SR_CRASH, "Invalid ucontext in crash handler", LOG_LEVEL_ERROR, NULL);
+        log_this(SR_CRASH, "Invalid ucontext in crash handler", LOG_LEVEL_ERROR, 0);
         fclose(mem);
         fclose(out);
         _exit(128 + sig);
@@ -317,7 +316,7 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     fclose(mem);
     fclose(out);
 
-    log_this(SR_CRASH, "Run: gdb -q %s %s", LOG_LEVEL_ERROR, exe_path, core_name, NULL);
+    log_this(SR_CRASH, "Run: gdb -q %s %s", LOG_LEVEL_ERROR, 2, exe_path, core_name);
 
 #ifdef HYDROGEN_COVERAGE_BUILD
     __gcov_dump();
@@ -338,7 +337,7 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
  */
 static void test_crash_handler(int sig) {
     (void)sig;
-    log_this(SR_CRASH, "Received SIGUSR1, simulating crash via null dereference", LOG_LEVEL_ERROR);
+    log_this(SR_CRASH, "Received SIGUSR1, simulating crash via null dereference", LOG_LEVEL_ERROR, 0);
     volatile int *ptr = NULL;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnull-dereference"
@@ -357,11 +356,11 @@ static void test_crash_handler(int sig) {
  */
 static void config_dump_handler(int sig) {
     (void)sig;
-    log_this(SR_CONFIG_CURRENT, "Received SIGUSR2, dumping current configuration", LOG_LEVEL_STATE);
+    log_this(SR_CONFIG_CURRENT, "Received SIGUSR2, dumping current configuration", LOG_LEVEL_STATE, 0);
     if (app_config) {
         dumpAppConfig(app_config, NULL);
     } else {
-        log_this(SR_CONFIG_CURRENT, "No configuration available to dump", LOG_LEVEL_ERROR);
+        log_this(SR_CONFIG_CURRENT, "No configuration available to dump", LOG_LEVEL_ERROR, 0);
     }
 }
 
@@ -427,12 +426,12 @@ int main(int argc, char *argv[]) {
      // Store program arguments for restart
      store_program_args(argc, argv);
      if (prctl(PR_SET_DUMPABLE, 1) == -1) {
-         log_this(SR_STARTUP, "Failed to set dumpable: %s", LOG_LEVEL_ERROR, strerror(errno));
+         log_this(SR_STARTUP, "Failed to set dumpable: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
      }
  
      struct rlimit core_limit = { 10 * 1024 * 1024, 10 * 1024 * 1024 };
      if (setrlimit(RLIMIT_CORE, &core_limit) == -1) {
-         log_this(SR_STARTUP, "Failed to enable core dumps: %s", LOG_LEVEL_ERROR, strerror(errno));
+         log_this(SR_STARTUP, "Failed to enable core dumps: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
      }
  
      main_thread_id = pthread_self();
@@ -468,7 +467,7 @@ int main(int argc, char *argv[]) {
      if (sigaction(SIGSEGV, &sa_crash, NULL) == -1 ||
          sigaction(SIGABRT, &sa_crash, NULL) == -1 ||
          sigaction(SIGFPE, &sa_crash, NULL) == -1) {
-         log_this(SR_STARTUP, "Failed to set crash signal handlers: %s", LOG_LEVEL_ERROR, strerror(errno));
+         log_this(SR_STARTUP, "Failed to set crash signal handlers: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
          return 1;
      }
 
@@ -482,7 +481,7 @@ int main(int argc, char *argv[]) {
      sigemptyset(&sa_test.sa_mask);
      sa_test.sa_flags = SA_RESTART;
      if (sigaction(SIGUSR1, &sa_test, NULL) == -1) {
-         log_this(SR_STARTUP, "Failed to set test crash signal handler: %s", LOG_LEVEL_ERROR, strerror(errno));
+         log_this(SR_STARTUP, "Failed to set test crash signal handler: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
      }
 
      /* 4. Config dump signal handler (SIGUSR2)
@@ -495,7 +494,7 @@ int main(int argc, char *argv[]) {
      sigemptyset(&sa_dump.sa_mask);
      sa_dump.sa_flags = SA_RESTART;
      if (sigaction(SIGUSR2, &sa_dump, NULL) == -1) {
-         log_this(SR_STARTUP, "Failed to set config dump signal handler: %s", LOG_LEVEL_ERROR, strerror(errno));
+         log_this(SR_STARTUP, "Failed to set config dump signal handler: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
      }
 
      if (!startup_hydrogen(config_path)) {
@@ -510,7 +509,7 @@ int main(int argc, char *argv[]) {
          int wait_result = pthread_cond_timedwait(&terminate_cond, &terminate_mutex, &ts);
          pthread_mutex_unlock(&terminate_mutex);
          if (wait_result != 0 && wait_result != ETIMEDOUT) {
-             log_this(SR_CRASH, "Unexpected error in main event loop: %d", LOG_LEVEL_ERROR, wait_result);
+             log_this(SR_CRASH, "Unexpected error in main event loop: %d", LOG_LEVEL_ERROR, 1, wait_result);
          }
      }
  
