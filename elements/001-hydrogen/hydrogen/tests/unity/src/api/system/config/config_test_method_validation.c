@@ -60,12 +60,15 @@ static char* create_json_loading_error(const char *filename, const char *error_d
     return error_msg;
 }
 
+// Global dummy context for connection state
+static int global_dummy_context = 1;
+
 // Mock function: Validate connection context for first call
 static bool is_first_connection_call(void **con_cls) {
     if (!con_cls) return false;
 
     if (*con_cls == NULL) {
-        *con_cls = (void *)1; // Mark as initialized
+        *con_cls = &global_dummy_context; // Mark as initialized
         return true; // First call
     }
 
@@ -76,8 +79,8 @@ static bool is_first_connection_call(void **con_cls) {
 static bool should_continue_connection(void **con_cls) {
     if (!con_cls || !*con_cls) return false;
 
-    // If context is set to 1, it means we should continue
-    return (*con_cls == (void *)1);
+    // If context is set to our dummy context, it means we should continue
+    return (*con_cls == &global_dummy_context);
 }
 
 // Mock function: Reset connection context
@@ -273,12 +276,12 @@ void test_is_first_connection_call_first_time(void) {
     bool result = is_first_connection_call(&con_cls);
 
     TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_EQUAL((void *)1, con_cls); // Should be marked as initialized
+    TEST_ASSERT_EQUAL(&global_dummy_context, con_cls); // Should be marked as initialized
 }
 
 // Test first connection call detection - subsequent time
 void test_is_first_connection_call_subsequent_time(void) {
-    void *con_cls = (void *)1; // Already initialized
+    void *con_cls = &global_dummy_context; // Already initialized
     bool result = is_first_connection_call(&con_cls);
 
     TEST_ASSERT_FALSE(result);
@@ -292,7 +295,7 @@ void test_is_first_connection_call_null_context(void) {
 
 // Test connection continuation check - initialized
 void test_should_continue_connection_initialized(void) {
-    void *con_cls = (void *)1;
+    void *con_cls = &global_dummy_context;
     bool result = should_continue_connection(&con_cls);
     TEST_ASSERT_TRUE(result);
 }
@@ -305,7 +308,7 @@ void test_should_continue_connection_null(void) {
 
 // Test connection context reset - basic case
 void test_reset_connection_context_basic(void) {
-    void *con_cls = (void *)1;
+    void *con_cls = &global_dummy_context;
     reset_connection_context(&con_cls);
     TEST_ASSERT_NULL(con_cls);
 }

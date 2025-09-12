@@ -216,7 +216,6 @@ static TerminalSession* find_or_create_terminal_session(struct lws *wsi)
     }
 
     // Get terminal configuration from global config
-    extern AppConfig *app_config;
     if (!app_config || !app_config->terminal.enabled) {
         log_this(SR_WEBSOCKET, "Terminal subsystem not enabled", LOG_LEVEL_ERROR, 0);
         return NULL;

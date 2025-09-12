@@ -13,4 +13,8 @@
 bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
 bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt);
 
+// Utility functions for prepared statement cache
+bool sqlite_add_prepared_statement(PreparedStatementCache* cache, const char* name);
+bool sqlite_remove_prepared_statement(PreparedStatementCache* cache, const char* name);
+
 #endif // SQLITE_PREPARED_H

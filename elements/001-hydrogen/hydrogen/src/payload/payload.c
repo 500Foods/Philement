@@ -166,7 +166,6 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     }
 
     // Check all state flags atomically
-    extern volatile sig_atomic_t web_server_shutdown;
 
     // Prevent extraction during shutdown
     if (server_stopping || web_server_shutdown) {
@@ -452,7 +451,6 @@ bool launch_payload(const AppConfig *config, const char *marker) {
     }
 
     // Check all state flags atomically
-    extern volatile sig_atomic_t web_server_shutdown;
 
     // Prevent launch during shutdown
     if (server_stopping || web_server_shutdown) {

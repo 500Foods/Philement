@@ -295,8 +295,6 @@ LaunchReadiness check_websocket_launch_readiness(void) {
 // 3. Support flexible deployment
 // 4. Enable different security policies
 int launch_websocket_subsystem(void) {
-    extern volatile sig_atomic_t websocket_server_shutdown;
-    
     log_this(SR_WEBSOCKET, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_WEBSOCKET, "LAUNCH: " SR_WEBSOCKET, LOG_LEVEL_STATE, 0);
 

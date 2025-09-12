@@ -28,7 +28,8 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
     
     // Initialize connection context if needed
     if (*con_cls == NULL) {
-        *con_cls = (void *)1;
+        static int connection_initialized = 1;
+        *con_cls = &connection_initialized;
         return MHD_YES;
     }
     

@@ -41,7 +41,8 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
     
     // Initialize connection context if needed
     if (*con_cls == NULL) {
-        *con_cls = (void *)1;  // Mark as initialized
+        static int connection_initialized = 1;
+        *con_cls = &connection_initialized;  // Mark as initialized
         return MHD_YES;  // Continue processing
     }
     

@@ -158,6 +158,9 @@ run_single_unity_test_parallel() {
         fi
         exit_code=1
     fi
+
+    # not useed anymore perhaps?
+    ignored_count=0
     
     echo "SUBTEST_END|${subtest_number}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}" >> "${output_file}"
     echo "${exit_code}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}" > "${result_file}"

@@ -51,7 +51,6 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
     ws_context->total_connections++;
 
     // Register connection thread
-    extern ServiceThreads websocket_threads;
     add_service_thread(&websocket_threads, pthread_self());
 
     pthread_mutex_unlock(&ws_context->mutex);
@@ -98,7 +97,6 @@ int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session)
     }
 
     // Remove thread from tracking
-    extern ServiceThreads websocket_threads;
     remove_service_thread(&websocket_threads, pthread_self());
 
     // During shutdown, broadcast to all waiting threads when last connection closes

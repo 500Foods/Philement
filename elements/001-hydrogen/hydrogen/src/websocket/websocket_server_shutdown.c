@@ -87,7 +87,6 @@ void stop_websocket_server(void)
             log_this(SR_WEBSOCKET, "Thread cancellation timed out, forcing cleanup",4,3,2,1, LOG_LEVEL_ALERT,0);
             
             // Force cleanup anyway as a last resort
-            extern ServiceThreads websocket_threads;
             pthread_t server_thread = ws_context->server_thread;
             remove_service_thread(&websocket_threads, server_thread);
             
@@ -143,7 +142,6 @@ void cleanup_websocket_server(void)
     }
     
     // Aggressively terminate any lingering threads BEFORE context destruction
-    extern ServiceThreads websocket_threads;
     
     // First log what threads are still active
     log_this(SR_WEBSOCKET, "Checking for remaining threads before cleanup", LOG_LEVEL_STATE,4,3,2,1,0);

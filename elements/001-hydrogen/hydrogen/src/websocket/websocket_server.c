@@ -303,7 +303,6 @@ static void *websocket_server_run(void *arg)
     }
 
     // Register main server thread
-    extern ServiceThreads websocket_threads;
     add_service_thread(&websocket_threads, pthread_self());
 
     log_this(SR_WEBSOCKET, "Server thread starting", LOG_LEVEL_STATE, 0);
@@ -312,7 +311,6 @@ static void *websocket_server_run(void *arg)
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
-    extern volatile sig_atomic_t server_running;
     int shutdown_wait = 0;
     const int max_shutdown_wait = 40;  // 2 seconds total (40 * 50ms)
 
@@ -394,8 +392,6 @@ static void *websocket_server_run(void *arg)
 // Start the WebSocket server
 int start_websocket_server(void)
 {
-    extern ServiceThreads websocket_threads;
-    extern pthread_t websocket_thread;
     
     if (!ws_context) {
         log_this(SR_WEBSOCKET, "Server not initialized", LOG_LEVEL_DEBUG, 0);

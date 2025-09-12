@@ -55,7 +55,7 @@ bool init_api_endpoints(void) {
     // Try to initialize OIDC service, but continue even if it fails
     bool oidc_initialized = init_oidc_endpoints(NULL);  // NULL for default context
     if (!oidc_initialized) {
-        log_this(SR_API, "OIDC initialization failed, continuing with system endpoints only", 1, LOG_LEVEL_ERROR);
+        log_this(SR_API, "OIDC initialization failed, continuing with system endpoints only", LOG_LEVEL_ERROR, 0);
     } else {
         log_this(SR_API, "OIDC endpoints initialized", LOG_LEVEL_STATE, 0);
     }

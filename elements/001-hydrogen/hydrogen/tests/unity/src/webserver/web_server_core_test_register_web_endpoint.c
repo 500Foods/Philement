@@ -46,8 +46,8 @@ static void test_register_web_endpoint_null_prefix(void) {
     // Test null prefix in endpoint
     WebServerEndpoint endpoint = {0};
     endpoint.prefix = NULL;
-    endpoint.validator = (bool (*)(const char*))1; // Non-null function pointer
-    endpoint.handler = (enum MHD_Result (*)(void*, struct MHD_Connection*, const char*, const char*, const char*, const char*, size_t*, void**))1;
+    endpoint.validator = always_true_validator; // Non-null function pointer
+    endpoint.handler = dummy_handler;
 
     TEST_ASSERT_FALSE(register_web_endpoint(&endpoint));
 }
@@ -57,7 +57,7 @@ static void test_register_web_endpoint_null_validator(void) {
     WebServerEndpoint endpoint = {0};
     endpoint.prefix = "/test";
     endpoint.validator = NULL;
-    endpoint.handler = (enum MHD_Result (*)(void*, struct MHD_Connection*, const char*, const char*, const char*, const char*, size_t*, void**))1;
+    endpoint.handler = dummy_handler;
 
     TEST_ASSERT_FALSE(register_web_endpoint(&endpoint));
 }
@@ -66,7 +66,7 @@ static void test_register_web_endpoint_null_handler(void) {
     // Test null handler in endpoint
     WebServerEndpoint endpoint = {0};
     endpoint.prefix = "/test";
-    endpoint.validator = (bool (*)(const char*))1;
+    endpoint.validator = always_true_validator;
     endpoint.handler = NULL;
 
     TEST_ASSERT_FALSE(register_web_endpoint(&endpoint));
@@ -76,8 +76,8 @@ static void test_register_web_endpoint_valid_endpoint(void) {
     // Test registering a valid endpoint
     WebServerEndpoint endpoint = {0};
     endpoint.prefix = "/test";
-    endpoint.validator = (bool (*)(const char*))1; // Non-null function pointer
-    endpoint.handler = (enum MHD_Result (*)(void*, struct MHD_Connection*, const char*, const char*, const char*, const char*, size_t*, void**))1;
+    endpoint.validator = always_true_validator; // Non-null function pointer
+    endpoint.handler = dummy_handler;
 
     // First test that registration succeeds
     bool result = register_web_endpoint(&endpoint);
@@ -88,13 +88,13 @@ static void test_register_web_endpoint_duplicate_prefix(void) {
     // Test registering endpoint with duplicate prefix
     WebServerEndpoint endpoint1 = {0};
     endpoint1.prefix = "/duplicate";
-    endpoint1.validator = (bool (*)(const char*))1;
-    endpoint1.handler = (enum MHD_Result (*)(void*, struct MHD_Connection*, const char*, const char*, const char*, const char*, size_t*, void**))1;
+    endpoint1.validator = always_true_validator;
+    endpoint1.handler = dummy_handler;
 
     WebServerEndpoint endpoint2 = {0};
     endpoint2.prefix = "/duplicate"; // Same prefix
-    endpoint2.validator = (bool (*)(const char*))1;
-    endpoint2.handler = (enum MHD_Result (*)(void*, struct MHD_Connection*, const char*, const char*, const char*, const char*, size_t*, void**))1;
+    endpoint2.validator = always_true_validator;
+    endpoint2.handler = dummy_handler;
 
     TEST_ASSERT_TRUE(register_web_endpoint(&endpoint1));
     TEST_ASSERT_FALSE(register_web_endpoint(&endpoint2));
@@ -152,8 +152,8 @@ static void test_register_web_endpoint_empty_prefix(void) {
     // Test registering with empty prefix - current implementation behavior is uncertain
     WebServerEndpoint endpoint = {0};
     endpoint.prefix = "";
-    endpoint.validator = (bool (*)(const char*))1; // Non-null function pointer
-    endpoint.handler = (enum MHD_Result (*)(void*, struct MHD_Connection*, const char*, const char*, const char*, const char*, size_t*, void**))1;
+    endpoint.validator = always_true_validator; // Non-null function pointer
+    endpoint.handler = dummy_handler;
 
     register_web_endpoint(&endpoint);
     // Just verify it doesn't crash - the result depends on implementation

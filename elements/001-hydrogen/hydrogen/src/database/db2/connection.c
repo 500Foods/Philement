@@ -13,6 +13,16 @@
 SQLAllocHandle_t SQLAllocHandle_ptr = NULL;
 SQLConnect_t SQLConnect_ptr = NULL;
 SQLExecDirect_t SQLExecDirect_ptr = NULL;
+SQLFetch_t SQLFetch_ptr = NULL;
+SQLGetData_t SQLGetData_ptr = NULL;
+SQLNumResultCols_t SQLNumResultCols_ptr = NULL;
+SQLRowCount_t SQLRowCount_ptr = NULL;
+SQLFreeHandle_t SQLFreeHandle_ptr = NULL;
+SQLDisconnect_t SQLDisconnect_ptr = NULL;
+SQLEndTran_t SQLEndTran_ptr = NULL;
+SQLPrepare_t SQLPrepare_ptr = NULL;
+SQLExecute_t SQLExecute_ptr = NULL;
+SQLFreeStmt_t SQLFreeStmt_ptr = NULL;
 
 // Library handle
 void* libdb2_handle = NULL;
@@ -52,15 +62,35 @@ bool load_libdb2_functions(void) {
     SQLAllocHandle_ptr = (SQLAllocHandle_t)dlsym(libdb2_handle, "SQLAllocHandle");
     SQLConnect_ptr = (SQLConnect_t)dlsym(libdb2_handle, "SQLConnect");
     SQLExecDirect_ptr = (SQLExecDirect_t)dlsym(libdb2_handle, "SQLExecDirect");
+    SQLFetch_ptr = (SQLFetch_t)dlsym(libdb2_handle, "SQLFetch");
+    SQLGetData_ptr = (SQLGetData_t)dlsym(libdb2_handle, "SQLGetData");
+    SQLNumResultCols_ptr = (SQLNumResultCols_t)dlsym(libdb2_handle, "SQLNumResultCols");
+    SQLRowCount_ptr = (SQLRowCount_t)dlsym(libdb2_handle, "SQLRowCount");
+    SQLFreeHandle_ptr = (SQLFreeHandle_t)dlsym(libdb2_handle, "SQLFreeHandle");
+    SQLDisconnect_ptr = (SQLDisconnect_t)dlsym(libdb2_handle, "SQLDisconnect");
+    SQLEndTran_ptr = (SQLEndTran_t)dlsym(libdb2_handle, "SQLEndTran");
+    SQLPrepare_ptr = (SQLPrepare_t)dlsym(libdb2_handle, "SQLPrepare");
+    SQLExecute_ptr = (SQLExecute_t)dlsym(libdb2_handle, "SQLExecute");
+    SQLFreeStmt_ptr = (SQLFreeStmt_t)dlsym(libdb2_handle, "SQLFreeStmt");
 #pragma GCC diagnostic pop
 
-    // Check if all functions were loaded
-    if (!SQLAllocHandle_ptr || !SQLConnect_ptr || !SQLExecDirect_ptr) {
+    // Check if all required functions were loaded
+    if (!SQLAllocHandle_ptr || !SQLConnect_ptr || !SQLExecDirect_ptr ||
+        !SQLFetch_ptr || !SQLGetData_ptr || !SQLNumResultCols_ptr ||
+        !SQLFreeHandle_ptr || !SQLDisconnect_ptr) {
         log_this(SR_DATABASE, "Failed to load all required libdb2 functions", LOG_LEVEL_ERROR, 0);
         dlclose(libdb2_handle);
         libdb2_handle = NULL;
         pthread_mutex_unlock(&libdb2_mutex);
         return false;
+    }
+
+    // Optional functions - log if not available
+    if (!SQLEndTran_ptr) {
+        log_this(SR_DATABASE, "SQLEndTran function not available - transactions may be limited", LOG_LEVEL_DEBUG, 0);
+    }
+    if (!SQLPrepare_ptr || !SQLExecute_ptr || !SQLFreeStmt_ptr) {
+        log_this(SR_DATABASE, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_DEBUG, 0);
     }
 
     pthread_mutex_unlock(&libdb2_mutex);

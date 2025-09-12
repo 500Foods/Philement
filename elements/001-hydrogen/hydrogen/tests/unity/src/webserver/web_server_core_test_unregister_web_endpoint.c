@@ -13,6 +13,21 @@
 #include <string.h>
 #include <stdlib.h>
 
+// Dummy functions for testing
+static bool dummy_validator(const char* url) {
+    (void)url; // Unused parameter
+    return true;
+}
+
+static enum MHD_Result dummy_handler(void *cls, struct MHD_Connection *connection,
+                                   const char *url, const char *method,
+                                   const char *version, const char *upload_data,
+                                   size_t *upload_data_size, void **con_cls) {
+    (void)cls; (void)connection; (void)url; (void)method; (void)version;
+    (void)upload_data; (void)upload_data_size; (void)con_cls;
+    return MHD_YES;
+}
+
 void setUp(void) {
     // Set up test fixtures, if any
 }
@@ -44,8 +59,8 @@ static void test_unregister_web_endpoint_valid_prefix(void) {
     // Test unregistering a valid registered endpoint
     WebServerEndpoint endpoint = {0};
     endpoint.prefix = "/test_unregister";
-    endpoint.validator = (bool (*)(const char*))1;
-    endpoint.handler = (enum MHD_Result (*)(void*, struct MHD_Connection*, const char*, const char*, const char*, const char*, size_t*, void**))1;
+    endpoint.validator = dummy_validator;
+    endpoint.handler = dummy_handler;
 
     // First register the endpoint
     bool registered = register_web_endpoint(&endpoint);
@@ -63,8 +78,8 @@ static void test_unregister_web_endpoint_multiple_calls(void) {
     // Test multiple calls to unregister the same prefix
     WebServerEndpoint endpoint = {0};
     endpoint.prefix = "/test_multiple";
-    endpoint.validator = (bool (*)(const char*))1;
-    endpoint.handler = (enum MHD_Result (*)(void*, struct MHD_Connection*, const char*, const char*, const char*, const char*, size_t*, void**))1;
+    endpoint.validator = dummy_validator;
+    endpoint.handler = dummy_handler;
 
     // Register endpoint
     bool registered = register_web_endpoint(&endpoint);

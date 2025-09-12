@@ -58,7 +58,6 @@ bool database_subsystem_init(void) {
     pthread_mutex_unlock(&database_subsystem_mutex);
 
     // Initialize database thread tracking
-    extern ServiceThreads database_threads;
     init_service_threads(&database_threads, SR_DATABASE);
 
     log_this(SR_DATABASE, "Database subsystem initialization completed successfully", LOG_LEVEL_STATE, 0);

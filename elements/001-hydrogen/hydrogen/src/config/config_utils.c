@@ -98,8 +98,9 @@ bool process_level_config(json_t* root, int* level_ptr, const char* level_name,
     const char* indent = get_indent(temp_path);
     
     // Log with level name format
-    log_this(category, "%s%s: %d (%s)%s", LOG_LEVEL_STATE, 4,
-            indent, key, 
+    log_this(category, "%s%s: %d (%s)%s", LOG_LEVEL_STATE, 5,
+            indent, 
+            key, 
             *level_ptr, 
             level_name ? level_name : "unknown",
             using_default ? " *" : "");

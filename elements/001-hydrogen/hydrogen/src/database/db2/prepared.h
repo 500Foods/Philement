@@ -18,4 +18,8 @@ bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt
 bool db2_add_prepared_statement(PreparedStatementCache* cache, const char* name);
 bool db2_remove_prepared_statement(PreparedStatementCache* cache, const char* name);
 
+// Utility functions for prepared statement cache
+bool db2_add_prepared_statement(PreparedStatementCache* cache, const char* name);
+bool db2_remove_prepared_statement(PreparedStatementCache* cache, const char* name);
+
 #endif // DATABASE_ENGINE_DB2_PREPARED_H

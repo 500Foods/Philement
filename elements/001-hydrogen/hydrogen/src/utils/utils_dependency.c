@@ -385,7 +385,7 @@ static const DatabaseDependencyConfig db_configs[] = {
          if (status == LIB_STATUS_CRITICAL && db.required) critical_count++;
      }
 
-     log_this(SR_DEPCHECK, "Completed dependency check, critical issues: %d", 1, LOG_LEVEL_STATE, critical_count);
+     log_this(SR_DEPCHECK, "Completed dependency check, critical issues: %d", LOG_LEVEL_STATE, 1, critical_count);
      return critical_count;
  }
  

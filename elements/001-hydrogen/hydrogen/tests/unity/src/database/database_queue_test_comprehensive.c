@@ -13,7 +13,6 @@ void test_database_queue_comprehensive_all_functions(void);
 
 void setUp(void) {
     // Initialize queue system for testing
-    extern int queue_system_initialized;
     if (!queue_system_initialized) {
         queue_system_init();
     }
