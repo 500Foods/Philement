@@ -5,22 +5,15 @@
  * Provides unified interface for PostgreSQL, SQLite, MySQL, DB2, and future engines.
  */
 
-#define _POSIX_C_SOURCE 200809L
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <assert.h>
-#include <time.h>
-
 #include "../hydrogen.h"
 #include "database.h"
 #include "database_queue.h"
 
 // Forward declarations for database engines
-DatabaseEngineInterface* database_engine_postgresql_get_interface(void);
-DatabaseEngineInterface* database_engine_sqlite_get_interface(void);
-DatabaseEngineInterface* database_engine_mysql_get_interface(void);
-DatabaseEngineInterface* database_engine_db2_get_interface(void);
+DatabaseEngineInterface* postgresql_get_interface(void);
+DatabaseEngineInterface* sqlite_get_interface(void);
+DatabaseEngineInterface* mysql_get_interface(void);
+DatabaseEngineInterface* db2_get_interface(void);
 
 // Global engine registry
 static DatabaseEngineInterface* engine_registry[DB_ENGINE_MAX] = {NULL};
@@ -47,27 +40,27 @@ bool database_engine_init(void) {
     memset(engine_registry, 0, sizeof(engine_registry));
 
     // Register all engines
-    DatabaseEngineInterface* postgresql_engine = database_engine_postgresql_get_interface();
+    DatabaseEngineInterface* postgresql_engine = postgresql_get_interface();
     if (postgresql_engine) {
         log_this(SR_DATABASE, "Registering PostgreSQL engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
-                 postgresql_engine->name ? postgresql_engine->name : "NULL", 
+                 postgresql_engine->name ? postgresql_engine->name : "NULL",
                  DB_ENGINE_POSTGRESQL);
         engine_registry[DB_ENGINE_POSTGRESQL] = postgresql_engine;
     } else {
         log_this(SR_DATABASE, "CRITICAL ERROR: Failed to get PostgreSQL engine interface!", LOG_LEVEL_ERROR, 0);
     }
 
-    DatabaseEngineInterface* sqlite_engine = database_engine_sqlite_get_interface();
+    DatabaseEngineInterface* sqlite_engine = sqlite_get_interface();
     if (sqlite_engine) {
         engine_registry[DB_ENGINE_SQLITE] = sqlite_engine;
     }
 
-    DatabaseEngineInterface* mysql_engine = database_engine_mysql_get_interface();
+    DatabaseEngineInterface* mysql_engine = mysql_get_interface();
     if (mysql_engine) {
         engine_registry[DB_ENGINE_MYSQL] = mysql_engine;
     }
 
-    DatabaseEngineInterface* db2_engine = database_engine_db2_get_interface();
+    DatabaseEngineInterface* db2_engine = db2_get_interface();
     if (db2_engine) {
         engine_registry[DB_ENGINE_DB2] = db2_engine;
     }

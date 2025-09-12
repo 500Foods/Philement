@@ -78,6 +78,7 @@
 #include <string.h>         // String manipulation (e.g., strcpy, strlen, memcmp)
 #include <strings.h>        // Case-insensitive/BSD string functions (e.g., strcasecmp, bcopy; POSIX extension)
 #include <time.h>           // Time/date manipulation (e.g., time, localtime, strftime)
+#include <semaphore.h>      // 
 
 // POSIX-specific includes
 #include <sys/ioctl.h>      // I/O control operations (e.g., ioctl; POSIX)

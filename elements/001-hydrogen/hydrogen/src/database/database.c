@@ -5,12 +5,6 @@
  * subsystem initialization, database management, and API functions.
  */
 
-#define _POSIX_C_SOURCE 200809L
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <time.h>
-
 #include "../hydrogen.h"
 #include "database.h"
 #include "database_queue.h"

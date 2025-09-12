@@ -13,10 +13,6 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
-// Standard includes
-#include <stdbool.h>
-#include <time.h>
-
 // Project includes
 #include "../hydrogen.h"
 #include "database_queue.h"
