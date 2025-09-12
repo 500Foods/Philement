@@ -285,7 +285,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     log_this(designator, "About to read engine_type field", LOG_LEVEL_ERROR, 0);
     
     // Force compiler to not optimize this access
-    volatile DatabaseEngine* volatile_engine_ptr = &connection->engine_type;
+    const volatile DatabaseEngine* volatile_engine_ptr = &connection->engine_type;
     DatabaseEngine captured_engine_type = *volatile_engine_ptr;
 
     log_this(designator, "Successfully read engine_type: %d", LOG_LEVEL_ERROR, 1, (int)captured_engine_type);

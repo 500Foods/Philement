@@ -44,7 +44,7 @@ static char** process_config_lines(const char *raw_text, size_t *line_count) {
     char *text_copy = strdup(raw_text);
     if (!text_copy) return NULL;
 
-    char *line = strtok(text_copy, "\n");
+    const char *line = strtok(text_copy, "\n");
     while (line) {
         size_t marker_pos = find_appconfig_marker(line);
         if (marker_pos > 0) {  // Found APPCONFIG marker

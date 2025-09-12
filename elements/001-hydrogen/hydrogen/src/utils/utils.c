@@ -99,7 +99,7 @@ char* format_double_with_commas(double value, int decimals, char* formatted, siz
     }
 
     // Find decimal point position
-    char* decimal_point = strchr(temp, '.');
+    const char* decimal_point = strchr(temp, '.');
 
     // Calculate integer part length
     size_t integer_part_len = decimal_point ? (size_t)(decimal_point - temp) : strlen(temp);

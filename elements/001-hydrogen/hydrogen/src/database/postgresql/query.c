@@ -38,7 +38,7 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
 
     log_this(designator, "postgresql_execute_query: Parameters validated, proceeding", LOG_LEVEL_DEBUG, 0);
 
-    PostgresConnection* pg_conn = (PostgresConnection*)connection->connection_handle;
+    const PostgresConnection* pg_conn = (const PostgresConnection*)connection->connection_handle;
     if (!pg_conn || !pg_conn->connection) {
         log_this(designator, "PostgreSQL execute_query: Invalid connection handle", LOG_LEVEL_ERROR, 0);
         return false;
@@ -217,7 +217,7 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
         return false;
     }
 
-    PostgresConnection* pg_conn = (PostgresConnection*)connection->connection_handle;
+    const PostgresConnection* pg_conn = (const PostgresConnection*)connection->connection_handle;
     if (!pg_conn || !pg_conn->connection) {
         return false;
     }

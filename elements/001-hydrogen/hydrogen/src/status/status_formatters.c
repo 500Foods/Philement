@@ -114,7 +114,7 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
 
     // Format server start time as ISO string
     char iso_time[32];
-    struct tm *tm_info = gmtime(&metrics->server_start_time);
+    const struct tm *tm_info = gmtime(&metrics->server_start_time);
     strftime(iso_time, sizeof(iso_time), "%Y-%m-%dT%H:%M:%S.000Z", tm_info);
     json_object_set_new(status, "server_started", json_string(iso_time));
 

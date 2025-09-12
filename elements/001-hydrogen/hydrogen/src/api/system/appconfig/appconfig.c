@@ -56,7 +56,7 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
         return MHD_NO;
     }
 
-    char *config_marker = strstr(first_line, "APPCONFIG");
+    const char *config_marker = strstr(first_line, "APPCONFIG");
     if (!config_marker) {
         free(raw_text);
         log_this(SR_API, "Could not find APPCONFIG marker", LOG_LEVEL_ERROR, 0);
@@ -77,7 +77,7 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
     lines[line_count++] = strdup(config_marker);
 
     // Process remaining lines
-    char *line;
+    const char *line;
     while ((line = strtok(NULL, "\n"))) {
         new_lines = realloc(lines, (line_count + 1) * sizeof(char*));
         if (!new_lines) {

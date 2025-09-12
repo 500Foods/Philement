@@ -52,7 +52,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
     }
 
     // Get server context if available
-    WebSocketServerContext *ctx = ws_context;
+    const WebSocketServerContext *ctx = ws_context;
     if (!ctx) {
         ctx = (WebSocketServerContext *)lws_context_user(lws_get_context(wsi));
     }
@@ -314,7 +314,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                             key_param += 4; // Skip "key="
                             
                             // Find end of key value (next & or end of string)
-                            char *key_end = strchr(key_param, '&');
+                            const char *key_end = strchr(key_param, '&');
                             char key_value[256];
                             if (key_end) {
                                 size_t key_len = (size_t)(key_end - key_param);

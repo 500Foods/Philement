@@ -37,7 +37,7 @@
 int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                   void *user, void *in, size_t len);
 int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
-                      void *user, void *in, size_t len);
+                      void *user, const void *in, size_t len);
 void custom_lws_log(int level, const char *line);
 
 /* Global variables */
@@ -98,7 +98,7 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
                             key_param += 4; // Skip "key="
                             
                             // Find end of key value (next & or end of string)
-                            char *key_end = strchr(key_param, '&');
+                            const char *key_end = strchr(key_param, '&');
                             char key_value[256];
                             if (key_end) {
                                 size_t key_len = (size_t)(key_end - key_param);
@@ -165,7 +165,7 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
 // Main callback dispatcher for all WebSocket events
 int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
-                           void *user, void *in, size_t len)
+                       void *user, const void *in, size_t len)
 {
     // Allow certain callbacks without session data
 #pragma GCC diagnostic push
@@ -184,7 +184,7 @@ int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
 #pragma GCC diagnostic pop
 
     // Get server context from user data during vhost creation
-    WebSocketServerContext *ctx = lws_context_user(lws_get_context(wsi));
+    const WebSocketServerContext *ctx = lws_context_user(lws_get_context(wsi));
     if (ctx && ctx->vhost_creating) {
         // Allow all callbacks during vhost creation
         return ws_callback_dispatch(wsi, reason, user, in, len);
@@ -244,7 +244,7 @@ int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
     }
 
     // Cast and validate session data for other callbacks
-    WebSocketSessionData *session = (WebSocketSessionData *)user;
+    const WebSocketSessionData *session = (const WebSocketSessionData *)user;
     if (!session && reason != LWS_CALLBACK_PROTOCOL_INIT) {
         log_this(SR_WEBSOCKET, "Invalid session data for callback %d", LOG_LEVEL_DEBUG, 1, reason);
         return -1;

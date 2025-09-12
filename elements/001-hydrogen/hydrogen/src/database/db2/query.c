@@ -32,7 +32,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
 
     log_this(designator, "db2_execute_query: Parameters validated, proceeding", LOG_LEVEL_DEBUG, 0);
 
-    DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
+    const DB2Connection* db2_conn = (const DB2Connection*)connection->connection_handle;
     if (!db2_conn || !db2_conn->connection) {
         log_this(designator, "DB2 execute_query: Invalid connection handle", LOG_LEVEL_ERROR, 0);
         return false;
@@ -101,7 +101,7 @@ bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* s
         return false;
     }
 
-    DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
+    const DB2Connection* db2_conn = (const DB2Connection*)connection->connection_handle;
     if (!db2_conn || !db2_conn->connection) {
         return false;
     }

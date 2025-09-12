@@ -637,6 +637,7 @@ static int call_protected_api(const char *access_token, char *error_message, siz
 }
 
 /* Callback function for curl to store received data */
+// cppcheck-suppress[constParameterCallback] - libcurl callback signature requires void*
 static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
     size_t realsize = size * nmemb;
     struct MemoryStruct *mem = (struct MemoryStruct *)userp;
@@ -878,7 +879,7 @@ static void print_json_value(json_t *value, const char *prefix) {
                     strcmp(key, "nbf") == 0 || strcmp(key, "auth_time") == 0) {
                     time_t timestamp = (time_t)json_integer_value(val);
                     char timestr[64];
-                    struct tm *tm_info = localtime(&timestamp);
+                    const struct tm *tm_info = localtime(&timestamp);
                     strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
                     printf("%s%s: %lld (%s)\n", prefix, key, json_integer_value(val), timestr);
                 } else {

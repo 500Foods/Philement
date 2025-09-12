@@ -148,7 +148,7 @@ void test_get_iso8601_timestamp_multiple_calls(void) {
 void test_get_iso8601_timestamp_length_consistency(void) {
     // Test that length is always consistent
     for (int i = 0; i < 10; i++) {
-        char* timestamp = get_iso8601_timestamp();
+        const char* timestamp = get_iso8601_timestamp();
         TEST_ASSERT_EQUAL_INT(20, strlen(timestamp));
     }
 }

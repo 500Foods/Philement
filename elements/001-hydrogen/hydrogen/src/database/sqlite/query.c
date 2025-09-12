@@ -83,7 +83,7 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
 
     log_this(designator, "sqlite_execute_query: Parameters validated, proceeding", LOG_LEVEL_DEBUG, 0);
 
-    SQLiteConnection* sqlite_conn = (SQLiteConnection*)connection->connection_handle;
+    const SQLiteConnection* sqlite_conn = (const SQLiteConnection*)connection->connection_handle;
     if (!sqlite_conn || !sqlite_conn->db) {
         log_this(designator, "SQLite execute_query: Invalid connection handle", LOG_LEVEL_ERROR, 0);
         return false;
@@ -163,7 +163,7 @@ bool sqlite_execute_prepared(DatabaseHandle* connection, const PreparedStatement
         return false;
     }
 
-    SQLiteConnection* sqlite_conn = (SQLiteConnection*)connection->connection_handle;
+    const SQLiteConnection* sqlite_conn = (const SQLiteConnection*)connection->connection_handle;
     if (!sqlite_conn || !sqlite_conn->db) {
         return false;
     }

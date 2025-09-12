@@ -238,7 +238,7 @@ void test_context_availability_check(void) {
 // Tests for session validation logic
 void test_session_validation_requirements(void) {
     // Test session validation requirements for different callbacks
-    WebSocketSessionData *session = NULL;
+    const WebSocketSessionData *session = NULL;
     enum lws_callback_reasons reason;
     
     // Test callbacks that require session validation
@@ -270,7 +270,7 @@ void test_session_validation_requirements(void) {
 
 void test_session_validation_with_valid_session(void) {
     // Test session validation with valid session data
-    WebSocketSessionData *session = &test_session;
+    const WebSocketSessionData *session = &test_session;
     enum lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
     
     bool session_valid = (session != NULL);

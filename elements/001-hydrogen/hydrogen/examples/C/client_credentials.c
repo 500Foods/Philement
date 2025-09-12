@@ -387,19 +387,20 @@ static int call_protected_api(const char *access_token, char *error_message, siz
 }
 
 /* Callback function for curl to store received data
- * 
+ *
  * This function is called by curl when data is received from an HTTP request.
  * It dynamically resizes the memory buffer to store all incoming data.
- * 
+ *
  * Parameters:
  *   contents - Pointer to the received data
  *   size - Size of each data element
  *   nmemb - Number of data elements
  *   userp - User-provided pointer (points to a MemoryStruct)
- * 
+ *
  * Returns:
  *   Number of bytes processed (should be size*nmemb if successful)
  */
+// cppcheck-suppress[constParameterCallback] - libcurl callback signature requires void*
 static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
     size_t realsize = size * nmemb;
     struct MemoryStruct *mem = (struct MemoryStruct *)userp;
@@ -692,7 +693,7 @@ static int display_token_info(const char *token) {
                 strcmp(key, "nbf") == 0 || strcmp(key, "auth_time") == 0) {
                 time_t timestamp = (time_t)json_integer_value(value);
                 char timestr[64];
-                struct tm *tm_info = localtime(&timestamp);
+                const struct tm *tm_info = localtime(&timestamp);
                 strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
                 
                 int now = current_time();

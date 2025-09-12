@@ -221,7 +221,7 @@ bool check_all_landing_readiness(void) {
     if (restart_requested) {
         // Get initial config path from stored program args
         char** program_args = get_program_args();
-        char* config_path = (program_args && program_args[1]) ? program_args[1] : NULL;
+        const char* config_path = (program_args && program_args[1]) ? program_args[1] : NULL;
         
         // Land Registry as final step
         log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
