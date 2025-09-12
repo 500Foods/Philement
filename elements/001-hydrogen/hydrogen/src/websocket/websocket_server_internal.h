@@ -85,6 +85,6 @@ int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, cons
 
 // Main callback dispatcher
 int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
-                        void *user, void *in, size_t len);
+                        void *user, const void *in, size_t len);
 
 #endif // WEBSOCKET_SERVER_INTERNAL_H

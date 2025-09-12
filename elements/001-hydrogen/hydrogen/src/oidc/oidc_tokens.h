@@ -112,31 +112,31 @@ void oidc_free_token_claims(OIDCTokenClaims *claims);
 
 /*
  * Generate an ID token
- * 
+ *
  * @param context Token context
  * @param claims Token claims
  * @return JWT string (caller must free)
  */
-char* oidc_generate_id_token(OIDCTokenContext *context, OIDCTokenClaims *claims);
+char* oidc_generate_id_token(const OIDCTokenContext *context, const OIDCTokenClaims *claims);
 
 /*
  * Generate an access token
- * 
+ *
  * @param context Token context
  * @param claims Token claims
  * @param reference Opaque reference token value
  * @return JWT string (caller must free)
  */
-char* oidc_generate_access_token(OIDCTokenContext *context, OIDCTokenClaims *claims, char **reference);
+char* oidc_generate_access_token(const OIDCTokenContext *context, const OIDCTokenClaims *claims, char **reference);
 
 /*
  * Generate a refresh token
- * 
+ *
  * @param context Token context
  * @param claims Token claims
  * @return Reference token string (caller must free)
  */
-char* oidc_generate_refresh_token(OIDCTokenContext *context, OIDCTokenClaims *claims);
+char* oidc_generate_refresh_token(const OIDCTokenContext *context, const OIDCTokenClaims *claims);
 
 /*
  * Generate an authorization code
@@ -172,25 +172,25 @@ bool oidc_validate_id_token(OIDCTokenContext *context, const char *id_token,
 
 /*
  * Validate an access token
- * 
+ *
  * @param context Token context
  * @param access_token Access token to validate
  * @param claims Output parameter for parsed claims (optional, caller must free)
  * @return true if token is valid, false otherwise
  */
-bool oidc_validate_access_token(OIDCTokenContext *context, const char *access_token,
-                               OIDCTokenClaims **claims);
+bool oidc_validate_access_token(const OIDCTokenContext *context, const char *access_token,
+                                OIDCTokenClaims **claims);
 
 /*
  * Validate a refresh token
- * 
+ *
  * @param context Token context
  * @param refresh_token Refresh token to validate
  * @param client_id Client identifier
  * @return true if token is valid, false otherwise
  */
-bool oidc_validate_refresh_token(OIDCTokenContext *context, const char *refresh_token,
-                                const char *client_id);
+bool oidc_validate_refresh_token(const OIDCTokenContext *context, const char *refresh_token,
+                                 const char *client_id);
 
 /*
  * Validate an authorization code
@@ -208,15 +208,15 @@ char* oidc_validate_authorization_code(OIDCTokenContext *context, const char *co
 
 /*
  * Revoke a token
- * 
+ *
  * @param context Token context
  * @param token Token to revoke
  * @param token_type_hint Token type hint (optional)
  * @param client_id Client identifier
  * @return true if token was revoked, false otherwise
  */
-bool oidc_revoke_token(OIDCTokenContext *context, const char *token,
-                      const char *token_type_hint, const char *client_id);
+bool oidc_revoke_token(const OIDCTokenContext *context, const char *token,
+                       const char *token_type_hint, const char *client_id);
 
 /*
  * Get token status
