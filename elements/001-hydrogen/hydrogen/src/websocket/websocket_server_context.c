@@ -111,7 +111,6 @@ void ws_context_destroy(WebSocketServerContext* ctx)
         pthread_mutex_unlock(&ctx->mutex);
 
         // Cancel any remaining threads before context destruction
-        extern ServiceThreads websocket_threads;
         update_service_thread_metrics(&websocket_threads);
         if (websocket_threads.thread_count > 0) {
             log_this(SR_WEBSOCKET, "Cancelling %d remaining threads", LOG_LEVEL_ALERT, 1, websocket_threads.thread_count);
@@ -128,8 +127,6 @@ void ws_context_destroy(WebSocketServerContext* ctx)
         }
 
         // Check if we're in a signal-based shutdown (SIGINT/SIGTERM) or restart (SIGHUP) for rapid exit
-        extern volatile sig_atomic_t signal_based_shutdown;
-        extern volatile sig_atomic_t restart_requested;
         if (signal_based_shutdown || restart_requested) {
             log_this(SR_WEBSOCKET, "Skipping expensive lws_context_destroy during %s", LOG_LEVEL_STATE, 1, signal_based_shutdown ? "signal shutdown" : "restart");
             // OS will clean up resources on process exit/restart, no need for graceful cleanup

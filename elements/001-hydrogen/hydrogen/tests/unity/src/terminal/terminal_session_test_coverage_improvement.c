@@ -73,7 +73,6 @@ static SessionManager *original_manager = NULL;
 
 void setUp(void) {
     // Save original manager state
-    extern SessionManager *global_session_manager;
     original_manager = global_session_manager;
 
     // Reset global state for testing
@@ -90,7 +89,6 @@ void setUp(void) {
 
 void tearDown(void) {
     // Restore original manager state
-    extern SessionManager *global_session_manager;
     if (global_session_manager) {
         cleanup_session_manager();
     }
@@ -108,7 +106,6 @@ void test_init_session_manager_success(void) {
     TEST_ASSERT_TRUE(result);
 
     // Verify manager was created
-    extern SessionManager *global_session_manager;
     TEST_ASSERT_NOT_NULL(global_session_manager);
     TEST_ASSERT_EQUAL(10, global_session_manager->max_sessions);
     TEST_ASSERT_EQUAL(300, global_session_manager->idle_timeout_seconds);
@@ -126,7 +123,6 @@ void test_init_session_manager_already_initialized(void) {
     TEST_ASSERT_TRUE(result2);
 
     // Manager should retain original values
-    extern SessionManager *global_session_manager;
     TEST_ASSERT_EQUAL(10, global_session_manager->max_sessions);
     TEST_ASSERT_EQUAL(300, global_session_manager->idle_timeout_seconds);
 }
@@ -143,7 +139,6 @@ void test_init_session_manager_mutex_failure(void) {
  */
 
 void test_cleanup_session_manager_not_initialized(void) {
-    extern SessionManager *global_session_manager;
     global_session_manager = NULL;
 
     // Should not crash
@@ -157,7 +152,6 @@ void test_cleanup_session_manager_with_sessions(void) {
     TEST_ASSERT_TRUE(init_result);
 
     // Create a mock session for cleanup
-    extern SessionManager *global_session_manager;
     TerminalSession *session = calloc(1, sizeof(TerminalSession));
     TEST_ASSERT_NOT_NULL(session);
 
@@ -180,7 +174,6 @@ void test_cleanup_session_manager_with_sessions(void) {
  */
 
 void test_create_terminal_session_null_manager(void) {
-    extern SessionManager *global_session_manager;
     global_session_manager = NULL;
 
     TerminalSession *result = create_terminal_session("/bin/bash", 24, 80);
@@ -231,7 +224,6 @@ void test_create_terminal_session_success(void) {
  */
 
 void test_get_terminal_session_null_manager(void) {
-    extern SessionManager *global_session_manager;
     global_session_manager = NULL;
 
     TerminalSession *result = get_terminal_session("test_session_123");
@@ -259,7 +251,6 @@ void test_get_terminal_session_found(void) {
     TEST_ASSERT_TRUE(init_result);
 
     // Create and add a mock session
-    extern SessionManager *global_session_manager;
     TerminalSession *session = calloc(1, sizeof(TerminalSession));
     TEST_ASSERT_NOT_NULL(session);
 
@@ -284,7 +275,6 @@ void test_get_terminal_session_found(void) {
  */
 
 void test_remove_terminal_session_null_manager(void) {
-    extern SessionManager *global_session_manager;
     global_session_manager = NULL;
 
     TerminalSession *session = calloc(1, sizeof(TerminalSession));
@@ -364,7 +354,6 @@ void test_update_session_activity_success(void) {
  */
 
 void test_cleanup_expired_sessions_no_manager(void) {
-    extern SessionManager *global_session_manager;
     global_session_manager = NULL;
 
     int result = cleanup_expired_sessions();
@@ -384,7 +373,6 @@ void test_cleanup_expired_sessions_with_expired(void) {
     TEST_ASSERT_TRUE(init_result);
 
     // Create a mock session with old activity time
-    extern SessionManager *global_session_manager;
     TerminalSession *session = calloc(1, sizeof(TerminalSession));
     TEST_ASSERT_NOT_NULL(session);
 
@@ -513,7 +501,6 @@ void test_read_data_from_session_success(void) {
  */
 
 void test_get_session_manager_stats_null_manager(void) {
-    extern SessionManager *global_session_manager;
     global_session_manager = NULL;
 
     size_t active, max;
@@ -537,7 +524,6 @@ void test_get_session_manager_stats_success(void) {
  */
 
 void test_list_active_sessions_null_manager(void) {
-    extern SessionManager *global_session_manager;
     global_session_manager = NULL;
 
     char **session_ids = NULL;
@@ -585,7 +571,6 @@ void test_list_active_sessions_with_sessions(void) {
  */
 
 void test_terminate_all_sessions_no_manager(void) {
-    extern SessionManager *global_session_manager;
     global_session_manager = NULL;
 
     int result = terminate_all_sessions();
@@ -604,7 +589,6 @@ void test_terminate_all_sessions_with_sessions(void) {
     TEST_ASSERT_EQUAL(1, result);
 
     // Session should be cleaned up
-    extern SessionManager *global_session_manager;
     TEST_ASSERT_NULL(global_session_manager->active_sessions);
     TEST_ASSERT_EQUAL(0, global_session_manager->session_count);
 }
@@ -614,7 +598,6 @@ void test_terminate_all_sessions_with_sessions(void) {
  */
 
 void test_session_manager_has_capacity_no_manager(void) {
-    extern SessionManager *global_session_manager;
     global_session_manager = NULL;
 
     bool result = session_manager_has_capacity();

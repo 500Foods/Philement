@@ -24,7 +24,6 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     }
 
     // Initialize the global queue system if not already done
-    extern int queue_system_initialized;
     if (!queue_system_initialized) {
         queue_system_init();
     }

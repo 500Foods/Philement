@@ -13,23 +13,23 @@
 mysql_init_t mysql_init_ptr = NULL;
 mysql_real_connect_t mysql_real_connect_ptr = NULL;
 mysql_query_t mysql_query_ptr = NULL;
-// mysql_store_result_t mysql_store_result_ptr = NULL;
-// mysql_num_rows_t mysql_num_rows_ptr = NULL;
-// mysql_num_fields_t mysql_num_fields_ptr = NULL;
-// mysql_fetch_row_t mysql_fetch_row_ptr = NULL;
-// mysql_fetch_fields_t mysql_fetch_fields_ptr = NULL;
-// mysql_free_result_t mysql_free_result_ptr = NULL;
-// mysql_error_t mysql_error_ptr = NULL;
-// mysql_close_t mysql_close_ptr = NULL;
-// mysql_options_t mysql_options_ptr = NULL;
-// mysql_ping_t mysql_ping_ptr = NULL;
-// mysql_autocommit_t mysql_autocommit_ptr = NULL;
-// mysql_commit_t mysql_commit_ptr = NULL;
-// mysql_rollback_t mysql_rollback_ptr = NULL;
-// mysql_stmt_init_t mysql_stmt_init_ptr = NULL;
-// mysql_stmt_prepare_t mysql_stmt_prepare_ptr = NULL;
-// mysql_stmt_execute_t mysql_stmt_execute_ptr = NULL;
-// mysql_stmt_close_t mysql_stmt_close_ptr = NULL;
+mysql_store_result_t mysql_store_result_ptr = NULL;
+mysql_num_rows_t mysql_num_rows_ptr = NULL;
+mysql_num_fields_t mysql_num_fields_ptr = NULL;
+mysql_fetch_row_t mysql_fetch_row_ptr = NULL;
+mysql_fetch_fields_t mysql_fetch_fields_ptr = NULL;
+mysql_free_result_t mysql_free_result_ptr = NULL;
+mysql_error_t mysql_error_ptr = NULL;
+mysql_close_t mysql_close_ptr = NULL;
+mysql_options_t mysql_options_ptr = NULL;
+mysql_ping_t mysql_ping_ptr = NULL;
+mysql_autocommit_t mysql_autocommit_ptr = NULL;
+mysql_commit_t mysql_commit_ptr = NULL;
+mysql_rollback_t mysql_rollback_ptr = NULL;
+mysql_stmt_init_t mysql_stmt_init_ptr = NULL;
+mysql_stmt_prepare_t mysql_stmt_prepare_ptr = NULL;
+mysql_stmt_execute_t mysql_stmt_execute_ptr = NULL;
+mysql_stmt_close_t mysql_stmt_close_ptr = NULL;
 
 // Library handle
 void* libmysql_handle = NULL;
@@ -75,32 +75,49 @@ bool load_libmysql_functions(void) {
     mysql_init_ptr = (mysql_init_t)dlsym(libmysql_handle, "mysql_init");
     mysql_real_connect_ptr = (mysql_real_connect_t)dlsym(libmysql_handle, "mysql_real_connect");
     mysql_query_ptr = (mysql_query_t)dlsym(libmysql_handle, "mysql_query");
-    // mysql_store_result_ptr = (mysql_store_result_t)dlsym(libmysql_handle, "mysql_store_result");
-    // mysql_num_rows_ptr = (mysql_num_rows_t)dlsym(libmysql_handle, "mysql_num_rows");
-    // mysql_num_fields_ptr = (mysql_num_fields_t)dlsym(libmysql_handle, "mysql_num_fields");
-    // mysql_fetch_row_ptr = (mysql_fetch_row_t)dlsym(libmysql_handle, "mysql_fetch_row");
-    // mysql_fetch_fields_ptr = (mysql_fetch_fields_t)dlsym(libmysql_handle, "mysql_fetch_fields");
-    // mysql_free_result_ptr = (mysql_free_result_t)dlsym(libmysql_handle, "mysql_free_result");
-    // mysql_error_ptr = (mysql_error_t)dlsym(libmysql_handle, "mysql_error");
-    // mysql_close_ptr = (mysql_close_t)dlsym(libmysql_handle, "mysql_close");
-    // mysql_options_ptr = (mysql_options_t)dlsym(libmysql_handle, "mysql_options");
-    // mysql_ping_ptr = (mysql_ping_t)dlsym(libmysql_handle, "mysql_ping");
-    // mysql_autocommit_ptr = (mysql_autocommit_t)dlsym(libmysql_handle, "mysql_autocommit");
-    // mysql_commit_ptr = (mysql_commit_t)dlsym(libmysql_handle, "mysql_commit");
-    // mysql_rollback_ptr = (mysql_rollback_t)dlsym(libmysql_handle, "mysql_rollback");
-    // mysql_stmt_init_ptr = (mysql_stmt_init_t)dlsym(libmysql_handle, "mysql_stmt_init");
-    // mysql_stmt_prepare_ptr = (mysql_stmt_prepare_t)dlsym(libmysql_handle, "mysql_stmt_prepare");
-    // mysql_stmt_execute_ptr = (mysql_stmt_execute_t)dlsym(libmysql_handle, "mysql_stmt_execute");
-    // mysql_stmt_close_ptr = (mysql_stmt_close_t)dlsym(libmysql_handle, "mysql_stmt_close");
+    mysql_store_result_ptr = (mysql_store_result_t)dlsym(libmysql_handle, "mysql_store_result");
+    mysql_num_rows_ptr = (mysql_num_rows_t)dlsym(libmysql_handle, "mysql_num_rows");
+    mysql_num_fields_ptr = (mysql_num_fields_t)dlsym(libmysql_handle, "mysql_num_fields");
+    mysql_fetch_row_ptr = (mysql_fetch_row_t)dlsym(libmysql_handle, "mysql_fetch_row");
+    mysql_fetch_fields_ptr = (mysql_fetch_fields_t)dlsym(libmysql_handle, "mysql_fetch_fields");
+    mysql_free_result_ptr = (mysql_free_result_t)dlsym(libmysql_handle, "mysql_free_result");
+    mysql_error_ptr = (mysql_error_t)dlsym(libmysql_handle, "mysql_error");
+    mysql_close_ptr = (mysql_close_t)dlsym(libmysql_handle, "mysql_close");
+    mysql_options_ptr = (mysql_options_t)dlsym(libmysql_handle, "mysql_options");
+    mysql_ping_ptr = (mysql_ping_t)dlsym(libmysql_handle, "mysql_ping");
+    mysql_autocommit_ptr = (mysql_autocommit_t)dlsym(libmysql_handle, "mysql_autocommit");
+    mysql_commit_ptr = (mysql_commit_t)dlsym(libmysql_handle, "mysql_commit");
+    mysql_rollback_ptr = (mysql_rollback_t)dlsym(libmysql_handle, "mysql_rollback");
+    mysql_stmt_init_ptr = (mysql_stmt_init_t)dlsym(libmysql_handle, "mysql_stmt_init");
+    mysql_stmt_prepare_ptr = (mysql_stmt_prepare_t)dlsym(libmysql_handle, "mysql_stmt_prepare");
+    mysql_stmt_execute_ptr = (mysql_stmt_execute_t)dlsym(libmysql_handle, "mysql_stmt_execute");
+    mysql_stmt_close_ptr = (mysql_stmt_close_t)dlsym(libmysql_handle, "mysql_stmt_close");
 #pragma GCC diagnostic pop
 
-    // Check if all functions were loaded
-    if (!mysql_init_ptr || !mysql_real_connect_ptr || !mysql_query_ptr) {
+    // Check if all required functions were loaded
+    if (!mysql_init_ptr || !mysql_real_connect_ptr || !mysql_query_ptr ||
+        !mysql_store_result_ptr || !mysql_num_rows_ptr || !mysql_num_fields_ptr ||
+        !mysql_fetch_row_ptr || !mysql_fetch_fields_ptr || !mysql_free_result_ptr ||
+        !mysql_error_ptr || !mysql_close_ptr) {
         log_this(SR_DATABASE, "Failed to load all required libmysqlclient functions", LOG_LEVEL_ERROR, 0);
         dlclose(libmysql_handle);
         libmysql_handle = NULL;
         pthread_mutex_unlock(&libmysql_mutex);
         return false;
+    }
+
+    // Optional functions - log if not available
+    if (!mysql_options_ptr) {
+        log_this(SR_DATABASE, "mysql_options function not available - connection options will be limited", LOG_LEVEL_DEBUG, 0);
+    }
+    if (!mysql_ping_ptr) {
+        log_this(SR_DATABASE, "mysql_ping function not available - health check will use query method only", LOG_LEVEL_DEBUG, 0);
+    }
+    if (!mysql_autocommit_ptr || !mysql_commit_ptr || !mysql_rollback_ptr) {
+        log_this(SR_DATABASE, "Transaction functions not available - transactions will be limited", LOG_LEVEL_DEBUG, 0);
+    }
+    if (!mysql_stmt_init_ptr || !mysql_stmt_prepare_ptr || !mysql_stmt_execute_ptr || !mysql_stmt_close_ptr) {
+        log_this(SR_DATABASE, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_DEBUG, 0);
     }
 
     pthread_mutex_unlock(&libmysql_mutex);
@@ -164,8 +181,10 @@ bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
     }
 
     // Set auto-reconnect option
-    // int reconnect = 1;
-    // mysql_options_ptr(mysql_conn, MYSQL_OPT_RECONNECT, &reconnect);
+    if (mysql_options_ptr) {
+        int reconnect = 1;
+        mysql_options_ptr(mysql_conn, MYSQL_OPT_RECONNECT, &reconnect);
+    }
 
     // Establish connection
     void* result = mysql_real_connect_ptr(
@@ -181,7 +200,15 @@ bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
 
     if (!result) {
         log_this(SR_DATABASE, "MySQL connection failed", LOG_LEVEL_ERROR, 0);
-        // mysql_close_ptr(mysql_conn);
+        if (mysql_error_ptr) {
+            const char* error_msg = mysql_error_ptr(mysql_conn);
+            if (error_msg && strlen(error_msg) > 0) {
+                log_this(SR_DATABASE, error_msg, LOG_LEVEL_ERROR, 0);
+            }
+        }
+        if (mysql_close_ptr) {
+            mysql_close_ptr(mysql_conn);
+        }
         return false;
     }
 
@@ -242,8 +269,8 @@ bool mysql_disconnect(DatabaseHandle* connection) {
 
     MySQLConnection* mysql_conn = (MySQLConnection*)connection->connection_handle;
     if (mysql_conn) {
-        if (mysql_conn->connection) {
-            // mysql_close_ptr(mysql_conn->connection);
+        if (mysql_conn->connection && mysql_close_ptr) {
+            mysql_close_ptr(mysql_conn->connection);
         }
         mysql_destroy_prepared_statement_cache(mysql_conn->prepared_statements);
         free(mysql_conn);
@@ -258,24 +285,87 @@ bool mysql_disconnect(DatabaseHandle* connection) {
 }
 
 bool mysql_health_check(DatabaseHandle* connection) {
-    if (!connection || connection->engine_type != DB_ENGINE_MYSQL) {
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+
+    log_this(designator, "MySQL health check: Starting validation", LOG_LEVEL_DEBUG, 0);
+
+    if (!connection) {
+        log_this(designator, "MySQL health check: connection is NULL", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    if (connection->engine_type != DB_ENGINE_MYSQL) {
+        log_this(designator, "MySQL health check: wrong engine type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);
         return false;
     }
 
     MySQLConnection* mysql_conn = (MySQLConnection*)connection->connection_handle;
-    if (!mysql_conn || !mysql_conn->connection) {
+    if (!mysql_conn) {
+        log_this(designator, "MySQL health check: mysql_conn is NULL", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    // TODO: Implement MySQL ping check
-    // if (mysql_ping_ptr(mysql_conn->connection) != 0) {
-    //     connection->consecutive_failures++;
-    //     return false;
-    // }
+    if (!mysql_conn->connection) {
+        log_this(designator, "MySQL health check: mysql_conn->connection is NULL", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
 
-    connection->last_health_check = time(NULL);
-    connection->consecutive_failures = 0;
-    return true;
+    // Function pointer validation
+    if (!mysql_ping_ptr && !mysql_query_ptr) {
+        log_this(designator, "MySQL health check: neither mysql_ping_ptr nor mysql_query_ptr available", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    log_this(designator, "MySQL health check: All validations passed, executing health check", LOG_LEVEL_DEBUG, 0);
+
+    // Try ping method first if available
+    if (mysql_ping_ptr) {
+        log_this(designator, "MySQL health check: Trying mysql_ping method", LOG_LEVEL_DEBUG, 0);
+        int ping_result = mysql_ping_ptr(mysql_conn->connection);
+        log_this(designator, "MySQL health check: mysql_ping result: %d", LOG_LEVEL_DEBUG, 1, ping_result);
+
+        if (ping_result == 0) {
+            log_this(designator, "MySQL health check passed via mysql_ping", LOG_LEVEL_STATE, 0);
+            connection->last_health_check = time(NULL);
+            connection->consecutive_failures = 0;
+            return true;
+        } else {
+            log_this(designator, "MySQL health check: mysql_ping failed, trying query method", LOG_LEVEL_DEBUG, 0);
+        }
+    }
+
+    // Fallback to query method
+    if (mysql_query_ptr) {
+        log_this(designator, "MySQL health check: Executing 'SELECT 1'", LOG_LEVEL_DEBUG, 0);
+
+        if (mysql_query_ptr(mysql_conn->connection, "SELECT 1") != 0) {
+            log_this(designator, "MySQL health check: Query failed", LOG_LEVEL_ERROR, 0);
+            if (mysql_error_ptr) {
+                const char* error_msg = mysql_error_ptr(mysql_conn->connection);
+                if (error_msg && strlen(error_msg) > 0) {
+                    log_this(designator, "MySQL health check error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+                }
+            }
+            connection->consecutive_failures++;
+            return false;
+        }
+
+        // Store and free result
+        if (mysql_store_result_ptr) {
+            void* result = mysql_store_result_ptr(mysql_conn->connection);
+            if (result && mysql_free_result_ptr) {
+                mysql_free_result_ptr(result);
+            }
+        }
+
+        log_this(designator, "MySQL health check passed via query", LOG_LEVEL_STATE, 0);
+        connection->last_health_check = time(NULL);
+        connection->consecutive_failures = 0;
+        return true;
+    }
+
+    log_this(designator, "MySQL health check: No health check method available", LOG_LEVEL_ERROR, 0);
+    return false;
 }
 
 bool mysql_reset_connection(DatabaseHandle* connection) {

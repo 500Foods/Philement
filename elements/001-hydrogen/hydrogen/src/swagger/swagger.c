@@ -76,7 +76,6 @@ bool init_swagger_support_from_payload(SwaggerConfig *config, PayloadFile *paylo
     global_swagger_config = config;
 
     // Check all shutdown flags atomically
-    extern volatile sig_atomic_t web_server_shutdown;
 
     // Prevent initialization during shutdown
     if (server_stopping || web_server_shutdown) {
@@ -137,7 +136,7 @@ bool init_swagger_support_from_payload(SwaggerConfig *config, PayloadFile *paylo
     config->payload_available = true;
     swagger_initialized = true;
 
-    log_this(SR_SWAGGER, "Loaded %zu swagger files from payload cache", LOG_LEVEL_STATE, 0);
+    log_this(SR_SWAGGER, "Loaded %zu swagger files from payload cache", LOG_LEVEL_STATE, 1, num_swagger_files);
 
     return true;
 }

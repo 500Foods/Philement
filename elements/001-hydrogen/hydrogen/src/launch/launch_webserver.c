@@ -212,9 +212,6 @@ LaunchReadiness check_webserver_launch_readiness(void) {
 // 3. Support flexible deployment
 // 4. Enable different security policies
 int launch_webserver_subsystem(void) {
-    extern volatile sig_atomic_t server_stopping;
-    extern volatile sig_atomic_t web_server_shutdown;
-    
     log_this(SR_WEBSERVER, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_WEBSERVER, "LAUNCH: " SR_WEBSERVER, LOG_LEVEL_STATE, 0);
 
@@ -274,9 +271,6 @@ int launch_webserver_subsystem(void) {
     pthread_attr_init(&thread_attr);
     pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
 
-    // Register thread before creation
-    extern ServiceThreads webserver_threads;
-    
     if (pthread_create(&webserver_thread, &thread_attr, run_web_server, NULL) != 0) {
         log_this(SR_WEBSERVER, "Failed to start web server thread", LOG_LEVEL_ERROR, 0);
         pthread_attr_destroy(&thread_attr);
@@ -300,7 +294,6 @@ int launch_webserver_subsystem(void) {
         nanosleep(&wait_time, NULL);
         
         // Check if web daemon is running and bound to port
-        extern struct MHD_Daemon *webserver_daemon;
         if (webserver_daemon != NULL) {
             const union MHD_DaemonInfo *info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_BIND_PORT);
             if (info != NULL && info->port > 0) {

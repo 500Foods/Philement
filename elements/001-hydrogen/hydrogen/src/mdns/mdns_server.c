@@ -647,7 +647,6 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
     
     // Wait for any active threads to notice the shutdown flag
     // This ensures they don't access mdns_server after we free it
-    extern ServiceThreads mdns_server_threads;
     update_service_thread_metrics(&mdns_server_threads);
     
     // Check for active threads before proceeding

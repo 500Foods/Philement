@@ -403,10 +403,10 @@ int startup_hydrogen(const char* config_path) {
             log_this(SR_STARTUP, "    Web Server running:  http://localhost:%d", LOG_LEVEL_STATE, 1, app_config->webserver.port);
         }
         if (is_subsystem_running_by_name(SR_API)) {
-            log_this(SR_STARTUP, "    API Server running:  http://localhost:%d%s", LOG_LEVEL_STATE, 1, app_config->webserver.port, app_config->api.prefix);
+            log_this(SR_STARTUP, "    API Server running:  http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->api.prefix);
         }
         if (is_subsystem_running_by_name(SR_SWAGGER)) {
-            log_this(SR_STARTUP, "    Swagger running:     http://localhost:%d%s", LOG_LEVEL_STATE, 1, app_config->webserver.port, app_config->swagger.prefix);
+            log_this(SR_STARTUP, "    Swagger running:     http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->swagger.prefix);
         }
         
         log_this(SR_STARTUP, "- Performance Information", LOG_LEVEL_STATE, 0);

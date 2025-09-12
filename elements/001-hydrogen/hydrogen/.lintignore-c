@@ -32,7 +32,6 @@ suppress=constParameterCallback
 suppress=constVariablePointer
 suppress=unusedStructMember
 suppress=normalCheckLevelMaxBranches
-suppress=shadowVariable
 suppress=knownConditionTrueFalse
 suppress=redundantCondition
 suppress=varFuncNullUB
