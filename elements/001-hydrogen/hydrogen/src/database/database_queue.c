@@ -16,7 +16,6 @@
  */
 
 #include "../hydrogen.h"
-#include <assert.h>
 
 // Local includes
 #include "database_queue.h"

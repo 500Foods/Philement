@@ -26,44 +26,6 @@ Hydrogen serves as a database gateway supporting PostgreSQL, SQLite, MySQL, DB2 
 
 **ARCHITECTURAL CHANGE:** The subsystem has evolved from the planned multi-queue-per-database approach to a **Database Queue Manager (DQM)** architecture where each database gets a single **Lead queue** that dynamically spawns **child worker queues** for different priority levels (slow/medium/fast/cache).
 
-```c
-// Configuration Layer - ENHANCED
-src/config/config_defaults.c        // Multi-engine configuration defaults
-                                      // Support for PostgreSQL, MySQL, SQLite, DB2
-                                      // 5 database connection slots available
-                                      // Environment variable configuration
-                                      // Selective enable/disable per database
-
-// Launch Readiness Checks ✅ COMPLETED 9/5/2025
-src/config/config_databases.c       // Launch readiness validation implementation
-src/launch/launch_databases.c       // Database readiness checks in launch sequence
-
-// Launch/Landing Integration - EXISTING/ENHANCED
-src/launch/launch_database.c        // Basic connectivity validation
-src/landing/landing_database.c      // Config cleanup only
-
-// DQM (Database Queue Manager) Architecture ✅ COMPLETED 9/8/2025
-src/database/database_queue.h       // DQM infrastructure and Lead queue definitions
-src/database/database_queue.c       // Full DQM implementation (~960 lines)
-                                      // Lead queue spawns child queues dynamically
-                                      // Thread-safe queue management and worker threads
-                                      // Hierarchical queue architecture (Lead + children)
-
-// Multi-Engine Interface Layer ✅ COMPLETED 9/5/2025
-src/database/database.h             // DatabaseEngineInterface with function pointers
-src/database/database_engine.h      // Engine abstraction layer header
-src/database/database_engine.c      // Engine registry and unified API (~280 lines)
-                                      // Support for PostgreSQL, SQLite, MySQL, DB2, AI engines
-                                      // Connection management, query execution, transactions
-                                      // Health checks and connection reset functionality
-
-// Core Database Subsystem ✅ COMPLETED 9/8/2025
-src/database/database.c             // Database subsystem core (~408 lines)
-                                      // DQM integration and database management
-                                      // PostgreSQL engine fully implemented and working
-                                      // SQLite, MySQL, DB2 engines have placeholder implementations
-```
-
 ## IMPLEMENTATION PHASES
 
 ### Phase 1: DQM (Database Queue Manager) Infrastructure ✅ **COMPLETED 9/8/2025**

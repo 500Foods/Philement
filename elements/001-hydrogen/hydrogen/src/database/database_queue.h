@@ -8,11 +8,6 @@
 #ifndef DATABASE_QUEUE_H
 #define DATABASE_QUEUE_H
 
-// Standard includes
-#include <semaphore.h>
-#include <stdbool.h>
-#include <time.h>
-
 // Project includes
 #include "../hydrogen.h"
 #include "../queue/queue.h"
