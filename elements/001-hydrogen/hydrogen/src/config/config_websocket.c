@@ -48,7 +48,7 @@ bool load_websocket_config(json_t* root, AppConfig* config) {
     }
 
     // Process main section - if WebSocketServer section doesn't exist, keep defaults
-    json_t* websocket_section = json_object_get(root, "WebSocketServer");
+    const json_t* websocket_section = json_object_get(root, "WebSocketServer");
     if (!websocket_section) {
         log_this(SR_CONFIG, "WebSocketServer section not found, using defaults", LOG_LEVEL_STATE, 0);
         return true; // Use defaults

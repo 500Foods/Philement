@@ -419,7 +419,7 @@ int startup_hydrogen(const char* config_path) {
         
         // Format current time with ISO 8601 format including milliseconds
         time_t current_time = tv.tv_sec;
-        struct tm* current_tm = gmtime(&current_time);
+        const struct tm* current_tm = gmtime(&current_time);
         char current_time_str[64];
         strftime(current_time_str, sizeof(current_time_str), "%Y-%m-%dT%H:%M:%S", current_tm);
         
@@ -431,7 +431,7 @@ int startup_hydrogen(const char* config_path) {
         
         // Format start time from the captured start_tv
         time_t start_sec = start_tv.tv_sec;
-        struct tm* start_tm = gmtime(&start_sec);
+        const struct tm* start_tm = gmtime(&start_sec);
         char start_time_str[64];
         strftime(start_time_str, sizeof(start_time_str), "%Y-%m-%dT%H:%M:%S", start_tm);
         
@@ -454,7 +454,7 @@ int startup_hydrogen(const char* config_path) {
             }
             
             // Format original start time with microsecond precision
-            struct tm* orig_tm = gmtime(&original_start_tv.tv_sec);
+            const struct tm* orig_tm = gmtime(&original_start_tv.tv_sec);
             char orig_time_str[64];
             strftime(orig_time_str, sizeof(orig_time_str), "%Y-%m-%dT%H:%M:%S", orig_tm);
             int orig_ms = (int)(original_start_tv.tv_usec / 1000);

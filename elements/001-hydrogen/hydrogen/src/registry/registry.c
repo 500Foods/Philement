@@ -304,8 +304,8 @@ bool stop_subsystem(int subsystem_id) {
     
     for (int i = 0; i < subsystem_registry.count; i++) {
         if (i == subsystem_id) continue;
-        
-        SubsystemInfo* other = &subsystem_registry.subsystems[i];
+
+        const SubsystemInfo* other = &subsystem_registry.subsystems[i];
         if (other->state != SUBSYSTEM_RUNNING && other->state != SUBSYSTEM_STARTING) {
             continue;
         }

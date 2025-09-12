@@ -88,7 +88,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
 
             // Extract column names
             if (db_result->column_count > 0 && mysql_fetch_fields_ptr) {
-                void* fields = mysql_fetch_fields_ptr(mysql_result);
+                const void* fields = mysql_fetch_fields_ptr(mysql_result);
                 if (fields) {
                     db_result->column_names = calloc(db_result->column_count, sizeof(char*));
                     if (db_result->column_names) {
@@ -113,7 +113,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                     for (size_t row = 0; row < db_result->row_count; row++) {
                         if (row > 0) strcat(db_result->data_json, ",");
 
-                        void* row_data = mysql_fetch_row_ptr(mysql_result);
+                        const void* row_data = mysql_fetch_row_ptr(mysql_result);
                         if (row_data) {
                             strcat(db_result->data_json, "{");
                             // Simplified - in practice need to handle row data properly

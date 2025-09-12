@@ -155,7 +155,7 @@ static void process_log_message(const char* message, int priority) {
 
         char timestamp[32];
         struct timeval tv;
-        struct tm* tm_info;
+        const struct tm* tm_info;
         gettimeofday(&tv, NULL);
         tm_info = localtime(&tv.tv_sec);
         strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);

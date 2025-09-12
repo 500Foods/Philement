@@ -70,7 +70,7 @@ char* format_number_with_separators(double value, int decimals) {
     }
 
     char *result = buffer;
-    char *input = temp;
+    const char *input = temp;
     size_t len = strlen(temp);
     int comma_count = 0;
 
@@ -81,7 +81,7 @@ char* format_number_with_separators(double value, int decimals) {
     }
 
     // Find decimal point position
-    char *decimal_point = strchr(input, '.');
+    const char *decimal_point = strchr(input, '.');
     size_t integer_part_len = decimal_point ? (size_t)(decimal_point - input) : len;
 
     // Add commas to integer part
@@ -498,7 +498,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
             char *name_pos = strstr(line, "NAME=");
             if (name_pos != NULL) {
                 char *name_start = name_pos + 5;
-                char *name_end = strchr(name_start, ' ');
+                const char *name_end = strchr(name_start, ' ');
                 if (name_end == NULL) {
                     name_end = strchr(name_start, '\n');
                 }
@@ -549,7 +549,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
             char *name_pos = strstr(line, "NAME=");
             if (name_pos != NULL) {
                 char *name_start = name_pos + 5;
-                char *name_end = strchr(name_start, ' ');
+                const char *name_end = strchr(name_start, ' ');
                 if (name_end == NULL) {
                     name_end = strchr(name_start, '\n');
                 }

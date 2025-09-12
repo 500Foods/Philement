@@ -239,7 +239,7 @@ LaunchReadiness check_network_launch_readiness(void) {
     // Check each interface's status
     int up_interfaces = 0;
     for (int i = 0; i < network_info->count; i++) {
-        interface_t* interface = &network_info->interfaces[i];
+        const interface_t* interface = &network_info->interfaces[i];
         bool is_up = interface->ip_count > 0;
         bool is_available = all_interfaces_enabled; // If all interfaces enabled, start with true
 

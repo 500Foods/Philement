@@ -103,8 +103,8 @@ static void test_shutdown_web_server_no_global_state_corruption(void) {
     // We can't test all globals, but we can test the ones we know about
 
     // Store original state
-    struct MHD_Daemon* original_daemon = webserver_daemon;
-    WebServerConfig* original_config = server_web_config;
+    const struct MHD_Daemon* original_daemon = webserver_daemon;
+    const WebServerConfig* original_config = server_web_config;
 
     // Call shutdown
     shutdown_web_server();

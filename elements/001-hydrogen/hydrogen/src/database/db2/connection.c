@@ -253,7 +253,7 @@ bool db2_health_check(DatabaseHandle* connection) {
         return false;
     }
 
-    DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
+    const DB2Connection* db2_conn = (const DB2Connection*)connection->connection_handle;
     if (!db2_conn || !db2_conn->connection) {
         return false;
     }

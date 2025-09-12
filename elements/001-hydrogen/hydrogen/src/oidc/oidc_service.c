@@ -454,7 +454,7 @@ char* oidc_generate_jwks_document(void) {
     log_this(SR_OIDC, "Generating JWKS document", LOG_LEVEL_STATE, 0);
 
     // Get key context
-    OIDCKeyContext *key_context = (OIDCKeyContext *)oidc_context->key_context;
+    const OIDCKeyContext *key_context = (OIDCKeyContext *)oidc_context->key_context;
     if (!key_context) {
         log_this(SR_OIDC, "Key context not available", LOG_LEVEL_ERROR, 0);
         return NULL;

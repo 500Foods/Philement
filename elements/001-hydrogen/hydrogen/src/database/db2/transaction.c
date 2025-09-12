@@ -18,7 +18,7 @@ bool db2_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel le
         return false;
     }
 
-    DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
+    const DB2Connection* db2_conn = (const DB2Connection*)connection->connection_handle;
     if (!db2_conn || !db2_conn->connection) {
         return false;
     }
@@ -49,7 +49,7 @@ bool db2_commit_transaction(DatabaseHandle* connection, Transaction* transaction
         return false;
     }
 
-    DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
+    const DB2Connection* db2_conn = (const DB2Connection*)connection->connection_handle;
     if (!db2_conn || !db2_conn->connection) {
         return false;
     }
@@ -75,7 +75,7 @@ bool db2_rollback_transaction(DatabaseHandle* connection, Transaction* transacti
         return false;
     }
 
-    DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
+    const DB2Connection* db2_conn = (const DB2Connection*)connection->connection_handle;
     if (!db2_conn || !db2_conn->connection) {
         return false;
     }

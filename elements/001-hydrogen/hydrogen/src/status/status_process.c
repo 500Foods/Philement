@@ -160,7 +160,7 @@ void get_fd_info(int fd, FileDescriptorInfo *info) {
             socklen_t addr_len = sizeof(addr);
             if (getsockname(fd, (struct sockaddr*)&addr, &addr_len) == 0) {
                 if (addr.ss_family == AF_UNIX) {
-                    struct sockaddr_un *un = (struct sockaddr_un*)&addr;
+                    const struct sockaddr_un *un = (struct sockaddr_un*)&addr;
                     if (un->sun_path[0]) {
                         char temp[MAX_DESC_STRING * 2];  // Larger temp buffer
                         snprintf(temp, sizeof(temp), "Unix domain socket: %s", un->sun_path);
@@ -231,7 +231,7 @@ bool collect_file_descriptors(FileDescriptorInfo **descriptors, int *count) {
     }
 
     // First pass to count file descriptors
-    struct dirent *ent;
+    const struct dirent *ent;
     *count = 0;
     while ((ent = readdir(dir)) != NULL) {
         if (ent->d_name[0] != '.') (*count)++;

@@ -147,7 +147,7 @@ bool stop_subsystem_and_dependents(int subsystem_id) {
     
     // First check if any other running subsystems depend on this one
     for (int i = 0; i < subsystem_registry.count; i++) {
-        SubsystemInfo* other = &subsystem_registry.subsystems[i];
+        const SubsystemInfo* other = &subsystem_registry.subsystems[i];
         if (other->state == SUBSYSTEM_RUNNING) {
             for (int j = 0; j < other->dependency_count; j++) {
                 if (strcmp(other->dependencies[j], subsystem->name) == 0) {

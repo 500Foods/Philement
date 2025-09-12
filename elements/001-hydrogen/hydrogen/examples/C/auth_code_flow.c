@@ -674,6 +674,7 @@ static enum MHD_Result callback_handler(void *cls, struct MHD_Connection *connec
 }
 
 /* Callback function for curl to store received data */
+// cppcheck-suppress[constParameterCallback] - libcurl callback signature requires void*
 static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
     size_t realsize = size * nmemb;
     struct MemoryStruct *mem = (struct MemoryStruct *)userp;

@@ -36,7 +36,7 @@ enum MHD_Result handle_system_recent_request(struct MHD_Connection *connection) 
     size_t total_size = 0;
 
     // First pass: count lines and calculate total size needed
-    char *line = strtok(raw_text, "\n");
+    const char *line = strtok(raw_text, "\n");
     while (line) {
         char **new_lines = realloc(lines, (line_count + 1) * sizeof(char*));
         if (!new_lines) {

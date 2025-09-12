@@ -139,7 +139,7 @@ void mdns_server_build_announcement(uint8_t *packet, size_t *packet_len, const c
     }
 
     // Find the matching interface from net_info
-    mdns_server_interface_t *matching_iface = NULL;
+    const mdns_server_interface_t *matching_iface = NULL;
     if (net_info_instance && net_info_instance->primary_index >= 0 && net_info_instance->primary_index < net_info_instance->count) {
         const interface_t *primary = &net_info_instance->interfaces[net_info_instance->primary_index];
         for (size_t i = 0; i < mdns_server_instance->num_interfaces; i++) {

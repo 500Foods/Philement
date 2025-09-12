@@ -25,7 +25,7 @@ static char** process_log_lines(const char *raw_text, size_t *line_count) {
     char *text_copy = strdup(raw_text);
     if (!text_copy) return NULL;
 
-    char *line = strtok(text_copy, "\n");
+    const char *line = strtok(text_copy, "\n");
     while (line) {
         char **new_lines = realloc(lines, (*line_count + 1) * sizeof(char*));
         if (!new_lines) {

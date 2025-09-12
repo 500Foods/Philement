@@ -311,7 +311,7 @@ void *mdns_server_responder_loop(void *arg) {
 
     nfds_t nfds = 0;  // Use nfds_t type to avoid sign conversion
     for (size_t i = 0; i < mdns_server_instance->num_interfaces; i++) {
-        mdns_server_interface_t *iface = &mdns_server_instance->interfaces[i];
+        const mdns_server_interface_t *iface = &mdns_server_instance->interfaces[i];
         if (iface->sockfd_v4 >= 0) {
             fds[nfds].fd = iface->sockfd_v4;
             fds[nfds].events = POLLIN;

@@ -33,6 +33,7 @@ bool swagger_url_validator(const char *url) {
 /**
  * Web server handler wrapper - matches MHD signature
  */
+// cppcheck-suppress[constParameterPointer] - MHD callback signature requires void*
 enum MHD_Result swagger_request_handler(void *cls,
                                        struct MHD_Connection *connection,
                                        const char *url,
@@ -113,7 +114,7 @@ bool init_swagger_support_from_payload(SwaggerConfig *config, PayloadFile *paylo
     // Convert PayloadFile to SwaggerFile
     for (size_t i = 0; i < num_payload_files; i++) {
         // Clean the file name to remove prefixes (e.g., "swagger/index.html" -> "index.html")
-        char *clean_name = payload_files[i].name;
+        const char *clean_name = payload_files[i].name;
         if (strncmp(payload_files[i].name, "swagger/", 8) == 0) {
             clean_name = payload_files[i].name + 8; // Skip "swagger/" prefix
         }

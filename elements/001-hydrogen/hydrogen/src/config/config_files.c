@@ -101,7 +101,7 @@ char* get_file_modification_time(const char* filename) {
         return NULL;
     }
 
-    struct tm* tm_info = localtime(&st.st_mtime);
+    const struct tm* tm_info = localtime(&st.st_mtime);
     if (!tm_info) {
         log_this(SR_CONFIG, "Error converting time for %s", LOG_LEVEL_ERROR, 1, filename);
         return NULL;

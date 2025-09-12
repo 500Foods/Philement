@@ -330,7 +330,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     log_this(SR_WEBSOCKET, "Binding to all interfaces (0.0.0.0:%d)", LOG_LEVEL_STATE, 1, port);
 
     ws_context->vhost_creating = 1;
-    struct lws_vhost *vhost = lws_create_vhost(ws_context->lws_context, &vhost_info);
+    const struct lws_vhost *vhost = lws_create_vhost(ws_context->lws_context, &vhost_info);
     ws_context->vhost_creating = 0;
 
     if (!vhost) {

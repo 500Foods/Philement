@@ -209,7 +209,7 @@ static void console_log(const char* subsystem, int priority, const char* message
 
     char timestamp[32];
     struct timeval tv;
-    struct tm* tm_info;
+    const struct tm* tm_info;
     gettimeofday(&tv, NULL);
     tm_info = gmtime(&tv.tv_sec);
     strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);

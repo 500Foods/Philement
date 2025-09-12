@@ -256,7 +256,7 @@ LaunchReadiness check_database_launch_readiness(void) {
             }
 
             if (!libpq_handle) {
-                char* error_msg = dlerror();
+                const char* error_msg = dlerror();
                 char* lib_msg = malloc(512);
                 if (lib_msg) {
                     snprintf(lib_msg, 512, "  No-Go:   PostgreSQL library not found: %s", error_msg ? error_msg : "unknown error");
@@ -304,7 +304,7 @@ LaunchReadiness check_database_launch_readiness(void) {
             }
 
             if (!mysql_handle) {
-                char* error_msg = dlerror();
+                const char* error_msg = dlerror();
                 char* lib_msg = malloc(512);
                 if (lib_msg) {
                     snprintf(lib_msg, 512, "  No-Go:   MySQL library not found: %s", error_msg ? error_msg : "unknown error");
@@ -348,7 +348,7 @@ LaunchReadiness check_database_launch_readiness(void) {
             }
 
             if (!sqlite_handle) {
-                char* error_msg = dlerror();
+                const char* error_msg = dlerror();
                 char* lib_msg = malloc(512);
                 if (lib_msg) {
                     snprintf(lib_msg, 512, "  No-Go:   SQLite library not found: %s", error_msg ? error_msg : "unknown error");
@@ -389,7 +389,7 @@ LaunchReadiness check_database_launch_readiness(void) {
             }
 
             if (!db2_handle) {
-                char* error_msg = dlerror();
+                const char* error_msg = dlerror();
                 char* lib_msg = malloc(512);
                 if (lib_msg) {
                     snprintf(lib_msg, 512, "  No-Go:   DB2 library not found: %s", error_msg ? error_msg : "unknown error");

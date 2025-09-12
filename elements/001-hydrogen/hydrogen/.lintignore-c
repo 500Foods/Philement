@@ -19,19 +19,15 @@ include=/usr/include
 include=/usr/local/include
 
 # Check level
-check-level=normal
+check-level=exhaustive
 
 # Template for output
 template={file}:{line}:{column}: {severity}: {message} ({id})
 
 # Suppress specific warnings
-suppress=missingIncludeSystem
 suppress=variableScope
 suppress=unreadVariable
-suppress=constParameterCallback
-suppress=constVariablePointer
 suppress=unusedStructMember
-suppress=normalCheckLevelMaxBranches
 suppress=knownConditionTrueFalse
 suppress=redundantCondition
 suppress=varFuncNullUB
