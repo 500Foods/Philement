@@ -13,31 +13,31 @@
 typedef int (*SQLAllocHandle_t)(int, void*, void**);
 typedef int (*SQLConnect_t)(void*, char*, int, char*, int, char*, int);
 typedef int (*SQLExecDirect_t)(void*, char*, int);
-// typedef int (*SQLFetch_t)(void*);
-// typedef int (*SQLGetData_t)(void*, int, int, void*, int, int*);
-// typedef int (*SQLNumResultCols_t)(void*, int*);
-// typedef int (*SQLRowCount_t)(void*, int*);
-// typedef int (*SQLFreeHandle_t)(int, void*);
-// typedef int (*SQLDisconnect_t)(void*);
-// typedef int (*SQLEndTran_t)(int, void*, int);
-// typedef int (*SQLPrepare_t)(void*, char*, int);
-// typedef int (*SQLExecute_t)(void*);
-// typedef int (*SQLFreeStmt_t)(void*, int);
+typedef int (*SQLFetch_t)(void*);
+typedef int (*SQLGetData_t)(void*, int, int, void*, int, int*);
+typedef int (*SQLNumResultCols_t)(void*, int*);
+typedef int (*SQLRowCount_t)(void*, int*);
+typedef int (*SQLFreeHandle_t)(int, void*);
+typedef int (*SQLDisconnect_t)(void*);
+typedef int (*SQLEndTran_t)(int, void*, int);
+typedef int (*SQLPrepare_t)(void*, char*, int);
+typedef int (*SQLExecute_t)(void*);
+typedef int (*SQLFreeStmt_t)(void*, int);
 
 // DB2 function pointers (loaded dynamically)
 extern SQLAllocHandle_t SQLAllocHandle_ptr;
 extern SQLConnect_t SQLConnect_ptr;
 extern SQLExecDirect_t SQLExecDirect_ptr;
-// extern SQLFetch_t SQLFetch_ptr;
-// extern SQLGetData_t SQLGetData_ptr;
-// extern SQLNumResultCols_t SQLNumResultCols_ptr;
-// extern SQLRowCount_t SQLRowCount_ptr;
-// extern SQLFreeHandle_t SQLFreeHandle_ptr;
-// extern SQLDisconnect_t SQLDisconnect_ptr;
-// extern SQLEndTran_t SQLEndTran_ptr;
-// extern SQLPrepare_t SQLPrepare_ptr;
-// extern SQLExecute_t SQLExecute_ptr;
-// extern SQLFreeStmt_t SQLFreeStmt_ptr;
+extern SQLFetch_t SQLFetch_ptr;
+extern SQLGetData_t SQLGetData_ptr;
+extern SQLNumResultCols_t SQLNumResultCols_ptr;
+extern SQLRowCount_t SQLRowCount_ptr;
+extern SQLFreeHandle_t SQLFreeHandle_ptr;
+extern SQLDisconnect_t SQLDisconnect_ptr;
+extern SQLEndTran_t SQLEndTran_ptr;
+extern SQLPrepare_t SQLPrepare_ptr;
+extern SQLExecute_t SQLExecute_ptr;
+extern SQLFreeStmt_t SQLFreeStmt_ptr;
 
 // Library handle
 extern void* libdb2_handle;

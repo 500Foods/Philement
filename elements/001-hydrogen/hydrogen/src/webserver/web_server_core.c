@@ -180,8 +180,6 @@ void add_cors_headers(struct MHD_Response *response) {
 
 bool init_web_server(WebServerConfig *web_config) {
     // Check all shutdown flags atomically
-    extern volatile sig_atomic_t server_stopping;
-    extern volatile sig_atomic_t web_server_shutdown;
     
     // Prevent initialization during shutdown
     if (server_stopping || web_server_shutdown) {
@@ -249,7 +247,6 @@ void* run_web_server(void* arg) {
     (void)arg; // Unused parameter
 
     // Check all shutdown flags atomically
-    extern volatile sig_atomic_t web_server_shutdown;
     
     // Prevent initialization during any shutdown state
     if (server_stopping || web_server_shutdown) {
@@ -379,7 +376,6 @@ void* run_web_server(void* arg) {
 
 void shutdown_web_server(void) {
     // Set shutdown flag first to prevent reinitialization
-    extern volatile sig_atomic_t web_server_shutdown;
     __sync_bool_compare_and_swap(&web_server_shutdown, 0, 1);
     __sync_synchronize();  // Memory barrier
 

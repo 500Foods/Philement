@@ -41,7 +41,6 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
     db_queue->worker_thread_started = true;
 
     // Register thread with thread tracking system
-    extern ServiceThreads database_threads;
     add_service_thread(&database_threads, db_queue->worker_thread);
 
     char* dqm_label_success = database_queue_generate_label(db_queue);
@@ -117,7 +116,6 @@ void* database_queue_worker_thread(void* arg) {
     }
 
     // Clean up thread tracking before exit
-    extern ServiceThreads database_threads;
     remove_service_thread(&database_threads, pthread_self());
 
     char* dqm_label_exit = database_queue_generate_label(db_queue);

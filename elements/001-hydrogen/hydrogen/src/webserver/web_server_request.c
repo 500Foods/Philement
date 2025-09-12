@@ -71,7 +71,6 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
 
     // Register connection thread if this is a new request
     if (*con_cls == NULL) {
-        extern ServiceThreads webserver_threads;
         add_service_thread(&webserver_threads, pthread_self());
         char msg[128];
         snprintf(msg, sizeof(msg), "New connection thread for %s %s", method, url);
@@ -207,7 +206,6 @@ void request_completed(void *cls, struct MHD_Connection *connection,
     *con_cls = NULL;
 
     // Remove connection thread from tracking after cleanup
-    extern ServiceThreads webserver_threads;
     remove_service_thread(&webserver_threads, pthread_self());
     log_this(SR_WEBSERVER, "Connection thread completed", LOG_LEVEL_STATE, 0);
 }

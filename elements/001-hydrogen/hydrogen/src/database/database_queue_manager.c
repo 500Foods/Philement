@@ -26,7 +26,6 @@ bool database_queue_system_init(void) {
     }
 
     // Ensure the global queue system is initialized first
-    extern int queue_system_initialized;
     if (!queue_system_initialized) {
         queue_system_init();
     }

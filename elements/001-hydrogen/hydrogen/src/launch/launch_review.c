@@ -74,7 +74,7 @@ void handle_launch_review(const ReadinessResults* results) {
             }
             
             // Log subsystem status
-            log_this(SR_LAUNCH, "- %-15s %s", LOG_LEVEL_STATE, 1, subsystem, status);
+            log_this(SR_LAUNCH, "- %-15s %s", LOG_LEVEL_STATE, 2, subsystem, status);
         }
         
         // Log summary statistics

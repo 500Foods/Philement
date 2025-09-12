@@ -76,7 +76,6 @@ bool init_terminal_support(TerminalConfig *config) {
     global_terminal_config = config;
 
     // Check shutdown flags
-    extern volatile sig_atomic_t web_server_shutdown;
 
     // Prevent initialization during shutdown
     if (server_stopping || web_server_shutdown) {
