@@ -80,31 +80,31 @@ bool init_terminal_support(TerminalConfig *config) {
 
     // Prevent initialization during shutdown
     if (server_stopping || web_server_shutdown) {
-        log_this(SR_TERMINAL, "Cannot initialize terminal during shutdown", LOG_LEVEL_STATE);
+        log_this(SR_TERMINAL, "Cannot initialize terminal during shutdown", LOG_LEVEL_STATE, 0);
         terminal_initialized = false;
         return false;
     }
 
     // Only proceed if we're in startup phase
     if (!server_starting || server_stopping || web_server_shutdown) {
-        log_this(SR_TERMINAL, "Cannot initialize - invalid system state", LOG_LEVEL_STATE);
+        log_this(SR_TERMINAL, "Cannot initialize - invalid system state", LOG_LEVEL_STATE, 0);
         return false;
     }
 
     // Skip if already initialized or disabled
     if (terminal_initialized || !config || !config->enabled) {
         if (terminal_initialized) {
-            log_this(SR_TERMINAL, "Already initialized", LOG_LEVEL_STATE);
+            log_this(SR_TERMINAL, "Already initialized", LOG_LEVEL_STATE, 0);
         }
         return terminal_initialized;
     }
 
     // Initialize terminal session manager for WebSocket integration
     if (!init_session_manager(config->max_sessions, config->idle_timeout_seconds)) {
-        log_this(SR_TERMINAL, "Failed to initialize terminal session manager", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to initialize terminal session manager", LOG_LEVEL_ERROR, 0);
         return false;
     }
-    log_this(SR_TERMINAL, "Terminal session manager initialized", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "Terminal session manager initialized", LOG_LEVEL_STATE, 0);
 
     // Determine serving mode based on WebRoot configuration
     bool is_payload_mode = false;
@@ -120,7 +120,7 @@ bool init_terminal_support(TerminalConfig *config) {
 
     // Only check payload cache availability if we're in payload mode
     if (is_payload_mode && !is_payload_cache_available()) {
-        log_this(SR_TERMINAL, "Payload cache not available - has payload subsystem launched?", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Payload cache not available - has payload subsystem launched?", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -136,7 +136,7 @@ bool init_terminal_support(TerminalConfig *config) {
         bool success = get_payload_files_by_prefix("terminal/", &payload_files, &num_payload_files, &capacity);
 
         if (!success) {
-            log_this(SR_TERMINAL, "Failed to get terminal files from payload cache", LOG_LEVEL_ERROR);
+            log_this(SR_TERMINAL, "Failed to get terminal files from payload cache", LOG_LEVEL_ERROR, 0);
             terminal_initialized = false;
             return false;
         }
@@ -144,7 +144,7 @@ bool init_terminal_support(TerminalConfig *config) {
         // Convert PayloadFile array to TerminalFile array (compatibility layer)
         terminal_files = calloc(num_payload_files, sizeof(TerminalFile));
         if (!terminal_files) {
-            log_this(SR_TERMINAL, "Failed to allocate terminal files array", LOG_LEVEL_ERROR);
+            log_this(SR_TERMINAL, "Failed to allocate terminal files array", LOG_LEVEL_ERROR, 0);
             free(payload_files);
             return false;
         }
@@ -164,7 +164,7 @@ bool init_terminal_support(TerminalConfig *config) {
             terminal_files[i].is_compressed = payload_files[i].is_compressed;
 
             if (!terminal_files[i].name) {
-                log_this(SR_TERMINAL, "Failed to allocate memory for file name", LOG_LEVEL_ERROR);
+                log_this(SR_TERMINAL, "Failed to allocate memory for file name", LOG_LEVEL_ERROR, 0);
                 // Cleanup already allocated names
                 for (size_t j = 0; j < i; j++) {
                     free(terminal_files[j].name);
@@ -179,11 +179,11 @@ bool init_terminal_support(TerminalConfig *config) {
 
         // Free the PayloadFile array (but not the individual files - we keep references)
         free(payload_files);
-        log_this(SR_TERMINAL, "Initialized in PAYLOAD mode with %zu files", LOG_LEVEL_STATE, num_terminal_files);
+        log_this(SR_TERMINAL, "Initialized in PAYLOAD mode with %zu files", LOG_LEVEL_STATE, 1, num_terminal_files);
     } else {
         // Initialize empty by design - this will force filesystem-only serving
         terminal_files = NULL;
-        log_this(SR_TERMINAL, "Initialized in FILESYSTEM mode (no payload files loaded)", LOG_LEVEL_STATE);
+        log_this(SR_TERMINAL, "Initialized in FILESYSTEM mode (no payload files loaded)", LOG_LEVEL_STATE, 0);
     }
 
     // Update configuration based on payload availability
@@ -191,9 +191,9 @@ bool init_terminal_support(TerminalConfig *config) {
 
     // Log the configurable index page setting
     if (config->index_page) {
-        log_this(SR_TERMINAL, "Initialized with index page: %s", LOG_LEVEL_STATE, config->index_page);
+        log_this(SR_TERMINAL, "Initialized with index page: %s", LOG_LEVEL_STATE, 1, config->index_page);
     } else {
-        log_this(SR_TERMINAL, "Initialized with default index page", LOG_LEVEL_STATE);
+        log_this(SR_TERMINAL, "Initialized with default index page", LOG_LEVEL_STATE, 0);
     }
 
     // Log each file's details (only for payload mode)
@@ -208,9 +208,10 @@ bool init_terminal_support(TerminalConfig *config) {
                 snprintf(size_display, sizeof(size_display), "%.1fM", (double)terminal_files[i].size / (1024.0 * 1024.0));
             }
 
-            log_this(SR_TERMINAL, "-> %s (%s%s)", LOG_LEVEL_STATE,
-                    terminal_files[i].name, size_display,
-                    terminal_files[i].is_compressed ? ", compressed" : "");
+            log_this(SR_TERMINAL, "-> %s (%s%s)", LOG_LEVEL_STATE, 3,
+                terminal_files[i].name, 
+                size_display,
+                terminal_files[i].is_compressed ? ", compressed" : "");
         }
     }
 
@@ -262,21 +263,21 @@ static enum MHD_Result serve_file_from_path(struct MHD_Connection *connection, c
     // Open the file
     int fd = open(path_to_serve, O_RDONLY);
     if (fd == -1) {
-        log_this(SR_TERMINAL, "Failed to open file: %s", LOG_LEVEL_ERROR, file_path);
+        log_this(SR_TERMINAL, "Failed to open file: %s", LOG_LEVEL_ERROR, 1, file_path);
         return MHD_NO;
     }
 
     struct stat st;
     if (fstat(fd, &st) == -1) {
         close(fd);
-        log_this(SR_TERMINAL, "Failed to stat file: %s", LOG_LEVEL_ERROR, file_path);
+        log_this(SR_TERMINAL, "Failed to stat file: %s", LOG_LEVEL_ERROR, 1, file_path);
         return MHD_NO;
     }
 
     struct MHD_Response *response = MHD_create_response_from_fd((size_t)st.st_size, fd);
     if (!response) {
         close(fd);
-        log_this(SR_TERMINAL, "Failed to create response from file descriptor", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to create response from file descriptor", LOG_LEVEL_ERROR, 0);
         return MHD_NO;
     }
 
@@ -296,9 +297,9 @@ static enum MHD_Result serve_file_from_path(struct MHD_Connection *connection, c
     // If serving a .br file, add the Content-Encoding header
     if (use_br_file) {
         add_brotli_header(response);
-        log_this(SR_TERMINAL, "Served pre-compressed Brotli file from filesystem: %s", LOG_LEVEL_STATE, br_file_path);
+        log_this(SR_TERMINAL, "Served pre-compressed Brotli file from filesystem: %s", LOG_LEVEL_STATE, 1, br_file_path);
     } else {
-        log_this(SR_TERMINAL, "Served file from filesystem: %s", LOG_LEVEL_STATE, file_path);
+        log_this(SR_TERMINAL, "Served file from filesystem: %s", LOG_LEVEL_STATE, 1, file_path);
     }
 
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
@@ -323,8 +324,7 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
     if (strcmp(url, config->web_path) == 0) {
         char *redirect_url;
         if (asprintf(&redirect_url, "%s/", url) != -1) {
-            log_this(SR_TERMINAL, "Redirecting %s to %s for proper relative path resolution",
-                    LOG_LEVEL_STATE, url, redirect_url);
+            log_this(SR_TERMINAL, "Redirecting %s to %s for proper relative path resolution", LOG_LEVEL_STATE, 2, url, redirect_url);
 
             struct MHD_Response *response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
             MHD_add_response_header(response, "Location", redirect_url);
@@ -344,7 +344,7 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
         // Use the configurable index page
         const char *index_file = config->index_page ? config->index_page : "terminal.html";
         url_path = index_file;
-        log_this(SR_TERMINAL, "Serving index page: %s", LOG_LEVEL_STATE, url_path);
+        log_this(SR_TERMINAL, "Serving index page: %s", LOG_LEVEL_STATE, 1, url_path);
     } else if (*url_path == '/') {
         url_path++; // Skip leading slash for other paths
     }
@@ -353,8 +353,7 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
     // Client-side JavaScript will connect directly to port 5261 for terminal WebSocket connections
 
     // Log the URL processing for debugging
-    log_this(SR_TERMINAL, "Request: Original URL: %s, Processed path: %s",
-             LOG_LEVEL_STATE, url, url_path);
+    log_this(SR_TERMINAL, "Request: Original URL: %s, Processed path: %s", LOG_LEVEL_STATE, 2, url, url_path);
 
     // Try to find the requested file - robust approach matching swagger.c
     TerminalFile *file = NULL;
@@ -363,9 +362,9 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
     // Debug logging for troubleshooting
     const char *accept_encoding = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Accept-Encoding");
     if (accept_encoding) {
-        log_this(SR_TERMINAL, "Client Accept-Encoding: %s", LOG_LEVEL_STATE, accept_encoding);
+        log_this(SR_TERMINAL, "Client Accept-Encoding: %s", LOG_LEVEL_STATE, 1, accept_encoding);
     } else {
-        log_this(SR_TERMINAL, "No Accept-Encoding header from client", LOG_LEVEL_STATE, NULL);
+        log_this(SR_TERMINAL, "No Accept-Encoding header from client", LOG_LEVEL_STATE, 0);
     }
 
     // Look for both compressed and uncompressed versions
@@ -390,15 +389,15 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
     // Prefer uncompressed file for browser compatibility, fallback to compressed
     if (uncompressed_file) {
         file = uncompressed_file;
-        log_this(SR_TERMINAL, "Using uncompressed version of %s", LOG_LEVEL_STATE, url_path);
+        log_this(SR_TERMINAL, "Using uncompressed version of %s", LOG_LEVEL_STATE, 1, url_path);
     } else if (compressed_file && client_accepts_br) {
         file = compressed_file;
-        log_this(SR_TERMINAL, "Using compressed version of %s (client supports brotli)", LOG_LEVEL_STATE, url_path);
+        log_this(SR_TERMINAL, "Using compressed version of %s (client supports brotli)", LOG_LEVEL_STATE, 1, url_path);
     } else if (compressed_file) {
         file = compressed_file;
-        log_this(SR_TERMINAL, "Using compressed version of %s (forcing header for client compatibility)", LOG_LEVEL_STATE, url_path);
+        log_this(SR_TERMINAL, "Using compressed version of %s (forcing header for client compatibility)", LOG_LEVEL_STATE, 1, url_path);
     } else {
-        log_this(SR_TERMINAL, "No version found for %s", LOG_LEVEL_ERROR, url_path);
+        log_this(SR_TERMINAL, "No version found for %s", LOG_LEVEL_ERROR, 1, url_path);
     }
 
     // Fallback handling for direct .br requests (if someone requests the compressed version directly)
@@ -429,18 +428,18 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
             // Check if WebRoot specifies payload-only mode
             if (strncmp(config->webroot, "PAYLOAD:", 8) == 0) {
                 serve_from_payload_only = true;
-                log_this(SR_TERMINAL, "Configured for payload-only mode: %s", LOG_LEVEL_STATE, config->webroot);
+                log_this(SR_TERMINAL, "Configured for payload-only mode: %s", LOG_LEVEL_STATE, 1, config->webroot);
             } else {
                 // Default to filesystem mode
                 serve_from_filesystem_only = true;
                 filesystem_root = config->webroot;
-                log_this(SR_TERMINAL, "Configured for filesystem mode: %s", LOG_LEVEL_STATE, config->webroot);
+                log_this(SR_TERMINAL, "Configured for filesystem mode: %s", LOG_LEVEL_STATE, 1, config->webroot);
             }
         } else {
             // Legacy behavior: if no WebRoot configured, assume filesystem from current directory
             serve_from_filesystem_only = true;
             filesystem_root = ".";
-            log_this(SR_TERMINAL, "No WebRoot configured, using current directory as fallback", LOG_LEVEL_STATE);
+            log_this(SR_TERMINAL, "No WebRoot configured, using current directory as fallback", LOG_LEVEL_STATE, 0);
         }
 
         // Handle filesystem fallback only if not in payload-only mode
@@ -448,18 +447,18 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
             // Build filesystem path using WebRoot
             char full_path[PATH_MAX];
             if (snprintf(full_path, sizeof(full_path), "%s/%s", filesystem_root, url_path) >= (int)sizeof(full_path)) {
-                log_this(SR_TERMINAL, "File path too long: %s/%s", LOG_LEVEL_ERROR, filesystem_root, url_path);
+                log_this(SR_TERMINAL, "File path too long: %s/%s", LOG_LEVEL_ERROR, 2, filesystem_root, url_path);
                 return MHD_NO;
             }
 
             // Check if file exists on filesystem
             if (access(full_path, F_OK) != -1) {
-                log_this(SR_TERMINAL, "Serving from filesystem: %s", LOG_LEVEL_STATE, full_path);
+                log_this(SR_TERMINAL, "Serving from filesystem: %s", LOG_LEVEL_STATE, 1, full_path);
                 return serve_file_from_path(connection, full_path);
             }
         }
 
-        log_this(SR_TERMINAL, "File not found: %s", LOG_LEVEL_STATE, url_path);
+        log_this(SR_TERMINAL, "File not found: %s", LOG_LEVEL_STATE, 1, url_path);
         return MHD_NO; // File not found
     }
 
@@ -537,13 +536,13 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
  * This function cleans up resources used by the terminal subsystem
  */
 void cleanup_terminal_support(TerminalConfig *config __attribute__((unused))) {
-    log_this(SR_TERMINAL, "Terminal subsystem cleanup called", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "Terminal subsystem cleanup called", LOG_LEVEL_STATE, 0);
     terminal_initialized = false;
     global_terminal_config = NULL;
 
     // Cleanup terminal session manager and all active sessions
     cleanup_session_manager();
-    log_this(SR_TERMINAL, "Terminal session manager cleaned up", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "Terminal session manager cleaned up", LOG_LEVEL_STATE, 0);
 
     // Free terminal files array and allocated names
     if (terminal_files) {
@@ -555,5 +554,5 @@ void cleanup_terminal_support(TerminalConfig *config __attribute__((unused))) {
     }
     num_terminal_files = 0;
 
-    log_this(SR_TERMINAL, "Terminal subsystem cleanup completed", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "Terminal subsystem cleanup completed", LOG_LEVEL_STATE, 0);
 }

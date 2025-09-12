@@ -20,7 +20,7 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
-    log_this(dqm_label, "Destroying queue", LOG_LEVEL_STATE);
+    log_this(dqm_label, "Destroying queue", LOG_LEVEL_STATE, 0);
     free(dqm_label);
 
     // Wait for worker thread to finish (this will set shutdown_requested internally)
@@ -91,7 +91,7 @@ void database_queue_stop_worker(DatabaseQueue* db_queue) {
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
-    log_this(dqm_label, "Stopping worker thread", LOG_LEVEL_STATE);
+    log_this(dqm_label, "Stopping worker thread", LOG_LEVEL_STATE, 0);
     free(dqm_label);
 
     db_queue->shutdown_requested = true;
@@ -105,6 +105,6 @@ void database_queue_stop_worker(DatabaseQueue* db_queue) {
     }
 
     char* dqm_label_stop = database_queue_generate_label(db_queue);
-    log_this(dqm_label_stop, "Stopped worker thread", LOG_LEVEL_STATE);
+    log_this(dqm_label_stop, "Stopped worker thread", LOG_LEVEL_STATE, 0);
     free(dqm_label_stop);
 }

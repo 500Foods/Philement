@@ -49,13 +49,13 @@ void stop_pty_bridge_thread(TerminalSession *session);
 int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, size_t len)
 {
     if (!session || !ws_context) {
-        log_this(SR_WEBSOCKET, "Invalid session or context", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSOCKET, "Invalid session or context", LOG_LEVEL_ERROR, 0);
         return -1;
     }
 
     // Verify authentication
     if (!ws_is_authenticated(session)) {
-        log_this(SR_WEBSOCKET, "Received data from unauthenticated connection", LOG_LEVEL_ALERT);
+        log_this(SR_WEBSOCKET, "Received data from unauthenticated connection", LOG_LEVEL_ALERT, 0);
         return -1;
     }
 
@@ -65,9 +65,7 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
     // Check message size
     if (ws_context->message_length + len > ws_context->max_message_size) {
         pthread_mutex_unlock(&ws_context->mutex);
-        log_this(SR_WEBSOCKET, "Message too large (max size: %zu bytes)", 
-                 LOG_LEVEL_ALERT, true, true, true,
-                 ws_context->max_message_size);
+        log_this(SR_WEBSOCKET, "Message too large (max size: %zu bytes)", LOG_LEVEL_ALERT, 1, ws_context->max_message_size);
         ws_context->message_length = 0; // Reset buffer
         return -1;
     }
@@ -89,14 +87,14 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
     pthread_mutex_unlock(&ws_context->mutex);
 
     // Comment out verbose message logging to reduce log size
-    // log_this(SR_WEBSOCKET, "Processing complete message: %s", LOG_LEVEL_STATE, ws_context->message_buffer);
+    // log_this(SR_WEBSOCKET, "Processing complete message: %s", LOG_LEVEL_STATE, 1, ws_context->message_buffer);
 
     // Parse JSON message
     json_error_t error;
     json_t *root = json_loads((const char *)ws_context->message_buffer, 0, &error);
     
     if (!root) {
-        log_this(SR_WEBSOCKET, "Error parsing JSON: %s", LOG_LEVEL_ALERT, error.text);
+        log_this(SR_WEBSOCKET, "Error parsing JSON: %s", LOG_LEVEL_ALERT, 1, error.text);
         return 0;
     }
 
@@ -106,10 +104,10 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
 
     if (json_is_string(type_json)) {
         const char *type = json_string_value(type_json);
-        log_this(SR_WEBSOCKET, "Processing message type: %s", LOG_LEVEL_STATE, type);
+        log_this(SR_WEBSOCKET, "Processing message type: %s", LOG_LEVEL_STATE, 1, type);
         result = handle_message_type(wsi, type);
     } else {
-        log_this(SR_WEBSOCKET, "Missing or invalid 'type' in request", LOG_LEVEL_STATE);
+        log_this(SR_WEBSOCKET, "Missing or invalid 'type' in request", LOG_LEVEL_STATE, 0);
     }
 
     json_decref(root);
@@ -119,7 +117,7 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
 static int handle_message_type(struct lws *wsi, const char *type)
 {
     if (strcmp(type, "status") == 0) {
-        log_this(SR_WEBSOCKET, "Handling status request", LOG_LEVEL_STATE);
+        log_this(SR_WEBSOCKET, "Handling status request", LOG_LEVEL_STATE, 0);
         handle_status_request(wsi);
         return 0;
     }
@@ -129,12 +127,12 @@ static int handle_message_type(struct lws *wsi, const char *type)
     if (strcmp(type, "input") == 0 || strcmp(type, "resize") == 0 || strcmp(type, "ping") == 0) {
         const struct lws_protocols *protocol = lws_get_protocol(wsi);
         if (protocol && strcmp(protocol->name, "terminal") == 0) {
-            log_this(SR_WEBSOCKET, "Routing terminal message to terminal session handlers", LOG_LEVEL_STATE);
+            log_this(SR_WEBSOCKET, "Routing terminal message to terminal session handlers", LOG_LEVEL_STATE, 0);
 
             // Get terminal session for this WebSocket connection
             TerminalSession *session = find_or_create_terminal_session(wsi);
             if (!session) {
-                log_this(SR_WEBSOCKET, "Failed to find/create terminal session", LOG_LEVEL_ERROR);
+                log_this(SR_WEBSOCKET, "Failed to find/create terminal session", LOG_LEVEL_ERROR, 0);
                 return -1;
             }
 
@@ -142,13 +140,13 @@ static int handle_message_type(struct lws *wsi, const char *type)
             json_error_t error;
             json_t *json_msg = json_loads((const char *)ws_context->message_buffer, 0, &error);
             if (!json_msg) {
-                log_this(SR_WEBSOCKET, "Error parsing JSON for terminal processing: %s", LOG_LEVEL_ERROR, error.text);
+                log_this(SR_WEBSOCKET, "Error parsing JSON for terminal processing: %s", LOG_LEVEL_ERROR, 1, error.text);
                 return -1;
             }
 
             const char *msg_type = json_string_value(json_object_get(json_msg, "type"));
             if (!msg_type) {
-                log_this(SR_WEBSOCKET, "Terminal message missing type field", LOG_LEVEL_ERROR);
+                log_this(SR_WEBSOCKET, "Terminal message missing type field", LOG_LEVEL_ERROR, 0);
                 json_decref(json_msg);
                 return -1;
             }
@@ -158,7 +156,7 @@ static int handle_message_type(struct lws *wsi, const char *type)
             // Create a TerminalWSConnection adapter to use terminal_websocket.c functions
             TerminalWSConnection *ws_conn_adapter = calloc(1, sizeof(TerminalWSConnection));
             if (!ws_conn_adapter) {
-                log_this(SR_WEBSOCKET, "Failed to allocate TerminalWSConnection adapter", LOG_LEVEL_ERROR);
+                log_this(SR_WEBSOCKET, "Failed to allocate TerminalWSConnection adapter", LOG_LEVEL_ERROR, 0);
                 result = -1;
             } else {
                 // Initialize the adapter
@@ -176,7 +174,7 @@ static int handle_message_type(struct lws *wsi, const char *type)
                 if (!process_terminal_websocket_message(ws_conn_adapter,
                                                       (const char *)ws_context->message_buffer,
                                                       ws_context->message_length)) {
-                    log_this(SR_WEBSOCKET, "Terminal WebSocket message processing failed", LOG_LEVEL_ERROR);
+                    log_this(SR_WEBSOCKET, "Terminal WebSocket message processing failed", LOG_LEVEL_ERROR, 0);
                     result = -1;
                 }
 
@@ -187,13 +185,12 @@ static int handle_message_type(struct lws *wsi, const char *type)
             json_decref(json_msg);
             return result;
         } else {
-            log_this(SR_WEBSOCKET, "Terminal message received but protocol is not 'terminal': %s",
-                    LOG_LEVEL_ALERT, protocol ? protocol->name : "unknown");
+            log_this(SR_WEBSOCKET, "Terminal message received but protocol is not 'terminal': %s", LOG_LEVEL_ALERT, 1, protocol ? protocol->name : "unknown");
             return -1;
         }
     }
 
-    log_this(SR_WEBSOCKET, "Unknown message type: %s", LOG_LEVEL_STATE, type);
+    log_this(SR_WEBSOCKET, "Unknown message type: %s", LOG_LEVEL_STATE, 1, type);
     return -1;
 }
 
@@ -214,14 +211,14 @@ static TerminalSession* find_or_create_terminal_session(struct lws *wsi)
     if (existing_session && existing_session->active) {
         // Mark session as connected when reusing
         existing_session->connected = true;
-        log_this(SR_WEBSOCKET, "Reusing existing terminal session: %s", LOG_LEVEL_STATE, existing_session->session_id);
+        log_this(SR_WEBSOCKET, "Reusing existing terminal session: %s", LOG_LEVEL_STATE, 1, existing_session->session_id);
         return existing_session;
     }
 
     // Get terminal configuration from global config
     extern AppConfig *app_config;
     if (!app_config || !app_config->terminal.enabled) {
-        log_this(SR_WEBSOCKET, "Terminal subsystem not enabled", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSOCKET, "Terminal subsystem not enabled", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -234,7 +231,7 @@ static TerminalSession* find_or_create_terminal_session(struct lws *wsi)
                                                           DEFAULT_ROWS,
                                                           DEFAULT_COLS);
     if (!new_session) {
-        log_this(SR_WEBSOCKET, "Failed to create new terminal session", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSOCKET, "Failed to create new terminal session", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -247,7 +244,7 @@ static TerminalSession* find_or_create_terminal_session(struct lws *wsi)
     // NOTE: I/O bridge thread is now handled by terminal_websocket.c to avoid duplicate threads
     // start_pty_bridge_thread(wsi, new_session);
 
-    log_this(SR_WEBSOCKET, "Created new terminal connection for session: %s", LOG_LEVEL_STATE, new_session->session_id);
+    log_this(SR_WEBSOCKET, "Created new terminal connection for session: %s", LOG_LEVEL_STATE, 1, new_session->session_id);
 
     return new_session;
 }
@@ -257,7 +254,7 @@ int ws_write_json_response(struct lws *wsi, json_t *json)
 {
     char *response_str = json_dumps(json, JSON_COMPACT);
     if (!response_str) {
-        log_this(SR_WEBSOCKET, "Failed to serialize JSON response", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSOCKET, "Failed to serialize JSON response", LOG_LEVEL_ERROR, 0);
         return -1;
     }
 
@@ -280,11 +277,11 @@ static void *pty_output_bridge_thread(void *arg)
 {
     PtyBridgeContext *bridge = (PtyBridgeContext *)arg;
     if (!bridge || !bridge->wsi || !bridge->session || !bridge->session->pty_shell) {
-        log_this(SR_TERMINAL, "Invalid PTY bridge context", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Invalid PTY bridge context", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
-    log_this(SR_TERMINAL, "PTY output bridge thread started for session: %s", LOG_LEVEL_STATE, bridge->session->session_id);
+    log_this(SR_TERMINAL, "PTY output bridge thread started for session: %s", LOG_LEVEL_STATE, 1, bridge->session->session_id);
 
     char buffer[4096];
     fd_set readfds;
@@ -296,9 +293,11 @@ static void *pty_output_bridge_thread(void *arg)
         // Debug: Log thread status periodically
         static int log_counter = 0;
         if (log_counter++ % 100 == 0) {  // Log every 100 iterations
-            log_this(SR_TERMINAL, "PTY bridge thread active for session %s: active=%d, connected=%d, pty_running=%d",
-                    LOG_LEVEL_DEBUG, bridge->session->session_id, bridge->active, bridge->session->connected,
-                    pty_is_running(bridge->session->pty_shell));
+            log_this(SR_TERMINAL, "PTY bridge thread active for session %s: active=%d, connected=%d, pty_running=%d", LOG_LEVEL_DEBUG, 4,
+                bridge->session->session_id, 
+                bridge->active, 
+                bridge->session->connected,
+                pty_is_running(bridge->session->pty_shell));
         }
 
         // Clear and set up file descriptor set
@@ -344,30 +343,30 @@ static void *pty_output_bridge_thread(void *arg)
 
                             // Use non-blocking write to avoid thread issues
                             if (lws_write(bridge->wsi, ws_buf + LWS_PRE, len, LWS_WRITE_TEXT) < 0) {
-                                log_this(SR_WEBSOCKET, "Failed to send PTY output via WebSocket", LOG_LEVEL_ERROR);
+                                log_this(SR_WEBSOCKET, "Failed to send PTY output via WebSocket", LOG_LEVEL_ERROR, 0);
                             } else {
-                                // log_this(SR_WEBSOCKET, "Sent PTY output: %.*s", LOG_LEVEL_DEBUG, (int)len, response_str);
+                                // log_this(SR_WEBSOCKET, "Sent PTY output: %.*s", LOG_LEVEL_DEBUG 2, (int,0)len, response_str);
                             }
 
                             free(ws_buf);
                         } else {
-                            log_this(SR_TERMINAL, "Failed to allocate WebSocket buffer for PTY output", LOG_LEVEL_ERROR);
+                            log_this(SR_TERMINAL, "Failed to allocate WebSocket buffer for PTY output", LOG_LEVEL_ERROR, 0);
                         }
 
                         free(response_str);
                     } else {
-                        log_this(SR_TERMINAL, "Failed to serialize JSON for PTY output", LOG_LEVEL_ERROR);
+                        log_this(SR_TERMINAL, "Failed to serialize JSON for PTY output", LOG_LEVEL_ERROR, 0);
                     }
                 } else {
-                    log_this(SR_TERMINAL, "Failed to create JSON object for PTY output", LOG_LEVEL_ERROR);
+                    log_this(SR_TERMINAL, "Failed to create JSON object for PTY output", LOG_LEVEL_ERROR, 0);
                 }
             } else if (bytes_read == 0) {
                 // PTY closed, exit thread
-                log_this(SR_TERMINAL, "PTY closed, exiting bridge thread", LOG_LEVEL_STATE);
+                log_this(SR_TERMINAL, "PTY closed, exiting bridge thread", LOG_LEVEL_STATE, 0);
                 break;
             } else {
                 // Error reading PTY
-                log_this(SR_TERMINAL, "Error reading from PTY: %s", LOG_LEVEL_ERROR, strerror(errno));
+                log_this(SR_TERMINAL, "Error reading from PTY: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
                 break;
             }
         } else if (result == 0) {
@@ -376,15 +375,17 @@ static void *pty_output_bridge_thread(void *arg)
         } else {
             // Error in select
             if (errno != EINTR) {
-                log_this(SR_TERMINAL, "Select error in PTY bridge: %s", LOG_LEVEL_ERROR, strerror(errno));
+                log_this(SR_TERMINAL, "Select error in PTY bridge: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
                 break;
             }
         }
     }
 
     bridge->active = false;
-    log_this(SR_TERMINAL, "PTY output bridge thread exiting for session: %s (active=%d, connection_closed=%d)",
-            LOG_LEVEL_STATE, bridge->session->session_id, bridge->active, bridge->connection_closed);
+    log_this(SR_TERMINAL, "PTY output bridge thread exiting for session: %s (active=%d, connection_closed=%d)", LOG_LEVEL_STATE, 3,
+        bridge->session->session_id, 
+        bridge->active, 
+        bridge->connection_closed);
     free(bridge);
     return NULL;
 }
@@ -392,16 +393,16 @@ static void *pty_output_bridge_thread(void *arg)
 __attribute__((unused)) static void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session)
 {
     if (!wsi || !session || !session->pty_shell) {
-        log_this(SR_TERMINAL, "Invalid parameters for PTY bridge thread", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Invalid parameters for PTY bridge thread", LOG_LEVEL_ERROR, 0);
         return;
     }
 
-    log_this(SR_TERMINAL, "Starting PTY bridge thread for terminal session: %s", LOG_LEVEL_STATE, session->session_id);
+    log_this(SR_TERMINAL, "Starting PTY bridge thread for terminal session: %s", LOG_LEVEL_STATE, 1, session->session_id);
 
     // Create bridge context
     PtyBridgeContext *bridge = malloc(sizeof(PtyBridgeContext));
     if (!bridge) {
-        log_this(SR_TERMINAL, "Failed to allocate PTY bridge context", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to allocate PTY bridge context", LOG_LEVEL_ERROR, 0);
         return;
     }
 
@@ -416,7 +417,7 @@ __attribute__((unused)) static void start_pty_bridge_thread(struct lws *wsi, Ter
     // Create background thread for PTY I/O
     pthread_t bridge_thread;
     if (pthread_create(&bridge_thread, NULL, pty_output_bridge_thread, bridge) != 0) {
-        log_this(SR_TERMINAL, "Failed to create PTY bridge thread", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to create PTY bridge thread", LOG_LEVEL_ERROR, 0);
         session->pty_bridge_context = NULL;
         free(bridge);
         return;
@@ -425,7 +426,7 @@ __attribute__((unused)) static void start_pty_bridge_thread(struct lws *wsi, Ter
     // Detach the thread since we don't need to join it
     pthread_detach(bridge_thread);
 
-    log_this(SR_TERMINAL, "PTY bridge thread created and detached for session: %s", LOG_LEVEL_STATE, session->session_id);
+    log_this(SR_TERMINAL, "PTY bridge thread created and detached for session: %s", LOG_LEVEL_STATE, 1, session->session_id);
 }
 
 void stop_pty_bridge_thread(TerminalSession *session)
@@ -436,7 +437,7 @@ void stop_pty_bridge_thread(TerminalSession *session)
 
     PtyBridgeContext *bridge = (PtyBridgeContext *)session->pty_bridge_context;
 
-    log_this(SR_TERMINAL, "Stopping PTY bridge thread for session: %s", LOG_LEVEL_STATE, session->session_id);
+    log_this(SR_TERMINAL, "Stopping PTY bridge thread for session: %s", LOG_LEVEL_STATE, 1, session->session_id);
 
     // Signal the bridge thread to stop
     bridge->connection_closed = true;
@@ -447,5 +448,5 @@ void stop_pty_bridge_thread(TerminalSession *session)
     // Clear the bridge context from session
     session->pty_bridge_context = NULL;
 
-    log_this(SR_TERMINAL, "PTY bridge thread stop signal sent for session: %s", LOG_LEVEL_STATE, session->session_id);
+    log_this(SR_TERMINAL, "PTY bridge thread stop signal sent for session: %s", LOG_LEVEL_STATE, 1, session->session_id);
 }

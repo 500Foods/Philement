@@ -178,68 +178,66 @@ LaunchReadiness check_oidc_launch_readiness(void) {
  */
 int launch_oidc_subsystem(void) {
     // Begin LAUNCH: OIDC section
-    log_this(SR_OIDC, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_OIDC, "LAUNCH: " SR_OIDC, LOG_LEVEL_STATE);
+    log_this(SR_OIDC, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "LAUNCH: " SR_OIDC, LOG_LEVEL_STATE, 0);
 
     // Step 1: Verify explicit dependencies
-    log_this(SR_OIDC, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE, 0);
 
     // Check Registry dependency
     if (is_subsystem_running_by_name("Registry")) {
-        log_this(SR_OIDC, "    Registry dependency verified (running)", LOG_LEVEL_STATE);
+        log_this(SR_OIDC, "    Registry dependency verified (running)", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_OIDC, "    Registry dependency not met", LOG_LEVEL_ERROR);
-        log_this(SR_OIDC, "LAUNCH: OIDC - Failed: Registry dependency not met", LOG_LEVEL_STATE);
+        log_this(SR_OIDC, "    Registry dependency not met", LOG_LEVEL_ERROR, 0);
+        log_this(SR_OIDC, "LAUNCH: OIDC - Failed: Registry dependency not met", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     // Check Network dependency (recommended for OIDC external connectivity)
     if (is_subsystem_running_by_name("Network")) {
-        log_this(SR_OIDC, "    Network dependency verified (running)", LOG_LEVEL_STATE);
+        log_this(SR_OIDC, "    Network dependency verified (running)", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_OIDC, "    Network dependency not met - OIDC may have limited external connectivity", LOG_LEVEL_ALERT);
+        log_this(SR_OIDC, "    Network dependency not met - OIDC may have limited external connectivity", LOG_LEVEL_ALERT, 0);
     }
 
-    log_this(SR_OIDC, "    All critical dependencies verified", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "    All critical dependencies verified", LOG_LEVEL_STATE, 0);
 
     // Step 2: Check if OIDC is enabled
-    log_this(SR_OIDC, "  Step 2: Checking OIDC configuration", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "  Step 2: Checking OIDC configuration", LOG_LEVEL_STATE, 0);
     if (!app_config || !app_config->oidc.enabled) {
-        log_this(SR_OIDC, "    OIDC is disabled - skipping service initialization", LOG_LEVEL_STATE);
-        log_this(SR_OIDC, "  Step 3: Updating subsystem registry", LOG_LEVEL_STATE);
+        log_this(SR_OIDC, "    OIDC is disabled - skipping service initialization", LOG_LEVEL_STATE, 0);
+        log_this(SR_OIDC, "  Step 3: Updating subsystem registry", LOG_LEVEL_STATE, 0);
         update_subsystem_on_startup(SR_OIDC, true);
 
         SubsystemState final_state = get_subsystem_state(oidc_subsystem_id);
         if (final_state == SUBSYSTEM_RUNNING) {
-            log_this(SR_OIDC, "LAUNCH: OIDC - Successfully launched (disabled state)", LOG_LEVEL_STATE);
+            log_this(SR_OIDC, "LAUNCH: OIDC - Successfully launched (disabled state)", LOG_LEVEL_STATE, 0);
             return 1;
         } else {
-            log_this(SR_OIDC, "LAUNCH: OIDC - Warning: Unexpected final state: %s",
-                    LOG_LEVEL_ALERT, subsystem_state_to_string(final_state));
+            log_this(SR_OIDC, "LAUNCH: OIDC - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
             return 0;
         }
     }
 
     // Step 3: Initialize OIDC services
-    log_this(SR_OIDC, "  Step 3: Initializing OIDC services", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "  Step 3: Initializing OIDC services", LOG_LEVEL_STATE, 0);
 
     // TODO: Add actual OIDC service initialization here when implementation is ready
     // For now, we log that the service would be initialized
-    log_this(SR_OIDC, "    OIDC service initialization placeholder", LOG_LEVEL_STATE);
-    log_this(SR_OIDC, "    OIDC server would start on port %d", LOG_LEVEL_STATE, app_config->oidc.port);
-    log_this(SR_OIDC, "    OIDC issuer: %s", LOG_LEVEL_STATE, app_config->oidc.issuer);
+    log_this(SR_OIDC, "    OIDC service initialization placeholder", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "    OIDC server would start on port %d", LOG_LEVEL_STATE, 1, app_config->oidc.port);
+    log_this(SR_OIDC, "    OIDC issuer: %s", LOG_LEVEL_STATE, 1, app_config->oidc.issuer);
 
     // Step 4: Update registry and verify state
-    log_this(SR_OIDC, "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE, 0);
     update_subsystem_on_startup(SR_OIDC, true);
 
     SubsystemState final_state = get_subsystem_state(oidc_subsystem_id);
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this(SR_OIDC, "LAUNCH: OIDC - Successfully launched and running", LOG_LEVEL_STATE);
+        log_this(SR_OIDC, "LAUNCH: OIDC - Successfully launched and running", LOG_LEVEL_STATE, 0);
         return 1;
     } else {
-        log_this(SR_OIDC, "LAUNCH: OIDC - Warning: Unexpected final state: %s",
-                LOG_LEVEL_ALERT, subsystem_state_to_string(final_state));
+        log_this(SR_OIDC, "LAUNCH: OIDC - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
         return 0;
     }
 }

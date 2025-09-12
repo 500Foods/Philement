@@ -43,10 +43,9 @@ static void report_thread_cleanup_status(void) {
     
     // Log thread status
     if (active_threads > 0) {
-        log_this(SR_LANDING, "Warning: %d active threads remain", LOG_LEVEL_ALERT,
-                active_threads);
+        log_this(SR_LANDING, "Warning: %d active threads remain", LOG_LEVEL_ALERT, 1, active_threads);
     } else {
-        log_this(SR_LANDING, "All threads cleaned up successfully", LOG_LEVEL_STATE);
+        log_this(SR_LANDING, "All threads cleaned up successfully", LOG_LEVEL_STATE, 0);
     }
 }
 
@@ -58,14 +57,12 @@ static void report_final_landing_summary(const ReadinessResults* results) {
     if (!results) return;
     
     // Log subsystem counts
-    log_this(SR_LANDING, "Total Subsystems:     %d", LOG_LEVEL_STATE,
-             results->total_checked);
-    log_this(SR_LANDING, "Landing Success Rate: %.1f%%", LOG_LEVEL_STATE,
-             ((double)results->total_ready * 100.0) / (double)results->total_checked);
+    log_this(SR_LANDING, "Total Subsystems:     %d", LOG_LEVEL_STATE, 1, results->total_checked);
+    log_this(SR_LANDING, "Landing Success Rate: %.1f%%", LOG_LEVEL_STATE, 1, ((double)results->total_ready * 100.0) / (double)results->total_checked);
     
     // Log individual subsystem status
-    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this(SR_LANDING, "Subsystem Status:", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    log_this(SR_LANDING, "Subsystem Status:", LOG_LEVEL_STATE, 0);
     
     for (size_t i = 0; i < results->total_checked; i++) {
         const char* subsystem = results->results[i].subsystem;
@@ -81,11 +78,9 @@ static void report_final_landing_summary(const ReadinessResults* results) {
         }
         
         // Log subsystem details
-        log_this(SR_LANDING, "%s:", LOG_LEVEL_STATE, subsystem);
-        log_this(SR_LANDING, "  Status: %s", LOG_LEVEL_STATE,
-                is_ready ? "Ready for Landing" : "Not Ready");
-        log_this(SR_LANDING, "  State:  %s", LOG_LEVEL_STATE,
-                subsystem_state_to_string(state));
+        log_this(SR_LANDING, "%s:", LOG_LEVEL_STATE, 1, subsystem);
+        log_this(SR_LANDING, "  Status: %s", LOG_LEVEL_STATE, 1, is_ready ? "Ready for Landing" : "Not Ready");
+        log_this(SR_LANDING, "  State:  %s", LOG_LEVEL_STATE, 1, subsystem_state_to_string(state));
     }
 }
 
@@ -98,8 +93,8 @@ void handle_landing_review(const ReadinessResults* results, time_t start_time) {
     if (!results) return;
     
     // Begin LANDING REVIEW logging section
-    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this(SR_LANDING, "LANDING REVIEW", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    log_this(SR_LANDING, "LANDING REVIEW", LOG_LEVEL_STATE, 0);
     
     /*
      * Phase 1: Timing Assessment
@@ -109,7 +104,7 @@ void handle_landing_review(const ReadinessResults* results, time_t start_time) {
     double elapsed_time = difftime(current_time, start_time);
     
     // Log landing timing
-    log_this(SR_LANDING, "Shutdown elapsed time: %.3fs", LOG_LEVEL_STATE, elapsed_time);
+    log_this(SR_LANDING, "Shutdown elapsed time: %.3fs", LOG_LEVEL_STATE, 1, elapsed_time);
     
     /*
      * Phase 2: Thread Analysis
@@ -127,12 +122,11 @@ void handle_landing_review(const ReadinessResults* results, time_t start_time) {
      * Phase 4: Final Report
      * Provide overall landing assessment
      */
-    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
     if (results->total_ready == results->total_checked) {
-        log_this(SR_LANDING, "Landing Complete - All Systems Landed", LOG_LEVEL_STATE);
+        log_this(SR_LANDING, "Landing Complete - All Systems Landed", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_LANDING, "Landing Complete - Some Systems Failed to Land", LOG_LEVEL_ALERT);
-        log_this(SR_LANDING, "Landed: %d/%d", LOG_LEVEL_STATE,
-                results->total_ready, results->total_checked);
+        log_this(SR_LANDING, "Landing Complete - Some Systems Failed to Land", LOG_LEVEL_ALERT, 0);
+        log_this(SR_LANDING, "Landed: %d/%d", LOG_LEVEL_STATE, 2, results->total_ready, results->total_checked);
     }
 }

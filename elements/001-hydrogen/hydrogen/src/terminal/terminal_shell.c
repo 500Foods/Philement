@@ -41,15 +41,15 @@
  */
 PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
     if (!shell_command || !session) {
-        log_this(SR_TERMINAL, "Invalid parameters for pty_spawn_shell", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Invalid parameters for pty_spawn_shell", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
-    log_this(SR_TERMINAL, "Attempting to spawn shell: %s", LOG_LEVEL_STATE, shell_command);
+    log_this(SR_TERMINAL, "Attempting to spawn shell: %s", LOG_LEVEL_STATE, 1, shell_command);
 
     PtyShell *shell = calloc(1, sizeof(PtyShell));
     if (!shell) {
-        log_this(SR_TERMINAL, "Failed to allocate PtyShell structure", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to allocate PtyShell structure", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -61,7 +61,7 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
     char slave_name[256];
 
     if (openpty(&master_fd, &shell->slave_fd, slave_name, NULL, NULL) == -1) {
-        log_this(SR_TERMINAL, "Failed to create PTY pair: %s", LOG_LEVEL_ERROR, strerror(errno));
+        log_this(SR_TERMINAL, "Failed to create PTY pair: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
         free(shell);
         return NULL;
     }
@@ -70,7 +70,7 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
     shell->master_fd = master_fd;
     shell->slave_name = strdup(slave_name);
     if (!shell->slave_name) {
-        log_this(SR_TERMINAL, "Failed to allocate slave name", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to allocate slave name", LOG_LEVEL_ERROR, 0);
         close(master_fd);
         close(shell->slave_fd);
         free(shell);
@@ -79,7 +79,7 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
 
     // Make master FD non-blocking
     if (fcntl(master_fd, F_SETFL, O_NONBLOCK) == -1) {
-        log_this(SR_TERMINAL, "Failed to set master FD non-blocking", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to set master FD non-blocking", LOG_LEVEL_ERROR, 0);
         close(master_fd);
         close(shell->slave_fd);
         free(shell->slave_name);
@@ -90,7 +90,7 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
     // Fork child process
     pid_t pid = fork();
     if (pid == -1) {
-        log_this(SR_TERMINAL, "Fork failed: %s", LOG_LEVEL_ERROR, strerror(errno));
+        log_this(SR_TERMINAL, "Fork failed: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
         close(master_fd);
         close(shell->slave_fd);
         free(shell->slave_name);
@@ -107,7 +107,7 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
 
         // Set controlling terminal
         if (ioctl(shell->slave_fd, TIOCSCTTY, NULL) == -1) {
-            log_this(SR_TERMINAL, "Failed to set controlling terminal", LOG_LEVEL_ERROR);
+            log_this(SR_TERMINAL, "Failed to set controlling terminal", LOG_LEVEL_ERROR, 0);
             exit(1);
         }
 
@@ -141,8 +141,7 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
         shell->pid = pid;
         close(shell->slave_fd); // Close slave in parent
 
-        log_this(SR_TERMINAL, "Shell spawned successfully - PID: %d, PTY: %s",
-                LOG_LEVEL_STATE, pid, slave_name);
+        log_this(SR_TERMINAL, "Shell spawned successfully - PID: %d, PTY: %s", LOG_LEVEL_STATE, 2, pid, slave_name);
 
         // Wait briefly to ensure shell starts successfully
         usleep(10000); // 10ms
@@ -152,7 +151,7 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
         pid_t result = waitpid(pid, &status, WNOHANG);
         if (result == pid) {
         if (WIFEXITED(status) || WIFSIGNALED(status)) {
-            log_this(SR_TERMINAL, "Shell process terminated prematurely", LOG_LEVEL_ERROR);
+            log_this(SR_TERMINAL, "Shell process terminated prematurely", LOG_LEVEL_ERROR, 0);
                 close(master_fd);
                 free(shell->slave_name);
                 free(shell);
@@ -182,7 +181,7 @@ int pty_write_data(PtyShell *shell, const char *data, size_t size) {
     ssize_t written = write(shell->master_fd, data, size);
     if (written == -1) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            log_this(SR_TERMINAL, "Failed to write to PTY: %s", LOG_LEVEL_ERROR, strerror(errno));
+            log_this(SR_TERMINAL, "Failed to write to PTY: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
         }
         return -1;
     }
@@ -208,7 +207,7 @@ int pty_read_data(PtyShell *shell, char *buffer, size_t size) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             return 0; // No data available
         } else {
-            log_this(SR_TERMINAL, "Failed to read from PTY: %s", LOG_LEVEL_ERROR, strerror(errno));
+            log_this(SR_TERMINAL, "Failed to read from PTY: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
             return -1;
         }
     }
@@ -237,7 +236,7 @@ bool pty_set_size(PtyShell *shell, unsigned short rows, unsigned short cols) {
     };
 
     if (ioctl(shell->master_fd, TIOCSWINSZ, &ws) == -1) {
-        log_this(SR_TERMINAL, "Failed to set terminal size: %s", LOG_LEVEL_ERROR, strerror(errno));
+        log_this(SR_TERMINAL, "Failed to set terminal size: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
         return false;
     }
 
@@ -291,15 +290,14 @@ bool pty_terminate_shell(PtyShell *shell) {
 
     // Send SIGTERM first
     if (kill(shell->pid, SIGTERM) == -1) {
-        log_this(SR_TERMINAL, "Failed to send SIGTERM to process %d: %s",
-                LOG_LEVEL_ERROR, shell->pid, strerror(errno));
+        log_this(SR_TERMINAL, "Failed to send SIGTERM to process %d: %s", LOG_LEVEL_ERROR, 2, shell->pid, strerror(errno));
         return false;
     }
 
     // Process termination will be handled by the system
 
     shell->running = false;
-    log_this(SR_TERMINAL, "Shell process terminated successfully", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "Shell process terminated successfully", LOG_LEVEL_STATE, 0);
 
     return true;
 }
@@ -314,7 +312,7 @@ void pty_cleanup_shell(PtyShell *shell) {
         return;
     }
 
-    log_this(SR_TERMINAL, "Cleaning up PTY shell resources", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "Cleaning up PTY shell resources", LOG_LEVEL_STATE, 0);
 
     // Terminate process if still running
     if (shell->running) {

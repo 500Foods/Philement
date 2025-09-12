@@ -21,13 +21,13 @@ bool load_terminal_config(json_t* root, AppConfig* config) {
     // Initialize string fields with defaults
     terminal->web_path = strdup("/terminal");  // Standard web path
     if (!terminal->web_path) {
-        log_this(SR_TERMINAL, "Failed to allocate web path string", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to allocate web path string", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     terminal->shell_command = strdup("/bin/bash");  // Default shell
     if (!terminal->shell_command) {
-        log_this(SR_TERMINAL, "Failed to allocate shell command string", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to allocate shell command string", LOG_LEVEL_ERROR, 0);
         free(terminal->web_path);
         terminal->web_path = NULL;
         return false;
@@ -36,7 +36,7 @@ bool load_terminal_config(json_t* root, AppConfig* config) {
     // NEW: Initialize WebRoot and CORS fields
     terminal->webroot = strdup("PAYLOAD:/terminal");  // Default WebRoot
     if (!terminal->webroot) {
-        log_this(SR_TERMINAL, "Failed to allocate webroot string", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to allocate webroot string", LOG_LEVEL_ERROR, 0);
         free(terminal->web_path);
         free(terminal->shell_command);
         terminal->web_path = NULL;

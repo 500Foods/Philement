@@ -51,36 +51,36 @@ LaunchReadiness check_notify_landing_readiness(void) {
  */
 static void free_notify_resources(void) {
     // Begin LANDING: NOTIFY section
-    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this(SR_LANDING, "LANDING: NOTIFY", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    log_this(SR_LANDING, "LANDING: NOTIFY", LOG_LEVEL_STATE, 0);
 
     // Check if notify is enabled before attempting cleanup
     if (app_config && !app_config->notify.enabled) {
-        log_this(SR_LANDING, "  Step 1: Notify disabled, skipping cleanup", LOG_LEVEL_STATE);
+        log_this(SR_LANDING, "  Step 1: Notify disabled, skipping cleanup", LOG_LEVEL_STATE, 0);
         update_subsystem_after_shutdown("Notify");
-        log_this(SR_LANDING, "  Step 2: Notify subsystem marked as inactive", LOG_LEVEL_STATE);
-        log_this(SR_LANDING, "LANDING: NOTIFY cleanup complete", LOG_LEVEL_STATE);
+        log_this(SR_LANDING, "  Step 2: Notify subsystem marked as inactive", LOG_LEVEL_STATE, 0);
+        log_this(SR_LANDING, "LANDING: NOTIFY cleanup complete", LOG_LEVEL_STATE, 0);
         return;
     }
 
     // Clean up notification service resources
-    log_this(SR_LANDING, "  Step 1: Stopping notification service", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "  Step 1: Stopping notification service", LOG_LEVEL_STATE, 0);
 
     // Note: If SMTP connections or notification queues were created,
     // they would be cleaned up here. Currently the notify subsystem
     // only initializes configuration, so minimal cleanup is needed.
 
-    log_this(SR_LANDING, "  Step 2: Clearing notification templates", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "  Step 2: Clearing notification templates", LOG_LEVEL_STATE, 0);
     // Any cached notification templates would be freed here
 
-    log_this(SR_LANDING, "  Step 3: Closing notification connections", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "  Step 3: Closing notification connections", LOG_LEVEL_STATE, 0);
     // Any persistent connections (SMTP, etc.) would be closed here
 
     // Update the registry that notify has been shut down
     update_subsystem_after_shutdown("Notify");
-    log_this(SR_LANDING, "  Step 4: Notify subsystem marked as inactive", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "  Step 4: Notify subsystem marked as inactive", LOG_LEVEL_STATE, 0);
 
-    log_this(SR_LANDING, "LANDING: NOTIFY cleanup complete", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "LANDING: NOTIFY cleanup complete", LOG_LEVEL_STATE, 0);
 }
 
 /**
@@ -88,19 +88,19 @@ static void free_notify_resources(void) {
  */
 int land_notify_subsystem(void) {
     // Begin LANDING: NOTIFY section
-    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this(SR_LANDING, "LANDING: NOTIFY", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    log_this(SR_LANDING, "LANDING: NOTIFY", LOG_LEVEL_STATE, 0);
 
     // Get current subsystem state through registry
     int subsys_id = get_subsystem_id_by_name("Notify");
     if (subsys_id < 0 || !is_subsystem_running(subsys_id)) {
-        log_this(SR_LANDING, "Notify not running, skipping shutdown", LOG_LEVEL_STATE);
+        log_this(SR_LANDING, "Notify not running, skipping shutdown", LOG_LEVEL_STATE, 0);
         return 1;  // Success - nothing to do
     }
 
     // Step 1: Mark as stopping
     update_subsystem_state(subsys_id, SUBSYSTEM_STOPPING);
-    log_this(SR_LANDING, "LANDING: NOTIFY - Beginning shutdown sequence", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "LANDING: NOTIFY - Beginning shutdown sequence", LOG_LEVEL_STATE, 0);
 
     // Step 2: Free resources and mark as inactive
     free_notify_resources();
@@ -108,10 +108,9 @@ int land_notify_subsystem(void) {
     // Step 3: Verify final state for restart capability
     SubsystemState final_state = get_subsystem_state(subsys_id);
     if (final_state == SUBSYSTEM_INACTIVE) {
-        log_this(SR_LANDING, "LANDING: NOTIFY - Successfully landed and ready for future restart", LOG_LEVEL_STATE);
+        log_this(SR_LANDING, "LANDING: NOTIFY - Successfully landed and ready for future restart", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_LANDING, "LANDING: NOTIFY - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
-                subsystem_state_to_string(final_state));
+        log_this(SR_LANDING, "LANDING: NOTIFY - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
     }
 
     return 1;  // Success

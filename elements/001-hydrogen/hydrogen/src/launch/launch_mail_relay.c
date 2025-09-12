@@ -155,8 +155,8 @@ int launch_mail_relay_subsystem(void) {
     
     mail_relay_system_shutdown = 0;
     
-    log_this(SR_MAIL_RELAY, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_MAIL_RELAY, "LAUNCH: " SR_MAIL_RELAY, LOG_LEVEL_STATE);    
+    log_this(SR_MAIL_RELAY, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    log_this(SR_MAIL_RELAY, "LAUNCH: " SR_MAIL_RELAY, LOG_LEVEL_STATE, 0);
     
     // Initialize mail relay system
     // TODO: Add proper initialization when system is ready

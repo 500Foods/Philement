@@ -349,7 +349,7 @@ void log_readiness_messages(LaunchReadiness* readiness) {
         }
 
         // Print the message directly (formatting is already in the message)
-        log_this(SR_LAUNCH, "%s", level, readiness->messages[i]);
+        log_this(SR_LAUNCH, "%s", level, 1, readiness->messages[i]);
     }
 }
 
@@ -402,8 +402,8 @@ ReadinessResults handle_readiness_checks(void) {
     
     // Begin LAUNCH READINESS logging section
     log_group_begin();
-        log_this(SR_LAUNCH, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-        log_this(SR_LAUNCH, "LAUNCH READINESS", LOG_LEVEL_STATE);
+        log_this(SR_LAUNCH, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+        log_this(SR_LAUNCH, "LAUNCH READINESS", LOG_LEVEL_STATE, 0);
         process_subsystem_readiness(&results, &index, SR_REGISTRY, check_registry_launch_readiness());
         process_subsystem_readiness(&results, &index, SR_PAYLOAD, check_payload_launch_readiness());
         process_subsystem_readiness(&results, &index, SR_THREADS, check_threads_launch_readiness());

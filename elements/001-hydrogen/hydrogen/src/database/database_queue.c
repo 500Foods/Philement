@@ -23,6 +23,50 @@
 #include "database.h"
 
 /*
+ * Debug function to dump connection details - shared across files
+ */
+void debug_dump_connection(const char* label, DatabaseHandle* conn, const char* dqm_label) {
+    log_this(dqm_label, "=== %s CONNECTION DUMP ===", LOG_LEVEL_ERROR, 1, label);
+    log_this(dqm_label, "Connection pointer: %p", LOG_LEVEL_ERROR, 1, (void*)conn);
+    
+    if (!conn) {
+        log_this(dqm_label, "Connection is NULL", LOG_LEVEL_ERROR, 0);
+    } else if ((uintptr_t)conn < 0x1000) {
+        log_this(dqm_label, "Connection is invalid pointer: 0x%lx", LOG_LEVEL_ERROR, 1, (uintptr_t)conn);
+    } else {
+        log_this(dqm_label, "Engine type: %d", LOG_LEVEL_ERROR, 1, (int)conn->engine_type);
+        log_this(dqm_label, "Status: %d", LOG_LEVEL_ERROR, 1, (int)conn->status);
+        log_this(dqm_label, "Connection handle: %p", LOG_LEVEL_ERROR, 1, conn->connection_handle);
+        log_this(dqm_label, "Designator: %s", LOG_LEVEL_ERROR, 1, conn->designator ? conn->designator : "NULL");
+        log_this(dqm_label, "Connected since: %ld", LOG_LEVEL_ERROR, 1, (long)conn->connected_since);
+        log_this(dqm_label, "In use: %s", LOG_LEVEL_ERROR, 1, conn->in_use ? "true" : "false");
+    }
+    log_this(dqm_label, "=== END %s DUMP ===", LOG_LEVEL_ERROR, 1, label);
+}
+
+/*
+ * Debug function to dump engine interface details
+ */
+void debug_dump_engine(const char* label, DatabaseEngineInterface* engine, const char* dqm_label) {
+    log_this(dqm_label, "=== %s ENGINE DUMP ===", LOG_LEVEL_ERROR, 1, label);
+    log_this(dqm_label, "Engine pointer: %p", LOG_LEVEL_ERROR, 1, (void*)engine);
+
+    if (!engine) {
+        log_this(dqm_label, "Engine is NULL", LOG_LEVEL_ERROR, 0);
+    } else if ((uintptr_t)engine < 0x1000) {
+        log_this(dqm_label, "Engine is invalid pointer: 0x%lx", LOG_LEVEL_ERROR, 1, (uintptr_t)engine);
+    } else {
+        log_this(dqm_label, "Engine type: %d", LOG_LEVEL_ERROR, 1, (int)engine->engine_type);
+        log_this(dqm_label, "Name: %s", LOG_LEVEL_ERROR, 1, engine->name ? engine->name : "NULL");
+        log_this(dqm_label, "execute_query: %p", LOG_LEVEL_ERROR, 1, (void*)(uintptr_t)engine->execute_query);
+        log_this(dqm_label, "connect: %p", LOG_LEVEL_ERROR, 1, (void*)(uintptr_t)engine->connect);
+        log_this(dqm_label, "disconnect: %p", LOG_LEVEL_ERROR, 1, (void*)(uintptr_t)engine->disconnect);
+        log_this(dqm_label, "health_check: %p", LOG_LEVEL_ERROR, 1, (void*)(uintptr_t)engine->health_check);
+    }
+    log_this(dqm_label, "=== END %s ENGINE DUMP ===", LOG_LEVEL_ERROR, 1, label);
+}
+
+/*
  * Get total queue depth across all queues
  */
 size_t database_queue_get_depth(DatabaseQueue* db_queue) {
@@ -84,7 +128,7 @@ bool database_queue_health_check(DatabaseQueue* db_queue) {
     // Check if queues are responding (placeholder - expand with actual connection testing)
     size_t total_depth = database_queue_get_depth(db_queue);
     if (total_depth > 10000) {  // Arbitrary high watermark
-        log_this(SR_DATABASE, "Queue depth too high: %zu for %s", LOG_LEVEL_ALERT, total_depth, db_queue->database_name);
+        log_this(SR_DATABASE, "Queue depth too high: %zu for %s", LOG_LEVEL_ALERT, 2, total_depth, db_queue->database_name);
     }
 
     return true;

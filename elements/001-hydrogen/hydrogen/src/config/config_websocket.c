@@ -31,26 +31,26 @@ bool load_websocket_config(json_t* root, AppConfig* config) {
     // Initialize string fields with defaults
     ws->protocol = strdup("hydrogen");
     if (!ws->protocol) {
-        log_this(SR_CONFIG, "Failed to allocate protocol string, using hardcoded default", LOG_LEVEL_ALERT);
+        log_this(SR_CONFIG, "Failed to allocate protocol string, using hardcoded default", LOG_LEVEL_ALERT, 0);
         ws->protocol = NULL; // Will be handled by WebSocket code
     }
 
     ws->key = strdup("${env.WEBSOCKET_KEY}");
     if (!ws->key) {
-        log_this(SR_CONFIG, "Failed to allocate key string, using hardcoded default", LOG_LEVEL_ALERT);
+        log_this(SR_CONFIG, "Failed to allocate key string, using hardcoded default", LOG_LEVEL_ALERT, 0);
         ws->key = NULL; // Will be handled by WebSocket code
     }
 
     // If no JSON root provided, use defaults (matches no-config behavior)
     if (!root) {
-        log_this(SR_CONFIG, "No configuration provided, using defaults", LOG_LEVEL_STATE);
+        log_this(SR_CONFIG, "No configuration provided, using defaults", LOG_LEVEL_STATE, 0);
         return true;
     }
 
     // Process main section - if WebSocketServer section doesn't exist, keep defaults
     json_t* websocket_section = json_object_get(root, "WebSocketServer");
     if (!websocket_section) {
-        log_this(SR_CONFIG, "WebSocketServer section not found, using defaults", LOG_LEVEL_STATE);
+        log_this(SR_CONFIG, "WebSocketServer section not found, using defaults", LOG_LEVEL_STATE, 0);
         return true; // Use defaults
     }
 
@@ -69,7 +69,7 @@ bool load_websocket_config(json_t* root, AppConfig* config) {
     (void)PROCESS_INT(root, &ws->connection_timeouts, connection_cleanup_ms, "WebSocketServer.ConnectionTimeouts.ConnectionCleanupMs", "WebSocket");
     (void)PROCESS_INT(root, &ws->connection_timeouts, exit_wait_seconds, "WebSocketServer.ConnectionTimeouts.ExitWaitSeconds", "WebSocket");
 
-    log_this(SR_CONFIG, "WebSocket configuration loaded successfully (with fallbacks)", LOG_LEVEL_STATE);
+    log_this(SR_CONFIG, "WebSocket configuration loaded successfully (with fallbacks)", LOG_LEVEL_STATE, 0);
     return true; // Always succeed - use defaults for any missing values
 }
 

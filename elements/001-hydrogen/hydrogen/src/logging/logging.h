@@ -11,19 +11,20 @@
 
 /*
  * Primary logging function - use this for all logging needs
- * 
+ *
  * This is the ONLY function that should be used for logging throughout the codebase.
  * It handles:
  * - Checking if logging is initialized
  * - Applying logging filters based on configuration
  * - Routing to appropriate outputs based on configuration settings
  * - Thread safety and synchronization
- * 
+ * - Defensive checking that num_args matches the number of format specifiers
+ *
  * Logging destinations (console, database, file) are controlled by configuration
  * settings rather than parameters. This ensures consistent logging behavior
  * across the application based on centralized configuration.
  */
-void log_this(const char* subsystem, const char* format, int priority, ...);
+void log_this(const char* subsystem, const char* format, int priority, int num_args, ...);
 
 /**
  * Begin a group of log messages that should be output consecutively

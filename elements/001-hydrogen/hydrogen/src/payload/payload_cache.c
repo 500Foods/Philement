@@ -27,7 +27,7 @@ static PayloadCache global_payload_cache = {0};
 bool initialize_payload_cache(void) {
     memset(&global_payload_cache, 0, sizeof(PayloadCache));
     global_payload_cache.is_initialized = true;
-    log_this(SR_PAYLOAD, "Payload cache initialized", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "Payload cache initialized", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -36,14 +36,14 @@ bool initialize_payload_cache(void) {
  */
 bool load_payload_cache(const AppConfig *config, const char *marker) {
     if (!global_payload_cache.is_initialized) {
-        log_this(SR_PAYLOAD, "Payload cache not initialized", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "Payload cache not initialized", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Get executable path
     char *executable_path = get_executable_path();
     if (!executable_path) {
-        log_this(SR_PAYLOAD, "Failed to get executable path", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "Failed to get executable path", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -53,7 +53,7 @@ bool load_payload_cache(const AppConfig *config, const char *marker) {
     free(executable_path);
 
     if (!success) {
-        log_this(SR_PAYLOAD, "Failed to extract payload from executable", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "Failed to extract payload from executable", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -65,9 +65,9 @@ bool load_payload_cache(const AppConfig *config, const char *marker) {
 
     if (success) {
         global_payload_cache.is_available = true;
-        log_this(SR_PAYLOAD, "Payload loaded into cache successfully", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "Payload loaded into cache successfully", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_PAYLOAD, "Failed to process payload into cache", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "Failed to process payload into cache", LOG_LEVEL_ERROR, 0);
     }
 
     return success;
@@ -176,7 +176,7 @@ bool process_payload_tar_cache(const PayloadData *payload_data) {
 bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_size) {
     // Check input parameters
     if (!tar_data || tar_size == 0) {
-        log_this(SR_PAYLOAD, "Invalid payload data for processing", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "Invalid payload data for processing", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -184,12 +184,12 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
     bool is_compressed = true; // Based on extract_payload setting
 
     if (is_compressed) {
-        log_this(SR_PAYLOAD, "Processing compressed payload: %zu bytes", LOG_LEVEL_STATE, tar_size);
+        log_this(SR_PAYLOAD, "Processing compressed payload: %zu bytes", LOG_LEVEL_STATE, 1, tar_size);
 
         // Use Brotli streaming API for decompression
         BrotliDecoderState* decoder = BrotliDecoderCreateInstance(NULL, NULL, NULL);
         if (!decoder) {
-            log_this(SR_PAYLOAD, "Failed to create Brotli decoder", LOG_LEVEL_ERROR);
+            log_this(SR_PAYLOAD, "Failed to create Brotli decoder", LOG_LEVEL_ERROR, 0);
             return false;
         }
 
@@ -197,7 +197,7 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
         size_t buffer_size = tar_size * 4;  // Start with 4x the compressed size
         uint8_t* decompressed_data = malloc(buffer_size);
         if (!decompressed_data) {
-            log_this(SR_PAYLOAD, "Failed to allocate memory for decompressed data", LOG_LEVEL_ERROR);
+            log_this(SR_PAYLOAD, "Failed to allocate memory for decompressed data", LOG_LEVEL_ERROR, 0);
             BrotliDecoderDestroyInstance(decoder);
             return false;
         }
@@ -224,7 +224,7 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
                 buffer_size *= 2;
                 uint8_t* new_buffer = realloc(decompressed_data, buffer_size);
                 if (!new_buffer) {
-                    log_this(SR_PAYLOAD, "Failed to resize decompression buffer", LOG_LEVEL_ERROR);
+                    log_this(SR_PAYLOAD, "Failed to resize decompression buffer", LOG_LEVEL_ERROR, 0);
                     free(decompressed_data);
                     BrotliDecoderDestroyInstance(decoder);
                     return false;
@@ -234,8 +234,7 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
                 next_out = decompressed_data + current_position;
                 available_out = buffer_size - current_position;
             } else if (result == BROTLI_DECODER_RESULT_ERROR) {
-                log_this(SR_PAYLOAD, "Brotli decompression error: %s",
-                        LOG_LEVEL_ERROR, BrotliDecoderErrorString(BrotliDecoderGetErrorCode(decoder)));
+                log_this(SR_PAYLOAD, "Brotli decompression error: %s", LOG_LEVEL_ERROR, 1, BrotliDecoderErrorString(BrotliDecoderGetErrorCode(decoder)));
                 free(decompressed_data);
                 BrotliDecoderDestroyInstance(decoder);
                 return false;
@@ -245,7 +244,7 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
         // Clean up decoder
         BrotliDecoderDestroyInstance(decoder);
 
-        log_this(SR_PAYLOAD, "Payload decompressed: %zu bytes -> %zu bytes", LOG_LEVEL_STATE, tar_size, total_out);
+        log_this(SR_PAYLOAD, "Payload decompressed: %zu bytes -> %zu bytes", LOG_LEVEL_STATE, 2, tar_size, total_out);
 
         // Parse the decompressed tar data
         bool success = parse_tar_into_cache(decompressed_data, total_out);
@@ -273,7 +272,7 @@ void list_tar_contents(const uint8_t *tar_data, size_t tar_size) {
  */
 static bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
     if (!tar_data || tar_size < 512) {
-        log_this(SR_PAYLOAD, "Invalid tar data or size too small", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "Invalid tar data or size too small", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -282,7 +281,7 @@ static bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
     PayloadFile *temp_files = calloc(initial_capacity, sizeof(PayloadFile));
 
     if (!temp_files) {
-        log_this(SR_PAYLOAD, "Failed to allocate temporary file array", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "Failed to allocate temporary file array", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -302,7 +301,7 @@ static bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
             }
         }
         if (is_empty) {
-            log_this(SR_PAYLOAD, "Found end of tar archive", LOG_LEVEL_STATE);
+            log_this(SR_PAYLOAD, "Found end of tar archive", LOG_LEVEL_STATE, 0);
             break;
         }
 
@@ -326,7 +325,7 @@ static bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
                 initial_capacity *= 2;
                 PayloadFile *new_files = realloc(temp_files, initial_capacity * sizeof(PayloadFile));
                 if (!new_files) {
-                    log_this(SR_PAYLOAD, "Failed to grow temporary file array", LOG_LEVEL_ERROR);
+                    log_this(SR_PAYLOAD, "Failed to grow temporary file array", LOG_LEVEL_ERROR, 0);
                     free(temp_files);
                     return false;
                 }
@@ -345,21 +344,21 @@ static bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
             // Extract file data
             size_t data_offset = pos + 512;
             if (data_offset + file_size > tar_size) {
-                log_this(SR_PAYLOAD, "File data extends beyond tar boundary: %s", LOG_LEVEL_ERROR, filename);
+                log_this(SR_PAYLOAD, "File data extends beyond tar boundary: %s", LOG_LEVEL_ERROR, 1, filename);
                 free(temp_files[file_count].name);
                 break;
             }
 
             temp_files[file_count].data = malloc(file_size);
             if (!temp_files[file_count].data) {
-                log_this(SR_PAYLOAD, "Failed to allocate memory for file data: %s", LOG_LEVEL_ERROR, filename);
+                log_this(SR_PAYLOAD, "Failed to allocate memory for file data: %s", LOG_LEVEL_ERROR, 1, filename);
                 free(temp_files[file_count].name);
                 break;
             }
 
             memcpy(temp_files[file_count].data, tar_data + data_offset, file_size);
 
-            log_this(SR_PAYLOAD, "Cached file: %s (%zu bytes)", LOG_LEVEL_STATE, filename, file_size);
+            log_this(SR_PAYLOAD, "Cached file: %s (%zu bytes)", LOG_LEVEL_STATE, 2, filename, file_size);
             total_processed += file_size;
             file_count++;
         }
@@ -370,7 +369,7 @@ static bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
 
         // Safety check
         if (pos > tar_size) {
-            log_this(SR_PAYLOAD, "Exceeded tar file size during parsing", LOG_LEVEL_ERROR);
+            log_this(SR_PAYLOAD, "Exceeded tar file size during parsing", LOG_LEVEL_ERROR, 0);
             break;
         }
     }
@@ -380,8 +379,7 @@ static bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
     global_payload_cache.num_files = file_count;
     global_payload_cache.capacity = initial_capacity;
 
-    log_this(SR_PAYLOAD, "Payload cache populated with %zu files (%zu bytes total)",
-             LOG_LEVEL_STATE, file_count, total_processed);
+    log_this(SR_PAYLOAD, "Payload cache populated with %zu files (%zu bytes total)", LOG_LEVEL_STATE, 2, file_count, total_processed);
 
     return (file_count > 0);
 }
@@ -401,5 +399,5 @@ void cleanup_payload_cache(void) {
     free(global_payload_cache.tar_data);
 
     memset(&global_payload_cache, 0, sizeof(PayloadCache));
-    log_this(SR_PAYLOAD, "Payload cache cleaned up", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "Payload cache cleaned up", LOG_LEVEL_STATE, 0);
 }

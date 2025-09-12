@@ -141,8 +141,8 @@ static bool load_libmysql_functions(void) {
         libmysql_handle = dlopen("libmysqlclient.so", RTLD_LAZY);
     }
     if (!libmysql_handle) {
-        log_this(SR_DATABASE, "Failed to load libmysqlclient library", LOG_LEVEL_ERROR, true, true, true);
-        log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "Failed to load libmysqlclient library", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, 0);
         pthread_mutex_unlock(&libmysql_mutex);
         return false;
     }
@@ -174,7 +174,7 @@ static bool load_libmysql_functions(void) {
 
     // Check if all functions were loaded
     if (!mysql_init_ptr || !mysql_real_connect_ptr || !mysql_query_ptr) {
-        log_this(SR_DATABASE, "Failed to load all required libmysqlclient functions", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "Failed to load all required libmysqlclient functions", LOG_LEVEL_ERROR, 0);
         dlclose(libmysql_handle);
         libmysql_handle = NULL;
         pthread_mutex_unlock(&libmysql_mutex);
@@ -182,7 +182,7 @@ static bool load_libmysql_functions(void) {
     }
 
     pthread_mutex_unlock(&libmysql_mutex);
-    log_this(SR_DATABASE, "Successfully loaded libmysqlclient library", LOG_LEVEL_STATE, true, true, true);
+    log_this(SR_DATABASE, "Successfully loaded libmysqlclient library", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -224,20 +224,20 @@ static void destroy_prepared_statement_cache(PreparedStatementCache* cache) {
 
 bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator) {
     if (!config || !connection) {
-        log_this(SR_DATABASE, "Invalid parameters for MySQL connection", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "Invalid parameters for MySQL connection", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Load libmysqlclient library if not already loaded
     if (!load_libmysql_functions()) {
-        log_this(SR_DATABASE, "MySQL library not available", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "MySQL library not available", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Initialize MySQL connection
     void* mysql_conn = mysql_init_ptr(NULL);
     if (!mysql_conn) {
-        log_this(SR_DATABASE, "MySQL connection initialization failed", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "MySQL connection initialization failed", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -258,7 +258,7 @@ bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
     );
 
     if (!result) {
-        log_this(SR_DATABASE, "MySQL connection failed", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "MySQL connection failed", LOG_LEVEL_ERROR, 0);
         // mysql_close_ptr(mysql_conn);
         return false;
     }
@@ -309,7 +309,7 @@ bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
 
     // Use designator for logging if provided, otherwise use generic Database subsystem
     const char* log_subsystem = designator ? designator : SR_DATABASE;
-    log_this(log_subsystem, "MySQL connection established successfully", LOG_LEVEL_STATE, true, true, true);
+    log_this(log_subsystem, "MySQL connection established successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -331,7 +331,7 @@ bool mysql_disconnect(DatabaseHandle* connection) {
 
     // Use stored designator for logging if available
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(log_subsystem, "MySQL connection closed", LOG_LEVEL_STATE, true, true, true);
+    log_this(log_subsystem, "MySQL connection closed", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -366,7 +366,7 @@ bool mysql_reset_connection(DatabaseHandle* connection) {
     connection->connected_since = time(NULL);
     connection->consecutive_failures = 0;
 
-    log_this(SR_DATABASE, "MySQL connection reset successfully", LOG_LEVEL_STATE, true, true, true);
+    log_this(SR_DATABASE, "MySQL connection reset successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -386,7 +386,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
 
     // Execute query
     if (mysql_query_ptr(mysql_conn->connection, request->sql_template) != 0) {
-        log_this(SR_DATABASE, "MySQL query execution failed", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "MySQL query execution failed", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -406,7 +406,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
 
     *result = db_result;
 
-    // log_this(SR_DATABASE, "MySQL query executed (placeholder implementation)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "MySQL query executed (placeholder implementation)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -448,7 +448,7 @@ bool mysql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel 
     *transaction = tx;
     connection->current_transaction = tx;
 
-    // log_this(SR_DATABASE, "MySQL transaction started (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "MySQL transaction started (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -461,7 +461,7 @@ bool mysql_commit_transaction(DatabaseHandle* connection, Transaction* transacti
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    // log_this(SR_DATABASE, "MySQL transaction committed (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "MySQL transaction committed (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -474,7 +474,7 @@ bool mysql_rollback_transaction(DatabaseHandle* connection, Transaction* transac
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    // log_this(SR_DATABASE, "MySQL transaction rolled back (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "MySQL transaction rolled back (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -500,7 +500,7 @@ bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const
 
     *stmt = prepared_stmt;
 
-    // log_this(SR_DATABASE, "MySQL prepared statement created (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "MySQL prepared statement created (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -514,7 +514,7 @@ bool mysql_unprepare_statement(DatabaseHandle* connection, PreparedStatement* st
     free(stmt->sql_template);
     free(stmt);
 
-    // log_this(SR_DATABASE, "MySQL prepared statement removed (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "MySQL prepared statement removed (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 

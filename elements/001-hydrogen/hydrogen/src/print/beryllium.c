@@ -468,7 +468,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     // Allocate memory for stats.object_times
     stats.object_times = calloc(MAX_LAYERS, sizeof(double *));
     if (stats.object_times == NULL) {
-        log_this(SR_BERYLLIUM, "Memory allocation failed for object_times", LOG_LEVEL_ERROR);
+        log_this(SR_BERYLLIUM, "Memory allocation failed for object_times", LOG_LEVEL_ERROR, 0);
         return stats;
     }
 
@@ -479,7 +479,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
 
     double *z_values = calloc(Z_VALUES_CHUNK_SIZE, sizeof(double));  // Start with configured chunk size
     if (z_values == NULL) {
-        log_this(SR_BERYLLIUM, "Memory allocation failed for z_values", LOG_LEVEL_ERROR);
+        log_this(SR_BERYLLIUM, "Memory allocation failed for z_values", LOG_LEVEL_ERROR, 0);
         free(stats.object_times);
         stats.object_times = NULL;
         stats.success = false;
@@ -513,7 +513,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                     size_t name_length = (size_t)(name_end - name_start);
                     ObjectInfo *temp = realloc(object_infos, ((size_t)num_objects + 1) * sizeof(ObjectInfo));
                     if (temp == NULL) {
-                        log_this(SR_BERYLLIUM, "Memory reallocation failed for object_infos", LOG_LEVEL_ERROR);
+                        log_this(SR_BERYLLIUM, "Memory reallocation failed for object_infos", LOG_LEVEL_ERROR, 0);
                         free(stats.object_times);
                         stats.object_times = NULL;
                         free(z_values);
@@ -528,7 +528,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                     object_infos[num_objects].name = strndup(name_start, name_length);
                     //printf("Object defined: %s\n",object_infos[num_objects].name);
                     if (object_infos[num_objects].name == NULL) {
-                        log_this(SR_BERYLLIUM, "Memory allocation failed for object name", LOG_LEVEL_ERROR);
+                        log_this(SR_BERYLLIUM, "Memory allocation failed for object name", LOG_LEVEL_ERROR, 0);
                         free(stats.object_times);
                         stats.object_times = NULL;
                         free(z_values);
@@ -598,7 +598,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                 if (stats.object_times[current_layer] == NULL) {
                     stats.object_times[current_layer] = calloc((size_t)num_objects, sizeof(double));
                     if (stats.object_times[current_layer] == NULL) {
-                        log_this(SR_BERYLLIUM, "Memory allocation failed for layer object times", LOG_LEVEL_ERROR);
+                        log_this(SR_BERYLLIUM, "Memory allocation failed for layer object times", LOG_LEVEL_ERROR, 0);
                         // Free previously allocated layer arrays
                         for (int i = 0; i < current_layer; i++) {
                             free(stats.object_times[i]);
@@ -686,7 +686,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                         z_values_capacity += Z_VALUES_CHUNK_SIZE;
                         double *new_z_values = realloc(z_values, (size_t)z_values_capacity * sizeof(double));
                         if (new_z_values == NULL) {
-                            log_this(SR_BERYLLIUM, "Memory reallocation failed for z_values", LOG_LEVEL_ERROR);
+                            log_this(SR_BERYLLIUM, "Memory reallocation failed for z_values", LOG_LEVEL_ERROR, 0);
                             free(z_values);
                             for (int i = 0; i < stats.layer_count_slicer; i++) {
                                 free(stats.object_times[i]);

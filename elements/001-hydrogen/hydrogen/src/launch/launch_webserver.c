@@ -215,70 +215,61 @@ int launch_webserver_subsystem(void) {
     extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t web_server_shutdown;
     
-    log_this(SR_WEBSERVER, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_WEBSERVER, "LAUNCH: " SR_WEBSERVER, LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    log_this(SR_WEBSERVER, "LAUNCH: " SR_WEBSERVER, LOG_LEVEL_STATE, 0);
 
     // Step 1: Verify system state
-    log_this(SR_WEBSERVER, "  Step 1: Verifying system state", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "  Step 1: Verifying system state", LOG_LEVEL_STATE, 0);
     
     if (server_stopping || web_server_shutdown) {
-        log_this(SR_WEBSERVER, "Cannot initialize web server during shutdown", LOG_LEVEL_STATE);
-        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Failed: System in shutdown", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Cannot initialize web server during shutdown", LOG_LEVEL_STATE, 0);
+        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Failed: System in shutdown", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     if (!server_starting) {
-        log_this(SR_WEBSERVER, "Cannot initialize web server outside startup phase", LOG_LEVEL_STATE);
-        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Failed: Not in startup phase", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Cannot initialize web server outside startup phase", LOG_LEVEL_STATE, 0);
+        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Failed: Not in startup phase", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     if (!app_config) {
-        log_this(SR_WEBSERVER, "Configuration not loaded", LOG_LEVEL_STATE);
-        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Failed: No configuration", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Configuration not loaded", LOG_LEVEL_STATE, 0);
+        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Failed: No configuration", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     if (!app_config->webserver.enable_ipv4 && !app_config->webserver.enable_ipv6) {
-        log_this(SR_WEBSERVER, "Web server disabled in configuration (no protocols enabled)", LOG_LEVEL_STATE);
-        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Disabled by configuration", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Web server disabled in configuration (no protocols enabled)", LOG_LEVEL_STATE, 0);
+        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Disabled by configuration", LOG_LEVEL_STATE, 0);
         return 1; // Not an error if disabled
     }
 
-    log_this(SR_WEBSERVER, "    System state verified", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "    System state verified", LOG_LEVEL_STATE, 0);
 
     // Step 2: Initialize web server
-    log_this(SR_WEBSERVER, "  Step 2: Initializing web server", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "  Step 2: Initializing web server", LOG_LEVEL_STATE, 0);
     
     if (!init_web_server(&app_config->webserver)) {
-        log_this(SR_WEBSERVER, "Failed to initialize web server", LOG_LEVEL_ERROR);
-        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Failed to initialize", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Failed to initialize web server", LOG_LEVEL_ERROR, 0);
+        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Failed to initialize", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     // Step 3: Log configuration
-    log_this(SR_WEBSERVER, "  Step 3: Verifying configuration", LOG_LEVEL_STATE);
-    log_this(SR_WEBSERVER, "    IPv6 support: %s", LOG_LEVEL_STATE, 
-             app_config->webserver.enable_ipv6 ? "enabled" : "disabled");
-    log_this(SR_WEBSERVER, "    Port: %d", LOG_LEVEL_STATE, 
-             app_config->webserver.port);
-    log_this(SR_WEBSERVER, "    WebRoot: %s", LOG_LEVEL_STATE, 
-             app_config->webserver.web_root);
-    log_this(SR_WEBSERVER, "    Upload Path: %s", LOG_LEVEL_STATE, 
-             app_config->webserver.upload_path);
-    log_this(SR_WEBSERVER, "    Upload Dir: %s", LOG_LEVEL_STATE, 
-             app_config->webserver.upload_dir);
-    log_this(SR_WEBSERVER, "    Thread Pool Size: %d", LOG_LEVEL_STATE, 
-             app_config->webserver.thread_pool_size);
-    log_this(SR_WEBSERVER, "    Max Connections: %d", LOG_LEVEL_STATE, 
-             app_config->webserver.max_connections);
-    log_this(SR_WEBSERVER, "    Max Connections Per IP: %d", LOG_LEVEL_STATE, 
-             app_config->webserver.max_connections_per_ip);
-    log_this(SR_WEBSERVER, "    Connection Timeout: %d seconds", LOG_LEVEL_STATE, 
-             app_config->webserver.connection_timeout);
+    log_this(SR_WEBSERVER, "  Step 3: Verifying configuration", LOG_LEVEL_STATE, 0);
+    log_this(SR_WEBSERVER, "    IPv6 support: %s", LOG_LEVEL_STATE, 1, app_config->webserver.enable_ipv6 ? "enabled" : "disabled");
+    log_this(SR_WEBSERVER, "    Port: %d", LOG_LEVEL_STATE, 1, app_config->webserver.port);
+    log_this(SR_WEBSERVER, "    WebRoot: %s", LOG_LEVEL_STATE, 1, app_config->webserver.web_root);
+    log_this(SR_WEBSERVER, "    Upload Path: %s", LOG_LEVEL_STATE, 1, app_config->webserver.upload_path);
+    log_this(SR_WEBSERVER, "    Upload Dir: %s", LOG_LEVEL_STATE, 1, app_config->webserver.upload_dir);
+    log_this(SR_WEBSERVER, "    Thread Pool Size: %d", LOG_LEVEL_STATE, 1, app_config->webserver.thread_pool_size);
+    log_this(SR_WEBSERVER, "    Max Connections: %d", LOG_LEVEL_STATE, 1, app_config->webserver.max_connections);
+    log_this(SR_WEBSERVER, "    Max Connections Per IP: %d", LOG_LEVEL_STATE, 1, app_config->webserver.max_connections_per_ip);
+    log_this(SR_WEBSERVER, "    Connection Timeout: %d seconds", LOG_LEVEL_STATE, 1, app_config->webserver.connection_timeout);
 
     // Step 4: Create and register web server thread
-    log_this(SR_WEBSERVER, "  Step 4: Creating web server thread", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "  Step 4: Creating web server thread", LOG_LEVEL_STATE, 0);
     pthread_attr_t thread_attr;
     pthread_attr_init(&thread_attr);
     pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
@@ -287,7 +278,7 @@ int launch_webserver_subsystem(void) {
     extern ServiceThreads webserver_threads;
     
     if (pthread_create(&webserver_thread, &thread_attr, run_web_server, NULL) != 0) {
-        log_this(SR_WEBSERVER, "Failed to start web server thread", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Failed to start web server thread", LOG_LEVEL_ERROR, 0);
         pthread_attr_destroy(&thread_attr);
         shutdown_web_server();
         return 0;
@@ -303,7 +294,7 @@ int launch_webserver_subsystem(void) {
     int tries = 0;
     bool server_ready = false;
 
-    log_this(SR_WEBSERVER, "  Step 5: Waiting for initialization", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "  Step 5: Waiting for initialization", LOG_LEVEL_STATE, 0);
     
     while (tries < max_tries) {
         nanosleep(&wait_time, NULL);
@@ -321,18 +312,15 @@ int launch_webserver_subsystem(void) {
                 const union MHD_DaemonInfo *thread_info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_FLAGS);
                 bool using_threads = thread_info && (thread_info->flags & MHD_USE_THREAD_PER_CONNECTION);
                 
-                log_this(SR_WEBSERVER, "    Server status:", LOG_LEVEL_STATE);
-                log_this(SR_WEBSERVER, "    -> Bound to port: %u", LOG_LEVEL_STATE, info->port);
-                log_this(SR_WEBSERVER, "    -> Active connections: %u", LOG_LEVEL_STATE, num_connections);
-                log_this(SR_WEBSERVER, "    -> Thread mode: %s", LOG_LEVEL_STATE, 
-                        using_threads ? "Thread per connection" : "Single thread");
-                log_this(SR_WEBSERVER, "    -> IPv6: %s", LOG_LEVEL_STATE, 
-                        app_config->webserver.enable_ipv6 ? "enabled" : "disabled");
-                log_this(SR_WEBSERVER, "    -> Max connections: %d", LOG_LEVEL_STATE, 
-                        app_config->webserver.max_connections);
+                log_this(SR_WEBSERVER, "    Server status:", LOG_LEVEL_STATE, 0);
+                log_this(SR_WEBSERVER, "    -> Bound to port: %u", LOG_LEVEL_STATE, 1, info->port);
+                log_this(SR_WEBSERVER, "    -> Active connections: %u", LOG_LEVEL_STATE, 1, num_connections);
+                log_this(SR_WEBSERVER, "    -> Thread mode: %s", LOG_LEVEL_STATE, 1, using_threads ? "Thread per connection" : "Single thread");
+                log_this(SR_WEBSERVER, "    -> IPv6: %s", LOG_LEVEL_STATE, 1, app_config->webserver.enable_ipv6 ? "enabled" : "disabled");
+                log_this(SR_WEBSERVER, "    -> Max connections: %d", LOG_LEVEL_STATE, 1, app_config->webserver.max_connections);
                 
                 // Log network interfaces
-                log_this(SR_WEBSERVER, "    Network interfaces:", LOG_LEVEL_STATE);
+                log_this(SR_WEBSERVER, "    Network interfaces:", LOG_LEVEL_STATE, 0);
                 struct ifaddrs *ifaddr, *ifa;
                 if (getifaddrs(&ifaddr) != -1) {
                     for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
@@ -348,8 +336,9 @@ int launch_webserver_subsystem(void) {
                                              host, NI_MAXHOST,
                                              NULL, 0, NI_NUMERICHOST);
                             if (s == 0) {
-                                log_this(SR_WEBSERVER, "    -> %s: %s (%s)", LOG_LEVEL_STATE,
-                                        ifa->ifa_name, host,
+                                log_this(SR_WEBSERVER, "    -> %s: %s (%s)", LOG_LEVEL_STATE, 3,
+                                        ifa->ifa_name, 
+                                        host,
                                         (family == AF_INET) ? "IPv4" : "IPv6");
                             }
                         }
@@ -364,26 +353,25 @@ int launch_webserver_subsystem(void) {
         tries++;
         
         if (tries % 10 == 0) { // Log every second
-            log_this(SR_WEBSERVER, "Still waiting for web server... (%d seconds)", LOG_LEVEL_STATE, tries / 10);
+            log_this(SR_WEBSERVER, "Still waiting for web server... (%d seconds)", LOG_LEVEL_STATE, 1, tries / 10);
         }
     }
 
     if (!server_ready) {
-        log_this(SR_WEBSERVER, "Web server failed to start within timeout", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Web server failed to start within timeout", LOG_LEVEL_ERROR, 0);
         shutdown_web_server();
         return 0;
     }
 
     // Step 6: Update registry and verify state
-    log_this(SR_WEBSERVER, "  Step 6: Updating subsystem registry", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "  Step 6: Updating subsystem registry", LOG_LEVEL_STATE, 0);
     update_subsystem_on_startup(SR_WEBSERVER, true);
     
     SubsystemState final_state = get_subsystem_state(webserver_subsystem_id);
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Successfully launched and running", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Successfully launched and running", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
-                subsystem_state_to_string(final_state));
+        log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
         return 0;
     }
     return 1;

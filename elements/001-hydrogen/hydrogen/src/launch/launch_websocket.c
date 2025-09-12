@@ -297,73 +297,69 @@ LaunchReadiness check_websocket_launch_readiness(void) {
 int launch_websocket_subsystem(void) {
     extern volatile sig_atomic_t websocket_server_shutdown;
     
-    log_this(SR_WEBSOCKET, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_WEBSOCKET, "LAUNCH: " SR_WEBSOCKET, LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    log_this(SR_WEBSOCKET, "LAUNCH: " SR_WEBSOCKET, LOG_LEVEL_STATE, 0);
 
     // Step 1: Verify system state
-    log_this(SR_WEBSOCKET, "  Step 1: Verifying system state", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "  Step 1: Verifying system state", LOG_LEVEL_STATE, 0);
     
     if (server_stopping || websocket_server_shutdown) {
-        log_this(SR_WEBSOCKET, "Cannot initialize websocket during shutdown", LOG_LEVEL_STATE);
-        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Failed: System in shutdown", LOG_LEVEL_STATE);
+        log_this(SR_WEBSOCKET, "Cannot initialize websocket during shutdown", LOG_LEVEL_STATE, 0);
+        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Failed: System in shutdown", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     if (!server_starting) {
-        log_this(SR_WEBSOCKET, "Cannot initialize websocket outside startup phase", LOG_LEVEL_STATE);
-        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Failed: Not in startup phase", LOG_LEVEL_STATE);
+        log_this(SR_WEBSOCKET, "Cannot initialize websocket outside startup phase", LOG_LEVEL_STATE, 0);
+        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Failed: Not in startup phase", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     if (!app_config) {
-        log_this(SR_WEBSOCKET, "Configuration not loaded", LOG_LEVEL_STATE);
-        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Failed: No configuration", LOG_LEVEL_STATE);
+        log_this(SR_WEBSOCKET, "Configuration not loaded", LOG_LEVEL_STATE, 0);
+        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Failed: No configuration", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     // if (!app_config->websocket.enabled) {
-    //     log_this(SR_WEBSOCKET, "Websocket disabled in configuration", LOG_LEVEL_STATE);
-    //     log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Disabled by configuration", LOG_LEVEL_STATE);
+    //     log_this(SR_WEBSOCKET, "Websocket disabled in configuration", LOG_LEVEL_STATE, 0);
+    //     log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Disabled by configuration", LOG_LEVEL_STATE, 0);
     //     return 1; // Not an error if disabled
     // }
 
-    log_this(SR_WEBSOCKET, "    System state verified", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "    System state verified", LOG_LEVEL_STATE, 0);
 
     // Step 2: Initialize websocket server
-    log_this(SR_WEBSOCKET, "  Step 2: Initializing websocket server", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "  Step 2: Initializing websocket server", LOG_LEVEL_STATE, 0);
     
     // Use safe defaults for protocol and key if not configured
     const char* protocol = app_config->websocket.protocol ? app_config->websocket.protocol : "hydrogen";
     const char* key = app_config->websocket.key ? app_config->websocket.key : "default_websocket_key";
     
     if (init_websocket_server(app_config->websocket.port, protocol, key) != 0) {
-        log_this(SR_WEBSOCKET, "Failed to initialize websocket server", LOG_LEVEL_ERROR);
-        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Failed to initialize", LOG_LEVEL_STATE);
+        log_this(SR_WEBSOCKET, "Failed to initialize websocket server", LOG_LEVEL_ERROR, 0);
+        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Failed to initialize", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     // Step 3: Log configuration
-    log_this(SR_WEBSOCKET, "  Step 3: Verifying configuration", LOG_LEVEL_STATE);
-    log_this(SR_WEBSOCKET, "    IPv6 support: %s", LOG_LEVEL_STATE, 
-             app_config->websocket.enable_ipv6 ? "enabled" : "disabled");
-    log_this(SR_WEBSOCKET, "    Port: %d", LOG_LEVEL_STATE, 
-             app_config->websocket.port);
-    log_this(SR_WEBSOCKET, "    Protocol: %s", LOG_LEVEL_STATE, protocol);
-    log_this(SR_WEBSOCKET, "    Max Message Size: %zu", LOG_LEVEL_STATE, 
-             app_config->websocket.max_message_size);
-    log_this(SR_WEBSOCKET, "    Exit Wait Seconds: %d", LOG_LEVEL_STATE, 
-             app_config->websocket.connection_timeouts.exit_wait_seconds);
+    log_this(SR_WEBSOCKET, "  Step 3: Verifying configuration", LOG_LEVEL_STATE, 0);
+    log_this(SR_WEBSOCKET, "    IPv6 support: %s", LOG_LEVEL_STATE, 1,  app_config->websocket.enable_ipv6 ? "enabled" : "disabled");
+    log_this(SR_WEBSOCKET, "    Port: %d", LOG_LEVEL_STATE, 1, app_config->websocket.port);
+    log_this(SR_WEBSOCKET, "    Protocol: %s", LOG_LEVEL_STATE, 1, protocol);
+    log_this(SR_WEBSOCKET, "    Max Message Size: %zu", LOG_LEVEL_STATE, 1, app_config->websocket.max_message_size);
+    log_this(SR_WEBSOCKET, "    Exit Wait Seconds: %d", LOG_LEVEL_STATE, 1, app_config->websocket.connection_timeouts.exit_wait_seconds);
 
     // Step 4: Start websocket server (which creates its thread)
-    log_this(SR_WEBSOCKET, "  Step 4: Starting websocket server", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "  Step 4: Starting websocket server", LOG_LEVEL_STATE, 0);
     if (start_websocket_server() != 0) {
-        log_this(SR_WEBSOCKET, "Failed to start websocket server", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSOCKET, "Failed to start websocket server", LOG_LEVEL_ERROR, 0);
         cleanup_websocket_server();
         return 0;
     }
 
     // Step 5: Wait for server to fully initialize (up to 10 seconds)
-    log_this(SR_WEBSOCKET, "  Step 5: Waiting for initialization", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "  Step 5: Waiting for initialization", LOG_LEVEL_STATE, 0);
     struct timespec wait_time = {0, 100000000}; // 100ms intervals
     int max_tries = 100; // 10 seconds total
     int tries = 0;
@@ -375,13 +371,12 @@ int launch_websocket_subsystem(void) {
         // Check if server is running and bound to port
         int bound_port = get_websocket_port();
         if (bound_port > 0) {
-            log_this(SR_WEBSOCKET, "    Server status:", LOG_LEVEL_STATE);
-            log_this(SR_WEBSOCKET, "    -> Bound to port: %d", LOG_LEVEL_STATE, bound_port);
-            log_this(SR_WEBSOCKET, "    -> IPv6: %s", LOG_LEVEL_STATE, 
-                     app_config->websocket.enable_ipv6 ? "enabled" : "disabled");
+            log_this(SR_WEBSOCKET, "    Server status:", LOG_LEVEL_STATE, 0);
+            log_this(SR_WEBSOCKET, "    -> Bound to port: %d", LOG_LEVEL_STATE, 1, bound_port);
+            log_this(SR_WEBSOCKET, "    -> IPv6: %s", LOG_LEVEL_STATE, 1, app_config->websocket.enable_ipv6 ? "enabled" : "disabled");
             
             // Log network interfaces
-            log_this(SR_WEBSOCKET, "    Network interfaces:", LOG_LEVEL_STATE);
+            log_this(SR_WEBSOCKET, "    Network interfaces:", LOG_LEVEL_STATE, 0);
             struct ifaddrs *ifaddr, *ifa;
             if (getifaddrs(&ifaddr) != -1) {
                 for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
@@ -397,9 +392,10 @@ int launch_websocket_subsystem(void) {
                                             host, NI_MAXHOST,
                                             NULL, 0, NI_NUMERICHOST);
                         if (s == 0) {
-                            log_this(SR_WEBSOCKET, "    -> %s: %s (%s)", LOG_LEVEL_STATE,
-                                     ifa->ifa_name, host,
-                                     (family == AF_INET) ? "IPv4" : "IPv6");
+                            log_this(SR_WEBSOCKET, "    -> %s: %s (%s)", LOG_LEVEL_STATE, 3,
+                                ifa->ifa_name, 
+                                host,
+                                (family == AF_INET) ? "IPv4" : "IPv6");
                         }
                     }
                 }
@@ -412,27 +408,26 @@ int launch_websocket_subsystem(void) {
         tries++;
         
         if (tries % 10 == 0) { // Log every second
-            log_this(SR_WEBSOCKET, "Still waiting for websocket server... (%d seconds)", LOG_LEVEL_STATE, tries / 10);
+            log_this(SR_WEBSOCKET, "Still waiting for websocket server... (%d seconds)", LOG_LEVEL_STATE, 1, tries / 10);
         }
     }
 
     if (!server_ready) {
-        log_this(SR_WEBSOCKET, "Websocket server failed to start within timeout", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSOCKET, "Websocket server failed to start within timeout", LOG_LEVEL_ERROR, 0);
         stop_websocket_server();
         cleanup_websocket_server();
         return 0;
     }
 
     // Step 6: Update registry and verify state
-    log_this(SR_WEBSOCKET, "  Step 6: Updating subsystem registry", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "  Step 6: Updating subsystem registry", LOG_LEVEL_STATE, 0);
     update_subsystem_on_startup(SR_WEBSOCKET, true);
     
     SubsystemState final_state = get_subsystem_state(websocket_subsystem_id);
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Successfully launched and running", LOG_LEVEL_STATE);
+        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Successfully launched and running", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
-                 subsystem_state_to_string(final_state));
+        log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
         return 0;
     }
     return 1;

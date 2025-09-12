@@ -176,18 +176,18 @@ int launch_logging_subsystem(void) {
     
     logging_stopping = 0;
     
-    log_this(SR_LOGGING, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_LOGGING, "LAUNCH: " SR_LOGGING, LOG_LEVEL_STATE);
+    log_this(SR_LOGGING, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    log_this(SR_LOGGING, "LAUNCH: " SR_LOGGING, LOG_LEVEL_STATE, 0);
 
     // Get subsystem ID and update state
     int subsystem_id = get_subsystem_id_by_name(SR_LOGGING);
     if (subsystem_id >= 0) {
         update_subsystem_state(subsystem_id, SUBSYSTEM_RUNNING);
-        log_this(SR_LOGGING, SR_LOGGING " subsystem initialized", LOG_LEVEL_STATE);
+        log_this(SR_LOGGING, SR_LOGGING " subsystem initialized", LOG_LEVEL_STATE, 0);
         return 1;
     }
     
-    log_this(SR_LOGGING, "Failed to initialize " SR_LOGGING " subsystem", LOG_LEVEL_ERROR);
+    log_this(SR_LOGGING, "Failed to initialize " SR_LOGGING " subsystem", LOG_LEVEL_ERROR, 0);
     return 0;
 }
 
@@ -195,6 +195,6 @@ int launch_logging_subsystem(void) {
 void shutdown_logging(void) {
     if (!logging_stopping) {
         logging_stopping = 1;
-        log_this(SR_LOGGING, SR_LOGGING " subsystem shutting down", LOG_LEVEL_STATE);
+        log_this(SR_LOGGING, SR_LOGGING " subsystem shutting down", LOG_LEVEL_STATE, 0);
     }
 }

@@ -23,28 +23,27 @@
  * Returns 1 on success, 0 on failure
  */
 int land_network_subsystem(void) {
-    log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_LANDING, "LANDING: NETWORK", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    log_this(SR_LANDING, "LANDING: NETWORK", LOG_LEVEL_STATE, 0);
     
     // Step 1: Verify subsystem state
-    log_this(SR_LANDING, "  Step 1: Verifying subsystem state", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "  Step 1: Verifying subsystem state", LOG_LEVEL_STATE, 0);
     int subsystem_id = get_subsystem_id_by_name("Network");
     if (subsystem_id < 0) {
-        log_this(SR_LANDING, "Failed to get network subsystem ID", LOG_LEVEL_ALERT);
-        log_this(SR_LANDING, "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE);
+        log_this(SR_LANDING, "Failed to get network subsystem ID", LOG_LEVEL_ALERT, 0);
+        log_this(SR_LANDING, "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE, 0);
         return 0;
     }
     
     SubsystemState state = get_subsystem_state(subsystem_id);
     if (state != SUBSYSTEM_RUNNING && state != SUBSYSTEM_STOPPING) {
-        log_this(SR_LANDING, "Network subsystem is in invalid state: %s", LOG_LEVEL_ALERT,
-                subsystem_state_to_string(state));
-        log_this(SR_LANDING, "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE);
+        log_this(SR_LANDING, "Network subsystem is in invalid state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(state));
+        log_this(SR_LANDING, "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE, 0);
         return 0;
     }
     
     // Step 2: Final interface tests
-    log_this(SR_LANDING, "  Step 2: Performing final interface tests", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "  Step 2: Performing final interface tests", LOG_LEVEL_STATE, 0);
     network_info_t *info = get_network_info();
     if (info) {
         test_network_interfaces(info);
@@ -52,18 +51,18 @@ int land_network_subsystem(void) {
     }
     
     // Step 3: Shutdown network interfaces
-    log_this(SR_LANDING, "  Step 3: Shutting down network interfaces", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "  Step 3: Shutting down network interfaces", LOG_LEVEL_STATE, 0);
     if (!network_shutdown()) {
-        log_this(SR_LANDING, "Failed to shut down network interfaces", LOG_LEVEL_ALERT);
-        log_this(SR_LANDING, "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE);
+        log_this(SR_LANDING, "Failed to shut down network interfaces", LOG_LEVEL_ALERT, 0);
+        log_this(SR_LANDING, "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE, 0);
         return 0;
     }
     
     // Step 4: Update subsystem registry
-    log_this(SR_LANDING, "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE, 0);
     update_subsystem_after_shutdown("Network");
     
-    log_this(SR_LANDING, "LANDING: NETWORK - Successfully landed", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "LANDING: NETWORK - Successfully landed", LOG_LEVEL_STATE, 0);
     return 1;
 }
 
@@ -102,6 +101,6 @@ LaunchReadiness check_network_landing_readiness(void) {
 
 // Network subsystem shutdown function
 void shutdown_network_subsystem(void) {
-    log_this(SR_NETWORK, "Shutting down network subsystem", LOG_LEVEL_STATE);
+    log_this(SR_NETWORK, "Shutting down network subsystem", LOG_LEVEL_STATE, 0);
     // No specific shutdown actions needed for network subsystem
 }

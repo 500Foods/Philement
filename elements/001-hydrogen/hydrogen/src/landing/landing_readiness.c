@@ -70,7 +70,7 @@ static void log_readiness_messages(const LaunchReadiness* readiness) {
         }
         
         // Print the message directly (formatting is already in the message)
-        log_this(SR_LANDING, "%s", level, readiness->messages[i]);
+        log_this(SR_LANDING, "%s", level, 1, readiness->messages[i]);
     }
 }
 
@@ -111,8 +111,8 @@ ReadinessResults handle_landing_readiness(void) {
     size_t index = 0;
     
     // Begin LANDING READINESS logging section
-    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this(SR_LANDING, "LANDING READINESS", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    log_this(SR_LANDING, "LANDING READINESS", LOG_LEVEL_STATE, 0);
     
     // Define subsystem order and readiness check functions
     struct {

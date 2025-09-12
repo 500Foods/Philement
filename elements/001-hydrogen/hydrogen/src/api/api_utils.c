@@ -197,7 +197,7 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
     // First, safely convert the JSON object to a string
     char *json_str = json_dumps(json_obj, JSON_INDENT(2));
     if (!json_str) {
-        log_this(SR_API, "Failed to create JSON response", LOG_LEVEL_DEBUG);
+        log_this(SR_API, "Failed to create JSON response", LOG_LEVEL_DEBUG, 0);
         const char *error_response = "{\"error\": \"Failed to create response\"}";
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(error_response), (void *)error_response, MHD_RESPMEM_PERSISTENT);
@@ -242,7 +242,7 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
             // Compression failed, fall back to uncompressed
             char *json_str_copy = malloc(json_len + 1);
             if (!json_str_copy) {
-                log_this(SR_API, "Failed to allocate memory for JSON response", LOG_LEVEL_ERROR);
+                log_this(SR_API, "Failed to allocate memory for JSON response", LOG_LEVEL_ERROR, 0);
                 free(json_str);
                 json_decref(json_obj);
                 const char *error_response = "{\"error\": \"Out of memory\"}";
@@ -264,7 +264,7 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
         // Client doesn't support Brotli, use uncompressed
         char *json_str_copy = malloc(json_len + 1);
         if (!json_str_copy) {
-            log_this(SR_API, "Failed to allocate memory for JSON response", LOG_LEVEL_ERROR);
+            log_this(SR_API, "Failed to allocate memory for JSON response", LOG_LEVEL_ERROR, 0);
             free(json_str);
             json_decref(json_obj);
             const char *error_response = "{\"error\": \"Out of memory\"}";
@@ -284,7 +284,7 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
     }
     
     if (!response) {
-        log_this(SR_API, "Failed to create MHD response", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to create MHD response", LOG_LEVEL_ERROR, 0);
         // Just clean up the JSON object - other resources were already 
         // freed in their respective error handling paths
         json_decref(json_obj);
@@ -340,7 +340,7 @@ json_t *api_validate_jwt(const char *token, const char *secret) {
     // Create a basic claims object with minimal information
     json_t *claims = json_object();
     if (!claims) {
-        log_this(SR_API, "Failed to create claims object", LOG_LEVEL_DEBUG);
+        log_this(SR_API, "Failed to create claims object", LOG_LEVEL_DEBUG, 0);
         return NULL;
     }
     
@@ -350,7 +350,7 @@ json_t *api_validate_jwt(const char *token, const char *secret) {
     json_object_set_new(claims, "exp", json_integer(time(NULL) + 3600)); // Valid for 1 hour
     json_object_set_new(claims, "iat", json_integer(time(NULL)));
     
-    log_this(SR_API, "Created default JWT claims", LOG_LEVEL_DEBUG);
+    log_this(SR_API, "Created default JWT claims", LOG_LEVEL_DEBUG, 0);
     
     return claims;
 }
@@ -363,7 +363,7 @@ char *api_create_jwt(json_t *claims, const char *secret) {
     
     // TODO: Implement actual JWT creation with the provided secret
     // This is a stub for now
-    log_this(SR_API, "JWT creation not fully implemented", LOG_LEVEL_ALERT);
+    log_this(SR_API, "JWT creation not fully implemented", LOG_LEVEL_ALERT, 0);
     
     return strdup("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkR1bW15IFRva2VuIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
 }

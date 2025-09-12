@@ -78,8 +78,8 @@ void signal_handler(int sig) {
             restart_requested = 1;
             restart_count++;
             handler_flags_reset_needed = 1;  // Ensure handlers are reset after restart
-            log_this(SR_RESTART, "SIGHUP received, initiating restart", LOG_LEVEL_STATE);
-            log_this(SR_RESTART, "Restart count: %d", LOG_LEVEL_STATE, restart_count);
+            log_this(SR_RESTART, "SIGHUP received, initiating restart", LOG_LEVEL_STATE, 0);
+            log_this(SR_RESTART, "Restart count: %d", LOG_LEVEL_STATE, 1, restart_count);
             __sync_synchronize();  // Memory barrier to ensure flag visibility
             
             // Reset signal handlers immediately
@@ -94,8 +94,7 @@ void signal_handler(int sig) {
             // Record shutdown start time immediately when signal received
             record_shutdown_start_time();
             
-            log_this(SR_SHUTDOWN, "%s received, initiating rapid shutdown", LOG_LEVEL_STATE,
-                    sig == SIGINT ? "SIGINT" : "SIGTERM");
+            log_this(SR_SHUTDOWN, "%s received, initiating rapid shutdown", LOG_LEVEL_STATE, 1, sig == SIGINT ? "SIGINT" : "SIGTERM");
             
             // Set signal-based shutdown flag for rapid exit
             __sync_bool_compare_and_swap(&signal_based_shutdown, 0, 1);
@@ -129,10 +128,10 @@ void graceful_shutdown(void) {
 
     // Start shutdown sequence
     const char* subsystem = restart_requested ? SR_RESTART : SR_SHUTDOWN;
-    log_this(subsystem, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(subsystem, restart_requested ? 
-        "Initiating graceful restart sequence" : 
-        "Initiating graceful shutdown sequence", LOG_LEVEL_STATE);
+    log_this(subsystem, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    log_this(subsystem, restart_requested ?
+        "Initiating graceful restart sequence" :
+        "Initiating graceful shutdown sequence", LOG_LEVEL_STATE, 0);
 
     // Trigger landing sequence
     bool landing_ok = check_all_landing_readiness();

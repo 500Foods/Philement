@@ -9,7 +9,7 @@
 #include "logging.h"
 
 // Public interface declarations
-void log_this(const char* subsystem, const char* format, int priority, ...);
+void log_this(const char* subsystem, const char* format, int priority, int num_args, ...);
 void log_group_begin(void);
 void log_group_end(void);
 
@@ -193,13 +193,13 @@ static const char* get_fallback_priority_label(int priority) {
 static void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count) {
     // Format the counter as two 3-digit numbers
     char counter_prefix[16];
-    snprintf(counter_prefix, sizeof(counter_prefix), "[ %03lu %03lu ]", 
-             (current_count / 1000) % 1000, current_count % 1000);
+    snprintf(counter_prefix, sizeof(counter_prefix), "[ %03lu %03lu ]",
+              (current_count / 1000) % 1000, current_count % 1000);
 
     // Use fallback labels if config system is unavailable
-    const char* priority_label = (!app_config || !app_config->logging.levels) 
-                               ? get_fallback_priority_label(priority)
-                               : get_priority_label(priority);
+    const char* priority_label = (!app_config || !app_config->logging.levels)
+                                ? get_fallback_priority_label(priority)
+                                : get_priority_label(priority);
 
     char formatted_priority[MAX_PRIORITY_LABEL_WIDTH + 5];
     snprintf(formatted_priority, sizeof(formatted_priority), "[ %-*s ]", MAX_PRIORITY_LABEL_WIDTH, priority_label);
@@ -218,13 +218,62 @@ static void console_log(const char* subsystem, int priority, const char* message
 
     // Format the complete log line
     char log_line[DEFAULT_LOG_ENTRY_SIZE];
-    snprintf(log_line, sizeof(log_line), "%s  %s  %s  %s  %s", 
-             counter_prefix, timestamp_ms, formatted_priority, formatted_subsystem, message);
+    snprintf(log_line, sizeof(log_line), "%s  %s  %s  %s  %s",
+              counter_prefix, timestamp_ms, formatted_priority, formatted_subsystem, message);
 
     // Add to rolling buffer and output
     add_to_buffer(log_line);
     fprintf(stdout, "%s\n", log_line);
     fflush(stdout);
+}
+
+// Count the number of format specifiers in a format string, excluding %%
+static size_t count_format_specifiers(const char* format) {
+    if (!format) return 0;
+
+    size_t count = 0;
+    const char* ptr = format;
+
+    while ((ptr = strchr(ptr, '%')) != NULL) {
+        ptr++;  // Move past %
+        if (*ptr == '%') {
+            // %% is literal %, skip
+            ptr++;
+            continue;
+        }
+
+        // Skip flags
+        while (*ptr == '-' || *ptr == '+' || *ptr == ' ' || *ptr == '#' || *ptr == '0') ptr++;
+
+        // Skip width
+        if (*ptr == '*') ptr++;
+        else while (isdigit(*ptr)) ptr++;
+
+        // Skip precision
+        if (*ptr == '.') {
+            ptr++;
+            if (*ptr == '*') ptr++;
+            else while (isdigit(*ptr)) ptr++;
+        }
+
+        // Skip length modifier
+        if (*ptr == 'h' || *ptr == 'l' || *ptr == 'L' || *ptr == 'z' || *ptr == 'j' || *ptr == 't') {
+            if ((*ptr == 'l' && *(ptr+1) == 'l') || (*ptr == 'h' && *(ptr+1) == 'h')) ptr += 2;
+            else ptr++;
+        }
+
+        // Check for conversion specifier
+        if (strchr("diouxXeEfFgGaAcspn", *ptr)) {
+            count++;
+            ptr++;
+        } else if (*ptr) {
+            // Invalid specifier, but count it anyway to be safe
+            count++;
+            ptr++;
+        }
+    }
+
+    return count;
 }
 
 
@@ -239,18 +288,29 @@ void log_group_end(void) {
     pthread_mutex_unlock(&log_mutex);
 }
 
-void log_this(const char* subsystem, const char* format, int priority, ...) {
+void log_this(const char* subsystem, const char* format, int priority, int num_args, ...) {
     // Validate inputs and normalize priority level early
     if (!subsystem) subsystem = "Unknown";
     if (!format) format = "No message";
-    
+
     // Ensure priority is valid, defaulting to STATE if:
     // 1. Priority is out of bounds
     // 2. Priority is corrupted (e.g., during shutdown)
     // 3. app_config is not available
-    if (priority < LOG_LEVEL_TRACE || priority > LOG_LEVEL_QUIET || 
+    if (priority < LOG_LEVEL_TRACE || priority > LOG_LEVEL_QUIET ||
         !app_config || !app_config->logging.levels) {
         priority = LOG_LEVEL_STATE;
+    }
+
+    // DEFENSIVE PROGRAMMING: Check that num_args matches the number of format specifiers
+    // This helps prevent the type of bug we just spent hours fixing
+    if (format && strlen(format) > 0) {
+        size_t specifier_count = count_format_specifiers(format);
+        if ((size_t)num_args != specifier_count) {
+            fprintf(stderr, "WARNING: log_this parameter mismatch! Format string '%s' has %zu specifiers but received %d arguments\n",
+                    format, specifier_count, num_args);
+            fflush(stderr);
+        }
     }
 
     // Only lock if we're not already in a group
@@ -260,7 +320,7 @@ void log_this(const char* subsystem, const char* format, int priority, ...) {
 
     char details[DEFAULT_LOG_ENTRY_SIZE];
     va_list args;
-    va_start(args, priority);
+    va_start(args, num_args);
     vsnprintf(details, sizeof(details), format, args);
     va_end(args);
 

@@ -83,7 +83,7 @@ void test_database_queue_comprehensive_all_functions(void) {
     TEST_ASSERT_EQUAL(4, manager->max_databases);
 
     // Test database_queue_create_lead
-    DatabaseQueue* lead_queue = database_queue_create_lead("testdb", "sqlite:///tmp/test.db");
+    DatabaseQueue* lead_queue = database_queue_create_lead("testdb", "sqlite:///tmp/test.db", NULL);
     TEST_ASSERT_NOT_NULL(lead_queue);
     TEST_ASSERT_TRUE(lead_queue->is_lead_queue);
     TEST_ASSERT_TRUE(lead_queue->can_spawn_queues);

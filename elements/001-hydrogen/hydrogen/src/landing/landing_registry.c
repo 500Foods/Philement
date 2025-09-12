@@ -29,7 +29,7 @@ void report_registry_landing_status(void) {
     
     // Only report if there are active subsystems (potential issue)
     if (total_active > 0) {
-        log_this(SR_REGISTRY, "Warning: %d subsystems still active", LOG_LEVEL_ALERT, total_active);
+        log_this(SR_REGISTRY, "Warning: %d subsystems still active", LOG_LEVEL_ALERT, 1, total_active);
     }
 }
 
@@ -96,8 +96,8 @@ LaunchReadiness check_registry_landing_readiness(void) {
 // is_restart: true if this is part of a restart sequence
 int land_registry_subsystem(bool is_restart) {
 
-    log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_REGISTRY, "LANDING: REGISTRY", LOG_LEVEL_STATE);    
+    log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    log_this(SR_REGISTRY, "LANDING: REGISTRY", LOG_LEVEL_STATE, 0);
 
     // Report final status
     report_registry_landing_status();

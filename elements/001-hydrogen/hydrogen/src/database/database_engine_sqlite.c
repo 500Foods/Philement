@@ -135,8 +135,8 @@ static bool load_libsqlite_functions(void) {
         libsqlite_handle = dlopen("libsqlite3.so", RTLD_LAZY);
     }
     if (!libsqlite_handle) {
-        log_this(SR_DATABASE, "Failed to load libsqlite3 library", LOG_LEVEL_ERROR, true, true, true);
-        log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "Failed to load libsqlite3 library", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, 0);
         pthread_mutex_unlock(&libsqlite_mutex);
         return false;
     }
@@ -167,7 +167,7 @@ static bool load_libsqlite_functions(void) {
 
     // Check if all functions were loaded
     if (!sqlite3_open_ptr || !sqlite3_close_ptr) {
-        log_this(SR_DATABASE, "Failed to load all required libsqlite3 functions", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "Failed to load all required libsqlite3 functions", LOG_LEVEL_ERROR, 0);
         dlclose(libsqlite_handle);
         libsqlite_handle = NULL;
         pthread_mutex_unlock(&libsqlite_mutex);
@@ -175,7 +175,7 @@ static bool load_libsqlite_functions(void) {
     }
 
     pthread_mutex_unlock(&libsqlite_mutex);
-    log_this(SR_DATABASE, "Successfully loaded libsqlite3 library", LOG_LEVEL_STATE, true, true, true);
+    log_this(SR_DATABASE, "Successfully loaded libsqlite3 library", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -217,13 +217,13 @@ static void destroy_prepared_statement_cache(PreparedStatementCache* cache) {
 
 bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator) {
     if (!config || !connection) {
-        log_this(SR_DATABASE, "Invalid parameters for SQLite connection", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "Invalid parameters for SQLite connection", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Load libsqlite3 library if not already loaded
     if (!load_libsqlite_functions()) {
-        log_this(SR_DATABASE, "SQLite library not available", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "SQLite library not available", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -241,7 +241,7 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
     void* sqlite_db = NULL;
     int rc = sqlite3_open_ptr(db_path, &sqlite_db);
     if (rc != SQLITE_OK) {
-        log_this(SR_DATABASE, "SQLite database open failed", LOG_LEVEL_ERROR, true, true, true);
+        log_this(SR_DATABASE, "SQLite database open failed", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -292,7 +292,7 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
 
     // Use designator for logging if provided, otherwise use generic Database subsystem
     const char* log_subsystem = designator ? designator : SR_DATABASE;
-    log_this(log_subsystem, "SQLite connection established successfully", LOG_LEVEL_STATE, true, true, true);
+    log_this(log_subsystem, "SQLite connection established successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -315,7 +315,7 @@ bool sqlite_disconnect(DatabaseHandle* connection) {
 
     // Use stored designator for logging if available
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(log_subsystem, "SQLite connection closed", LOG_LEVEL_STATE, true, true, true);
+    log_this(log_subsystem, "SQLite connection closed", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -345,7 +345,7 @@ bool sqlite_reset_connection(DatabaseHandle* connection) {
     connection->connected_since = time(NULL);
     connection->consecutive_failures = 0;
 
-    log_this(SR_DATABASE, "SQLite connection reset successfully", LOG_LEVEL_STATE, true, true, true);
+    log_this(SR_DATABASE, "SQLite connection reset successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -379,7 +379,7 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
 
     *result = db_result;
 
-    // log_this(SR_DATABASE, "SQLite query executed (placeholder implementation)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "SQLite query executed (placeholder implementation)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -421,7 +421,7 @@ bool sqlite_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel
     *transaction = tx;
     connection->current_transaction = tx;
 
-    // log_this(SR_DATABASE, "SQLite transaction started (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "SQLite transaction started (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -434,7 +434,7 @@ bool sqlite_commit_transaction(DatabaseHandle* connection, Transaction* transact
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    // log_this(SR_DATABASE, "SQLite transaction committed (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "SQLite transaction committed (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -447,7 +447,7 @@ bool sqlite_rollback_transaction(DatabaseHandle* connection, Transaction* transa
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    // log_this(SR_DATABASE, "SQLite transaction rolled back (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "SQLite transaction rolled back (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -473,7 +473,7 @@ bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, cons
 
     *stmt = prepared_stmt;
 
-    // log_this(SR_DATABASE, "SQLite prepared statement created (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "SQLite prepared statement created (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -487,7 +487,7 @@ bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* s
     free(stmt->sql_template);
     free(stmt);
 
-    // log_this(SR_DATABASE, "SQLite prepared statement removed (placeholder)", LOG_LEVEL_DEBUG, true, true, true);
+    // log_this(SR_DATABASE, "SQLite prepared statement removed (placeholder)", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 

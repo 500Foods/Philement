@@ -282,44 +282,44 @@ bool process_array_element_config(json_t* root, ConfigArrayElement value, const 
 
 #define DUMP_STRING(name, value) do { \
     const char* val = (value) ? (value) : "(not set)"; \
-    log_this(SR_CONFIG_CURRENT, "――― %s: %s", LOG_LEVEL_STATE, (name), val); \
+    log_this(SR_CONFIG_CURRENT, "――― %s: %s", LOG_LEVEL_STATE, 2, (name), val); \
 } while(0)
 
 #define DUMP_STRING2(prefix, name, value) do { \
     const char* val = (value) ? (value) : "(not set)"; \
-    log_this(SR_CONFIG_CURRENT, "――― %s %s: %s", LOG_LEVEL_STATE, (prefix), (name), val); \
+    log_this(SR_CONFIG_CURRENT, "――― %s %s: %s", LOG_LEVEL_STATE, 3, (prefix), (name), val); \
 } while(0)
 
 #define DUMP_TEXT(value1, value2) \
-    log_this(SR_CONFIG_CURRENT, "――― %s %s", LOG_LEVEL_STATE, (value1), (value2)); 
+    log_this(SR_CONFIG_CURRENT, "――― %s %s", LOG_LEVEL_STATE, 2, (value1), (value2)); 
 
 #define DUMP_INT(name, value) \
-    log_this(SR_CONFIG_CURRENT, "――― %s: %d", LOG_LEVEL_STATE, (name), (value))
+    log_this(SR_CONFIG_CURRENT, "――― %s: %d", LOG_LEVEL_STATE, 2, (name), (value))
 
 #define DUMP_BOOL(name, value) \
-    log_this(SR_CONFIG_CURRENT, "――― %s: %s", LOG_LEVEL_STATE, (name), ((value) ? "true" : "false"))
+    log_this(SR_CONFIG_CURRENT, "――― %s: %s", LOG_LEVEL_STATE, 2, (name), ((value) ? "true" : "false"))
 
 #define DUMP_BOOL2(prefix, name, value) \
-    log_this(SR_CONFIG_CURRENT, "――― %s %s: %s", LOG_LEVEL_STATE, (prefix), (name), ((value) ? "true" : "false"))
+    log_this(SR_CONFIG_CURRENT, "――― %s %s: %s", LOG_LEVEL_STATE, 3, (prefix), (name), ((value) ? "true" : "false"))
 
 #define DUMP_SIZE(name, value) \
-    log_this(SR_CONFIG_CURRENT, "――― %s: %zu", LOG_LEVEL_STATE, (name), (value))
+    log_this(SR_CONFIG_CURRENT, "――― %s: %zu", LOG_LEVEL_STATE, 2, (name), (value))
 
 #define DUMP_SECRET(name, value) do { \
     const char* val = (value); \
     if (!val) { \
-        log_this(SR_CONFIG_CURRENT, "――― %s: (not set)", LOG_LEVEL_STATE, (name)); \
+        log_this(SR_CONFIG_CURRENT, "――― %s: (not set)", LOG_LEVEL_STATE, 1, (name)); \
     } else if (strlen(val) <= 5) { \
-        log_this(SR_CONFIG_CURRENT, "――― %s: %s...", LOG_LEVEL_STATE, (name), val); \
+        log_this(SR_CONFIG_CURRENT, "――― %s: %s...", LOG_LEVEL_STATE, 2, (name), val); \
     } else { \
         char temp[6]; \
         strncpy(temp, val, 5); \
         temp[5] = '\0'; \
-        log_this(SR_CONFIG_CURRENT, "――― %s: %s...", LOG_LEVEL_STATE, (name), temp); \
+        log_this(SR_CONFIG_CURRENT, "――― %s: %s...", LOG_LEVEL_STATE, 2, (name), temp); \
     } \
 } while(0)
 
 #define DUMP_LOOKUP(name, value, lookup_name) \
-    log_this(SR_CONFIG_CURRENT, "――― %s: %d (%s)", LOG_LEVEL_STATE, (name), (value), (lookup_name))
+    log_this(SR_CONFIG_CURRENT, "――― %s: %d (%s)", LOG_LEVEL_STATE, 3, (name), (value), (lookup_name))
 
 #endif /* CONFIG_UTILS_H */

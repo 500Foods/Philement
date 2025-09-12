@@ -33,8 +33,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 
                 // Log any remaining connections
                 if (ws_context->active_connections > 0) {
-                    log_this(SR_WEBSOCKET, "Protocol destroy with %d active connections",
-                            LOG_LEVEL_ALERT, true, true, true, ws_context->active_connections);
+                    log_this(SR_WEBSOCKET, "Protocol destroy with %d active connections", LOG_LEVEL_ALERT, 1, ws_context->active_connections);
                 }
                 
                 // Force clear connections and notify all waiting threads
@@ -43,10 +42,10 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 
                 pthread_mutex_unlock(&ws_context->mutex);
                 
-                log_this(SR_WEBSOCKET, "Protocol cleanup complete", LOG_LEVEL_STATE);
+                log_this(SR_WEBSOCKET, "Protocol cleanup complete", LOG_LEVEL_STATE, 0);
             } else {
                 // Context already cleaned up, which is also valid
-                log_this(SR_WEBSOCKET, "Protocol destroy with no context", LOG_LEVEL_STATE);
+                log_this(SR_WEBSOCKET, "Protocol destroy with no context", LOG_LEVEL_STATE, 0);
             }
         }
         return 0;
@@ -65,7 +64,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
 
     // Normal operation requires valid context
     if (!ws_context) {
-        log_this(SR_WEBSOCKET, "No server context available for callback %d", LOG_LEVEL_ERROR, reason);
+        log_this(SR_WEBSOCKET, "No server context available for callback %d", LOG_LEVEL_ERROR, 1, reason);
         return -1;
     }
 
@@ -79,8 +78,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 if (reason == LWS_CALLBACK_CLOSED || reason == LWS_CALLBACK_WSI_DESTROY) {
                     // During shutdown, some sessions might be already cleaned up
                     if (!session) {
-                        log_this(SR_WEBSOCKET, "Connection cleanup with no session during shutdown", 
-                                LOG_LEVEL_STATE, true, true, true);
+                        log_this(SR_WEBSOCKET, "Connection cleanup with no session during shutdown", LOG_LEVEL_STATE, 0);
                         return 0;
                     }
                     int result = ws_handle_connection_closed(wsi, session);
@@ -88,8 +86,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                     if (result == 0) {
                         pthread_mutex_lock(&ws_context->mutex);
                         if (ws_context->active_connections == 0) {
-                            log_this(SR_WEBSOCKET, "Last connection closed, notifying waiters", 
-                                    LOG_LEVEL_STATE, true, true, true);
+                            log_this(SR_WEBSOCKET, "Last connection closed, notifying waiters", LOG_LEVEL_STATE, 0);
                             pthread_cond_broadcast(&ws_context->cond);
                         }
                         pthread_mutex_unlock(&ws_context->mutex);
@@ -220,8 +217,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
             case LWS_CALLBACK_CGI_PROCESS_ATTACH:
                 // During shutdown, log but don't error on missing session
                 if (!session) {
-                    log_this(SR_WEBSOCKET, "Ignoring callback %d during shutdown (no session)", 
-                            LOG_LEVEL_STATE, true, true, true, reason);
+                    log_this(SR_WEBSOCKET, "Ignoring callback %d during shutdown (no session)", LOG_LEVEL_STATE, 1, reason);
                 }
                 return -1;  // Silently reject other callbacks during shutdown
         }
@@ -237,7 +233,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         reason != LWS_CALLBACK_FILTER_HTTP_CONNECTION &&
         reason != LWS_CALLBACK_WS_SERVER_BIND_PROTOCOL &&
         reason != LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL) {
-        log_this(SR_WEBSOCKET, "Invalid session data for callback %d", LOG_LEVEL_DEBUG, reason);
+        log_this(SR_WEBSOCKET, "Invalid session data for callback %d", LOG_LEVEL_DEBUG, 1, reason);
         return -1;
     }
 
@@ -255,7 +251,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         // Authentication and Security
         case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
             if (ws_context->vhost_creating) {
-                log_this(SR_WEBSOCKET, "Allowing protocol filtering during vhost creation", LOG_LEVEL_DEBUG);
+                log_this(SR_WEBSOCKET, "Allowing protocol filtering during vhost creation", LOG_LEVEL_DEBUG, 0);
                 return 0;  // Allow during vhost creation
             }
             {
@@ -265,9 +261,9 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 int protocol_len = lws_hdr_total_length(wsi, WSI_TOKEN_PROTOCOL);
                 if (protocol_len > 0 && protocol_len < (int)sizeof(protocol_buf)) {
                     lws_hdr_copy(wsi, protocol_buf, sizeof(protocol_buf), WSI_TOKEN_PROTOCOL);
-                    // log_this(SR_WEBSOCKET, "Filter protocol connection for protocol: %s", LOG_LEVEL_DEBUG, protocol_buf);
+                    // log_this(SR_WEBSOCKET, "Filter protocol connection for protocol: %s", LOG_LEVEL_DEBUG, 1, protocol_buf);
                 } else {
-                    log_this(SR_WEBSOCKET, "Filter protocol connection for unknown protocol", LOG_LEVEL_DEBUG);
+                    log_this(SR_WEBSOCKET, "Filter protocol connection for unknown protocol", LOG_LEVEL_DEBUG, 0);
                 }
 
                 // FIRST: Hardcoded fallback for JavaScript WebSocket clients
@@ -275,7 +271,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 // but URI headers show just '/'. Accept the key ABDEFGHIJKLMNOP by default
                 const char *fallback_key = "ABDEFGHIJKLMNOP";
                 if (ws_context && strcmp(fallback_key, ws_context->auth_key) == 0) {
-                    log_this(SR_WEBSOCKET, "Authentication successful via fallback key for JavaScript client", LOG_LEVEL_STATE);
+                    log_this(SR_WEBSOCKET, "Authentication successful via fallback key for JavaScript client", LOG_LEVEL_STATE, 0);
                     // Store the key in session if possible
                     if (user_data) {
                         WebSocketSessionData *auth_session = (WebSocketSessionData *)user_data;
@@ -288,18 +284,18 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 if (user_data) {
                     WebSocketSessionData *auth_session = (WebSocketSessionData *)user_data;
                     if (auth_session->authenticated_key) {
-                        log_this(SR_WEBSOCKET, "Found stored key in session: %s", LOG_LEVEL_STATE, auth_session->authenticated_key);
+                        log_this(SR_WEBSOCKET, "Found stored key in session: %s", LOG_LEVEL_STATE, 1, auth_session->authenticated_key);
                         if (strcmp(auth_session->authenticated_key, ws_context->auth_key) == 0) {
-                            log_this(SR_WEBSOCKET, "Authentication successful via stored key during protocol filtering", LOG_LEVEL_STATE);
+                            log_this(SR_WEBSOCKET, "Authentication successful via stored key during protocol filtering", LOG_LEVEL_STATE, 0);
                             return 0;
                         } else {
-                            // log_this(SR_WEBSOCKET, "Stored key doesn't match server key", LOG_LEVEL_ALERT);
+                            // log_this(SR_WEBSOCKET, "Stored key doesn't match server key", LOG_LEVEL_ALERT, 0);
                         }
                     } else {
-                        log_this(SR_WEBSOCKET, "No authenticated_key stored in session", LOG_LEVEL_DEBUG);
+                        log_this(SR_WEBSOCKET, "No authenticated_key stored in session", LOG_LEVEL_DEBUG, 0);
                     }
                 } else {
-                    log_this(SR_WEBSOCKET, "No user_data available in lws_wsi_user", LOG_LEVEL_DEBUG);
+                    log_this(SR_WEBSOCKET, "No user_data available in lws_wsi_user", LOG_LEVEL_DEBUG, 0);
                 }
 
                 // Check for query parameter authentication
@@ -307,7 +303,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 int uri_len = lws_hdr_total_length(wsi, WSI_TOKEN_GET_URI);
                 if (uri_len > 0 && uri_len < (int)sizeof(uri_buf)) {
                     lws_hdr_copy(wsi, uri_buf, sizeof(uri_buf), WSI_TOKEN_GET_URI);
-                    log_this(SR_WEBSOCKET, "Request URI: %s", LOG_LEVEL_DEBUG, uri_buf);
+                    log_this(SR_WEBSOCKET, "Request URI: %s", LOG_LEVEL_DEBUG, 1, uri_buf);
 
                     // Look for key parameter in query string
                     char *query = strchr(uri_buf, '?');
@@ -351,7 +347,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                             }
                             decoded_key[decoded_len] = '\0';
 
-                            log_this(SR_WEBSOCKET, "Query parameter key found: %s", LOG_LEVEL_STATE, decoded_key);
+                            log_this(SR_WEBSOCKET, "Query parameter key found: %s", LOG_LEVEL_STATE, 1, decoded_key);
 
                             if (ws_context && strcmp(decoded_key, ws_context->auth_key) == 0) {
                                 // Authentication successful via query parameter
@@ -359,16 +355,16 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                                     WebSocketSessionData *auth_session = (WebSocketSessionData *)user_data;
                                     auth_session->authenticated_key = strdup(decoded_key);  // Store the authenticated key
                                 }
-                                log_this(SR_WEBSOCKET, "Authentication successful via query parameter during protocol filtering", LOG_LEVEL_STATE);
+                                log_this(SR_WEBSOCKET, "Authentication successful via query parameter during protocol filtering", LOG_LEVEL_STATE, 0);
                                 return 0;
                             } else {
-                                log_this(SR_WEBSOCKET, "Query parameter key doesn't match server key", LOG_LEVEL_ALERT);
+                                log_this(SR_WEBSOCKET, "Query parameter key doesn't match server key", LOG_LEVEL_ALERT, 0);
                             }
                         } else {
-                            log_this(SR_WEBSOCKET, "No key parameter found in query string", LOG_LEVEL_DEBUG);
+                            log_this(SR_WEBSOCKET, "No key parameter found in query string", LOG_LEVEL_DEBUG, 0);
                         }
                     } else {
-                        log_this(SR_WEBSOCKET, "No query string in URI", LOG_LEVEL_DEBUG);
+                        log_this(SR_WEBSOCKET, "No query string in URI", LOG_LEVEL_DEBUG, 0);
                     }
                 }
 
@@ -377,12 +373,12 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 int length = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
                 if (length > 0) {
                     lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
-                    log_this(SR_WEBSOCKET, "Found Authorization header: %s", LOG_LEVEL_DEBUG, buf);
+                    log_this(SR_WEBSOCKET, "Found Authorization header: %s", LOG_LEVEL_DEBUG, 1, buf);
                 } else {
-                    log_this(SR_WEBSOCKET, "No Authorization header present", LOG_LEVEL_DEBUG);
+                    log_this(SR_WEBSOCKET, "No Authorization header present", LOG_LEVEL_DEBUG, 0);
                 }
 
-                log_this(SR_WEBSOCKET, "All authentication methods failed, denying connection", LOG_LEVEL_ALERT);
+                log_this(SR_WEBSOCKET, "All authentication methods failed, denying connection", 1, LOG_LEVEL_ALERT, 0);
                 return -1;
             }
 
@@ -519,7 +515,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         case LWS_CALLBACK_CGI_STDIN_COMPLETED:
         case LWS_CALLBACK_CGI_PROCESS_ATTACH:
             // Log unhandled callback for debugging
-            log_this(SR_WEBSOCKET, "Unhandled callback reason: %d", LOG_LEVEL_STATE, reason);
+            log_this(SR_WEBSOCKET, "Unhandled callback reason: %d", LOG_LEVEL_STATE, 1, reason);
             return 0;  // Accept unhandled callbacks during normal operation
     }
     

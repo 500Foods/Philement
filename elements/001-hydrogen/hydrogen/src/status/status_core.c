@@ -22,12 +22,12 @@ static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 void status_core_init(void) {
     // Currently just logs initialization
     // Will be expanded if needed for more complex initialization
-    log_this(SR_STATUS, "Initializing status collection system", LOG_LEVEL_STATE);
+    log_this(SR_STATUS, "Initializing status collection system", LOG_LEVEL_STATE, 0);
 }
 
 // Clean up the metrics collection system
 void status_core_cleanup(void) {
-    log_this(SR_STATUS, "Cleaning up status collection system", LOG_LEVEL_STATE);
+    log_this(SR_STATUS, "Cleaning up status collection system", LOG_LEVEL_STATE, 0);
     pthread_mutex_destroy(&status_mutex);
 }
 
@@ -111,7 +111,7 @@ pthread_mutex_t* get_status_mutex(void) {
 static SystemMetrics* allocate_system_metrics(void) {
     SystemMetrics *metrics = calloc(1, sizeof(SystemMetrics));
     if (!metrics) {
-        log_this(SR_STATUS, "Failed to allocate SystemMetrics structure", LOG_LEVEL_ERROR);
+        log_this(SR_STATUS, "Failed to allocate SystemMetrics structure", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
     return metrics;
