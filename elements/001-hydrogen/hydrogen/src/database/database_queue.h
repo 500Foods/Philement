@@ -17,6 +17,10 @@
 #include "../hydrogen.h"
 #include "../queue/queue.h"
 
+// Forward declarations to avoid circular dependencies
+typedef struct DatabaseHandle DatabaseHandle;
+typedef struct DatabaseEngineInterface DatabaseEngineInterface;
+
 // Queue types per database connection for different priority levels
 #define QUEUE_TYPE_SLOW    "slow"
 #define QUEUE_TYPE_MEDIUM  "medium"
@@ -31,6 +35,7 @@ struct DatabaseQueue {
     char* database_name;           // Database identifier (e.g., "Acuranzo")
     char* connection_string;       // Database connection string
     char* queue_type;              // Queue type: "Lead", "slow", "medium", "fast", "cache"
+    char* bootstrap_query;         // Bootstrap query from config (only used by Lead queues)
 
     // Single queue instance - type determined by queue_type
     Queue* queue;                  // The actual queue for this worker
@@ -66,6 +71,10 @@ struct DatabaseQueue {
     volatile time_t last_heartbeat; // Timestamp of last heartbeat check
     volatile time_t last_connection_attempt; // Timestamp of last connection attempt
     volatile int heartbeat_interval_seconds; // Configurable heartbeat interval (default 30)
+
+    // Persistent database connection for this queue
+    DatabaseHandle* persistent_connection; // Maintained connection for query execution
+    pthread_mutex_t connection_lock;       // Protects persistent connection access
 
     // Flags
     volatile bool shutdown_requested;
@@ -122,7 +131,7 @@ bool database_queue_system_init(void);
 void database_queue_system_destroy(void);
 
 // Database queue management
-DatabaseQueue* database_queue_create_lead(const char* database_name, const char* connection_string);
+DatabaseQueue* database_queue_create_lead(const char* database_name, const char* connection_string, const char* bootstrap_query);
 DatabaseQueue* database_queue_create_worker(const char* database_name, const char* connection_string, const char* queue_type);
 void database_queue_destroy(DatabaseQueue* db_queue);
 
@@ -168,5 +177,10 @@ char* database_queue_generate_label(DatabaseQueue* db_queue);
 void database_queue_start_heartbeat(DatabaseQueue* db_queue);
 bool database_queue_check_connection(DatabaseQueue* db_queue);
 void database_queue_perform_heartbeat(DatabaseQueue* db_queue);
+void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue);
+
+// Debug functions
+void debug_dump_connection(const char* label, DatabaseHandle* conn, const char* dqm_label);
+void debug_dump_engine(const char* label, DatabaseEngineInterface* engine, const char* dqm_label);
 
 #endif // DATABASE_QUEUE_H

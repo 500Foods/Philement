@@ -52,28 +52,24 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
 
     // Validate connection settings against limits
     if (webserver->thread_pool_size < MIN_THREAD_POOL_SIZE || webserver->thread_pool_size > MAX_THREAD_POOL_SIZE) {
-        log_this(SR_CONFIG, "Thread pool size must be between %d and %d", LOG_LEVEL_ERROR,
-                MIN_THREAD_POOL_SIZE, MAX_THREAD_POOL_SIZE);
+        log_this(SR_CONFIG, "Thread pool size must be between %d and %d", LOG_LEVEL_ERROR, 2, MIN_THREAD_POOL_SIZE, MAX_THREAD_POOL_SIZE);
         success = false;
     }
 
     if (webserver->max_connections < MIN_CONNECTIONS || webserver->max_connections > MAX_CONNECTIONS) {
-        log_this(SR_CONFIG, "Max connections must be between %d and %d", LOG_LEVEL_ERROR,
-                MIN_CONNECTIONS, MAX_CONNECTIONS);
+        log_this(SR_CONFIG, "Max connections must be between %d and %d", LOG_LEVEL_ERROR, 2, MIN_CONNECTIONS, MAX_CONNECTIONS);
         success = false;
     }
 
     if (webserver->max_connections_per_ip < MIN_CONNECTIONS_PER_IP || 
         webserver->max_connections_per_ip > MAX_CONNECTIONS_PER_IP) {
-        log_this(SR_CONFIG, "Max connections per IP must be between %d and %d", LOG_LEVEL_ERROR,
-                MIN_CONNECTIONS_PER_IP, MAX_CONNECTIONS_PER_IP);
+        log_this(SR_CONFIG, "Max connections per IP must be between %d and %d", LOG_LEVEL_ERROR, 2, MIN_CONNECTIONS_PER_IP, MAX_CONNECTIONS_PER_IP);
         success = false;
     }
 
     if (webserver->connection_timeout < MIN_CONNECTION_TIMEOUT || 
         webserver->connection_timeout > MAX_CONNECTION_TIMEOUT) {
-        log_this(SR_CONFIG, "Connection timeout must be between %d and %d seconds", LOG_LEVEL_ERROR,
-                MIN_CONNECTION_TIMEOUT, MAX_CONNECTION_TIMEOUT);
+        log_this(SR_CONFIG, "Connection timeout must be between %d and %d seconds", LOG_LEVEL_ERROR, 2, MIN_CONNECTION_TIMEOUT, MAX_CONNECTION_TIMEOUT);
         success = false;
     }
 

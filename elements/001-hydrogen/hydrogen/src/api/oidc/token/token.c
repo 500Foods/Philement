@@ -30,7 +30,7 @@ enum MHD_Result handle_oidc_token_endpoint(struct MHD_Connection *connection,
     /* Mark unused parameters */
     (void)con_cls;
     
-    log_this(SR_OIDC, "Handling token endpoint request", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Handling token endpoint request", LOG_LEVEL_STATE, 0);
     
     // Only POST is allowed for token endpoint
     if (strcmp(method, "POST") != 0) {
@@ -52,7 +52,7 @@ enum MHD_Result handle_oidc_token_endpoint(struct MHD_Connection *connection,
                                    &grant_type, &code, &redirect_uri,
                                    &client_id, &client_secret,
                                    &refresh_token, &code_verifier)) {
-        log_this(SR_OIDC, "Failed to extract token request parameters", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Failed to extract token request parameters", LOG_LEVEL_ERROR, 0);
         return send_oidc_json_response(connection, 
                                    "{\"error\":\"invalid_request\",\"error_description\":\"Invalid token request\"}",
                                    MHD_HTTP_BAD_REQUEST);

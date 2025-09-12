@@ -147,78 +147,75 @@ LaunchReadiness check_notify_launch_readiness(void) {
 
 int launch_notify_subsystem(void) {
     // Begin LAUNCH: NOTIFY section
-    log_this(SR_NOTIFY, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_NOTIFY, "LAUNCH: " SR_NOTIFY, LOG_LEVEL_STATE);
+    log_this(SR_NOTIFY, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    log_this(SR_NOTIFY, "LAUNCH: " SR_NOTIFY, LOG_LEVEL_STATE, 0);
 
     // Step 1: Verify explicit dependencies
-    log_this(SR_NOTIFY, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE);
+    log_this(SR_NOTIFY, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE, 0);
 
     // Check Registry dependency
     if (is_subsystem_running_by_name("Registry")) {
-        log_this(SR_NOTIFY, "    Registry dependency verified (running)", LOG_LEVEL_STATE);
+        log_this(SR_NOTIFY, "    Registry dependency verified (running)", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_NOTIFY, "    Registry dependency not met", LOG_LEVEL_ERROR);
-        log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Failed: Registry dependency not met", LOG_LEVEL_STATE);
+        log_this(SR_NOTIFY, "    Registry dependency not met", LOG_LEVEL_ERROR, 0);
+        log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Failed: Registry dependency not met", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     // Check Network dependency (recommended for SMTP connectivity)
     if (is_subsystem_running_by_name("Network")) {
-        log_this(SR_NOTIFY, "    Network dependency verified (running)", LOG_LEVEL_STATE);
+        log_this(SR_NOTIFY, "    Network dependency verified (running)", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_NOTIFY, "    Network dependency not met - SMTP notifications may not work", LOG_LEVEL_ALERT);
+        log_this(SR_NOTIFY, "    Network dependency not met - SMTP notifications may not work", LOG_LEVEL_ALERT, 0);
     }
 
-    log_this(SR_NOTIFY, "    All critical dependencies verified", LOG_LEVEL_STATE);
+    log_this(SR_NOTIFY, "    All critical dependencies verified", LOG_LEVEL_STATE, 0);
 
     // Step 2: Check if Notify is enabled
-    log_this(SR_NOTIFY, "  Step 2: Checking Notify configuration", LOG_LEVEL_STATE);
+    log_this(SR_NOTIFY, "  Step 2: Checking Notify configuration", LOG_LEVEL_STATE, 0);
     if (!app_config || !app_config->notify.enabled) {
-        log_this(SR_NOTIFY, "    Notify is disabled - skipping service initialization", LOG_LEVEL_STATE);
-        log_this(SR_NOTIFY, "  Step 3: Updating subsystem registry", LOG_LEVEL_STATE);
+        log_this(SR_NOTIFY, "    Notify is disabled - skipping service initialization", LOG_LEVEL_STATE, 0);
+        log_this(SR_NOTIFY, "  Step 3: Updating subsystem registry", LOG_LEVEL_STATE, 0);
         update_subsystem_on_startup(SR_NOTIFY, true);
 
         SubsystemState final_state = get_subsystem_state(notify_subsystem_id);
         if (final_state == SUBSYSTEM_RUNNING) {
-            log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Successfully launched (disabled state)", LOG_LEVEL_STATE);
+            log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Successfully launched (disabled state)", LOG_LEVEL_STATE, 0);
             return 1;
         } else {
-            log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Warning: Unexpected final state: %s",
-                    LOG_LEVEL_ALERT, subsystem_state_to_string(final_state));
+            log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
             return 0;
         }
     }
 
     // Step 3: Initialize Notify services
-    log_this(SR_NOTIFY, "  Step 3: Initializing Notify services", LOG_LEVEL_STATE);
+    log_this(SR_NOTIFY, "  Step 3: Initializing Notify services", LOG_LEVEL_STATE, 0);
 
     // Validate notifier type
     if (!app_config->notify.notifier || !app_config->notify.notifier[0] || strcmp(app_config->notify.notifier, "SMTP") != 0) {
-        log_this(SR_NOTIFY, "    Unsupported notifier type: %s",
-                LOG_LEVEL_ERROR, app_config->notify.notifier ? app_config->notify.notifier : "NULL");
-        log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Failed: Unsupported notifier type", LOG_LEVEL_STATE);
+        log_this(SR_NOTIFY, "    Unsupported notifier type: %s", LOG_LEVEL_ERROR, 1, app_config->notify.notifier ? app_config->notify.notifier : "NULL");
+        log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Failed: Unsupported notifier type", LOG_LEVEL_STATE, 0);
         return 0;
     }
 
     // TODO: Add actual notification service initialization here when implementation is ready
     // For now, we log that the service would be initialized
-    log_this(SR_NOTIFY, "    Notify service initialization placeholder", LOG_LEVEL_STATE);
-    log_this(SR_NOTIFY, "    SMTP notifier configured", LOG_LEVEL_STATE);
-    log_this(SR_NOTIFY, "    SMTP host: %s", LOG_LEVEL_STATE, app_config->notify.smtp.host);
-    log_this(SR_NOTIFY, "    SMTP port: %d", LOG_LEVEL_STATE, app_config->notify.smtp.port);
-    log_this(SR_NOTIFY, "    From address: %s", LOG_LEVEL_STATE, app_config->notify.smtp.from_address);
+    log_this(SR_NOTIFY, "    Notify service initialization placeholder", LOG_LEVEL_STATE, 0);
+    log_this(SR_NOTIFY, "    SMTP notifier configured", LOG_LEVEL_STATE, 0);
+    log_this(SR_NOTIFY, "    SMTP host: %s", LOG_LEVEL_STATE, 1, app_config->notify.smtp.host);
+    log_this(SR_NOTIFY, "    SMTP port: %d", LOG_LEVEL_STATE, 1, app_config->notify.smtp.port);
+    log_this(SR_NOTIFY, "    From address: %s", LOG_LEVEL_STATE, 1, app_config->notify.smtp.from_address);
 
     // Step 4: Update registry and verify state
-    log_this(SR_NOTIFY, "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE);
+    log_this(SR_NOTIFY, "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE, 0);
     update_subsystem_on_startup(SR_NOTIFY, true);
 
     SubsystemState final_state = get_subsystem_state(notify_subsystem_id);
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Successfully launched and running", LOG_LEVEL_STATE);
+        log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Successfully launched and running", LOG_LEVEL_STATE, 0);
         return 1;
     } else {
-        log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Warning: Unexpected final state: %s",
-                LOG_LEVEL_ALERT, subsystem_state_to_string(final_state));
+        log_this(SR_NOTIFY, "LAUNCH: NOTIFY - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
         return 0;
     }
 }

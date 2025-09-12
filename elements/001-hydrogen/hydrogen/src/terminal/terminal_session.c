@@ -41,7 +41,7 @@ static bool test_mode_disable_cleanup_thread = false;
 static void *session_cleanup_thread(void *arg) {
     (void)arg; // Suppress unused parameter warning
 
-    log_this(SR_TERMINAL, "Session cleanup thread started", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "Session cleanup thread started", LOG_LEVEL_STATE, 0);
 
     while (global_session_manager && global_session_manager->cleanup_thread_running) {
         // Sleep for configurable interval (default 30 seconds, shorter for testing)
@@ -54,11 +54,11 @@ static void *session_cleanup_thread(void *arg) {
         // Perform cleanup
         int cleaned_count = cleanup_expired_sessions();
         if (cleaned_count > 0) {
-            log_this(SR_TERMINAL, "Cleaned up %d expired sessions", LOG_LEVEL_STATE, cleaned_count);
+            log_this(SR_TERMINAL, "Cleaned up %d expired sessions", LOG_LEVEL_STATE, 1, cleaned_count);
         }
     }
 
-    log_this(SR_TERMINAL, "Session cleanup thread terminated", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "Session cleanup thread terminated", LOG_LEVEL_STATE, 0);
     return NULL;
 }
 
@@ -90,13 +90,13 @@ static bool generate_session_id(char *session_id, size_t size) {
  */
 bool init_session_manager(int max_sessions, int idle_timeout_seconds) {
     if (global_session_manager != NULL) {
-        log_this(SR_TERMINAL, "Session manager already initialized", LOG_LEVEL_ALERT);
+        log_this(SR_TERMINAL, "Session manager already initialized", LOG_LEVEL_ALERT, 0);
         return true;
     }
 
     global_session_manager = calloc(1, sizeof(SessionManager));
     if (!global_session_manager) {
-        log_this(SR_TERMINAL, "Failed to allocate session manager", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to allocate session manager", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -108,14 +108,14 @@ bool init_session_manager(int max_sessions, int idle_timeout_seconds) {
 
     // Initialize mutexes and locks
     if (pthread_mutex_init(&global_session_manager->manager_mutex, NULL) != 0) {
-        log_this(SR_TERMINAL, "Failed to initialize manager mutex", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to initialize manager mutex", LOG_LEVEL_ERROR, 0);
         free(global_session_manager);
         global_session_manager = NULL;
         return false;
     }
 
     if (pthread_rwlock_init(&global_session_manager->sessions_lock, NULL) != 0) {
-        log_this(SR_TERMINAL, "Failed to initialize sessions lock", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to initialize sessions lock", LOG_LEVEL_ERROR, 0);
         pthread_mutex_destroy(&global_session_manager->manager_mutex);
         free(global_session_manager);
         global_session_manager = NULL;
@@ -127,7 +127,7 @@ bool init_session_manager(int max_sessions, int idle_timeout_seconds) {
         global_session_manager->cleanup_thread_running = true;
         if (pthread_create(&global_session_manager->cleanup_thread, NULL,
                           session_cleanup_thread, NULL) != 0) {
-            log_this(SR_TERMINAL, "Failed to create cleanup thread", LOG_LEVEL_ERROR);
+            log_this(SR_TERMINAL, "Failed to create cleanup thread", LOG_LEVEL_ERROR, 0);
             global_session_manager->cleanup_thread_running = false;
             // Continue without cleanup thread - not critical
         }
@@ -135,8 +135,7 @@ bool init_session_manager(int max_sessions, int idle_timeout_seconds) {
         global_session_manager->cleanup_thread_running = false;
     }
 
-    log_this(SR_TERMINAL, "Session manager initialized - max_sessions: %d, idle_timeout: %d seconds",
-             LOG_LEVEL_STATE, max_sessions, idle_timeout_seconds);
+    log_this(SR_TERMINAL, "Session manager initialized - max_sessions: %d, idle_timeout: %d seconds", LOG_LEVEL_STATE, 2, max_sessions, idle_timeout_seconds);
 
     return true;
 }
@@ -151,7 +150,7 @@ void cleanup_session_manager(void) {
         return;
     }
 
-    log_this(SR_TERMINAL, "Cleaning up session manager", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "Cleaning up session manager", LOG_LEVEL_STATE, 0);
 
     // Stop cleanup thread
     if (global_session_manager->cleanup_thread_running) {
@@ -176,7 +175,7 @@ void cleanup_session_manager(void) {
     free(global_session_manager);
     global_session_manager = NULL;
 
-    log_this(SR_TERMINAL, "Session manager cleanup completed", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "Session manager cleanup completed", LOG_LEVEL_STATE, 0);
 }
 
 /**
@@ -188,7 +187,7 @@ void cleanup_session_manager(void) {
 TerminalSession *create_terminal_session(const char *shell_command,
                                         int initial_rows, int initial_cols) {
     if (!global_session_manager || !shell_command) {
-        log_this(SR_TERMINAL, "Invalid parameters for session creation", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Invalid parameters for session creation", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -197,7 +196,7 @@ TerminalSession *create_terminal_session(const char *shell_command,
     // Check capacity
     if (!session_manager_has_capacity()) {
         pthread_mutex_unlock(&global_session_manager->manager_mutex);
-        log_this(SR_TERMINAL, "Maximum session capacity reached", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Maximum session capacity reached", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -205,13 +204,13 @@ TerminalSession *create_terminal_session(const char *shell_command,
     TerminalSession *session = calloc(1, sizeof(TerminalSession));
     if (!session) {
         pthread_mutex_unlock(&global_session_manager->manager_mutex);
-        log_this(SR_TERMINAL, "Failed to allocate terminal session", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to allocate terminal session", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
     // Generate unique session ID
     if (!generate_session_id(session->session_id, sizeof(session->session_id))) {
-        log_this(SR_TERMINAL, "Failed to generate session ID", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to generate session ID", LOG_LEVEL_ERROR, 0);
         free(session);
         pthread_mutex_unlock(&global_session_manager->manager_mutex);
         return NULL;
@@ -227,7 +226,7 @@ TerminalSession *create_terminal_session(const char *shell_command,
 
     // Initialize session mutex
     if (pthread_mutex_init(&session->session_mutex, NULL) != 0) {
-        log_this(SR_TERMINAL, "Failed to initialize session mutex", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to initialize session mutex", LOG_LEVEL_ERROR, 0);
         free(session);
         pthread_mutex_unlock(&global_session_manager->manager_mutex);
         return NULL;
@@ -236,7 +235,7 @@ TerminalSession *create_terminal_session(const char *shell_command,
     // Start PTY shell
     session->pty_shell = pty_spawn_shell(shell_command, session);
     if (!session->pty_shell) {
-        log_this(SR_TERMINAL, "Failed to spawn PTY shell for session %s", LOG_LEVEL_ERROR, session->session_id);
+        log_this(SR_TERMINAL, "Failed to spawn PTY shell for session %s", LOG_LEVEL_ERROR, 1, session->session_id);
         pthread_mutex_destroy(&session->session_mutex);
         free(session);
         pthread_mutex_unlock(&global_session_manager->manager_mutex);
@@ -258,8 +257,7 @@ TerminalSession *create_terminal_session(const char *shell_command,
     pthread_rwlock_unlock(&global_session_manager->sessions_lock);
     pthread_mutex_unlock(&global_session_manager->manager_mutex);
 
-    log_this(SR_TERMINAL, "Created terminal session %s (%dx%d)",
-             LOG_LEVEL_STATE, session->session_id, initial_cols, initial_rows);
+    log_this(SR_TERMINAL, "Created terminal session %s (%dx%d)", LOG_LEVEL_STATE, 3, session->session_id, initial_cols, initial_rows);
 
     return session;
 }
@@ -303,7 +301,7 @@ bool remove_terminal_session(TerminalSession *session) {
         return false;
     }
 
-    log_this(SR_TERMINAL, "Removing terminal session %s", LOG_LEVEL_STATE, session->session_id);
+    log_this(SR_TERMINAL, "Removing terminal session %s", LOG_LEVEL_STATE, 1, session->session_id);
 
     // Terminate PTY shell
     if (session->pty_shell) {
@@ -366,7 +364,7 @@ int cleanup_expired_sessions(void) {
         // Check if session is expired
         if (global_session_manager->idle_timeout_seconds > 0 &&
             difftime(current_time, session->last_activity) >= global_session_manager->idle_timeout_seconds) {
-            log_this(SR_TERMINAL, "Session %s expired due to idle timeout", LOG_LEVEL_STATE, session->session_id);
+            log_this(SR_TERMINAL, "Session %s expired due to idle timeout", LOG_LEVEL_STATE, 1, session->session_id);
 
             // Remove from current position in list
             if (session->prev) {
@@ -414,8 +412,7 @@ bool resize_terminal_session(TerminalSession *session, int rows, int cols) {
 
     if (success) {
         update_session_activity(session);
-        log_this(SR_TERMINAL, "Resized session %s to %dx%d",
-                 LOG_LEVEL_STATE, session->session_id, cols, rows);
+        log_this(SR_TERMINAL, "Resized session %s to %dx%d", LOG_LEVEL_STATE, 3, session->session_id, cols, rows);
     }
 
     return success;

@@ -43,7 +43,7 @@ static bool collect_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap
     
     FILE *status = fopen("/proc/self/status", "r");
     if (!status) {
-        log_this(SR_STATUS, "Failed to open /proc/self/status", LOG_LEVEL_ERROR);
+        log_this(SR_STATUS, "Failed to open /proc/self/status", LOG_LEVEL_ERROR, 0);
         return false;
     }
     
@@ -226,7 +226,7 @@ void get_fd_info(int fd, FileDescriptorInfo *info) {
 bool collect_file_descriptors(FileDescriptorInfo **descriptors, int *count) {
     DIR *dir = opendir("/proc/self/fd");
     if (!dir) {
-        log_this(SR_STATUS, "Failed to open /proc/self/fd", LOG_LEVEL_ERROR);
+        log_this(SR_STATUS, "Failed to open /proc/self/fd", LOG_LEVEL_ERROR, 0);
         return false;
     }
 

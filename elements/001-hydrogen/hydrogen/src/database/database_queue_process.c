@@ -20,19 +20,19 @@ extern volatile sig_atomic_t database_stopping;
  */
 bool database_queue_start_worker(DatabaseQueue* db_queue) {
     if (!db_queue) {
-        log_this(SR_DATABASE, "Invalid database queue parameter", LOG_LEVEL_ERROR);
+        log_this(SR_DATABASE, "Invalid database queue parameter", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
-    log_this(dqm_label, "Starting worker thread", LOG_LEVEL_STATE);
+    log_this(dqm_label, "Starting worker thread", LOG_LEVEL_STATE, 0);
     free(dqm_label);
 
     // Create the single worker thread
     if (pthread_create(&db_queue->worker_thread, NULL, database_queue_worker_thread, db_queue) != 0) {
         char* dqm_label_error = database_queue_generate_label(db_queue);
-        log_this(dqm_label_error, "Failed to start worker thread", LOG_LEVEL_ERROR);
+        log_this(dqm_label_error, "Failed to start worker thread", LOG_LEVEL_ERROR, 0);
         free(dqm_label_error);
         return false;
     }
@@ -45,7 +45,7 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
     add_service_thread(&database_threads, db_queue->worker_thread);
 
     char* dqm_label_success = database_queue_generate_label(db_queue);
-    log_this(dqm_label_success, "Worker thread created and registered successfully", LOG_LEVEL_STATE);
+    log_this(dqm_label_success, "Worker thread created and registered successfully", LOG_LEVEL_STATE, 0);
     free(dqm_label_success);
     return true;
 }
@@ -58,7 +58,7 @@ void* database_queue_worker_thread(void* arg) {
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
-    log_this(dqm_label, "Worker thread started", LOG_LEVEL_STATE);
+    log_this(dqm_label, "Worker thread started", LOG_LEVEL_STATE, 0);
 
     // Start heartbeat monitoring immediately
     database_queue_start_heartbeat(db_queue);
@@ -84,7 +84,7 @@ void* database_queue_worker_thread(void* arg) {
                 // Process next query from this queue
                 DatabaseQuery* query = database_queue_process_next(db_queue);
                 if (query) {
-                    // log_this(dqm_component, "%s queue processing query: %s", LOG_LEVEL_DEBUG, db_queue->queue_type, query->query_id ? query->query_id : "unknown");
+                    // log_this(dqm_component, "%s queue processing query: %s", LOG_LEVEL_DEBUG, 2, db_queue->queue_type, query->query_id ? query->query_id : "unknown");
 
                     // TODO: Actual database query execution will be implemented in Phase 2
                     // For now, just simulate processing time based on queue type
@@ -121,7 +121,7 @@ void* database_queue_worker_thread(void* arg) {
     remove_service_thread(&database_threads, pthread_self());
 
     char* dqm_label_exit = database_queue_generate_label(db_queue);
-    log_this(dqm_label_exit, "Worker thread exiting", LOG_LEVEL_STATE);
+    log_this(dqm_label_exit, "Worker thread exiting", LOG_LEVEL_STATE, 0);
     free(dqm_label_exit);
     return NULL;
 }
@@ -155,7 +155,7 @@ void database_queue_manage_child_queues(DatabaseQueue* lead_queue) {
     // Commented out trace logging to reduce log noise during heartbeat
     // Create DQM component name with full label for logging
     // char* dqm_label = database_queue_generate_label(lead_queue);
-    // log_this(dqm_label, "Lead queue managing child queues", LOG_LEVEL_TRACE);
+    // log_this(dqm_label, "Lead queue managing child queues", LOG_LEVEL_TRACE, 0);
     // free(dqm_label);
 
     // Implement scaling logic based on queue utilization

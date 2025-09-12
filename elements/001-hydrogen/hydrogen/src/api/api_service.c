@@ -29,7 +29,7 @@ static enum MHD_Result handle_exact_api_version_request(void *cls, struct MHD_Co
     (void)cls; (void)url; (void)method; (void)version; (void)upload_data;
     (void)upload_data_size; (void)con_cls;  // Unused parameters
 
-    // log_this(SR_API, "Handling exact /api/version request", LOG_LEVEL_STATE);
+    // log_this(SR_API, "Handling exact /api/version request", LOG_LEVEL_STATE, 0);
     return handle_version_request(connection);
 }
 
@@ -43,46 +43,46 @@ static enum MHD_Result handle_exact_api_files_local_request(void *cls, struct MH
                                                            const char *version, const char *upload_data,
                                                            size_t *upload_data_size, void **con_cls) {
     (void)cls; (void)url; (void)version; // Unused parameters
-    // log_this(SR_API, "Handling exact /api/files/local request", LOG_LEVEL_STATE);
+    // log_this(SR_API, "Handling exact /api/files/local request", LOG_LEVEL_STATE, 0);
     // Delegate to the same handler as /api/system/upload
     return handle_system_upload_request(connection, method, upload_data,
                                       upload_data_size, con_cls);
 }
 
 bool init_api_endpoints(void) {
-    log_this(SR_API, "Initializing API endpoints", LOG_LEVEL_STATE);
+    log_this(SR_API, "Initializing API endpoints", LOG_LEVEL_STATE, 0);
     
     // Try to initialize OIDC service, but continue even if it fails
     bool oidc_initialized = init_oidc_endpoints(NULL);  // NULL for default context
     if (!oidc_initialized) {
-        log_this(SR_API, "OIDC initialization failed, continuing with system endpoints only", LOG_LEVEL_ERROR);
+        log_this(SR_API, "OIDC initialization failed, continuing with system endpoints only", 1, LOG_LEVEL_ERROR);
     } else {
-        log_this(SR_API, "OIDC endpoints initialized", LOG_LEVEL_STATE);
+        log_this(SR_API, "OIDC endpoints initialized", LOG_LEVEL_STATE, 0);
     }
     
     // Register endpoints with the web server
     if (!register_api_endpoints()) {
-        log_this(SR_API, "Failed to register API endpoints", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to register API endpoints", LOG_LEVEL_ERROR, 0);
         if (oidc_initialized) {
             cleanup_oidc_endpoints();  // Clean up OIDC only if it was initialized
         }
         return false;
     }
     
-    log_this(SR_API, "API endpoints initialized successfully", LOG_LEVEL_STATE);
+    log_this(SR_API, "API endpoints initialized successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
 void cleanup_api_endpoints(void) {
-    log_this(SR_API, "Cleaning up API endpoints", LOG_LEVEL_STATE);
+    log_this(SR_API, "Cleaning up API endpoints", LOG_LEVEL_STATE, 0);
     
     // Clean up OIDC endpoints first
     cleanup_oidc_endpoints();
-    log_this(SR_API, "OIDC endpoints cleaned up", LOG_LEVEL_STATE);
+    log_this(SR_API, "OIDC endpoints cleaned up", LOG_LEVEL_STATE, 0);
     
     if (app_config && app_config->api.prefix) {
         unregister_web_endpoint(app_config->api.prefix);
-        log_this(SR_API, "Unregistered API endpoints", LOG_LEVEL_STATE);
+        log_this(SR_API, "Unregistered API endpoints", LOG_LEVEL_STATE, 0);
     }
 }
 
@@ -98,7 +98,7 @@ static enum MHD_Result api_handler(void *cls, struct MHD_Connection *connection,
 
 bool register_api_endpoints(void) {
     if (!app_config || !app_config->api.prefix) {
-        log_this(SR_API, "API configuration not available", LOG_LEVEL_ERROR);
+        log_this(SR_API, "API configuration not available", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -111,11 +111,11 @@ bool register_api_endpoints(void) {
 
     // Register hardcoded version endpoint
     if (!register_web_endpoint(&hardcoded_version_endpoint)) {
-        log_this(SR_API, "Failed to register hardcoded /api/version endpoint", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to register hardcoded /api/version endpoint", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    log_this(SR_API, "Registered hardcoded endpoint: /api/version", LOG_LEVEL_STATE);
+    log_this(SR_API, "Registered hardcoded endpoint: /api/version", LOG_LEVEL_STATE, 0);
 
     // Register hardcoded /api/files/local endpoint with high precedence SECOND
     WebServerEndpoint hardcoded_files_local_endpoint = {
@@ -126,11 +126,11 @@ bool register_api_endpoints(void) {
 
     // Register hardcoded files/local endpoint
     if (!register_web_endpoint(&hardcoded_files_local_endpoint)) {
-        log_this(SR_API, "Failed to register hardcoded /api/files/local endpoint", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to register hardcoded /api/files/local endpoint", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    log_this(SR_API, "Registered hardcoded endpoint: /api/files/local", LOG_LEVEL_STATE);
+    log_this(SR_API, "Registered hardcoded endpoint: /api/files/local", LOG_LEVEL_STATE, 0);
 
     // Create general API endpoint registration
     WebServerEndpoint api_endpoint = {
@@ -141,34 +141,33 @@ bool register_api_endpoints(void) {
 
     // Register general API endpoint (registered second so hardcoded endpoint gets precedence)
     if (!register_web_endpoint(&api_endpoint)) {
-        log_this(SR_API, "Failed to register API endpoint with webserver", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to register API endpoint with webserver", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    log_this(SR_API, "Registered API endpoints with prefix: %s", LOG_LEVEL_STATE,
-             app_config->api.prefix);
+    log_this(SR_API, "Registered API endpoints with prefix: %s", LOG_LEVEL_STATE, 1, app_config->api.prefix);
 
     // Log available endpoints
     log_group_begin();
-        log_this(SR_API, "Available endpoints:", LOG_LEVEL_STATE);
-        log_this(SR_API, "  -> /api/version (hardcoded, high precedence)", LOG_LEVEL_STATE);
-        log_this(SR_API, "  -> /api/files/local (hardcoded, high precedence - upload alias)", LOG_LEVEL_STATE);
-        log_this(SR_API, "  -> %s/version", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/info", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/health", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/test", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/version", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/config", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/prometheus", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/appconfig", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/recent", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/upload", LOG_LEVEL_STATE, app_config->api.prefix);
+        log_this(SR_API, "Available endpoints:", LOG_LEVEL_STATE, 0);
+        log_this(SR_API, "  -> /api/version (hardcoded, high precedence)", LOG_LEVEL_STATE, 0);
+        log_this(SR_API, "  -> /api/files/local (hardcoded, high precedence - upload alias)", LOG_LEVEL_STATE, 0);
+        log_this(SR_API, "  -> %s/version", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/system/info", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/system/health", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/system/test", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/system/version", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/system/config", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/system/prometheus", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/system/appconfig", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/system/recent", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/system/upload", LOG_LEVEL_STATE, 1, app_config->api.prefix);
         // OIDC endpoints
-        log_this(SR_API, "  -> %s/oidc/authorize", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/oidc/token", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/oidc/userinfo", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/oidc/.well-known/openid-configuration", LOG_LEVEL_STATE, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/oidc/jwks", LOG_LEVEL_STATE, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/oidc/authorize", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/oidc/token", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/oidc/userinfo", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/oidc/.well-known/openid-configuration", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "  -> %s/oidc/jwks", LOG_LEVEL_STATE, 1, app_config->api.prefix);
     log_group_end();
     
     return true;
@@ -197,7 +196,7 @@ bool register_api_endpoints(void) {
  */
 bool is_api_endpoint(const char *url, char *service, char *endpoint) {
     if (!app_config || !app_config->api.prefix || !app_config->api.prefix[0]) {
-        log_this(SR_API, "API prefix not configured", LOG_LEVEL_ERROR);
+        log_this(SR_API, "API prefix not configured", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -296,7 +295,7 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     (void)version;  // Unused parameter
 
     if (!app_config || !app_config->api.prefix || !app_config->api.prefix[0]) {
-        log_this(SR_API, "API prefix not configured", LOG_LEVEL_ERROR);
+        log_this(SR_API, "API prefix not configured", LOG_LEVEL_ERROR, 0);
         return MHD_NO;
     }
 
@@ -310,7 +309,7 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
 
     // Validate URL starts with the configured (or default) prefix
     if (strncmp(url, prefix, prefix_len) != 0) {
-        log_this(SR_API, "Invalid API prefix in request: %s", LOG_LEVEL_ERROR, url);
+        log_this(SR_API, "Invalid API prefix in request: %s", LOG_LEVEL_ERROR, 1, url);
         return MHD_NO;
     }
 
@@ -323,7 +322,7 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
 
     // Ensure we have a path to route
     if (!*path) {
-        log_this(SR_API, "Empty path after prefix: %s", LOG_LEVEL_ERROR, url);
+        log_this(SR_API, "Empty path after prefix: %s", LOG_LEVEL_ERROR, 1, url);
         return MHD_NO;
     }
 
@@ -378,7 +377,7 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     }
 
     // Endpoint not found
-    log_this(SR_API, "Endpoint not found: %s", LOG_LEVEL_DEBUG, path);
+    log_this(SR_API, "Endpoint not found: %s", LOG_LEVEL_DEBUG, 1, path);
     const char *error_json = "{\"error\": \"Endpoint not found\"}";
     struct MHD_Response *response = MHD_create_response_from_buffer(
         strlen(error_json), (void*)error_json, MHD_RESPMEM_PERSISTENT);

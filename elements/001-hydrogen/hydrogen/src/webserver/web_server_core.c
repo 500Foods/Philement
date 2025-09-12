@@ -27,7 +27,7 @@ WebServerConfig *server_web_config = NULL;
 // Endpoint registration functions
 bool register_web_endpoint(const WebServerEndpoint* endpoint) {
     if (!endpoint || !endpoint->prefix || !endpoint->validator || !endpoint->handler) {
-        log_this(SR_WEBSERVER, "Invalid endpoint registration parameters", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Invalid endpoint registration parameters", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -37,8 +37,7 @@ bool register_web_endpoint(const WebServerEndpoint* endpoint) {
     for (size_t i = 0; i < endpoint_count; i++) {
         if (strcmp(registered_endpoints[i].prefix, endpoint->prefix) == 0) {
             pthread_mutex_unlock(&endpoint_mutex);
-            log_this(SR_WEBSERVER, "Endpoint with prefix %s already registered", 
-                    LOG_LEVEL_ERROR, endpoint->prefix);
+            log_this(SR_WEBSERVER, "Endpoint with prefix %s already registered", LOG_LEVEL_ERROR, 1, endpoint->prefix);
             return false;
         }
     }
@@ -47,14 +46,13 @@ bool register_web_endpoint(const WebServerEndpoint* endpoint) {
     if (endpoint_count < MAX_ENDPOINTS) {
         registered_endpoints[endpoint_count] = *endpoint;
         endpoint_count++;
-        log_this(SR_WEBSERVER, "Registered endpoint with prefix: %s", 
-                LOG_LEVEL_STATE, endpoint->prefix);
+        log_this(SR_WEBSERVER, "Registered endpoint with prefix: %s", LOG_LEVEL_STATE, 1, endpoint->prefix);
         pthread_mutex_unlock(&endpoint_mutex);
         return true;
     }
 
     pthread_mutex_unlock(&endpoint_mutex);
-    log_this(SR_WEBSERVER, "Maximum number of endpoints reached", LOG_LEVEL_ERROR);
+    log_this(SR_WEBSERVER, "Maximum number of endpoints reached", LOG_LEVEL_ERROR, 0);
     return false;
 }
 
@@ -71,8 +69,7 @@ void unregister_web_endpoint(const char* prefix) {
                 registered_endpoints[j] = registered_endpoints[j + 1];
             }
             endpoint_count--;
-            log_this(SR_WEBSERVER, "Unregistered endpoint with prefix: %s", 
-                    LOG_LEVEL_STATE, prefix);
+            log_this(SR_WEBSERVER, "Unregistered endpoint with prefix: %s", LOG_LEVEL_STATE, 1, prefix);
             break;
         }
     }
@@ -119,8 +116,7 @@ static bool is_port_available(int port, bool check_ipv6) {
         // Enable SO_REUSEADDR to match the actual server behavior
         int reuse = 1;
         if (setsockopt(sock_v4, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
-            log_this(SR_WEBSERVER, "Failed to set SO_REUSEADDR on IPv4 test socket: %s", 
-                    LOG_LEVEL_ALERT, strerror(errno));
+            log_this(SR_WEBSERVER, "Failed to set SO_REUSEADDR on IPv4 test socket: %s", LOG_LEVEL_ALERT, 1, strerror(errno));
         }
 
         struct sockaddr_in addr;
@@ -132,11 +128,9 @@ static bool is_port_available(int port, bool check_ipv6) {
         ipv4_ok = (result == 0);
         
         if (!ipv4_ok) {
-            log_this(SR_WEBSERVER, "IPv4 port %d availability check failed: %s", 
-                    LOG_LEVEL_STATE, port, strerror(errno));
+            log_this(SR_WEBSERVER, "IPv4 port %d availability check failed: %s", LOG_LEVEL_STATE, 2, port, strerror(errno));
         } else {
-            log_this(SR_WEBSERVER, "IPv4 port %d is available (SO_REUSEADDR enabled)", 
-                    LOG_LEVEL_STATE, port);
+            log_this(SR_WEBSERVER, "IPv4 port %d is available (SO_REUSEADDR enabled)", LOG_LEVEL_STATE, 1, port);
         }
         
         close(sock_v4);
@@ -149,8 +143,7 @@ static bool is_port_available(int port, bool check_ipv6) {
             // Enable SO_REUSEADDR to match the actual server behavior
             int reuse = 1;
             if (setsockopt(sock_v6, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
-                log_this(SR_WEBSERVER, "Failed to set SO_REUSEADDR on IPv6 test socket: %s", 
-                        LOG_LEVEL_ALERT, strerror(errno));
+                log_this(SR_WEBSERVER, "Failed to set SO_REUSEADDR on IPv6 test socket: %s", LOG_LEVEL_ALERT, 2, strerror(errno));
             }
 
             struct sockaddr_in6 addr;
@@ -166,11 +159,9 @@ static bool is_port_available(int port, bool check_ipv6) {
             ipv6_ok = (result == 0);
             
             if (!ipv6_ok) {
-                log_this(SR_WEBSERVER, "IPv6 port %d availability check failed: %s", 
-                        LOG_LEVEL_STATE, port, strerror(errno));
+                log_this(SR_WEBSERVER, "IPv6 port %d availability check failed: %s", LOG_LEVEL_STATE, 2, port, strerror(errno));
             } else {
-                log_this(SR_WEBSERVER, "IPv6 port %d is available (SO_REUSEADDR enabled)", 
-                        LOG_LEVEL_STATE, port);
+                log_this(SR_WEBSERVER, "IPv6 port %d is available (SO_REUSEADDR enabled)", LOG_LEVEL_STATE, 1, port);
             }
             
             close(sock_v6);
@@ -194,19 +185,19 @@ bool init_web_server(WebServerConfig *web_config) {
     
     // Prevent initialization during shutdown
     if (server_stopping || web_server_shutdown) {
-        log_this(SR_WEBSERVER, "Cannot initialize web server during shutdown", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Cannot initialize web server during shutdown", LOG_LEVEL_STATE, 0);
         return false;
     }
 
     // Check if we're already initialized
     if (webserver_daemon != NULL) {
-        log_this(SR_WEBSERVER, "Web server already initialized", LOG_LEVEL_ALERT);
+        log_this(SR_WEBSERVER, "Web server already initialized", LOG_LEVEL_ALERT, 0);
         return false;
     }
 
     // Double-check shutdown state before proceeding
     if (server_stopping || web_server_shutdown) {
-        log_this(SR_WEBSERVER, "Shutdown initiated, aborting web server initialization", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Shutdown initiated, aborting web server initialization", LOG_LEVEL_STATE, 0);
         return false;
     }
 
@@ -215,40 +206,40 @@ bool init_web_server(WebServerConfig *web_config) {
 
     // Check port availability before initializing resources
     if (!is_port_available(web_config->port, web_config->enable_ipv6)) {
-        log_this(SR_WEBSERVER, "Port %u is not available", LOG_LEVEL_ERROR, web_config->port);
+        log_this(SR_WEBSERVER, "Port %u is not available", LOG_LEVEL_ERROR, 1, web_config->port);
         server_web_config = NULL;  // Reset config on failure
         return false;
     }
 
-    log_this(SR_WEBSERVER, "Starting web server initialization", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "Starting web server initialization", LOG_LEVEL_STATE, 0);
     if (web_config->enable_ipv6) {
-        log_this(SR_WEBSERVER, "IPv6 support enabled", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "IPv6 support enabled", LOG_LEVEL_STATE, 0);
     }
 
     // Log server configuration
-    log_this(SR_WEBSERVER, "Server Configuration:", LOG_LEVEL_STATE);
-    log_this(SR_WEBSERVER, "-> Port: %u", LOG_LEVEL_STATE, server_web_config->port);
-    log_this(SR_WEBSERVER, "-> WebRoot: %s", LOG_LEVEL_STATE, server_web_config->web_root);
-    log_this(SR_WEBSERVER, "-> Upload Path: %s", LOG_LEVEL_STATE, server_web_config->upload_path);
-    log_this(SR_WEBSERVER, "-> Upload Dir: %s", LOG_LEVEL_STATE, server_web_config->upload_dir);
-    log_this(SR_WEBSERVER, "-> Thread Pool Size: %d", LOG_LEVEL_STATE, web_config->thread_pool_size);
-    log_this(SR_WEBSERVER, "-> Max Connections: %d", LOG_LEVEL_STATE, web_config->max_connections);
-    log_this(SR_WEBSERVER, "-> Max Connections Per IP: %d", LOG_LEVEL_STATE, web_config->max_connections_per_ip);
-    log_this(SR_WEBSERVER, "-> Connection Timeout: %d seconds", LOG_LEVEL_STATE, web_config->connection_timeout);
+    log_this(SR_WEBSERVER, "Server Configuration:", LOG_LEVEL_STATE, 0);
+    log_this(SR_WEBSERVER, "-> Port: %u", LOG_LEVEL_STATE, 1, server_web_config->port);
+    log_this(SR_WEBSERVER, "-> WebRoot: %s", LOG_LEVEL_STATE, 1, server_web_config->web_root);
+    log_this(SR_WEBSERVER, "-> Upload Path: %s", LOG_LEVEL_STATE, 1, server_web_config->upload_path);
+    log_this(SR_WEBSERVER, "-> Upload Dir: %s", LOG_LEVEL_STATE, 1, server_web_config->upload_dir);
+    log_this(SR_WEBSERVER, "-> Thread Pool Size: %d", LOG_LEVEL_STATE, 1, web_config->thread_pool_size);
+    log_this(SR_WEBSERVER, "-> Max Connections: %d", LOG_LEVEL_STATE, 1, web_config->max_connections);
+    log_this(SR_WEBSERVER, "-> Max Connections Per IP: %d", LOG_LEVEL_STATE, 1, web_config->max_connections_per_ip);
+    log_this(SR_WEBSERVER, "-> Connection Timeout: %d seconds", LOG_LEVEL_STATE, 1, web_config->connection_timeout);
 
     // Create upload directory if it doesn't exist
     struct stat st = {0};
     if (stat(server_web_config->upload_dir, &st) == -1) {
-        log_this(SR_WEBSERVER, "Upload directory does not exist, attempting to create", LOG_LEVEL_ALERT);
+        log_this(SR_WEBSERVER, "Upload directory does not exist, attempting to create", LOG_LEVEL_ALERT, 0);
         if (mkdir(server_web_config->upload_dir, 0700) != 0) {
             char error_buffer[256];
             snprintf(error_buffer, sizeof(error_buffer), "Failed to create upload directory: %s", strerror(errno));
-            log_this(SR_WEBSERVER, error_buffer, LOG_LEVEL_DEBUG);
+            log_this(SR_WEBSERVER, error_buffer, LOG_LEVEL_DEBUG, 0);
             return false;
         }
-        log_this(SR_WEBSERVER, "Created upload directory", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Created upload directory", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_WEBSERVER, "Upload directory already exists", LOG_LEVEL_ALERT);
+        log_this(SR_WEBSERVER, "Upload directory already exists", LOG_LEVEL_ALERT, 0);
     }
 
     return true;
@@ -262,41 +253,41 @@ void* run_web_server(void* arg) {
     
     // Prevent initialization during any shutdown state
     if (server_stopping || web_server_shutdown) {
-        log_this(SR_WEBSERVER, "Cannot start web server during shutdown", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Cannot start web server during shutdown", LOG_LEVEL_STATE, 0);
         return NULL;
     }
 
     // Only proceed if we're in startup phase
     if (!server_starting) {
-        log_this(SR_WEBSERVER, "Cannot start web server outside startup phase", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Cannot start web server outside startup phase", LOG_LEVEL_STATE, 0);
         return NULL;
     }
 
     // Check if we already have a daemon running
     if (webserver_daemon != NULL) {
-        log_this(SR_WEBSERVER, "Web server daemon already exists", LOG_LEVEL_ALERT);
+        log_this(SR_WEBSERVER, "Web server daemon already exists", LOG_LEVEL_ALERT, 0);
         return NULL;
     }
 
     // Double-check shutdown state before proceeding with resource allocation
     if (server_stopping || web_server_shutdown) {
-        log_this(SR_WEBSERVER, "Shutdown initiated, aborting web server startup", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Shutdown initiated, aborting web server startup", LOG_LEVEL_STATE, 0);
         return NULL;
     }
 
     // Triple-check shutdown state before thread registration
     if (server_stopping || web_server_shutdown || !server_starting) {
-        log_this(SR_WEBSERVER, "Invalid system state, aborting web server startup", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Invalid system state, aborting web server startup", LOG_LEVEL_STATE, 0);
         return NULL;
     }
 
-    log_this(SR_WEBSERVER, "Starting web server daemon", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "Starting web server daemon", LOG_LEVEL_STATE, 0);
     
     // Initialize network interface logging
-    log_this(SR_WEBSERVER, "Initializing network interfaces", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "Initializing network interfaces", LOG_LEVEL_STATE, 0);
     struct ifaddrs *ifaddr, *ifa;
     if (getifaddrs(&ifaddr) == -1) {
-        log_this(SR_WEBSERVER, "Failed to get interface addresses", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Failed to get interface addresses", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -314,8 +305,9 @@ void* run_web_server(void* arg) {
                               host, NI_MAXHOST,
                               NULL, 0, NI_NUMERICHOST);
             if (s == 0) {
-                log_this(SR_WEBSERVER, "Interface %s: %s (%s)", LOG_LEVEL_STATE,
-                        ifa->ifa_name, host,
+                log_this(SR_WEBSERVER, "Interface %s: %s (%s)", LOG_LEVEL_STATE, 3,
+                        ifa->ifa_name, 
+                        host,
                         (family == AF_INET) ? "IPv4" : "IPv6");
             }
         }
@@ -330,14 +322,14 @@ void* run_web_server(void* arg) {
     
     if (server_web_config->enable_ipv6) {
         flags |= MHD_USE_DUAL_STACK;
-        log_this(SR_WEBSERVER, "Starting with IPv6 dual-stack support", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Starting with IPv6 dual-stack support", LOG_LEVEL_STATE, 0);
     }
 
-    log_this(SR_WEBSERVER, "Setting SO_REUSEADDR to enable immediate socket rebinding", LOG_LEVEL_STATE);
-    log_this(SR_WEBSERVER, "Using internal polling thread with select", LOG_LEVEL_STATE);
-    log_this(SR_WEBSERVER, "Maximum connections: %d", LOG_LEVEL_STATE, server_web_config->max_connections);
-    log_this(SR_WEBSERVER, "Maximum connections per IP: %d", LOG_LEVEL_STATE, server_web_config->max_connections_per_ip);
-    log_this(SR_WEBSERVER, "Connection timeout: %d seconds", LOG_LEVEL_STATE, server_web_config->connection_timeout);
+    log_this(SR_WEBSERVER, "Setting SO_REUSEADDR to enable immediate socket rebinding", LOG_LEVEL_STATE, 0);
+    log_this(SR_WEBSERVER, "Using internal polling thread with select", LOG_LEVEL_STATE, 0);
+    log_this(SR_WEBSERVER, "Maximum connections: %d", LOG_LEVEL_STATE, 1, server_web_config->max_connections);
+    log_this(SR_WEBSERVER, "Maximum connections per IP: %d", LOG_LEVEL_STATE, 1, server_web_config->max_connections_per_ip);
+    log_this(SR_WEBSERVER, "Connection timeout: %d seconds", LOG_LEVEL_STATE, 1, server_web_config->connection_timeout);
     
     // Start the daemon with proper thread configuration
     webserver_daemon = MHD_start_daemon(flags | MHD_USE_DEBUG | MHD_USE_ERROR_LOG,
@@ -353,16 +345,16 @@ void* run_web_server(void* arg) {
                                 MHD_OPTION_THREAD_STACK_SIZE, (1024 * 1024), // 1MB stack size
                                 MHD_OPTION_END);
     if (webserver_daemon == NULL) {
-        log_this(SR_WEBSERVER, "Failed to start web server daemon", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Failed to start web server daemon", LOG_LEVEL_ERROR, 0);
         server_web_config = NULL;  // Reset config on failure
-        log_this(SR_WEBSERVER, "Web server initialization failed", LOG_LEVEL_DEBUG);
+        log_this(SR_WEBSERVER, "Web server initialization failed", LOG_LEVEL_DEBUG, 0);
         return NULL;
     }
 
     // Check if the web server is actually running
     const union MHD_DaemonInfo *info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_BIND_PORT);
     if (info == NULL) {
-        log_this(SR_WEBSERVER, "Failed to get daemon info", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Failed to get daemon info", LOG_LEVEL_ERROR, 0);
         MHD_stop_daemon(webserver_daemon);
         webserver_daemon = NULL;
         return NULL;
@@ -370,7 +362,7 @@ void* run_web_server(void* arg) {
 
     unsigned int actual_port = info->port;
     if (actual_port == 0) {
-        log_this(SR_WEBSERVER, "Web server failed to bind to the specified port", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Web server failed to bind to the specified port", LOG_LEVEL_ERROR, 0);
         MHD_stop_daemon(webserver_daemon);
         webserver_daemon = NULL;
         return NULL;
@@ -378,9 +370,9 @@ void* run_web_server(void* arg) {
 
     char port_info[64];
     snprintf(port_info, sizeof(port_info), "Web server bound to port: %u", actual_port);
-    log_this(SR_WEBSERVER, port_info, LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, port_info, LOG_LEVEL_STATE, 0);
 
-    log_this(SR_WEBSERVER, "Web server started successfully", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "Web server started successfully", LOG_LEVEL_STATE, 0);
 
     return NULL;
 }
@@ -391,22 +383,22 @@ void shutdown_web_server(void) {
     __sync_bool_compare_and_swap(&web_server_shutdown, 0, 1);
     __sync_synchronize();  // Memory barrier
 
-    log_this(SR_WEBSERVER, "Shutdown: Initiating web server shutdown", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "Shutdown: Initiating web server shutdown", LOG_LEVEL_STATE, 0);
     
     // Stop the web server daemon
     if (webserver_daemon != NULL) {
-        log_this(SR_WEBSERVER, "Stopping web server daemon", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Stopping web server daemon", LOG_LEVEL_STATE, 0);
         MHD_stop_daemon(webserver_daemon);
         webserver_daemon = NULL;
-        log_this(SR_WEBSERVER, "Web server daemon stopped", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Web server daemon stopped", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_WEBSERVER, "Web server was not running", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Web server was not running", LOG_LEVEL_STATE, 0);
     }
 
     // Clear configuration
     server_web_config = NULL;
 
-    log_this(SR_WEBSERVER, "Web server shutdown complete", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "Web server shutdown complete", LOG_LEVEL_STATE, 0);
 }
 
 const char* get_upload_path(void) {
@@ -441,28 +433,28 @@ char* get_payload_subdirectory_path(const PayloadData* payload, const char* subd
     static char buffer[PATH_MAX];
 
     if (!payload || !subdir) {
-        log_this(SR_WEBSERVER, "Invalid payload or subdirectory parameter", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Invalid payload or subdirectory parameter", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
     // Build prefix to search for (e.g., "terminal/")
     char prefix[256];
     if (snprintf(prefix, sizeof(prefix), "%s/", subdir) >= (int)sizeof(prefix)) {
-        log_this(SR_WEBSERVER, "Subdirectory prefix too long", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Subdirectory prefix too long", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
     // Log the payload extraction request
-    log_this(SR_WEBSERVER, "Resolving payload subdirectory: %s", LOG_LEVEL_STATE, prefix);
+    log_this(SR_WEBSERVER, "Resolving payload subdirectory: %s", LOG_LEVEL_STATE, 1, prefix);
 
     // For now, return a placeholder path since payload extraction requires tar parsing
     // This would need implementation based on existing swagger payload handling
     if (snprintf(buffer, sizeof(buffer), "/payload/%s", subdir) >= (int)sizeof(buffer)) {
-        log_this(SR_WEBSERVER, "Payload path buffer overflow", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Payload path buffer overflow", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
-    log_this(SR_WEBSERVER, "Resolved payload path: %s", LOG_LEVEL_STATE, buffer);
+    log_this(SR_WEBSERVER, "Resolved payload path: %s", LOG_LEVEL_STATE, 1, buffer);
     return strdup(buffer);
 }
 
@@ -474,13 +466,13 @@ char* resolve_filesystem_path(const char* path_spec, AppConfig* config __attribu
     static char buffer[PATH_MAX];
 
     if (!path_spec) {
-        log_this(SR_WEBSERVER, "No path specification provided", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "No path specification provided", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
     // For absolute paths, use as-is
     if (path_spec[0] == '/') {
-        log_this(SR_WEBSERVER, "Using absolute filesystem path: %s", LOG_LEVEL_STATE, path_spec);
+        log_this(SR_WEBSERVER, "Using absolute filesystem path: %s", LOG_LEVEL_STATE, 1, path_spec);
         return strdup(path_spec);
     }
 
@@ -489,10 +481,10 @@ char* resolve_filesystem_path(const char* path_spec, AppConfig* config __attribu
                            ? server_web_config->web_root : ".";
 
     if (snprintf(buffer, sizeof(buffer), "%s/%s", base_path, path_spec) >= (int)sizeof(buffer)) {
-        log_this(SR_WEBSERVER, "Filesystem path buffer overflow", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Filesystem path buffer overflow", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
-    log_this(SR_WEBSERVER, "Resolved filesystem path: %s", LOG_LEVEL_STATE, buffer);
+    log_this(SR_WEBSERVER, "Resolved filesystem path: %s", LOG_LEVEL_STATE, 1, buffer);
     return strdup(buffer);
 }

@@ -20,7 +20,7 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
     (void)upload_data;      // Unused
     (void)upload_data_size; // Unused
     
-    log_this(SR_API, "Handling config endpoint request", LOG_LEVEL_STATE);
+    log_this(SR_API, "Handling config endpoint request", LOG_LEVEL_STATE, 0);
     
     // Start timing
     struct timespec start_time;
@@ -37,7 +37,7 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
         json_t *error = json_object();
         json_object_set_new(error, "error", json_string("Only GET method is allowed"));
         
-        log_this(SR_API, "Method not allowed: %s", LOG_LEVEL_DEBUG, method);
+        log_this(SR_API, "Method not allowed: %s", LOG_LEVEL_DEBUG, 1, method);
         *con_cls = NULL; // Reset connection context
         return api_send_json_response(connection, error, MHD_HTTP_METHOD_NOT_ALLOWED);
     }
@@ -47,13 +47,13 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
         json_t *error = json_object();
         json_object_set_new(error, "error", json_string("Configuration not available"));
         
-        log_this(SR_API, "Application configuration not available", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Application configuration not available", LOG_LEVEL_ERROR, 0);
         *con_cls = NULL; // Reset connection context
         return api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
     
     // Log that we're loading the config file
-    log_this(SR_API, "Loading configuration from file: %s", LOG_LEVEL_DEBUG, app_config->server.config_file);
+    log_this(SR_API, "Loading configuration from file: %s", LOG_LEVEL_DEBUG, 1, app_config->server.config_file);
     
     // Load the raw JSON configuration file
     json_error_t error;
@@ -64,8 +64,7 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
         json_object_set_new(error_obj, "error", json_string("Failed to load configuration file"));
         json_object_set_new(error_obj, "details", json_string(error.text));
         
-        log_this(SR_API, "Failed to load config file: %s (line %d, column %d)",
-                 LOG_LEVEL_ERROR, error.text, error.line, error.column);
+        log_this(SR_API, "Failed to load config file: %s (line %d, column %d)", LOG_LEVEL_ERROR, 3, error.text, error.line, error.column);
         
         *con_cls = NULL; // Reset connection context
         return api_send_json_response(connection, error_obj, MHD_HTTP_INTERNAL_SERVER_ERROR);
@@ -98,7 +97,7 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
     // Reset connection context before returning
     *con_cls = NULL;
     
-    log_this(SR_API, "Completed building configuration response in %.3f ms", LOG_LEVEL_DEBUG, processing_time);
+    log_this(SR_API, "Completed building configuration response in %.3f ms", LOG_LEVEL_DEBUG, 1, processing_time);
     
     // Send the response - this will free the response_obj
     return api_send_json_response(connection, response_obj, MHD_HTTP_OK);

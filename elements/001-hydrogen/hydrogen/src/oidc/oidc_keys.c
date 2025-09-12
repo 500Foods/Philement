@@ -30,18 +30,18 @@ struct OIDCKeyContext {
 OIDCKeyContext* init_oidc_key_management(const char *storage_path, 
                                         bool encryption_enabled, 
                                         int rotation_interval_days) {
-    log_this(SR_OIDC, "Initializing key management", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Initializing key management", LOG_LEVEL_STATE, 0);
     
     OIDCKeyContext *context = (OIDCKeyContext*)calloc(1, sizeof(OIDCKeyContext));
     if (!context) {
-        log_this(SR_OIDC, "Failed to allocate memory for key context", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Failed to allocate memory for key context", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
     
     if (storage_path) {
         context->storage_path = strdup(storage_path);
         if (!context->storage_path) {
-            log_this(SR_OIDC, "Failed to duplicate storage path", LOG_LEVEL_ERROR);
+            log_this(SR_OIDC, "Failed to duplicate storage path", LOG_LEVEL_ERROR, 0);
             free(context);
             return NULL;
         }
@@ -50,7 +50,7 @@ OIDCKeyContext* init_oidc_key_management(const char *storage_path,
     context->encryption_enabled = encryption_enabled;
     context->rotation_interval = rotation_interval_days;
     
-    log_this(SR_OIDC, "Key management initialized successfully", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Key management initialized successfully", LOG_LEVEL_STATE, 0);
     return context;
 }
 
@@ -64,7 +64,7 @@ void cleanup_oidc_key_management(OIDCKeyContext *context) {
         return;
     }
     
-    log_this(SR_OIDC, "Cleaning up key management", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Cleaning up key management", LOG_LEVEL_STATE, 0);
     
     if (context->storage_path) {
         free(context->storage_path);
@@ -73,7 +73,7 @@ void cleanup_oidc_key_management(OIDCKeyContext *context) {
     // Clean up any other allocated resources
     
     free(context);
-    log_this(SR_OIDC, "Key management cleanup completed", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Key management cleanup completed", LOG_LEVEL_STATE, 0);
 }
 
 /**
@@ -84,11 +84,11 @@ void cleanup_oidc_key_management(OIDCKeyContext *context) {
  */
 char* oidc_generate_jwks(OIDCKeyContext *context) {
     if (!context) {
-        log_this(SR_OIDC, "Cannot generate JWKS: Invalid context", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Cannot generate JWKS: Invalid context", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
     
-    log_this(SR_OIDC, "Generating JWKS document", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Generating JWKS document", LOG_LEVEL_STATE, 0);
     
     // This is a stub implementation that returns a minimal valid JWKS
     char *jwks = strdup("{"
@@ -105,7 +105,7 @@ char* oidc_generate_jwks(OIDCKeyContext *context) {
         "}");
     
     if (!jwks) {
-        log_this(SR_OIDC, "Failed to allocate memory for JWKS", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Failed to allocate memory for JWKS", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
     

@@ -98,8 +98,9 @@ bool process_level_config(json_t* root, int* level_ptr, const char* level_name,
     const char* indent = get_indent(temp_path);
     
     // Log with level name format
-    log_this(category, "%s%s: %d (%s)%s", LOG_LEVEL_STATE,
-            indent, key, *level_ptr, 
+    log_this(category, "%s%s: %d (%s)%s", LOG_LEVEL_STATE, 4,
+            indent, key, 
+            *level_ptr, 
             level_name ? level_name : "unknown",
             using_default ? " *" : "");
             
@@ -255,7 +256,7 @@ json_t* process_env_variable(const char* value) {
     
 // Check if it's a number
 if (!env_value) {
-    log_this(SR_CONFIG, "LTO: env_value is NULL for %s", LOG_LEVEL_ERROR, var_name);
+    log_this(SR_CONFIG, "LTO: env_value is NULL for %s", LOG_LEVEL_ERROR, 1, var_name);
     free(var_name);
     return json_null();
 }
@@ -310,13 +311,17 @@ static void log_value(const char* path, const char* value, bool is_default, bool
         if (env_var) {
             const char* env_val = getenv(env_var);
             if (is_sensitive) {
-                log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE,
-                        indent, key, env_var,
+                log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE, 5,
+                        indent, 
+                        key, 
+                        env_var,
                         format_sensitive(env_val ? env_val : "(not set)"),
                         is_default ? " *" : "");
             } else {
-                log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE,
-                        indent, key, env_var,
+                log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE, 5,
+                        indent, 
+                        key, 
+                        env_var,
                         env_val ? env_val : "(not set)",
                         is_default ? " *" : "");
             }
@@ -326,12 +331,16 @@ static void log_value(const char* path, const char* value, bool is_default, bool
     
     // Handle regular value
     if (is_sensitive) {
-        log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE,
-                indent, key, format_sensitive(value),
+        log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE, 4,
+                indent, 
+                key, 
+                format_sensitive(value),
                 is_default ? " *" : "");
     } else {
-        log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE,
-                indent, key, value ? value : "(not set)",
+        log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE, 4,
+                indent, 
+                key, 
+                value ? value : "(not set)",
                 is_default ? " *" : "");
     }
 }
@@ -350,8 +359,7 @@ bool process_config_value(json_t* root, ConfigValue value, ConfigValueType type,
         const char* display_name = strrchr(section, '.');
         display_name = display_name ? display_name + 1 : section;
         const char* indent = get_indent(section);
-        log_this(category, "%s%s%s", LOG_LEVEL_STATE,
-                indent, display_name, root ? "" : " *");
+        log_this(category, "%s%s%s", LOG_LEVEL_STATE, 3, indent, display_name, root ? "" : " *");
         return true;
     }
     
@@ -506,13 +514,17 @@ bool process_config_value(json_t* root, ConfigValue value, ConfigValueType type,
                     env_var_buffer[var_len] = '\0';
 
                     if (is_sensitive) {
-                        log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE,
-                                indent, key, env_var_buffer,
+                        log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE, 5,
+                                indent, 
+                                key, 
+                                env_var_buffer,
                                 format_sensitive(final_value ? final_value : "(not set)"),
                                 using_default ? " *" : "");
                     } else {
-                        log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE,
-                                indent, key, env_var_buffer,
+                        log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE, 5,
+                                indent, 
+                                key, 
+                                env_var_buffer,
                                 final_value ? final_value : "(not set)",
                                 using_default ? " *" : "");
                     }
@@ -535,8 +547,7 @@ void log_config_section(const char* section_name, bool using_defaults) {
     if (!section_name) return;
     char category[256];
     snprintf(category, sizeof(category), "Config-%s", get_top_level_section(section_name));
-    log_this(category, "%s%s", LOG_LEVEL_STATE,
-             section_name, using_defaults ? " *" : "");
+    log_this(category, "%s%s", LOG_LEVEL_STATE, 2, section_name, using_defaults ? " *" : "");
 }
 
 // Log configuration item
@@ -545,8 +556,11 @@ void log_config_item(const char* key, const char* value, bool is_default, const 
     const char* indent_str = get_indent(key);
     char category[256];
     snprintf(category, sizeof(category), "Config-%s", get_top_level_section(section));
-    log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE,
-             indent_str, value, is_default ? " *" : "");
+    log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE, 4,
+             indent_str, 
+             key,
+             value, 
+             is_default ? " *" : "");
 }
 
 // Format array output
@@ -674,8 +688,10 @@ bool process_int_array_config(json_t* root, ConfigIntArray value, const char* pa
     const char* key = strrchr(path, '.');
     key = key ? key + 1 : path;
 
-    log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE,
-            indent, key, format_int_array(value.array, *value.count),
+    log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE, 4,
+            indent, 
+            key, 
+            format_int_array(value.array, *value.count),
             using_default ? " *" : "");
 
     return true;
@@ -721,7 +737,7 @@ bool process_array_element_config(json_t* root, ConfigArrayElement value, const 
                 char* new_element = strdup(str);
                 if (!new_element) {
                     // Memory allocation failed, but keep existing value
-                    log_this(category, "Memory allocation failed for array element", LOG_LEVEL_ERROR);
+                    log_this(category, "Memory allocation failed for array element", LOG_LEVEL_ERROR, 0);
                     return false;
                 }
                 // Only free old value after new allocation succeeds
@@ -746,8 +762,10 @@ bool process_array_element_config(json_t* root, ConfigArrayElement value, const 
     char key_with_index[256];
     snprintf(key_with_index, sizeof(key_with_index), "%s[%zu]", display_key, value.index);
     
-    log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE,
-             indent, key_with_index, str ? str : "(not set)",
+    log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE, 4,
+             indent, 
+             key_with_index, 
+             str ? str : "(not set)",
              using_default ? " *" : "");
     
     return true;
@@ -809,8 +827,10 @@ bool process_string_array_config(json_t* root, ConfigStringArray value, const ch
     const char* key = strrchr(path, '.');
     key = key ? key + 1 : path;
 
-    log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE,
-            indent, key, format_string_array((const char**)value.array, *value.count),
+    log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE, 4,
+            indent, 
+            key, 
+            format_string_array((const char**)value.array, *value.count),
             using_default ? " *" : "");
 
     return true;
@@ -831,8 +851,7 @@ bool process_direct_bool_value(ConfigValue value, const char* path, const char* 
     const char* key = strrchr(path, '.');
     key = key ? key + 1 : path;
 
-    log_this(category, "%s%s: %s", LOG_LEVEL_STATE,
-            indent, key, direct_value ? "enabled" : "disabled");
+    log_this(category, "%s%s: %s", LOG_LEVEL_STATE, 3, indent, key, direct_value ? "enabled" : "disabled");
 
     return true;
 }

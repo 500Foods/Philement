@@ -38,8 +38,8 @@ void handle_launch_review(const ReadinessResults* results) {
     
     // Begin LAUNCH REVIEW logging section
     log_group_begin();
-        log_this(SR_LAUNCH, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-        log_this(SR_LAUNCH, "LAUNCH REVIEW", LOG_LEVEL_STATE);
+        log_this(SR_LAUNCH, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+        log_this(SR_LAUNCH, "LAUNCH REVIEW", LOG_LEVEL_STATE, 0);
         
         // Track launch statistics
         size_t total_attempts = 0;
@@ -74,14 +74,14 @@ void handle_launch_review(const ReadinessResults* results) {
             }
             
             // Log subsystem status
-            log_this(SR_LAUNCH, "- %-15s %s", LOG_LEVEL_STATE, subsystem, status);
+            log_this(SR_LAUNCH, "- %-15s %s", LOG_LEVEL_STATE, 1, subsystem, status);
         }
         
         // Log summary statistics
-        log_this(SR_LAUNCH, "Subsystems:      %3d", LOG_LEVEL_STATE, results->total_checked);
-        log_this(SR_LAUNCH, "Launch Attempts: %3d", LOG_LEVEL_STATE, total_attempts);
-        log_this(SR_LAUNCH, "Launch Successes:%3d", LOG_LEVEL_STATE, total_running);
-        log_this(SR_LAUNCH, "Launch Failures: %3d", LOG_LEVEL_STATE, total_attempts - total_running);
+        log_this(SR_LAUNCH, "Subsystems:      %3d", LOG_LEVEL_STATE, 1, results->total_checked);
+        log_this(SR_LAUNCH, "Launch Attempts: %3d", LOG_LEVEL_STATE, 1, total_attempts);
+        log_this(SR_LAUNCH, "Launch Successes:%3d", LOG_LEVEL_STATE, 1, total_running);
+        log_this(SR_LAUNCH, "Launch Failures: %3d", LOG_LEVEL_STATE, 1, total_attempts - total_running);
     log_group_end();
 
     registry_registered = results->total_checked;

@@ -77,8 +77,8 @@ LaunchReadiness check_print_landing_readiness(void) {
 
 // Land the print subsystem
 int land_print_subsystem(void) {
-    log_this(SR_PRINT, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_PRINT, "LANDING: " SR_PRINT, LOG_LEVEL_STATE);    
+    log_this(SR_PRINT, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    log_this(SR_PRINT, "LANDING: " SR_PRINT, LOG_LEVEL_STATE, 0);
     
     // Set shutdown flag
     print_system_shutdown = 1;
