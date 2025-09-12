@@ -156,7 +156,7 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
     return true;
 }
 
-bool sqlite_execute_prepared(DatabaseHandle* connection, PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
+bool sqlite_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
     const char* designator = connection->designator ? connection->designator : SR_DATABASE;
 
     if (!connection || !stmt || !request || !result || connection->engine_type != DB_ENGINE_SQLITE) {

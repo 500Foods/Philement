@@ -28,8 +28,7 @@ static int extract_websocket_metrics(MockWebSocketContext *ws_context, WebSocket
     }
 
     // Simulate mutex locking (in real code this would be pthread_mutex_lock/unlock)
-    ws_context->mutex_locked = 1;
-
+    // Set to unlocked state after extracting metrics
     metrics->server_start_time = ws_context->start_time;
     metrics->active_connections = ws_context->active_connections;
     metrics->total_connections = ws_context->total_connections;

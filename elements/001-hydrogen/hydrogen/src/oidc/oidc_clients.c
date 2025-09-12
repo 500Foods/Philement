@@ -75,7 +75,7 @@ void cleanup_oidc_client_registry(OIDCClientContext *client_context) {
  * @param redirect_uri Redirect URI to validate
  * @return true if the client and redirect URI are valid, false otherwise
  */
-bool oidc_validate_client(OIDCClientContext *client_context, const char *client_id, const char *redirect_uri) {
+bool oidc_validate_client(const OIDCClientContext *client_context, const char *client_id, const char *redirect_uri) {
     /* Mark unused parameter */
     (void)redirect_uri;
     
@@ -101,7 +101,7 @@ bool oidc_validate_client(OIDCClientContext *client_context, const char *client_
  * @param client_secret Client secret
  * @return true if authentication succeeds, false otherwise
  */
-bool oidc_authenticate_client(OIDCClientContext *client_context, const char *client_id, const char *client_secret) {
+bool oidc_authenticate_client(const OIDCClientContext *client_context, const char *client_id, const char *client_secret) {
     if (!client_context || !client_id || !client_secret) {
         return false;
     }
@@ -127,7 +127,7 @@ bool oidc_authenticate_client(OIDCClientContext *client_context, const char *cli
  * @param client_secret_out Output parameter for the new client secret
  * @return true if registration succeeds, false otherwise
  */
-bool oidc_register_client(OIDCClientContext *client_context, const char *client_name, const char *redirect_uri, 
+bool oidc_register_client(OIDCClientContext *client_context, const char *client_name, const char *redirect_uri,
                           bool confidential, char **client_id_out, char **client_secret_out) {
     if (!client_context || !client_name || !redirect_uri || !client_id_out || !client_secret_out) {
         return false;

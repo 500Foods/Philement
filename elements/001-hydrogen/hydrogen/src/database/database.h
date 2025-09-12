@@ -237,7 +237,7 @@ bool database_submit_query(const char* database_name,
 DatabaseQueryStatus database_query_status(const char* query_id);
 
 // Get query result
-bool database_get_result(const char* query_id, char* result_buffer, size_t buffer_size);
+bool database_get_result(const char* query_id, const char* result_buffer, size_t buffer_size);
 
 // Cancel a running query
 bool database_cancel_query(const char* query_id);

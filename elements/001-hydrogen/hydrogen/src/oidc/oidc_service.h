@@ -94,7 +94,7 @@ typedef enum {
  */
 
 // Initialize the OIDC service
-bool init_oidc_service(OIDCConfig *config);
+bool init_oidc_service(const OIDCConfig *config);
 
 // Shutdown the OIDC service
 void shutdown_oidc_service(void);

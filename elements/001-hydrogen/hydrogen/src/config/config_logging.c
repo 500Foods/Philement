@@ -183,9 +183,9 @@ bool load_logging_config(json_t* root, AppConfig* config) {
 
     // Process main logging section
     success = PROCESS_SECTION(root, "Logging");
-    
+
     // Process levels section
-    success = PROCESS_SECTION(root, "Logging.Levels");
+    success = success && PROCESS_SECTION(root, "Logging.Levels");
     
     // Process each level name individually, allowing JSON/env overrides
     for (size_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {

@@ -133,6 +133,6 @@ json_t *api_validate_jwt(const char *token, const char *secret);
  * @param secret The secret key for signing
  * @return A newly allocated JWT string, or NULL on error
  */
-char *api_create_jwt(json_t *claims, const char *secret);
+char *api_create_jwt(const json_t *claims, const char *secret);
 
 #endif /* HYDROGEN_API_UTILS_H */

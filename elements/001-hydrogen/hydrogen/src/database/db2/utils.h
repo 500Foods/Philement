@@ -10,8 +10,8 @@
 #include "../database.h"
 
 // Utility functions
-char* db2_get_connection_string(ConnectionConfig* config);
+char* db2_get_connection_string(const ConnectionConfig* config);
 bool db2_validate_connection_string(const char* connection_string);
-char* db2_escape_string(DatabaseHandle* connection, const char* input);
+char* db2_escape_string(const DatabaseHandle* connection, const char* input);
 
 #endif // DATABASE_ENGINE_DB2_UTILS_H

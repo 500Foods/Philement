@@ -9,7 +9,7 @@
 #include "utils.h"
 
 // Utility Functions
-char* sqlite_get_connection_string(ConnectionConfig* config) {
+char* sqlite_get_connection_string(const ConnectionConfig* config) {
     if (!config) return NULL;
 
     char* conn_str = calloc(1, 1024);
@@ -57,7 +57,7 @@ bool sqlite_validate_connection_string(const char* connection_string) {
     return true;
 }
 
-char* sqlite_escape_string(DatabaseHandle* connection, const char* input) {
+char* sqlite_escape_string(const DatabaseHandle* connection, const char* input) {
     if (!connection || !input || connection->engine_type != DB_ENGINE_SQLITE) {
         return NULL;
     }

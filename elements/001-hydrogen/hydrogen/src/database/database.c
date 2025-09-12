@@ -297,7 +297,7 @@ DatabaseQueryStatus database_query_status(const char* query_id) {
 }
 
 // Get query result
-bool database_get_result(const char* query_id, char* result_buffer, size_t buffer_size) {
+bool database_get_result(const char* query_id, const char* result_buffer, size_t buffer_size) {
     if (!database_subsystem || !query_id || !result_buffer || buffer_size == 0) {
         return false;
     }
@@ -365,7 +365,7 @@ void database_get_supported_engines(char* buffer, size_t buffer_size) {
 
 // For API subsystem integration
 bool database_process_api_query(const char* database __attribute__((unused)), const char* query_path __attribute__((unused)),
-                               const char* parameters __attribute__((unused)), char* result_buffer __attribute__((unused)), size_t buffer_size __attribute__((unused))) {
+                               const char* parameters __attribute__((unused)), const char* result_buffer __attribute__((unused)), size_t buffer_size __attribute__((unused))) {
     if (!database_subsystem || !database || !query_path || !result_buffer || buffer_size == 0) {
         return false;
     }

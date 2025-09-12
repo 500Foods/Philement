@@ -100,7 +100,7 @@ void queue_system_destroy(void); // Clean shutdown of all queues
 
 // Queue Management
 Queue* queue_find(const char* name);  // O(1) queue lookup
-Queue* queue_create(const char* name, QueueAttributes* attrs);  // Create/get queue
+Queue* queue_create(const char* name, const QueueAttributes* attrs);  // Create/get queue
 void queue_destroy(Queue* queue);  // Clean up queue resources
 
 // Message Operations

@@ -122,7 +122,7 @@ void cleanup_oidc_user_management(OIDCUserContext *context);
 
 /*
  * Create a new user
- * 
+ *
  * @param context User context
  * @param username Username
  * @param email Email address
@@ -131,7 +131,7 @@ void cleanup_oidc_user_management(OIDCUserContext *context);
  * @param family_name Last name
  * @return User ID or NULL on failure
  */
-char* oidc_create_user(OIDCUserContext *context, const char *username,
+char* oidc_create_user(const OIDCUserContext *context, const char *username,
                       const char *email, const char *password,
                       const char *given_name, const char *family_name);
 
@@ -164,23 +164,23 @@ OIDCUser* oidc_get_user_by_email(OIDCUserContext *context, const char *email);
 
 /*
  * Get user information by ID
- * 
+ *
  * @param context User context
  * @param user_id User ID to look up
  * @return JSON string with user info (caller must free) or NULL on error
  */
-char* oidc_get_user_info(OIDCUserContext *context, const char *user_id);
+char* oidc_get_user_info(const OIDCUserContext *context, const char *user_id);
 
 /*
  * Update user information
- * 
+ *
  * @param context User context
  * @param user_id User ID to update
  * @param field Field to update
  * @param value New value for field
  * @return Update result (0 for success, error code otherwise)
  */
-int oidc_update_user(OIDCUserContext *context, const char *user_id, const char *field, const char *value);
+int oidc_update_user(const OIDCUserContext *context, const char *user_id, const char *field, const char *value);
 
 /*
  * Update user profile
@@ -205,13 +205,13 @@ bool oidc_delete_user(OIDCUserContext *context, const char *user_id);
 
 /*
  * Authenticate a user
- * 
+ *
  * @param context User context
  * @param username Username or email
  * @param password Password
  * @return Authentication result
  */
-OIDCAuthResult oidc_authenticate_user(OIDCUserContext *context, const char *username,
+OIDCAuthResult oidc_authenticate_user(const OIDCUserContext *context, const char *username,
                                     const char *password);
 
 /*

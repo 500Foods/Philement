@@ -10,8 +10,8 @@
 #include "../database.h"
 
 // Utility functions
-char* sqlite_get_connection_string(ConnectionConfig* config);
+char* sqlite_get_connection_string(const ConnectionConfig* config);
 bool sqlite_validate_connection_string(const char* connection_string);
-char* sqlite_escape_string(DatabaseHandle* connection, const char* input);
+char* sqlite_escape_string(const DatabaseHandle* connection, const char* input);
 
 #endif // SQLITE_UTILS_H
