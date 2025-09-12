@@ -61,7 +61,7 @@ void set_readiness_messages(LaunchReadiness* readiness, const char** messages) {
     readiness->messages = messages;
 }
 
-void finalize_launch_messages(const char*** messages, size_t* count, size_t* capacity) {
+void finalize_launch_messages(const char*** messages, const size_t* count, size_t* capacity) {
     if (*count >= *capacity) {
         *capacity = *count + 1;
         *messages = realloc(*messages, *capacity * sizeof(char*));

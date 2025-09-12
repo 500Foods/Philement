@@ -9,7 +9,7 @@
 #include "utils.h"
 
 // Utility Functions
-char* db2_get_connection_string(ConnectionConfig* config) {
+char* db2_get_connection_string(const ConnectionConfig* config) {
     if (!config) return NULL;
 
     char* conn_str = calloc(1, 1024);
@@ -45,7 +45,7 @@ bool db2_validate_connection_string(const char* connection_string) {
            strstr(connection_string, "HOSTNAME=") != NULL;
 }
 
-char* db2_escape_string(DatabaseHandle* connection, const char* input) {
+char* db2_escape_string(const DatabaseHandle* connection, const char* input) {
     if (!connection || !input || connection->engine_type != DB_ENGINE_DB2) {
         return NULL;
     }

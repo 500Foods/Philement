@@ -212,7 +212,7 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
     return true;
 }
 
-bool postgresql_execute_prepared(DatabaseHandle* connection, PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
+bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
     if (!connection || !stmt || !request || !result || connection->engine_type != DB_ENGINE_POSTGRESQL) {
         return false;
     }

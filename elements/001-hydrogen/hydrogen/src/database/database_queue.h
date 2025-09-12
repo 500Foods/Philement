@@ -163,7 +163,7 @@ DatabaseQueueType database_queue_select_type(const char* queue_path_hint);
 
 // Tag management functions
 bool database_queue_set_tags(DatabaseQueue* db_queue, const char* tags);
-char* database_queue_get_tags(DatabaseQueue* db_queue);
+char* database_queue_get_tags(const DatabaseQueue* db_queue);
 bool database_queue_add_tag(DatabaseQueue* db_queue, char tag);
 bool database_queue_remove_tag(DatabaseQueue* db_queue, char tag);
 char* database_queue_generate_label(DatabaseQueue* db_queue);
@@ -175,7 +175,7 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue);
 void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue);
 
 // Debug functions
-void debug_dump_connection(const char* label, DatabaseHandle* conn, const char* dqm_label);
+void debug_dump_connection(const char* label, const DatabaseHandle* conn, const char* dqm_label);
 void debug_dump_engine(const char* label, DatabaseEngineInterface* engine, const char* dqm_label);
 
 #endif // DATABASE_QUEUE_H

@@ -25,7 +25,7 @@ static int validate_prometheus_format(const char *output) {
 }
 
 // Mock function: Create Prometheus response headers
-static int setup_prometheus_headers(void *response) {
+static int setup_prometheus_headers(const void *response) {
     if (!response) return 0;
 
     // Simulate adding headers (in real code this would be MHD_add_response_header)

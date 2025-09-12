@@ -46,7 +46,7 @@ static void *pty_output_bridge_thread(void *arg);
 static void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session);
 void stop_pty_bridge_thread(TerminalSession *session);
 
-int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, size_t len)
+int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len)
 {
     if (!session || !ws_context) {
         log_this(SR_WEBSOCKET, "Invalid session or context", LOG_LEVEL_ERROR, 0);

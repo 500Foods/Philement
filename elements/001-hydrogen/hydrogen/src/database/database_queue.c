@@ -24,10 +24,10 @@
 /*
  * Debug function to dump connection details - shared across files
  */
-void debug_dump_connection(const char* label, DatabaseHandle* conn, const char* dqm_label) {
+void debug_dump_connection(const char* label, const DatabaseHandle* conn, const char* dqm_label) {
     log_this(dqm_label, "=== %s CONNECTION DUMP ===", LOG_LEVEL_ERROR, 1, label);
     log_this(dqm_label, "Connection pointer: %p", LOG_LEVEL_ERROR, 1, (void*)conn);
-    
+
     if (!conn) {
         log_this(dqm_label, "Connection is NULL", LOG_LEVEL_ERROR, 0);
     } else if ((uintptr_t)conn < 0x1000) {
@@ -218,7 +218,7 @@ bool database_queue_set_tags(DatabaseQueue* db_queue, const char* tags) {
 /*
  * Get current tags for a database queue
  */
-char* database_queue_get_tags(DatabaseQueue* db_queue) {
+char* database_queue_get_tags(const DatabaseQueue* db_queue) {
     if (!db_queue || !db_queue->tags) return NULL;
     return strdup(db_queue->tags);
 }

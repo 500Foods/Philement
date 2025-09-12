@@ -71,13 +71,13 @@ void cleanup_oidc_user_management(OIDCUserContext *context) {
 
 /**
  * Authenticate a user
- * 
+ *
  * @param context User context
  * @param username Username to authenticate
  * @param password Password to verify
  * @return Authentication result (OIDC_AUTH_SUCCESS, OIDC_AUTH_FAILED, or OIDC_AUTH_ERROR)
  */
-OIDCAuthResult oidc_authenticate_user(OIDCUserContext *context,
+OIDCAuthResult oidc_authenticate_user(const OIDCUserContext *context,
                          const char *username,
                          const char *password) {
     OIDCAuthResult result = {0};  // Initialize all fields to 0/NULL
@@ -109,7 +109,7 @@ OIDCAuthResult oidc_authenticate_user(OIDCUserContext *context,
 
 /**
  * Create a new user account
- * 
+ *
  * @param context User context
  * @param username Username for new account
  * @param email Email address for new account
@@ -118,7 +118,7 @@ OIDCAuthResult oidc_authenticate_user(OIDCUserContext *context,
  * @param family_name User's last name
  * @return User ID if successful, NULL otherwise
  */
-char* oidc_create_user(OIDCUserContext *context,
+char* oidc_create_user(const OIDCUserContext *context,
                      const char *username,
                      const char *email,
                      const char *password,
@@ -154,12 +154,12 @@ char* oidc_create_user(OIDCUserContext *context,
 
 /**
  * Get user information by ID
- * 
+ *
  * @param context User context
  * @param user_id User ID to look up
  * @return JSON string with user info (caller must free) or NULL on error
  */
-char* oidc_get_user_info(OIDCUserContext *context, const char *user_id) {
+char* oidc_get_user_info(const OIDCUserContext *context, const char *user_id) {
     if (!context || !user_id) {
         log_this(SR_OIDC, "Invalid parameters for user info retrieval", LOG_LEVEL_ERROR, 0);
         return NULL;
@@ -185,14 +185,14 @@ char* oidc_get_user_info(OIDCUserContext *context, const char *user_id) {
 
 /**
  * Update user information
- * 
+ *
  * @param context User context
  * @param user_id User ID to update
  * @param field Field to update
  * @param value New value for field
  * @return Update result (0 for success, error code otherwise)
  */
-int oidc_update_user(OIDCUserContext *context,
+int oidc_update_user(const OIDCUserContext *context,
                    const char *user_id,
                    const char *field,
                    const char *value) {

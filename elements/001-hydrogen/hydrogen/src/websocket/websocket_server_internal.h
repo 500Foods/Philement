@@ -81,7 +81,7 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
 int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session);
 
 // Message processing
-int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, size_t len);
+int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len);
 
 // Main callback dispatcher
 int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,

@@ -78,11 +78,11 @@ void cleanup_oidc_key_management(OIDCKeyContext *context) {
 
 /**
  * Generate a JWKS (JSON Web Key Set) document
- * 
+ *
  * @param context The key context
  * @return JSON string containing JWKS document
  */
-char* oidc_generate_jwks(OIDCKeyContext *context) {
+char* oidc_generate_jwks(const OIDCKeyContext *context) {
     if (!context) {
         log_this(SR_OIDC, "Cannot generate JWKS: Invalid context", LOG_LEVEL_ERROR, 0);
         return NULL;
