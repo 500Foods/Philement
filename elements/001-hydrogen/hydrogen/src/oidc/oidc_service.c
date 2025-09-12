@@ -33,7 +33,7 @@ static OIDCContext *oidc_context = NULL;
  * @param config OIDC configuration
  * @return true if initialization successful, false otherwise
  */
-bool init_oidc_service(OIDCConfig *config) {
+bool init_oidc_service(const OIDCConfig *config) {
     if (!config) {
         log_this(SR_OIDC, "Invalid configuration provided", LOG_LEVEL_ERROR, 0);
         return false;

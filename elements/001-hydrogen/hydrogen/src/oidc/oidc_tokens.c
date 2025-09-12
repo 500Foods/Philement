@@ -86,15 +86,15 @@ void cleanup_oidc_token_service(OIDCTokenContext *context) {
 
 /**
  * Generate an access token
- * 
+ *
  * @param context Token context
  * @param claims Token claims
  * @param reference Output parameter for opaque reference token
  * @return JWT access token string (caller must free) or NULL on error
  */
-char* oidc_generate_access_token(OIDCTokenContext *context,
-                                OIDCTokenClaims *claims,
-                                char **reference) {
+char* oidc_generate_access_token(const OIDCTokenContext *context,
+                                 const OIDCTokenClaims *claims,
+                                 char **reference) {
     if (!context || !claims) {
         log_this(SR_OIDC, "Invalid parameters for access token generation", LOG_LEVEL_ERROR, 0);
         return NULL;
@@ -120,13 +120,13 @@ char* oidc_generate_access_token(OIDCTokenContext *context,
 
 /**
  * Generate a refresh token
- * 
+ *
  * @param context Token context
  * @param claims Token claims
  * @return Refresh token string (caller must free) or NULL on error
  */
-char* oidc_generate_refresh_token(OIDCTokenContext *context,
-                                 OIDCTokenClaims *claims) {
+char* oidc_generate_refresh_token(const OIDCTokenContext *context,
+                                  const OIDCTokenClaims *claims) {
     if (!context || !claims) {
         log_this(SR_OIDC, "Invalid parameters for refresh token generation", LOG_LEVEL_ERROR, 0);
         return NULL;
@@ -147,13 +147,13 @@ char* oidc_generate_refresh_token(OIDCTokenContext *context,
 
 /**
  * Generate an ID token
- * 
+ *
  * @param context Token context
  * @param claims Token claims
  * @return JWT ID token string (caller must free) or NULL on error
  */
-char* oidc_generate_id_token(OIDCTokenContext *context,
-                            OIDCTokenClaims *claims) {
+char* oidc_generate_id_token(const OIDCTokenContext *context,
+                             const OIDCTokenClaims *claims) {
     if (!context || !claims) {
         log_this(SR_OIDC, "Invalid parameters for ID token generation", LOG_LEVEL_ERROR, 0);
         return NULL;
@@ -174,13 +174,13 @@ char* oidc_generate_id_token(OIDCTokenContext *context,
 
 /**
  * Validate an access token
- * 
+ *
  * @param context Token context
  * @param access_token The token to validate
  * @param claims Output parameter for parsed claims (optional)
  * @return true if token is valid, false otherwise
  */
-bool oidc_validate_access_token(OIDCTokenContext *context, const char *access_token, OIDCTokenClaims **claims) {
+bool oidc_validate_access_token(const OIDCTokenContext *context, const char *access_token, OIDCTokenClaims **claims) {
     if (!context || !access_token) {
         log_this(SR_OIDC, "Invalid parameters for token validation", LOG_LEVEL_ERROR, 0);
         return false;
@@ -199,13 +199,13 @@ bool oidc_validate_access_token(OIDCTokenContext *context, const char *access_to
 
 /**
  * Validate a refresh token
- * 
+ *
  * @param context Token context
  * @param refresh_token The token to validate
  * @param client_id Client identifier
  * @return true if token is valid, false otherwise
  */
-bool oidc_validate_refresh_token(OIDCTokenContext *context, const char *refresh_token, const char *client_id) {
+bool oidc_validate_refresh_token(const OIDCTokenContext *context, const char *refresh_token, const char *client_id) {
     if (!context || !refresh_token || !client_id) {
         log_this(SR_OIDC, "Invalid parameters for token validation", LOG_LEVEL_ERROR, 0);
         return false;
@@ -219,17 +219,17 @@ bool oidc_validate_refresh_token(OIDCTokenContext *context, const char *refresh_
 
 /**
  * Revoke a token
- * 
+ *
  * @param context Token context
  * @param token The token to revoke
  * @param token_type_hint Hint about token type (access or refresh)
  * @param client_id Client identifier
  * @return true if revocation successful, false otherwise
  */
-bool oidc_revoke_token(OIDCTokenContext *context, 
-                      const char *token, 
-                      const char *token_type_hint,
-                      const char *client_id) {
+bool oidc_revoke_token(const OIDCTokenContext *context,
+                       const char *token,
+                       const char *token_type_hint,
+                       const char *client_id) {
     if (!context || !token || !client_id) {
         log_this(SR_OIDC, "Invalid parameters for token revocation", LOG_LEVEL_ERROR, 0);
         return false;

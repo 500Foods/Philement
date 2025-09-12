@@ -33,10 +33,10 @@ OIDCClientContext* init_oidc_client_registry(void);
 void cleanup_oidc_client_registry(OIDCClientContext *client_context);
 
 // Validate a client ID and redirect URI
-bool oidc_validate_client(OIDCClientContext *client_context, const char *client_id, const char *redirect_uri);
+bool oidc_validate_client(const OIDCClientContext *client_context, const char *client_id, const char *redirect_uri);
 
 // Authenticate a client using client ID and secret
-bool oidc_authenticate_client(OIDCClientContext *client_context, const char *client_id, const char *client_secret);
+bool oidc_authenticate_client(const OIDCClientContext *client_context, const char *client_id, const char *client_secret);
 
 // Register a new client
 bool oidc_register_client(OIDCClientContext *client_context, const char *client_name, const char *redirect_uri, 

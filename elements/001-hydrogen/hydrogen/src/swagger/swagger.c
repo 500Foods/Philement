@@ -33,14 +33,14 @@ bool swagger_url_validator(const char *url) {
 /**
  * Web server handler wrapper - matches MHD signature
  */
-enum MHD_Result swagger_request_handler(void *cls,
-                                      struct MHD_Connection *connection,
-                                      const char *url,
-                                      const char *method __attribute__((unused)),
-                                      const char *version __attribute__((unused)),
-                                      const char *upload_data __attribute__((unused)),
-                                      size_t *upload_data_size __attribute__((unused)),
-                                      void **con_cls __attribute__((unused))) {
+enum MHD_Result swagger_request_handler(const void *cls,
+                                       struct MHD_Connection *connection,
+                                       const char *url,
+                                       const char *method __attribute__((unused)),
+                                       const char *version __attribute__((unused)),
+                                       const char *upload_data __attribute__((unused)),
+                                       size_t *upload_data_size __attribute__((unused)),
+                                       void **con_cls __attribute__((unused))) {
     const SwaggerConfig *config = (const SwaggerConfig *)cls;
     return handle_swagger_request(connection, url, config);
 }

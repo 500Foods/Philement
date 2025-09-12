@@ -11,6 +11,6 @@
 
 // Query execution
 bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result);
-bool db2_execute_prepared(DatabaseHandle* connection, PreparedStatement* stmt, QueryRequest* request, QueryResult** result);
+bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result);
 
 #endif // DATABASE_ENGINE_DB2_QUERY_H

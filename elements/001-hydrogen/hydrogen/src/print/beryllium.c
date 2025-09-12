@@ -114,7 +114,7 @@ char* format_number_with_separators(double value, int decimals) {
 // 4. Handle variable layer heights by using median
 //
 // Returns layer height in mm, or 0.0 if calculation fails
-static double calculate_layer_height(double *z_values, int z_values_count) {
+static double calculate_layer_height(const double *z_values, int z_values_count) {
     if (z_values_count < 2) {
         return 0.0;  // Need at least 2 Z values to calculate height
     }

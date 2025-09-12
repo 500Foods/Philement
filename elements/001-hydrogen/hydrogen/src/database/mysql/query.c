@@ -157,7 +157,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     return true;
 }
 
-bool mysql_execute_prepared(DatabaseHandle* connection, PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
+bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
     if (!connection || !stmt || !request || !result || connection->engine_type != DB_ENGINE_MYSQL) {
         return false;
     }

@@ -50,7 +50,7 @@
 enum MHD_Result handle_oidc_token_endpoint(struct MHD_Connection *connection,
                                        const char *method,
                                        const char *upload_data,
-                                       size_t *upload_data_size,
+                                       const size_t *upload_data_size,
                                        void **con_cls);
 
 #endif /* HYDROGEN_OIDC_TOKEN_H */

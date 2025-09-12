@@ -137,11 +137,11 @@ OIDCKey* oidc_find_key_by_id(OIDCKeyContext *context, const char *kid);
 
 /*
  * Generate JWKS (JSON Web Key Set) document
- * 
+ *
  * @param context Key context
  * @return JWKS document as a JSON string (caller must free)
  */
-char* oidc_generate_jwks(OIDCKeyContext *context);
+char* oidc_generate_jwks(const OIDCKeyContext *context);
 
 /*
  * Sign data using a specified key

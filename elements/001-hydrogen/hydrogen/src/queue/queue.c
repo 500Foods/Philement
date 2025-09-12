@@ -133,7 +133,7 @@ Queue* queue_find(const char* name) {
 // visible to other threads and ensures clean cleanup on any initialization failure.
 // The strdup of name creates a private copy, isolating the queue from external
 // string lifetime issues.
-Queue* queue_create(const char* name, QueueAttributes* attrs) {
+Queue* queue_create(const char* name, const QueueAttributes* attrs) {
     if (name == NULL || attrs == NULL || strlen(name) == 0) {
         return NULL;
     }

@@ -65,7 +65,7 @@ LaunchReadiness get_api_readiness(void);
 
 // Dynamic message array utilities for readiness functions
 void add_launch_message(const char*** messages, size_t* count, size_t* capacity, const char* message);
-void finalize_launch_messages(const char*** messages, size_t* count, size_t* capacity);
+void finalize_launch_messages(const char*** messages, const size_t* count, size_t* capacity);
 void free_launch_messages(const char** messages, size_t count);
 void set_readiness_messages(LaunchReadiness* readiness, const char** messages);
 

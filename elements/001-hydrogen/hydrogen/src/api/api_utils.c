@@ -358,7 +358,7 @@ json_t *api_validate_jwt(const char *token, const char *secret) {
 /**
  * Create a JWT token from claims
  */
-char *api_create_jwt(json_t *claims, const char *secret) {
+char *api_create_jwt(const json_t *claims, const char *secret) {
     if (!claims || !secret) return NULL;
     
     // TODO: Implement actual JWT creation with the provided secret

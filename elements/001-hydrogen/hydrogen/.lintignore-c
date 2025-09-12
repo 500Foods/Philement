@@ -39,8 +39,6 @@ suppress=redundantInitialization
 suppress=unsignedLessThanZero
 suppress=nullPointerRedundantCheck
 suppress=nullPointerArithmeticRedundantCheck
-suppress=constParameterPointer
-suppress=redundantAssignment
 
 # Additional options
 option=--inline-suppr

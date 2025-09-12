@@ -13,7 +13,7 @@
  * Utility Functions
  */
 
-char* mysql_get_connection_string(ConnectionConfig* config) {
+char* mysql_get_connection_string(const ConnectionConfig* config) {
     if (!config) return NULL;
 
     char* conn_str = calloc(1, 1024);
@@ -41,7 +41,7 @@ bool mysql_validate_connection_string(const char* connection_string) {
     return strncmp(connection_string, "mysql://", 8) == 0;
 }
 
-char* mysql_escape_string(DatabaseHandle* connection, const char* input) {
+char* mysql_escape_string(const DatabaseHandle* connection, const char* input) {
     if (!connection || !input || connection->engine_type != DB_ENGINE_MYSQL) {
         return NULL;
     }
