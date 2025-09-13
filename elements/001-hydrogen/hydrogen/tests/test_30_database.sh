@@ -29,7 +29,7 @@ set -euo pipefail
 # Test Configuration
 TEST_NAME="Databases"
 TEST_ABBR="DBS"
-TEST_NUMBER="27"
+TEST_NUMBER="30"
 TEST_COUNTER=0
 TEST_VERSION="1.2.1"
 
