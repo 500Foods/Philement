@@ -118,8 +118,6 @@ int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session)
 void ws_update_client_info(struct lws *wsi, WebSocketSessionData *session)
 {
     char ip[50];
-    char app[50];
-    char client[50];
 
     // Get client IP
     lws_get_peer_simple(wsi, ip, sizeof(ip));
@@ -128,6 +126,7 @@ void ws_update_client_info(struct lws *wsi, WebSocketSessionData *session)
     // Get application name from headers if available
     int len = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_USER_AGENT);
     if (len > 0) {
+        char app[50];
         lws_hdr_copy(wsi, app, sizeof(app), WSI_TOKEN_HTTP_USER_AGENT);
         snprintf(session->request_app, sizeof(session->request_app), "%s", app);
     } else {
@@ -137,6 +136,7 @@ void ws_update_client_info(struct lws *wsi, WebSocketSessionData *session)
     // Get client identifier if provided
     len = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COOKIE);
     if (len > 0) {
+        char client[50];
         lws_hdr_copy(wsi, client, sizeof(client), WSI_TOKEN_HTTP_COOKIE);
         snprintf(session->request_client, sizeof(session->request_client), "%s", client);
     } else {

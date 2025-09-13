@@ -108,7 +108,6 @@ extern pthread_mutex_t terminate_mutex;
 // Check if a network port is available for binding
 static bool is_port_available(int port, bool check_ipv6) {
     bool ipv4_ok = false;
-    bool ipv6_ok = false;
 
     // Check IPv4
     int sock_v4 = socket(AF_INET, SOCK_STREAM, 0);
@@ -126,18 +125,19 @@ static bool is_port_available(int port, bool check_ipv6) {
 
         int result = bind(sock_v4, (struct sockaddr*)&addr, sizeof(addr));
         ipv4_ok = (result == 0);
-        
+
         if (!ipv4_ok) {
             log_this(SR_WEBSERVER, "IPv4 port %d availability check failed: %s", LOG_LEVEL_STATE, 2, port, strerror(errno));
         } else {
             log_this(SR_WEBSERVER, "IPv4 port %d is available (SO_REUSEADDR enabled)", LOG_LEVEL_STATE, 1, port);
         }
-        
+
         close(sock_v4);
     }
 
     // Check IPv6 if requested
     if (check_ipv6) {
+        bool ipv6_ok = false;
         int sock_v6 = socket(AF_INET6, SOCK_STREAM, 0);
         if (sock_v6 != -1) {
             // Enable SO_REUSEADDR to match the actual server behavior
@@ -157,13 +157,13 @@ static bool is_port_available(int port, bool check_ipv6) {
 
             int result = bind(sock_v6, (struct sockaddr*)&addr, sizeof(addr));
             ipv6_ok = (result == 0);
-            
+
             if (!ipv6_ok) {
                 log_this(SR_WEBSERVER, "IPv6 port %d availability check failed: %s", LOG_LEVEL_STATE, 2, port, strerror(errno));
             } else {
                 log_this(SR_WEBSERVER, "IPv6 port %d is available (SO_REUSEADDR enabled)", LOG_LEVEL_STATE, 1, port);
             }
-            
+
             close(sock_v6);
         }
         return ipv6_ok;
