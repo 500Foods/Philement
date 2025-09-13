@@ -205,10 +205,9 @@ LaunchReadiness check_network_launch_readiness(void) {
     }
 
     // Check for specifically configured interfaces if not using "all"
-    int json_interfaces_count = 0;
     if (!all_interfaces_enabled && app_config->network.available_interfaces &&
         app_config->network.available_interfaces_count > 0) {
-        json_interfaces_count = (int)app_config->network.available_interfaces_count;
+        int json_interfaces_count = (int)app_config->network.available_interfaces_count;
         char* config_count_msg = malloc(256);
         if (config_count_msg) {
             snprintf(config_count_msg, 256, "  Go:      %d network interfaces configured:", json_interfaces_count);
@@ -218,11 +217,10 @@ LaunchReadiness check_network_launch_readiness(void) {
         // List specifically configured interfaces
         for (size_t i = 0; i < app_config->network.available_interfaces_count; i++) {
             if (app_config->network.available_interfaces[i].interface_name) {
-                const char* interface_name = app_config->network.available_interfaces[i].interface_name;
-                bool is_available = app_config->network.available_interfaces[i].available;
-
                 char* interface_msg = malloc(256);
                 if (interface_msg) {
+                    const char* interface_name = app_config->network.available_interfaces[i].interface_name;
+                    bool is_available = app_config->network.available_interfaces[i].available;
                     if (is_available) {
                         snprintf(interface_msg, 256, "  Go:      Available: %s is enabled", interface_name);
                     } else {

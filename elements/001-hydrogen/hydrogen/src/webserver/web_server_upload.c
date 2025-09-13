@@ -224,24 +224,27 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                     int minutes = (int)((stats.print_time - hours * 3600) / 60);
                     int seconds = (int)(stats.print_time - hours * 3600 - minutes * 60);
 
-                    // Calculate total height from layer count * layer height
-                    double total_height = stats.layer_count_height * stats.layer_height;
-
-                    // Create formatted strings for logging
-                    char file_info[80], lines_info[96], layers_info[96], time_info[80], filament_info[96], material_info[96], objects_info[80];
-
                     // Format each line using the improved format_double_with_commas function
-                    char formatted_file_size[32], formatted_gcode_lines[32], formatted_layer_count[32], formatted_extrusion[32], formatted_objects[32];
+                    {
+                        char formatted_file_size[32];
+                        format_number_with_commas((size_t)stats.file_size, formatted_file_size, sizeof(formatted_file_size));
+                        char file_info[80];
+                        snprintf(file_info, sizeof(file_info), "- File: %s bytes", formatted_file_size);
+                        log_this(SR_WEBSERVER, file_info, LOG_LEVEL_STATE, 0);
+                    }
 
-                    format_number_with_commas((size_t)stats.file_size, formatted_file_size, sizeof(formatted_file_size));
-                    snprintf(file_info, sizeof(file_info), "- File: %s bytes", formatted_file_size);
-                    log_this(SR_WEBSERVER, file_info, LOG_LEVEL_STATE, 0);
-
-                    format_number_with_commas((size_t)stats.gcode_lines, formatted_gcode_lines, sizeof(formatted_gcode_lines));
-                    snprintf(lines_info, sizeof(lines_info), "- Lines: %s", formatted_gcode_lines);
-                    log_this(SR_WEBSERVER, lines_info, LOG_LEVEL_STATE, 0);
+                    {
+                        char formatted_gcode_lines[32];
+                        format_number_with_commas((size_t)stats.gcode_lines, formatted_gcode_lines, sizeof(formatted_gcode_lines));
+                        char lines_info[96];
+                        snprintf(lines_info, sizeof(lines_info), "- Lines: %s", formatted_gcode_lines);
+                        log_this(SR_WEBSERVER, lines_info, LOG_LEVEL_STATE, 0);
+                    }
 
                     if (stats.layer_count_height > 0) {
+                        double total_height = stats.layer_count_height * stats.layer_height;
+                        char formatted_layer_count[32];
+                        char layers_info[96];
                         if (total_height > 0.0) {
                             format_number_with_commas((size_t)stats.layer_count_height, formatted_layer_count, sizeof(formatted_layer_count));
                             snprintf(layers_info, sizeof(layers_info), "- Layers: %s layers, %.1f mm height",
@@ -255,6 +258,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                     }
 
                     if (hours > 0 || minutes > 0 || seconds > 0) {
+                        char time_info[80];
                         if (hours > 0) {
                             snprintf(time_info, sizeof(time_info), "- Print Time: %dh %02dm %02ds", hours, minutes, seconds);
                         } else if (minutes > 0) {
@@ -266,7 +270,9 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                     }
 
                     if (stats.extrusion > 0.0) {
+                        char formatted_extrusion[32];
                         format_double_with_commas(stats.extrusion, 1, formatted_extrusion, sizeof(formatted_extrusion));
+                        char filament_info[96];
                         snprintf(filament_info, sizeof(filament_info), "- Filament: %s mm", formatted_extrusion);
                         log_this(SR_WEBSERVER, filament_info, LOG_LEVEL_STATE, 0);
                     }
@@ -275,13 +281,16 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                         char formatted_volume[32], formatted_weight[32];
                         format_double_with_commas(stats.filament_volume, 3, formatted_volume, sizeof(formatted_volume));
                         format_double_with_commas(stats.filament_weight, 1, formatted_weight, sizeof(formatted_weight));
+                        char material_info[96];
                         snprintf(material_info, sizeof(material_info), "- Material: %s cm³ / %s g",
                                 formatted_volume, formatted_weight);
                         log_this(SR_WEBSERVER, material_info, LOG_LEVEL_STATE, 0);
                     }
 
                     if (stats.num_objects > 0) {
+                        char formatted_objects[32];
                         format_number_with_commas((size_t)stats.num_objects, formatted_objects, sizeof(formatted_objects));
+                        char objects_info[80];
                         snprintf(objects_info, sizeof(objects_info), "- Objects: %s", formatted_objects);
                         log_this(SR_WEBSERVER, objects_info, LOG_LEVEL_STATE, 0);
                     }

@@ -82,29 +82,27 @@ static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *p
 
     // Add service records (PTR, SRV, TXT)
     for (size_t i = 0; i < mdns_server_instance->num_services; i++) {
-        // Create full service type with .local suffix as required by RFC 6763
-        char service_type_with_local[256];
         // Use the full service type including .local as PTR owner name
         const char *ptr_owner_name = mdns_server_instance->services[i].type;
-
+    
         // Create full service instance name for SRV and TXT records
         const size_t max_name_len = 100;
         const size_t max_type_len = 100;
         size_t name_len = strlen(mdns_server_instance->services[i].name);
         size_t type_len = strlen(mdns_server_instance->services[i].type);
-
+    
         size_t total_len = name_len + 1 + type_len + 6;  // +6 for extra formatting
-        if (total_len >= sizeof(service_type_with_local)) {
+        if (total_len >= 256) {
             log_this(SR_MDNS_SERVER, "Service name too long: %s.%s truncated", LOG_LEVEL_ALERT, 2,
                      mdns_server_instance->services[i].name, mdns_server_instance->services[i].type);
             name_len = max_name_len < name_len ? max_name_len : name_len;
             type_len = max_type_len < type_len ? max_type_len : type_len;
         }
-
+    
         // Full service instance name with .local suffix
         char full_service_instance_name[256];
-        snprintf(full_service_instance_name, sizeof(full_service_instance_name), "%.*s.%s",
-                 (int)name_len, mdns_server_instance->services[i].name, mdns_server_instance->services[i].type);
+        snprintf(full_service_instance_name, sizeof(full_service_instance_name), "%.*s.%.*s",
+                 (int)name_len, mdns_server_instance->services[i].name, (int)type_len, mdns_server_instance->services[i].type);
 
         // PTR record - owner name MUST include .local as per RFC 6763
         ptr = write_dns_ptr_record(ptr, ptr_owner_name, full_service_instance_name, ttl);

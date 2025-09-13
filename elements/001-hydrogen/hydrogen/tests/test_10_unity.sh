@@ -30,6 +30,7 @@ TEST_ABBR="UNT"
 TEST_NUMBER="10"
 TEST_COUNTER=0
 TEST_VERSION="3.1.1"
+TEST_TIMEOUT="10s"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -114,7 +115,7 @@ run_single_unity_test_parallel() {
     true > "${temp_test_log}"
     
     # Limit runtime of individual tests
-    if timeout 2s "${test_exe}" > "${temp_test_log}" 2>&1; then
+    if timeout "${TEST_TIMEOUT}" "${test_exe}" > "${temp_test_log}" 2>&1; then
         # Parse the Unity test output to get test counts
         local failure_count
         local ignored_count

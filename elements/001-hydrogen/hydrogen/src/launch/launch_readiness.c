@@ -176,7 +176,6 @@ char* get_library_version(void* handle, const char* lib_name) {
             "db_version_info", "sqle_client_version", NULL
         };
 
-        bool version_found = false;
         for (int i = 0; version_funcs[i] != NULL; i++) {
             union { void* obj_ptr; db2_version_func func_ptr; } ptr_union;
             ptr_union.obj_ptr = dlsym(handle, version_funcs[i]);
@@ -192,14 +191,13 @@ char* get_library_version(void* handle, const char* lib_name) {
                     } else {
                         snprintf(version_str, sizeof(version_str), "%s", version);
                     }
-                    version_found = true;
                     break;
                 }
             }
         }
 
         // If function-based version detection failed, try file scanning
-        if (!version_found) {
+        if (strlen(version_str) == 0) {
             // Get the library file path - prefer dladdr(dlsym("SQLAllocHandle"))
             char lib_path[PATH_MAX] = {0};
             void* sym = dlsym(handle, "SQLAllocHandle");
@@ -317,7 +315,6 @@ char* get_library_version(void* handle, const char* lib_name) {
 
                     if (best_score >= 0) {
                         snprintf(version_str, sizeof(version_str), "%s", best_version);
-                        version_found = true;
                     }
                 }
             }

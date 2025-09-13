@@ -289,9 +289,8 @@ static const DatabaseDependencyConfig db_configs[] = {
                  size_t len = strnlen(temp, size - 1);
                  if (len > 0 && len < size - 1) {
                      bool valid = true;
-                     volatile char probe;
                      for (size_t i = 0; i < len; i++) {
-                         probe = temp[i];
+                         volatile char probe = temp[i];
                          if (probe < 32 || probe > 126) {
                              valid = false;
                              break;

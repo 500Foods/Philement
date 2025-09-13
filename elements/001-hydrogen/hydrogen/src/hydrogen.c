@@ -290,26 +290,24 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
      * - Code segment: Contains the executable instructions
      * Memory is read directly from process space using /proc/self/mem
      */
-    size_t stack_written = 0;
     if (stack_start && stack_end) {
         fseek(out, (long)stack_phdr.p_offset, SEEK_SET);
         fseek(mem, (long)stack_start, SEEK_SET);
         char *buf = malloc(stack_size);
         if (buf) {
-            stack_written = fread(buf, 1, stack_size, mem);
+            size_t stack_written = fread(buf, 1, stack_size, mem);
             fwrite(buf, 1, stack_written, out);
             free(buf);
         }
     }
 
     // Write code
-    size_t code_written = 0;
     if (code_start && code_end) {
         fseek(out, (long)code_phdr.p_offset, SEEK_SET);
         fseek(mem, (long)code_start, SEEK_SET);
         char *buf = malloc(code_size);
         if (buf) {
-            code_written = fread(buf, 1, code_size, mem);
+            size_t code_written = fread(buf, 1, code_size, mem);
             fwrite(buf, 1, code_written, out);
             free(buf);
         }

@@ -300,6 +300,16 @@ const char* mutex_result_to_string(MutexResult result) {
 }
 
 void mutex_log_result(MutexResult result, MutexId* id, int timeout_ms) {
+    if (!id) {
+        // Log without id information if id is NULL
+        if (result == MUTEX_SUCCESS) {
+            log_this(SR_DATABASE, "MUTEX ADD: Mutex locked (no id info)", LOG_LEVEL_DEBUG, 0);
+        } else {
+            log_this(SR_DATABASE, "MUTEX %s: Mutex operation failed (no id info)", LOG_LEVEL_ERROR, 1, mutex_result_to_string(result));
+        }
+        return;
+    }
+
     if (result == MUTEX_SUCCESS) {
         log_this(id->subsystem, "MUTEX ADD: %s locked in %s() [%s:%d]", LOG_LEVEL_DEBUG, 4, id->name, id->function, id->file, id->line);
     } else {

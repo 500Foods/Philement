@@ -51,8 +51,8 @@ bool mysql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel 
     }
 
     // Set isolation level
-    char query[256];
     if (mysql_query_ptr) {
+        char query[256];
         snprintf(query, sizeof(query), "SET SESSION TRANSACTION ISOLATION LEVEL %s", isolation_str);
         if (mysql_query_ptr(mysql_conn->connection, query) != 0) {
             log_this(SR_DATABASE, "MySQL SET ISOLATION LEVEL failed", LOG_LEVEL_ERROR, 0);
