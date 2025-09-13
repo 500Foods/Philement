@@ -645,7 +645,7 @@ The WebSocket Unity test effort demonstrated that **significant effort** (creati
 
 For code that requires system resources:
 
-1. **Integration Tests**: Test the complete system functionality (like `test_27_websockets.sh`)
+1. **Integration Tests**: Test the complete system functionality (like `test_30_websockets.sh`)
 2. **Blackbox Testing**: Test from external perspective using real system interactions
 3. **Component Testing**: Test larger components that include necessary system setup
 4. **Mock-Heavy Testing**: Only if mocking system dependencies is practical and valuable
