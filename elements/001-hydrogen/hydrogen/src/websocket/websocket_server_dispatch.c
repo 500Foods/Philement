@@ -369,9 +369,9 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 }
 
                 // Fallback to checking Authorization header
-                char buf[256];
                 int length = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
                 if (length > 0) {
+                    char buf[256];
                     lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
                     log_this(SR_WEBSOCKET, "Found Authorization header: %s", LOG_LEVEL_DEBUG, 1, buf);
                 } else {

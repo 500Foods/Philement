@@ -836,41 +836,39 @@ static int display_token_info(const char *token, const char *token_type) {
         printf("No %s token available\n", token_type);
         return 0;
     }
-    
+
     json_t *payload = parse_jwt_payload(token);
     if (!payload) {
         printf("Failed to parse %s token\n", token_type);
         return 0;
     }
-    
+
     printf("%s token payload:\n", token_type);
     print_json_value(payload, "  ");
-    
-    int exp_time = 0;
+
     json_t *exp = json_object_get(payload, "exp");
-    
+
     if (exp && json_is_integer(exp)) {
-        exp_time = (int)json_integer_value(exp);
+        int exp_time = (int)json_integer_value(exp);
         int now = current_time();
         int remaining = exp_time - now;
-        
+
         printf("\n%s token expires in %d seconds\n", token_type, remaining);
     }
-    
+
     json_decref(payload);
     return 1;
 }
 
 /* Print JSON values (for debugging and display) */
 static void print_json_value(json_t *value, const char *prefix) {
-    const char *key;
-    json_t *val;
-    
     if (!value) {
         return;
     }
-    
+
     if (json_is_object(value)) {
+        const char *key;
+        json_t *val;
         json_object_foreach(value, key, val) {
             if (json_is_string(val)) {
                 printf("%s%s: %s\n", prefix, key, json_string_value(val));

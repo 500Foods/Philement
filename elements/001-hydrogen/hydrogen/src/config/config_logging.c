@@ -38,13 +38,12 @@ static bool process_subsystems(json_t* root, LoggingDestConfig* dest, const char
     // Process the subsystems section
     if (!PROCESS_SECTION(root, subsys_path)) return false;
 
-    // Get the section name from path
-    const char* section_name = strrchr(path, '.') + 1;
-
     // Get subsystems object from JSON
     json_t* logging = json_object_get(root, "Logging");
     json_t* subsystems = NULL;
     if (json_is_object(logging)) {
+        // Get the section name from path
+        const char* section_name = strrchr(path, '.') + 1;
         json_t* section = json_object_get(logging, section_name);
         if (json_is_object(section)) {
             subsystems = json_object_get(section, "Subsystems");
