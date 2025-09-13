@@ -296,17 +296,13 @@ char* parse_parameter_string(const char *line, const char *parameter) {
 
                 // Calculate the length and allocate memory
                 size_t length = (size_t)(end - value_start);
-                if (length > 0) {
-                    char *value = (char *)malloc(length + 1);
-                    if (value != NULL) {
-                        strncpy(value, value_start, length);
-                        value[length] = '\0';
-                        return value;
-                    }
-                } else {
-                    // Empty value after parameter
-                    return strdup("");
+                char *value = (char *)malloc(length + 1);
+                if (value != NULL) {
+                    memcpy(value, value_start, length);
+                    value[length] = '\0';
+                    return value;
                 }
+                return NULL;
             }
         }
         current++;
@@ -594,7 +590,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
             layer_start_time = stats.print_time;
             stats.layer_count_slicer = (int)fmax(stats.layer_count_slicer, current_layer + 1);
 
-                if (current_layer >= 0 && current_layer < MAX_LAYERS) {
+                if (current_layer < MAX_LAYERS) {
                 if (stats.object_times[current_layer] == NULL) {
                     stats.object_times[current_layer] = calloc((size_t)num_objects, sizeof(double));
                     if (stats.object_times[current_layer] == NULL) {

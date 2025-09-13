@@ -81,8 +81,6 @@ int land_mdns_client_subsystem(void) {
     log_this(SR_MDNS_CLIENT, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_MDNS_CLIENT, "LANDING: mDNS CLIENT", LOG_LEVEL_STATE, 0);
     
-    bool success = true;
-    
     // Signal shutdown
     mdns_client_system_shutdown = 1;
     log_this(SR_MDNS_CLIENT, "Signaled mDNS Client to stop", LOG_LEVEL_STATE, 0);
@@ -94,5 +92,5 @@ int land_mdns_client_subsystem(void) {
     
     log_this(SR_MDNS_CLIENT, "mDNS Client shutdown complete", LOG_LEVEL_STATE, 0);
     
-    return success ? 1 : 0;  // Return 1 for success, 0 for failure
+    return 1;  // Always successful
 }

@@ -72,14 +72,14 @@ int sqlite_exec_callback(void* data, int argc, char** argv, char** col_names) {
 
 // Query Execution Functions
 bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result) {
-    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-
-    log_this(designator, "sqlite_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_DEBUG, 3, (void*)connection, (void*)request, (void*)result);
-
     if (!connection || !request || !result || connection->engine_type != DB_ENGINE_SQLITE) {
+        const char* designator = connection ? (connection->designator ? connection->designator : SR_DATABASE) : SR_DATABASE;
         log_this(designator, "SQLite execute_query: Invalid parameters", LOG_LEVEL_ERROR, 0);
         return false;
     }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(designator, "sqlite_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_DEBUG, 3, (void*)connection, (void*)request, (void*)result);
 
     log_this(designator, "sqlite_execute_query: Parameters validated, proceeding", LOG_LEVEL_DEBUG, 0);
 
@@ -157,11 +157,11 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
 }
 
 bool sqlite_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
-    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-
     if (!connection || !stmt || !request || !result || connection->engine_type != DB_ENGINE_SQLITE) {
         return false;
     }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
 
     const SQLiteConnection* sqlite_conn = (const SQLiteConnection*)connection->connection_handle;
     if (!sqlite_conn || !sqlite_conn->db) {

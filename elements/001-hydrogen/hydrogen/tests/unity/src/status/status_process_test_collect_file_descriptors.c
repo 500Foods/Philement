@@ -117,12 +117,8 @@ void test_collect_file_descriptors_memory_management(void) {
 
     // If successful, descriptors should be allocated
     if (result && descriptors && count > 0) {
-        // Verify that descriptors point to valid memory
-        TEST_ASSERT_TRUE(descriptors != NULL);
-
-        // The function should have allocated memory for the descriptors
-        // (We can't easily verify the exact count, but we can check it's reasonable)
-        TEST_ASSERT_TRUE(count >= 0);
+        // Verify that we have valid data - descriptors and count are already validated by the if condition
+        TEST_PASS_MESSAGE("Successfully collected file descriptors");
     }
 
     // Clean up any allocated memory

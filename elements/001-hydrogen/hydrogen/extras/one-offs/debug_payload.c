@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
         printf("%02x ", end_data[i]);
         if (i % 16 == 15) printf("\n");
     }
-    if (50 % 16 != 0) printf("\n");
+    printf("\n");
     
     munmap(file_data, st.st_size);
     return 0;

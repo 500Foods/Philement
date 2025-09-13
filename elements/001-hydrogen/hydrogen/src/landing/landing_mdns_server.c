@@ -70,7 +70,7 @@ LaunchReadiness check_mdns_server_landing_readiness(void) {
     }
     
     // Final decision
-    if (threads_ready && network_ready) {
+    if (threads_ready) {
         readiness.ready = true;
         readiness.messages[3] = strdup("  Go:      Network subsystem ready");
         readiness.messages[4] = strdup("  Decide:  Go For Landing of mDNS Server");

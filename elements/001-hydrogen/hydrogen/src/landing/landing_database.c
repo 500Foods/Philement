@@ -59,8 +59,6 @@ LaunchReadiness check_database_landing_readiness(void) {
 int land_database_subsystem(void) {
     log_this(SR_DATABASE, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_DATABASE, "LANDING: DATABASE", LOG_LEVEL_STATE, 0);
-
-    bool success = true;
     
     // Since this is just a configuration handler, cleanup is minimal
     log_this(SR_DATABASE, "Cleaning up database configuration", LOG_LEVEL_STATE, 0);
@@ -68,6 +66,6 @@ int land_database_subsystem(void) {
     // Additional cleanup will be added as needed
     
     log_this(SR_DATABASE, "Database shutdown complete", LOG_LEVEL_STATE, 0);
-    
-    return success ? 1 : 0;  // Return 1 for success, 0 for failure
+
+    return 1;  // Always return success for now
 }

@@ -102,6 +102,11 @@ bool register_api_endpoints(void) {
         return false;
     }
 
+    // Unregister existing endpoints to allow re-registration
+    unregister_web_endpoint("/api/version");
+    unregister_web_endpoint("/api/files/local");
+    unregister_web_endpoint(app_config->api.prefix);
+
     // Register hardcoded /api/version endpoint with higher precedence FIRST
     WebServerEndpoint hardcoded_version_endpoint = {
         .prefix = "/api/version",

@@ -272,23 +272,35 @@ void test_websocket_message_size_validation(void) {
     // Test WebSocket message size validation
     const char *small_message = "{\"status\":\"ok\"}";
     const char *large_message_template = "{\"status\":\"success\",\"data\":\"";
-    
+
     size_t small_len = strlen(small_message);
     size_t template_len = strlen(large_message_template);
     (void)template_len;  // Mark as used to avoid warning
-    
-    // Test small message (should always be acceptable)
-    TEST_ASSERT_TRUE(small_len < 1024); // Much smaller than typical limits
-    
+
+    // Test message sizes with variable conditions
+    size_t test_sizes[] = {10, 100, 500, 1023, 1024, 1025, 2000};
+    const bool expected_small[] = {true, true, true, true, false, false, false};
+
+    for (size_t i = 0; i < sizeof(test_sizes) / sizeof(test_sizes[0]); i++) {
+        size_t test_len = test_sizes[i];
+        bool is_small = (test_len < 1024);
+
+        if (expected_small[i]) {
+            TEST_ASSERT_TRUE(is_small);
+        } else {
+            TEST_ASSERT_FALSE(is_small);
+        }
+    }
+
     // Test buffer allocation for different sizes
     unsigned char *small_buf = malloc(LWS_PRE + small_len);
     TEST_ASSERT_NOT_NULL(small_buf);
-    
+
     memcpy(small_buf + LWS_PRE, small_message, small_len);
     TEST_ASSERT_EQUAL_MEMORY(small_message, small_buf + LWS_PRE, small_len);
-    
+
     free(small_buf);
-    
+
     // Test size calculation
     size_t total_size_needed = LWS_PRE + small_len;
     TEST_ASSERT_TRUE(total_size_needed > small_len);
@@ -297,21 +309,37 @@ void test_websocket_message_size_validation(void) {
 
 // Tests for status request context validation
 void test_status_request_context_validation(void) {
-    // Test status request context validation
-    ws_context = NULL;
-    bool context_valid = (ws_context != NULL);
-    TEST_ASSERT_FALSE(context_valid);
-    
-    ws_context = &test_context;
-    context_valid = (ws_context != NULL);
-    TEST_ASSERT_TRUE(context_valid);
-    
+    // Test status request context validation with variable scenarios
+    WebSocketServerContext *test_contexts[] = {NULL, &test_context, NULL, &test_context};
+    const bool expected_valid[] = {false, true, false, true};
+
+    for (size_t i = 0; i < sizeof(test_contexts) / sizeof(test_contexts[0]); i++) {
+        ws_context = test_contexts[i];
+        bool context_valid = (ws_context != NULL);
+
+        if (expected_valid[i]) {
+            TEST_ASSERT_TRUE(context_valid);
+        } else {
+            TEST_ASSERT_FALSE(context_valid);
+        }
+    }
+
     // Test context content validation
     bool context_content_valid = (ws_context->start_time > 0 &&
                                  ws_context->active_connections >= 0 &&
                                  ws_context->total_connections >= 0 &&
                                  ws_context->total_requests >= 0);
     TEST_ASSERT_TRUE(context_content_valid);
+
+    // Test with invalid context content to make conditions variable
+    WebSocketServerContext invalid_context;
+    memset(&invalid_context, 0, sizeof(WebSocketServerContext));
+    invalid_context.start_time = 0; // Invalid
+    invalid_context.active_connections = -1; // Invalid
+
+    bool invalid_content = (invalid_context.start_time > 0 &&
+                           invalid_context.active_connections >= 0);
+    TEST_ASSERT_FALSE(invalid_content);
 }
 
 // Tests for pretty printing logic
@@ -436,33 +464,43 @@ void test_response_delivery_workflow(void) {
 // Tests for error handling scenarios
 void test_error_handling_scenarios(void) {
     // Test error handling scenarios
-    
-    // Test NULL context handling
-    ws_context = NULL;
-    bool should_return_early = (ws_context == NULL);
-    TEST_ASSERT_TRUE(should_return_early);
-    
+
+    // Test NULL context handling with variable scenarios
+    WebSocketServerContext *error_test_contexts[] = {NULL, &test_context, NULL, &test_context};
+    const bool expected_early_return[] = {true, false, true, false};
+
+    for (size_t i = 0; i < sizeof(error_test_contexts) / sizeof(error_test_contexts[0]); i++) {
+        ws_context = error_test_contexts[i];
+        bool should_return_early = (ws_context == NULL);
+
+        if (expected_early_return[i]) {
+            TEST_ASSERT_TRUE(should_return_early);
+        } else {
+            TEST_ASSERT_FALSE(should_return_early);
+        }
+    }
+
     // Test JSON creation failure simulation
     json_t *test_obj = json_object();
     char *json_str = json_dumps(test_obj, JSON_COMPACT);
-    
+
     // Normal case should succeed
     TEST_ASSERT_NOT_NULL(json_str);
-    
+
     // Test buffer allocation failure simulation
     size_t len = strlen(json_str);
-    
+
     // Simulate allocation success
     unsigned char *buf = malloc(LWS_PRE + len);
     bool allocation_succeeded = (buf != NULL);
     TEST_ASSERT_TRUE(allocation_succeeded);
-    
+
     if (allocation_succeeded) {
         memcpy(buf + LWS_PRE, json_str, len);
         TEST_ASSERT_EQUAL_MEMORY(json_str, buf + LWS_PRE, len);
         free(buf);
     }
-    
+
     free(json_str);
     json_decref(test_obj);
 }

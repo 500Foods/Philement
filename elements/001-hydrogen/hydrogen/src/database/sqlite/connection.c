@@ -259,14 +259,14 @@ bool sqlite_disconnect(DatabaseHandle* connection) {
 }
 
 bool sqlite_health_check(DatabaseHandle* connection) {
-    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-
-    log_this(designator, "SQLite health check: Starting validation", LOG_LEVEL_DEBUG, 0);
-
     if (!connection) {
+        const char* designator = SR_DATABASE;
         log_this(designator, "SQLite health check: connection is NULL", LOG_LEVEL_ERROR, 0);
         return false;
     }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(designator, "SQLite health check: Starting validation", LOG_LEVEL_DEBUG, 0);
 
     if (connection->engine_type != DB_ENGINE_SQLITE) {
         log_this(designator, "SQLite health check: wrong engine type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);

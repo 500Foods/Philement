@@ -196,11 +196,7 @@ int launch_payload_subsystem(void) {
         log_this(SR_PAYLOAD, "    Cache not yet available - will be initialized on first access", LOG_LEVEL_STATE, 0);
     }
 
-    if (success) {
-        log_this(SR_PAYLOAD, "    Payload processing completed successfully", LOG_LEVEL_STATE, 0);
-    } else {
-        log_this(SR_PAYLOAD, "    Payload processing failed", LOG_LEVEL_ERROR, 0);
-    }
+    log_this(SR_PAYLOAD, "    Payload processing completed successfully", LOG_LEVEL_STATE, 0);
 
     // Step 3: Update registry and verify state
     log_this(SR_PAYLOAD, "  Step 3: Updating subsystem registry", LOG_LEVEL_STATE, 0);

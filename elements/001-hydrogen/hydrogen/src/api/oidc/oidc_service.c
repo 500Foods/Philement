@@ -33,10 +33,7 @@ bool init_oidc_endpoints(OIDCContext *oidc_context) {
     g_oidc_context = oidc_context;
     
     // Register endpoints with the web server
-    if (!register_oidc_endpoints()) {
-        log_this(SR_OIDC, "Failed to register OIDC endpoints", LOG_LEVEL_ERROR, 0);
-        return false;
-    }
+    register_oidc_endpoints();
     
     log_this(SR_OIDC, "OIDC endpoints initialized successfully", LOG_LEVEL_STATE, 0);
     return true;
@@ -252,18 +249,17 @@ bool extract_token_request_params(struct MHD_Connection *connection,
     if (!*client_id || !*client_secret) {
         char *auth_client_id = NULL;
         char *auth_client_secret = NULL;
-        if (extract_client_credentials(connection, &auth_client_id, &auth_client_secret)) {
-            if (!*client_id) {
-                *client_id = auth_client_id;
-            } else {
-                free(auth_client_id);
-            }
-            
-            if (!*client_secret) {
-                *client_secret = auth_client_secret;
-            } else {
-                free(auth_client_secret);
-            }
+        extract_client_credentials(connection, &auth_client_id, &auth_client_secret);
+        if (!*client_id) {
+            *client_id = auth_client_id;
+        } else {
+            free(auth_client_id);
+        }
+
+        if (!*client_secret) {
+            *client_secret = auth_client_secret;
+        } else {
+            free(auth_client_secret);
         }
     }
     

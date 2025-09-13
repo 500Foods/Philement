@@ -77,8 +77,7 @@ LaunchReadiness check_api_launch_readiness(void) {
         }
 
         // Check API prefix
-        if (!app_config->api.prefix || !app_config->api.prefix[0] ||
-            app_config->api.prefix[0] != '/') {
+        if (!app_config->api.prefix || app_config->api.prefix[0] != '/') {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid API prefix configuration"));
             ready = false;
         } else {

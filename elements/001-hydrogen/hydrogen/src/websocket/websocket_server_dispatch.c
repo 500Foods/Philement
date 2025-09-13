@@ -58,7 +58,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
     }
 
     // During vhost creation or early initialization, allow all callbacks
-    if (!ctx || (ctx && ctx->vhost_creating)) {
+    if (!ctx || ctx->vhost_creating) {
         return 0;  // Accept all callbacks during initialization
     }
 

@@ -56,9 +56,11 @@ void test_mdns_server_init_basic_success(void) {
     );
 
     TEST_ASSERT_NOT_NULL(server);
-    TEST_ASSERT_EQUAL_STRING("TestApp", server->service_name);
-    TEST_ASSERT_EQUAL_STRING("test123", server->device_id);
-    TEST_ASSERT_EQUAL_STRING("TestPrinter", server->friendly_name);
+    if (server) {
+        TEST_ASSERT_EQUAL_STRING("TestApp", server->service_name);
+        TEST_ASSERT_EQUAL_STRING("test123", server->device_id);
+        TEST_ASSERT_EQUAL_STRING("TestPrinter", server->friendly_name);
+    }
 
     // Fast cleanup - just close sockets without goodbye packets
     if (server) {
@@ -228,7 +230,9 @@ void test_mdns_server_init_multiple_services(void) {
     );
 
     TEST_ASSERT_NOT_NULL(server);
-    TEST_ASSERT_EQUAL(2, server->num_services);
+    if (server) {
+        TEST_ASSERT_EQUAL(2, server->num_services);
+    }
 
     // Fast cleanup for multiple services test
     if (server) {
@@ -295,7 +299,9 @@ void test_mdns_server_init_empty_services(void) {
     );
 
     TEST_ASSERT_NOT_NULL(server);
-    TEST_ASSERT_EQUAL(0, server->num_services);
+    if (server) {
+        TEST_ASSERT_EQUAL(0, server->num_services);
+    }
 
     // Fast cleanup for empty services test
     if (server) {

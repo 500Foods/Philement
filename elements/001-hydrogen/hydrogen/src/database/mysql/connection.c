@@ -285,14 +285,14 @@ bool mysql_disconnect(DatabaseHandle* connection) {
 }
 
 bool mysql_health_check(DatabaseHandle* connection) {
-    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-
-    log_this(designator, "MySQL health check: Starting validation", LOG_LEVEL_DEBUG, 0);
-
     if (!connection) {
+        const char* designator = SR_DATABASE;
         log_this(designator, "MySQL health check: connection is NULL", LOG_LEVEL_ERROR, 0);
         return false;
     }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(designator, "MySQL health check: Starting validation", LOG_LEVEL_DEBUG, 0);
 
     if (connection->engine_type != DB_ENGINE_MYSQL) {
         log_this(designator, "MySQL health check: wrong engine type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);
