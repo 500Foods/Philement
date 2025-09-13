@@ -181,81 +181,74 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
     }
 
     // Check if payload is compressed (assume Brotli compression)
-    bool is_compressed = true; // Based on extract_payload setting
+    // For now, always assume compressed since that's the current implementation
+    log_this(SR_PAYLOAD, "Processing compressed payload: %zu bytes", LOG_LEVEL_STATE, 1, tar_size);
 
-    if (is_compressed) {
-        log_this(SR_PAYLOAD, "Processing compressed payload: %zu bytes", LOG_LEVEL_STATE, 1, tar_size);
+    // Use Brotli streaming API for decompression
+    BrotliDecoderState* decoder = BrotliDecoderCreateInstance(NULL, NULL, NULL);
+    if (!decoder) {
+        log_this(SR_PAYLOAD, "Failed to create Brotli decoder", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
 
-        // Use Brotli streaming API for decompression
-        BrotliDecoderState* decoder = BrotliDecoderCreateInstance(NULL, NULL, NULL);
-        if (!decoder) {
-            log_this(SR_PAYLOAD, "Failed to create Brotli decoder", LOG_LEVEL_ERROR, 0);
-            return false;
-        }
+    // Initial buffer size - we'll grow it if needed
+    size_t buffer_size = tar_size * 4;  // Start with 4x the compressed size
+    uint8_t* decompressed_data = malloc(buffer_size);
+    if (!decompressed_data) {
+        log_this(SR_PAYLOAD, "Failed to allocate memory for decompressed data", LOG_LEVEL_ERROR, 0);
+        BrotliDecoderDestroyInstance(decoder);
+        return false;
+    }
 
-        // Initial buffer size - we'll grow it if needed
-        size_t buffer_size = tar_size * 4;  // Start with 4x the compressed size
-        uint8_t* decompressed_data = malloc(buffer_size);
-        if (!decompressed_data) {
-            log_this(SR_PAYLOAD, "Failed to allocate memory for decompressed data", LOG_LEVEL_ERROR, 0);
-            BrotliDecoderDestroyInstance(decoder);
-            return false;
-        }
+    // Set up input/output parameters
+    const uint8_t* next_in = tar_data;
+    size_t available_in = tar_size;
+    uint8_t* next_out = decompressed_data;
+    size_t available_out = buffer_size;
+    size_t total_out = 0;
 
-        // Set up input/output parameters
-        const uint8_t* next_in = tar_data;
-        size_t available_in = tar_size;
-        uint8_t* next_out = decompressed_data;
-        size_t available_out = buffer_size;
-        size_t total_out = 0;
+    // Decompress until done
+    BrotliDecoderResult result;
+    do {
+        result = BrotliDecoderDecompressStream(
+            decoder,
+            &available_in, &next_in,
+            &available_out, &next_out,
+            &total_out);
 
-        // Decompress until done
-        BrotliDecoderResult result;
-        do {
-            result = BrotliDecoderDecompressStream(
-                decoder,
-                &available_in, &next_in,
-                &available_out, &next_out,
-                &total_out);
-
-            if (result == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT) {
-                // Need more output space
-                size_t current_position = (size_t)(next_out - decompressed_data);
-                buffer_size *= 2;
-                uint8_t* new_buffer = realloc(decompressed_data, buffer_size);
-                if (!new_buffer) {
-                    log_this(SR_PAYLOAD, "Failed to resize decompression buffer", LOG_LEVEL_ERROR, 0);
-                    free(decompressed_data);
-                    BrotliDecoderDestroyInstance(decoder);
-                    return false;
-                }
-
-                decompressed_data = new_buffer;
-                next_out = decompressed_data + current_position;
-                available_out = buffer_size - current_position;
-            } else if (result == BROTLI_DECODER_RESULT_ERROR) {
-                log_this(SR_PAYLOAD, "Brotli decompression error: %s", LOG_LEVEL_ERROR, 1, BrotliDecoderErrorString(BrotliDecoderGetErrorCode(decoder)));
+        if (result == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT) {
+            // Need more output space
+            size_t current_position = (size_t)(next_out - decompressed_data);
+            buffer_size *= 2;
+            uint8_t* new_buffer = realloc(decompressed_data, buffer_size);
+            if (!new_buffer) {
+                log_this(SR_PAYLOAD, "Failed to resize decompression buffer", LOG_LEVEL_ERROR, 0);
                 free(decompressed_data);
                 BrotliDecoderDestroyInstance(decoder);
                 return false;
             }
-        } while (result != BROTLI_DECODER_RESULT_SUCCESS);
 
-        // Clean up decoder
-        BrotliDecoderDestroyInstance(decoder);
+            decompressed_data = new_buffer;
+            next_out = decompressed_data + current_position;
+            available_out = buffer_size - current_position;
+        } else if (result == BROTLI_DECODER_RESULT_ERROR) {
+            log_this(SR_PAYLOAD, "Brotli decompression error: %s", LOG_LEVEL_ERROR, 1, BrotliDecoderErrorString(BrotliDecoderGetErrorCode(decoder)));
+            free(decompressed_data);
+            BrotliDecoderDestroyInstance(decoder);
+            return false;
+        }
+    } while (result != BROTLI_DECODER_RESULT_SUCCESS);
 
-        log_this(SR_PAYLOAD, "Payload decompressed: %zu bytes -> %zu bytes", LOG_LEVEL_STATE, 2, tar_size, total_out);
+    // Clean up decoder
+    BrotliDecoderDestroyInstance(decoder);
 
-        // Parse the decompressed tar data
-        bool success = parse_tar_into_cache(decompressed_data, total_out);
-        free(decompressed_data);
+    log_this(SR_PAYLOAD, "Payload decompressed: %zu bytes -> %zu bytes", LOG_LEVEL_STATE, 2, tar_size, total_out);
 
-        return success;
+    // Parse the decompressed tar data
+    bool success = parse_tar_into_cache(decompressed_data, total_out);
+    free(decompressed_data);
 
-    } else {
-        // Data is not compressed, parse directly as tar
-        return parse_tar_into_cache(tar_data, tar_size);
-    }
+    return success;
 }
 
 /**

@@ -111,9 +111,8 @@ void test_get_network_info_ipv4_ipv6_detection(void) {
         // The detection might not be perfect, but it should be consistent
         for (int i = 0; i < info->count; i++) {
             for (int j = 0; j < info->interfaces[i].ip_count; j++) {
-                // Check that IPv6 flag is either true or false (no crash)
-                bool is_ipv6_flag = info->interfaces[i].is_ipv6[j];
-                TEST_ASSERT_TRUE(is_ipv6_flag == true || is_ipv6_flag == false);
+                // Check that IP address is valid (no crash)
+                TEST_ASSERT_NOT_NULL(info->interfaces[i].ips[j]);
 
                 // Check that IP string is valid
                 TEST_ASSERT_GREATER_THAN(0, strlen(info->interfaces[i].ips[j]));

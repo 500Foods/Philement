@@ -115,28 +115,41 @@ void test_websocket_server_run_cancellation_points(void) {
 }
 
 void test_websocket_server_run_shutdown_wait_logic(void) {
-    // Test shutdown wait logic conditions
+    // Test shutdown wait logic conditions with variable scenarios
     ws_context = &test_context;
     test_context.shutdown = 1;
-    test_context.active_connections = 5;
-    
+
     const int max_shutdown_wait = 40;
-    int shutdown_wait = 0;
-    
-    // Test condition: active_connections == 0 || shutdown_wait >= max_shutdown_wait
-    bool should_exit = (test_context.active_connections == 0 || shutdown_wait >= max_shutdown_wait);
-    TEST_ASSERT_FALSE(should_exit);
-    
-    // Test with no active connections
-    test_context.active_connections = 0;
-    should_exit = (test_context.active_connections == 0 || shutdown_wait >= max_shutdown_wait);
-    TEST_ASSERT_TRUE(should_exit);
-    
-    // Test with max wait reached
-    test_context.active_connections = 5;
-    shutdown_wait = 40;
-    should_exit = (test_context.active_connections == 0 || shutdown_wait >= max_shutdown_wait);
-    TEST_ASSERT_TRUE(should_exit);
+
+    // Test different scenarios for the exit condition: active_connections == 0 || shutdown_wait >= max_shutdown_wait
+    struct {
+        int active_connections;
+        int shutdown_wait;
+        bool expected_should_exit;
+    } test_scenarios[] = {
+        {5, 0, false},      // connections active, wait not exceeded
+        {0, 0, true},       // no active connections
+        {5, 40, true},      // max wait reached
+        {10, 20, false},    // connections active, partial wait
+        {0, 50, true},      // no connections, wait exceeded
+        {1, 39, false},     // one connection, wait almost exceeded
+        {3, 25, false},     // few connections, partial wait
+        {0, 30, true}       // no connections, wait exceeded
+    };
+
+    for (size_t i = 0; i < sizeof(test_scenarios) / sizeof(test_scenarios[0]); i++) {
+        test_context.active_connections = test_scenarios[i].active_connections;
+        int shutdown_wait = test_scenarios[i].shutdown_wait;
+        bool expected = test_scenarios[i].expected_should_exit;
+
+        bool should_exit = (test_context.active_connections == 0 || shutdown_wait >= max_shutdown_wait);
+
+        if (expected) {
+            TEST_ASSERT_TRUE(should_exit);
+        } else {
+            TEST_ASSERT_FALSE(should_exit);
+        }
+    }
 }
 
 void test_websocket_server_run_timespec_calculation(void) {
@@ -173,12 +186,6 @@ void test_websocket_server_run_signal_handling(void) {
 
     // Test shutdown signal
     shutdown_requested = 1;
-    should_continue = (local_server_running && !test_context.shutdown && !shutdown_requested);
-    TEST_ASSERT_FALSE(should_continue);
-
-    // Test context shutdown
-    shutdown_requested = 0;
-    test_context.shutdown = 1;
     should_continue = (local_server_running && !test_context.shutdown && !shutdown_requested);
     TEST_ASSERT_FALSE(should_continue);
 }

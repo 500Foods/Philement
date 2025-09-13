@@ -235,20 +235,18 @@ static const DatabaseDependencyConfig db_configs[] = {
                  if (strcmp(config->name, "libtar") == 0 && strcmp(*func_name, "libtar_version") == 0) {
                      const char *version_str = (const char *)func_ptr;
 //                     log_this(SR_DEPCHECK, "%s: Raw version_str at %p", LOG_LEVEL_DEBUG, 2, config->name, func_ptr);
-                     if (version_str) {
-                         volatile char probe = *version_str; // Force read to catch segfault
-                         if (probe != '\0') {
-                             size_t len = strnlen(version_str, size - 1);
-//                             log_this(SR_DEPCHECK, "%s: Version string length: %zu", LOG_LEVEL_DEBUG, 2, config->name, len);
-                             if (len > 0 && len < size - 1) {
-                                 strncpy(buffer, version_str, len);
-                                 buffer[len] = '\0';
-                                 version = buffer;
-                                 *method = "SYM";
-//                                 log_this(SR_DEPCHECK, "%s: Found version %s via %s (data symbol)", LOG_LEVEL_DEBUG, 3, config->name, version, *func_name);
-                                 dlclose(handle);
-                                 return version;
-                             }
+                     volatile char probe = *version_str; // Force read to catch segfault
+                     if (probe != '\0') {
+                         size_t len = strnlen(version_str, size - 1);
+                         //                             log_this(SR_DEPCHECK, "%s: Version string length: %zu", LOG_LEVEL_DEBUG, 2, config->name, len);
+                         if (len > 0 && len < size - 1) {
+                             strncpy(buffer, version_str, len);
+                             buffer[len] = '\0';
+                             version = buffer;
+                             *method = "SYM";
+                             //                                 log_this(SR_DEPCHECK, "%s: Found version %s via %s (data symbol)", LOG_LEVEL_DEBUG, 3, config->name, version, *func_name);
+                             dlclose(handle);
+                             return version;
                          }
                      }
                      version = "NoVersionFound";

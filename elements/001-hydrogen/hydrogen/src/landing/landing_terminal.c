@@ -81,8 +81,6 @@ int land_terminal_subsystem(void) {
     log_this(SR_TERMINAL, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_TERMINAL, "LANDING: TERMINAL", LOG_LEVEL_STATE, 0);
     
-    bool success = true;
-    
     // Signal shutdown
     terminal_system_shutdown = 1;
     log_this(SR_TERMINAL, "Signaled Terminal to stop", LOG_LEVEL_STATE, 0);
@@ -92,5 +90,5 @@ int land_terminal_subsystem(void) {
     
     log_this(SR_TERMINAL, "Terminal shutdown complete", LOG_LEVEL_STATE, 0);
     
-    return success ? 1 : 0;  // Return 1 for success, 0 for failure
+    return 1;  // Always successful
 }

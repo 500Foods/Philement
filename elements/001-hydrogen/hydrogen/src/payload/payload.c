@@ -560,8 +560,9 @@ bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
     private_key_data = calloc(1, private_key_len);
     if (!private_key_data) goto cleanup;
 
-    private_key_len = (size_t)BIO_read(bio_chain, private_key_data, (int)private_key_len);
-    if (private_key_len <= 0) goto cleanup;
+    int read_len = BIO_read(bio_chain, private_key_data, (int)private_key_len);
+    if (read_len <= 0) goto cleanup;
+    private_key_len = (size_t)read_len;
 
     bio = BIO_new_mem_buf(private_key_data, (int)private_key_len);
     if (!bio) goto cleanup;

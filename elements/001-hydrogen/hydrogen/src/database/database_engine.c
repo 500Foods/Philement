@@ -218,12 +218,10 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     // Store values to check for changes
     uintptr_t saved_mutex_addr = mutex_addr;
     uintptr_t saved_conn_addr = conn_addr;
-    DatabaseEngine saved_engine_type = connection->engine_type;
 
     // Check if values changed between logging calls
     uintptr_t current_mutex_addr = (uintptr_t)&connection->connection_lock;
     uintptr_t current_conn_addr = (uintptr_t)connection;
-    DatabaseEngine current_engine_type = connection->engine_type;
 
     if (saved_mutex_addr != current_mutex_addr) {
         log_this(SR_DATABASE, "MUTEX_ADDRESS_CHANGED: Was %p, now %p - this explains the discrepancy!", LOG_LEVEL_ERROR, 2, 
@@ -233,18 +231,12 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
     if (saved_conn_addr != current_conn_addr) {
         log_this(SR_DATABASE, "CONNECTION_ADDRESS_CHANGED: Was %p, now %p", LOG_LEVEL_ERROR, 2,
-            (void*)saved_conn_addr, 
+            (void*)saved_conn_addr,
             (void*)current_conn_addr);
     }
 
-    if (saved_engine_type != current_engine_type) {
-        log_this(SR_DATABASE, "ENGINE_TYPE_CHANGED: Was %d, now %d", LOG_LEVEL_ERROR, 2,
-            (int)saved_engine_type, 
-            (int)current_engine_type);
-    }
-
     // CRITICAL: Check for memory corruption in mutex structure
-    if ((uintptr_t)mutex_ptr == 0x1 || (uintptr_t)mutex_ptr < 0x1000) {
+    if ((uintptr_t)mutex_ptr < 0x1000) {
         log_this(SR_DATABASE, "CRITICAL ERROR: Connection mutex pointer is corrupted! Address: %p", LOG_LEVEL_ERROR, 1, (void*)mutex_ptr);
         log_this(SR_DATABASE, "This indicates memory corruption in the DatabaseHandle structure", LOG_LEVEL_ERROR, 0);
         log_this(SR_DATABASE, "The connection object itself may be corrupted or double-freed", LOG_LEVEL_ERROR, 0);
@@ -312,7 +304,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     log_this(designator, "Connection address in engine_type access: %p", LOG_LEVEL_ERROR, 1, (void*)connection);
 
     // CRITICAL: Check for connection pointer corruption
-    if ((uintptr_t)connection == 0x1 || (uintptr_t)connection < 0x1000) {
+    if ((uintptr_t)connection < 0x1000) {
         log_this(designator, "CRITICAL ERROR: Connection pointer itself is corrupted! Value: %p", LOG_LEVEL_ERROR, 1, (void*)connection);
         log_this(designator, "This indicates the entire connection structure has been corrupted", LOG_LEVEL_ERROR, 0);
         return false;

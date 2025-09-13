@@ -38,12 +38,8 @@ static const char* get_top_level_section(const char* section) {
         if (len > MAX_SECTION_LENGTH) len = MAX_SECTION_LENGTH;
     } else {
         ptrdiff_t diff = dot - section;
-        if (diff < 0) {
-            len = 0;
-        } else {
-            len = (size_t)diff;
-            if (len > MAX_SECTION_LENGTH) len = MAX_SECTION_LENGTH;
-        }
+        len = (size_t)diff;
+        if (len > MAX_SECTION_LENGTH) len = MAX_SECTION_LENGTH;
     }
     
     strncpy(section_buffer, section, len);
@@ -58,9 +54,9 @@ bool process_level_config(json_t* root, int* level_ptr, const char* level_name,
 
     // Check if the path exists in JSON
     bool using_default = true;
-    
+
     // Use the provided default_value if specified, otherwise use the current value
-    if (using_default && default_value >= 0) {
+    if (default_value >= 0) {
         *level_ptr = default_value;
     }
     
@@ -122,7 +118,6 @@ static const char* get_env_var_name(const char* str, char* buffer, size_t buffer
     if (!end || end <= start) return NULL;
     
     ptrdiff_t diff = end - start;
-    if (diff < 0) return NULL;
     size_t len = (size_t)diff;
     if (len >= buffer_size) len = buffer_size - 1;
     
@@ -238,9 +233,8 @@ json_t* process_env_variable(const char* value) {
         return NULL;
     }
 
-    // Check if env_value is empty string (avoid direct array access under LTO)
-    // Compare to empty string instead of checking *env_value
-    if (!env_value || strcmp(env_value, "") == 0) {
+    // Check if env_value is empty string
+    if (strcmp(env_value, "") == 0) {
         free(var_name);
         return json_null();
     }
@@ -256,11 +250,6 @@ json_t* process_env_variable(const char* value) {
     }
     
 // Check if it's a number
-if (!env_value) {
-    log_this(SR_CONFIG, "LTO: env_value is NULL for %s", LOG_LEVEL_ERROR, 1, var_name);
-    free(var_name);
-    return json_null();
-}
 
 char* endptr;
 // Try parsing as integer first
@@ -506,28 +495,33 @@ bool process_config_value(json_t* root, ConfigValue value, ConfigValueType type,
 
             if (original_ref[0] != '\0') {
                 // Extract variable name from ${env.VAR_NAME}
-                const char* var_start = strstr(original_ref, "${env.") + 6;
-                const char* var_end = strchr(var_start, '}');
-                if (var_start && var_end) {
-                    char env_var_buffer[256];  // Renamed to avoid shadow warning
-                    size_t var_len = (size_t)(var_end - var_start);
-                    strncpy(env_var_buffer, var_start, var_len);
-                    env_var_buffer[var_len] = '\0';
+                const char* env_pos = strstr(original_ref, "${env.");
+                if (env_pos) {
+                    const char* var_start = env_pos + 6;
+                    const char* var_end = strchr(var_start, '}');
+                    if (var_end) {
+                        char env_var_buffer[256];  // Renamed to avoid shadow warning
+                        size_t var_len = (size_t)(var_end - var_start);
+                        strncpy(env_var_buffer, var_start, var_len);
+                        env_var_buffer[var_len] = '\0';
 
-                    if (is_sensitive) {
-                        log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE, 5,
-                                indent, 
-                                key, 
-                                env_var_buffer,
-                                format_sensitive(final_value ? final_value : "(not set)"),
-                                using_default ? " *" : "");
+                        if (is_sensitive) {
+                            log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE, 5,
+                                    indent,
+                                    key,
+                                    env_var_buffer,
+                                    format_sensitive(final_value ? final_value : "(not set)"),
+                                    using_default ? " *" : "");
+                        } else {
+                            log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE, 5,
+                                    indent,
+                                    key,
+                                    env_var_buffer,
+                                    final_value ? final_value : "(not set)",
+                                    using_default ? " *" : "");
+                        }
                     } else {
-                        log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE, 5,
-                                indent, 
-                                key, 
-                                env_var_buffer,
-                                final_value ? final_value : "(not set)",
-                                using_default ? " *" : "");
+                        log_value(path, final_value, using_default, is_sensitive, section);
                     }
                 } else {
                     log_value(path, final_value, using_default, is_sensitive, section);

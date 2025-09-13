@@ -27,14 +27,14 @@ extern bool check_timeout_expired(time_t start_time, int timeout_seconds);
 
 // Query Execution Functions
 bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result) {
-    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-
-    log_this(designator, "postgresql_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_DEBUG, 3, (void*)connection, (void*)request, (void*)result);
-
     if (!connection || !request || !result || connection->engine_type != DB_ENGINE_POSTGRESQL) {
+        const char* designator = connection ? (connection->designator ? connection->designator : SR_DATABASE) : SR_DATABASE;
         log_this(designator, "PostgreSQL execute_query: Invalid parameters", LOG_LEVEL_ERROR, 0);
         return false;
     }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(designator, "postgresql_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_DEBUG, 3, (void*)connection, (void*)request, (void*)result);
 
     log_this(designator, "postgresql_execute_query: Parameters validated, proceeding", LOG_LEVEL_DEBUG, 0);
 

@@ -221,7 +221,7 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
             db_queue->is_connected = true;
 
             // CRITICAL: Validate the stored connection's mutex before unlocking
-            if (db_handle && (uintptr_t)&db_handle->connection_lock >= 0x1000) {
+            if ((uintptr_t)&db_handle->connection_lock >= 0x1000) {
                 mutex_unlock(&db_queue->connection_lock);
             } else {
                 log_this(SR_DATABASE, "CRITICAL ERROR: Stored connection has corrupted mutex! Not unlocking queue mutex", LOG_LEVEL_ERROR, 0);

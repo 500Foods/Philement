@@ -122,8 +122,9 @@ void test_init_queue_memory_limits_initialization(void) {
 
     // Should initialize limits structure
     // The actual values depend on the implementation
-    TEST_ASSERT_TRUE(test_queue.limits.max_blocks > 0 || test_queue.limits.max_blocks == 0);
-    TEST_ASSERT_TRUE(test_queue.limits.block_limit > 0 || test_queue.limits.block_limit == 0);
+    // Since these are unsigned, just verify they are reasonable values
+    TEST_ASSERT_TRUE(test_queue.limits.max_blocks <= 1000000); // Reasonable upper bound
+    TEST_ASSERT_TRUE(test_queue.limits.block_limit <= 1000000);
 }
 
 void test_init_queue_memory_metrics_reset(void) {
