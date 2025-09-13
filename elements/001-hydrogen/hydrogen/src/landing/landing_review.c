@@ -36,7 +36,7 @@ static void report_thread_cleanup_status(void) {
     // Count active threads across all subsystems
     for (int i = 0; i < subsystem_registry.count; i++) {
         SubsystemInfo* info = &subsystem_registry.subsystems[i];
-        if (info && info->threads) {
+        if (info->threads) {
             active_threads += info->threads->thread_count;
         }
     }
@@ -73,8 +73,8 @@ static void report_final_landing_summary(const ReadinessResults* results) {
         SubsystemState state = SUBSYSTEM_INACTIVE;
         
         if (subsystem_id >= 0) {
-            SubsystemInfo* info = &subsystem_registry.subsystems[subsystem_id];
-            state = info ? info->state : SUBSYSTEM_INACTIVE;
+            const SubsystemInfo* info = &subsystem_registry.subsystems[subsystem_id];
+            state = info->state;
         }
         
         // Log subsystem details

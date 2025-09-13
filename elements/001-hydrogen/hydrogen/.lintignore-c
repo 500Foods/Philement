@@ -9,7 +9,7 @@
 # - Redundant condition/initialization warnings
 # - Null pointer and arithmetic checks
 #
-# Used by support_cppcheck.sh and test_z_codebase.sh for C code linting.
+# Used primarily by tests/test_91_cppcheck.sh for C code linting.
 
 # Enable specific checks
 enable=style,warning,performance,portability
@@ -28,13 +28,6 @@ template={file}:{line}:{column}: {severity}: {message} ({id})
 suppress=variableScope
 suppress=unreadVariable
 suppress=unusedStructMember
-suppress=knownConditionTrueFalse
-suppress=redundantCondition
-suppress=varFuncNullUB
-suppress=redundantInitialization
-suppress=unsignedLessThanZero
-suppress=nullPointerRedundantCheck
-suppress=nullPointerArithmeticRedundantCheck
 
 # Additional options
 option=--inline-suppr

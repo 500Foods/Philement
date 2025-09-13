@@ -34,10 +34,10 @@ void test_create_multicast_socket_ipv4_success(void) {
     if (sockfd >= 0) {
         // Success case - close the socket
         close(sockfd);
-        TEST_ASSERT_TRUE(sockfd >= 0);
+        TEST_PASS_MESSAGE("IPv4 multicast socket created successfully");
     } else {
         // Expected failure case (permissions, etc.) - just verify it doesn't crash
-        TEST_ASSERT_TRUE(sockfd < 0);
+        TEST_PASS_MESSAGE("IPv4 multicast socket creation failed as expected (permissions, etc.)");
     }
 }
 
@@ -50,10 +50,10 @@ void test_create_multicast_socket_ipv6_success(void) {
     if (sockfd >= 0) {
         // Success case - close the socket
         close(sockfd);
-        TEST_ASSERT_TRUE(sockfd >= 0);
+        TEST_PASS_MESSAGE("IPv6 multicast socket created successfully");
     } else {
         // Expected failure case (permissions, etc.) - just verify it doesn't crash
-        TEST_ASSERT_TRUE(sockfd < 0);
+        TEST_PASS_MESSAGE("IPv6 multicast socket creation failed as expected (permissions, etc.)");
     }
 }
 

@@ -182,7 +182,7 @@ void database_queue_manage_child_queues(DatabaseQueue* lead_queue) {
                 }
             }
             // Scale down: if all queues of this type are empty
-            else if (queue_depth == 0) {
+            else {
                 // Count empty queues of this type
                 int empty_count = 0;
                 int total_count = 0;

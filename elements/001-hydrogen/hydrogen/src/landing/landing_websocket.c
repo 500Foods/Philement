@@ -78,8 +78,6 @@ int land_websocket_subsystem(void) {
     log_this(SR_WEBSOCKET, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_WEBSOCKET, "LANDING: LOGGING", LOG_LEVEL_STATE, 0);
 
-    bool success = true;
-    
     // Step 1: Stop the WebSocket server (handles thread shutdown and connection termination)
     log_this(SR_WEBSOCKET, "Stopping WebSocket server", LOG_LEVEL_STATE, 0);
     stop_websocket_server();
@@ -95,5 +93,5 @@ int land_websocket_subsystem(void) {
     
     log_this(SR_WEBSOCKET, "WebSocket shutdown complete", LOG_LEVEL_STATE, 0);
     
-    return success ? 1 : 0;  // Return 1 for success, 0 for failure
+    return 1;  // Always successful
 }

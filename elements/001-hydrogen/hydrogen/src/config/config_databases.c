@@ -337,7 +337,8 @@ bool load_database_config(json_t* root, AppConfig* config) {
         int db_index = 0;
 
         json_object_foreach(connections_obj, key, value) {
-            if (db_index >= 5) break;  // Safety limit
+            // cppcheck-suppress[knownConditionTrueFalse] - cppcheck incorrectly assumes db_index never exceeds 4, but it does when there are more than 5 connections
+            if (db_index > 4) break;  // Safety limit
 
             DatabaseConnection* conn = &db_config->connections[db_index];
             memset(conn, 0, sizeof(DatabaseConnection));
@@ -360,7 +361,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 snprintf(engine_path, sizeof(engine_path), "Databases.Connections.%s.Engine", key);
                 snprintf(type_path, sizeof(type_path), "Databases.Connections.%s.Type", key);
                 success = success && (PROCESS_STRING(root, conn, type, engine_path, "Databases") ||
-                                     PROCESS_STRING(root, conn, type, type_path, "Databases"));
+                                      PROCESS_STRING(root, conn, type, type_path, "Databases"));
 
                 // Process other database fields
                 snprintf(path, sizeof(path), "Databases.Connections.%s.Database", key);
@@ -377,10 +378,9 @@ bool load_database_config(json_t* root, AppConfig* config) {
 
                 snprintf(path, sizeof(path), "Databases.Connections.%s.Pass", key);
                 success = success && PROCESS_SENSITIVE(root, conn, pass, path, "Databases");
-
-
-                db_index++;
             }
+
+            db_index++;
         }
         db_config->connection_count = db_index;
     }

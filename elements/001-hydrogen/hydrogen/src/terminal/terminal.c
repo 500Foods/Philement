@@ -404,7 +404,7 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
         strcmp(url_path + strlen(url_path) - 3, ".br") == 0) {
         char base_path[256];
         size_t path_len = strlen(url_path);
-        if (path_len > 3U && path_len - 3U < sizeof(base_path)) {
+        if (path_len - 3U < sizeof(base_path)) {
             memcpy(base_path, url_path, path_len - 3U);
             base_path[path_len - 3U] = '\0';
 

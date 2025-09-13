@@ -329,15 +329,15 @@ bool postgresql_disconnect(DatabaseHandle* connection) {
 }
 
 bool postgresql_health_check(DatabaseHandle* connection) {
-    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-
-    // Early validation logging
-    log_this(designator, "PostgreSQL health check: Starting validation", LOG_LEVEL_DEBUG, 0);
-
     if (!connection) {
+        const char* designator = SR_DATABASE;
         log_this(designator, "PostgreSQL health check: connection is NULL", LOG_LEVEL_ERROR, 0);
         return false;
     }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    // Early validation logging
+    log_this(designator, "PostgreSQL health check: Starting validation", LOG_LEVEL_DEBUG, 0);
 
     if (connection->engine_type != DB_ENGINE_POSTGRESQL) {
         log_this(designator, "PostgreSQL health check: wrong engine type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);
@@ -375,7 +375,7 @@ bool postgresql_health_check(DatabaseHandle* connection) {
 
     // Check connection status
     if (PQstatus_ptr && PQstatus_ptr(pg_conn->connection) != CONNECTION_OK) {
-        int conn_status = PQstatus_ptr ? PQstatus_ptr(pg_conn->connection) : -1;
+        int conn_status = PQstatus_ptr(pg_conn->connection);
         log_this(designator, "PostgreSQL health check: connection status is not OK: %d", LOG_LEVEL_ERROR, 1, conn_status);
         return false;
     }

@@ -53,7 +53,7 @@ char* format_number_with_commas(size_t n, char* formatted, size_t size) {
     // Add commas
     for (size_t i = 0; i < len; i++) {
         // Check buffer space (including null terminator)
-        if (j >= size - 1) {
+        if (j + 1 >= size) {
             formatted[size-1] = '\0';
             return formatted;
         }
@@ -63,7 +63,7 @@ char* format_number_with_commas(size_t n, char* formatted, size_t size) {
             formatted[j++] = ',';
 
             // Check buffer again after adding comma
-            if (j >= size - 1) {
+            if (j + 1 >= size) {
                 formatted[size-1] = '\0';
                 return formatted;
             }
@@ -85,17 +85,13 @@ char* format_number_with_commas(size_t n, char* formatted, size_t size) {
 char* format_double_with_commas(double value, int decimals, char* formatted, size_t size) {
     if (!formatted || size < 2) return NULL;
 
-    // Handle negative numbers
-    bool is_negative = value < 0;
-    double abs_value = is_negative ? -value : value;
-
     // Format the number with specified decimal places
     char temp[64];
     if (decimals >= 0) {
-        snprintf(temp, sizeof(temp), "%.*f", decimals, abs_value);
+        snprintf(temp, sizeof(temp), "%.*f", decimals, value);
     } else {
         // No decimal formatting - convert to integer-like string
-        snprintf(temp, sizeof(temp), "%.0f", abs_value);
+        snprintf(temp, sizeof(temp), "%.0f", value);
     }
 
     // Find decimal point position
@@ -105,19 +101,10 @@ char* format_double_with_commas(double value, int decimals, char* formatted, siz
     size_t integer_part_len = decimal_point ? (size_t)(decimal_point - temp) : strlen(temp);
     size_t j = 0;
 
-    // Handle negative sign
-    if (is_negative) {
-        if (j >= size - 1) {
-            formatted[size-1] = '\0';
-            return formatted;
-        }
-        formatted[j++] = '-';
-    }
-
     // Process integer part with commas
     for (size_t i = 0; i < integer_part_len; i++) {
         // Check buffer space
-        if (j >= size - 1) {
+        if (j + 1 >= size) {
             formatted[size-1] = '\0';
             return formatted;
         }
@@ -127,7 +114,7 @@ char* format_double_with_commas(double value, int decimals, char* formatted, siz
             formatted[j++] = ',';
 
             // Check buffer again after adding comma
-            if (j >= size - 1) {
+            if (j + 1 >= size) {
                 formatted[size-1] = '\0';
                 return formatted;
             }

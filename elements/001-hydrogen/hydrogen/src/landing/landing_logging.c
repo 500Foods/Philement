@@ -83,7 +83,7 @@ LaunchReadiness check_logging_landing_readiness(void) {
     }
     
     // Final decision
-    if (threads_ready && others_complete) {
+    if (threads_ready) {
         readiness.ready = true;
         readiness.messages[2] = strdup("  Go:      All other subsystems inactive");
         readiness.messages[3] = strdup("  Go:      Ready for final cleanup");

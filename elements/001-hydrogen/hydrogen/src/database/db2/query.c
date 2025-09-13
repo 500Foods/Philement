@@ -21,14 +21,14 @@ extern SQLFreeStmt_t SQLFreeStmt_ptr;
 
 // Query Execution Functions
 bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result) {
-    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-
-    log_this(designator, "db2_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_DEBUG, 3, (void*)connection, (void*)request, (void*)result);
-
     if (!connection || !request || !result || connection->engine_type != DB_ENGINE_DB2) {
+        const char* designator = connection ? (connection->designator ? connection->designator : SR_DATABASE) : SR_DATABASE;
         log_this(designator, "DB2 execute_query: Invalid parameters", LOG_LEVEL_ERROR, 0);
         return false;
     }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(designator, "db2_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_DEBUG, 3, (void*)connection, (void*)request, (void*)result);
 
     log_this(designator, "db2_execute_query: Parameters validated, proceeding", LOG_LEVEL_DEBUG, 0);
 
@@ -95,11 +95,11 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
 }
 
 bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
-    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-
     if (!connection || !stmt || !request || !result || connection->engine_type != DB_ENGINE_DB2) {
         return false;
     }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
 
     const DB2Connection* db2_conn = (const DB2Connection*)connection->connection_handle;
     if (!db2_conn || !db2_conn->connection) {

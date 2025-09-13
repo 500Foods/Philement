@@ -122,9 +122,9 @@ void test_is_library_available_null_name(void) {
 void test_is_library_available_empty_name(void) {
     // Test with empty name - actual behavior depends on dlopen implementation
     bool result = is_library_available("");
-    // The function should return a valid boolean value (true or false)
-    // We don't care which, just that it doesn't crash and returns a boolean
-    TEST_ASSERT_TRUE((result == true) || (result == false));
+    // Test that function doesn't crash and returns consistent results
+    bool repeated_result = is_library_available("");
+    TEST_ASSERT_EQUAL(result, repeated_result);
 }
 
 void test_is_library_available_nonexistent_library(void) {
@@ -137,8 +137,9 @@ void test_is_library_available_standard_library(void) {
     // Test with standard C library - should return true (usually available)
     bool result = is_library_available("libc.so.6");
     // Note: This might fail in some environments, but libc should be available
-    // We're mainly testing that the function doesn't crash
-    TEST_ASSERT_TRUE((result == true) || (result == false));  // Just ensure it returns a boolean
+    // We're mainly testing that the function doesn't crash and is consistent
+    bool repeated_result = is_library_available("libc.so.6");
+    TEST_ASSERT_EQUAL(result, repeated_result);
 }
 
 //=============================================================================
