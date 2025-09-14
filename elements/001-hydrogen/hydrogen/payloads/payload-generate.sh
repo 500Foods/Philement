@@ -21,9 +21,23 @@
 # 1.1.0 - Added RSA+AES hybrid encryption support
 # 1.0.0 - Initial release with basic payload generation
 
+set -e
+
 # Display script information
 echo "payload-generate.sh version 2.2.0"
 echo "Encrypted Payload Generator for Hydrogen"
+
+# Helium project Migrations to include (same as test_31_migrations.sh)
+DESIGNS=("helium" "acuranzo")
+HELIUM_DIR="../../../../elements/002-helium"
+
+# Path configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+readonly SWAGGERUI_DIR="${SCRIPT_DIR}/swaggerui"
+readonly XTERMJS_DIR="${SCRIPT_DIR}/xtermjs"
+readonly TAR_FILE="${SCRIPT_DIR}/payload.tar"
+readonly COMPRESSED_TAR_FILE="${SCRIPT_DIR}/payload.tar.br.enc"
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
 FIND=$(command -v gfind 2>/dev/null || command -v find)
@@ -68,17 +82,6 @@ convert_to_relative_path() {
         echo "${relative_path}"
     fi
 }
-
-# Set script to exit on any error
-set -e
-
-# Path configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly SCRIPT_DIR
-readonly SWAGGERUI_DIR="${SCRIPT_DIR}/swaggerui"
-readonly XTERMJS_DIR="${SCRIPT_DIR}/xtermjs"
-readonly TAR_FILE="${SCRIPT_DIR}/payload.tar"
-readonly COMPRESSED_TAR_FILE="${SCRIPT_DIR}/payload.tar.br.enc"
 
 # Create temporary directory
 TEMP_DIR=$(mktemp -d)
@@ -258,6 +261,52 @@ generate_terminal_payload() {
     fi
 
     echo -e "${GREEN}${PASS} Terminal payload generated successfully.${NC}"
+}
+
+# Function to copy migration files into payload
+copy_migration_files() {
+    print_header "Copying Migration Files"
+
+    echo -e "${CYAN}${INFO} Copying database migration files...${NC}"
+
+    # Process each design
+    for design in "${DESIGNS[@]}"; do
+        echo -e "${CYAN}${INFO} Processing design: ${design}${NC}"
+
+        # Create design directory in swaggerui
+        local design_dir="${SWAGGERUI_DIR}/${design}"
+        mkdir -p "${design_dir}"
+
+        # Copy database.lua for this design
+        local source_db="${HELIUM_DIR}/${design}/database.lua"
+        if [[ -f "${source_db}" ]]; then
+            cp "${source_db}" "${design_dir}/"
+            echo -e "${GREEN}${PASS} Copied ${design}/database.lua${NC}"
+        else
+            echo -e "${YELLOW}${WARN} Warning: ${source_db} not found${NC}"
+        fi
+
+        # Copy all migration files for this design
+        local migration_count=0
+        local migration_files=()
+        while IFS= read -r -d '' file; do
+            migration_files+=("${file}")
+        done < <("${FIND}" "${HELIUM_DIR}/${design}" -name "${design}_????.lua" -type f -print0 2>/dev/null || true)
+
+        for migration_file in "${migration_files[@]}"; do
+            if [[ -f "${migration_file}" ]]; then
+                local filename
+                filename=$(basename "${migration_file}")
+                cp "${migration_file}" "${design_dir}/"
+                echo -e "${GREEN}${PASS} Copied ${design}/${filename}${NC}"
+                migration_count=$(( migration_count + 1 ))
+            fi
+        done
+
+        echo -e "${CYAN}${INFO} Copied ${migration_count} migration files for ${design}${NC}"
+    done
+
+    echo -e "${GREEN}${PASS} Migration files copied successfully.${NC}"
 }
 
 # Function to download and extract SwaggerUI
@@ -508,6 +557,22 @@ create_tarball() {
         )
     fi
 
+    # Add migration files for each design
+    for design in "${DESIGNS[@]}"; do
+        if [[ -d "${SWAGGERUI_DIR}/${design}" ]]; then
+            # Add database.lua
+            if [[ -f "${SWAGGERUI_DIR}/${design}/database.lua" ]]; then
+                TAR_FILES+=("${design}/database.lua")
+            fi
+
+            # Add all migration files
+            while IFS= read -r -d '' migration_file; do
+                local rel_path="${migration_file#"${SWAGGERUI_DIR}"/}"
+                TAR_FILES+=("${rel_path}")
+            done < <("${FIND}" "${SWAGGERUI_DIR}/${design}" -name "${design}_????.lua" -type f -print0 2>/dev/null || true)
+        fi
+    done
+
     cd "${SWAGGERUI_DIR}" && "${TAR}" --mode=0000 --owner=0 --group=0 -cf "${TAR_FILE}" "${TAR_FILES[@]}"
 
     # Compress the tar file with Brotli using explicit settings
@@ -727,6 +792,7 @@ main() {
     print_header "Payload Generation Process"
     download_swaggerui
     generate_terminal_payload
+    copy_migration_files
     compress_static_assets
     create_tarball
 

@@ -74,6 +74,11 @@ struct DatabaseQueue {
     // Flags
     volatile bool shutdown_requested;
     volatile bool is_connected;
+    volatile bool bootstrap_completed;  // True when bootstrap query has completed (Lead queues only)
+
+    // Bootstrap completion synchronization (Lead queues only)
+    pthread_mutex_t bootstrap_lock;
+    pthread_cond_t bootstrap_cond;
 };
 
 // Database queue manager that coordinates multiple databases
