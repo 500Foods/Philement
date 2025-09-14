@@ -20,14 +20,17 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
         return false;
     }
 
-    pthread_mutex_lock(&lead_queue->children_lock);
+    MutexResult lock_result = MUTEX_LOCK(&lead_queue->children_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return false;
+    }
 
     // Check if we already have a child queue of this type
     for (int i = 0; i < lead_queue->child_queue_count; i++) {
         if (lead_queue->child_queues[i] &&
             lead_queue->child_queues[i]->queue_type &&
             strcmp(lead_queue->child_queues[i]->queue_type, queue_type) == 0) {
-            pthread_mutex_unlock(&lead_queue->children_lock);
+            mutex_unlock(&lead_queue->children_lock);
             // log_this(SR_DATABASE, "Child queue %s already exists for database %s", LOG_LEVEL_DEBUG, 2 queue_type, lead_queue->database_name);
             return true; // Already exists
         }
@@ -35,7 +38,7 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
 
     // Check if we have space for more child queues
     if (lead_queue->child_queue_count >= lead_queue->max_child_queues) {
-        pthread_mutex_unlock(&lead_queue->children_lock);
+        mutex_unlock(&lead_queue->children_lock);
         // log_this(SR_DATABASE, "Cannot spawn %s queue: maximum child queues reached for %s", LOG_LEVEL_ERROR, 2 queue_type, lead_queue->database_name);
         return false;
     }
@@ -48,7 +51,7 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
     );
 
     if (!child_queue) {
-        pthread_mutex_unlock(&lead_queue->children_lock);
+        mutex_unlock(&lead_queue->children_lock);
         char* dqm_label = database_queue_generate_label(lead_queue);
         log_this(dqm_label, "Failed to create child queue", LOG_LEVEL_ERROR, 0);
         free(dqm_label);
@@ -73,7 +76,7 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
 
     // Start the worker thread for the child queue
     if (!database_queue_start_worker(child_queue)) {
-        pthread_mutex_unlock(&lead_queue->children_lock);
+        mutex_unlock(&lead_queue->children_lock);
         database_queue_destroy(child_queue);
         char* dqm_label = database_queue_generate_label(lead_queue);
         log_this(dqm_label, "Failed to start worker for child queue", LOG_LEVEL_ERROR, 0);
@@ -96,7 +99,7 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
         database_queue_remove_tag(lead_queue, tag_to_remove);
     }
 
-    pthread_mutex_unlock(&lead_queue->children_lock);
+    mutex_unlock(&lead_queue->children_lock);
 
     char* dqm_label = database_queue_generate_label(lead_queue);
     log_this(dqm_label, "Spawned child queue", LOG_LEVEL_STATE, 0);
@@ -112,7 +115,10 @@ bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* 
         return false;
     }
 
-    pthread_mutex_lock(&lead_queue->children_lock);
+    MutexResult lock_result = MUTEX_LOCK(&lead_queue->children_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return false;
+    }
 
     // Find the child queue to shutdown
     int target_index = -1;
@@ -126,7 +132,7 @@ bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* 
     }
 
     if (target_index == -1) {
-        pthread_mutex_unlock(&lead_queue->children_lock);
+        mutex_unlock(&lead_queue->children_lock);
         // log_this(SR_DATABASE, "Child queue %s not found for database %s", LOG_LEVEL_DEBUG, 2, queue_type, lead_queue->database_name);
         return false;
     }
@@ -142,7 +148,7 @@ bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* 
     lead_queue->child_queues[lead_queue->child_queue_count - 1] = NULL;
     lead_queue->child_queue_count--;
 
-    pthread_mutex_unlock(&lead_queue->children_lock);
+    mutex_unlock(&lead_queue->children_lock);
 
     log_this(SR_DATABASE, "Shutdown %s child queue for database %s", LOG_LEVEL_STATE, 2, queue_type, lead_queue->database_name);
     return true;

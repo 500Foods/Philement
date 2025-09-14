@@ -61,13 +61,13 @@ void queue_system_init(void) {
 
 /*
  * Clean shutdown of the entire queue system
- * 
+ *
  * Why this sequence?
  * 1. Lock system first to prevent new queues
  * 2. Destroy queues in hash table order
  * 3. Release system lock last
  * 4. Clean up system mutex
- * 
+ *
  * This ensures:
  * - No memory leaks
  * - No dangling references
@@ -76,31 +76,33 @@ void queue_system_init(void) {
  */
 void queue_system_destroy(void) {
     queue_system_initialized = 0;  // Mark as not initialized
-    pthread_mutex_lock(&queue_system.mutex);
-    for (int i = 0; i < QUEUE_HASH_SIZE; i++) {
-        Queue* queue = queue_system.queues[i];
-        while (queue) {
-            Queue* next = queue->hash_next;
-            queue_system.queues[i] = next;  // Remove from hash table
-            if (queue->name) {  // Check if the queue is still valid
-                queue_destroy(queue);
+    MutexResult lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
+    if (lock_result == MUTEX_SUCCESS) {
+        for (int i = 0; i < QUEUE_HASH_SIZE; i++) {
+            Queue* queue = queue_system.queues[i];
+            while (queue) {
+                Queue* next = queue->hash_next;
+                queue_system.queues[i] = next;  // Remove from hash table
+                if (queue->name) {  // Check if the queue is still valid
+                    queue_destroy(queue);
+                }
+                queue = next;
             }
-            queue = next;
         }
+        mutex_unlock(&queue_system.mutex);
+        pthread_mutex_destroy(&queue_system.mutex);
     }
-    pthread_mutex_unlock(&queue_system.mutex);
-    pthread_mutex_destroy(&queue_system.mutex);
 }
 
 /*
  * Locate a queue by name with O(1) average complexity
- * 
+ *
  * Why hash-based lookup?
  * - Constant time access critical for real-time ops
  * - Hash function spreads load across buckets
  * - Chaining handles collisions gracefully
  * - System lock prevents race conditions
- * 
+ *
  * Thread Safety:
  * - System mutex protects hash table
  * - Early unlock after finding queue
@@ -108,16 +110,18 @@ void queue_system_destroy(void) {
  */
 Queue* queue_find(const char* name) {
     unsigned int index = hash(name);
-    pthread_mutex_lock(&queue_system.mutex);
-    Queue* queue = queue_system.queues[index];
-    while (queue) {
-        if (strcmp(queue->name, name) == 0) {
-            pthread_mutex_unlock(&queue_system.mutex);
-            return queue;
+    MutexResult lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
+    if (lock_result == MUTEX_SUCCESS) {
+        Queue* queue = queue_system.queues[index];
+        while (queue) {
+            if (strcmp(queue->name, name) == 0) {
+                mutex_unlock(&queue_system.mutex);
+                return queue;
+            }
+            queue = queue->hash_next;
         }
-        queue = queue->hash_next;
+        mutex_unlock(&queue_system.mutex);
     }
-    pthread_mutex_unlock(&queue_system.mutex);
     return NULL;
 }
 
@@ -185,14 +189,24 @@ Queue* queue_create(const char* name, const QueueAttributes* attrs) {
 
     // Add the queue to the hash table
     unsigned int index = hash(name);
-    pthread_mutex_lock(&queue_system.mutex);
-    queue->hash_next = queue_system.queues[index];
-    queue_system.queues[index] = queue;
-    pthread_mutex_unlock(&queue_system.mutex);
+    MutexResult hash_lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
+    if (hash_lock_result == MUTEX_SUCCESS) {
+        queue->hash_next = queue_system.queues[index];
+        queue_system.queues[index] = queue;
+        mutex_unlock(&queue_system.mutex);
+    } else {
+        // Failed to add to hash table, clean up
+        pthread_cond_destroy(&queue->not_full);
+        pthread_cond_destroy(&queue->not_empty);
+        pthread_mutex_destroy(&queue->mutex);
+        free(queue->name);
+        free(queue);
+        return NULL;
+    }
 
     // During early initialization (SystemLog queue creation), logging system isn't ready
     // For all other queues, use the normal logging system
-    // Temporarily disabled logging to debug segfault
+    // Temporarily disabled logging to prevent circular dependency with mutex wrapper
     /*
     if (strcmp(name, "SystemLog") != 0) {
         log_this(SR_QUEUES, "New queue created: %s", LOG_LEVEL_STATE, 1, name);
@@ -207,16 +221,17 @@ void queue_destroy(Queue* queue) {
         return;
     }
 
-    pthread_mutex_lock(&queue->mutex);
+    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (lock_result == MUTEX_SUCCESS) {
+        while (queue->head != NULL) {
+            QueueElement* temp = queue->head;
+            queue->head = queue->head->next;
+            free(temp->data);
+            free(temp);
+        }
 
-    while (queue->head != NULL) {
-        QueueElement* temp = queue->head;
-        queue->head = queue->head->next;
-        free(temp->data);
-        free(temp);
+        mutex_unlock(&queue->mutex);
     }
-
-    pthread_mutex_unlock(&queue->mutex);
     pthread_mutex_destroy(&queue->mutex);
     pthread_cond_destroy(&queue->not_empty);
     pthread_cond_destroy(&queue->not_full);
@@ -260,19 +275,25 @@ bool queue_enqueue(Queue* queue, const char* data, size_t size, int priority) {
     clock_gettime(CLOCK_REALTIME, &new_element->timestamp);
     new_element->next = NULL;
 
-    pthread_mutex_lock(&queue->mutex);
+    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (lock_result == MUTEX_SUCCESS) {
+        if (queue->tail) {
+            queue->tail->next = new_element;
+        } else {
+            queue->head = new_element;
+        }
+        queue->tail = new_element;
+        queue->size++;
+        queue->memory_used += size;
 
-    if (queue->tail) {
-        queue->tail->next = new_element;
+        pthread_cond_signal(&queue->not_empty);
+        mutex_unlock(&queue->mutex);
     } else {
-        queue->head = new_element;
+        // Failed to lock, clean up
+        free(new_element->data);
+        free(new_element);
+        return false;
     }
-    queue->tail = new_element;
-    queue->size++;
-    queue->memory_used += size;
-
-    pthread_cond_signal(&queue->not_empty);
-    pthread_mutex_unlock(&queue->mutex);
 
     return true;
 } 
@@ -294,7 +315,10 @@ char* queue_dequeue(Queue* queue, size_t* size, int* priority) {
         return NULL;
     }
 
-    pthread_mutex_lock(&queue->mutex);
+    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (lock_result != MUTEX_SUCCESS) {
+        return NULL;
+    }
 
     while (queue->size == 0) {
         pthread_cond_wait(&queue->not_empty, &queue->mutex);
@@ -309,7 +333,7 @@ char* queue_dequeue(Queue* queue, size_t* size, int* priority) {
     queue->memory_used -= element->size;
 
     pthread_cond_signal(&queue->not_full);
-    pthread_mutex_unlock(&queue->mutex);
+    mutex_unlock(&queue->mutex);
 
     char* data = element->data;
     *size = element->size;
@@ -322,13 +346,13 @@ char* queue_dequeue(Queue* queue, size_t* size, int* priority) {
 
 /*
  * Get current queue size with minimal locking
- * 
+ *
  * Why this design?
  * - Short critical section
  * - Atomic size counter
  * - No element traversal
  * - Safe concurrent access
- * 
+ *
  * Returns 0 for invalid queues to prevent crashes
  */
 size_t queue_size(Queue* queue) {
@@ -336,9 +360,12 @@ size_t queue_size(Queue* queue) {
         return 0;
     }
 
-    pthread_mutex_lock(&queue->mutex);
-    size_t size = queue->size;
-    pthread_mutex_unlock(&queue->mutex);
+    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    size_t size = 0;
+    if (lock_result == MUTEX_SUCCESS) {
+        size = queue->size;
+        mutex_unlock(&queue->mutex);
+    }
 
     return size;
 }
@@ -346,13 +373,13 @@ size_t queue_size(Queue* queue) {
 
 /*
  * Track memory usage for resource management
- * 
+ *
  * Why track memory?
  * - Detect memory leaks
  * - Prevent exhaustion
  * - Monitor queue health
  * - Guide cleanup decisions
- * 
+ *
  * Uses atomic counter for accuracy
  */
 size_t queue_memory_usage(Queue* queue) {
@@ -360,22 +387,25 @@ size_t queue_memory_usage(Queue* queue) {
         return 0;
     }
 
-    pthread_mutex_lock(&queue->mutex);
-    size_t memory_used = queue->memory_used;
-    pthread_mutex_unlock(&queue->mutex);
+    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    size_t memory_used = 0;
+    if (lock_result == MUTEX_SUCCESS) {
+        memory_used = queue->memory_used;
+        mutex_unlock(&queue->mutex);
+    }
 
     return memory_used;
 }
 
 /*
  * Calculate age of oldest message for queue health
- * 
+ *
  * Why track message age?
  * - Detect stalled messages
  * - Guide priority boosting
  * - Monitor processing delays
  * - Support timeout policies
- * 
+ *
  * Uses monotonic clock for reliability
  */
 long queue_oldest_element_age(Queue* queue) {
@@ -383,10 +413,13 @@ long queue_oldest_element_age(Queue* queue) {
         return 0;
     }
 
-    pthread_mutex_lock(&queue->mutex);
+    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (lock_result != MUTEX_SUCCESS) {
+        return 0;
+    }
 
     if (queue->size == 0) {
-        pthread_mutex_unlock(&queue->mutex);
+        mutex_unlock(&queue->mutex);
         return 0;
     }
 
@@ -396,7 +429,7 @@ long queue_oldest_element_age(Queue* queue) {
     long age_ms = (now.tv_sec - queue->head->timestamp.tv_sec) * 1000 +
                   (now.tv_nsec - queue->head->timestamp.tv_nsec) / 1000000;
 
-    pthread_mutex_unlock(&queue->mutex);
+    mutex_unlock(&queue->mutex);
 
     return age_ms;
 }
@@ -406,10 +439,13 @@ long queue_youngest_element_age(Queue* queue) {
         return 0;
     }
 
-    pthread_mutex_lock(&queue->mutex);
+    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (lock_result != MUTEX_SUCCESS) {
+        return 0;
+    }
 
     if (queue->size == 0) {
-        pthread_mutex_unlock(&queue->mutex);
+        mutex_unlock(&queue->mutex);
         return 0;
     }
 
@@ -419,20 +455,20 @@ long queue_youngest_element_age(Queue* queue) {
     long age_ms = (now.tv_sec - queue->tail->timestamp.tv_sec) * 1000 +
                   (now.tv_nsec - queue->tail->timestamp.tv_nsec) / 1000000;
 
-    pthread_mutex_unlock(&queue->mutex);
+    mutex_unlock(&queue->mutex);
 
     return age_ms;
 }
 
 /*
  * Remove all messages from queue immediately
- * 
+ *
  * Why needed?
  * - Emergency cleanup
  * - System reset
  * - Memory pressure relief
  * - Queue recycling
- * 
+ *
  * Implementation:
  * - Single-pass cleanup
  * - Proper memory deallocation
@@ -442,15 +478,17 @@ long queue_youngest_element_age(Queue* queue) {
 void queue_clear(Queue* queue) {
     if (!queue) return;
 
-    pthread_mutex_lock(&queue->mutex);
-    while (queue->head) {
-        QueueElement* temp = queue->head;
-        queue->head = queue->head->next;
-        free(temp->data);
-        free(temp);
+    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (lock_result == MUTEX_SUCCESS) {
+        while (queue->head) {
+            QueueElement* temp = queue->head;
+            queue->head = queue->head->next;
+            free(temp->data);
+            free(temp);
+        }
+        queue->tail = NULL;
+        queue->size = 0;
+        queue->memory_used = 0;
+        mutex_unlock(&queue->mutex);
     }
-    queue->tail = NULL;
-    queue->size = 0;
-    queue->memory_used = 0;
-    pthread_mutex_unlock(&queue->mutex);
 }

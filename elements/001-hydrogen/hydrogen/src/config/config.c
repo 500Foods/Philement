@@ -174,7 +174,7 @@ AppConfig* load_config(const char* cmdline_path) {
     // If no config file was found, log the checked locations
     if (!root) {
         log_this(SR_CONFIG, "― No configuration file found, using defaults", LOG_LEVEL_ALERT, 0);
-        log_this(SR_CONFIG, "― Checked locations:", LOG_LEVEL_STATE,4,3,2,1,0);
+        log_this(SR_CONFIG, "― Checked locations:", LOG_LEVEL_STATE, 0);
         if (env_path) {
             log_this(SR_CONFIG, "――― $HYDROGEN_CONFIG: %s", LOG_LEVEL_STATE, 1, env_path);
         }

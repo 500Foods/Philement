@@ -40,6 +40,7 @@ typedef struct {
     pthread_t thread_id;
     time_t attempt_start;
     bool is_write_lock;         // For future rwlock support
+    pthread_mutex_t* mutex_ptr; // Pointer to the actual mutex for unlock tracking
 } MutexLockAttempt;
 
 // Core mutex functions with timeout and identification
@@ -69,8 +70,16 @@ MutexResult mutex_try_lock(
     mutex_try_lock(mutex_ptr, \
         &(MutexId){#mutex_ptr, subsystem, __func__, __FILE__, __LINE__})
 
+// Convenience macro for unlock with logging
+#define MUTEX_UNLOCK(mutex_ptr, subsystem) \
+    mutex_unlock_with_id(mutex_ptr, \
+        &(MutexId){#mutex_ptr, subsystem, __func__, __FILE__, __LINE__})
+
 // Unlock with error checking
 MutexResult mutex_unlock(pthread_mutex_t* mutex);
+
+// Unlock with identification for logging
+MutexResult mutex_unlock_with_id(pthread_mutex_t* mutex, MutexId* id);
 
 // Deadlock detection and monitoring
 void mutex_enable_deadlock_detection(bool enable);

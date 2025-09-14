@@ -131,7 +131,7 @@ run_upload_test_parallel() {
 
                                 # Extract upload completion info from server logs
                                 local upload_info
-                                upload_info=$("${GREP}" -A 5 "File upload completed:" "${log_file}" 2>/dev/null || true)
+                                upload_info=$("${GREP}" -v "\[ TRACE \]" "${log_file}" | "${GREP}" -A 5 "File upload completed:" 2>/dev/null || true)
                                 if [[ -n "${upload_info}" ]]; then
                                     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - SUCCESS"
                                     print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${upload_info}"
@@ -155,7 +155,7 @@ run_upload_test_parallel() {
 
                             # Extract rejection info from server logs
                             local reject_info
-                            reject_info=$("${GREP}" -B 2 -A 2 "File upload exceeds maximum allowed size" "${log_file}" 2>/dev/null || true)
+                            reject_info=$("${GREP}" -v "\[ TRACE \]" "${log_file}" | "${GREP}" -B 2 -A 2 "File upload exceeds maximum allowed size" 2>/dev/null || true)
                             if [[ -n "${reject_info}" ]]; then
                                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - Correctly rejected"
                                 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${reject_info}"
@@ -193,7 +193,7 @@ run_upload_test_parallel() {
 
                         # Extract method not allowed info from server logs if available
                         local method_info
-                        method_info=$("${GREP}" -B 2 -A 2 "Method not allowed" "${log_file}" 2>/dev/null || true)
+                        method_info=$("${GREP}" -v "\[ TRACE \]" "${log_file}" | "${GREP}" -B 2 -A 2 "Method not allowed" 2>/dev/null || true)
                         if [[ -n "${method_info}" ]]; then
                             print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${method_info}"
                         fi
@@ -228,7 +228,7 @@ run_upload_test_parallel() {
 
                         # Extract upload completion info from server logs
                         local upload_info
-                        upload_info=$("${GREP}" -A 5 "File upload completed:" "${log_file}" 2>/dev/null || true)
+                        upload_info=$("${GREP}" -v "\[ TRACE \]" "${log_file}" | "${GREP}" -A 5 "File upload completed:" 2>/dev/null || true)
                         if [[ -n "${upload_info}" ]]; then
                             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - SUCCESS"
                             print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${upload_info}"
@@ -240,7 +240,7 @@ run_upload_test_parallel() {
 
                                 # Extract beryllium results
                                 local beryllium_info
-                                beryllium_info=$("${GREP}" -A 3 "Beryllium analysis" "${log_file}" 2>/dev/null || true)
+                                beryllium_info=$("${GREP}" -v "\[ TRACE \]" "${log_file}" | "${GREP}" -A 3 "Beryllium analysis" 2>/dev/null || true)
                                 if [[ -n "${beryllium_info}" ]]; then
                                     print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${beryllium_info}"
                                 fi
@@ -263,7 +263,7 @@ run_upload_test_parallel() {
 
                         # Extract rejection info from server logs
                         local reject_info
-                        reject_info=$("${GREP}" -B 2 -A 2 "File upload exceeds maximum allowed size" "${log_file}" 2>/dev/null || true)
+                        reject_info=$("${GREP}" -v "\[ TRACE \]" "${log_file}" | "${GREP}" -B 2 -A 2 "File upload exceeds maximum allowed size" 2>/dev/null || true)
                         if [[ -n "${reject_info}" ]]; then
                             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - Correctly rejected"
                             print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${reject_info}"
@@ -492,8 +492,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         if [[ -f "${log_file}" ]]; then
             # Extract the full server runtime log section (from 2 lines after "Press Ctrl+C to exit (SIGINT)" to 1 line before "SIGINT received")
             full_log_section=$("${GREP}" -A 10000 "Press Ctrl+C to exit (SIGINT)" "${log_file}" 2>/dev/null | tail -n +2 | "${GREP}" -B 10000 -A 3 "SIGINT received" | head -n -1 2>/dev/null || true)
+            # Filter out low-level TRACE lines from the displayed log
+            full_log_section=$(echo "${full_log_section}" | "${GREP}" -v "\[ TRACE \]" || true)
             if [[ -n "${full_log_section}" ]]; then
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Server Log: ..${log_file}" 
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Server Log: ..${log_file}"
                 # Process each line following Test 15 pattern for consistent log formatting
                 while IFS= read -r line; do
                     output_line=$([[ "${line}" == \[* ]] && echo "${line:39}" || echo "${line}")

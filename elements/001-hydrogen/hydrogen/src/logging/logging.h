@@ -65,4 +65,12 @@ char* log_get_messages(const char* subsystem);
  */
 char* log_get_last_n(size_t count);
 
+/*
+ * Check if the current thread is currently in a logging operation
+ * This is used to prevent circular dependencies between logging and mutex operations
+ *
+ * @return true if currently in a logging operation, false otherwise
+ */
+bool log_is_in_logging_operation(void);
+
 #endif // LOGGING_H

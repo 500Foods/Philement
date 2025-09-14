@@ -25,7 +25,7 @@ static bool engine_system_initialized = false;
  */
 
 bool database_engine_init(void) {
-    log_this(SR_DATABASE, "Starting database engine registry initialization", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Starting database engine registry initialization", LOG_LEVEL_STATE, 0);
 
     if (engine_system_initialized) {
         return true;
@@ -39,30 +39,76 @@ bool database_engine_init(void) {
     // Initialize registry to NULL
     memset(engine_registry, 0, sizeof(engine_registry));
 
-    // Register all engines
-    DatabaseEngineInterface* postgresql_engine = postgresql_get_interface();
-    if (postgresql_engine) {
-        log_this(SR_DATABASE, "Registering PostgreSQL engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
-                 postgresql_engine->name ? postgresql_engine->name : "NULL",
-                 DB_ENGINE_POSTGRESQL);
-        engine_registry[DB_ENGINE_POSTGRESQL] = postgresql_engine;
+    // Count databases by engine type to determine which engines to register
+    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0;
+
+    if (app_config && app_config->databases.connection_count > 0) {
+        for (int i = 0; i < app_config->databases.connection_count; i++) {
+            const DatabaseConnection* conn = &app_config->databases.connections[i];
+            if (conn->enabled && conn->type) {
+                const char* engine_type = conn->type;
+                if (strcmp(engine_type, "postgresql") == 0 || strcmp(engine_type, "postgres") == 0) {
+                    postgres_count++;
+                } else if (strcmp(engine_type, "mysql") == 0) {
+                    mysql_count++;
+                } else if (strcmp(engine_type, "sqlite") == 0) {
+                    sqlite_count++;
+                } else if (strcmp(engine_type, "db2") == 0) {
+                    db2_count++;
+                }
+            }
+        }
+    }
+
+    // Register only engines that are being used
+    if (postgres_count > 0) {
+        DatabaseEngineInterface* postgresql_engine = postgresql_get_interface();
+        if (postgresql_engine) {
+            log_this(SR_DATABASE, "- Registering PostgreSQL engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
+                postgresql_engine->name ? postgresql_engine->name : "NULL",
+                DB_ENGINE_POSTGRESQL);
+            engine_registry[DB_ENGINE_POSTGRESQL] = postgresql_engine;
+        } else {
+            log_this(SR_DATABASE, "CRITICAL ERROR: Failed to get PostgreSQL engine interface!", LOG_LEVEL_ERROR, 0);
+        }
     } else {
-        log_this(SR_DATABASE, "CRITICAL ERROR: Failed to get PostgreSQL engine interface!", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "- Skipping PostgreSQL engine", LOG_LEVEL_DEBUG, 0);
     }
 
-    DatabaseEngineInterface* sqlite_engine = sqlite_get_interface();
-    if (sqlite_engine) {
-        engine_registry[DB_ENGINE_SQLITE] = sqlite_engine;
+    if (sqlite_count > 0) {
+        DatabaseEngineInterface* sqlite_engine = sqlite_get_interface();
+        if (sqlite_engine) {
+            log_this(SR_DATABASE, "- Registering SQLite engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
+                sqlite_engine->name ? sqlite_engine->name : "NULL",
+                DB_ENGINE_SQLITE);
+            engine_registry[DB_ENGINE_SQLITE] = sqlite_engine;
+        }
+    } else {
+        log_this(SR_DATABASE, "- Skipping SQLite engine", LOG_LEVEL_DEBUG, 0);
     }
 
-    DatabaseEngineInterface* mysql_engine = mysql_get_interface();
-    if (mysql_engine) {
-        engine_registry[DB_ENGINE_MYSQL] = mysql_engine;
+    if (mysql_count > 0) {
+        DatabaseEngineInterface* mysql_engine = mysql_get_interface();
+        if (mysql_engine) {
+            log_this(SR_DATABASE, "- Registering MySQL engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
+                mysql_engine->name ? mysql_engine->name : "NULL",
+                DB_ENGINE_MYSQL);
+            engine_registry[DB_ENGINE_MYSQL] = mysql_engine;
+        }
+    } else {
+        log_this(SR_DATABASE, "- Skipping MySQL engine", LOG_LEVEL_DEBUG, 0);
     }
 
-    DatabaseEngineInterface* db2_engine = db2_get_interface();
-    if (db2_engine) {
-        engine_registry[DB_ENGINE_DB2] = db2_engine;
+    if (db2_count > 0) {
+        DatabaseEngineInterface* db2_engine = db2_get_interface();
+        if (db2_engine) {
+            log_this(SR_DATABASE, "- Registering DB2 engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
+                db2_engine->name ? db2_engine->name : "NULL",
+                DB_ENGINE_DB2);
+            engine_registry[DB_ENGINE_DB2] = db2_engine;
+        }
+    } else {
+        log_this(SR_DATABASE, "- Skipping DB2 engine", LOG_LEVEL_DEBUG, 0);
     }
 
     engine_system_initialized = true;
@@ -97,7 +143,7 @@ bool database_engine_register(DatabaseEngineInterface* engine) {
 
     mutex_unlock(&engine_registry_lock);
 
-    log_this(SR_DATABASE, "Database engine registered successfully", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Database engine registered successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 

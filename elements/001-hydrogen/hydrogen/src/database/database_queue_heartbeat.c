@@ -361,7 +361,8 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
     // log_this(dqm_label, "Attempting to acquire connection lock with 5 second timeout", LOG_LEVEL_DEBUG, 0);
 
     // log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK: About to lock connection mutex for bootstrap", LOG_LEVEL_DEBUG, 0);
-    if (pthread_mutex_timedlock(&db_queue->connection_lock, &timeout) == 0) {
+    MutexResult lock_result = MUTEX_LOCK(&db_queue->connection_lock, SR_DATABASE);
+    if (lock_result == MUTEX_SUCCESS) {
         // log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK_SUCCESS: Connection lock acquired successfully", LOG_LEVEL_DEBUG, 0);
 
         if (db_queue->persistent_connection) {
@@ -378,7 +379,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             if (original_engine_type != DB_ENGINE_POSTGRESQL) {
                 log_this(dqm_label, "CRITICAL ERROR: Connection engine_type corrupted! Expected 0 (PostgreSQL), got %d", LOG_LEVEL_ERROR, 1, (int)original_engine_type);
                 log_this(dqm_label, "Aborting bootstrap query to prevent hang", LOG_LEVEL_ERROR, 0);
-                pthread_mutex_unlock(&db_queue->connection_lock);
+                mutex_unlock(&db_queue->connection_lock);
                 goto cleanup;
             }
             
@@ -391,10 +392,10 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             // Validate connection integrity again right before the call
             if (db_queue->persistent_connection->engine_type != original_engine_type) {
                 log_this(dqm_label, "CRITICAL ERROR: Connection engine_type changed from %d to %d during bootstrap!", LOG_LEVEL_ERROR, 2,
-                    (int)original_engine_type, 
+                    (int)original_engine_type,
                     (int)db_queue->persistent_connection->engine_type);
                 log_this(dqm_label, "Memory corruption detected - aborting bootstrap", LOG_LEVEL_ERROR, 0);
-                pthread_mutex_unlock(&db_queue->connection_lock);
+                mutex_unlock(&db_queue->connection_lock);
                 goto cleanup;
             }
             
@@ -411,7 +412,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             
             if (!connection_to_use || (uintptr_t)connection_to_use < 0x1000) {
                 log_this(dqm_label, "CRITICAL ERROR: Connection pointer corrupted - aborting", LOG_LEVEL_ERROR, 0);
-                pthread_mutex_unlock(&db_queue->connection_lock);
+                mutex_unlock(&db_queue->connection_lock);
                 goto cleanup;
             }
             
@@ -419,7 +420,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             
             if (connection_to_use->engine_type != DB_ENGINE_POSTGRESQL) {
                 log_this(dqm_label, "CRITICAL ERROR: Connection engine_type corrupted - aborting", LOG_LEVEL_ERROR, 0);
-                pthread_mutex_unlock(&db_queue->connection_lock);
+                mutex_unlock(&db_queue->connection_lock);
                 goto cleanup;
             }
             
@@ -457,10 +458,12 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 // log_this(dqm_label, "Bootstrap query completed successfully - continuing with heartbeat", LOG_LEVEL_STATE, 0);
 
                 // Signal bootstrap completion for launch synchronization
-                pthread_mutex_lock(&db_queue->bootstrap_lock);
-                db_queue->bootstrap_completed = true;
-                pthread_cond_broadcast(&db_queue->bootstrap_cond);
-                pthread_mutex_unlock(&db_queue->bootstrap_lock);
+                MutexResult bootstrap_lock_result = MUTEX_LOCK(&db_queue->bootstrap_lock, SR_DATABASE);
+                if (bootstrap_lock_result == MUTEX_SUCCESS) {
+                    db_queue->bootstrap_completed = true;
+                    pthread_cond_broadcast(&db_queue->bootstrap_cond);
+                    mutex_unlock(&db_queue->bootstrap_lock);
+                }
             } else {
                 log_this(dqm_label, "Bootstrap query failed: success=%d, result=%p, error=%s", LOG_LEVEL_ERROR, 3,
                         query_success,
@@ -475,19 +478,23 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 }
 
                 // Signal bootstrap completion even on failure to prevent launch hang
-                pthread_mutex_lock(&db_queue->bootstrap_lock);
-                db_queue->bootstrap_completed = true;
-                pthread_cond_broadcast(&db_queue->bootstrap_cond);
-                pthread_mutex_unlock(&db_queue->bootstrap_lock);
+                MutexResult bootstrap_lock_result2 = MUTEX_LOCK(&db_queue->bootstrap_lock, SR_DATABASE);
+                if (bootstrap_lock_result2 == MUTEX_SUCCESS) {
+                    db_queue->bootstrap_completed = true;
+                    pthread_cond_broadcast(&db_queue->bootstrap_cond);
+                    mutex_unlock(&db_queue->bootstrap_lock);
+                }
             }
         } else {
             // log_this(dqm_label, "No persistent connection available for bootstrap query", LOG_LEVEL_ERROR, 0);
 
             // Signal bootstrap completion even when no connection available
-            pthread_mutex_lock(&db_queue->bootstrap_lock);
-            db_queue->bootstrap_completed = true;
-            pthread_cond_broadcast(&db_queue->bootstrap_cond);
-            pthread_mutex_unlock(&db_queue->bootstrap_lock);
+            MutexResult bootstrap_lock_result3 = MUTEX_LOCK(&db_queue->bootstrap_lock, SR_DATABASE);
+            if (bootstrap_lock_result3 == MUTEX_SUCCESS) {
+                db_queue->bootstrap_completed = true;
+                pthread_cond_broadcast(&db_queue->bootstrap_cond);
+                mutex_unlock(&db_queue->bootstrap_lock);
+            }
         }
 
         // log_this(dqm_label, "MUTEX_BOOTSTRAP_UNLOCK: About to unlock connection mutex", LOG_LEVEL_DEBUG, 0);
@@ -498,10 +505,12 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
         // log_this(dqm_label, "This indicates the connection lock is held by another thread", LOG_LEVEL_ERROR, 0);
 
         // Signal bootstrap completion on timeout to prevent launch hang
-        pthread_mutex_lock(&db_queue->bootstrap_lock);
-        db_queue->bootstrap_completed = true;
-        pthread_cond_broadcast(&db_queue->bootstrap_cond);
-        pthread_mutex_unlock(&db_queue->bootstrap_lock);
+        MutexResult bootstrap_lock_result4 = MUTEX_LOCK(&db_queue->bootstrap_lock, SR_DATABASE);
+        if (bootstrap_lock_result4 == MUTEX_SUCCESS) {
+            db_queue->bootstrap_completed = true;
+            pthread_cond_broadcast(&db_queue->bootstrap_cond);
+            mutex_unlock(&db_queue->bootstrap_lock);
+        }
     }
 
 cleanup:
