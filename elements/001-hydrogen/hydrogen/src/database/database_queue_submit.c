@@ -55,17 +55,19 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
         // Find appropriate child queue based on query type hint
         const char* target_queue_type = database_queue_type_to_string(query->queue_type_hint);
 
-        pthread_mutex_lock(&db_queue->children_lock);
+        MutexResult lock_result = MUTEX_LOCK(&db_queue->children_lock, SR_DATABASE);
         DatabaseQueue* target_child = NULL;
-        for (int i = 0; i < db_queue->child_queue_count; i++) {
-            if (db_queue->child_queues[i] &&
-                db_queue->child_queues[i]->queue_type &&
-                strcmp(db_queue->child_queues[i]->queue_type, target_queue_type) == 0) {
-                target_child = db_queue->child_queues[i];
-                break;
+        if (lock_result == MUTEX_SUCCESS) {
+            for (int i = 0; i < db_queue->child_queue_count; i++) {
+                if (db_queue->child_queues[i] &&
+                    db_queue->child_queues[i]->queue_type &&
+                    strcmp(db_queue->child_queues[i]->queue_type, target_queue_type) == 0) {
+                    target_child = db_queue->child_queues[i];
+                    break;
+                }
             }
+            mutex_unlock(&db_queue->children_lock);
         }
-        pthread_mutex_unlock(&db_queue->children_lock);
 
         if (target_child) {
             // Route to child queue

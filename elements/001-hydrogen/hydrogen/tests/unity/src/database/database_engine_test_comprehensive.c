@@ -17,6 +17,9 @@ bool mock_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stm
 char* mock_get_connection_string(const ConnectionConfig* config);
 bool mock_validate_connection_string(const char* connection_string);
 
+// Forward declarations for engine interfaces
+DatabaseEngineInterface* sqlite_get_interface(void);
+
 // Mock functions for testing
 bool mock_disconnect(DatabaseHandle* connection) {
     (void)connection;
@@ -193,7 +196,17 @@ void test_database_engine_cleanup_transaction_null(void);
 
 void setUp(void) {
     // Initialize the database engine system
+    // For testing, we need to ensure SQLite is registered since the test expects it
     database_engine_init();
+
+    // If no engines were registered (because no app config), register SQLite for testing
+    if (database_engine_get_by_name("sqlite") == NULL) {
+        // Force register SQLite engine for testing
+        DatabaseEngineInterface* sqlite_engine = sqlite_get_interface();
+        if (sqlite_engine) {
+            database_engine_register(sqlite_engine);
+        }
+    }
 
     // Initialize string fields for mock structures
     // mock_engine.name is already set at declaration

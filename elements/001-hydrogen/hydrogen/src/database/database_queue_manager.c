@@ -62,15 +62,20 @@ bool database_queue_manager_add_database(DatabaseQueueManager* manager, Database
         return false;
     }
 
-    pthread_mutex_lock(&manager->manager_lock);
+    MutexResult lock_result = MUTEX_LOCK(&manager->manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        log_this(SR_DATABASE, "Failed to lock manager mutex", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
     if (manager->database_count >= manager->max_databases) {
-        pthread_mutex_unlock(&manager->manager_lock);
+        mutex_unlock(&manager->manager_lock);
         log_this(SR_DATABASE, "Cannot add database: maximum capacity reached", LOG_LEVEL_ALERT, 0);
         return false;
     }
 
     manager->databases[manager->database_count++] = db_queue;
-    pthread_mutex_unlock(&manager->manager_lock);
+    mutex_unlock(&manager->manager_lock);
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
@@ -85,15 +90,20 @@ bool database_queue_manager_add_database(DatabaseQueueManager* manager, Database
 DatabaseQueue* database_queue_manager_get_database(DatabaseQueueManager* manager, const char* name) {
     if (!manager || !name) return NULL;
 
-    pthread_mutex_lock(&manager->manager_lock);
+    MutexResult lock_result = MUTEX_LOCK(&manager->manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        log_this(SR_DATABASE, "Failed to lock manager mutex for database lookup", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
     for (size_t i = 0; i < manager->database_count; i++) {
         if (strcmp(manager->databases[i]->database_name, name) == 0) {
             DatabaseQueue* result = manager->databases[i];
-            pthread_mutex_unlock(&manager->manager_lock);
+            mutex_unlock(&manager->manager_lock);
             return result;
         }
     }
-    pthread_mutex_unlock(&manager->manager_lock);
+    mutex_unlock(&manager->manager_lock);
 
     return NULL;
 }

@@ -157,52 +157,53 @@ void database_queue_manage_child_queues(DatabaseQueue* lead_queue) {
     // free(dqm_label);
 
     // Implement scaling logic based on queue utilization
-    pthread_mutex_lock(&lead_queue->children_lock);
+    MutexResult lock_result = MUTEX_LOCK(&lead_queue->children_lock, SR_DATABASE);
+    if (lock_result == MUTEX_SUCCESS) {
+        // Check each child queue for scaling decisions
+        for (int i = 0; i < lead_queue->child_queue_count; i++) {
+            if (lead_queue->child_queues[i]) {
+                DatabaseQueue* child = lead_queue->child_queues[i];
+                size_t queue_depth = database_queue_get_depth(child);
 
-    // Check each child queue for scaling decisions
-    for (int i = 0; i < lead_queue->child_queue_count; i++) {
-        if (lead_queue->child_queues[i]) {
-            DatabaseQueue* child = lead_queue->child_queues[i];
-            size_t queue_depth = database_queue_get_depth(child);
-
-            // Scale up: if all queues of this type are non-empty
-            if (queue_depth > 0) {
-                // Check if we can spawn another queue of this type
-                int same_type_count = 0;
-                for (int j = 0; j < lead_queue->child_queue_count; j++) {
-                    if (lead_queue->child_queues[j] &&
-                        strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
-                        same_type_count++;
-                    }
-                }
-
-                // If we have fewer than max queues of this type, consider scaling up
-                if (same_type_count < 3) {  // Configurable max per type
-                    database_queue_spawn_child_queue(lead_queue, child->queue_type);
-                }
-            }
-            // Scale down: if all queues of this type are empty
-            else {
-                // Count empty queues of this type
-                int empty_count = 0;
-                int total_count = 0;
-                for (int j = 0; j < lead_queue->child_queue_count; j++) {
-                    if (lead_queue->child_queues[j] &&
-                        strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
-                        total_count++;
-                        if (database_queue_get_depth(lead_queue->child_queues[j]) == 0) {
-                            empty_count++;
+                // Scale up: if all queues of this type are non-empty
+                if (queue_depth > 0) {
+                    // Check if we can spawn another queue of this type
+                    int same_type_count = 0;
+                    for (int j = 0; j < lead_queue->child_queue_count; j++) {
+                        if (lead_queue->child_queues[j] &&
+                            strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
+                            same_type_count++;
                         }
                     }
-                }
 
-                // If all queues of this type are empty and we have more than minimum, scale down
-                if (empty_count == total_count && total_count > 1) {  // Keep at least 1
-                    database_queue_shutdown_child_queue(lead_queue, child->queue_type);
+                    // If we have fewer than max queues of this type, consider scaling up
+                    if (same_type_count < 3) {  // Configurable max per type
+                        database_queue_spawn_child_queue(lead_queue, child->queue_type);
+                    }
+                }
+                // Scale down: if all queues of this type are empty
+                else {
+                    // Count empty queues of this type
+                    int empty_count = 0;
+                    int total_count = 0;
+                    for (int j = 0; j < lead_queue->child_queue_count; j++) {
+                        if (lead_queue->child_queues[j] &&
+                            strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
+                            total_count++;
+                            if (database_queue_get_depth(lead_queue->child_queues[j]) == 0) {
+                                empty_count++;
+                            }
+                        }
+                    }
+
+                    // If all queues of this type are empty and we have more than minimum, scale down
+                    if (empty_count == total_count && total_count > 1) {  // Keep at least 1
+                        database_queue_shutdown_child_queue(lead_queue, child->queue_type);
+                    }
                 }
             }
         }
-    }
 
-    pthread_mutex_unlock(&lead_queue->children_lock);
+        mutex_unlock(&lead_queue->children_lock);
+    }
 }

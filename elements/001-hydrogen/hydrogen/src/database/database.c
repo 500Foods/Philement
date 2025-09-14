@@ -19,7 +19,7 @@ static pthread_mutex_t database_subsystem_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Initialize the database subsystem
 bool database_subsystem_init(void) {
-    log_this(SR_DATABASE, "Starting database subsystem initialization", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Starting database subsystem initialization", LOG_LEVEL_STATE, 0);
 
     MutexResult result = MUTEX_LOCK(&database_subsystem_mutex, SR_DATABASE);
     if (result != MUTEX_SUCCESS) {
@@ -34,7 +34,7 @@ bool database_subsystem_init(void) {
     database_subsystem = calloc(1, sizeof(DatabaseSubsystem));
     if (!database_subsystem) {
         log_this(SR_DATABASE, "Failed to allocate database subsystem", LOG_LEVEL_ERROR, 0);
-        pthread_mutex_unlock(&database_subsystem_mutex);
+        mutex_unlock(&database_subsystem_mutex);
         return false;
     }
 
@@ -55,7 +55,7 @@ bool database_subsystem_init(void) {
     memset(database_subsystem->engines, 0, sizeof(database_subsystem->engines));
 
     database_subsystem->initialized = true;
-    pthread_mutex_unlock(&database_subsystem_mutex);
+    mutex_unlock(&database_subsystem_mutex);
 
     // Initialize database thread tracking
     init_service_threads(&database_threads, SR_DATABASE);
@@ -83,7 +83,7 @@ void database_subsystem_shutdown(void) {
     free(database_subsystem);
     database_subsystem = NULL;
 
-    pthread_mutex_unlock(&database_subsystem_mutex);
+    mutex_unlock(&database_subsystem_mutex);
 
     log_this(SR_DATABASE, "Database subsystem shutdown complete", LOG_LEVEL_STATE, 0);
 }

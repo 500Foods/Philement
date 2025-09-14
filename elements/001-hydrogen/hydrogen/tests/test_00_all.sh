@@ -115,7 +115,13 @@ if [[ ${#to_process[@]} -gt 0 ]]; then
             if [ -n "${version}" ]; then
                 echo "0|${cmd} @ ${cmd_path}|${version}"
             else
-                echo "0|${cmd} @ ${cmd_path}|no version found"
+                version=$("${cmd_path}" -v 2>&1 | "${GREP}" -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
+                if [ -n "${version}" ]; then
+                    echo "0|${cmd} @ ${cmd_path}|${version}"
+                else
+                    version=$(type "${cmd_path}" | head -n 1)
+                    echo "0|${cmd} @ ${cmd_path}|no version found (${version})"
+                fi
             fi
             # Cache it: path|version
             cache_file="${CACHE_CMD_DIR}/${cmd//\//_}"

@@ -75,13 +75,15 @@ size_t database_queue_get_depth(DatabaseQueue* db_queue) {
 
     // If this is a Lead queue, include child queue depths
     if (db_queue->is_lead_queue && db_queue->child_queues) {
-        pthread_mutex_lock(&db_queue->children_lock);
-        for (int i = 0; i < db_queue->child_queue_count; i++) {
-            if (db_queue->child_queues[i]) {
-                total_depth += database_queue_get_depth(db_queue->child_queues[i]);
+        MutexResult lock_result = MUTEX_LOCK(&db_queue->children_lock, SR_DATABASE);
+        if (lock_result == MUTEX_SUCCESS) {
+            for (int i = 0; i < db_queue->child_queue_count; i++) {
+                if (db_queue->child_queues[i]) {
+                    total_depth += database_queue_get_depth(db_queue->child_queues[i]);
+                }
             }
+            mutex_unlock(&db_queue->children_lock);
         }
-        pthread_mutex_unlock(&db_queue->children_lock);
     }
 
     return total_depth;

@@ -46,9 +46,9 @@ DatabaseEngineInterface* sqlite_get_interface(void) {
         return NULL;
     }
 
-    log_this(SR_DATABASE, "SQLite engine interface validated: name=%s, execute_query=%p", LOG_LEVEL_DEBUG, 2,
-        sqlite_engine_interface.name,
-        (void*)(uintptr_t)sqlite_engine_interface.execute_query);
+    // log_this(SR_DATABASE, "SQLite engine interface validated: name=%s, execute_query=%p", LOG_LEVEL_DEBUG, 2,
+    //     sqlite_engine_interface.name,
+    //     (void*)(uintptr_t)sqlite_engine_interface.execute_query);
 
     return &sqlite_engine_interface;
 }

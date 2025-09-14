@@ -47,9 +47,9 @@ DatabaseEngineInterface* postgresql_get_interface(void) {
         return NULL;
     }
 
-    log_this(SR_DATABASE, "PostgreSQL engine interface validated: name=%s, execute_query=%p", LOG_LEVEL_DEBUG, 2,
-        postgresql_engine_interface.name,
-        (void*)(uintptr_t)postgresql_engine_interface.execute_query);
+    // log_this(SR_DATABASE, "PostgreSQL engine interface validated: name=%s, execute_query=%p", LOG_LEVEL_DEBUG, 2,
+    //     postgresql_engine_interface.name,
+    //     (void*)(uintptr_t)postgresql_engine_interface.execute_query);
 
     return &postgresql_engine_interface;
 }
