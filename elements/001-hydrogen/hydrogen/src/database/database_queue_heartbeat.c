@@ -157,12 +157,6 @@ void database_queue_start_heartbeat(DatabaseQueue* db_queue) {
 
     char* dqm_label = database_queue_generate_label(db_queue);
 
-    // Log initial disconnected state
-    log_this(dqm_label, "Heartbeat monitoring started: state DISCONNECTED", LOG_LEVEL_STATE, 0);
-
-    // Attempt database connection
-    log_this(dqm_label, "Attempting database connection", LOG_LEVEL_STATE, 0);
-
     // Perform immediate connection check and log result
     bool is_connected = database_queue_check_connection(db_queue);
 
@@ -267,9 +261,9 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
     bool is_connected = false;
 
     // Use persistent connection for health check if available
-    log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK: About to lock queue connection mutex", LOG_LEVEL_DEBUG, 0);
+    // log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK: About to lock queue connection mutex", LOG_LEVEL_DEBUG, 0);
     MutexResult result = MUTEX_LOCK(&db_queue->connection_lock, SR_DATABASE);
-    log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK_RESULT: Lock result %s", LOG_LEVEL_DEBUG, 1, mutex_result_to_string(result));
+    // log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK_RESULT: Lock result %s", LOG_LEVEL_DEBUG, 1, mutex_result_to_string(result));
 
     if (result == MUTEX_SUCCESS) {
         if (db_queue->persistent_connection) {
@@ -292,9 +286,9 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
             // No persistent connection, attempt to establish one
             is_connected = database_queue_check_connection(db_queue);
         }
-        log_this(dqm_label, "MUTEX_HEARTBEAT_UNLOCK: About to unlock queue connection mutex", LOG_LEVEL_DEBUG, 0);
+        // log_this(dqm_label, "MUTEX_HEARTBEAT_UNLOCK: About to unlock queue connection mutex", LOG_LEVEL_DEBUG, 0);
         mutex_unlock(&db_queue->connection_lock);
-        log_this(dqm_label, "MUTEX_HEARTBEAT_UNLOCK: Unlock completed", LOG_LEVEL_DEBUG, 0);
+        // log_this(dqm_label, "MUTEX_HEARTBEAT_UNLOCK: Unlock completed", LOG_LEVEL_DEBUG, 0);
     } else {
         is_connected = false;
         db_queue->is_connected = false;
@@ -332,11 +326,11 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
     }
 
     char* dqm_label = database_queue_generate_label(db_queue);
-    log_this(dqm_label, "Executing bootstrap query", LOG_LEVEL_STATE, 0);
+    // log_this(dqm_label, "Executing bootstrap query", LOG_LEVEL_STATE, 0);
 
     // Use configured bootstrap query or fallback to safe default
     const char* bootstrap_query = db_queue->bootstrap_query ? db_queue->bootstrap_query : "SELECT 42 as test_value";
-    log_this(dqm_label, "Bootstrap query SQL: %s", LOG_LEVEL_DEBUG, 1, bootstrap_query);
+    // log_this(dqm_label, "Bootstrap query SQL: %s", LOG_LEVEL_DEBUG, 1, bootstrap_query);
 
     // Create query request
     QueryRequest* request = calloc(1, sizeof(QueryRequest));
@@ -349,11 +343,11 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
     request->query_id = strdup("bootstrap_query");
     request->sql_template = strdup(bootstrap_query);
     request->parameters_json = strdup("{}");
-    request->timeout_seconds = 10; // Shorter timeout for bootstrap
+    request->timeout_seconds = 5; // Shorter timeout for bootstrap
     request->isolation_level = DB_ISOLATION_READ_COMMITTED;
     request->use_prepared_statement = false;
 
-    log_this(dqm_label, "Bootstrap query request created - timeout: %d seconds", LOG_LEVEL_DEBUG, 1, request->timeout_seconds);
+    // log_this(dqm_label, "Bootstrap query request created - timeout: %d seconds", LOG_LEVEL_DEBUG, 1, request->timeout_seconds);
 
     // Execute query using persistent connection
     QueryResult* result = NULL;
@@ -364,21 +358,21 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
     clock_gettime(CLOCK_REALTIME, &timeout);
     timeout.tv_sec += 5; // 5 second timeout for the entire operation
 
-    log_this(dqm_label, "Attempting to acquire connection lock with 5 second timeout", LOG_LEVEL_DEBUG, 0);
+    // log_this(dqm_label, "Attempting to acquire connection lock with 5 second timeout", LOG_LEVEL_DEBUG, 0);
 
-    log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK: About to lock connection mutex for bootstrap", LOG_LEVEL_DEBUG, 0);
+    // log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK: About to lock connection mutex for bootstrap", LOG_LEVEL_DEBUG, 0);
     if (pthread_mutex_timedlock(&db_queue->connection_lock, &timeout) == 0) {
-        log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK_SUCCESS: Connection lock acquired successfully", LOG_LEVEL_DEBUG, 0);
+        // log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK_SUCCESS: Connection lock acquired successfully", LOG_LEVEL_DEBUG, 0);
 
         if (db_queue->persistent_connection) {
-            log_this(dqm_label, "Persistent connection available, executing query", LOG_LEVEL_DEBUG, 0);
+            // og_this(dqm_label, "Persistent connection available, executing query", LOG_LEVEL_DEBUG, 0);
 
             // Debug the connection handle before calling database_engine_execute
-            log_this(dqm_label, "Connection handle: %p", LOG_LEVEL_DEBUG, 1, (void*)db_queue->persistent_connection);
+            // log_this(dqm_label, "Connection handle: %p", LOG_LEVEL_DEBUG, 1, (void*)db_queue->persistent_connection);
             
             // CRITICAL: Validate connection integrity before use
             DatabaseEngine original_engine_type = db_queue->persistent_connection->engine_type;
-            log_this(dqm_label, "Connection engine_type: %d", LOG_LEVEL_DEBUG, 1, (int)original_engine_type);
+            // log_this(dqm_label, "Connection engine_type: %d", LOG_LEVEL_DEBUG, 1, (int)original_engine_type);
             
             // Add memory corruption detection
             if (original_engine_type != DB_ENGINE_POSTGRESQL) {
@@ -388,14 +382,10 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 goto cleanup;
             }
             
-            log_this(dqm_label, "Request: %p, query: '%s'", LOG_LEVEL_DEBUG, 2, (void*)request, request->sql_template ? request->sql_template : "NULL");
+            // log_this(dqm_label, "Request: %p, query: '%s'", LOG_LEVEL_DEBUG, 2, (void*)request, request->sql_template ? request->sql_template : "NULL");
 
-            log_this(dqm_label, "About to call database_engine_execute - this is where it might hang", LOG_LEVEL_DEBUG, 0);
+            // log_this(dqm_label, "About to call database_engine_execute - this is where it might hang", LOG_LEVEL_DEBUG, 0);
             
-            // Force log output before the hanging call
-            fflush(stdout);
-            fflush(stderr);
-
             time_t query_start_time = time(NULL);
             
             // Validate connection integrity again right before the call
@@ -409,15 +399,15 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             }
             
             // Simple direct call with extensive debugging
-            log_this(dqm_label, "BOOTSTRAP HANG DEBUG: About to call database_engine_execute", LOG_LEVEL_ERROR, 0);
-            log_this(dqm_label, "BOOTSTRAP HANG DEBUG: If you see this but not the next message, the hang is in database_engine_execute", LOG_LEVEL_ERROR, 0);
+            // log_this(dqm_label, "BOOTSTRAP HANG DEBUG: About to call database_engine_execute", LOG_LEVEL_ERROR, 0);
+            // log_this(dqm_label, "BOOTSTRAP HANG DEBUG: If you see this but not the next message, the hang is in database_engine_execute", LOG_LEVEL_ERROR, 0);
             
             // CRITICAL: Stack corruption detection
             DatabaseHandle* connection_to_use = db_queue->persistent_connection;
             
             // Simple logging without complex format strings to avoid buffer overflow
-            log_this(dqm_label, "Stack validation: connection_to_use assigned", LOG_LEVEL_ERROR, 0);
-            log_this(dqm_label, "Stack validation: checking pointer validity", LOG_LEVEL_ERROR, 0);
+            // log_this(dqm_label, "Stack validation: connection_to_use assigned", LOG_LEVEL_ERROR, 0);
+            // log_this(dqm_label, "Stack validation: checking pointer validity", LOG_LEVEL_ERROR, 0);
             
             if (!connection_to_use || (uintptr_t)connection_to_use < 0x1000) {
                 log_this(dqm_label, "CRITICAL ERROR: Connection pointer corrupted - aborting", LOG_LEVEL_ERROR, 0);
@@ -425,7 +415,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 goto cleanup;
             }
             
-            log_this(dqm_label, "Stack validation: checking engine type", LOG_LEVEL_ERROR, 0);
+            // log_this(dqm_label, "Stack validation: checking engine type", LOG_LEVEL_ERROR, 0);
             
             if (connection_to_use->engine_type != DB_ENGINE_POSTGRESQL) {
                 log_this(dqm_label, "CRITICAL ERROR: Connection engine_type corrupted - aborting", LOG_LEVEL_ERROR, 0);
@@ -433,38 +423,44 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 goto cleanup;
             }
             
-            log_this(dqm_label, "Stack validation: about to call function", LOG_LEVEL_ERROR, 0);
+            // log_this(dqm_label, "Stack validation: about to call function", LOG_LEVEL_ERROR, 0);
             
             // CRITICAL: Dump connection BEFORE the call to see if it's valid
-            debug_dump_connection("BEFORE", connection_to_use, dqm_label);
+            // debug_dump_connection("BEFORE", connection_to_use, dqm_label);
             
             // Call with minimal parameters to reduce stack corruption risk
             query_success = database_engine_execute(connection_to_use, request, &result);
             
             // CRITICAL: Dump connection AFTER the call to see what changed
-            debug_dump_connection("AFTER", connection_to_use, dqm_label);
+            // debug_dump_connection("AFTER", connection_to_use, dqm_label);
             
-            log_this(dqm_label, "BOOTSTRAP HANG DEBUG: database_engine_execute call completed", LOG_LEVEL_ERROR, 0);
+            // log_this(dqm_label, "BOOTSTRAP HANG DEBUG: database_engine_execute call completed", LOG_LEVEL_ERROR, 0);
             
             time_t query_end_time = time(NULL);
 
-            log_this(dqm_label, "Query execution completed (direct method)", LOG_LEVEL_DEBUG, 0);
+            // log_this(dqm_label, "Query execution completed (direct method)", LOG_LEVEL_DEBUG, 0);
 
             log_this(dqm_label, "Query execution completed in %ld seconds", LOG_LEVEL_DEBUG, 1, query_end_time - query_start_time);
 
             if (query_success && result && result->success) {
-                log_this(dqm_label, "Bootstrap query successful: %zu records returned", LOG_LEVEL_STATE, 1, result->row_count);
+                log_this(dqm_label, "Query result: %zu records", LOG_LEVEL_STATE, 1, result->row_count);
 
                 // Log detailed result information
                 if (result->row_count > 0 && result->column_count > 0 && result->data_json) {
-                    log_this(dqm_label, "Bootstrap query result data: %s", LOG_LEVEL_DEBUG, 1, result->data_json);
+                    // log_this(dqm_label, "Bootstrap query result data: %s", LOG_LEVEL_DEBUG, 1, result->data_json);
                 }
 
                 if (result->affected_rows > 0) {
-                    log_this(dqm_label, "Bootstrap query affected %d rows", LOG_LEVEL_DEBUG, 1, result->affected_rows);
+                    // log_this(dqm_label, "Bootstrap query affected %d rows", LOG_LEVEL_DEBUG, 1, result->affected_rows);
                 }
 
-                log_this(dqm_label, "Bootstrap query completed successfully - continuing with heartbeat", LOG_LEVEL_STATE, 0);
+                // log_this(dqm_label, "Bootstrap query completed successfully - continuing with heartbeat", LOG_LEVEL_STATE, 0);
+
+                // Signal bootstrap completion for launch synchronization
+                pthread_mutex_lock(&db_queue->bootstrap_lock);
+                db_queue->bootstrap_completed = true;
+                pthread_cond_broadcast(&db_queue->bootstrap_cond);
+                pthread_mutex_unlock(&db_queue->bootstrap_lock);
             } else {
                 log_this(dqm_label, "Bootstrap query failed: success=%d, result=%p, error=%s", LOG_LEVEL_ERROR, 3,
                         query_success,
@@ -472,22 +468,40 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                         result && result->error_message ? result->error_message : "Unknown error");
 
                 if (result) {
-                    log_this(dqm_label, "Result details: row_count=%zu, column_count=%zu, affected_rows=%d", LOG_LEVEL_DEBUG, 3,
-                            result->row_count,
-                            result->column_count,
-                            result->affected_rows);
+                    // log_this(dqm_label, "Result details: row_count=%zu, column_count=%zu, affected_rows=%d", LOG_LEVEL_DEBUG, 3,
+                    //         result->row_count,
+                    //         result->column_count,
+                    //         result->affected_rows);
                 }
+
+                // Signal bootstrap completion even on failure to prevent launch hang
+                pthread_mutex_lock(&db_queue->bootstrap_lock);
+                db_queue->bootstrap_completed = true;
+                pthread_cond_broadcast(&db_queue->bootstrap_cond);
+                pthread_mutex_unlock(&db_queue->bootstrap_lock);
             }
         } else {
-            log_this(dqm_label, "No persistent connection available for bootstrap query", LOG_LEVEL_ERROR, 0);
+            // log_this(dqm_label, "No persistent connection available for bootstrap query", LOG_LEVEL_ERROR, 0);
+
+            // Signal bootstrap completion even when no connection available
+            pthread_mutex_lock(&db_queue->bootstrap_lock);
+            db_queue->bootstrap_completed = true;
+            pthread_cond_broadcast(&db_queue->bootstrap_cond);
+            pthread_mutex_unlock(&db_queue->bootstrap_lock);
         }
 
-        log_this(dqm_label, "MUTEX_BOOTSTRAP_UNLOCK: About to unlock connection mutex", LOG_LEVEL_DEBUG, 0);
+        // log_this(dqm_label, "MUTEX_BOOTSTRAP_UNLOCK: About to unlock connection mutex", LOG_LEVEL_DEBUG, 0);
         mutex_unlock(&db_queue->connection_lock);
-        log_this(dqm_label, "MUTEX_BOOTSTRAP_UNLOCK_SUCCESS: Connection mutex unlocked", LOG_LEVEL_DEBUG, 0);
+        // log_this(dqm_label, "MUTEX_BOOTSTRAP_UNLOCK_SUCCESS: Connection mutex unlocked", LOG_LEVEL_DEBUG, 0);
     } else {
         log_this(dqm_label, "Timeout waiting for connection lock in bootstrap query (5 seconds)", LOG_LEVEL_ERROR, 0);
-        log_this(dqm_label, "This indicates the connection lock is held by another thread", LOG_LEVEL_ERROR, 0);
+        // log_this(dqm_label, "This indicates the connection lock is held by another thread", LOG_LEVEL_ERROR, 0);
+
+        // Signal bootstrap completion on timeout to prevent launch hang
+        pthread_mutex_lock(&db_queue->bootstrap_lock);
+        db_queue->bootstrap_completed = true;
+        pthread_cond_broadcast(&db_queue->bootstrap_cond);
+        pthread_mutex_unlock(&db_queue->bootstrap_lock);
     }
 
 cleanup:

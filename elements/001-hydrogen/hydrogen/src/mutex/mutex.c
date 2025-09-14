@@ -55,7 +55,7 @@ MutexResult mutex_lock_with_timeout(
     }
 
     // DEBUG: Log lock attempt
-    log_this(id->subsystem, "MUTEX REQ: %s in %s() [%s:%d]", LOG_LEVEL_DEBUG, 4, id->name, id->function, id->file, id->line);
+    log_this(id->subsystem, "MUTEX REQ: %s in %s()", LOG_LEVEL_DEBUG, 2, id->name, id->function);
 
     // Record lock attempt for deadlock detection
     if (deadlock_detection_enabled) {
