@@ -5,14 +5,6 @@
  * and comprehensive logging for the entire Hydrogen codebase.
  */
 
-#define _POSIX_C_SOURCE 200809L
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <time.h>
-
 #include "../hydrogen.h"
 #include "mutex.h"
 
@@ -22,6 +14,18 @@ static MutexLockAttempt* active_lock_attempts = NULL;
 static size_t active_lock_count = 0;
 static size_t active_lock_capacity = 0;
 static pthread_mutex_t deadlock_detection_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// Global state for tracking locked mutexes
+static MutexLockAttempt* locked_mutexes = NULL;
+static size_t locked_mutex_count = 0;
+static size_t locked_mutex_capacity = 0;
+
+// Thread-local storage for current mutex operation
+static __thread MutexId* current_mutex_operation_id = NULL;
+static __thread pthread_mutex_t* current_mutex_operation_ptr = NULL;
+
+// Global flag to suppress early startup mutex logging (no longer needed)
+
 
 // Forward declarations
 static void detect_potential_deadlock(MutexId* current_id);
@@ -54,8 +58,10 @@ MutexResult mutex_lock_with_timeout(
         timeout.tv_nsec %= 1000000000;
     }
 
-    // DEBUG: Log lock attempt
-    log_this(id->subsystem, "MUTEX REQ: %s in %s()", LOG_LEVEL_DEBUG, 2, id->name, id->function);
+    // DEBUG: Log lock attempt (only if logging system is initialized and not already in a logging operation to avoid circular dependency)
+    if (queue_system_initialized && !log_is_in_logging_operation()) {
+        log_this(id->subsystem, "MUTEX REQ: %X as %s in %s()", LOG_LEVEL_TRACE, 3, (unsigned int)(uintptr_t)mutex, id->name, id->function);
+    }
 
     // Record lock attempt for deadlock detection
     if (deadlock_detection_enabled) {
@@ -108,7 +114,36 @@ MutexResult mutex_lock_with_timeout(
     global_stats.total_locks++;
 
     if (result == 0) {
-        // Success
+        // Success - record the locked mutex
+        if (deadlock_detection_enabled) {
+            pthread_mutex_lock(&deadlock_detection_mutex);
+
+            // Expand capacity if needed
+            if (locked_mutex_count >= locked_mutex_capacity) {
+                locked_mutex_capacity = locked_mutex_capacity == 0 ? 16 : locked_mutex_capacity * 2;
+                MutexLockAttempt* new_locked = realloc(locked_mutexes,
+                    locked_mutex_capacity * sizeof(MutexLockAttempt));
+                if (!new_locked) {
+                    pthread_mutex_unlock(&deadlock_detection_mutex);
+                    pthread_mutex_unlock(&stats_mutex);
+                    return MUTEX_ERROR;
+                }
+                locked_mutexes = new_locked;
+            }
+
+            // Add locked mutex
+            locked_mutexes[locked_mutex_count].id = *id;
+            locked_mutexes[locked_mutex_count].thread_id = pthread_self();
+            locked_mutexes[locked_mutex_count].mutex_ptr = mutex;
+            locked_mutex_count++;
+
+            // Set thread-local storage for unlock logging
+            current_mutex_operation_id = &locked_mutexes[locked_mutex_count - 1].id;
+            current_mutex_operation_ptr = mutex;
+
+            pthread_mutex_unlock(&deadlock_detection_mutex);
+        }
+
         pthread_mutex_unlock(&stats_mutex);
         return MUTEX_SUCCESS;
     } else if (result == ETIMEDOUT) {
@@ -117,8 +152,14 @@ MutexResult mutex_lock_with_timeout(
         global_stats.last_timeout_time = time(NULL);
         pthread_mutex_unlock(&stats_mutex);
 
-        // Log timeout with full context
-        log_this(id->subsystem, "MUTEX EXP: %s in %s() [%s:%d] - timeout after %dms", LOG_LEVEL_ERROR, 5, id->name, id->function, id->file, id->line, timeout_ms);
+        // Clear thread-local storage on failure
+        current_mutex_operation_id = NULL;
+        current_mutex_operation_ptr = NULL;
+
+        // Log timeout with full context (only if not already in a logging operation to avoid circular dependency)
+        if (!log_is_in_logging_operation()) {
+            log_this(id->subsystem, "MUTEX EXP: %X as %s in %s() [%s:%d] - timeout after %dms", LOG_LEVEL_TRACE, 6, (unsigned int)(uintptr_t)mutex, id->name, id->function, id->file, id->line, timeout_ms);
+        }
 
         // Check for potential deadlock
         if (deadlock_detection_enabled) {
@@ -131,7 +172,14 @@ MutexResult mutex_lock_with_timeout(
         global_stats.total_errors++;
         pthread_mutex_unlock(&stats_mutex);
 
-        log_this(id->subsystem, "MUTEX ERR: %s in %s() [%s:%d] - error %d (%s)", LOG_LEVEL_ERROR, 4, id->name, id->function, id->file, id->line, result, strerror(result));
+        // Clear thread-local storage on failure
+        current_mutex_operation_id = NULL;
+        current_mutex_operation_ptr = NULL;
+
+        // Log error (only if not already in a logging operation to avoid circular dependency)
+        if (!log_is_in_logging_operation()) {
+            log_this(id->subsystem, "MUTEX ERR: %X as %s in %s() [%s:%d] - error %d (%s)", LOG_LEVEL_TRACE, 6, (unsigned int)(uintptr_t)mutex, id->name, id->function, id->file, id->line, result, strerror(result));
+        }
 
         return MUTEX_ERROR;
     }
@@ -155,7 +203,10 @@ MutexResult mutex_try_lock(
     } else if (result == EBUSY) {
         return MUTEX_TIMEOUT; // Treat as timeout for consistency
     } else {
-        log_this(id->subsystem, "MUTEX TRY: %s in %s() [%s:%d] - error %d (%s)", LOG_LEVEL_ERROR, 5, id->name, id->function, id->file, id->line, result, strerror(result));
+        // Log error (only if not already in a logging operation to avoid circular dependency)
+        if (!log_is_in_logging_operation()) {
+            log_this(id->subsystem, "MUTEX TRY: %X as %s in %s() [%s:%d] - error %d (%s)", LOG_LEVEL_TRACE, 6, (unsigned int)(uintptr_t)mutex, id->name, id->function, id->file, id->line, result, strerror(result));
+        }
         return MUTEX_ERROR;
     }
 }
@@ -171,12 +222,49 @@ MutexResult mutex_unlock(pthread_mutex_t* mutex) {
     int result = pthread_mutex_unlock(mutex);
 
     if (result == 0) {
-        // DEBUG: Log successful unlock
-        log_this(SR_DATABASE, "MUTEX REL: Mutex at %p", LOG_LEVEL_DEBUG, 1, (void*)mutex);
+        // DEBUG: Log unlock operation (only if not already in a logging operation to avoid circular dependency)
+        if (!log_is_in_logging_operation() && current_mutex_operation_id && current_mutex_operation_ptr == mutex) {
+            log_this(current_mutex_operation_id->subsystem, "MUTEX REL: %X as %s in %s()", LOG_LEVEL_TRACE, 3,
+                     (unsigned int)(uintptr_t)mutex, current_mutex_operation_id->name, current_mutex_operation_id->function);
+        }
+
+        // Clear thread-local storage
+        current_mutex_operation_id = NULL;
+        current_mutex_operation_ptr = NULL;
+
         return MUTEX_SUCCESS;
     } else {
-        // This is a serious error - log it
-        log_this(SR_DATABASE, "MUTEX ERR: Failed to unlock mutex - error %d (%s)", LOG_LEVEL_ERROR, 2, result, strerror(result));
+        // This is a serious error - log it (only if not already in a logging operation to avoid circular dependency)
+        if (!log_is_in_logging_operation()) {
+            log_this(SR_DATABASE, "MUTEX ERR: %X unlock failed - error %d (%s)", LOG_LEVEL_TRACE, 3, (unsigned int)(uintptr_t)mutex, result, strerror(result));
+        }
+        return MUTEX_ERROR;
+    }
+}
+
+/*
+ * Unlock mutex with identification for logging
+ */
+MutexResult mutex_unlock_with_id(pthread_mutex_t* mutex, MutexId* id) {
+    if (!mutex) {
+        return MUTEX_ERROR;
+    }
+
+    int result = pthread_mutex_unlock(mutex);
+
+    if (result == 0) {
+        // DEBUG: Log unlock operation (only if not already in a logging operation to avoid circular dependency)
+        if (!log_is_in_logging_operation()) {
+            log_this(id->subsystem, "MUTEX REL: %X as %s in %s()", LOG_LEVEL_TRACE, 3,
+                     (unsigned int)(uintptr_t)mutex, id->name, id->function);
+        }
+
+        return MUTEX_SUCCESS;
+    } else {
+        // This is a serious error - log it (only if not already in a logging operation to avoid circular dependency)
+        if (!log_is_in_logging_operation()) {
+            log_this(id->subsystem, "MUTEX ERR: %X unlock failed - error %d (%s)", LOG_LEVEL_TRACE, 3, (unsigned int)(uintptr_t)mutex, result, strerror(result));
+        }
         return MUTEX_ERROR;
     }
 }
@@ -267,10 +355,19 @@ bool mutex_system_init(void) {
     active_lock_capacity = 16;
     active_lock_count = 0;
 
+    // Initialize locked mutex tracking structures
+    locked_mutexes = calloc(16, sizeof(MutexLockAttempt));
+    if (!locked_mutexes) {
+        free(active_lock_attempts);
+        return false;
+    }
+    locked_mutex_capacity = 16;
+    locked_mutex_count = 0;
+
     // Reset statistics
     memset(&global_stats, 0, sizeof(MutexStats));
 
-    log_this(SR_DATABASE, "Mutex system initialized", LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, "Mutex system initialized", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -281,9 +378,20 @@ void mutex_system_cleanup(void) {
     active_lock_attempts = NULL;
     active_lock_count = 0;
     active_lock_capacity = 0;
+
+    // Clean up locked mutex tracking structures
+    free(locked_mutexes);
+    locked_mutexes = NULL;
+    locked_mutex_count = 0;
+    locked_mutex_capacity = 0;
+
+    // Clear thread-local storage
+    current_mutex_operation_id = NULL;
+    current_mutex_operation_ptr = NULL;
+
     pthread_mutex_unlock(&deadlock_detection_mutex);
 
-    log_this(SR_DATABASE, "Mutex system cleanup completed", LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, "Mutex system cleanup completed", LOG_LEVEL_TRACE, 0);
 }
 
 /*

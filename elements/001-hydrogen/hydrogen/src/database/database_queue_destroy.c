@@ -28,15 +28,17 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
 
     // If this is a Lead queue, clean up child queues first
     if (db_queue->is_lead_queue && db_queue->child_queues) {
-        pthread_mutex_lock(&db_queue->children_lock);
-        for (int i = 0; i < db_queue->child_queue_count; i++) {
-            if (db_queue->child_queues[i]) {
-                database_queue_destroy(db_queue->child_queues[i]);
-                db_queue->child_queues[i] = NULL;
+        MutexResult lock_result = MUTEX_LOCK(&db_queue->children_lock, SR_DATABASE);
+        if (lock_result == MUTEX_SUCCESS) {
+            for (int i = 0; i < db_queue->child_queue_count; i++) {
+                if (db_queue->child_queues[i]) {
+                    database_queue_destroy(db_queue->child_queues[i]);
+                    db_queue->child_queues[i] = NULL;
+                }
             }
+            db_queue->child_queue_count = 0;
+            mutex_unlock(&db_queue->children_lock);
         }
-        db_queue->child_queue_count = 0;
-        pthread_mutex_unlock(&db_queue->children_lock);
 
         free(db_queue->child_queues);
         pthread_mutex_destroy(&db_queue->children_lock);
@@ -69,13 +71,15 @@ void database_queue_manager_destroy(DatabaseQueueManager* manager) {
     manager->initialized = false;
 
     // Destroy all managed databases
-    pthread_mutex_lock(&manager->manager_lock);
-    for (size_t i = 0; i < manager->database_count; i++) {
-        if (manager->databases[i]) {
-            database_queue_destroy(manager->databases[i]);
+    MutexResult lock_result = MUTEX_LOCK(&manager->manager_lock, SR_DATABASE);
+    if (lock_result == MUTEX_SUCCESS) {
+        for (size_t i = 0; i < manager->database_count; i++) {
+            if (manager->databases[i]) {
+                database_queue_destroy(manager->databases[i]);
+            }
         }
+        mutex_unlock(&manager->manager_lock);
     }
-    pthread_mutex_unlock(&manager->manager_lock);
 
     // Clean up resources
     free(manager->databases);

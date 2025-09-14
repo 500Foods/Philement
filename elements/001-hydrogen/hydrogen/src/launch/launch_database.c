@@ -382,10 +382,36 @@ LaunchReadiness check_database_launch_readiness(void) {
 
         // Check DB2 library if needed
         if (db2_count > 0) {
-            void* db2_handle = dlopen("libdb2.so", RTLD_LAZY);
+            void* db2_handle = NULL;
+            const char* db2_paths[] = {
+                "/opt/ibm/db2/V11.5/lib64/libdb2.so.1",
+                "/opt/ibm/db2/V11.5/lib32/libdb2.so.1",
+                "/opt/ibm/db2/V11.1/lib64/libdb2.so.1",
+                "/opt/ibm/db2/V11.1/lib32/libdb2.so.1",
+                "/mnt/extra/festival/opt/ibm/db2/V11.5/lib64/libdb2.so.1",
+                "/mnt/extra/festival/opt/ibm/db2/V11.5/lib32/libdb2.so.1",
+                "/mnt/extra/festival/usr/lib/libdb2.so.1",
+                "/opt/ibm/db2/V11.5/lib64/libdb2.so",
+                "/opt/ibm/db2/V11.5/lib32/libdb2.so",
+                "/opt/ibm/db2/V11.1/lib64/libdb2.so",
+                "/opt/ibm/db2/V11.1/lib32/libdb2.so",
+                "/mnt/extra/festival/opt/ibm/db2/V11.5/lib64/libdb2.so",
+                "/mnt/extra/festival/opt/ibm/db2/V11.5/lib32/libdb2.so",
+                "/mnt/extra/festival/usr/lib/libdb2.so",
+                NULL
+            };
+
+            // Try loading DB2 library from known installation paths
+            for (int i = 0; db2_paths[i] != NULL && !db2_handle; i++) {
+                db2_handle = dlopen(db2_paths[i], RTLD_LAZY);
+            }
+
+            // Fallback to standard library search if full paths fail
             if (!db2_handle) {
-                // Try alternative version if first fails
-                db2_handle = dlopen("libdb2.so.1", RTLD_LAZY);
+                db2_handle = dlopen("libdb2.so", RTLD_LAZY);
+                if (!db2_handle) {
+                    db2_handle = dlopen("libdb2.so.1", RTLD_LAZY);
+                }
             }
 
             if (!db2_handle) {

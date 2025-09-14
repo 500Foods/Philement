@@ -31,71 +31,76 @@ bool register_web_endpoint(const WebServerEndpoint* endpoint) {
         return false;
     }
 
-    pthread_mutex_lock(&endpoint_mutex);
-
-    // Check for existing registration with same prefix
-    for (size_t i = 0; i < endpoint_count; i++) {
-        if (strcmp(registered_endpoints[i].prefix, endpoint->prefix) == 0) {
-            pthread_mutex_unlock(&endpoint_mutex);
-            log_this(SR_WEBSERVER, "Endpoint with prefix %s already registered", LOG_LEVEL_ERROR, 1, endpoint->prefix);
-            return false;
+    MutexResult lock_result = MUTEX_LOCK(&endpoint_mutex, SR_WEBSERVER);
+    if (lock_result == MUTEX_SUCCESS) {
+        // Check for existing registration with same prefix
+        for (size_t i = 0; i < endpoint_count; i++) {
+            if (strcmp(registered_endpoints[i].prefix, endpoint->prefix) == 0) {
+                mutex_unlock(&endpoint_mutex);
+                log_this(SR_WEBSERVER, "Endpoint with prefix %s already registered", LOG_LEVEL_ERROR, 1, endpoint->prefix);
+                return false;
+            }
         }
-    }
 
-    // Register new endpoint if space available
-    if (endpoint_count < MAX_ENDPOINTS) {
-        registered_endpoints[endpoint_count] = *endpoint;
-        endpoint_count++;
-        log_this(SR_WEBSERVER, "Registered endpoint with prefix: %s", LOG_LEVEL_STATE, 1, endpoint->prefix);
-        pthread_mutex_unlock(&endpoint_mutex);
-        return true;
-    }
+        // Register new endpoint if space available
+        if (endpoint_count < MAX_ENDPOINTS) {
+            registered_endpoints[endpoint_count] = *endpoint;
+            endpoint_count++;
+            log_this(SR_WEBSERVER, "Registered endpoint with prefix: %s", LOG_LEVEL_STATE, 1, endpoint->prefix);
+            mutex_unlock(&endpoint_mutex);
+            return true;
+        }
 
-    pthread_mutex_unlock(&endpoint_mutex);
-    log_this(SR_WEBSERVER, "Maximum number of endpoints reached", LOG_LEVEL_ERROR, 0);
+        mutex_unlock(&endpoint_mutex);
+        log_this(SR_WEBSERVER, "Maximum number of endpoints reached", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
     return false;
 }
 
 void unregister_web_endpoint(const char* prefix) {
     if (!prefix) return;
 
-    pthread_mutex_lock(&endpoint_mutex);
-
-    // Find and remove endpoint
-    for (size_t i = 0; i < endpoint_count; i++) {
-        if (strcmp(registered_endpoints[i].prefix, prefix) == 0) {
-            // Shift remaining endpoints
-            for (size_t j = i; j < endpoint_count - 1; j++) {
-                registered_endpoints[j] = registered_endpoints[j + 1];
+    MutexResult lock_result = MUTEX_LOCK(&endpoint_mutex, SR_WEBSERVER);
+    if (lock_result == MUTEX_SUCCESS) {
+        // Find and remove endpoint
+        for (size_t i = 0; i < endpoint_count; i++) {
+            if (strcmp(registered_endpoints[i].prefix, prefix) == 0) {
+                // Shift remaining endpoints
+                for (size_t j = i; j < endpoint_count - 1; j++) {
+                    registered_endpoints[j] = registered_endpoints[j + 1];
+                }
+                endpoint_count--;
+                log_this(SR_WEBSERVER, "Unregistered endpoint with prefix: %s", LOG_LEVEL_STATE, 1, prefix);
+                break;
             }
-            endpoint_count--;
-            log_this(SR_WEBSERVER, "Unregistered endpoint with prefix: %s", LOG_LEVEL_STATE, 1, prefix);
-            break;
         }
-    }
 
-    pthread_mutex_unlock(&endpoint_mutex);
+        mutex_unlock(&endpoint_mutex);
+    }
 }
 
 // Get registered endpoint for URL
 const WebServerEndpoint* get_endpoint_for_url(const char* url) {
     if (!url) return NULL;
 
-    pthread_mutex_lock(&endpoint_mutex);
+    MutexResult lock_result = MUTEX_LOCK(&endpoint_mutex, SR_WEBSERVER);
     const WebServerEndpoint* matched_endpoint = NULL;
 
-    // Find matching endpoint
-    for (size_t i = 0; i < endpoint_count; i++) {
-        const WebServerEndpoint* endpoint = &registered_endpoints[i];
-        if (strncmp(url, endpoint->prefix, strlen(endpoint->prefix)) == 0) {
-            if (endpoint->validator(url)) {
-                matched_endpoint = endpoint;
-                break;
+    if (lock_result == MUTEX_SUCCESS) {
+        // Find matching endpoint
+        for (size_t i = 0; i < endpoint_count; i++) {
+            const WebServerEndpoint* endpoint = &registered_endpoints[i];
+            if (strncmp(url, endpoint->prefix, strlen(endpoint->prefix)) == 0) {
+                if (endpoint->validator(url)) {
+                    matched_endpoint = endpoint;
+                    break;
+                }
             }
         }
-    }
 
-    pthread_mutex_unlock(&endpoint_mutex);
+        mutex_unlock(&endpoint_mutex);
+    }
     return matched_endpoint;
 }
 

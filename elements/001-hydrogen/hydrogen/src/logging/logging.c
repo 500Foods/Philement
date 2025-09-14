@@ -22,6 +22,7 @@ extern int queue_system_initialized;  // From queue.c
 // Internal state
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 static __thread bool in_log_group = false;  // Thread-local flag for group logging
+static __thread bool in_logging_operation = false;  // Thread-local flag to prevent recursive logging
 static unsigned long log_counter = 0;  // Global log counter
 
 // Rolling buffer for recent messages
@@ -48,124 +49,132 @@ static bool init_message_slot(size_t index) {
 
 // Add a message to the rolling buffer
 static void add_to_buffer(const char* message) {
-    pthread_mutex_lock(&log_buffer.mutex);
+    MutexResult lock_result = MUTEX_LOCK(&log_buffer.mutex, SR_LOGGING);
+    if (lock_result == MUTEX_SUCCESS) {
+        // Initialize or move to next slot
+        size_t index = log_buffer.head;
+        if (!init_message_slot(index)) {
+            MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+            return;
+        }
 
-    // Initialize or move to next slot
-    size_t index = log_buffer.head;
-    if (!init_message_slot(index)) {
-        pthread_mutex_unlock(&log_buffer.mutex);
-        return;
+        // Copy message to buffer using snprintf for safety
+        snprintf(log_buffer.messages[index], MAX_LOG_LINE_LENGTH, "%s", message);
+
+        // Update head and count
+        log_buffer.head = (log_buffer.head + 1) % LOG_BUFFER_SIZE;
+        if (log_buffer.count < LOG_BUFFER_SIZE) {
+            log_buffer.count++;
+        }
+
+        MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
     }
-
-    // Copy message to buffer using snprintf for safety
-    snprintf(log_buffer.messages[index], MAX_LOG_LINE_LENGTH, "%s", message);
-
-    // Update head and count
-    log_buffer.head = (log_buffer.head + 1) % LOG_BUFFER_SIZE;
-    if (log_buffer.count < LOG_BUFFER_SIZE) {
-        log_buffer.count++;
-    }
-
-    pthread_mutex_unlock(&log_buffer.mutex);
 }
 
 // Get messages matching a subsystem
 char* log_get_messages(const char* subsystem) {
     if (!subsystem) return NULL;
 
-    pthread_mutex_lock(&log_buffer.mutex);
-
-    // Calculate total size needed
-    size_t total_size = 0;
-    size_t matches = 0;
-    for (size_t i = 0; i < log_buffer.count; i++) {
-        size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
-        if (log_buffer.messages[idx] && strstr(log_buffer.messages[idx], subsystem)) {
-            total_size += strlen(log_buffer.messages[idx]) + 1;  // +1 for newline
-            matches++;
+    MutexResult lock_result = MUTEX_LOCK(&log_buffer.mutex, SR_LOGGING);
+    if (lock_result == MUTEX_SUCCESS) {
+        // Calculate total size needed
+        size_t total_size = 0;
+        size_t matches = 0;
+        for (size_t i = 0; i < log_buffer.count; i++) {
+            size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
+            if (log_buffer.messages[idx] && strstr(log_buffer.messages[idx], subsystem)) {
+                total_size += strlen(log_buffer.messages[idx]) + 1;  // +1 for newline
+                matches++;
+            }
         }
-    }
 
-    if (matches == 0) {
-        pthread_mutex_unlock(&log_buffer.mutex);
-        return NULL;
-    }
-
-    // Allocate buffer for matching messages
-    char* result = malloc(total_size + 1);  // +1 for null terminator
-    if (!result) {
-        pthread_mutex_unlock(&log_buffer.mutex);
-        return NULL;
-    }
-
-    // Copy matching messages
-    char* pos = result;
-    for (size_t i = 0; i < log_buffer.count; i++) {
-        size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
-        if (log_buffer.messages[idx] && strstr(log_buffer.messages[idx], subsystem)) {
-            size_t len = strlen(log_buffer.messages[idx]);
-            memcpy(pos, log_buffer.messages[idx], len);
-            pos[len] = '\n';
-            pos += len + 1;
+        if (matches == 0) {
+            MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+            return NULL;
         }
-    }
-    *pos = '\0';
 
-    pthread_mutex_unlock(&log_buffer.mutex);
-    return result;
+        // Allocate buffer for matching messages
+        char* result = malloc(total_size + 1);  // +1 for null terminator
+        if (!result) {
+            MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+            return NULL;
+        }
+
+        // Copy matching messages
+        char* pos = result;
+        for (size_t i = 0; i < log_buffer.count; i++) {
+            size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
+            if (log_buffer.messages[idx] && strstr(log_buffer.messages[idx], subsystem)) {
+                size_t len = strlen(log_buffer.messages[idx]);
+                memcpy(pos, log_buffer.messages[idx], len);
+                pos[len] = '\n';
+                pos += len + 1;
+            }
+        }
+        *pos = '\0';
+
+        MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+        return result;
+    }
+    return NULL;
 }
 
 // Get the last N messages
 char* log_get_last_n(size_t count) {
-    pthread_mutex_lock(&log_buffer.mutex);
-
-    // Adjust count if it's larger than available messages
-    if (count > log_buffer.count) {
-        count = log_buffer.count;
-    }
-
-    if (count == 0) {
-        pthread_mutex_unlock(&log_buffer.mutex);
-        return NULL;
-    }
-
-    // Calculate total size needed
-    size_t total_size = 0;
-    for (size_t i = 0; i < count; i++) {
-        size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
-        if (log_buffer.messages[idx]) {
-            total_size += strlen(log_buffer.messages[idx]) + 1;  // +1 for newline
+    MutexResult lock_result = MUTEX_LOCK(&log_buffer.mutex, SR_LOGGING);
+    if (lock_result == MUTEX_SUCCESS) {
+        // Adjust count if it's larger than available messages
+        if (count > log_buffer.count) {
+            count = log_buffer.count;
         }
-    }
 
-    // Allocate buffer
-    char* result = malloc(total_size + 1);  // +1 for null terminator
-    if (!result) {
-        pthread_mutex_unlock(&log_buffer.mutex);
-        return NULL;
-    }
-
-    // Copy messages
-    char* pos = result;
-    for (size_t i = 0; i < count; i++) {
-        size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
-        if (log_buffer.messages[idx]) {
-            size_t len = strlen(log_buffer.messages[idx]);
-            memcpy(pos, log_buffer.messages[idx], len);
-            pos[len] = '\n';
-            pos += len + 1;
+        if (count == 0) {
+            MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+            return NULL;
         }
-    }
-    *pos = '\0';
 
-    pthread_mutex_unlock(&log_buffer.mutex);
-    return result;
+        // Calculate total size needed
+        size_t total_size = 0;
+        for (size_t i = 0; i < count; i++) {
+            size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
+            if (log_buffer.messages[idx]) {
+                total_size += strlen(log_buffer.messages[idx]) + 1;  // +1 for newline
+            }
+        }
+
+        // Allocate buffer
+        char* result = malloc(total_size + 1);  // +1 for null terminator
+        if (!result) {
+            MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+            return NULL;
+        }
+
+        // Copy messages
+        char* pos = result;
+        for (size_t i = 0; i < count; i++) {
+            size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
+            if (log_buffer.messages[idx]) {
+                size_t len = strlen(log_buffer.messages[idx]);
+                memcpy(pos, log_buffer.messages[idx], len);
+                pos[len] = '\n';
+                pos += len + 1;
+            }
+        }
+        *pos = '\0';
+
+        MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+        return result;
+    }
+    return NULL;
 }
 
 // Private function declarations
 static void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count);
 static bool init_message_slot(size_t index);
 static void add_to_buffer(const char* message);
+
+// Public interface declarations
+bool log_is_in_logging_operation(void);
 
 /*
  * INTERNAL USE ONLY - Do not call directly!
@@ -279,16 +288,23 @@ static size_t count_format_specifiers(const char* format) {
 
 // Log a message based on configuration settings
 void log_group_begin(void) {
-    pthread_mutex_lock(&log_mutex);
-    in_log_group = true;
+    MutexResult lock_result = MUTEX_LOCK(&log_mutex, SR_LOGGING);
+    if (lock_result == MUTEX_SUCCESS) {
+        in_log_group = true;
+    }
 }
 
 void log_group_end(void) {
     in_log_group = false;
-    pthread_mutex_unlock(&log_mutex);
+    // Use the macro instead of direct function call to get proper logging
+    MUTEX_UNLOCK(&log_mutex, SR_LOGGING);
 }
 
 void log_this(const char* subsystem, const char* format, int priority, int num_args, ...) {
+    // Set thread-local flag to prevent recursive logging
+    bool was_in_logging = in_logging_operation;
+    in_logging_operation = true;
+
     // Validate inputs and normalize priority level early
     if (!subsystem) subsystem = "Unknown";
     if (!format) format = "No message";
@@ -299,7 +315,12 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
     // 3. app_config is not available
     if (priority < LOG_LEVEL_TRACE || priority > LOG_LEVEL_QUIET ||
         !app_config || !app_config->logging.levels) {
-        priority = LOG_LEVEL_STATE;
+        // For TRACE level, preserve it even if config is not available
+        if (priority == LOG_LEVEL_TRACE) {
+            // Keep TRACE level for early startup logging
+        } else {
+            priority = LOG_LEVEL_STATE;
+        }
     }
 
     // DEFENSIVE PROGRAMMING: Check that num_args matches the number of format specifiers
@@ -315,7 +336,12 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
 
     // Only lock if we're not already in a group
     if (!in_log_group) {
-        pthread_mutex_lock(&log_mutex);
+        MutexResult lock_result = MUTEX_LOCK(&log_mutex, SR_LOGGING);
+        if (lock_result != MUTEX_SUCCESS) {
+            // Failed to lock, skip logging to avoid infinite recursion
+            in_logging_operation = was_in_logging;  // Restore flag
+            return;
+        }
     }
 
     char details[DEFAULT_LOG_ENTRY_SIZE];
@@ -355,7 +381,7 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
             // Try to use queue system if it's running
             Queue* log_queue = NULL;
             bool use_console = true;  // Default to using console unless queue succeeds
-            
+
             log_queue = queue_find("SystemLog");
             if (log_queue) {
                 if (queue_enqueue(log_queue, json_message, strlen(json_message), priority) == 0) {
@@ -375,6 +401,13 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
 
     // Only unlock if we're not in a group
     if (!in_log_group) {
-        pthread_mutex_unlock(&log_mutex);
+        MUTEX_UNLOCK(&log_mutex, SR_LOGGING);
     }
+
+    // Restore the logging operation flag
+    in_logging_operation = was_in_logging;
+}
+
+bool log_is_in_logging_operation(void) {
+    return in_logging_operation;
 }

@@ -53,7 +53,7 @@ static const DatabaseDependencyConfig db_configs[] = {
  static const LibConfig lib_configs[] = {
      {"pthreads", pthread_paths, NULL, "1.0", true, true},
      {"jansson", jansson_paths, jansson_funcs, "2.13.1", false, true},
-     {"microhttpd", microhttpd_paths, microhttpd_funcs, "1.0.1", false, false},
+     {"microhttpd", microhttpd_paths, microhttpd_funcs, "1.0.2", false, false},
      {"libm", libm_paths, NULL, "2.0", true, true},
      {"libwebsockets", libwebsockets_paths, libwebsockets_funcs, "4.3.3", false, false},
      {"OpenSSL", openssl_paths, openssl_funcs, "3.2.4", false, false},

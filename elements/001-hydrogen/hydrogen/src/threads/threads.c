@@ -33,46 +33,50 @@ static size_t get_thread_stack_size(pid_t tid);
 
 // Initialize service thread tracking
 void init_service_threads(ServiceThreads *threads, const char* subsystem_name) {
-    pthread_mutex_lock(&thread_mutex);
-    threads->thread_count = 0;
-    memset(threads->thread_ids, 0, sizeof(pthread_t) * MAX_SERVICE_THREADS);
-    memset(threads->thread_metrics, 0, sizeof(ThreadMemoryMetrics) * MAX_SERVICE_THREADS);
-    memset(threads->thread_tids, 0, sizeof(pid_t) * MAX_SERVICE_THREADS);
+    MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
+    if (lock_result == MUTEX_SUCCESS) {
+        threads->thread_count = 0;
+        memset(threads->thread_ids, 0, sizeof(pthread_t) * MAX_SERVICE_THREADS);
+        memset(threads->thread_metrics, 0, sizeof(ThreadMemoryMetrics) * MAX_SERVICE_THREADS);
+        memset(threads->thread_tids, 0, sizeof(pid_t) * MAX_SERVICE_THREADS);
 
-    if (subsystem_name) {
-        strncpy(threads->subsystem, subsystem_name, 31); // Leave space for null terminator
-        threads->subsystem[31] = '\0'; // Ensure null-termination
-    } else {
-        strncpy(threads->subsystem, "Unknown", 31);
-        threads->subsystem[31] = '\0';
+        if (subsystem_name) {
+            strncpy(threads->subsystem, subsystem_name, 31); // Leave space for null terminator
+            threads->subsystem[31] = '\0'; // Ensure null-termination
+        } else {
+            strncpy(threads->subsystem, "Unknown", 31);
+            threads->subsystem[31] = '\0';
+        }
+
+        mutex_unlock(&thread_mutex);
     }
-
-    pthread_mutex_unlock(&thread_mutex);
 }
 
 // Add a thread to service tracking
 void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
-    pthread_mutex_lock(&thread_mutex);
-    if (threads->thread_count < MAX_SERVICE_THREADS) {
-        pid_t tid = (pid_t)syscall(SYS_gettid);
-        threads->thread_ids[threads->thread_count] = thread_id;
-        threads->thread_tids[threads->thread_count] = tid;
-        threads->thread_count++;
-        
-        // Only log if not in final shutdown mode
-        if (!final_shutdown_mode) {
-            char msg[128];
-            // Use log group to ensure consistent formatting
-            log_group_begin();
-            snprintf(msg, sizeof(msg), "%s: Thread %lu (tid: %d) added, count: %d", 
-                     threads->subsystem, (unsigned long)thread_id, tid, threads->thread_count);
-            log_this(SR_THREADS_LIB, msg, LOG_LEVEL_STATE, 0);
-            log_group_end();
+    MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
+    if (lock_result == MUTEX_SUCCESS) {
+        if (threads->thread_count < MAX_SERVICE_THREADS) {
+            pid_t tid = (pid_t)syscall(SYS_gettid);
+            threads->thread_ids[threads->thread_count] = thread_id;
+            threads->thread_tids[threads->thread_count] = tid;
+            threads->thread_count++;
+
+            // Only log if not in final shutdown mode
+            if (!final_shutdown_mode) {
+                char msg[128];
+                // Use log group to ensure consistent formatting
+                log_group_begin();
+                snprintf(msg, sizeof(msg), "%s: Thread %lu (tid: %d) added, count: %d",
+                         threads->subsystem, (unsigned long)thread_id, tid, threads->thread_count);
+                log_this(SR_THREADS_LIB, msg, LOG_LEVEL_STATE, 0);
+                log_group_end();
+            }
+        } else {
+            log_this(SR_THREADS_LIB, "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_DEBUG, 0);
         }
-    } else {
-        log_this(SR_THREADS_LIB, "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_DEBUG, 0);
+        mutex_unlock(&thread_mutex);
     }
-    pthread_mutex_unlock(&thread_mutex);
 }
 
 // Remove a thread from service tracking
@@ -108,14 +112,16 @@ static void remove_thread_internal(ServiceThreads *threads, int index, bool skip
 }
 
 void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
-    pthread_mutex_lock(&thread_mutex);
-    for (int i = 0; i < threads->thread_count; i++) {
-        if (pthread_equal(threads->thread_ids[i], thread_id)) {
-            remove_thread_internal(threads, i, false);
-            break;
+    MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
+    if (lock_result == MUTEX_SUCCESS) {
+        for (int i = 0; i < threads->thread_count; i++) {
+            if (pthread_equal(threads->thread_ids[i], thread_id)) {
+                remove_thread_internal(threads, i, false);
+                break;
+            }
         }
+        mutex_unlock(&thread_mutex);
     }
-    pthread_mutex_unlock(&thread_mutex);
 }
 
 // Get thread stack size from /proc/[tid]/status
@@ -141,38 +147,39 @@ static size_t get_thread_stack_size(pid_t tid) {
 
 // Update memory metrics for all threads in a service
 void update_service_thread_metrics(ServiceThreads *threads) {
-    pthread_mutex_lock(&thread_mutex);
-    
-    // Reset service totals
-    threads->virtual_memory = 0;
-    threads->resident_memory = 0;
-    
-    // Update each thread's metrics using stack size only
-    for (int i = 0; i < threads->thread_count; i++) {
-        pid_t tid = threads->thread_tids[i];
-        
-        // Check if thread is alive
-        if (kill(tid, 0) != 0) {
-            // Thread is dead, remove it
-            remove_thread_internal(threads, i, true);  // Skip logging during metrics update
-            i--; // Reprocess this index
-            continue;
+    MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
+    if (lock_result == MUTEX_SUCCESS) {
+        // Reset service totals
+        threads->virtual_memory = 0;
+        threads->resident_memory = 0;
+
+        // Update each thread's metrics using stack size only
+        for (int i = 0; i < threads->thread_count; i++) {
+            pid_t tid = threads->thread_tids[i];
+
+            // Check if thread is alive
+            if (kill(tid, 0) != 0) {
+                // Thread is dead, remove it
+                remove_thread_internal(threads, i, true);  // Skip logging during metrics update
+                i--; // Reprocess this index
+                continue;
+            }
+
+            // Get thread stack size
+            size_t stack_size = get_thread_stack_size(tid);
+
+            // Update thread metrics with stack size
+            ThreadMemoryMetrics *metrics = &threads->thread_metrics[i];
+            metrics->virtual_bytes = stack_size * 1024; // Convert KB to bytes
+            metrics->resident_bytes = stack_size * 1024; // Assume stack is resident
+
+            // Add to service totals
+            threads->virtual_memory += metrics->virtual_bytes;
+            threads->resident_memory += metrics->resident_bytes;
         }
-        
-        // Get thread stack size
-        size_t stack_size = get_thread_stack_size(tid);
-        
-        // Update thread metrics with stack size
-        ThreadMemoryMetrics *metrics = &threads->thread_metrics[i];
-        metrics->virtual_bytes = stack_size * 1024; // Convert KB to bytes
-        metrics->resident_bytes = stack_size * 1024; // Assume stack is resident
-        
-        // Add to service totals
-        threads->virtual_memory += metrics->virtual_bytes;
-        threads->resident_memory += metrics->resident_bytes;
+
+        mutex_unlock(&thread_mutex);
     }
-    
-    pthread_mutex_unlock(&thread_mutex);
 }
 
 // Get memory metrics for a specific thread
@@ -184,82 +191,85 @@ ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t
         return metrics;
     }
 
-    pthread_mutex_lock(&thread_mutex);
-
-    // Find the thread in our tracking array
-    for (int i = 0; i < threads->thread_count; i++) {
-        if (pthread_equal(threads->thread_ids[i], thread_id)) {
-            metrics = threads->thread_metrics[i];
-            break;
+    MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
+    if (lock_result == MUTEX_SUCCESS) {
+        // Find the thread in our tracking array
+        for (int i = 0; i < threads->thread_count; i++) {
+            if (pthread_equal(threads->thread_ids[i], thread_id)) {
+                metrics = threads->thread_metrics[i];
+                break;
+            }
         }
-    }
 
-    pthread_mutex_unlock(&thread_mutex);
+        mutex_unlock(&thread_mutex);
+    }
 
     return metrics;
 }
 
 // Report status of all service threads
 void report_thread_status(void) {
-    pthread_mutex_lock(&thread_mutex);
-    
-    log_this(SR_THREADS, "Thread Status Report:", LOG_LEVEL_STATE, 0);
-    
-    // Report logging threads
-    log_this(SR_THREADS, "  Logging Threads: %d active", LOG_LEVEL_STATE, 1, logging_threads.thread_count);
-    
-    // Report web threads
-    log_this(SR_THREADS, "  Web Threads: %d active", LOG_LEVEL_STATE, 1, webserver_threads.thread_count);
-    
-    // Report websocket threads
-    log_this(SR_THREADS, "  WebSocket Threads: %d active", LOG_LEVEL_STATE, 1, websocket_threads.thread_count);
-    
-    // Report mdns server threads
-    log_this(SR_THREADS, "  mDNS Server Threads: %d active", LOG_LEVEL_STATE, 1, mdns_server_threads.thread_count);
-    
-    // Report print threads
-    log_this(SR_THREADS, "  Print Threads: %d active", LOG_LEVEL_STATE, 1, print_threads.thread_count);
+    MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
+    if (lock_result == MUTEX_SUCCESS) {
+        log_this(SR_THREADS, "Thread Status Report:", LOG_LEVEL_STATE, 0);
 
-    // Report database threads
-    log_this(SR_THREADS, "  Database Threads: %d active", LOG_LEVEL_STATE, 1, database_threads.thread_count);
+        // Report logging threads
+        log_this(SR_THREADS, "  Logging Threads: %d active", LOG_LEVEL_STATE, 1, logging_threads.thread_count);
 
-    // Calculate total threads
-    int total_threads = logging_threads.thread_count +
-                       webserver_threads.thread_count +
-                       websocket_threads.thread_count +
-                       mdns_server_threads.thread_count +
-                       print_threads.thread_count +
-                       database_threads.thread_count;
-    
-    log_this(SR_THREADS, "Total Active Threads: %d", LOG_LEVEL_STATE, 1, total_threads);
-    
-    pthread_mutex_unlock(&thread_mutex);
+        // Report web threads
+        log_this(SR_THREADS, "  Web Threads: %d active", LOG_LEVEL_STATE, 1, webserver_threads.thread_count);
+
+        // Report websocket threads
+        log_this(SR_THREADS, "  WebSocket Threads: %d active", LOG_LEVEL_STATE, 1, websocket_threads.thread_count);
+
+        // Report mdns server threads
+        log_this(SR_THREADS, "  mDNS Server Threads: %d active", LOG_LEVEL_STATE, 1, mdns_server_threads.thread_count);
+
+        // Report print threads
+        log_this(SR_THREADS, "  Print Threads: %d active", LOG_LEVEL_STATE, 1, print_threads.thread_count);
+
+        // Report database threads
+        log_this(SR_THREADS, "  Database Threads: %d active", LOG_LEVEL_STATE, 1, database_threads.thread_count);
+
+        // Calculate total threads
+        int total_threads = logging_threads.thread_count +
+                           webserver_threads.thread_count +
+                           websocket_threads.thread_count +
+                           mdns_server_threads.thread_count +
+                           print_threads.thread_count +
+                           database_threads.thread_count;
+
+        log_this(SR_THREADS, "Total Active Threads: %d", LOG_LEVEL_STATE, 1, total_threads);
+
+        mutex_unlock(&thread_mutex);
+    }
 }
 
 // Free thread-related resources
 void free_threads_resources(void) {
-    pthread_mutex_lock(&thread_mutex);
-    
-    // Set final shutdown mode to prevent excessive logging
-    final_shutdown_mode = 1;
-    
-    // Clean up logging threads
-    init_service_threads(&logging_threads, SR_LOGGING);
-    
-    // Clean up web threads
-    init_service_threads(&webserver_threads, SR_WEBSERVER);
-    
-    // Clean up websocket threads
-    init_service_threads(&websocket_threads, SR_WEBSOCKET);
-    
-    // Clean up mdns server threads
-    init_service_threads(&mdns_server_threads, SR_MDNS_SERVER);
-    
-    // Clean up print threads
-    init_service_threads(&print_threads, SR_PRINT);
+    MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
+    if (lock_result == MUTEX_SUCCESS) {
+        // Set final shutdown mode to prevent excessive logging
+        final_shutdown_mode = 1;
 
-    // Clean up database threads
-    init_service_threads(&database_threads, SR_DATABASE);
+        // Clean up logging threads
+        init_service_threads(&logging_threads, SR_LOGGING);
 
-    pthread_mutex_unlock(&thread_mutex);
+        // Clean up web threads
+        init_service_threads(&webserver_threads, SR_WEBSERVER);
+
+        // Clean up websocket threads
+        init_service_threads(&websocket_threads, SR_WEBSOCKET);
+
+        // Clean up mdns server threads
+        init_service_threads(&mdns_server_threads, SR_MDNS_SERVER);
+
+        // Clean up print threads
+        init_service_threads(&print_threads, SR_PRINT);
+
+        // Clean up database threads
+        init_service_threads(&database_threads, SR_DATABASE);
+
+        mutex_unlock(&thread_mutex);
+    }
 }

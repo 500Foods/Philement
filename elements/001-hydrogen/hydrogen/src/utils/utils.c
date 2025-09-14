@@ -13,7 +13,8 @@ static void init_all_service_threads(void);
 
 // Initialize service threads when module loads
 static void __attribute__((constructor)) init_utils(void) {
-    init_all_service_threads();
+    // Thread initialization moved to launch_threads_subsystem() to avoid early MUTEX logging
+    // init_all_service_threads();
     init_queue_memory(&log_queue_memory, NULL);
     init_queue_memory(&print_queue_memory, NULL);
 }
@@ -27,7 +28,7 @@ void update_queue_limits_from_config(const AppConfig *config) {
 }
 
 // Initialize all service thread tracking
-static void init_all_service_threads(void) {
+static void __attribute__((unused)) init_all_service_threads(void) {
     init_service_threads(&logging_threads, SR_LOGGING);
     init_service_threads(&webserver_threads, SR_WEBSERVER);
     init_service_threads(&websocket_threads, SR_WEBSOCKET);

@@ -79,84 +79,85 @@ static bool grow_registry(size_t new_capacity) {
  */
 void init_registry(void) {
     // Lock the mutex to ensure thread safety during cleanup
-    int lock_result = pthread_mutex_lock(&subsystem_registry.mutex);
+    MutexResult lock_result = MUTEX_LOCK(&subsystem_registry.mutex, SR_REGISTRY);
+    if (lock_result == MUTEX_SUCCESS) {
+        // Free any existing allocation
+        if (subsystem_registry.subsystems) {
+            // Free any dynamically allocated strings in the subsystems
+            for (int i = 0; i < subsystem_registry.count; i++) {
+                // Free the dynamically allocated name (created with strdup)
+                if (subsystem_registry.subsystems[i].name) {
+                    free((char*)subsystem_registry.subsystems[i].name);
+                    subsystem_registry.subsystems[i].name = NULL;
+                }
 
-    // Free any existing allocation
-    if (subsystem_registry.subsystems) {
-        // Free any dynamically allocated strings in the subsystems
-        for (int i = 0; i < subsystem_registry.count; i++) {
-            // Free the dynamically allocated name (created with strdup)
-            if (subsystem_registry.subsystems[i].name) {
-                free((char*)subsystem_registry.subsystems[i].name);
-                subsystem_registry.subsystems[i].name = NULL;
-            }
-            
-            // Free the dynamically allocated dependency names
-            for (int j = 0; j < subsystem_registry.subsystems[i].dependency_count; j++) {
-                if (subsystem_registry.subsystems[i].dependencies[j]) {
-                    free((char*)subsystem_registry.subsystems[i].dependencies[j]);
-                    subsystem_registry.subsystems[i].dependencies[j] = NULL;
+                // Free the dynamically allocated dependency names
+                for (int j = 0; j < subsystem_registry.subsystems[i].dependency_count; j++) {
+                    if (subsystem_registry.subsystems[i].dependencies[j]) {
+                        free((char*)subsystem_registry.subsystems[i].dependencies[j]);
+                        subsystem_registry.subsystems[i].dependencies[j] = NULL;
+                    }
                 }
             }
+            free(subsystem_registry.subsystems);
+            subsystem_registry.subsystems = NULL;
         }
-        free(subsystem_registry.subsystems);
+
+        // Reset all fields to ensure complete cleanup
         subsystem_registry.subsystems = NULL;
-    }
+        subsystem_registry.count = 0;
+        subsystem_registry.capacity = 0;
 
-    // Reset all fields to ensure complete cleanup
-    subsystem_registry.subsystems = NULL;
-    subsystem_registry.count = 0;
-    subsystem_registry.capacity = 0;
-
-    // Unlock the mutex if we successfully locked it
-    if (lock_result == 0) {
-        pthread_mutex_unlock(&subsystem_registry.mutex);
+        mutex_unlock(&subsystem_registry.mutex);
     }
 }
 
 /*
  * Register a new subsystem with the registry.
  */
-int register_subsystem(const char* name, ServiceThreads* threads, 
+int register_subsystem(const char* name, ServiceThreads* threads,
                      pthread_t* main_thread, volatile sig_atomic_t* shutdown_flag,
                      int (*init_function)(void), void (*shutdown_function)(void)) {
     if (!name) {
         log_this(SR_REGISTRY, "Cannot register subsystem with NULL name", LOG_LEVEL_ERROR, 0);
         return -1;
     }
-    
-    pthread_mutex_lock(&subsystem_registry.mutex);
-    
+
+    MutexResult lock_result = MUTEX_LOCK(&subsystem_registry.mutex, SR_REGISTRY);
+    if (lock_result != MUTEX_SUCCESS) {
+        return -1;
+    }
+
     // Check if we need to grow the registry
     if (subsystem_registry.count >= subsystem_registry.capacity) {
         // Double the capacity or use initial capacity if empty
-        size_t new_capacity = (subsystem_registry.capacity == 0) ? 
-                           INITIAL_REGISTRY_CAPACITY : 
+        size_t new_capacity = (subsystem_registry.capacity == 0) ?
+                           INITIAL_REGISTRY_CAPACITY :
                            ((size_t)subsystem_registry.capacity * 2);
-        
+
         if (!grow_registry(new_capacity)) {
             log_this(SR_REGISTRY, "Cannot register subsystem '%s': memory allocation failed", LOG_LEVEL_ERROR, 1, name);
-            pthread_mutex_unlock(&subsystem_registry.mutex);
+            mutex_unlock(&subsystem_registry.mutex);
             return -1;
         }
     }
-    
+
     // Check if a subsystem with this name already exists
     for (int i = 0; i < subsystem_registry.count; i++) {
-        if (subsystem_registry.subsystems[i].name && 
+        if (subsystem_registry.subsystems[i].name &&
             strcmp(subsystem_registry.subsystems[i].name, name) == 0) {
             log_this(SR_REGISTRY, "Subsystem '%s' already registered", LOG_LEVEL_ERROR, 1, name);
-            pthread_mutex_unlock(&subsystem_registry.mutex);
+            mutex_unlock(&subsystem_registry.mutex);
             return -1;
         }
     }
-    
+
     // Register the new subsystem
     int id = subsystem_registry.count;
     subsystem_registry.subsystems[id].name = strdup(name);  // Create a copy of the name
     if (!subsystem_registry.subsystems[id].name) {
         log_this(SR_REGISTRY, "Cannot register subsystem '%s': failed to allocate name", LOG_LEVEL_ERROR, 1, name);
-        pthread_mutex_unlock(&subsystem_registry.mutex);
+        mutex_unlock(&subsystem_registry.mutex);
         return -1;
     }
     subsystem_registry.subsystems[id].state = SUBSYSTEM_INACTIVE;
@@ -167,11 +168,11 @@ int register_subsystem(const char* name, ServiceThreads* threads,
     subsystem_registry.subsystems[id].init_function = init_function;
     subsystem_registry.subsystems[id].shutdown_function = shutdown_function;
     subsystem_registry.subsystems[id].dependency_count = 0;
-    
+
     subsystem_registry.count++;
-    
-    pthread_mutex_unlock(&subsystem_registry.mutex);
-    
+
+    mutex_unlock(&subsystem_registry.mutex);
+
     return id;
 }
 
