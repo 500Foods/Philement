@@ -56,6 +56,7 @@ commands=(
     "${OH}" "${TABLES}" 
     "coverage_table.sh" "github-sitemap.sh"
     "db2level" "mysql_config" "pg_config" "sqlite3"
+    "lua" "sqruff"
 )
 
 # Array to store results

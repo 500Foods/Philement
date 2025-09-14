@@ -517,7 +517,6 @@ int launch_database_subsystem(void) {
 
     database_stopping = 0;
 
-    log_this(SR_DATABASE, "=== DATABASE SUBSYSTEM LAUNCH STARTED ===", LOG_LEVEL_STATE, 0);
     log_this(SR_DATABASE, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_DATABASE, "LAUNCH: " SR_DATABASE, LOG_LEVEL_STATE, 0);
 
@@ -551,7 +550,7 @@ int launch_database_subsystem(void) {
     // log_this(SR_DATABASE, "Phase 3.3: Queue manager initialization completed", LOG_LEVEL_STATE, 0);
 
     // Phase 4: Connect to configured databases and start queues
-    log_this(SR_DATABASE, "Connecting to configured databases and starting queues", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Connecting to configured databases and starting queues", LOG_LEVEL_STATE, 0);
     int connected_databases = 0;
     int total_queues_started = 0;
 
@@ -581,6 +580,28 @@ int launch_database_subsystem(void) {
                 // log_this(SR_DATABASE, "Phase 4.7: Database added to subsystem successfully", LOG_LEVEL_STATE, 0);
                 connected_databases++;
                 total_queues_started += queues_for_db;
+
+                // Wait for bootstrap query completion before continuing launch
+                DatabaseQueue* db_queue = database_queue_manager_get_database(global_queue_manager, conn->name);
+                if (db_queue && db_queue->is_lead_queue) {
+                    log_this(SR_DATABASE, "Waiting for bootstrap query completion for database: %s", LOG_LEVEL_STATE, 1, conn->name);
+
+                    // Wait with timeout to prevent unreasonable blocking
+                    struct timespec timeout;
+                    clock_gettime(CLOCK_REALTIME, &timeout);
+                    timeout.tv_sec += 5; // 10 second timeout for bootstrap
+
+                    pthread_mutex_lock(&db_queue->bootstrap_lock);
+                    while (!db_queue->bootstrap_completed) {
+                        if (pthread_cond_timedwait(&db_queue->bootstrap_cond, &db_queue->bootstrap_lock, &timeout) == ETIMEDOUT) {
+                            log_this(SR_DATABASE, "Timeout waiting for bootstrap query completion for database: %s", LOG_LEVEL_ALERT, 1, conn->name);
+                            break;
+                        }
+                    }
+                    pthread_mutex_unlock(&db_queue->bootstrap_lock);
+
+                    log_this(SR_DATABASE, "Bootstrap query completed for database: %s", LOG_LEVEL_STATE, 1, conn->name);
+                }
 
                 // Log Lead queue startup for this database
                 // log_this(SR_DATABASE, "Phase 4.8: Lead queue started for database", LOG_LEVEL_DEBUG, 0);
