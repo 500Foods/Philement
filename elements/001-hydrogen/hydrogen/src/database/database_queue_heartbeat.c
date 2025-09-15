@@ -176,6 +176,17 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
     if (!config) {
         db_queue->is_connected = false;
         db_queue->last_connection_attempt = time(NULL);
+
+        // Signal that initial connection attempt is complete (parsing failed)
+        if (db_queue->is_lead_queue) {
+            MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+            if (signal_result == MUTEX_SUCCESS) {
+                db_queue->initial_connection_attempted = true;
+                pthread_cond_broadcast(&db_queue->initial_connection_cond);
+                mutex_unlock(&db_queue->initial_connection_lock);
+            }
+        }
+
         return false;
     }
 
@@ -194,6 +205,17 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
         free_connection_config(config);
         db_queue->is_connected = false;
         db_queue->last_connection_attempt = time(NULL);
+
+        // Signal that initial connection attempt is complete (engine init failed)
+        if (db_queue->is_lead_queue) {
+            MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+            if (signal_result == MUTEX_SUCCESS) {
+                db_queue->initial_connection_attempted = true;
+                pthread_cond_broadcast(&db_queue->initial_connection_cond);
+                mutex_unlock(&db_queue->initial_connection_lock);
+            }
+        }
+
         return false;
     }
 
@@ -220,6 +242,17 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
             } else {
                 log_this(SR_DATABASE, "CRITICAL ERROR: Stored connection has corrupted mutex! Not unlocking queue mutex", LOG_LEVEL_ERROR, 0);
                 // Don't unlock - this will cause the timeout detection to trigger
+
+                // Signal that initial connection attempt is complete (corrupted mutex)
+                if (db_queue->is_lead_queue) {
+                    MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+                    if (signal_result == MUTEX_SUCCESS) {
+                        db_queue->initial_connection_attempted = true;
+                        pthread_cond_broadcast(&db_queue->initial_connection_cond);
+                        mutex_unlock(&db_queue->initial_connection_lock);
+                    }
+                }
+
                 return false;
             }
         } else {
@@ -227,6 +260,39 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
             database_engine_cleanup_connection(db_handle);
             db_queue->is_connected = false;
         }
+
+        // Perform health check on the newly established connection
+        char* health_check_label = database_queue_generate_label(db_queue);
+        log_this(health_check_label, "About to perform health check on newly established connection", LOG_LEVEL_DEBUG, 0);
+        bool health_check_passed = database_engine_health_check(db_handle);
+        log_this(health_check_label, "Health check completed, result: %s", LOG_LEVEL_DEBUG, 1, health_check_passed ? "PASSED" : "FAILED");
+        if (!health_check_passed) {
+            log_this(health_check_label, "Health check failed after connection establishment - connection may be unstable", LOG_LEVEL_ERROR, 0);
+            // Add diagnostic information about the connection before cleanup
+            log_this(health_check_label, "Connection diagnostics: engine_type=%d, status=%d, connected_since=%ld",
+                    LOG_LEVEL_DEBUG, 3, db_handle->engine_type, db_handle->status, (long)db_handle->connected_since);
+            // Clean up the connection since health check failed
+            database_engine_cleanup_connection(db_handle);
+            db_queue->is_connected = false;
+            mutex_unlock(&db_queue->connection_lock);
+            free(health_check_label);
+            db_queue->last_connection_attempt = time(NULL);
+
+            // Signal that initial connection attempt is complete (even on failure)
+            if (db_queue->is_lead_queue) {
+                MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+                if (signal_result == MUTEX_SUCCESS) {
+                    db_queue->initial_connection_attempted = true;
+                    pthread_cond_broadcast(&db_queue->initial_connection_cond);
+                    mutex_unlock(&db_queue->initial_connection_lock);
+                }
+            }
+
+            free_connection_config(config);
+            return false;
+        }
+        log_this(health_check_label, "Health check passed - connection is stable", LOG_LEVEL_STATE, 0);
+        free(health_check_label);
 
         // Execute bootstrap query if configured (only for Lead queues)
         if (db_queue->is_lead_queue) {
@@ -241,6 +307,16 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
 
     // Clean up config
     free_connection_config(config);
+
+    // Signal that initial connection attempt is complete (for Lead queues)
+    if (db_queue->is_lead_queue) {
+        MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+        if (signal_result == MUTEX_SUCCESS) {
+            db_queue->initial_connection_attempted = true;
+            pthread_cond_broadcast(&db_queue->initial_connection_cond);
+            mutex_unlock(&db_queue->initial_connection_lock);
+        }
+    }
 
     return db_queue->is_connected;
 }
@@ -314,6 +390,57 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
     if (db_queue->is_lead_queue) {
         database_queue_manage_child_queues(db_queue);
     }
+}
+
+/*
+ * Wait for initial connection attempt to complete (Lead queues only)
+ * Returns true if connection attempt completed within timeout, false on timeout
+ */
+bool database_queue_wait_for_initial_connection(DatabaseQueue* db_queue, int timeout_seconds) {
+    if (!db_queue || !db_queue->is_lead_queue) {
+        return true; // Non-lead queues don't need this synchronization
+    }
+
+    char* dqm_label = database_queue_generate_label(db_queue);
+
+    MutexResult lock_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        log_this(dqm_label, "Failed to acquire initial connection lock for synchronization", LOG_LEVEL_ERROR, 0);
+        free(dqm_label);
+        return false;
+    }
+
+    // Check if already completed
+    if (db_queue->initial_connection_attempted) {
+        mutex_unlock(&db_queue->initial_connection_lock);
+        free(dqm_label);
+        return true;
+    }
+
+    // Set up timeout
+    struct timespec timeout_time;
+    clock_gettime(CLOCK_REALTIME, &timeout_time);
+    timeout_time.tv_sec += timeout_seconds;
+
+    log_this(dqm_label, "Waiting for initial connection attempt to complete (timeout: %d seconds)", LOG_LEVEL_DEBUG, 1, timeout_seconds);
+
+    // Wait for the condition
+    int wait_result = pthread_cond_timedwait(&db_queue->initial_connection_cond,
+                                           &db_queue->initial_connection_lock,
+                                           &timeout_time);
+
+    bool completed = (wait_result == 0) || db_queue->initial_connection_attempted;
+
+    if (completed) {
+        log_this(dqm_label, "Initial connection attempt completed", LOG_LEVEL_STATE, 0);
+    } else {
+        log_this(dqm_label, "Timeout waiting for initial connection attempt", LOG_LEVEL_ERROR, 0);
+    }
+
+    mutex_unlock(&db_queue->initial_connection_lock);
+    free(dqm_label);
+
+    return completed;
 }
 
 /*

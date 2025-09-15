@@ -214,15 +214,38 @@ bool database_engine_connect_with_designator(DatabaseEngine engine_type, Connect
 }
 
 bool database_engine_health_check(DatabaseHandle* connection) {
-    if (!connection || !connection->engine_type) {
+    log_this(SR_DATABASE, "database_engine_health_check: Function called with connection=%p", LOG_LEVEL_DEBUG, 1, (void*)connection);
+
+    if (!connection) {
+        log_this(SR_DATABASE, "database_engine_health_check: connection is NULL", LOG_LEVEL_ERROR, 0);
         return false;
     }
+
+    log_this(SR_DATABASE, "database_engine_health_check: connection->engine_type = %d", LOG_LEVEL_DEBUG, 1, connection->engine_type);
+    log_this(SR_DATABASE, "database_engine_health_check: DB_ENGINE_MAX = %d", LOG_LEVEL_DEBUG, 1, DB_ENGINE_MAX);
+
+    if (connection->engine_type >= DB_ENGINE_MAX) {
+        log_this(SR_DATABASE, "database_engine_health_check: Invalid engine_type %d (must be < %d)", LOG_LEVEL_ERROR, 2, connection->engine_type, DB_ENGINE_MAX);
+        return false;
+    }
+
+    log_this(SR_DATABASE, "database_engine_health_check: Engine type validation passed", LOG_LEVEL_DEBUG, 0);
 
     DatabaseEngineInterface* engine = database_engine_get(connection->engine_type);
-    if (!engine || !engine->health_check) {
+    log_this(SR_DATABASE, "database_engine_health_check: database_engine_get returned %p", LOG_LEVEL_DEBUG, 1, (void*)engine);
+
+    if (!engine) {
+        log_this(SR_DATABASE, "database_engine_health_check: No engine found for type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);
         return false;
     }
 
+    log_this(SR_DATABASE, "database_engine_health_check: Engine found, checking health_check function", LOG_LEVEL_DEBUG, 0);
+    if (!engine->health_check) {
+        log_this(SR_DATABASE, "database_engine_health_check: Engine has no health_check function", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    log_this(SR_DATABASE, "database_engine_health_check: Calling engine health_check function", LOG_LEVEL_DEBUG, 0);
     return engine->health_check(connection);
 }
 

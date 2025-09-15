@@ -75,10 +75,15 @@ struct DatabaseQueue {
     volatile bool shutdown_requested;
     volatile bool is_connected;
     volatile bool bootstrap_completed;  // True when bootstrap query has completed (Lead queues only)
+    volatile bool initial_connection_attempted;  // True when initial connection attempt is complete (Lead queues only)
 
     // Bootstrap completion synchronization (Lead queues only)
     pthread_mutex_t bootstrap_lock;
     pthread_cond_t bootstrap_cond;
+
+    // Initial connection attempt synchronization (Lead queues only)
+    pthread_mutex_t initial_connection_lock;
+    pthread_cond_t initial_connection_cond;
 };
 
 // Database queue manager that coordinates multiple databases
@@ -178,6 +183,9 @@ void database_queue_start_heartbeat(DatabaseQueue* db_queue);
 bool database_queue_check_connection(DatabaseQueue* db_queue);
 void database_queue_perform_heartbeat(DatabaseQueue* db_queue);
 void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue);
+
+// Launch synchronization functions
+bool database_queue_wait_for_initial_connection(DatabaseQueue* db_queue, int timeout_seconds);
 
 // Debug functions
 // void debug_dump_connection(const char* label, const DatabaseHandle* conn, const char* dqm_label);

@@ -87,6 +87,11 @@ char* postgresql_escape_string(DatabaseHandle* connection, const char* input);
 // Engine interface
 DatabaseEngineInterface* postgresql_get_interface(void);
 
+// Engine information functions
+const char* postgresql_engine_get_version(void);
+bool postgresql_engine_is_available(void);
+const char* postgresql_engine_get_description(void);
+
 
 /*
  * PostgreSQL Database Engine - Main Entry Point
@@ -99,11 +104,11 @@ DatabaseEngineInterface* postgresql_get_interface(void);
 #include "interface.h"
 
 // Engine version and information functions for testing and coverage
-static const char* postgresql_engine_get_version(void) {
+const char* postgresql_engine_get_version(void) {
     return "PostgreSQL Engine v1.0.0";
 }
 
-static bool postgresql_engine_is_available(void) {
+bool postgresql_engine_is_available(void) {
     // Try to load the PostgreSQL library
     void* test_handle = dlopen("libpq.so.5", RTLD_LAZY);
     if (!test_handle) {
@@ -118,7 +123,7 @@ static bool postgresql_engine_is_available(void) {
     return false;
 }
 
-static const char* postgresql_engine_get_description(void) {
+const char* postgresql_engine_get_description(void) {
     return "PostgreSQL database engine with dynamic loading support";
 }
 

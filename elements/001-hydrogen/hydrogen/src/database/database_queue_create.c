@@ -161,10 +161,37 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
         return NULL;
     }
 
+    // Initialize initial connection attempt synchronization (Lead queues only)
+    if (pthread_mutex_init(&db_queue->initial_connection_lock, NULL) != 0) {
+        log_this(SR_DATABASE, "Failed to initialize initial connection mutex", LOG_LEVEL_ERROR, 0);
+        pthread_cond_destroy(&db_queue->bootstrap_cond);
+        pthread_mutex_destroy(&db_queue->bootstrap_lock);
+        pthread_mutex_destroy(&db_queue->connection_lock);
+        pthread_mutex_destroy(&db_queue->children_lock);
+        sem_destroy(&db_queue->worker_semaphore);
+        pthread_mutex_destroy(&db_queue->queue_access_lock);
+        database_queue_destroy(db_queue);
+        return NULL;
+    }
+
+    if (pthread_cond_init(&db_queue->initial_connection_cond, NULL) != 0) {
+        log_this(SR_DATABASE, "Failed to initialize initial connection condition variable", LOG_LEVEL_ERROR, 0);
+        pthread_mutex_destroy(&db_queue->initial_connection_lock);
+        pthread_cond_destroy(&db_queue->bootstrap_cond);
+        pthread_mutex_destroy(&db_queue->bootstrap_lock);
+        pthread_mutex_destroy(&db_queue->connection_lock);
+        pthread_mutex_destroy(&db_queue->children_lock);
+        sem_destroy(&db_queue->worker_semaphore);
+        pthread_mutex_destroy(&db_queue->queue_access_lock);
+        database_queue_destroy(db_queue);
+        return NULL;
+    }
+
     // Initialize flags and statistics
     db_queue->shutdown_requested = false;
     db_queue->is_connected = false;
     db_queue->bootstrap_completed = false;
+    db_queue->initial_connection_attempted = false;
     db_queue->persistent_connection = NULL;
     db_queue->active_connections = 0;
     db_queue->total_queries_processed = 0;
