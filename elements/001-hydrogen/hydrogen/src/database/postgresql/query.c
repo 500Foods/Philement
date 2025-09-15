@@ -128,11 +128,6 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
     db_result->execution_time_ms = 0; // TODO: Implement timing
     db_result->affected_rows = atoi(PQcmdTuples_ptr(pg_result));
 
-    log_this(designator, "Query returned %zu rows, %zu columns, affected %d rows", LOG_LEVEL_DEBUG, 3,
-        db_result->row_count,
-        db_result->column_count,
-        db_result->affected_rows);
-
     // Extract column names
     if (db_result->column_count > 0) {
         db_result->column_names = calloc(db_result->column_count, sizeof(char*));

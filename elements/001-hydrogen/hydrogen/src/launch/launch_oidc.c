@@ -6,10 +6,11 @@
  */
 
  // Global includes
-#include "../hydrogen.h"
-
-// Local includes
-#include "launch.h"
+ #include "../hydrogen.h"
+ 
+ // Local includes
+ #include "launch.h"
+ #include "../oidc/oidc_service.h"
 
 // Registry ID and cached readiness state
 static int oidc_subsystem_id = -1;
@@ -222,10 +223,15 @@ int launch_oidc_subsystem(void) {
     // Step 3: Initialize OIDC services
     log_this(SR_OIDC, "  Step 3: Initializing OIDC services", LOG_LEVEL_STATE, 0);
 
-    // TODO: Add actual OIDC service initialization here when implementation is ready
-    // For now, we log that the service would be initialized
-    log_this(SR_OIDC, "    OIDC service initialization placeholder", LOG_LEVEL_STATE, 0);
-    log_this(SR_OIDC, "    OIDC server would start on port %d", LOG_LEVEL_STATE, 1, app_config->oidc.port);
+    // Initialize the OIDC service with configuration
+    if (!init_oidc_service(&app_config->oidc)) {
+        log_this(SR_OIDC, "    Failed to initialize OIDC service", LOG_LEVEL_ERROR, 0);
+        log_this(SR_OIDC, "LAUNCH: OIDC - Failed: Service initialization failed", LOG_LEVEL_STATE, 0);
+        return 0;
+    }
+
+    log_this(SR_OIDC, "    OIDC service initialized successfully", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "    OIDC server running on port %d", LOG_LEVEL_STATE, 1, app_config->oidc.port);
     log_this(SR_OIDC, "    OIDC issuer: %s", LOG_LEVEL_STATE, 1, app_config->oidc.issuer);
 
     // Step 4: Update registry and verify state

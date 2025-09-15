@@ -44,7 +44,7 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
     add_service_thread(&database_threads, db_queue->worker_thread);
 
     char* dqm_label_success = database_queue_generate_label(db_queue);
-    log_this(dqm_label_success, "Worker thread created and registered successfully", LOG_LEVEL_STATE, 0);
+    // log_this(dqm_label_success, "Worker thread created and registered successfully", LOG_LEVEL_STATE, 0);
     free(dqm_label_success);
     return true;
 }
@@ -57,6 +57,8 @@ void* database_queue_worker_thread(void* arg) {
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
+
+    // NOTE: This is what Test 30 (Database) is looking for
     log_this(dqm_label, "Worker thread started", LOG_LEVEL_STATE, 0);
 
     // Start heartbeat monitoring immediately
@@ -88,15 +90,15 @@ void* database_queue_worker_thread(void* arg) {
                     // TODO: Actual database query execution will be implemented in Phase 2
                     // For now, just simulate processing time based on queue type
                     if (strcmp(db_queue->queue_type, "slow") == 0) {
-                        usleep(500000); // 500ms for slow queries
+                        usleep(5); // 500ms for slow queries
                     } else if (strcmp(db_queue->queue_type, "medium") == 0) {
-                        usleep(200000); // 200ms for medium queries
+                        usleep(2); // 200ms for medium queries
                     } else if (strcmp(db_queue->queue_type, "fast") == 0) {
-                        usleep(50000);  // 50ms for fast queries
+                        usleep(5);  // 50ms for fast queries
                     } else if (strcmp(db_queue->queue_type, "cache") == 0) {
-                        usleep(10000);  // 10ms for cache queries
+                        usleep(5);  // 10ms for cache queries
                     } else if (strcmp(db_queue->queue_type, "Lead") == 0) {
-                        usleep(100000); // 100ms for Lead queue queries
+                        usleep(5); // 100ms for Lead queue queries
                         // Lead queue can also manage child queues here
                         if (db_queue->is_lead_queue) {
                             database_queue_manage_child_queues(db_queue);

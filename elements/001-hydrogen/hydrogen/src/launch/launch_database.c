@@ -555,7 +555,7 @@ int launch_database_subsystem(void) {
     }
 
     // Phase 3: Initialize queue system FIRST (moved from Phase 4)
-    log_this(SR_DATABASE, "Initializing queue system", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Initializing queue system", LOG_LEVEL_STATE, 0);
     // log_this(SR_DATABASE, "Phase 3.1: Starting queue manager initialization", LOG_LEVEL_STATE, 0);
 
     if (!database_queue_system_init()) {
@@ -597,27 +597,9 @@ int launch_database_subsystem(void) {
                 connected_databases++;
                 total_queues_started += queues_for_db;
 
-                // Wait for bootstrap query completion before continuing launch
-                DatabaseQueue* db_queue = database_queue_manager_get_database(global_queue_manager, conn->name);
-                if (db_queue && db_queue->is_lead_queue) {
-                    log_this(SR_DATABASE, "Waiting for bootstrap query completion for database: %s", LOG_LEVEL_STATE, 1, conn->name);
-
-                    // Wait with timeout to prevent unreasonable blocking
-                    struct timespec timeout;
-                    clock_gettime(CLOCK_REALTIME, &timeout);
-                    timeout.tv_sec += 5; // 10 second timeout for bootstrap
-
-                    pthread_mutex_lock(&db_queue->bootstrap_lock);
-                    while (!db_queue->bootstrap_completed) {
-                        if (pthread_cond_timedwait(&db_queue->bootstrap_cond, &db_queue->bootstrap_lock, &timeout) == ETIMEDOUT) {
-                            log_this(SR_DATABASE, "Timeout waiting for bootstrap query completion for database: %s", LOG_LEVEL_ALERT, 1, conn->name);
-                            break;
-                        }
-                    }
-                    pthread_mutex_unlock(&db_queue->bootstrap_lock);
-
-                    log_this(SR_DATABASE, "Bootstrap query completed for database: %s", LOG_LEVEL_STATE, 1, conn->name);
-                }
+                // Bootstrap query runs asynchronously - don't wait for it to speed up launch
+                // DatabaseQueue* db_queue = database_queue_manager_get_database(global_queue_manager, conn->name);
+                // Bootstrap will complete in background and signal when done
 
                 // Log Lead queue startup for this database
                 // log_this(SR_DATABASE, "Phase 4.8: Lead queue started for database", LOG_LEVEL_DEBUG, 0);

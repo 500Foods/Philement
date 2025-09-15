@@ -37,7 +37,7 @@ bool database_queue_system_init(void) {
         return false;
     }
 
-    log_this(SR_DATABASE, "Database queue system initialized successfully", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Database queue system initialized successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -79,7 +79,7 @@ bool database_queue_manager_add_database(DatabaseQueueManager* manager, Database
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
-    log_this(dqm_label, "Added to global queue manager", LOG_LEVEL_STATE, 0);
+    // log_this(dqm_label, "Added to global queue manager", LOG_LEVEL_STATE, 0);
     free(dqm_label);
     return true;
 }

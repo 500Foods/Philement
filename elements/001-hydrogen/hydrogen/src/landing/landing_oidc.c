@@ -7,6 +7,7 @@
 
 // Local includes
 #include "landing.h"
+#include "../oidc/oidc_service.h"
 
 // External declarations
 extern AppConfig* app_config;
@@ -63,24 +64,9 @@ static void free_oidc_resources(void) {
         return;
     }
 
-    // Clean up OIDC service resources
-    log_this(SR_LANDING, "  Step 1: Stopping OIDC authentication service", LOG_LEVEL_STATE, 0);
-
-    // Clean up any active OIDC sessions or tokens
-    log_this(SR_LANDING, "  Step 2: Clearing active OIDC sessions", LOG_LEVEL_STATE, 0);
-    // Any cached authentication sessions would be cleared here
-
-    log_this(SR_LANDING, "  Step 3: Revoking cached tokens", LOG_LEVEL_STATE, 0);
-    // Any cached access/refresh tokens would be revoked here
-
-    log_this(SR_LANDING, "  Step 4: Closing OIDC network connections", LOG_LEVEL_STATE, 0);
-    // Any HTTP connections to OIDC provider would be closed here
-
-    log_this(SR_LANDING, "  Step 5: Clearing OIDC key cache", LOG_LEVEL_STATE, 0);
-    // Any cached encryption keys would be cleared here
-
-    log_this(SR_LANDING, "  Step 6: Freeing OIDC configuration", LOG_LEVEL_STATE, 0);
-    // OIDC-specific configuration resources would be freed here
+    // Shut down the OIDC service
+    log_this(SR_LANDING, "  Step 1: Shutting down OIDC service", LOG_LEVEL_STATE, 0);
+    shutdown_oidc_service();
 
     // Update the registry that OIDC has been shut down
     update_subsystem_after_shutdown("OIDC");

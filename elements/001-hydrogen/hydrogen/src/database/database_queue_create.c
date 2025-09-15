@@ -92,7 +92,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
         return NULL;
     }
 
-    log_this(SR_DATABASE, "Lead queue created successfully", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Lead queue created successfully", LOG_LEVEL_STATE, 0);
 
     // Initialize synchronization primitives
     if (pthread_mutex_init(&db_queue->queue_access_lock, NULL) != 0) {
@@ -171,7 +171,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     db_queue->current_queue_depth = 0;
     db_queue->child_queue_count = 0;
 
-    log_this(SR_DATABASE, "Lead queue creation completed successfully", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Lead queue creation completed successfully", LOG_LEVEL_STATE, 0);
     return db_queue;
 }
 
@@ -321,6 +321,6 @@ DatabaseQueueManager* database_queue_manager_create(size_t max_databases) {
     }
 
     manager->initialized = true;
-    log_this(SR_DATABASE, "Queue manager creation completed successfully", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Queue manager creation completed successfully", LOG_LEVEL_STATE, 0);
     return manager;
 }

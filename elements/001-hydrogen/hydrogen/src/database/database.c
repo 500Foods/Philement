@@ -60,7 +60,7 @@ bool database_subsystem_init(void) {
     // Initialize database thread tracking
     init_service_threads(&database_threads, SR_DATABASE);
 
-    log_this(SR_DATABASE, "Database subsystem initialization completed successfully", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Database subsystem initialization completed successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
@@ -90,10 +90,10 @@ void database_subsystem_shutdown(void) {
 
 // Add a database configuration
 bool database_add_database(const char* name, const char* engine, const char* connection_string __attribute__((unused))) {
-    log_this(SR_DATABASE, "Starting database addition for: %s", LOG_LEVEL_STATE, 1, name);
+    log_this(SR_DATABASE, "Starting database: %s", LOG_LEVEL_STATE, 1, name);
 
     if (!database_subsystem || !name || !engine) {
-        log_this(SR_DATABASE, "Invalid parameters for database addition", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Invalid parameters for database", LOG_LEVEL_ERROR, 0);
         return false;
     }
 

@@ -15,7 +15,6 @@
 #include "../webserver/web_server_core.h"
 #include "system/system_service.h"
 #include "system/upload/upload.h"
-#include "oidc/oidc_service.h"
 
 // Simple hardcoded endpoint validator and handler for /api/version
 static bool is_exact_api_version_endpoint(const char *url) {
@@ -51,35 +50,20 @@ static enum MHD_Result handle_exact_api_files_local_request(void *cls, struct MH
 
 bool init_api_endpoints(void) {
     log_this(SR_API, "Initializing API endpoints", LOG_LEVEL_STATE, 0);
-    
-    // Try to initialize OIDC service, but continue even if it fails
-    bool oidc_initialized = init_oidc_endpoints(NULL);  // NULL for default context
-    if (!oidc_initialized) {
-        log_this(SR_API, "OIDC initialization failed, continuing with system endpoints only", LOG_LEVEL_ERROR, 0);
-    } else {
-        log_this(SR_API, "OIDC endpoints initialized", LOG_LEVEL_STATE, 0);
-    }
-    
+
     // Register endpoints with the web server
     if (!register_api_endpoints()) {
         log_this(SR_API, "Failed to register API endpoints", LOG_LEVEL_ERROR, 0);
-        if (oidc_initialized) {
-            cleanup_oidc_endpoints();  // Clean up OIDC only if it was initialized
-        }
         return false;
     }
-    
+
     log_this(SR_API, "API endpoints initialized successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
 void cleanup_api_endpoints(void) {
     log_this(SR_API, "Cleaning up API endpoints", LOG_LEVEL_STATE, 0);
-    
-    // Clean up OIDC endpoints first
-    cleanup_oidc_endpoints();
-    log_this(SR_API, "OIDC endpoints cleaned up", LOG_LEVEL_STATE, 0);
-    
+
     if (app_config && app_config->api.prefix) {
         unregister_web_endpoint(app_config->api.prefix);
         log_this(SR_API, "Unregistered API endpoints", LOG_LEVEL_STATE, 0);
@@ -167,12 +151,6 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "  -> %s/system/appconfig", LOG_LEVEL_STATE, 1, app_config->api.prefix);
         log_this(SR_API, "  -> %s/system/recent", LOG_LEVEL_STATE, 1, app_config->api.prefix);
         log_this(SR_API, "  -> %s/system/upload", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        // OIDC endpoints
-        log_this(SR_API, "  -> %s/oidc/authorize", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/oidc/token", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/oidc/userinfo", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/oidc/.well-known/openid-configuration", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/oidc/jwks", LOG_LEVEL_STATE, 1, app_config->api.prefix);
     log_group_end();
     
     return true;
@@ -374,11 +352,6 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     else if (strcmp(path, "system/upload") == 0) {
         return handle_system_upload_request(connection, method, upload_data,
                                           upload_data_size, con_cls);
-    }
-    // Handle OIDC endpoints
-    else if (strncmp(path, "oidc/", 5) == 0) {
-        return handle_oidc_request(connection, url, method, version,
-                                 upload_data, upload_data_size, con_cls);
     }
 
     // Endpoint not found
