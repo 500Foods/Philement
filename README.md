@@ -67,15 +67,15 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-09-15 00:14:15 UTC
+Last updated at 2025-09-15 01:43:41 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              415          15662          16996          57553
+C                              415          15653          16994          57506
 Markdown                       287           8346             58          26233
-Bourne Shell                    73           3230          57787          14746
+Bourne Shell                    73           3230          57772          14746
 C/C++ Header                   139           1548           4260           4205
-SVG                              4              0              0           3957
+SVG                              4              0              0           3959
 JSON                            39              0              0           3531
 HTML                             8            138             23            882
 CMake                            1            146            191            779
@@ -90,7 +90,7 @@ Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           994          29277          79452         113034
+SUM:                           994          29268          79435         112989
 -------------------------------------------------------------------------------
 47 Files were skipped (duplicate, binary, or without source code):
   lua: 6
