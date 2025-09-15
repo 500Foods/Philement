@@ -83,8 +83,6 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
             db_result->row_count = (size_t)mysql_num_rows_ptr(mysql_result);
             db_result->column_count = (size_t)mysql_num_fields_ptr(mysql_result);
 
-            log_this(designator, "MySQL execute_query: Query returned %zu rows, %zu columns", LOG_LEVEL_DEBUG, 2,
-                db_result->row_count, db_result->column_count);
 
             // Extract column names
             if (db_result->column_count > 0 && mysql_fetch_fields_ptr) {
