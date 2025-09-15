@@ -199,15 +199,13 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
 
 // Log early startup information (before any initialization)
 static void log_early_info(void) {
-    log_group_begin();
-        log_this(SR_STARTUP, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
-        log_this(SR_STARTUP, "HYDROGEN STARTUP", LOG_LEVEL_STATE, 0);
-        log_this(SR_STARTUP, "PID:     %d", LOG_LEVEL_STATE, 1, getpid());
-        log_this(SR_STARTUP, "Version: %s", LOG_LEVEL_STATE, 1, VERSION);
-        log_this(SR_STARTUP, "Release: %s", LOG_LEVEL_STATE, 1, RELEASE);
-        log_this(SR_STARTUP, "Build:   %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
-        log_this(SR_STARTUP, "Size:    %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);    
-    log_group_end();
+    log_this(SR_STARTUP, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    log_this(SR_STARTUP, "HYDROGEN STARTUP", LOG_LEVEL_STATE, 0);
+    log_this(SR_STARTUP, "PID:     %d", LOG_LEVEL_STATE, 1, getpid());
+    log_this(SR_STARTUP, "Version: %s", LOG_LEVEL_STATE, 1, VERSION);
+    log_this(SR_STARTUP, "Release: %s", LOG_LEVEL_STATE, 1, RELEASE);
+    log_this(SR_STARTUP, "Build:   %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
+    log_this(SR_STARTUP, "Size:    %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);    
 }
 
 // Check readiness of all subsystems and coordinate launch
@@ -356,12 +354,9 @@ int startup_hydrogen(const char* config_path) {
         return 0;
     }
 
-    // Apply configured startup delay silently
-    if (app_config->server.startup_delay > 0 && app_config->server.startup_delay < 10000) {
-        usleep((unsigned int)(app_config->server.startup_delay * 1000));
-    } else {
-        usleep(5 * 1000);
-    }
+    // Apply minimal startup delay for stability (reduced from configurable delay)
+    // Only use a very short delay to ensure registry initialization is complete
+    usleep(1000); // 1ms delay for stability
     
     // Launch approved subsystems and continue regardless of failures
     bool launch_success = launch_approved_subsystems(&readiness_results);
