@@ -180,7 +180,7 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue);
 void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue);
 
 // Debug functions
-void debug_dump_connection(const char* label, const DatabaseHandle* conn, const char* dqm_label);
-void debug_dump_engine(const char* label, DatabaseEngineInterface* engine, const char* dqm_label);
+// void debug_dump_connection(const char* label, const DatabaseHandle* conn, const char* dqm_label);
+// void debug_dump_engine(const char* label, DatabaseEngineInterface* engine, const char* dqm_label);
 
 #endif // DATABASE_QUEUE_H
