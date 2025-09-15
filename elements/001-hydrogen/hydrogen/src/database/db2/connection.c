@@ -103,7 +103,7 @@ bool load_libdb2_functions(void) {
  */
 
 
-static PreparedStatementCache* create_prepared_statement_cache(void) {
+PreparedStatementCache* db2_create_prepared_statement_cache(void) {
     PreparedStatementCache* cache = calloc(1, sizeof(PreparedStatementCache));
     if (!cache) return NULL;
 
@@ -118,7 +118,7 @@ static PreparedStatementCache* create_prepared_statement_cache(void) {
     return cache;
 }
 
-static void destroy_prepared_statement_cache(PreparedStatementCache* cache) {
+void db2_destroy_prepared_statement_cache(PreparedStatementCache* cache) {
     if (!cache) return;
 
     pthread_mutex_lock(&cache->lock);
@@ -197,7 +197,7 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
 
     db2_wrapper->environment = env_handle;
     db2_wrapper->connection = conn_handle;
-    db2_wrapper->prepared_statements = create_prepared_statement_cache();
+    db2_wrapper->prepared_statements = db2_create_prepared_statement_cache();
     if (!db2_wrapper->prepared_statements) {
         free(db2_wrapper);
         free(db_handle);
@@ -236,7 +236,7 @@ bool db2_disconnect(DatabaseHandle* connection) {
 
     DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
     if (db2_conn) {
-        destroy_prepared_statement_cache(db2_conn->prepared_statements);
+        db2_destroy_prepared_statement_cache(db2_conn->prepared_statements);
         free(db2_conn);
     }
 

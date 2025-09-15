@@ -619,6 +619,34 @@ int launch_database_subsystem(void) {
         return 0;
     }
 
+    // Phase 4.51: Wait for all Lead DQMs to complete their initial connection attempts
+    log_this(SR_DATABASE, "Waiting for all Lead DQMs to complete initial connection attempts", LOG_LEVEL_STATE, 0);
+    bool all_dqms_ready = true;
+
+    for (int i = 0; i < db_config->connection_count; i++) {
+        const DatabaseConnection* conn = &db_config->connections[i];
+
+        if (conn->enabled) {
+            // Get the Lead DQM for this database
+            DatabaseQueue* lead_queue = database_queue_manager_get_database(global_queue_manager, conn->name);
+            if (lead_queue && lead_queue->is_lead_queue) {
+                // Wait for initial connection attempt to complete (with 10 second timeout)
+                bool ready = database_queue_wait_for_initial_connection(lead_queue, 10);
+                if (!ready) {
+                    log_this(SR_DATABASE, "Timeout waiting for Lead DQM %s to complete initial connection attempt", LOG_LEVEL_ERROR, 1, conn->name);
+                    all_dqms_ready = false;
+                } else {
+                    log_this(SR_DATABASE, "Lead DQM %s initial connection attempt completed", LOG_LEVEL_STATE, 1, conn->name);
+                }
+            }
+        }
+    }
+
+    if (!all_dqms_ready) {
+        log_this(SR_DATABASE, "Not all Lead DQMs completed initial connection attempts within timeout", LOG_LEVEL_ERROR, 0);
+        // Continue anyway - DQMs will retry connections in heartbeat
+    }
+
     // log_this(SR_DATABASE, "Phase 4.52: Database connections established", LOG_LEVEL_STATE, 0);
     // log_this(SR_DATABASE, "Phase 4.53: Preparing queue count message", LOG_LEVEL_STATE, 0);
     char total_queues_msg[128];
