@@ -385,19 +385,9 @@ LaunchReadiness check_database_launch_readiness(void) {
             void* db2_handle = NULL;
             const char* db2_paths[] = {
                 "/opt/ibm/db2/V11.5/lib64/libdb2.so.1",
-                "/opt/ibm/db2/V11.5/lib32/libdb2.so.1",
                 "/opt/ibm/db2/V11.1/lib64/libdb2.so.1",
-                "/opt/ibm/db2/V11.1/lib32/libdb2.so.1",
-                "/mnt/extra/festival/opt/ibm/db2/V11.5/lib64/libdb2.so.1",
-                "/mnt/extra/festival/opt/ibm/db2/V11.5/lib32/libdb2.so.1",
-                "/mnt/extra/festival/usr/lib/libdb2.so.1",
                 "/opt/ibm/db2/V11.5/lib64/libdb2.so",
-                "/opt/ibm/db2/V11.5/lib32/libdb2.so",
                 "/opt/ibm/db2/V11.1/lib64/libdb2.so",
-                "/opt/ibm/db2/V11.1/lib32/libdb2.so",
-                "/mnt/extra/festival/opt/ibm/db2/V11.5/lib64/libdb2.so",
-                "/mnt/extra/festival/opt/ibm/db2/V11.5/lib32/libdb2.so",
-                "/mnt/extra/festival/usr/lib/libdb2.so",
                 NULL
             };
 

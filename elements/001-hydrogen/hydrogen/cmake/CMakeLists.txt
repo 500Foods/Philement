@@ -191,6 +191,7 @@ pkg_check_modules(MICROHTTPD REQUIRED libmicrohttpd)
 pkg_check_modules(WEBSOCKETS REQUIRED libwebsockets)
 pkg_check_modules(BROTLI REQUIRED libbrotlienc libbrotlidec)
 pkg_check_modules(UUID REQUIRED uuid)
+pkg_check_modules(LUA REQUIRED lua)
 
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
@@ -246,6 +247,7 @@ set(HYDROGEN_BASE_LIBS
     ${WEBSOCKETS_LIBRARIES}
     ${BROTLI_LIBRARIES}
     ${UUID_LIBRARIES}
+    ${LUA_LIBRARIES}
 )
 
 # Include directories
@@ -256,6 +258,7 @@ set(HYDROGEN_INCLUDE_DIRS
     ${WEBSOCKETS_INCLUDE_DIRS}
     ${BROTLI_INCLUDE_DIRS}
     ${UUID_INCLUDE_DIRS}
+    ${LUA_INCLUDE_DIRS}
 )
 
 # Source file discovery
@@ -310,6 +313,7 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
                 ${WEBSOCKETS_CFLAGS}
                 ${BROTLI_CFLAGS}
                 ${UUID_CFLAGS}
+                ${LUA_CFLAGS}
                 -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
             DEPENDS ${SOURCE_FILE}
             COMMENT "Compiling ${REL_PATH} to ${target_name} object file"
@@ -434,6 +438,7 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
             ${WEBSOCKETS_CFLAGS}
             ${BROTLI_CFLAGS}
             ${UUID_CFLAGS}
+            ${LUA_CFLAGS}
             -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
         DEPENDS ${SOURCE_FILE}
         COMMENT "Compiling ${REL_PATH} to coverage object file"
@@ -811,6 +816,7 @@ foreach(MOCK_SOURCE ${UNITY_MOCK_SOURCES})
             ${WEBSOCKETS_CFLAGS}
             ${BROTLI_CFLAGS}
             ${UUID_CFLAGS}
+            ${LUA_CFLAGS}
             -c ${MOCK_SOURCE} -o ${MOCK_OUTPUT_OBJ}
         DEPENDS ${MOCK_SOURCE}
         COMMENT "Compiling ${MOCK_BASENAME} mock to Unity object file"
@@ -870,6 +876,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             ${WEBSOCKETS_CFLAGS}
             ${BROTLI_CFLAGS}
             ${UUID_CFLAGS}
+            ${LUA_CFLAGS}
             -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
         DEPENDS ${SOURCE_FILE}
         COMMENT "Compiling ${REL_PATH} to Unity object file"
