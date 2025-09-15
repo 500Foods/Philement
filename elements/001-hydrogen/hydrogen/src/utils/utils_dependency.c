@@ -1,13 +1,25 @@
 /*
  * Simplified library dependency checking utilities
  */
-// Global includes 
+// Global includes
 #include "../hydrogen.h"
 
 // Local includes
- #include "utils_dependency.h"
- 
- extern const char *jansson_version_str(void);
+#include "utils_dependency.h"
+
+extern const char *jansson_version_str(void);
+
+// Lua includes for version checking
+#include <lua.h>
+
+// Thread includes for parallel database checks
+#include <pthread.h>
+#include <sys/time.h>
+#include <sys/select.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <pwd.h>
+#include <fcntl.h>
 
 // Database dependency configuration
 typedef struct {
@@ -16,6 +28,14 @@ typedef struct {
     const char *expected;
     bool required;
 } DatabaseDependencyConfig;
+
+// Thread data for parallel database checks
+typedef struct {
+    const DatabaseDependencyConfig *config;
+    char buffer[256];
+    const char *found;
+    LibraryStatus status;
+} ThreadData;
 
  typedef struct {
      const char *name;
@@ -34,6 +54,7 @@ typedef struct {
  static const char *openssl_paths[] = {"libssl.so", "/lib64/libssl.so.3", "/usr/lib/libssl.so", "/usr/lib/x86_64-linux-gnu/libssl.so.3", NULL};
  static const char *brotli_paths[] = {"libbrotlidec.so", "/lib64/libbrotlidec.so.1", "/usr/lib/libbrotlidec.so", "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1", NULL};
  static const char *libtar_paths[] = {"libtar.so", "/usr/lib64/libtar.so.1", "/usr/lib64/libtar.so", "/lib64/libtar.so.1", "/usr/lib/libtar.so", "/usr/lib/x86_64-linux-gnu/libtar.so", NULL};
+ static const char *lua_paths[] = {"liblua.so", "/lib64/liblua.so.5.4", "/usr/lib/liblua.so", "/usr/lib/x86_64-linux-gnu/liblua.so.5.4", NULL};
  
  static const char *jansson_funcs[] = {"jansson_version_str", NULL};
  static const char *microhttpd_funcs[] = {"MHD_get_version", NULL};
@@ -41,6 +62,7 @@ typedef struct {
  static const char *openssl_funcs[] = {"OpenSSL_version", "SSLeay_version", NULL};
  static const char *brotli_funcs[] = {"BrotliDecoderVersion", NULL};
  static const char *libtar_funcs[] = {"libtar_version", NULL};
+ static const char *lua_funcs[] = {NULL};
 
 // Database configurations
 static const DatabaseDependencyConfig db_configs[] = {
@@ -50,6 +72,103 @@ static const DatabaseDependencyConfig db_configs[] = {
     {"SQLite", "sqlite3 --version", "3.46.1", false}
 };
 
+// File-based cache for database version results (valid for 7 days)
+#define CACHE_TIMEOUT_SECONDS 604800
+#define CACHE_DIR "~/.cache/hydrogen/dependency"
+
+static int cache_hits = 0;  // Track cache hits across all database checks
+
+// Get the cache file path for a specific database
+static char* get_cache_file_path(const char *db_name) {
+    const struct passwd *pw = getpwuid(getuid());
+    if (!pw) return NULL;
+
+    const char *home = pw->pw_dir;
+    char *cache_path = malloc(strlen(home) + strlen("/.cache/hydrogen/dependency/") + strlen(db_name) + 1);
+    if (!cache_path) return NULL;
+
+    sprintf(cache_path, "%s/.cache/hydrogen/dependency/%s", home, db_name);
+    return cache_path;
+}
+
+// Ensure cache directory exists
+static bool ensure_cache_dir(void) {
+    const struct passwd *pw = getpwuid(getuid());
+    if (!pw) return false;
+
+    const char *home = pw->pw_dir;
+    char cache_dir[PATH_MAX];
+
+    // Create ~/.cache if it doesn't exist
+    snprintf(cache_dir, sizeof(cache_dir), "%s/.cache", home);
+    struct stat st;
+    if (stat(cache_dir, &st) != 0) {
+        if (mkdir(cache_dir, 0755) != 0) return false;
+    }
+
+    // Create ~/.cache/hydrogen if it doesn't exist
+    snprintf(cache_dir, sizeof(cache_dir), "%s/.cache/hydrogen", home);
+    if (stat(cache_dir, &st) != 0) {
+        if (mkdir(cache_dir, 0755) != 0) return false;
+    }
+
+    // Create ~/.cache/hydrogen/dependency if it doesn't exist
+    snprintf(cache_dir, sizeof(cache_dir), "%s/.cache/hydrogen/dependency", home);
+    if (stat(cache_dir, &st) != 0) {
+        if (mkdir(cache_dir, 0755) != 0) return false;
+    }
+
+    return true;
+}
+
+// Load cached version for a specific database
+static const char* load_cached_version(const char *db_name, char *buffer, size_t size) {
+    char *cache_path = get_cache_file_path(db_name);
+    if (!cache_path) return NULL;
+
+    FILE *fp = fopen(cache_path, "r");
+    if (!fp) {
+        free(cache_path);
+        return NULL;
+    }
+
+    // Read version and timestamp from file
+    char version[256];
+    time_t timestamp;
+    if (fscanf(fp, "%255s %ld", version, &timestamp) == 2) {
+        time_t now = time(NULL);
+        if (now - timestamp < CACHE_TIMEOUT_SECONDS) {
+            // Cache is valid
+            strncpy(buffer, version, size - 1);
+            buffer[size - 1] = '\0';
+            fclose(fp);
+            free(cache_path);
+            return buffer;
+        }
+    }
+
+    fclose(fp);
+    free(cache_path);
+    return NULL;
+}
+
+// Save cache to file for a specific database
+static void save_cache(const char *db_name, const char *version) {
+    if (!ensure_cache_dir()) return;
+
+    char *cache_path = get_cache_file_path(db_name);
+    if (!cache_path) return;
+
+    FILE *fp = fopen(cache_path, "w");
+    if (fp) {
+        time_t now = time(NULL);
+        fprintf(fp, "%s %ld\n", version, now);
+        fclose(fp);
+    }
+
+    free(cache_path);
+}
+
  static const LibConfig lib_configs[] = {
      {"pthreads", pthread_paths, NULL, "1.0", true, true},
      {"jansson", jansson_paths, jansson_funcs, "2.13.1", false, true},
@@ -58,7 +177,8 @@ static const DatabaseDependencyConfig db_configs[] = {
      {"libwebsockets", libwebsockets_paths, libwebsockets_funcs, "4.3.3", false, false},
      {"OpenSSL", openssl_paths, openssl_funcs, "3.2.4", false, false},
      {"libbrotlidec", brotli_paths, brotli_funcs, "1.1.0", false, false},
-     {"libtar", libtar_paths, libtar_funcs, "1.2.20", false, false}
+     {"libtar", libtar_paths, libtar_funcs, "1.2.20", false, false},
+     {"lua", lua_paths, lua_funcs, "5.4", false, false}
  };
  
  static const char *get_status_string(LibraryStatus status) {
@@ -92,7 +212,7 @@ static const DatabaseDependencyConfig db_configs[] = {
  
  static const char *parse_db2_version(const char *output, char *buffer, size_t size) {
      // Parse DB2 output: Look for pattern in "DB2 v11.1.3.3"
-     const char *version_start = strstr(output, "DB2 v");
+     char *version_start = (char *)strstr(output, "DB2 v");
      if (version_start) {
          version_start += 5; // Skip "DB2 v"
          size_t i = 0;
@@ -116,7 +236,7 @@ static const DatabaseDependencyConfig db_configs[] = {
 
  static const char *parse_postgresql_version(const char *output, char *buffer, size_t size) {
      // Parse PostgreSQL output: "PostgreSQL 17.6"
-     const char *version_start = strstr(output, "PostgreSQL ");
+     char *version_start = (char *)strstr(output, "PostgreSQL ");
      if (version_start) {
          version_start += 11; // Skip "PostgreSQL "
          size_t i = 0;
@@ -137,7 +257,7 @@ static const DatabaseDependencyConfig db_configs[] = {
      size_t i = 0;
      while (i < size - 1 && output[i] && output[i] != ' ' &&
             output[i] != '\n' && output[i] != '\r') {
-         buffer[i] = output[i];
+         buffer[i] = ((char *)output)[i];
          i++;
      }
      buffer[i] = '\0';
@@ -150,7 +270,7 @@ static const DatabaseDependencyConfig db_configs[] = {
      size_t i = 0;
      while (i < size - 1 && output[i] && output[i] != ' ' &&
             output[i] != '\n' && output[i] != '\r') {
-         buffer[i] = output[i];
+         buffer[i] = ((char *)output)[i];
          i++;
      }
      buffer[i] = '\0';
@@ -159,30 +279,70 @@ static const DatabaseDependencyConfig db_configs[] = {
 
  static const char *get_database_version(const DatabaseDependencyConfig *config, char *buffer, size_t size) {
      if (!config || !buffer || !size) return "None";
+
+     // Check cache first
+     const char *cached_result = load_cached_version(config->name, buffer, size);
+     if (cached_result) {
+         cache_hits++;
+         return cached_result;
+     }
+
      buffer[0] = '\0';
 
+     // Add timeout to prevent slow commands from blocking startup
      FILE *fp = popen(config->command, "r");
      if (!fp) return "None";
 
+     // Set up timeout for the command (30 seconds max)
+     struct timeval timeout;
+     timeout.tv_sec = 30;
+     timeout.tv_usec = 0;
+
+     fd_set readfds;
+     FD_ZERO(&readfds);
+     int fd = fileno(fp);
+     FD_SET(fd, &readfds);
+
      char output[1024];
-     size_t bytes_read = fread(output, 1, sizeof(output) - 1, fp);
+     size_t bytes_read = 0;
+
+     // Read with timeout
+     if (select(fd + 1, &readfds, NULL, NULL, &timeout) > 0) {
+         bytes_read = fread(output, 1, sizeof(output) - 1, fp);
+     }
      output[bytes_read] = '\0';
      pclose(fp);
 
      if (bytes_read == 0) return "None";
 
      // Parse based on database type
+     const char *result;
      if (strcmp(config->name, "DB2") == 0) {
-         return parse_db2_version(output, buffer, size);
+         result = parse_db2_version(output, buffer, size);
      } else if (strcmp(config->name, "PostgreSQL") == 0) {
-         return parse_postgresql_version(output, buffer, size);
+         result = parse_postgresql_version(output, buffer, size);
      } else if (strcmp(config->name, "MySQL") == 0) {
-         return parse_mysql_version(output, buffer, size);
+         result = parse_mysql_version(output, buffer, size);
      } else if (strcmp(config->name, "SQLite") == 0) {
-         return parse_sqlite_version(output, buffer, size);
+         result = parse_sqlite_version(output, buffer, size);
+     } else {
+         return "None";
      }
 
-     return "None";
+     // Cache the result if we got a valid response
+     if (strcmp(result, "None") != 0) {
+         save_cache(config->name, result);
+     }
+
+     return result;
+ }
+
+ // Thread function for parallel database version checking
+ static void *check_database_thread(void *arg) {
+     ThreadData *data = (ThreadData *)arg;
+     data->found = get_database_version(data->config, data->buffer, sizeof(data->buffer));
+     data->status = determine_status(data->config->expected, data->found, data->config->required);
+     return NULL;
  }
 
  static const char *get_version(const LibConfig *config, char *buffer, size_t size, const char **method) {
@@ -193,6 +353,35 @@ static const DatabaseDependencyConfig db_configs[] = {
      if (config->is_core) {
          *method = "COR";
          return config->expected;
+     }
+
+     if (strcmp(config->name, "lua") == 0) {
+         // Use compile-time LUA_VERSION macro for Lua version
+         const char *lua_ver = LUA_VERSION;
+         if (lua_ver) {
+             // LUA_VERSION is like "Lua 5.4", extract the version part
+             const char *version_start = strstr(lua_ver, "Lua ");
+             if (version_start) {
+                 version_start += 4; // Skip "Lua "
+                 size_t len = strnlen(version_start, size - 1);
+                 if (len > 0 && len < size - 1) {
+                     strncpy(buffer, version_start, len);
+                     buffer[len] = '\0';
+                     *method = "HDR";
+                     return buffer;
+                 }
+             } else {
+                 // If it doesn't start with "Lua ", use the whole string
+                 size_t len = strnlen(lua_ver, size - 1);
+                 if (len > 0 && len < size - 1) {
+                     strncpy(buffer, lua_ver, len);
+                     buffer[len] = '\0';
+                     *method = "HDR";
+                     return buffer;
+                 }
+             }
+         }
+         return "NoVersionFound";
      }
  
      for (const char **path = config->paths; *path; path++) {
@@ -254,6 +443,7 @@ static const DatabaseDependencyConfig db_configs[] = {
                      dlclose(handle);
                      return version;
                  }
+
  
                  if (strcmp(config->name, "libbrotlidec") == 0 && strcmp(*func_name, "BrotliDecoderVersion") == 0) {
                      uint32_t (*brotli_func)(void);
@@ -267,14 +457,16 @@ static const DatabaseDependencyConfig db_configs[] = {
                      dlclose(handle);
                      return version;
                  }
+
  
+
                  union {
                      const char *(*void_func)(void);
                      const char *(*int_func)(int);
                      void *ptr;
                  } func;
                  func.ptr = func_ptr;
- 
+
                  const char *temp = NULL;
                  if (strcmp(config->name, "OpenSSL") == 0) {
                      temp = func.int_func(0);
@@ -285,7 +477,7 @@ static const DatabaseDependencyConfig db_configs[] = {
 //                     log_this(SR_DEPCHECK, "%s: Version function %s returned NULL", LOG_LEVEL_DEBUG, 2, config->name, *func_name);
                      continue;
                  }
- 
+
                  size_t len = strnlen(temp, size - 1);
                  if (len > 0 && len < size - 1) {
                      bool valid = true;
@@ -346,6 +538,11 @@ static const DatabaseDependencyConfig db_configs[] = {
  }
  
  int check_library_dependencies(const AppConfig *config) {
+     // Start precision timing
+     struct timeval depcheck_start, depcheck_end;
+     gettimeofday(&depcheck_start, NULL);
+
+
      log_this(SR_DEPCHECK, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
      log_this(SR_DEPCHECK, "DEPENDENCY CHECK", LOG_LEVEL_STATE, 0);
      int critical_count = 0;
@@ -371,18 +568,49 @@ static const DatabaseDependencyConfig db_configs[] = {
          if (status == LIB_STATUS_CRITICAL && lib.required) critical_count++;
      }
 
-     // Check database dependencies
-     for (size_t i = 0; i < sizeof(db_configs) / sizeof(db_configs[0]); i++) {
-         DatabaseDependencyConfig db = db_configs[i];
+     // Check database dependencies in parallel using threads
+     struct timeval db_start, db_end;
+     gettimeofday(&db_start, NULL);
+     cache_hits = 0;  // Reset counter for this run
 
-         char buffer[256];
-         const char *found = get_database_version(&db, buffer, sizeof(buffer));
-         LibraryStatus status = determine_status(db.expected, found, db.required);
-         log_status(db.name, db.expected, found, "CMD", status);
-         if (status == LIB_STATUS_CRITICAL && db.required) critical_count++;
+     size_t db_count = sizeof(db_configs) / sizeof(db_configs[0]);
+     ThreadData thread_data[db_count];
+     pthread_t threads[db_count];
+
+     // Create threads for each database check
+     for (size_t i = 0; i < db_count; i++) {
+         thread_data[i].config = &db_configs[i];
+         thread_data[i].buffer[0] = '\0';
+         thread_data[i].found = NULL;
+         thread_data[i].status = LIB_STATUS_UNKNOWN;
+         if (pthread_create(&threads[i], NULL, check_database_thread, &thread_data[i]) != 0) {
+             // Fallback to sequential if thread creation fails
+             thread_data[i].found = get_database_version(thread_data[i].config, thread_data[i].buffer, sizeof(thread_data[i].buffer));
+             thread_data[i].status = determine_status(thread_data[i].config->expected, thread_data[i].found, thread_data[i].config->required);
+         }
      }
 
+     // Join threads and log results
+     for (size_t i = 0; i < db_count; i++) {
+         if (pthread_join(threads[i], NULL) == 0) {
+             // Thread completed successfully
+         } else {
+             // If join fails, data might already be set from fallback
+         }
+         log_status(thread_data[i].config->name, thread_data[i].config->expected, thread_data[i].found, "CMD", thread_data[i].status);
+         if (thread_data[i].status == LIB_STATUS_CRITICAL && thread_data[i].config->required) critical_count++;
+     }
+
+     // Calculate database check timing
+     gettimeofday(&db_end, NULL);
+     double db_time = (double)(db_end.tv_sec - db_start.tv_sec) + (double)(db_end.tv_usec - db_start.tv_usec) / 1000000.0;
+
+     // Calculate total dependency check timing
+     gettimeofday(&depcheck_end, NULL);
+     double total_time = (double)(depcheck_end.tv_sec - depcheck_start.tv_sec) + (double)(depcheck_end.tv_usec - depcheck_start.tv_usec) / 1000000.0;
+
      log_this(SR_DEPCHECK, "Completed dependency check, critical issues: %d", LOG_LEVEL_STATE, 1, critical_count);
+     log_this(SR_DEPCHECK, "Timing: Database checks: %.3fs (%d/%d cached), Total: %.3fs", LOG_LEVEL_STATE, 4, db_time, cache_hits, db_count, total_time);
      return critical_count;
  }
  
@@ -395,7 +623,7 @@ static const DatabaseDependencyConfig db_configs[] = {
      handle->handle = dlopen(lib_name, dlopen_flags);
      handle->is_loaded = handle->handle != NULL;
      handle->status = handle->is_loaded ? LIB_STATUS_GOOD : LIB_STATUS_WARNING;
-     handle->version = handle->is_loaded ? "Unknown" : "None";
+     handle->version = strdup(handle->is_loaded ? "Unknown" : "None");
      return handle;
  }
  
@@ -404,6 +632,7 @@ static const DatabaseDependencyConfig db_configs[] = {
      bool success = true;
      if (handle->is_loaded && dlclose(handle->handle) != 0) success = false;
      free((void*)handle->name);
+     free((void*)handle->version);
      free(handle);
      return success;
  }

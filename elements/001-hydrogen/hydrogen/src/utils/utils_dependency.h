@@ -29,8 +29,8 @@ typedef enum {
 typedef struct {
     void *handle;            // Handle returned by dlopen()
     bool is_loaded;          // Whether the library is currently loaded
-    const char *name;        // Library name
-    const char *version;     // Library version
+    char *name;              // Library name
+    char *version;           // Library version
     LibraryStatus status;    // Current status
 } LibraryHandle;
 
