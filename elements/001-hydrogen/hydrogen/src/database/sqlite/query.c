@@ -147,8 +147,6 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
 
     db_result->success = true;
 
-    log_this(designator, "SQLite execute_query: Query returned %zu rows, %zu columns, affected %d rows", LOG_LEVEL_DEBUG, 3,
-        db_result->row_count, db_result->column_count, db_result->affected_rows);
 
     *result = db_result;
 
