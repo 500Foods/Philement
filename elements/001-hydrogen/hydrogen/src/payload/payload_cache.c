@@ -7,7 +7,7 @@
 #include "../payload/payload_cache.h"
 
 // Forward declarations for internal functions
-static bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size);
+// parse_tar_into_cache is now public for unit testing
 
 // Forward declarations for functions from payload.c
 bool extract_payload(const char *executable_path, const AppConfig *config,
@@ -19,7 +19,7 @@ bool process_payload_data(const PayloadData *payload);
 void free_payload(PayloadData *payload);
 
 // Global payload cache
-static PayloadCache global_payload_cache = {0};
+PayloadCache global_payload_cache = {0};
 
 /**
  * Initialize the global payload cache
@@ -263,7 +263,7 @@ void list_tar_contents(const uint8_t *tar_data, size_t tar_size) {
 /**
  * Parse tar data and store files in global cache
  */
-static bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
+bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
     if (!tar_data || tar_size < 512) {
         log_this(SR_PAYLOAD, "Invalid tar data or size too small", LOG_LEVEL_ERROR, 0);
         return false;
