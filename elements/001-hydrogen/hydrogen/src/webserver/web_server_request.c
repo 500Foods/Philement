@@ -11,7 +11,7 @@
 #include "../api/system/config/config.h"
 #include "../api/system/prometheus/prometheus.h"
 
-static enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
+enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
     // Check if client accepts Brotli compression
     bool accepts_brotli = client_accepts_brotli(connection);
     
@@ -59,9 +59,6 @@ static enum MHD_Result serve_file(struct MHD_Connection *connection, const char 
     MHD_destroy_response(response);
     return ret;
 }
-
-
-
 
 enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
                              const char *url, const char *method,
