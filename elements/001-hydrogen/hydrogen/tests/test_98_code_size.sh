@@ -279,8 +279,8 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Analysis files saved to result
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Line counts: ..${SOURCE_FILES_LIST}"
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Large files: ..${LARGE_FILES_LIST}"
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Line counts: ..${LINE_COUNT_FILE}"
-print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Cloc output: ..${CLOC_OUTPUT}"
-print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Cloc data: ..${CLOC_DATA}"
+print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "cloc format: ..${CLOC_OUTPUT}"
+print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "cloc output: ..${CLOC_DATA}"
 
 TEST_NAME="${TEST_NAME} {BLUE}(lines: ${LOCCOUNT}){RESET}"
 

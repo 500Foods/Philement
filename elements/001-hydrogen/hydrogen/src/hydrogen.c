@@ -341,6 +341,7 @@ static void test_crash_handler(int sig) {
     volatile int *ptr = NULL;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnull-dereference"
+    // cppcheck-suppress[nullPointer] Intentional null dereference to trigger test crash
     *ptr = 42; // Triggers SIGSEGV, which your crash_handler will catch
 #pragma GCC diagnostic pop
 }
