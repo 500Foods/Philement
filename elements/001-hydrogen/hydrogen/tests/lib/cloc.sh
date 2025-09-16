@@ -248,20 +248,28 @@ EOF
             # Calculate coverage statistics
             local instrumented_both instrumented_code instrumented_test format_code format_test unity_code
             if [[ -f "${PROJECT_DIR}/build/tests/results/coverage_unity.info" ]]; then
-                instrumented_both=$("${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info" || true)
+                instrumented_both=$("${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info" || echo 0)
+            elif [[ -d "${PROJECT_DIR}/build/unity" ]]; then
+                instrumented_both=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/unity" --output-file "${PROJECT_DIR}/build/tests/results/coverage_unity.info" --ignore-errors empty >/dev/null 2>&1 && "${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info" || echo 0)
             else
-                instrumented_both=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/unity" --output-file "${PROJECT_DIR}/build/tests/results/coverage_unity.info" --ignore-errors empty >/dev/null 2>&1 && "${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info")
+                instrumented_both=0
             fi
             if [[ -f "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" ]]; then
-                instrumented_code=$("${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" || true)
+                instrumented_code=$("${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" || echo 0)
+            elif [[ -d "${PROJECT_DIR}/build/coverage" ]]; then
+                instrumented_code=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/coverage" --output-file "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" --ignore-errors empty >/dev/null 2>&1 && "${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" || echo 0)
             else
-                instrumented_code=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/coverage" --output-file "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" --ignore-errors empty >/dev/null 2>&1 && "${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info")
+                instrumented_code=0
             fi
 
             instrumented_test=$(( instrumented_both - instrumented_code ))
             format_code=$("${PRINTF}" "%'7d" "$(( instrumented_code - 10 ))")
             format_test=$("${PRINTF}" "%'7d" "$(( instrumented_test - 10 ))")
-            unity_code=$(printf "%.1f" "$(bc -l <<< "scale=2; 100 * (${instrumented_test} - 10) / (${instrumented_code} - 10)" || true)")
+            if [[ "${instrumented_code}" -gt 0 ]]; then
+                unity_code=$(printf "%.1f" "$(bc -l <<< "scale=2; 100 * (${instrumented_test} - 10) / (${instrumented_code} - 10)" || true)")
+            else
+                unity_code="N/A"
+            fi
 
             # Use TABLES program to format the main code table
             # shellcheck disable=SC2154 # TABLES defined externally in framework.sh
