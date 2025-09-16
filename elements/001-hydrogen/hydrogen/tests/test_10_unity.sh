@@ -9,6 +9,7 @@
 # run_unity_tests()
 
 # CHANGELOG
+# 3.2.0 - 2025-09-15 - Added test times to each test, a long-running warning, and a long-running count at the end
 # 3.1.1 - 2025-08-23 - Added console dumps to give a more nuanced progress update  
 # 3.1.0 - 2025-08-07 - Cleaned up use of tmp files and sorted out diagnostics files, removed extraneous function
 # 3.0.0 - 2025-07-30 - Overhaul #1
@@ -29,8 +30,9 @@ TEST_NAME="Unity Unit Tests"
 TEST_ABBR="UNT"
 TEST_NUMBER="10"
 TEST_COUNTER=0
-TEST_VERSION="3.1.1"
-TEST_TIMEOUT="10s"
+TEST_VERSION="3.2.0"
+TEST_TIMEOUT="10" # Seconds
+LONG_RUNNING="0.250" # Seconds
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -40,6 +42,7 @@ setup_test_environment
 UNITY_BUILD_DIR="${BUILD_DIR}/unity"
 TOTAL_UNITY_TESTS=0
 TOTAL_UNITY_PASSED=0
+TOTAL_LONG_RUNNING=0
 
 # Function to check Unity tests are available via CTest (assumes they're already built by main build system)
 check_unity_tests_available() {
@@ -100,11 +103,20 @@ run_single_unity_test_parallel() {
     } >> "${output_file}"
     
     if [[ ! -f "${test_exe}" ]]; then
+        # Calculate test execution time (even for missing executable)
+        local test_end_time="${EPOCHREALTIME}"
+        local test_elapsed_seconds
+        test_elapsed_seconds=$(awk "BEGIN {print ${test_end_time} - ${test_start_time}}")
+
+        # Format time as X.XXXs
+        local formatted_time
+        formatted_time=$(printf "%.3fs" "${test_elapsed_seconds}")
+
         {
-            echo "RESULT_LINE|FAIL|Unity test executable not found: ${test_exe#"${SCRIPT_DIR}"/..}"
-            echo "SUBTEST_END|${subtest_number}|${test_name}|1|0|1"
+            echo "RESULT_LINE|FAIL|Unity test executable not found in ${formatted_time}: ${test_exe#"${SCRIPT_DIR}"/..}"
+            echo "SUBTEST_END|${subtest_number}|${test_name}|1|0|1|${is_long_running}"
         } >> "${output_file}"
-        echo "1|${test_name}|1|0|1" > "${result_file}"
+        echo "1|${test_name}|1|0|1|${is_long_running}" > "${result_file}"
         return 1
     fi
     
@@ -113,9 +125,21 @@ run_single_unity_test_parallel() {
     local log_path="${LOG_PREFIX}.log"
     mkdir -p "$("${DIRNAME}" "${temp_test_log}" || true)"
     true > "${temp_test_log}"
-    
+
+    # Record start time for test execution measurement
+    local test_start_time="${EPOCHREALTIME}"
+
     # Limit runtime of individual tests
-    if timeout "${TEST_TIMEOUT}" "${test_exe}" > "${temp_test_log}" 2>&1; then
+    if timeout "${TEST_TIMEOUT}"s "${test_exe}" > "${temp_test_log}" 2>&1; then
+        # Calculate test execution time
+        local test_end_time="${EPOCHREALTIME}"
+        local test_elapsed_seconds
+        test_elapsed_seconds=$(awk "BEGIN {print ${test_end_time} - ${test_start_time}}")
+
+        # Format time as X.XXXs
+        local formatted_time
+        formatted_time=$(printf "%.3fs" "${test_elapsed_seconds}")
+
         # Parse the Unity test output to get test counts
         local failure_count
         local ignored_count
@@ -125,25 +149,42 @@ run_single_unity_test_parallel() {
         failure_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | "${AWK}" '{print $3}' || true)
         # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
         ignored_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | "${AWK}" '{print $5}' || true)
-    
+
         if [[ -n "${test_count}" ]] && [[ -n "${failure_count}" ]] && [[ -n "${ignored_count}" ]]; then
             passed_count=$((test_count - failure_count - ignored_count))
-            echo "RESULT_LINE|PASS|${passed_count} passed, ${failure_count} failed: ..${temp_test_log}" >> "${output_file}"
+
+            # Check if test took longer than LONG_RUNNING seconds and add warning
+            local is_long_running=0
+            if awk "BEGIN {exit !(${test_elapsed_seconds} > ${LONG_RUNNING})}"; then
+                echo "RESULT_LINE|WARN|Long running test: ${formatted_time}" >> "${output_file}"
+                is_long_running=1
+            fi
+
+            echo "RESULT_LINE|PASS|${passed_count} passed, ${failure_count} failed in ${formatted_time}: ..${temp_test_log}" >> "${output_file}"
             failed_count=0
         else
-            echo "RESULT_LINE|PASS|1 passed, 0 failed: ${log_path}" >> "${output_file}"
+            echo "RESULT_LINE|PASS|1 passed, 0 failed in ${formatted_time}: ${log_path}" >> "${output_file}"
             test_count=1
             passed_count=1
             failed_count=0
         fi
         exit_code=0
     else
+        # Calculate test execution time (even for failed tests)
+        local test_end_time="${EPOCHREALTIME}"
+        local test_elapsed_seconds
+        test_elapsed_seconds=$(awk "BEGIN {print ${test_end_time} - ${test_start_time}}")
+
+        # Format time as X.XXXs
+        local formatted_time
+        formatted_time=$(printf "%.3fs" "${test_elapsed_seconds}")
+
         # Test failed - capture full output for display
-        echo "RESULT_LINE|FAIL|${passed_count} passed, ${failed_count} failed: ..${temp_test_log}" >> "${output_file}"
+        echo "RESULT_LINE|FAIL|${passed_count} passed, ${failed_count} failed in ${formatted_time}: ..${temp_test_log}" >> "${output_file}"
         while IFS= read -r line; do
             echo "OUTPUT_LINE|${line}" >> "${output_file}"
         done < "${temp_test_log}"
-        
+
         # Try to get test counts even from failed output
         # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
         failure_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | "${AWK}" '{print $3}' || true)
@@ -157,14 +198,23 @@ run_single_unity_test_parallel() {
             passed_count=0
             failed_count=1
         fi
+
+        # Check if failed test was also long-running
+        if awk "BEGIN {exit !(${test_elapsed_seconds} > ${LONG_RUNNING})}"; then
+            is_long_running=1
+        fi
+
         exit_code=1
     fi
+
+    # Add SUBTEST_END with long-running flag
+    echo "SUBTEST_END|${subtest_number}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}|${is_long_running}" >> "${output_file}"
 
     # not useed anymore perhaps?
     ignored_count=0
     
-    echo "SUBTEST_END|${subtest_number}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}" >> "${output_file}"
-    echo "${exit_code}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}" > "${result_file}"
+    echo "SUBTEST_END|${subtest_number}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}|${is_long_running}" >> "${output_file}"
+    echo "${exit_code}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}|${is_long_running}" > "${result_file}"
     
     return "${exit_code}"
 }
@@ -225,7 +275,8 @@ run_unity_tests() {
     # Split tests into batches for parallel execution
     # Calculate minimum number of groups needed to fit within CPU limit
     local total_tests=${#sorted_tests[@]}
-    local number_of_groups=$(( (total_tests + CORES - 1) / CORES ))  # ceil(total_tests / cpu_cores)
+    local corefactor="${CORES}"
+    local number_of_groups=$(( (total_tests + corefactor - 1) / corefactor ))  # ceil(total_tests / cpu_cores)
     local batch_size=$(( (total_tests + number_of_groups - 1) / number_of_groups ))  # ceil(total_tests / number_of_groups)
     local total_failed=0
     local batch_num=0
@@ -297,6 +348,8 @@ run_unity_tests() {
                             IFS='|' read -r result_type message <<< "${content}"
                             if [[ "${result_type}" = "PASS" ]]; then
                                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${message}"
+                            elif [[ "${result_type}" = "WARN" ]]; then
+                                print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "${message}"
                             else
                                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${message}"
                             fi
@@ -313,10 +366,13 @@ run_unity_tests() {
             
             # Collect statistics from result file
             if [[ -f "${temp_result_file}" ]] && [[ -s "${temp_result_file}" ]]; then
-                IFS='|' read -r exit_code test_name test_count passed_count failed_count ignored_count < "${temp_result_file}"
+                IFS='|' read -r exit_code test_name test_count passed_count failed_count ignored_count is_long_running < "${temp_result_file}"
                 TOTAL_UNITY_TESTS=$((TOTAL_UNITY_TESTS + test_count - ignored_count))
                 TOTAL_UNITY_PASSED=$((TOTAL_UNITY_PASSED + passed_count))
                 total_failed=$((total_failed + failed_count))
+                if [[ "${is_long_running}" == "1" ]]; then
+                    TOTAL_LONG_RUNNING=$((TOTAL_LONG_RUNNING + 1))
+                fi
             fi
             
         done
@@ -330,7 +386,11 @@ run_unity_tests() {
     done
     
     # Display summary in two parts
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unity test execution: ${total_tests} test files ran in ${batch_num} batches"
+    local long_running_summary=""
+    if [[ "${TOTAL_LONG_RUNNING}" -gt 0 ]]; then
+        long_running_summary=", $("${PRINTF}" "%'d" "${TOTAL_LONG_RUNNING}" || true) long-running tests"
+    fi
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unity test execution: ${total_tests} test files ran in ${batch_num} batches${long_running_summary}"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unity test results: $("${PRINTF}" "%'d" "${TOTAL_UNITY_TESTS}" || true) unit tests, $("${PRINTF}" "%'d" "${TOTAL_UNITY_PASSED}" || true) passing, $("${PRINTF}" "%'d" "${total_failed}" || true) failing"
 
     # Store the total unity test count for other tests to use

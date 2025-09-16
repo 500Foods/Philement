@@ -18,7 +18,7 @@ return {
                         Creates the `queries` table to store migration metadata and utility queries.
                     ]],
             sql =   [[
-                        CREATE TABLE IF NOT EXISTS %%SCHEMA%%queries (
+                        %%CREATE_TABLE%% %%SCHEMA%%queries (
                             query_id %%SERIAL%%,
                             query_ref %%INTEGER%% NOT NULL,
                             query_type_lua_28 %%INTEGER%% NOT NULL,
