@@ -76,20 +76,31 @@ run_cppcheck() {
     done < <("${FIND}" . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
 
     if [[ ${#files[@]} -gt 0 ]]; then
-        # Run cppcheck with verbose to get both cache stats and issues
+        # Calculate modified files since last run
+        local modified_count=0
+        if [[ -f "${CACHE_DIR}/last_run" ]]; then
+            for file in "${files[@]}"; do
+                if [[ "${file}" -nt "${CACHE_DIR}/last_run" ]]; then
+                    ((modified_count++))
+                fi
+            done
+        else
+            modified_count=${#files[@]}
+        fi
+
+        # Cache hits = total files - modified files
+        local cache_hits=$(( ${#files[@]} - modified_count ))
+
+        # Run cppcheck with verbose to get issues
         local verbose_output
-        verbose_output=$(cppcheck -j"${CORES}" --verbose --quiet --cppcheck-build-dir="${CACHE_DIR}" "${cppcheck_args[@]}" "${files[@]}" 2>&1 || true)
-
-        # Count files being checked (cache misses)
-        local checking_count
-        checking_count=$(echo "${verbose_output}" | grep -c "Checking " || true)
-
-        # Cache hits = total files - files being checked
-        local cache_hits=$(( ${#files[@]} - checking_count ))
+        verbose_output=$(cppcheck -j"${CORES}" --verbose --cppcheck-build-dir="${CACHE_DIR}" "${cppcheck_args[@]}" "${files[@]}" 2>&1 || true)
 
         # Extract only the issue lines (filter out verbose info messages)
         local issues_output
         issues_output=$(echo "${verbose_output}" | grep -v "^cppcheck: info: Checking " | grep -v "^cppcheck: info: " || true)
+
+        # Update last run timestamp
+        touch "${CACHE_DIR}/last_run"
 
         # Return cache_hits and issues_output separated by a pipe delimiter
         echo "${cache_hits}|${issues_output}"
@@ -120,8 +131,8 @@ TEST_NAME="${TEST_NAME} {BLUE}(cppcheck: ${C_COUNT} files){RESET}"
 COMBINED_OUTPUT=$(run_cppcheck ".")
 
 # Parse the combined output
-CACHE_HITS=$(echo "${COMBINED_OUTPUT}" | cut -d'|' -f1)
-CPPCHECK_OUTPUT=$(echo "${COMBINED_OUTPUT}" | cut -d'|' -f2-)
+CACHE_HITS="${COMBINED_OUTPUT%%|*}"
+CPPCHECK_OUTPUT="${COMBINED_OUTPUT#*|}"
 
 FILES_TO_RUN=$(( C_COUNT - CACHE_HITS ))
 
