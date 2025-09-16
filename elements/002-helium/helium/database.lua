@@ -36,6 +36,7 @@ local database = {
     defaults = {
 
         sqlite = {
+	    CREATE_TABLE="CREATE TABLE IF NOT EXISTS",
             SERIAL = "INTEGER PRIMARY KEY AUTOINCREMENT",
             INTEGER = "INTEGER",
             VARCHAR_100 = "VARCHAR(100)",
@@ -48,6 +49,7 @@ local database = {
         },
 
         postgresql = {
+	    CREATE_TABLE="CREATE TABLE IF NOT EXISTS",
             SERIAL = "SERIAL",
             INTEGER = "INTEGER",
             VARCHAR_100 = "VARCHAR(100)",
@@ -60,6 +62,7 @@ local database = {
         },
 
         mysql = {
+	    CREATE_TABLE="CREATE TABLE IF NOT EXISTS",
             SERIAL = "INT AUTO_INCREMENT",
             INTEGER = "INT",
             VARCHAR_100 = "VARCHAR(100)",
@@ -71,6 +74,7 @@ local database = {
             SCHEMA_PREFIX = "helium." -- e.g., helium.queries
         },
         db2 = {
+	    CREATE_TABLE="CREATE TABLE",
             SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
             INTEGER = "INTEGER",
             VARCHAR_100 = "VARCHAR(100)",
