@@ -49,6 +49,9 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
 
 // Request completion handler
 void request_completed(void *cls, struct MHD_Connection *connection,
-                      void **con_cls, enum MHD_RequestTerminationCode toe);
+                       void **con_cls, enum MHD_RequestTerminationCode toe);
+
+// File serving function (made non-static for unit testing)
+enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path);
 
 #endif // WEB_SERVER_REQUEST_H

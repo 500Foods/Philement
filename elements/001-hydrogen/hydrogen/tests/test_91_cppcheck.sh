@@ -7,6 +7,7 @@
 # run_cppcheck()
 
 # CHANGELOG
+# 3.2.0 - 2025-09-16 - Added cache hit statistics to output
 # 3.1.0 - 2025-08-13 - Review, removed custom should_exclude code, minor tewaks
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
@@ -21,7 +22,7 @@ TEST_NAME="C Lint"
 TEST_ABBR="GCC"
 TEST_NUMBER="91"
 TEST_COUNTER=0
-TEST_VERSION="3.1.0"
+TEST_VERSION="3.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -31,10 +32,10 @@ setup_test_environment
 CACHE_DIR="${HOME}/.cache/cppcheck"
 mkdir -p "${CACHE_DIR}"
 
-# Function to run cppcheck
+# Function to run cppcheck and get cache statistics
 run_cppcheck() {
     local target_dir="$1"
-    
+
     # Check for required files
     if [[ ! -f ".lintignore" ]]; then
         print_error "${TEST_NUMBER}" "${TEST_COUNTER}" ".lintignore not found"
@@ -44,13 +45,13 @@ run_cppcheck() {
         print_error "${TEST_NUMBER}" "${TEST_COUNTER}" ".lintignore-c not found"
         return 1
     fi
-    
+
     # Parse .lintignore-c
     local cppcheck_args=()
     while IFS='=' read -r key value; do
         case "${key}" in
             "enable") cppcheck_args+=("--enable=${value}") ;;
-            "include") 
+            "include")
                 if [[ -e "${value}" ]]; then
                     cppcheck_args+=("--include=${value}")
                 else
@@ -63,7 +64,7 @@ run_cppcheck() {
             *) ;;
         esac
     done < <("${GREP}" -v '^#' ".lintignore-c" | "${GREP}" '=' || true)
-    
+
     # Collect files with inline filtering using centralized exclusion function
     local files=()
     while read -r file; do
@@ -73,11 +74,27 @@ run_cppcheck() {
             files+=("${file}")
         fi
     done < <("${FIND}" . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
-    
+
     if [[ ${#files[@]} -gt 0 ]]; then
-        cppcheck -j"${CORES}" --quiet --cppcheck-build-dir="${CACHE_DIR}" "${cppcheck_args[@]}" "${files[@]}" 2>&1
+        # Run cppcheck with verbose to get both cache stats and issues
+        local verbose_output
+        verbose_output=$(cppcheck -j"${CORES}" --verbose --quiet --cppcheck-build-dir="${CACHE_DIR}" "${cppcheck_args[@]}" "${files[@]}" 2>&1 || true)
+
+        # Count files being checked (cache misses)
+        local checking_count
+        checking_count=$(echo "${verbose_output}" | grep -c "Checking " || true)
+
+        # Cache hits = total files - files being checked
+        local cache_hits=$(( ${#files[@]} - checking_count ))
+
+        # Extract only the issue lines (filter out verbose info messages)
+        local issues_output
+        issues_output=$(echo "${verbose_output}" | grep -v "^cppcheck: info: Checking " | grep -v "^cppcheck: info: " || true)
+
+        # Return cache_hits and issues_output separated by a pipe delimiter
+        echo "${cache_hits}|${issues_output}"
     else
-        echo ""
+        echo "0|||"
     fi
 }
 
@@ -95,10 +112,21 @@ while read -r file; do
 done < <("${FIND}" . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
 
 C_COUNT=${#C_FILES_TO_CHECK[@]}
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running cppcheck on ${C_COUNT} files..."
-TEST_NAME="${TEST_NAME} {BLUE}(cppcheck: ${C_COUNT} files){RESET}"    
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Evaluating ${C_COUNT} files..."
 
-CPPCHECK_OUTPUT=$(run_cppcheck ".")
+TEST_NAME="${TEST_NAME} {BLUE}(cppcheck: ${C_COUNT} files){RESET}"
+
+# Run cppcheck once to get both cache stats and issues
+COMBINED_OUTPUT=$(run_cppcheck ".")
+
+# Parse the combined output
+CACHE_HITS=$(echo "${COMBINED_OUTPUT}" | cut -d'|' -f1)
+CPPCHECK_OUTPUT=$(echo "${COMBINED_OUTPUT}" | cut -d'|' -f2-)
+
+FILES_TO_RUN=$(( C_COUNT - CACHE_HITS ))
+
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${CACHE_HITS} files of ${C_COUNT} files in cache..."
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running cppcheck on ${FILES_TO_RUN} / ${C_COUNT} files..."
 
 # Check for expected vs unexpected issues
 EXPECTED_WARNING="warning: Possible null pointer dereference: ptr"
