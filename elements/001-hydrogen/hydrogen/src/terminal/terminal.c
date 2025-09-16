@@ -26,7 +26,7 @@ bool client_accepts_brotli(struct MHD_Connection *connection);
 void add_brotli_header(struct MHD_Response *response);
 
 // Forward declaration for filesystem serving function
-static enum MHD_Result serve_file_from_path(struct MHD_Connection *connection, const char *file_path);
+enum MHD_Result serve_file_from_path(struct MHD_Connection *connection, const char *file_path);
 
 // Global state for terminal subsystem
 static const TerminalConfig *global_terminal_config = NULL;
@@ -248,7 +248,7 @@ bool is_terminal_request(const char *url, const TerminalConfig *config) {
  * Serve a file from filesystem path
  * This function serves files directly from the filesystem
  */
-static enum MHD_Result serve_file_from_path(struct MHD_Connection *connection, const char *file_path) {
+enum MHD_Result serve_file_from_path(struct MHD_Connection *connection, const char *file_path) {
     // Check if client accepts Brotli compression
     bool accepts_brotli = client_accepts_brotli(connection);
 
