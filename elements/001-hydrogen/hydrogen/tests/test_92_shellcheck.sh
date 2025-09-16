@@ -7,6 +7,7 @@
 # process_file()
 
 # CHANGELOG
+# 4.1.1 - 2025-09-16 - Fixed stale justification error messages persisting from previous runs
 # 4.1.0 - 2025-08-13 - General review, tweaks to log files
 # 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
@@ -23,7 +24,7 @@ TEST_NAME="Bash Lint"
 TEST_ABBR="BSH"
 TEST_NUMBER="92"
 TEST_COUNTER=0
-TEST_VERSION="4.1.0"
+TEST_VERSION="4.1.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -145,6 +146,8 @@ SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION=0
 process_file() {
     local file="$1"
     local total=0 with_just=0 without_just=0
+    # Remove any old no-justification log to prevent stale messages
+    rm -f "${file}.nojust.log"
     while IFS= read -r line; do
         if [[ "${line}" =~ ^[[:space:]]*"# shellcheck" ]]; then
             total=$(( total + 1 ))
