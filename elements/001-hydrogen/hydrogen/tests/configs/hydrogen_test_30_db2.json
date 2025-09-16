@@ -10,14 +10,15 @@
         "ConnectionCount": 1,
         "Connections": [
             {
-                "Name": "DB2",
-                "Engine": "db2",
                 "Enabled": true,
+                "Name": "HTST",
+                "Engine": "${env.HYDROTST_DB_TYPE}",
+                "Database": "${env.HYDROTST_DB_NAME}",
                 "Host": "localhost",
                 "Port": "50000",
-                "Database": "SAMPLE",
-                "User": "db2test",
-                "Pass": "test_pass",
+                "User": "${env.HYDROTST_DB_USER}",
+                "Pass": "${env.HYDROTST_DB_PASS}",
+                "Bootstrap":"SELECT * FROM acuranzo.queries;",
                 "Queues": {
                     "Slow": {
                         "start": 1,
