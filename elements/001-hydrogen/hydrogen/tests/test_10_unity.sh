@@ -95,7 +95,9 @@ run_single_unity_test_parallel() {
     local failed_count=0
     local test_count=0
     local exit_code=0
-    
+    local ignored_count=0
+    local is_long_running=0
+
     # Create output header
     {
         echo "SUBTEST_START|${subtest_number}|${test_name}"
@@ -142,7 +144,6 @@ run_single_unity_test_parallel() {
 
         # Parse the Unity test output to get test counts
         local failure_count
-        local ignored_count
         # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
         test_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | "${AWK}" '{print $1}' || true)
         # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
@@ -206,13 +207,11 @@ run_single_unity_test_parallel() {
 
         exit_code=1
     fi
-
+    
     # Add SUBTEST_END with long-running flag
     echo "SUBTEST_END|${subtest_number}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}|${is_long_running}" >> "${output_file}"
 
-    # not useed anymore perhaps?
-    ignored_count=0
-    
+   
     echo "SUBTEST_END|${subtest_number}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}|${is_long_running}" >> "${output_file}"
     echo "${exit_code}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}|${is_long_running}" > "${result_file}"
     

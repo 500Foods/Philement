@@ -65,9 +65,12 @@
 #include <dlfcn.h>          // Dynamic linking (e.g., dlopen, dlsym; POSIX)
 #include <errno.h>          // Error codes and errno variable (e.g., perror, strerror)
 #include <fcntl.h>          // File control options (e.g., open, O_RDONLY; POSIX)
+#include <features.h>       // GNU/glibc features 
 #include <libgen.h>         // Pathname utilities (e.g., basename, dirname; POSIX)
+#include <locale.h>         // Locale settings 
 #include <math.h>           // Mathematical functions (e.g., sin, cos, sqrt)
 #include <mntent.h>         // Filesystem mount points (e.g., getmntent; POSIX)
+#include <semaphore.h>      // Mutex lock handling
 #include <signal.h>         // Signal handling (e.g., signal, sigaction)
 #include <stdarg.h>         // Variable argument lists (e.g., va_list, va_start for variadic functions)
 #include <stdbool.h>        // Boolean type and constants (bool, true, false)
@@ -78,11 +81,11 @@
 #include <string.h>         // String manipulation (e.g., strcpy, strlen, memcmp)
 #include <strings.h>        // Case-insensitive/BSD string functions (e.g., strcasecmp, bcopy; POSIX extension)
 #include <time.h>           // Time/date manipulation (e.g., time, localtime, strftime)
-#include <semaphore.h>      // 
 
 // POSIX-specific includes
 #include <sys/ioctl.h>      // I/O control operations (e.g., ioctl; POSIX)
 #include <sys/mman.h>       // Memory management declarations (e.g., mmap, munmap; POSIX)
+#include <sys/prctl.h>      // Process control 
 #include <sys/resource.h>   // Resource limits (e.g., getrlimit, setrlimit; POSIX)
 #include <sys/stat.h>       // File status and modes (e.g., stat, fstat, mkdir, chmod; for file metadata)
 #include <sys/time.h>       // Time-related functions (e.g., gettimeofday, clock_gettime; POSIX)

@@ -236,7 +236,8 @@ analyze_core_with_gdb() {
     local has_test_crash=0
 
     # Look for test_crash_handler in backtrace
-    if "${GREP}" -q "test_crash_handler.*at.*hydrogen\.c:[0-9]" "${gdb_output_file}" && \
+    if ("${GREP}" -q "test_crash_handler.*at.*hydrogen\.c:[0-9]" "${gdb_output_file}" || \
+        "${GREP}" -q "test_crash_handler.*at.*handlers\.c:[0-9]" "${gdb_output_file}") && \
        "${GREP}" -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
         has_test_crash=1
         has_backtrace=1
