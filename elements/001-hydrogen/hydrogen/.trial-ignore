@@ -2,4 +2,4 @@
 
 ## This is used to test that unlinked code doesn't make it into the final executables
 
-./not_hydrogen.c
+./hydrogen_not.c

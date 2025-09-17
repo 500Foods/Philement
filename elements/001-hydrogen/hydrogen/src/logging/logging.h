@@ -73,4 +73,39 @@ char* log_get_last_n(size_t count);
  */
 bool log_is_in_logging_operation(void);
 
+/*
+ * Initialize a message slot in the rolling buffer
+ * Internal function exposed for unit testing
+ *
+ * @param index The slot index to initialize
+ * @return true if successful, false on allocation failure
+ */
+bool init_message_slot(size_t index);
+
+/*
+ * Add a message to the rolling buffer
+ * Internal function exposed for unit testing
+ *
+ * @param message The message to add
+ */
+void add_to_buffer(const char* message);
+
+/*
+ * Get fallback priority label for when config is unavailable
+ * Internal function exposed for unit testing
+ *
+ * @param priority The priority level
+ * @return The priority label string
+ */
+const char* get_fallback_priority_label(int priority);
+
+/*
+ * Count format specifiers in a format string
+ * Internal function exposed for unit testing
+ *
+ * @param format The format string to analyze
+ * @return Number of format specifiers found
+ */
+size_t count_format_specifiers(const char* format);
+
 #endif // LOGGING_H
