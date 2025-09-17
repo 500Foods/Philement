@@ -268,7 +268,7 @@ file(GLOB_RECURSE HYDROGEN_SOURCES
 
 # Remove files that should not be linked (from .trial-ignore)
 list(REMOVE_ITEM HYDROGEN_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/not_hydrogen.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/hydrogen_not.c"
 )
 
 # Function to add an executable target with specific build configuration using clean directory structure

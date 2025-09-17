@@ -21,6 +21,7 @@ void test_handle_system_health_request_function_signature(void);
 void test_handle_system_health_request_compilation_check(void);
 void test_health_header_includes(void);
 void test_health_function_declarations(void);
+void test_handle_system_health_request_normal_operation(void);
 void test_check_system_resources_function(void);
 void test_check_memory_usage_function(void);
 void test_check_disk_space_function(void);
@@ -29,6 +30,54 @@ void test_check_timestamp_function(void);
 void test_health_response_comprehensive_structure(void);
 void test_health_error_handling_structure(void);
 void test_health_response_format_expectations(void);
+
+// Mock structures for testing
+struct MockMHDConnection {
+    int dummy; // Minimal mock
+};
+
+struct MockMHDResponse {
+    int dummy; // Minimal mock
+};
+
+// Global state for mocks
+static int mock_api_send_json_response_result = 1; // MHD_YES
+
+// Mock function implementations
+struct MHD_Response *MHD_create_response_from_buffer(size_t size, void *buffer, enum MHD_ResponseMemoryMode mode) {
+    (void)size; (void)buffer; (void)mode;
+    return (struct MHD_Response *)malloc(sizeof(struct MockMHDResponse));
+}
+
+enum MHD_Result MHD_queue_response(struct MHD_Connection *connection, unsigned int status_code, struct MHD_Response *response) {
+    (void)connection; (void)status_code; (void)response;
+    return mock_api_send_json_response_result;
+}
+
+enum MHD_Result MHD_add_response_header(struct MHD_Response *response, const char *header, const char *content) {
+    (void)response; (void)header; (void)content;
+    return 1; // MHD_YES
+}
+
+void MHD_destroy_response(struct MHD_Response *response) {
+    (void)response;
+    // Don't free in mock
+}
+
+json_t *json_object(void) {
+    return (json_t *)malloc(sizeof(json_t));
+}
+
+int json_object_set_new(json_t *object, const char *key, json_t *value) {
+    (void)object; (void)key; (void)value;
+    return 0;
+}
+
+json_t *json_string(const char *value) {
+    (void)value;
+    return (json_t *)malloc(sizeof(json_t));
+}
+
 
 // Mock function declarations for testing
 static double mock_loadavg[3] = {1.5, 1.2, 0.9};
@@ -184,6 +233,17 @@ void test_health_function_declarations(void) {
     // enum MHD_Result handle_system_health_request(struct MHD_Connection *connection);
 
     TEST_ASSERT_TRUE(true);
+}
+
+// Test normal operation
+void test_handle_system_health_request_normal_operation(void) {
+    // Test normal operation with valid connection
+    struct MockMHDConnection mock_conn = {0};
+
+    enum MHD_Result result = handle_system_health_request((struct MHD_Connection *)&mock_conn);
+
+    // The function should return MHD_YES for successful operation
+    TEST_ASSERT_EQUAL(1, result); // Should return MHD_YES (1)
 }
 
 // Test system resources checking function
@@ -374,6 +434,7 @@ int main(void) {
     RUN_TEST(test_handle_system_health_request_compilation_check);
     RUN_TEST(test_health_header_includes);
     RUN_TEST(test_health_function_declarations);
+    RUN_TEST(test_handle_system_health_request_normal_operation);
     RUN_TEST(test_check_system_resources_function);
     RUN_TEST(test_check_memory_usage_function);
     RUN_TEST(test_check_disk_space_function);

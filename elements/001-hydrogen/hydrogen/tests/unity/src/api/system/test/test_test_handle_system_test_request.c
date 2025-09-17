@@ -3,12 +3,17 @@
  * This file contains comprehensive unit tests for the enhanced handle_system_test_request function in test.c
  */
 
+// Enable mocks BEFORE any includes
+#define UNITY_TEST_MODE
+
 // Standard project header plus Unity Framework header
 #include "../../../../../../src/hydrogen.h"
 #include "unity.h"
 
 // Include necessary headers for the module being tested
 #include "../../../../../../src/api/system/test/test.h"
+#include "../../../../../../src/websocket/websocket_server_internal.h"
+#include "../../../../../../src/config/config.h"
 
 // Include system headers for mock functions
 #include <sys/utsname.h>
@@ -32,18 +37,35 @@ void test_post_data_handling(void);
 void test_test_error_handling_structure(void);
 void test_test_response_format_expectations(void);
 void test_test_diagnostic_data_collection(void);
+void test_handle_system_test_request_normal_operation(void);
+
+// Mock structures for testing
+struct MockMHDConnection {
+    int dummy; // Minimal mock
+};
+
+struct MockMHDResponse {
+    size_t size;
+    void *data;
+    int status_code;
+};
+
+// Global state for mocks
+static int mock_mhd_queue_response_result = 1; // MHD_YES
 
 // Mock function prototypes
-char* mock_api_get_client_ip(struct MHD_Connection *connection);
-json_t* mock_api_extract_jwt_claims(struct MHD_Connection *connection, const char* secret);
-json_t* mock_api_extract_query_params(struct MHD_Connection *connection);
-const char* mock_MHD_lookup_connection_value(struct MHD_Connection *connection, enum MHD_ValueKind kind, const char *key);
-int mock_uname(struct utsname *buf);
-pid_t mock_getpid(void);
-char* mock_getenv(const char *name);
-int mock_clock_gettime(clockid_t clk_id, struct timespec *tp);
-struct tm* mock_localtime(const time_t *timep);
-size_t mock_strftime(char *s, size_t max, const char *format, const struct tm *tm);
+enum MHD_Result api_send_json_response(struct MHD_Connection *connection, json_t *json_obj, unsigned int status_code);
+
+// External variables (defined in other modules)
+extern WebSocketServerContext *ws_context;
+extern volatile sig_atomic_t server_running;
+extern volatile sig_atomic_t server_stopping;
+extern volatile sig_atomic_t web_server_shutdown;
+extern volatile sig_atomic_t print_queue_shutdown;
+extern volatile sig_atomic_t log_queue_shutdown;
+extern volatile sig_atomic_t mdns_server_system_shutdown;
+extern volatile sig_atomic_t websocket_server_shutdown;
+extern AppConfig *app_config;
 
 // Mock function declarations for testing
 static char mock_client_ip[16] = "192.168.1.100";
@@ -54,11 +76,51 @@ static char mock_user_agent[32] = "TestBrowser/1.0";
 static struct utsname mock_utsname;
 static pid_t mock_pid = 12345;
 
-// Note: Mock functions are not implemented here to avoid conflicts with real functions
-// The test file focuses on testing the mock data infrastructure and documenting expected behavior
-// Actual function testing would require proper mocking frameworks or integration testing
+// Mock function implementations
+
+// Mock implementation of MHD functions
+struct MHD_Response *MHD_create_response_from_buffer(size_t size, void *buffer, enum MHD_ResponseMemoryMode mode) {
+    (void)size; (void)buffer; (void)mode;
+    struct MockMHDResponse *mock_resp = (struct MockMHDResponse *)malloc(sizeof(struct MockMHDResponse));
+    if (mock_resp) {
+        mock_resp->size = size;
+        mock_resp->data = buffer;
+        mock_resp->status_code = 0;
+    }
+    return (struct MHD_Response *)mock_resp;
+}
+
+enum MHD_Result MHD_queue_response(struct MHD_Connection *connection, unsigned int status_code, struct MHD_Response *response) {
+    (void)connection; (void)status_code; (void)response;
+    if (response) {
+        ((struct MockMHDResponse *)response)->status_code = (int)status_code;
+    }
+    return (enum MHD_Result)mock_mhd_queue_response_result;
+}
+
+enum MHD_Result MHD_add_response_header(struct MHD_Response *response, const char *header, const char *content) {
+    (void)response; (void)header; (void)content;
+    return MHD_YES;
+}
+
+void MHD_destroy_response(struct MHD_Response *response) {
+    (void)response;
+    // Don't free in mock
+}
 
 void setUp(void) {
+    // Initialize app_config for tests
+    if (!app_config) {
+        app_config = (AppConfig *)malloc(sizeof(AppConfig));
+        if (app_config) {
+            // Initialize with minimal defaults
+            memset(app_config, 0, sizeof(AppConfig));
+            app_config->webserver.enable_ipv4 = true;
+            app_config->webserver.enable_ipv6 = false;
+            // Add other minimal defaults as needed
+        }
+    }
+
     // Initialize mock data for each test
     strcpy(mock_utsname.sysname, "Linux");
     strcpy(mock_utsname.nodename, "testhost");
@@ -305,6 +367,22 @@ void test_test_diagnostic_data_collection(void) {
     TEST_ASSERT_TRUE(true);
 }
 
+// Test normal operation
+void test_handle_system_test_request_normal_operation(void) {
+    // Test normal operation with valid connection
+    struct MockMHDConnection mock_conn = {0};
+    const char *method = "GET";
+    const char *upload_data = NULL;
+    size_t upload_data_size = 0;
+    void *con_cls = NULL;
+
+    enum MHD_Result result = handle_system_test_request((struct MHD_Connection *)&mock_conn,
+                                                       method, upload_data, &upload_data_size, &con_cls);
+
+    // The function should return MHD_YES for successful operation
+    TEST_ASSERT_EQUAL(1, result); // Should return MHD_YES (1)
+}
+
 int main(void) {
     // Main function with explicit return type
     // This suppresses the "return type defaults to int" warning
@@ -314,6 +392,7 @@ int main(void) {
     RUN_TEST(test_handle_system_test_request_compilation_check);
     RUN_TEST(test_test_header_includes);
     RUN_TEST(test_test_function_declarations);
+    RUN_TEST(test_handle_system_test_request_normal_operation);
     RUN_TEST(test_client_ip_extraction);
     RUN_TEST(test_query_parameter_processing);
     RUN_TEST(test_system_info_collection);

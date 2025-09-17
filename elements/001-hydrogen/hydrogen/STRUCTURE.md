@@ -25,7 +25,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <summary><b>Main Entry Point</b></summary>
 
 - [src/hydrogen.c](src/hydrogen.c) - Main entry point and core system initialization
-- [src/not_hydrogen.c](src/not_hydrogen.c) - Error handler test file
+- [src/not_hydrogen.c](src/hydrogen_not.c) - Error handler test file
 
 </details>
 
@@ -541,7 +541,7 @@ hydrogen/
 │   └── hydrogen-env.json      # Environment configuration
 ├── src/                       # Source code
 │   ├── hydrogen.c             # Main entry point
-│   ├── not_hydrogen.c         # Alternative entry point
+│   ├── hydrogen_not.c         # Alternative entry point
 │   ├── Makefile              # Build system
 │   ├── api/                  # API endpoints
 │   ├── config/               # Config management

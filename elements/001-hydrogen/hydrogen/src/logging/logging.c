@@ -39,7 +39,7 @@ static struct {
 };
 
 // Initialize a message slot in the buffer
-static bool init_message_slot(size_t index) {
+bool init_message_slot(size_t index) {
     if (log_buffer.messages[index] == NULL) {
         log_buffer.messages[index] = malloc(MAX_LOG_LINE_LENGTH);
         if (!log_buffer.messages[index]) return false;
@@ -48,7 +48,7 @@ static bool init_message_slot(size_t index) {
 }
 
 // Add a message to the rolling buffer
-static void add_to_buffer(const char* message) {
+void add_to_buffer(const char* message) {
     MutexResult lock_result = MUTEX_LOCK(&log_buffer.mutex, SR_LOGGING);
     if (lock_result == MUTEX_SUCCESS) {
         // Initialize or move to next slot
@@ -170,8 +170,8 @@ char* log_get_last_n(size_t count) {
 
 // Private function declarations
 static void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count);
-static bool init_message_slot(size_t index);
-static void add_to_buffer(const char* message);
+bool init_message_slot(size_t index);
+void add_to_buffer(const char* message);
 
 // Public interface declarations
 bool log_is_in_logging_operation(void);
@@ -189,7 +189,7 @@ bool log_is_in_logging_operation(void);
  * - Thread safety
  */
 // Fallback priority labels for when config is unavailable
-static const char* get_fallback_priority_label(int priority) {
+const char* get_fallback_priority_label(int priority) {
     static const char* fallback_labels[] = {
         "TRACE", "DEBUG", "STATE", "ALERT", "ERROR", "FATAL", "QUIET"
     };
@@ -237,7 +237,7 @@ static void console_log(const char* subsystem, int priority, const char* message
 }
 
 // Count the number of format specifiers in a format string, excluding %%
-static size_t count_format_specifiers(const char* format) {
+size_t count_format_specifiers(const char* format) {
     if (!format) return 0;
 
     size_t count = 0;

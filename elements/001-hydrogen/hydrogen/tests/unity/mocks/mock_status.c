@@ -15,6 +15,7 @@ static json_t* mock_json_result = NULL;
 // Mock implementation of get_system_status_json
 json_t* mock_get_system_status_json(const WebSocketMetrics *ws_metrics) {
     (void)ws_metrics; // Suppress unused parameter warning
+    printf("MOCK: mock_get_system_status_json called\n");
 
     if (mock_json_result) {
         // Return a copy of the mock result
