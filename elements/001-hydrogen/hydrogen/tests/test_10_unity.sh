@@ -340,23 +340,18 @@ run_unity_tests() {
                     case "${line_type}" in
                         "TEST_LINE")
                             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${content}"
-                            # dump_collected_output
-                            # clear_collected_output
+                            dump_collected_output
+                            clear_collected_output
                             ;;
                         "RESULT_LINE")
                             IFS='|' read -r result_type message <<< "${content}"
                             if [[ "${result_type}" = "PASS" ]]; then
-                                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${message}"
+                                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${message}" 
                             elif [[ "${result_type}" = "WARN" ]]; then
                                 print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "${message}"
                             else
                                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${message}"
                             fi
-                            ;;
-                        "OUTPUT_LINE")
-                            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${content}"
-                            ;;
-                        "SUBTEST_START")
                             ;;
                         *) ;;
                     esac
