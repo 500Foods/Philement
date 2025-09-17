@@ -32,7 +32,8 @@ export COVERAGE_GUARD="true"
 # between the Unity build and the Coverage build. These arise out of having #ifdef
 # sections that change the number of lines of instrumented code. Some effort has 
 # been made to limit these, but the nature of unit testing has made it difficult.
-DISCREPANCY=9
+DISCREPANCY_UNITY=9
+DISCREPANCY_COVERAGE=8
 
 # Library metadata
 COVERAGE_NAME="Coverage Library"
@@ -141,7 +142,7 @@ validate_coverage_consistency() {
     if [[ ${total_lines} -gt 0 ]]; then
         line_coverage_pct=$("${AWK}" "BEGIN {printf \"%.1f\", (${covered_lines} / ${total_lines}) * 100}")
     fi
-    
+   
     # Generate detailed report
     echo "COVERAGE_VALIDATION_REPORT_START"
     echo "Timestamp: ${timestamp}"
@@ -367,7 +368,9 @@ calculate_coverage_generic() {
 
         # This is to account for the difference between Unity and Coverage *instrumented* lines
         if [[ "${coverage_file}" == "${UNITY_COVERAGE_FILE}" ]]; then
-          total_lines=$(( total_lines + DISCREPANCY ))
+          total_lines=$(( total_lines + DISCREPANCY_UNITY ))
+        else
+          total_lines=$(( total_lines + DISCREPANCY_COVERAGE ))
         fi
 
         # Count files with at least one covered line using awk with the same pattern

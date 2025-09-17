@@ -210,9 +210,6 @@ run_single_unity_test_parallel() {
     
     # Add SUBTEST_END with long-running flag
     echo "SUBTEST_END|${subtest_number}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}|${is_long_running}" >> "${output_file}"
-
-   
-    echo "SUBTEST_END|${subtest_number}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}|${is_long_running}" >> "${output_file}"
     echo "${exit_code}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}|${is_long_running}" > "${result_file}"
     
     return "${exit_code}"
@@ -279,6 +276,8 @@ run_unity_tests() {
     local batch_size=$(( (total_tests + number_of_groups - 1) / number_of_groups ))  # ceil(total_tests / number_of_groups)
     local total_failed=0
     local batch_num=0
+    local filecounter=0
+
     TOTAL_UNITY_TESTS=0
     TOTAL_UNITY_PASSED=0
     
@@ -312,10 +311,11 @@ run_unity_tests() {
         for test_path in "${batch_tests[@]}"; do
             local temp_result_file
             local temp_output_file
-            temp_result_file="${LOG_PREFIX}_${RANDOM}.result"
-            temp_output_file="${LOG_PREFIX}_${RANDOM}.output"
+            temp_result_file="${LOG_PREFIX}_${filecounter}.result"
+            temp_output_file="${LOG_PREFIX}_${filecounter}.output"
             temp_files+=("${temp_result_file}")
             temp_outputs+=("${temp_output_file}")
+            filecounter=$(( filecounter + 1 ))
             # Run test in background
             run_single_unity_test_parallel "${test_path}" "${temp_result_file}" "${temp_output_file}" &
             pids+=($!)
@@ -340,8 +340,8 @@ run_unity_tests() {
                     case "${line_type}" in
                         "TEST_LINE")
                             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${content}"
-                            dump_collected_output
-                            clear_collected_output
+                            # dump_collected_output
+                            # clear_collected_output
                             ;;
                         "RESULT_LINE")
                             IFS='|' read -r result_type message <<< "${content}"
