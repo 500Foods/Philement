@@ -23,7 +23,10 @@ extern volatile sig_atomic_t mail_relay_system_shutdown;
 // Check if the mail relay subsystem is ready to land
 LaunchReadiness check_mail_relay_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-    
+
+    // Set subsystem name
+    readiness.subsystem = SR_MAIL_RELAY;
+
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(5 * sizeof(char*));
     if (!readiness.messages) {
@@ -31,7 +34,7 @@ LaunchReadiness check_mail_relay_landing_readiness(void) {
         return readiness;
     }
     int msg_count = 0;
-    
+
     // Add the subsystem name as the first message
     readiness.messages[msg_count++] = strdup("Mail Relay");
     

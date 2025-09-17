@@ -24,8 +24,11 @@ extern pthread_t log_thread;
 extern volatile sig_atomic_t log_queue_shutdown;
 extern AppConfig* app_config;
 
+// Local function prototypes
+bool check_other_subsystems_complete(void);
+
 // Check if all other subsystems have completed shutdown
-static bool check_other_subsystems_complete(void) {
+bool check_other_subsystems_complete(void) {
     for (int i = 0; i < subsystem_registry.count; i++) {
         const SubsystemInfo* info = &subsystem_registry.subsystems[i];
         // Skip logging subsystem itself

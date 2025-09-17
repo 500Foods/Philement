@@ -47,14 +47,14 @@ void test_update_subsystem_on_shutdown_from_running(void) {
     int id = register_subsystem_from_launch("test_subsystem", NULL, NULL, NULL,
                                            mock_init_success, mock_shutdown_function);
     TEST_ASSERT_EQUAL_INT(0, id);
-    
+
     // Start the subsystem
     update_subsystem_on_startup("test_subsystem", true);
     TEST_ASSERT_EQUAL_INT(SUBSYSTEM_RUNNING, get_subsystem_state(id));
-    
+
     // Update on shutdown
     update_subsystem_on_shutdown("test_subsystem");
-    
+
     // Should now be stopping
     TEST_ASSERT_EQUAL_INT(SUBSYSTEM_STOPPING, get_subsystem_state(id));
     TEST_ASSERT_FALSE(is_subsystem_running(id));

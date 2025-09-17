@@ -167,12 +167,17 @@ void handle_sigint(void) {
 
 
 bool check_all_landing_readiness(void) {
+    // Guard against uninitialized registry (e.g., in test environments)
+    if (!subsystem_registry.subsystems || subsystem_registry.count <= 0) {
+        return false; // Cannot perform landing readiness without initialized registry
+    }
+
     // Record shutdown initiate time for total running time calculation
     record_shutdown_initiate_time();
-    
+
     // Record landing start time
     time_t start_time = time(NULL);
-    
+
     // Use appropriate subsystem name based on operation
     const char* subsystem = restart_requested ? SR_RESTART : SR_SHUTDOWN;
     

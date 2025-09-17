@@ -65,13 +65,13 @@ void test_update_subsystem_on_startup_failure(void) {
     int id = register_subsystem_from_launch("test_subsystem", NULL, NULL, NULL,
                                            mock_init_success, mock_shutdown_function);
     TEST_ASSERT_EQUAL_INT(0, id);
-    
+
     // Initially should be inactive
     TEST_ASSERT_EQUAL_INT(SUBSYSTEM_INACTIVE, get_subsystem_state(id));
-    
+
     // Update on failed startup
     update_subsystem_on_startup("test_subsystem", false);
-    
+
     // Should now be in error state
     TEST_ASSERT_EQUAL_INT(SUBSYSTEM_ERROR, get_subsystem_state(id));
     TEST_ASSERT_FALSE(is_subsystem_running(id));

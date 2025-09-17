@@ -78,6 +78,11 @@ static bool grow_registry(size_t new_capacity) {
  * Initialize the registry.
  */
 void init_registry(void) {
+    // For robust test isolation, destroy and reinitialize the mutex
+    // This ensures clean state between test runs
+    pthread_mutex_destroy(&subsystem_registry.mutex);
+    pthread_mutex_init(&subsystem_registry.mutex, NULL);
+
     // Lock the mutex to ensure thread safety during cleanup
     MutexResult lock_result = MUTEX_LOCK(&subsystem_registry.mutex, SR_REGISTRY);
     if (lock_result == MUTEX_SUCCESS) {
@@ -382,11 +387,14 @@ bool is_subsystem_running(int subsystem_id) {
 /*
  * Check if a subsystem is running by name.
  */
+#ifdef UNITY_TEST_MODE
+__attribute__((weak))
+#endif
 bool is_subsystem_running_by_name(const char* name) {
     if (!name) return false;
-    
+
     pthread_mutex_lock(&subsystem_registry.mutex);
-    
+
     bool running = false;
     for (int i = 0; i < subsystem_registry.count; i++) {
         if (strcmp(subsystem_registry.subsystems[i].name, name) == 0) {
@@ -394,9 +402,9 @@ bool is_subsystem_running_by_name(const char* name) {
             break;
         }
     }
-    
+
     pthread_mutex_unlock(&subsystem_registry.mutex);
-    
+
     return running;
 }
 

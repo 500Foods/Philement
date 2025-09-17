@@ -148,6 +148,11 @@ bool handle_landing_plan(const ReadinessResults* results) {
  * Returns true if all dependencies are satisfied
  */
 static bool check_dependent_states(const char* subsystem, bool* can_land) {
+    // Guard against uninitialized registry (e.g., in test environments)
+    if (!subsystem_registry.subsystems || subsystem_registry.count <= 0) {
+        return true; // No registry means no dependencies to check
+    }
+
     for (int j = 0; j < subsystem_registry.count; j++) {
         const SubsystemInfo* dependent = &subsystem_registry.subsystems[j];
         
