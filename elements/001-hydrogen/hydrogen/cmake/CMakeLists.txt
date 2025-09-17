@@ -779,12 +779,13 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libmicrohttpd.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_launch.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_status.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_landing.c
 )
 
 # Create Unity test object files in build/unity/src directory structure (same as original)
 # Include hydrogen.c for coverage instrumentation consistency, but don't link it into test executables
 set(UNITY_HYDROGEN_SOURCES ${HYDROGEN_SOURCES})
-set(UNITY_HYDROGEN_SOURCES_FOR_LINKING ${HYDROGEN_SOURCES})
+set(UNITY_HYDROGEN_SOURCES_FOR_LINKING ${UNITY_HYDROGEN_SOURCES})
 list(REMOVE_ITEM UNITY_HYDROGEN_SOURCES_FOR_LINKING "${CMAKE_CURRENT_SOURCE_DIR}/../src/hydrogen.c")
 
 set(UNITY_OBJECT_FILES "")
@@ -866,6 +867,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             -DRELEASE='"${HYDROGEN_RELEASE}"'
             -DBUILD_TYPE='"Unity"'
             -DUNITY_INCLUDE_DOUBLE
+            -DUNITY_TEST_MODE
             ${MOCK_DEFINES}
             -I${CMAKE_CURRENT_SOURCE_DIR}/../src
             -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity

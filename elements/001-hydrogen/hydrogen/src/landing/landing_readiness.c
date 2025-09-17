@@ -96,6 +96,7 @@ static void process_subsystem_readiness(ReadinessResults* results, size_t* index
             free((void*)readiness.messages[i]);
         }
         free(readiness.messages);
+        readiness.messages = NULL;
     }
     
     (*index)++;

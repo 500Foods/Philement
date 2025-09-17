@@ -27,12 +27,12 @@ LaunchReadiness check_mdns_server_landing_readiness(void) {
     readiness.subsystem = SR_MDNS_SERVER;
     
     // Allocate space for messages (including NULL terminator)
-    readiness.messages = malloc(6 * sizeof(char*));
+    readiness.messages = calloc(6, sizeof(char*));
     if (!readiness.messages) {
         readiness.ready = false;
         return readiness;
     }
-    
+
     // Add initial subsystem identifier
     readiness.messages[0] = strdup(SR_MDNS_SERVER);
     

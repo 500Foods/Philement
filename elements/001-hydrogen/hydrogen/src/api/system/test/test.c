@@ -66,9 +66,6 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
     json_t *response_obj = json_object();
     
     // 1. Add client IP address
-#ifdef UNITY_TEST_MODE
-    json_object_set_new(response_obj, "client_ip", json_string("192.168.1.100"));
-#else
     char *client_ip = api_get_client_ip(connection);
     if (client_ip) {
         json_object_set_new(response_obj, "client_ip", json_string(client_ip));
@@ -76,44 +73,26 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
     } else {
         json_object_set_new(response_obj, "client_ip", json_string("unknown"));
     }
-#endif
     
     // 2. Add X-Forwarded-For header if present
-#ifdef UNITY_TEST_MODE
-    json_object_set_new(response_obj, "x_forwarded_for", json_string("203.0.113.195"));
-#else
     const char *forwarded_for = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "X-Forwarded-For");
     if (forwarded_for) {
         json_object_set_new(response_obj, "x_forwarded_for", json_string(forwarded_for));
     } else {
         json_object_set_new(response_obj, "x_forwarded_for", json_null());
     }
-#endif
     
     // 3. Add JWT claims if present
-#ifdef UNITY_TEST_MODE
-    json_t *jwt_claims = json_object();
-    json_object_set_new(jwt_claims, "sub", json_string("test_user"));
-    json_object_set_new(jwt_claims, "exp", json_integer(1638360000));
-    json_object_set_new(response_obj, "jwt_claims", jwt_claims);
-#else
     json_t *jwt_claims = api_extract_jwt_claims(connection, jwt_secret);
     if (jwt_claims) {
         json_object_set_new(response_obj, "jwt_claims", jwt_claims);
     } else {
         json_object_set_new(response_obj, "jwt_claims", json_null());
     }
-#endif
 
     // 4. Add query parameters
-#ifdef UNITY_TEST_MODE
-    json_t *query_params = json_object();
-    json_object_set_new(query_params, "test_param", json_string("test_value"));
-    json_object_set_new(response_obj, "query_parameters", query_params);
-#else
     json_t *query_params = api_extract_query_params(connection);
     json_object_set_new(response_obj, "query_parameters", query_params);
-#endif
     
     // 5. Add POST data if applicable
     if (strcmp(method, "POST") == 0) {
@@ -152,13 +131,6 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
     json_t *server_info = json_object();
     
     // System information
-#ifdef UNITY_TEST_MODE
-    json_object_set_new(server_info, "system", json_string("Linux"));
-    json_object_set_new(server_info, "hostname", json_string("testhost"));
-    json_object_set_new(server_info, "release", json_string("5.15.0-41-generic"));
-    json_object_set_new(server_info, "version", json_string("#44-Ubuntu SMP Wed Jun 22 14:20:53 UTC 2022"));
-    json_object_set_new(server_info, "machine", json_string("x86_64"));
-#else
     struct utsname system_info;
     if (uname(&system_info) == 0) {
         json_object_set_new(server_info, "system", json_string(system_info.sysname));
@@ -167,26 +139,13 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
         json_object_set_new(server_info, "version", json_string(system_info.version));
         json_object_set_new(server_info, "machine", json_string(system_info.machine));
     }
-#endif
     
     // Process information
-#ifdef UNITY_TEST_MODE
-    json_object_set_new(server_info, "pid", json_string("12345"));
-#else
     char pid_str[16];
     snprintf(pid_str, sizeof(pid_str), "%d", getpid());
     json_object_set_new(server_info, "pid", json_string(pid_str));
-#endif
 
     // Add some environment variables that might be useful for debugging
-#ifdef UNITY_TEST_MODE
-    json_t *env_obj = json_object();
-    json_object_set_new(env_obj, "PATH", json_string("/usr/local/bin:/usr/bin:/bin"));
-    json_object_set_new(env_obj, "HOME", json_string("/home/testuser"));
-    json_object_set_new(env_obj, "USER", json_string("testuser"));
-    json_object_set_new(env_obj, "LANG", json_string("en_US.UTF-8"));
-    json_object_set_new(server_info, "environment", env_obj);
-#else
     const char *env_vars[] = {"PATH", "LD_LIBRARY_PATH", "HOME", "USER", "LANG", "TZ"};
     json_t *env_obj = json_object();
     for (size_t i = 0; i < sizeof(env_vars) / sizeof(env_vars[0]); i++) {
@@ -196,7 +155,6 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
         }
     }
     json_object_set_new(server_info, "environment", env_obj);
-#endif
     
     json_object_set_new(response_obj, "server_info", server_info);
     
@@ -209,23 +167,11 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
     };
     
     for (size_t i = 0; i < sizeof(important_headers) / sizeof(important_headers[0]); i++) {
-#ifdef UNITY_TEST_MODE
-        // Mock some headers for testing
-        if (strcmp(important_headers[i], "User-Agent") == 0) {
-            json_object_set_new(headers, important_headers[i], json_string("TestBrowser/1.0"));
-        } else if (strcmp(important_headers[i], "Host") == 0) {
-            json_object_set_new(headers, important_headers[i], json_string("localhost:8080"));
-        } else if (strcmp(important_headers[i], "Content-Type") == 0) {
-            json_object_set_new(headers, important_headers[i], json_string("application/json"));
-        }
-        // Other headers remain null for test mode
-#else
         const char *value = MHD_lookup_connection_value(
             connection, MHD_HEADER_KIND, important_headers[i]);
         if (value) {
             json_object_set_new(headers, important_headers[i], json_string(value));
         }
-#endif
     }
     json_object_set_new(response_obj, "request_headers", headers);
     
@@ -254,12 +200,6 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
     json_object_set_new(response_obj, "request_info", request_info);
     
     // 9. Add timing/performance information
-#ifdef UNITY_TEST_MODE
-    json_t *timing = json_object();
-    json_object_set_new(timing, "processing_time_ms", json_real(5.5));
-    json_object_set_new(timing, "timestamp", json_integer(1638360000));
-    json_object_set_new(response_obj, "timing", timing);
-#else
     struct timespec end_time;
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     double processing_time = ((double)(end_time.tv_sec - start_time.tv_sec)) * 1000.0 +
@@ -269,7 +209,6 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
     json_object_set_new(timing, "processing_time_ms", json_real(processing_time));
     json_object_set_new(timing, "timestamp", json_integer(time(NULL)));
     json_object_set_new(response_obj, "timing", timing);
-#endif
 
     // Reset connection context before returning to prevent cleanup issues
     *con_cls = NULL;

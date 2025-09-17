@@ -15,6 +15,7 @@
 # calculate_blackbox_coverage()
 
 # CHANGELOG
+# 3.2.0 - 2025-09-17 - Added DISCREPANCY to calculation
 # 3.1.0 - 2025-08-10 - Added caching to calculate_unity/blackbox_coverage()
 # 3.0.0 - 2025-08-04 - GCOV Optimization Adventure
 # 2.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
@@ -26,6 +27,12 @@ set -euo pipefail
 # Guard clause to prevent multiple sourcing
 [[ -n "${COVERAGE_GUARD:-}" ]] && return 0
 export COVERAGE_GUARD="true"
+
+# This refers to the difference between the number of instrumented lines, in total,
+# between the Unity build and the Coverage build. These arise out of having #ifdef
+# sections that change the number of lines of instrumented code. Some effort has 
+# been made to limit these, but the nature of unit testing has made it difficult.
+DISCREPANCY=9
 
 # Library metadata
 COVERAGE_NAME="Coverage Library"
@@ -358,9 +365,9 @@ calculate_coverage_generic() {
         total_lines=${total_lines:-0}
         covered_lines=${covered_lines:-0}
 
-        # This is to account for the one extra instrumented line in hydrogen.c that is in coverage and not in unity
+        # This is to account for the difference between Unity and Coverage *instrumented* lines
         if [[ "${coverage_file}" == "${UNITY_COVERAGE_FILE}" ]]; then
-          total_lines=$(( total_lines + 1 ))
+          total_lines=$(( total_lines + DISCREPANCY ))
         fi
 
         # Count files with at least one covered line using awk with the same pattern
