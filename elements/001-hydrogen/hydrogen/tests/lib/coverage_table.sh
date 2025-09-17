@@ -4,6 +4,7 @@
 # Displays comprehensive coverage data from Unity and blackbox tests in a formatted table
 
 # CHANGELOG
+# 4.1.0 - 2025-09-17 - Added CYAN color flag for files where Unity Framework tests exceed Unity lines of coverage found
 # 4.0.0 - 2025-08-13 - Added Tests column showing Unity test count per source file with caching
 # 3.0.0 - 2025-08-04 - GCOV Optimization Adventure
 # 2.0.1 - 2025-07-23 - Added --help and --version options
@@ -19,7 +20,7 @@
 set -euo pipefail
 
 COVERAGE_TABLE_NAME="Coverage Table Library"
-COVERAGE_TABLE_VERSION="4.0.0"
+COVERAGE_TABLE_VERSION="4.1.0"
 export COVERAGE_TABLE_NAME COVERAGE_TABLE_VERSION
 
 # Test Configuration
@@ -27,7 +28,7 @@ TEST_NAME="Coverage Table"
 TEST_ABBR="CVT"
 TEST_NUMBER="CT"
 TEST_COUNTER=0
-TEST_VERSION="4.0.0"
+TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/framework.sh"
@@ -60,6 +61,7 @@ DESCRIPTION:
     and combined coverage data. The table includes color-coded flags:
     - YELLOW: Files with no coverage in either test type
     - MAGENTA: Files with >0 coverage but <50% coverage when >100 instrumented lines
+    - CYAN: Files where Unity Framework tests exceed Unity lines of coverage found
     
     The script processes gcov files from both Unity and blackbox test directories
     and displays comprehensive coverage statistics.
@@ -428,6 +430,7 @@ data_records=""
 first_record=true
 zero_coverage_count=0
 low_coverage_count=0
+cyan_coverage_count=0
 
 # Generate JSON data for tables
 for file_data_entry in "${sorted_file_data[@]}"; do
@@ -446,6 +449,9 @@ for file_data_entry in "${sorted_file_data[@]}"; do
     c_instrumented=${coverage_instrumented_lines["${file_path}"]:-0}
     combined_covered=${combined_covered_lines["${file_path}"]:-0}
     combined_instrumented=${combined_instrumented_lines["${file_path}"]:-0}
+
+    # Get Unity test count for this source file
+    test_count="${unity_test_counts[${file_path}]:-0}"
     
     # Compute all percentages and checks in one awk call
     # shellcheck disable=SC2312 # Not gonna touch this one
@@ -494,11 +500,11 @@ for file_data_entry in "${sorted_file_data[@]}"; do
     elif [[ ${coverage_below_50} -eq 1 ]]; then
         display_file_path="{MAGENTA}${display_file_path}{RESET}"
         low_coverage_count=$(( low_coverage_count + 1 ))
+    elif [[ ${test_count} -gt ${u_covered} ]]; then
+        display_file_path="{CYAN}${display_file_path}{RESET}"
+        cyan_coverage_count=$(( cyan_coverage_count + 1 ))
     fi
-    
-    # Get Unity test count for this source file
-    test_count="${unity_test_counts[${file_path}]:-0}"
-    
+
     # Build JSON record in memory
     if [[ "${first_record}" = false ]]; then
         data_records+=","
@@ -540,7 +546,7 @@ done
 cat > "${layout_json}" << EOF
 {
     "title": "{BOLD}{WHITE}Test Suite Coverage {RED}——— {BOLD}{CYAN}Unity{WHITE} ${unity_total_pct}% {RED}——— {BOLD}{CYAN}Blackbox{WHITE} ${coverage_total_pct}% {RED}——— {BOLD}{CYAN}Combined{WHITE} ${combined_total_pct}%{RESET}",
-    "footer": "{YELLOW}Zero Coverage{WHITE} ${zero_coverage_count} {RED}——— {MAGENTA}100+ Lines < 50% Coverage{WHITE} ${low_coverage_count} {RED}——— {CYAN}Completed{WHITE} ${display_timestamp}{RESET}",
+    "footer": "{YELLOW}Zero Coverage{WHITE} ${zero_coverage_count} {RED}——— {MAGENTA}100+ Lines < 50% Coverage{WHITE} ${low_coverage_count} {RED}——— {CYAN}Tests > Coverage{WHITE} ${cyan_coverage_count} {RED}——— {CYAN}Completed{WHITE} ${display_timestamp}{RESET}",
     "footer_position": "right",
     "theme": "Red",
     "columns": [
