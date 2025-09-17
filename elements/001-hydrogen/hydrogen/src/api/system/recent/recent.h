@@ -30,4 +30,24 @@
 // Function declarations
 enum MHD_Result handle_system_recent_request(struct MHD_Connection *connection);
 
+/**
+ * Extract log lines from raw text into an array.
+ * This function is made non-static to enable unit testing.
+ *
+ * @param raw_text The raw log text to process
+ * @param line_count Pointer to store the number of lines extracted
+ * @return Array of strings, each containing one log line, or NULL on error
+ */
+char** extract_log_lines(const char *raw_text, size_t *line_count);
+
+/**
+ * Build final text from log lines in reverse order (newest to oldest).
+ * This function is made non-static to enable unit testing.
+ *
+ * @param lines Array of log line strings
+ * @param line_count Number of lines in the array
+ * @return Processed text with lines in reverse order, or NULL on error
+ */
+char* build_reverse_log_text(char **lines, size_t line_count);
+
 #endif /* HYDROGEN_RECENT_H */

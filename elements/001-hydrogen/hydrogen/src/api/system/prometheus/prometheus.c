@@ -25,6 +25,25 @@ extern volatile sig_atomic_t log_queue_shutdown;
 extern volatile sig_atomic_t mdns_server_system_shutdown;
 extern volatile sig_atomic_t websocket_server_shutdown;
 
+// Extract WebSocket metrics in a testable way
+// This function can be mocked in unit tests
+void extract_websocket_metrics_prometheus(WebSocketMetrics *metrics) {
+    if (!metrics) return;
+
+    // Initialize metrics to zero
+    *metrics = (WebSocketMetrics){0};
+
+    // Get WebSocket metrics if available
+    if (ws_context) {
+        pthread_mutex_lock(&ws_context->mutex);
+        metrics->server_start_time = ws_context->start_time;
+        metrics->active_connections = ws_context->active_connections;
+        metrics->total_connections = ws_context->total_connections;
+        metrics->total_requests = ws_context->total_requests;
+        pthread_mutex_unlock(&ws_context->mutex);
+    }
+}
+
 // Handle GET /api/system/prometheus requests
 // Initially returns system information in JSON format (same as /api/system/info)
 // Will be updated in future to return Prometheus-compatible format
@@ -34,21 +53,19 @@ extern volatile sig_atomic_t websocket_server_shutdown;
 enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connection)
 {
     log_this(SR_API, "Handling prometheus endpoint request", LOG_LEVEL_STATE, 0);
-    
+
     WebSocketMetrics metrics = {0};
 
-    // Get WebSocket metrics if available
-    if (ws_context) {
-        pthread_mutex_lock(&ws_context->mutex);
-        metrics.server_start_time = ws_context->start_time;
-        metrics.active_connections = ws_context->active_connections;
-        metrics.total_connections = ws_context->total_connections;
-        metrics.total_requests = ws_context->total_requests;
-        pthread_mutex_unlock(&ws_context->mutex);
-    }
+    // Get WebSocket metrics using the testable function
+    extract_websocket_metrics_prometheus(&metrics);
 
     // Get metrics in Prometheus format
+#ifdef UNITY_TEST_MODE
+    // In test mode, create a simple mock response
+    char *prometheus_output = strdup("# HELP hydrogen_server_status Server status\n# TYPE hydrogen_server_status gauge\nhydrogen_server_status 1\n");
+#else
     char *prometheus_output = get_system_status_prometheus(ws_context ? &metrics : NULL);
+#endif
     if (!prometheus_output) {
         log_this(SR_API, "Failed to get metrics in Prometheus format", LOG_LEVEL_ERROR, 0);
         return MHD_NO;

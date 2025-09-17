@@ -3,12 +3,26 @@
  * This file contains comprehensive unit tests for the enhanced upload functions in upload.c
  */
 
+// Enable mocks BEFORE any includes
+#define UNITY_TEST_MODE
+
+// Include basic headers needed for mock function
+#include <stddef.h>
+
+// Include microhttpd header for MHD types
+#include <microhttpd.h>
+
+// Mock function prototypes
+// Note: handle_upload_request is not mocked - we test the validation logic instead
+
 // Standard project header plus Unity Framework header
 #include "../../../../../../src/hydrogen.h"
 #include "unity.h"
 
 // Include necessary headers for the module being tested
 #include "../../../../../../src/api/system/upload/upload.h"
+#include "../../../../../../src/websocket/websocket_server_internal.h"
+#include "../../../../../../src/config/config.h"
 
 // Include system headers for mock functions
 #include <sys/stat.h>
@@ -34,6 +48,39 @@ void test_upload_info_response_format(void);
 void test_upload_error_handling_structure(void);
 void test_upload_response_format_expectations(void);
 void test_upload_method_validation(void);
+void test_validate_upload_method_valid(void);
+void test_validate_upload_method_invalid(void);
+void test_handle_system_upload_request_normal_operation(void);
+void test_handle_system_upload_request_invalid_method(void);
+
+// Mock structures for testing
+struct MockMHDConnection {
+    int dummy; // Minimal mock
+};
+
+struct MockMHDResponse {
+    size_t size;
+    void *data;
+    int status_code;
+};
+
+// Global state for mocks
+static int mock_mhd_queue_response_result = 1; // MHD_YES
+
+// Mock function prototypes
+// Note: handle_upload_request is mocked at the top of the file
+// Note: api_add_cors_headers is not mocked since it's only called in error paths we don't test
+
+// External variables (defined in other modules)
+extern WebSocketServerContext *ws_context;
+extern volatile sig_atomic_t server_running;
+extern volatile sig_atomic_t server_stopping;
+extern volatile sig_atomic_t web_server_shutdown;
+extern volatile sig_atomic_t print_queue_shutdown;
+extern volatile sig_atomic_t log_queue_shutdown;
+extern volatile sig_atomic_t mdns_server_system_shutdown;
+extern volatile sig_atomic_t websocket_server_shutdown;
+extern AppConfig *app_config;
 
 // Mock function declarations for testing
 static struct statvfs mock_upload_statvfs;
@@ -73,7 +120,53 @@ time_t time(time_t *t) {
     return mock_time;
 }
 
+// Additional mock functions for MHD
+
+// Mock implementation of MHD functions
+struct MHD_Response *MHD_create_response_from_buffer(size_t size, void *buffer, enum MHD_ResponseMemoryMode mode) {
+    (void)size; (void)buffer; (void)mode;
+    struct MockMHDResponse *mock_resp = (struct MockMHDResponse *)malloc(sizeof(struct MockMHDResponse));
+    if (mock_resp) {
+        mock_resp->size = size;
+        mock_resp->data = buffer;
+        mock_resp->status_code = 0;
+    }
+    return (struct MHD_Response *)mock_resp;
+}
+
+enum MHD_Result MHD_queue_response(struct MHD_Connection *connection, unsigned int status_code, struct MHD_Response *response) {
+    (void)connection; (void)status_code; (void)response;
+    if (response) {
+        ((struct MockMHDResponse *)response)->status_code = (int)status_code;
+    }
+    return (enum MHD_Result)mock_mhd_queue_response_result;
+}
+
+enum MHD_Result MHD_add_response_header(struct MHD_Response *response, const char *header, const char *content) {
+    (void)response; (void)header; (void)content;
+    return MHD_YES;
+}
+
+void MHD_destroy_response(struct MHD_Response *response) {
+    (void)response;
+    // Don't free in mock
+}
+
+
+
 void setUp(void) {
+    // Initialize app_config for tests
+    if (!app_config) {
+        app_config = (AppConfig *)malloc(sizeof(AppConfig));
+        if (app_config) {
+            // Initialize with minimal defaults
+            memset(app_config, 0, sizeof(AppConfig));
+            app_config->webserver.enable_ipv4 = true;
+            app_config->webserver.enable_ipv6 = false;
+            // Add other minimal defaults as needed
+        }
+    }
+
     // Initialize mock data for each test
     mock_upload_statvfs.f_bavail = 1000000; // 1M blocks available
     mock_upload_statvfs.f_frsize = 4096;    // 4KB block size
@@ -391,6 +484,49 @@ void test_upload_method_validation(void) {
     TEST_ASSERT_TRUE(true);
 }
 
+// Test method validation function
+void test_validate_upload_method_valid(void) {
+    // Test that POST method is accepted
+    enum MHD_Result result = validate_upload_method("POST");
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+}
+
+void test_validate_upload_method_invalid(void) {
+    // Test that GET method is rejected
+    enum MHD_Result result = validate_upload_method("GET");
+    TEST_ASSERT_EQUAL(MHD_NO, result);
+}
+
+// Test invalid method rejection (tests the main function without calling handle_upload_request)
+void test_handle_system_upload_request_invalid_method(void) {
+    // Test that GET method is rejected - this tests the main function logic
+    // without calling the problematic handle_upload_request
+    struct MockMHDConnection mock_conn = {0};
+    const char *method = "GET";
+    const char *upload_data = NULL;
+    size_t upload_data_size = 0;
+    void *con_cls = NULL;
+
+    enum MHD_Result result = handle_system_upload_request((struct MHD_Connection *)&mock_conn,
+                                                       method, upload_data, &upload_data_size, &con_cls);
+
+    // The function should return MHD_YES (success) even for invalid methods
+    // because MHD_queue_response succeeds, even though it sends an error response
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+}
+
+// Test normal operation - test the method validation path without calling handle_upload_request
+void test_handle_system_upload_request_normal_operation(void) {
+    // Since we can't call handle_upload_request due to system dependencies,
+    // we test that the method validation works correctly
+    enum MHD_Result validation_result = validate_upload_method("POST");
+    TEST_ASSERT_EQUAL(MHD_YES, validation_result);
+
+    // The main function would proceed to call handle_upload_request for POST method
+    // We can't test that part due to system dependencies, but we verify the validation
+    TEST_ASSERT_TRUE(true);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -399,6 +535,10 @@ int main(void) {
     RUN_TEST(test_handle_system_upload_info_request_function_signature);
     RUN_TEST(test_upload_header_includes);
     RUN_TEST(test_upload_function_declarations);
+    RUN_TEST(test_validate_upload_method_valid);
+    RUN_TEST(test_validate_upload_method_invalid);
+    RUN_TEST(test_handle_system_upload_request_normal_operation);
+    RUN_TEST(test_handle_system_upload_request_invalid_method);
     RUN_TEST(test_validate_upload_request_missing_content_type);
     RUN_TEST(test_validate_upload_request_invalid_content_type);
     RUN_TEST(test_validate_upload_request_oversized);

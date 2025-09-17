@@ -4,12 +4,17 @@
  * The log processing logic could be extracted into pure functions for better testability.
  */
 
+// Enable mocks BEFORE any includes
+#define UNITY_TEST_MODE
+
 // Standard project header plus Unity Framework header
 #include "../../../../../../src/hydrogen.h"
 #include "unity.h"
 
 // Include necessary headers for the module being tested
 #include "../../../../../../src/api/system/recent/recent.h"
+#include "../../../../../../src/websocket/websocket_server_internal.h"
+#include "../../../../../../src/config/config.h"
 
 // Mock functions to test the log processing logic that exists in recent.c
 // These functions demonstrate how the logic could be extracted for testing
@@ -90,6 +95,52 @@ static char* build_reverse_text(char **lines, size_t line_count) {
     return processed_text;
 }
 
+// Mock structures for testing
+struct MockMHDConnection {
+    int dummy; // Minimal mock
+};
+
+struct MockMHDResponse {
+    size_t size;
+    void *data;
+    int status_code;
+};
+
+// Global state for mocks
+static int mock_mhd_queue_response_result = 1; // MHD_YES
+
+// Mock function implementations
+
+// Mock implementation of MHD functions
+struct MHD_Response *MHD_create_response_from_buffer(size_t size, void *buffer, enum MHD_ResponseMemoryMode mode) {
+    (void)size; (void)buffer; (void)mode;
+    struct MockMHDResponse *mock_resp = (struct MockMHDResponse *)malloc(sizeof(struct MockMHDResponse));
+    if (mock_resp) {
+        mock_resp->size = size;
+        mock_resp->data = buffer;
+        mock_resp->status_code = 0;
+    }
+    return (struct MHD_Response *)mock_resp;
+}
+
+enum MHD_Result MHD_queue_response(struct MHD_Connection *connection, unsigned int status_code, struct MHD_Response *response) {
+    (void)connection; (void)status_code; (void)response;
+    if (response) {
+        ((struct MockMHDResponse *)response)->status_code = (int)status_code;
+    }
+    return (enum MHD_Result)mock_mhd_queue_response_result;
+}
+
+enum MHD_Result MHD_add_response_header(struct MHD_Response *response, const char *header, const char *content) {
+    (void)response; (void)header; (void)content;
+    return MHD_YES;
+}
+
+void MHD_destroy_response(struct MHD_Response *response) {
+    (void)response;
+    // Don't free in mock
+}
+
 // Mock function: Validate log buffer size constraints
 static bool validate_log_buffer_size(size_t requested_size) {
     const size_t MAX_BUFFER_SIZE = 500; // Match the buffer size in original function
@@ -120,9 +171,21 @@ void test_validate_log_buffer_size_valid(void);
 void test_validate_log_buffer_size_zero(void);
 void test_validate_log_buffer_size_too_large(void);
 void test_validate_log_buffer_size_max(void);
+void test_handle_system_recent_request_normal_operation(void);
+
 
 void setUp(void) {
-    // Setup for log processing tests
+    // Initialize app_config for tests
+    if (!app_config) {
+        app_config = (AppConfig *)malloc(sizeof(AppConfig));
+        if (app_config) {
+            // Initialize with minimal defaults
+            memset(app_config, 0, sizeof(AppConfig));
+            app_config->webserver.enable_ipv4 = true;
+            app_config->webserver.enable_ipv6 = false;
+            // Add other minimal defaults as needed
+        }
+    }
 }
 
 void tearDown(void) {
@@ -415,6 +478,17 @@ void test_validate_log_buffer_size_max(void) {
     TEST_ASSERT_TRUE(validate_log_buffer_size(500));
 }
 
+// Test normal operation
+void test_handle_system_recent_request_normal_operation(void) {
+    // Test normal operation with valid connection
+    struct MockMHDConnection mock_conn = {0};
+
+    enum MHD_Result result = handle_system_recent_request((struct MHD_Connection *)&mock_conn);
+
+    // The function should return MHD_YES for successful operation
+    TEST_ASSERT_EQUAL(1, result); // Should return MHD_YES (1)
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -422,6 +496,7 @@ int main(void) {
     RUN_TEST(test_handle_system_recent_request_compilation_check);
     RUN_TEST(test_recent_header_includes);
     RUN_TEST(test_recent_function_declarations);
+    RUN_TEST(test_handle_system_recent_request_normal_operation);
     RUN_TEST(test_recent_error_handling_structure);
     RUN_TEST(test_recent_response_format_expectations);
     RUN_TEST(test_recent_log_processing_logic);

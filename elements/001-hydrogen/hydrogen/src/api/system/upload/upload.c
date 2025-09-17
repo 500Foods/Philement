@@ -14,19 +14,25 @@
 #include "../../../webserver/web_server_upload.h"
 #include "../../../api/api_utils.h"
 
+// Validate HTTP method for upload requests
+// Returns MHD_YES if method is valid (POST), MHD_NO if invalid
+enum MHD_Result validate_upload_method(const char *method) {
+    return (strcmp(method, "POST") == 0) ? MHD_YES : MHD_NO;
+}
+
 // Handle POST /api/system/upload requests
 // Accepts multipart form data and returns structured JSON responses
 // Success: 200 OK with JSON response containing upload details
 // Error: 400 Bad Request, 413 Payload Too Large, 500 Internal Server Error
 // Includes CORS headers for cross-origin access
 enum MHD_Result handle_system_upload_request(struct MHD_Connection *connection,
-                                           const char *method,
-                                           const char *upload_data,
-                                           size_t *upload_data_size,
-                                           void **con_cls)
+                                            const char *method,
+                                            const char *upload_data,
+                                            size_t *upload_data_size,
+                                            void **con_cls)
 {
     // Only allow POST method
-    if (strcmp(method, "POST") != 0) {
+    if (!validate_upload_method(method)) {
         // Commented out to reduce excessive logging during multipart uploads
         log_this(SR_WEBSERVER, "Upload Method not allowed: %s", LOG_LEVEL_ERROR, 1, method);
         const char *error_json = "{\"error\": \"Method not allowed. Use POST.\"}";

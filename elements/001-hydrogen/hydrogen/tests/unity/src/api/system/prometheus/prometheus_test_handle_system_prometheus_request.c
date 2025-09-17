@@ -4,12 +4,20 @@
  * The response formatting and header handling logic could be extracted into pure functions for better testability.
  */
 
+// Enable mocks BEFORE any includes
+#define USE_MOCK_INFO
+#define UNITY_TEST_MODE
+
+// Include mock headers FIRST to override functions before they are declared
+#include "../../../../../../tests/unity/mocks/mock_info.h"
+
 // Standard project header plus Unity Framework header
 #include "../../../../../../src/hydrogen.h"
 #include "unity.h"
 
 // Include necessary headers for the module being tested
 #include "../../../../../../src/api/system/prometheus/prometheus.h"
+#include "../../../../../../src/config/config.h"
 
 // Mock function: Validate Prometheus format output
 static int validate_prometheus_format(const char *output) {
@@ -76,7 +84,76 @@ static char* convert_to_prometheus_format(const WebSocketMetrics *metrics) {
     return format_websocket_metrics_prometheus(metrics);
 }
 
-// Function prototypes for test functions
+// Mock structures for testing
+struct MockMHDConnection {
+    int dummy; // Minimal mock
+};
+
+struct MockMHDResponse {
+    size_t size;
+    void *data;
+    int status_code;
+};
+
+// Global state for mocks
+static int mock_mhd_queue_response_result = 1; // MHD_YES
+
+// Mock WebSocket metrics data
+static WebSocketMetrics mock_websocket_metrics_data = {0};
+
+// Mock implementation of extract_websocket_metrics
+void mock_extract_websocket_metrics(WebSocketMetrics *metrics) {
+    if (metrics) {
+        *metrics = mock_websocket_metrics_data;
+    }
+}
+
+// Mock control functions
+void mock_info_reset_all(void) {
+    mock_websocket_metrics_data = (WebSocketMetrics){0};
+}
+
+void mock_info_set_websocket_metrics(const WebSocketMetrics *metrics) {
+    if (metrics) {
+        mock_websocket_metrics_data = *metrics;
+    } else {
+        mock_websocket_metrics_data = (WebSocketMetrics){0};
+    }
+}
+
+// Mock function implementations
+
+// Mock implementation of MHD functions
+struct MHD_Response *MHD_create_response_from_buffer(size_t size, void *buffer, enum MHD_ResponseMemoryMode mode) {
+    (void)size; (void)buffer; (void)mode;
+    struct MockMHDResponse *mock_resp = (struct MockMHDResponse *)malloc(sizeof(struct MockMHDResponse));
+    if (mock_resp) {
+        mock_resp->size = size;
+        mock_resp->data = buffer;
+        mock_resp->status_code = 0;
+    }
+    return (struct MHD_Response *)mock_resp;
+}
+
+enum MHD_Result MHD_queue_response(struct MHD_Connection *connection, unsigned int status_code, struct MHD_Response *response) {
+    (void)connection; (void)status_code; (void)response;
+    if (response) {
+        ((struct MockMHDResponse *)response)->status_code = (int)status_code;
+    }
+    return (enum MHD_Result)mock_mhd_queue_response_result;
+}
+
+enum MHD_Result MHD_add_response_header(struct MHD_Response *response, const char *header, const char *content) {
+    (void)response; (void)header; (void)content;
+    return MHD_YES;
+}
+
+void MHD_destroy_response(struct MHD_Response *response) {
+    (void)response;
+    // Don't free in mock
+}
+
+// Mock function prototypes
 void test_handle_system_prometheus_request_function_signature(void);
 void test_handle_system_prometheus_request_compilation_check(void);
 void test_prometheus_header_includes(void);
@@ -84,6 +161,18 @@ void test_prometheus_function_declarations(void);
 void test_prometheus_error_handling_structure(void);
 void test_prometheus_response_format_expectations(void);
 void test_prometheus_metrics_formatting(void);
+
+
+// External variables (defined in other modules)
+extern WebSocketServerContext *ws_context;
+extern volatile sig_atomic_t server_running;
+extern volatile sig_atomic_t server_stopping;
+extern volatile sig_atomic_t web_server_shutdown;
+extern volatile sig_atomic_t print_queue_shutdown;
+extern volatile sig_atomic_t log_queue_shutdown;
+extern volatile sig_atomic_t mdns_server_system_shutdown;
+extern volatile sig_atomic_t websocket_server_shutdown;
+extern AppConfig *app_config;
 
 // New comprehensive test functions
 void test_validate_prometheus_format_basic(void);
@@ -95,10 +184,23 @@ void test_format_websocket_metrics_prometheus_valid(void);
 void test_format_websocket_metrics_prometheus_null_metrics(void);
 void test_convert_to_prometheus_format_with_metrics(void);
 void test_convert_to_prometheus_format_without_metrics(void);
+void test_handle_system_prometheus_request_normal_operation(void);
 
 void setUp(void) {
-    // Note: Setup is minimal since this function requires system resources
-    // In a real scenario, we would mock the dependencies
+    // Initialize mock info
+    mock_info_reset_all();
+
+    // Initialize app_config for tests
+    if (!app_config) {
+        app_config = (AppConfig *)malloc(sizeof(AppConfig));
+        if (app_config) {
+            // Initialize with minimal defaults
+            memset(app_config, 0, sizeof(AppConfig));
+            app_config->webserver.enable_ipv4 = true;
+            app_config->webserver.enable_ipv6 = false;
+            // Add other minimal defaults as needed
+        }
+    }
 }
 
 void tearDown(void) {
@@ -304,6 +406,26 @@ void test_convert_to_prometheus_format_without_metrics(void) {
     free(result);
 }
 
+// Test normal operation
+void test_handle_system_prometheus_request_normal_operation(void) {
+    // Set up mock WebSocket metrics
+    WebSocketMetrics mock_metrics = {
+        .server_start_time = 1234567890,
+        .active_connections = 5,
+        .total_connections = 25,
+        .total_requests = 100
+    };
+    mock_info_set_websocket_metrics(&mock_metrics);
+
+    // Test normal operation with valid connection
+    struct MockMHDConnection mock_conn = {0};
+
+    enum MHD_Result result = handle_system_prometheus_request((struct MHD_Connection *)&mock_conn);
+
+    // The function should return MHD_YES for successful operation
+    TEST_ASSERT_EQUAL(1, result); // Should return MHD_YES (1)
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -311,6 +433,7 @@ int main(void) {
     RUN_TEST(test_handle_system_prometheus_request_compilation_check);
     RUN_TEST(test_prometheus_header_includes);
     RUN_TEST(test_prometheus_function_declarations);
+    RUN_TEST(test_handle_system_prometheus_request_normal_operation);
     RUN_TEST(test_prometheus_error_handling_structure);
     RUN_TEST(test_prometheus_response_format_expectations);
     RUN_TEST(test_prometheus_metrics_formatting);

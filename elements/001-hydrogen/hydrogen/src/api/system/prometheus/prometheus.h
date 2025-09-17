@@ -24,6 +24,7 @@
 // Project headers
 #include "../../../config/config.h"
 #include "../../../state/state.h"
+#include "../../../websocket/websocket_server_internal.h"
 
 /**
  * Handles the /api/system/prometheus endpoint request.
@@ -42,5 +43,13 @@
 //@ swagger:response 200 application/json {"type":"object","properties":{"hardware":{"type":"object"},"os":{"type":"object"},"runtime":{"type":"object"},"version":{"type":"object"}}}
 //@ swagger:response 500 application/json {"type":"object","properties":{"error":{"type":"string","example":"Failed to create response"}}}
 enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connection);
+
+/**
+ * Extract WebSocket metrics for Prometheus endpoint testing purposes.
+ * This function is made non-static to enable unit testing.
+ *
+ * @param metrics Pointer to WebSocketMetrics structure to fill
+ */
+void extract_websocket_metrics_prometheus(WebSocketMetrics *metrics);
 
 #endif /* HYDROGEN_SYSTEM_PROMETHEUS_H */

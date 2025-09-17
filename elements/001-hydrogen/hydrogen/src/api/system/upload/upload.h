@@ -67,11 +67,13 @@
 //@ swagger:note - **Response**: HTML response with upload status
 //@ swagger:note - **Features**: Progress tracking, G-code analysis, preview image extraction
 //@ swagger:note Both methods share the same upload logic and configuration for consistency.
+enum MHD_Result validate_upload_method(const char *method);
+
 enum MHD_Result handle_system_upload_request(struct MHD_Connection *connection,
-                                           const char *method,
-                                           const char *upload_data,
-                                           size_t *upload_data_size,
-                                           void **con_cls);
+                                            const char *method,
+                                            const char *upload_data,
+                                            size_t *upload_data_size,
+                                            void **con_cls);
 
 enum MHD_Result handle_system_upload_info_request(struct MHD_Connection *connection);
 

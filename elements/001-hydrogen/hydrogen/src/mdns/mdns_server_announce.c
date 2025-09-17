@@ -21,22 +21,14 @@ extern volatile sig_atomic_t mdns_server_system_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
 
-// DNS header structure
-typedef struct {
-    uint16_t id;
-    uint16_t flags;
-    uint16_t qdcount;
-    uint16_t ancount;
-    uint16_t nscount;
-    uint16_t arcount;
-} __attribute__((packed)) dns_header_t;
+// DNS header structure is now defined in mdns_server.h
 
 uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, size_t name_len);
 
-static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_len, const char *hostname,
+void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_len, const char *hostname,
                                              const mdns_server_t *mdns_server_instance, uint32_t ttl, const mdns_server_interface_t *iface);
-static network_info_t *create_single_interface_net_info(const mdns_server_interface_t *iface);
-static void free_single_interface_net_info(network_info_t *net_info_instance);
+network_info_t *create_single_interface_net_info(const mdns_server_interface_t *iface);
+void free_single_interface_net_info(network_info_t *net_info_instance);
 
 void mdns_server_build_announcement(uint8_t *packet, size_t *packet_len, const char *hostname,
                            const mdns_server_t *mdns_server_instance, uint32_t ttl, const network_info_t *net_info_instance);
@@ -45,8 +37,15 @@ void mdns_server_build_announcement(uint8_t *packet, size_t *packet_len, const c
  * Builds the actual mDNS announcement packet for a specific interface.
  * This is the core announcement packet construction logic that creates PTR, SRV, and TXT records.
  */
-static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_len, const char *hostname,
+void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_len, const char *hostname,
                                              const mdns_server_t *mdns_server_instance, uint32_t ttl, const mdns_server_interface_t *iface) {
+    // Check for NULL packet buffer or length pointer
+    if (!packet || !packet_len) {
+        log_this(SR_MDNS_SERVER, "Warning: NULL packet buffer or length pointer passed to announcement builder", LOG_LEVEL_ALERT, 0);
+        if (packet_len) *packet_len = 0;
+        return;
+    }
+
     if (!iface) {
         log_this(SR_MDNS_SERVER, "Warning: NULL interface passed to announcement builder", LOG_LEVEL_ALERT, 0);
         // Initialize header with zeros and return minimum packet
@@ -162,7 +161,7 @@ void mdns_server_build_announcement(uint8_t *packet, size_t *packet_len, const c
  * Creates a minimal network_info_t containing only the specified interface.
  * Used internally for interface-specific announcements.
  */
-static network_info_t *create_single_interface_net_info(const mdns_server_interface_t *iface) {
+network_info_t *create_single_interface_net_info(const mdns_server_interface_t *iface) {
     network_info_t *net_info_instance = calloc(1, sizeof(network_info_t));
     if (!net_info_instance) return NULL;
 
@@ -196,7 +195,7 @@ static network_info_t *create_single_interface_net_info(const mdns_server_interf
 /**
  * Frees the network_info_t created by create_single_interface_net_info.
  */
-static void free_single_interface_net_info(network_info_t *net_info_instance) {
+void free_single_interface_net_info(network_info_t *net_info_instance) {
     free(net_info_instance);
 }
 
