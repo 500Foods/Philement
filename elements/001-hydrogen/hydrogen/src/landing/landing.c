@@ -74,7 +74,10 @@ typedef int (*LandingFunction)(void);
 typedef int (*RegistryLandingFunction)(bool);
 
 // Utility function to get subsystem landing function from registry
-static LandingFunction get_landing_function(const char* subsystem_name) {
+LandingFunction get_landing_function(const char* subsystem_name) {
+    // Handle null input
+    if (!subsystem_name) return NULL;
+
     // Registry is handled separately due to different signature
     if (strcmp(subsystem_name, "Registry") == 0) return NULL;
 
@@ -103,7 +106,7 @@ static LandingFunction get_landing_function(const char* subsystem_name) {
  * Each subsystem's specific landing code is in its own landing_*.c file
  * Handles both shutdown and restart scenarios
  */
-static bool land_approved_subsystems(ReadinessResults* results) {
+bool land_approved_subsystems(ReadinessResults* results) {
     if (!results) return false;
     
     bool all_landed = true;

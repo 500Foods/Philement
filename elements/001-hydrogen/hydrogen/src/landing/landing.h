@@ -20,6 +20,11 @@ void report_registry_landing_status(void); // Report final registry status durin
 void handle_sighup(void);  // SIGHUP signal handler for restart
 void handle_sigint(void);  // SIGINT signal handler for shutdown
 
+// Internal landing functions (exposed for unit testing)
+typedef int (*LandingFunction)(void);
+LandingFunction get_landing_function(const char* subsystem_name);
+bool land_approved_subsystems(ReadinessResults* results);
+
 ReadinessResults handle_landing_readiness(void);
 bool handle_landing_plan(const ReadinessResults* results);
 void handle_landing_review(const ReadinessResults* results, time_t start_time);
@@ -27,8 +32,15 @@ void handle_landing_review(const ReadinessResults* results, time_t start_time);
 // Payload landing helper functions
 void free_payload_resources(void);
 
+// Resources landing helper functions
+void free_resources_resources(void);
+
 // Shutdown functions
 void shutdown_network_subsystem(void);
+
+// Thread management helper functions (exposed for unit testing)
+int get_thread_subsystem_id(void);
+void free_thread_resources(void);
 
 void shutdown_registry(void);
 void shutdown_payload(void);
