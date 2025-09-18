@@ -67,7 +67,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-09-18 01:46:00 UTC
+Last updated at 2025-09-18 02:16:50 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ C/C++ Header                   145           1599           4408           4326
 SVG                              4              0              0           4022
 JSON                            39              0              0           3413
 HTML                             8            138             23            882
-CMake                            1            146            191            781
+CMake                            1            154            202            821
 SQL                             30             40              0            642
 Lua                              7             93             83            639
 Python                           1             36              9            195
@@ -90,7 +90,7 @@ Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                          1161          33538          84225         126803
+SUM:                          1161          33546          84236         126843
 -------------------------------------------------------------------------------
 45 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
