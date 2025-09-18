@@ -546,7 +546,7 @@ done
 cat > "${layout_json}" << EOF
 {
     "title": "{BOLD}{WHITE}Test Suite Coverage {RED}——— {BOLD}{CYAN}Unity{WHITE} ${unity_total_pct}% {RED}——— {BOLD}{CYAN}Blackbox{WHITE} ${coverage_total_pct}% {RED}——— {BOLD}{CYAN}Combined{WHITE} ${combined_total_pct}%{RESET}",
-    "footer": "{YELLOW}Zero Cover{WHITE} ${zero_coverage_count} {RED}——— {CYAN}Tests > Cover{WHITE} ${cyan_coverage_count} {RED}——— {MAGENTA}100+ < 50% Cover{WHITE} ${low_coverage_count} {RED}——— {CYAN}Completed{WHITE} ${display_timestamp}{RESET}",
+    "footer": "{YELLOW}Zero Cover{WHITE} ${zero_coverage_count} {RED}——— {CYAN}Tests > Cover{WHITE} ${cyan_coverage_count} {RED}——— {MAGENTA}100+ < 50% Cover{WHITE} ${low_coverage_count} {RED}——— {CYAN}Generated{WHITE} ${display_timestamp}{RESET}",
     "footer_position": "right",
     "theme": "Red",
     "columns": [
