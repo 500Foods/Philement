@@ -655,7 +655,7 @@ TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "${TOTAL_RUNNING_TIME}")
 # shellcheck disable=SC2154 # TC_ORC_DSP defined externally in framework.sh
 layout_json_content='{
     "title": "{BOLD}{WHITE}Test Suite Results {RED}——— {BOLD}{CYAN}Unity{WHITE} '"${UNITY_COVERAGE}"'% {RED}——— {BOLD}{CYAN}Blackbox{WHITE} '"${BLACKBOX_COVERAGE}"'% {RED}——— {BOLD}{CYAN}Combined{WHITE} '"${COMBINED_COVERAGE}"'%{RESET}",
-    "footer": "{CYAN}Elapsed{WHITE} '"${TOTAL_ELAPSED_FORMATTED}"' {RED}——— {CYAN}Cumulative{WHITE} '"${TOTAL_RUNNING_TIME_FORMATTED}"' {RED}——— {CYAN}Completed{WHITE} '"${TIMESTAMP_DISPLAY}"'{RESET}",
+    "footer": "{CYAN}Elapsed{WHITE} '"${TOTAL_ELAPSED_FORMATTED}"' {RED}——— {CYAN}Cumulative{WHITE} '"${TOTAL_RUNNING_TIME_FORMATTED}"' {RED}——— {CYAN}Generated{WHITE} '"${TIMESTAMP_DISPLAY}"'{RESET}",
     "footer_position": "right",
     "columns": [
         {
