@@ -51,13 +51,13 @@ extern LaunchReadiness check_resources_landing_readiness(void);    // from landi
 extern LaunchReadiness check_notify_landing_readiness(void);       // from landing_notify.c
 extern LaunchReadiness check_registry_landing_readiness(void);     // from landing_registry.c
 
-// Forward declarations of static functions
-static void log_readiness_messages(const LaunchReadiness* readiness);
-static void process_subsystem_readiness(ReadinessResults* results, size_t* index,
+// Forward declarations of functions
+void log_landing_readiness_messages(const LaunchReadiness* readiness);
+void process_landing_subsystem_readiness(ReadinessResults* results, size_t* index,
                                       const char* name, LaunchReadiness readiness);
 
 // Log all messages from a readiness check
-static void log_readiness_messages(const LaunchReadiness* readiness) {
+void log_landing_readiness_messages(const LaunchReadiness* readiness) {
     if (!readiness || !readiness->messages) return;
     
     // Log each message (first message is the subsystem name)
@@ -75,9 +75,9 @@ static void log_readiness_messages(const LaunchReadiness* readiness) {
 }
 
 // Helper function to process a subsystem's readiness check
-static void process_subsystem_readiness(ReadinessResults* results, size_t* index,
+void process_landing_subsystem_readiness(ReadinessResults* results, size_t* index,
                                       const char* name, LaunchReadiness readiness) {
-    log_readiness_messages(&readiness);
+    log_landing_readiness_messages(&readiness);
     
     results->results[*index].subsystem = name;
     results->results[*index].ready = readiness.ready;
@@ -142,8 +142,8 @@ ReadinessResults handle_landing_readiness(void) {
     
     // Process subsystems in defined order
     for (size_t i = 0; i < sizeof(subsystems) / sizeof(subsystems[0]); i++) {
-        process_subsystem_readiness(&results, &index, 
-                                  subsystems[i].name, 
+        process_landing_subsystem_readiness(&results, &index,
+                                  subsystems[i].name,
                                   subsystems[i].check_func());
     }
     

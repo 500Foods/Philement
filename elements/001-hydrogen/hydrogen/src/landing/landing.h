@@ -29,6 +29,10 @@ ReadinessResults handle_landing_readiness(void);
 bool handle_landing_plan(const ReadinessResults* results);
 void handle_landing_review(const ReadinessResults* results, time_t start_time);
 
+// Landing review helper functions (exposed for unit testing)
+void report_thread_cleanup_status(void);
+void report_final_landing_summary(const ReadinessResults* results);
+
 // Payload landing helper functions
 void free_payload_resources(void);
 
