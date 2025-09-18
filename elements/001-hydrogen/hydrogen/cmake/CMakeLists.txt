@@ -32,8 +32,11 @@
 # cmake --build . --target client_credentials: Builds the Client Credentials flow example
 # cmake --build . --target password_flow     : Builds the Resource Owner Password flow example
 # cmake --build . --target all_examples      : Builds all example programs
+# cmake --build . --target configure_ccache  : Configure ccache with optimal settings for coverage builds
+# cmake --build . --target ccache_stats      : Show ccache statistics and performance metrics
 
 # CHANGELOG
+# 2025-09-18: Added hydrogen_unity static library with precompiled headers for src/hydrogen.h to improve Unity test build performance and ccache effectiveness. Unity tests now link to static library instead of individual object files. Added ccache optimization targets (configure_ccache, ccache_stats) with optimal settings for coverage builds.
 # 2025-08-17: Added additional compiler flags for better warnings and error checking when building with clang on macOS.
 # 2025-07-01: Added targets for building OIDC client example programs (auth_code_flow, client_credentials, password_flow) with regular and debug builds. Updated help and clean targets to include examples.
 
@@ -84,6 +87,38 @@ find_program(CCACHE_EXECUTABLE ccache)
 if(CCACHE_EXECUTABLE)
     message(STATUS "ccache found: ${CCACHE_EXECUTABLE} - Enabling compiler caching")
     set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
+
+    # Configure ccache for optimal performance with coverage builds
+    set(CCACHE_ENV_VARS
+        "CCACHE_MAXSIZE=20G"
+        "CCACHE_SLOPPINESS=file_macro,time_macros,pch_defines,include_file_mtime,include_file_ctime,system_headers"
+        "CCACHE_CPP2=yes"
+        "CCACHE_DEPEND=yes"
+        "CCACHE_HARDLINK=yes"
+        "CCACHE_BASEDIR=${CMAKE_CURRENT_SOURCE_DIR}/.."
+    )
+
+    # Create target to configure ccache environment
+    add_custom_target(configure_ccache
+        COMMAND ${CMAKE_COMMAND} -E echo "Configuring ccache for optimal performance..."
+        COMMAND ${CMAKE_COMMAND} -E env ${CCACHE_ENV_VARS} ${CMAKE_COMMAND} -E echo "ccache configured with:"
+        COMMAND ${CMAKE_COMMAND} -E env ${CCACHE_ENV_VARS} ccache -p
+        COMMAND ${CMAKE_COMMAND} -E echo "ccache configuration complete"
+        COMMENT "Configure ccache with optimal settings for coverage builds"
+    )
+
+    # Create target to show ccache statistics
+    add_custom_target(ccache_stats
+        COMMAND ${CMAKE_COMMAND} -E echo "🛈  ccache Statistics:"
+        COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
+        COMMAND ccache -s
+        COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
+        COMMAND ${CMAKE_COMMAND} -E echo "💡 Tips to improve ccache performance:"
+        COMMAND ${CMAKE_COMMAND} -E echo "   • Run 'make configure_ccache' to apply optimal settings"
+        COMMAND ${CMAKE_COMMAND} -E echo "   • Clear cache if needed: ccache -C"
+        COMMAND ${CMAKE_COMMAND} -E echo "   • Check cache size: ccache -s | grep 'size'"
+        COMMENT "Display ccache performance statistics and optimization tips"
+    )
 endif()
 
 # CPU-specific optimizations
@@ -895,6 +930,30 @@ endforeach()
 # Create target that depends on all Unity object files
 add_custom_target(unity_objects DEPENDS ${UNITY_OBJECT_FILES})
 
+# Create static library for Unity tests to improve build performance and ccache effectiveness
+add_library(hydrogen_unity STATIC ${UNITY_OBJECT_FILES_FOR_LINKING})
+add_dependencies(hydrogen_unity unity_objects)
+
+# Set linker language explicitly for the static library
+set_target_properties(hydrogen_unity PROPERTIES LINKER_LANGUAGE C)
+
+# Set include directories for the Unity library
+target_include_directories(hydrogen_unity PRIVATE ${HYDROGEN_INCLUDE_DIRS})
+
+# Add precompiled headers for hydrogen.h (included in nearly every file)
+target_precompile_headers(hydrogen_unity PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/hydrogen.h"
+)
+
+# Set Unity-specific compile definitions
+target_compile_definitions(hydrogen_unity PRIVATE
+    VERSION="${HYDROGEN_VERSION}"
+    RELEASE="${HYDROGEN_RELEASE}"
+    BUILD_TYPE="Unity"
+    UNITY_INCLUDE_DOUBLE
+    UNITY_TEST_MODE
+)
+
 # Create Unity test executables for each test file using custom build structure
 foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
@@ -993,9 +1052,9 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     )
     add_dependencies(${TEST_NAME} ${TEST_NAME}_objects unity_objects)
     
-    # Link with Unity object files and required libraries (excluding hydrogen.c which has main())
+    # Link with Unity static library and required libraries (excluding hydrogen.c which has main())
     target_link_libraries(${TEST_NAME}
-        ${UNITY_OBJECT_FILES_FOR_LINKING}
+        hydrogen_unity
         ${HYDROGEN_BASE_LIBS}
         --coverage
         -lgcov
