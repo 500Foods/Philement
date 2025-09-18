@@ -30,7 +30,7 @@
  * Report thread cleanup status
  * Verifies all threads have been properly terminated
  */
-static void report_thread_cleanup_status(void) {
+void report_thread_cleanup_status(void) {
     int active_threads = 0;
     
     // Count active threads across all subsystems
@@ -53,7 +53,7 @@ static void report_thread_cleanup_status(void) {
  * Report final landing summary
  * Provides comprehensive status for all subsystems
  */
-static void report_final_landing_summary(const ReadinessResults* results) {
+void report_final_landing_summary(const ReadinessResults* results) {
     if (!results) return;
     
     // Log subsystem counts

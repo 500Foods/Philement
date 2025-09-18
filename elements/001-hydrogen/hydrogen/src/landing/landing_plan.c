@@ -53,8 +53,8 @@
 #include "landing.h"
 
 // Forward declarations
-static bool check_dependent_states(const char* subsystem, bool* can_land);
-static void log_landing_status(const ReadinessResults* results);
+bool check_dependent_states(const char* subsystem, bool* can_land);
+void log_landing_status(const ReadinessResults* results);
 
 /*
  * Execute the landing plan and make Go/No-Go decisions
@@ -147,7 +147,7 @@ bool handle_landing_plan(const ReadinessResults* results) {
  * Check if all dependents of a subsystem have landed or are inactive
  * Returns true if all dependencies are satisfied
  */
-static bool check_dependent_states(const char* subsystem, bool* can_land) {
+bool check_dependent_states(const char* subsystem, bool* can_land) {
     // Guard against uninitialized registry (e.g., in test environments)
     if (!subsystem_registry.subsystems || subsystem_registry.count <= 0) {
         return true; // No registry means no dependencies to check
@@ -181,7 +181,7 @@ static bool check_dependent_states(const char* subsystem, bool* can_land) {
  * Log the overall landing plan status
  * Provides a summary of subsystem readiness
  */
-static void log_landing_status(const ReadinessResults* results) {
+void log_landing_status(const ReadinessResults* results) {
     log_this(SR_LANDING, "Total Subsystems Checked: %3d", LOG_LEVEL_STATE, 1, results->total_checked);
     log_this(SR_LANDING, "Ready Subsystems:         %3d", LOG_LEVEL_STATE, 1, results->total_ready);
     log_this(SR_LANDING, "Not Ready Subsystems:     %3d", LOG_LEVEL_STATE, 1, results->total_not_ready);
