@@ -33,7 +33,8 @@ extern AppConfig* app_config;
 // Check if the print subsystem is ready to land
 LaunchReadiness check_print_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-    
+    readiness.subsystem = SR_PRINT;
+
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(10 * sizeof(char*));
     if (!readiness.messages) {
