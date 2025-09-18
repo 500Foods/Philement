@@ -49,7 +49,7 @@ LaunchReadiness check_resources_landing_readiness(void) {
 /**
  * Free resources allocated during resources launch
  */
-static void free_resources_resources(void) {
+void free_resources_resources(void) {
     // Begin LANDING: RESOURCES section
     log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
     log_this(SR_LANDING, "LANDING: RESOURCES", LOG_LEVEL_STATE, 0);

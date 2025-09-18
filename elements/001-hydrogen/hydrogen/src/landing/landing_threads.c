@@ -21,7 +21,7 @@ extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
 
 // Get the thread subsystem ID from registry
-static int get_thread_subsystem_id(void) {
+int get_thread_subsystem_id(void) {
     return get_subsystem_id_by_name(SR_THREADS);
 }
 
@@ -90,11 +90,11 @@ LaunchReadiness check_threads_landing_readiness(void) {
 
 /**
  * Free thread-related resources
- * 
+ *
  * This function handles the cleanup of thread management resources during shutdown.
  * It ensures proper cleanup of all thread tracking structures and updates the registry.
  */
-static void free_thread_resources(void) {
+void free_thread_resources(void) {
     // Begin resource cleanup section
     log_this(SR_THREADS, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_THREADS, "LANDING: THREADS", LOG_LEVEL_STATE, 0);
