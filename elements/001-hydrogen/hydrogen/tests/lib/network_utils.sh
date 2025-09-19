@@ -9,8 +9,14 @@
 # count_time_wait_sockets()
 # check_time_wait_sockets()
 # make_http_requests()
+# check_response_content()
+# check_redirect_response()
+# check_swagger_json()
 
 # CHANGELOG
+# 3.3.0 - 2025-09-19 - Added HTTP response testing functions from test_22_swagger.sh
+#                    - Added check_response_content(), check_redirect_response(), check_swagger_json()
+#                    - Support for test script refactoring and code reuse
 # 3.2.0 - 2025-09-19 - Fixed curl_with_retry() to check file existence before using grep/head commands to prevent "No such file or directory" errors
 # 3.1.0 - 2025-09-19 - Fixed curl_with_retry() to ensure parent directories exist before writing files
 # 3.0.0 - 2025-09-19 - Added curl_with_retry() function for robust HTTP requests with retry logic and timing support
@@ -27,7 +33,7 @@ export NETWORK_UTILS_GUARD="true"
 
 # Library metadata
 NETWORK_UTILS_NAME="Network Utilities Library"
-NETWORK_UTILS_VERSION="3.2.0"
+NETWORK_UTILS_VERSION="3.3.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${NETWORK_UTILS_NAME} ${NETWORK_UTILS_VERSION}" "info"
 
@@ -298,4 +304,86 @@ make_http_requests() {
     curl -s --max-time 5 "${base_url}/" -o "${results_dir}/index_response_${timestamp}.html" 2>/dev/null || true
 
     return 0
+}
+
+# Function to check HTTP response content with retry logic for subsystem readiness
+check_response_content() {
+    local url="$1"
+    local expected_content="$2"
+    local response_file="$3"
+    local follow_redirects="$4"
+    local timing_file="$5"  # New parameter for timing data
+
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed ${follow_redirects:+-L} \"${url}\""
+
+    # shellcheck disable=SC2310 # Function invoked in if condition but we want set -e disabled here
+    if curl_with_retry "${url}" "${response_file}" "${timing_file}" "${follow_redirects}" "${expected_content}"; then
+        # Show response excerpt
+        local line_count
+        line_count=$(wc -l < "${response_file}")
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response contains ${line_count} lines"
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check HTTP redirect with retry logic for subsystem readiness
+check_redirect_response() {
+    local url="$1"
+    local expected_location="$2"
+    local redirect_file="$3"
+    local timing_file="$4"  # New parameter for timing data
+
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -v -s --max-time 10 -o /dev/null \"${url}\""
+
+    # Use curl with verbose output for headers
+    # shellcheck disable=SC2310 # Function invoked in if condition but we want set -e disabled here
+    if curl_with_retry "${url}" "${redirect_file}" "${timing_file}" "false" "" "${expected_location}" "true"; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check swagger.json file content with retry logic for subsystem readiness
+check_swagger_json() {
+    local url="$1"
+    local response_file="$2"
+    local timing_file="$3"  # New parameter for timing data
+
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 \"${url}\""
+
+    # shellcheck disable=SC2310 # Function invoked in if condition but we want set -e disabled here
+    if curl_with_retry "${url}" "${response_file}" "${timing_file}"; then
+        # Check if it's valid JSON and contains expected swagger content
+        if jq -e '.openapi // .swagger' "${response_file}" >/dev/null 2>&1; then
+            local openapi_version
+            openapi_version=$(jq -r '.openapi // .swagger // "unknown"' "${response_file}")
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Valid OpenAPI/Swagger specification found (version: ${openapi_version})"
+
+            # Check for required Hydrogen API components
+            if jq -e '.info.title' "${response_file}" >/dev/null 2>&1; then
+                local api_title
+                api_title=$(jq -r '.info.title' "${response_file}")
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API Title: ${api_title}"
+
+                if [[ "${api_title}" == *"Hydrogen"* ]]; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "swagger.json contains valid Hydrogen API specification"
+                    return 0
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json doesn't appear to be for Hydrogen API (title: ${api_title})"
+                    return 1
+                fi
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json missing required 'info.title' field"
+                return 1
+            fi
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json contains invalid JSON or missing OpenAPI/Swagger version"
+            return 1
+        fi
+    else
+        return 1
+    fi
 }

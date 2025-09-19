@@ -135,4 +135,28 @@ json_t *api_validate_jwt(const char *token, const char *secret);
  */
 char *api_create_jwt(const json_t *claims, const char *secret);
 
+/**
+ * Iterator function for processing query parameters
+ * Used internally by api_extract_query_params
+ *
+ * @param cls User data (JSON object)
+ * @param kind The type of value
+ * @param key The parameter key
+ * @param value The parameter value
+ * @return MHD_YES to continue iteration
+ */
+enum MHD_Result query_param_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
+
+/**
+ * Iterator function for processing POST data
+ * Used internally by api_extract_post_data
+ *
+ * @param cls User data (JSON object)
+ * @param kind The type of value
+ * @param key The parameter key
+ * @param value The parameter value
+ * @return MHD_YES to continue iteration
+ */
+enum MHD_Result post_data_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
+
 #endif /* HYDROGEN_API_UTILS_H */
