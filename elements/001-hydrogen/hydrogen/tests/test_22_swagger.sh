@@ -3,29 +3,19 @@
 # Test: Swagger
 # Tests the Swagger functionality, its presence in the payload, etc.
 
-# FUNCTIONS
-# curl_with_retry()
-# handle_timing_file()
-# test_file_download()
-# collect_timing_data()
-# check_response_content()
-# check_redirect_response()
-# check_swagger_json()
+# FUNCTIONS (others moved to lib/ files)
 # run_swagger_test_parallel()
 # analyze_swagger_test_results()
 # test_swagger_configuration()
 
 # CHANGELOG
+# 7.3.0 - 2025-09-19 - Major refactoring to reduce script size from 951 to ~750 lines.
+#                    - Moved timing functions (handle_timing_file, collect_timing_data, test_file_download) to file_utils.sh.
+#                    - Moved HTTP functions (check_response_content, check_redirect_response, check_swagger_json) to network_utils.sh.
+#                    - Updated function references and library sourcing.
+#                    - Maintained all existing functionality and test coverage.
 # 7.2.0 - 2025-09-19 - Moved curl_with_retry to network_utils.sh library for reuse across tests.
-#                    - Added network_utils.sh source to enable curl_with_retry function.
-#                    - Removed duplicate curl_with_retry function and CURL_FORMAT from test script.
 #                    - Fixed shellcheck errors and improved code quality.
-#                    - Fixed SC2089: Changed CURL_FORMAT from string to array to preserve backslashes.
-#                    - Fixed SC2090: Added shellcheck disable comments for intentional backslash preservation.
-#                    - Fixed SC2155: Separated variable declarations and assignments.
-#                    - Fixed SC2312: Replaced command substitution in while condition with separate variable assignment.
-#                    - Fixed SC2168: Removed 'local' keyword from global scope variable.
-#                    - Fixed SC2310: Added shellcheck disable comments for intentional function calls in if conditions.
 #                    - Maintained all existing functionality and test coverage.
 # 7.0.0 - 2025-09-19 - Major refactoring to reduce code size and eliminate duplication.
 #                    - Created curl_with_retry() function to consolidate retry logic across all HTTP functions.
@@ -57,7 +47,7 @@ TEST_NAME="Swagger"
 TEST_ABBR="SWG"
 TEST_NUMBER="22"
 TEST_COUNTER=0
-TEST_VERSION="7.2.0"
+TEST_VERSION="7.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -77,167 +67,6 @@ SWAGGER_TEST_CONFIGS=(
 STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=10
 
-
-# Function to handle timing file operations
-handle_timing_file() {
-    local timing_file="$1"
-    local test_name="$2"
-
-    if [[ -f "${timing_file}" ]]; then
-        local timing
-        timing=$(cat "${timing_file}" 2>/dev/null || echo "0.000")
-        local timing_calc
-        timing_calc=$(echo "scale=6; ${timing} * 1000" | bc 2>/dev/null || echo "0.000")
-        local timing_ms
-        # shellcheck disable=SC2312 # Intentional command substitution to format timing
-        timing_ms=$(printf "%.3f" "${timing_calc}" 2>/dev/null || echo "0.000")
-        echo "${timing_ms}"
-    else
-        echo "0.000"
-    fi
-}
-
-# Function to test file downloads
-test_file_download() {
-    local url="$1"
-    local output_file="$2"
-    local file_type="$3"
-    local result_marker="$4"
-    local result_file="$5"
-
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed \"${url}\""
-    if curl -s --max-time 10 --compressed "${url}" > "${output_file}"; then
-        if [[ -s "${output_file}" ]]; then
-            echo "${result_marker}_PASSED" >> "${result_file}"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded ${file_type} file ($(wc -c < "${output_file}" || true) bytes)"
-        else
-            echo "${result_marker}_FAILED" >> "${result_file}"
-            return 1
-        fi
-    else
-        echo "${result_marker}_FAILED" >> "${result_file}"
-        return 1
-    fi
-    return 0
-}
-
-# Function to collect timing data from multiple files
-collect_timing_data() {
-    local log_prefix="$1"
-    local log_suffix="$2"
-    local total_time_var="$3"
-    local count_var="$4"
-
-    local timing_files=(
-        "${log_prefix}_${log_suffix}_trailing_slash.timing"
-        "${log_prefix}_${log_suffix}_redirect.timing"
-        "${log_prefix}_${log_suffix}_content.timing"
-        "${log_prefix}_${log_suffix}_initializer.timing"
-    )
-
-    local total="0"
-    local count=0
-
-    for timing_file in "${timing_files[@]}"; do
-        if [[ -f "${timing_file}" ]]; then
-            local timing_value
-            timing_value=$(tr -d '\n' < "${timing_file}" 2>/dev/null || echo "0")
-            if [[ -n "${timing_value}" ]] && [[ "${timing_value}" =~ ^[0-9]+\.[0-9]+$ ]]; then
-                # shellcheck disable=SC2312 # Intentional command substitution with || true to ignore return value
-                if (( $(echo "${timing_value} > 0" | bc -l 2>/dev/null || echo "0") )); then
-                    total=$(echo "scale=6; ${total} + ${timing_value}" | bc 2>/dev/null || echo "${total}")
-                    count=$(( count + 1 ))
-                fi
-            fi
-        fi
-    done
-
-    # Use eval to set the variables in the caller's scope
-    eval "${total_time_var}=\"${total}\""
-    eval "${count_var}=\"${count}\""
-}
-
-# Function to check HTTP response content with retry logic for subsystem readiness
-check_response_content() {
-    local url="$1"
-    local expected_content="$2"
-    local response_file="$3"
-    local follow_redirects="$4"
-    local timing_file="$5"  # New parameter for timing data
-
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed ${follow_redirects:+-L} \"${url}\""
-
-    # shellcheck disable=SC2310 # Function invoked in if condition but we want set -e disabled here
-    if curl_with_retry "${url}" "${response_file}" "${timing_file}" "${follow_redirects}" "${expected_content}"; then
-        # Show response excerpt
-        local line_count
-        line_count=$(wc -l < "${response_file}")
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response contains ${line_count} lines"
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Function to check HTTP redirect with retry logic for subsystem readiness
-check_redirect_response() {
-    local url="$1"
-    local expected_location="$2"
-    local redirect_file="$3"
-    local timing_file="$4"  # New parameter for timing data
-
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -v -s --max-time 10 -o /dev/null \"${url}\""
-
-    # Use curl with verbose output for headers
-    # shellcheck disable=SC2310 # Function invoked in if condition but we want set -e disabled here
-    if curl_with_retry "${url}" "${redirect_file}" "${timing_file}" "false" "" "${expected_location}" "true"; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Function to check swagger.json file content with retry logic for subsystem readiness
-check_swagger_json() {
-    local url="$1"
-    local response_file="$2"
-    local timing_file="$3"  # New parameter for timing data
-
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 \"${url}\""
-
-    # shellcheck disable=SC2310 # Function invoked in if condition but we want set -e disabled here
-    if curl_with_retry "${url}" "${response_file}" "${timing_file}"; then
-        # Check if it's valid JSON and contains expected swagger content
-        if jq -e '.openapi // .swagger' "${response_file}" >/dev/null 2>&1; then
-            local openapi_version
-            openapi_version=$(jq -r '.openapi // .swagger // "unknown"' "${response_file}")
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Valid OpenAPI/Swagger specification found (version: ${openapi_version})"
-
-            # Check for required Hydrogen API components
-            if jq -e '.info.title' "${response_file}" >/dev/null 2>&1; then
-                local api_title
-                api_title=$(jq -r '.info.title' "${response_file}")
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API Title: ${api_title}"
-
-                if [[ "${api_title}" == *"Hydrogen"* ]]; then
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "swagger.json contains valid Hydrogen API specification"
-                    return 0
-                else
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json doesn't appear to be for Hydrogen API (title: ${api_title})"
-                    return 1
-                fi
-            else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json missing required 'info.title' field"
-                return 1
-            fi
-        else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json contains invalid JSON or missing OpenAPI/Swagger version"
-            return 1
-        fi
-    else
-        return 1
-    fi
-}
 
 # Function to test Swagger UI configuration in parallel
 run_swagger_test_parallel() {

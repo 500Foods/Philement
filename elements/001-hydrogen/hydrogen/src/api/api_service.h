@@ -121,4 +121,75 @@ extern enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *c
 extern enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connection);
 extern enum MHD_Result handle_system_recent_request(struct MHD_Connection *connection);
 
+/*
+ * Check if URL matches exact /api/version endpoint
+ *
+ * @param url The URL to check
+ * @return true if URL is exactly "/api/version", false otherwise
+ */
+bool is_exact_api_version_endpoint(const char *url);
+
+/*
+ * Handle exact /api/version endpoint request
+ *
+ * @param cls User data (unused)
+ * @param connection The MHD connection
+ * @param url The request URL
+ * @param method The HTTP method
+ * @param version The HTTP version
+ * @param upload_data Upload data
+ * @param upload_data_size Size of upload data
+ * @param con_cls Connection-specific data
+ * @return MHD_Result indicating success or failure
+ */
+enum MHD_Result handle_exact_api_version_request(void *cls, struct MHD_Connection *connection,
+                                               const char *url, const char *method,
+                                               const char *version, const char *upload_data,
+                                               size_t *upload_data_size, void **con_cls);
+
+/*
+ * Check if URL matches exact /api/files/local endpoint
+ *
+ * @param url The URL to check
+ * @return true if URL is exactly "/api/files/local", false otherwise
+ */
+bool is_exact_api_files_local_endpoint(const char *url);
+
+/*
+ * Handle exact /api/files/local endpoint request
+ *
+ * @param cls User data (unused)
+ * @param connection The MHD connection
+ * @param url The request URL
+ * @param method The HTTP method
+ * @param version The HTTP version
+ * @param upload_data Upload data
+ * @param upload_data_size Size of upload data
+ * @param con_cls Connection-specific data
+ * @return MHD_Result indicating success or failure
+ */
+enum MHD_Result handle_exact_api_files_local_request(void *cls, struct MHD_Connection *connection,
+                                                   const char *url, const char *method,
+                                                   const char *version, const char *upload_data,
+                                                   size_t *upload_data_size, void **con_cls);
+
+/*
+ * Main API handler function
+ * Routes API requests to appropriate endpoint handlers
+ *
+ * @param cls User data (unused)
+ * @param connection The MHD connection
+ * @param url The request URL
+ * @param method The HTTP method
+ * @param version The HTTP version
+ * @param upload_data Upload data
+ * @param upload_data_size Size of upload data
+ * @param con_cls Connection-specific data
+ * @return MHD_Result indicating success or failure
+ */
+enum MHD_Result api_handler(void *cls, struct MHD_Connection *connection,
+                          const char *url, const char *method,
+                          const char *version, const char *upload_data,
+                          size_t *upload_data_size, void **con_cls);
+
 #endif /* HYDROGEN_API_SERVICE_H */
