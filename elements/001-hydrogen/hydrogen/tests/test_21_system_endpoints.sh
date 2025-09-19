@@ -21,8 +21,9 @@
 # test_system_endpoints()
 
 # CHANGELOG
+# 6.0.0 - 2025-09-19 - Added average response time calculation and display in test name for all system endpoints
 # 5.1.0 - 2025-08-09 - Mopping up after major factor, tweaking names of log files mostly
-# 5.0.0 - 2025-08-08 - Major refactor: Implemented parallel execution of endpoint requests against single server. 
+# 5.0.0 - 2025-08-08 - Major refactor: Implemented parallel execution of endpoint requests against single server.
 #                    - Extracted modular functions run_endpoint_test_parallel() and analyze_endpoint_test_results(). Now tests all 7 system endpoints simultaneously instead of sequentially, significantly reducing execution time while maintaining single server approach.
 # 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
@@ -44,7 +45,7 @@ TEST_NAME="Endpoints"
 TEST_ABBR="SYS"
 TEST_NUMBER="21"
 TEST_COUNTER=0
-TEST_VERSION="5.0.0"
+TEST_VERSION="6.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -52,6 +53,9 @@ setup_test_environment
 
 # Test variables
 CONFIG_PATH="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_system_endpoints.json"
+
+# Curl timing format for measuring response times
+CURL_FORMAT='     time_namelookup:  %{time_namelookup}\n        time_connect:  %{time_connect}\n     time_appconnect:  %{time_appconnect}\n    time_pretransfer:  %{time_pretransfer}\n       time_redirect:  %{time_redirect}\n  time_starttransfer:  %{time_starttransfer}\n                     total:  %{time_total}\n'
 
 # Parallel execution configuration for endpoint requests
 declare -A ENDPOINT_TEST_CONFIGS
@@ -73,6 +77,7 @@ validate_api_request() {
     local request_name="$1"
     local url="$2"
     local expected_field="$3"
+    local timing_file="$4"  # New parameter for timing data
     local response_file="${LOG_PREFIX}${TIMESTAMP}_${request_name}"
     
     # Add appropriate extension based on endpoint type
@@ -91,16 +96,23 @@ validate_api_request() {
     local max_attempts=10
     local attempt=1
     local curl_exit_code=0
-    
+    local response_time="0.000"
+
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API request attempt ${attempt} of ${max_attempts} (waiting for API subsystem initialization)..."
             sleep 0.05  # Brief delay between attempts for API initialization
         fi
-        
-        # Run curl and capture exit code
-        curl -s --max-time 10 --compressed "${url}" > "${response_file}"
+
+        # Run curl with timing and capture exit code
+        local timing_output
+        timing_output=$(curl -s --max-time 10 --compressed -w "${CURL_FORMAT}" -o "${response_file}" "${url}" 2>/dev/null)
         curl_exit_code=$?
+
+        # Extract total time from timing output
+        if [[ -n "${timing_output}" ]]; then
+            response_time=$(echo "${timing_output}" | grep "total:" | awk '{print $2}' | sed 's/s$//' || echo "0.000")
+        fi
         
         if [[ "${curl_exit_code}" -eq 0 ]]; then
             # Check if we got a 404 or other error response
@@ -129,10 +141,22 @@ validate_api_request() {
             if [[ "${request_name}" == "recent" ]]; then
                 # Use fixed string search for recent endpoint
                 if "${GREP}" -F -q "[" "${response_file}"; then
+                    # Store timing data if file provided
+                    if [[ -n "${timing_file}" ]]; then
+                        echo "${response_time}" > "${timing_file}"
+                    fi
+                    # Format timing for display
+                    local timing_display=""
+                    if [[ -n "${timing_file}" ]]; then
+                        local timing_ms
+                        # shellcheck disable=SC2312 # We want to continue even if printf fails
+                        timing_ms=$(printf "%.3f" "$(echo "scale=6; ${response_time} * 1000" | bc 2>/dev/null || echo "0.000")" 2>/dev/null || echo "0.000")
+                        timing_display=" (${timing_ms}ms)"
+                    fi
                     if [[ "${attempt}" -gt 1 ]]; then
-                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected field: log entry (succeeded on attempt ${attempt})"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected field: log entry${timing_display} (succeeded on attempt ${attempt})"
                     else
-                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected field: log entry"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected field: log entry${timing_display}"
                     fi
                     return 0
                 else
@@ -142,10 +166,22 @@ validate_api_request() {
             else
                 # Normal pattern search for other endpoints
                 if "${GREP}" -q "${expected_field}" "${response_file}"; then
+                    # Store timing data if file provided
+                    if [[ -n "${timing_file}" ]]; then
+                        echo "${response_time}" > "${timing_file}"
+                    fi
+                    # Format timing for display
+                    local timing_display=""
+                    if [[ -n "${timing_file}" ]]; then
+                        local timing_ms
+                        # shellcheck disable=SC2312 # We want to continue even if printf fails
+                        timing_ms=$(printf "%.3f" "$(echo "scale=6; ${response_time} * 1000" | bc 2>/dev/null || echo "0.000")" 2>/dev/null || echo "0.000")
+                        timing_display=" (${timing_ms}ms)"
+                    fi
                     if [[ "${attempt}" -gt 1 ]]; then
-                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_field} (succeeded on attempt ${attempt})"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_field}${timing_display} (succeeded on attempt ${attempt})"
                     else
-                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_field}"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_field}${timing_display}"
                     fi
                     return 0
                 else
@@ -305,9 +341,12 @@ run_endpoint_test_parallel() {
     # Clear result file
     true > "${result_file}"
     
+    # Create timing file for this endpoint
+    local timing_file="${LOG_PREFIX}${TIMESTAMP}_${test_name}.timing"
+
     # Use the existing validate_api_request function with unique naming
     # shellcheck disable=SC2310 # We want to continue even if the test fails
-    if validate_api_request "${test_name}" "${base_url}${endpoint_path}" "${expected_content}"; then
+    if validate_api_request "${test_name}" "${base_url}${endpoint_path}" "${expected_content}" "${timing_file}"; then
         echo "ENDPOINT_TEST_PASSED" >> "${result_file}"
     else
         echo "ENDPOINT_TEST_FAILED" >> "${result_file}"
@@ -321,15 +360,29 @@ analyze_endpoint_test_results() {
     local test_name="$1"
     local description="$2"
     local result_file="${LOG_PREFIX}${TIMESTAMP}_${test_name}.result"
-    
+
     if [[ ! -f "${result_file}" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No result file found for ${test_name}"
         return 1
     fi
-    
+
     # Check endpoint test result
     if "${GREP}" -q "ENDPOINT_TEST_PASSED" "${result_file}" 2>/dev/null; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} endpoint test passed"
+        # Read timing data if available
+        local timing_display=""
+        local timing_file="${LOG_PREFIX}${TIMESTAMP}_${test_name}.timing"
+        if [[ -f "${timing_file}" ]]; then
+            local timing_value
+            timing_value=$(cat "${timing_file}" 2>/dev/null || echo "0.000")
+            if [[ -n "${timing_value}" ]] && [[ "${timing_value}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+                # shellcheck disable=SC2312 # We want to continue even if printf fails
+                local timing_ms
+                # shellcheck disable=SC2312 # We want to continue even if printf fails
+                timing_ms=$(printf "%.3f" "$(echo "scale=6; ${timing_value} * 1000" | bc 2>/dev/null || echo "0.000")" 2>/dev/null || echo "0.000")
+                timing_display=" (${timing_ms}ms)"
+            fi
+        fi
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} endpoint test passed${timing_display}"
         return 0
     else
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} endpoint test failed"
@@ -450,7 +503,40 @@ test_system_endpoints() {
     
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ${successful_endpoints}/${#ENDPOINT_TEST_CONFIGS[@]} system endpoints passed all tests"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Parallel endpoint execution completed"
-    
+
+    # Calculate average response time from actual timing data
+    local total_response_time="0"
+    local timing_count=0
+    for test_config in "${!ENDPOINT_TEST_CONFIGS[@]}"; do
+        IFS=':' read -r endpoint_name expected_content description <<< "${ENDPOINT_TEST_CONFIGS[${test_config}]}"
+        result_file="${LOG_PREFIX}${TIMESTAMP}_${endpoint_name}.result"
+        if [[ -f "${result_file}" ]] && "${GREP}" -q "ENDPOINT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+            # Collect timing data from timing files for this configuration
+            timing_file="${LOG_PREFIX}${TIMESTAMP}_${endpoint_name}.timing"
+            if [[ -f "${timing_file}" ]]; then
+                timing_value=$(tr -d '\n' < "${timing_file}" 2>/dev/null || echo "0")
+                # Check if timing value is a valid number greater than 0
+                if [[ -n "${timing_value}" ]] && [[ "${timing_value}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+                    # shellcheck disable=SC2312 # We want to continue even if bc fails
+                    if (( $(echo "${timing_value} > 0" | bc -l 2>/dev/null || echo "0") )); then
+                        total_response_time=$(echo "scale=6; ${total_response_time} + ${timing_value}" | bc 2>/dev/null || echo "${total_response_time}")
+                        timing_count=$((timing_count + 1))
+                    fi
+                fi
+            fi
+        fi
+    done
+
+    # Calculate average response time from actual timing data
+    if [[ ${timing_count} -gt 0 ]]; then
+        local avg_response_time
+        avg_response_time=$(echo "scale=6; ${total_response_time} / ${timing_count}" | bc 2>/dev/null || echo "0.000500")
+        # Convert to milliseconds for more readable display
+        # shellcheck disable=SC2312 # We want to continue even if printf fails
+        avg_response_time_ms=$(printf "%.3f" "$(echo "scale=6; ${avg_response_time} * 1000" | bc 2>/dev/null || echo "0.500")" 2>/dev/null || echo "0.500")
+        TEST_NAME="${TEST_NAME} {BLUE}(Response Avg: ${avg_response_time_ms}ms){RESET}"
+    fi
+
     # Stop the server
     if [[ -n "${hydrogen_pid}" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Stopping server..."
