@@ -4,6 +4,10 @@
 # Tests the Swagger functionality, its presence in the payload, etc.
 
 # FUNCTIONS
+# curl_with_retry()
+# handle_timing_file()
+# test_file_download()
+# collect_timing_data()
 # check_response_content()
 # check_redirect_response()
 # check_swagger_json()
@@ -12,9 +16,28 @@
 # test_swagger_configuration()
 
 # CHANGELOG
+# 7.2.0 - 2025-09-19 - Moved curl_with_retry to network_utils.sh library for reuse across tests.
+#                    - Added network_utils.sh source to enable curl_with_retry function.
+#                    - Removed duplicate curl_with_retry function and CURL_FORMAT from test script.
+#                    - Fixed shellcheck errors and improved code quality.
+#                    - Fixed SC2089: Changed CURL_FORMAT from string to array to preserve backslashes.
+#                    - Fixed SC2090: Added shellcheck disable comments for intentional backslash preservation.
+#                    - Fixed SC2155: Separated variable declarations and assignments.
+#                    - Fixed SC2312: Replaced command substitution in while condition with separate variable assignment.
+#                    - Fixed SC2168: Removed 'local' keyword from global scope variable.
+#                    - Fixed SC2310: Added shellcheck disable comments for intentional function calls in if conditions.
+#                    - Maintained all existing functionality and test coverage.
+# 7.0.0 - 2025-09-19 - Major refactoring to reduce code size and eliminate duplication.
+#                    - Created curl_with_retry() function to consolidate retry logic across all HTTP functions.
+#                    - Added handle_timing_file() for standardized timing data processing.
+#                    - Added test_file_download() and collect_timing_data() helper functions.
+#                    - Refactored check_response_content(), check_redirect_response(), and check_swagger_json() to use new helpers.
+#                    - Reduced script size from 1047 to 971 lines (7.3% reduction) to meet 1000-line build limit.
+#                    - Maintained all existing functionality and test coverage.
+# 6.0.0 - 2025-09-19 - Added average response time calculation and display in test name
 # 5.1.0 - 2025-08-09 - Minor tweaks to log file names
-# 5.0.0 - 2025-08-08 - Major refactor: Implemented parallel execution of Swagger tests following Test 13/20 patterns. 
-#                    - Extracted modular functions run_swagger_test_parallel() and analyze_swagger_test_results(). 
+# 5.0.0 - 2025-08-08 - Major refactor: Implemented parallel execution of Swagger tests following Test 13/20 patterns.
+#                    - Extracted modular functions run_swagger_test_parallel() and analyze_swagger_test_results().
 #                    - Now runs both /swagger and /apidocs tests simultaneously instead of sequentially, significantly reducing execution time.
 # 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
@@ -34,7 +57,7 @@ TEST_NAME="Swagger"
 TEST_ABBR="SWG"
 TEST_NUMBER="22"
 TEST_COUNTER=0
-TEST_VERSION="5.0.0"
+TEST_VERSION="7.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -54,88 +77,106 @@ SWAGGER_TEST_CONFIGS=(
 STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=10
 
+
+# Function to handle timing file operations
+handle_timing_file() {
+    local timing_file="$1"
+    local test_name="$2"
+
+    if [[ -f "${timing_file}" ]]; then
+        local timing
+        timing=$(cat "${timing_file}" 2>/dev/null || echo "0.000")
+        local timing_calc
+        timing_calc=$(echo "scale=6; ${timing} * 1000" | bc 2>/dev/null || echo "0.000")
+        local timing_ms
+        # shellcheck disable=SC2312 # Intentional command substitution to format timing
+        timing_ms=$(printf "%.3f" "${timing_calc}" 2>/dev/null || echo "0.000")
+        echo "${timing_ms}"
+    else
+        echo "0.000"
+    fi
+}
+
+# Function to test file downloads
+test_file_download() {
+    local url="$1"
+    local output_file="$2"
+    local file_type="$3"
+    local result_marker="$4"
+    local result_file="$5"
+
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed \"${url}\""
+    if curl -s --max-time 10 --compressed "${url}" > "${output_file}"; then
+        if [[ -s "${output_file}" ]]; then
+            echo "${result_marker}_PASSED" >> "${result_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded ${file_type} file ($(wc -c < "${output_file}" || true) bytes)"
+        else
+            echo "${result_marker}_FAILED" >> "${result_file}"
+            return 1
+        fi
+    else
+        echo "${result_marker}_FAILED" >> "${result_file}"
+        return 1
+    fi
+    return 0
+}
+
+# Function to collect timing data from multiple files
+collect_timing_data() {
+    local log_prefix="$1"
+    local log_suffix="$2"
+    local total_time_var="$3"
+    local count_var="$4"
+
+    local timing_files=(
+        "${log_prefix}_${log_suffix}_trailing_slash.timing"
+        "${log_prefix}_${log_suffix}_redirect.timing"
+        "${log_prefix}_${log_suffix}_content.timing"
+        "${log_prefix}_${log_suffix}_initializer.timing"
+    )
+
+    local total="0"
+    local count=0
+
+    for timing_file in "${timing_files[@]}"; do
+        if [[ -f "${timing_file}" ]]; then
+            local timing_value
+            timing_value=$(tr -d '\n' < "${timing_file}" 2>/dev/null || echo "0")
+            if [[ -n "${timing_value}" ]] && [[ "${timing_value}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+                # shellcheck disable=SC2312 # Intentional command substitution with || true to ignore return value
+                if (( $(echo "${timing_value} > 0" | bc -l 2>/dev/null || echo "0") )); then
+                    total=$(echo "scale=6; ${total} + ${timing_value}" | bc 2>/dev/null || echo "${total}")
+                    count=$(( count + 1 ))
+                fi
+            fi
+        fi
+    done
+
+    # Use eval to set the variables in the caller's scope
+    eval "${total_time_var}=\"${total}\""
+    eval "${count_var}=\"${count}\""
+}
+
 # Function to check HTTP response content with retry logic for subsystem readiness
 check_response_content() {
     local url="$1"
     local expected_content="$2"
     local response_file="$3"
     local follow_redirects="$4"
-    
+    local timing_file="$5"  # New parameter for timing data
+
     print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed ${follow_redirects:+-L} \"${url}\""
 
-    # Retry logic for subsystem readiness (especially important in parallel execution)
-    local max_attempts=25
-    local attempt=1
-    local curl_exit_code=0
-
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        if [[ "${attempt}" -gt 1 ]]; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
-            # sleep 0.05  # Brief delay between attempts for subsystem initialization
-        fi
-
-        # Run curl and capture exit code
-        if [[ "${follow_redirects}" = "true" ]]; then
-            curl -s --max-time 10 --compressed -L "${url}" > "${response_file}"
-            curl_exit_code=$?
-        else
-            curl -s --max-time 10 --compressed "${url}" > "${response_file}"
-            curl_exit_code=$?
-        fi
-        
-        if [[ "${curl_exit_code}" -eq 0 ]]; then
-            # Check if we got a 404 or other error response
-            if "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; then
-                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint still not ready after ${max_attempts} attempts"
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Endpoint returned 404 or HTML error page"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response content:"
-                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "$(cat "${response_file}" || true)"
-                    return 1
-                else
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint not ready yet (got 404/HTML), retrying..."
-                    ((attempt++))
-                    continue
-                fi
-            fi
-            
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully received response from ${url}"
-            
-            # Show response excerpt
-            local line_count
-            line_count=$(wc -l < "${response_file}")
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response contains ${line_count} lines"
-            
-            # Check for expected content
-            if "${GREP}" -q "${expected_content}" "${response_file}"; then
-                if [[ "${attempt}" -gt 1 ]]; then
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_content} (succeeded on attempt ${attempt})"
-                else
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_content}"
-                fi
-                return 0
-            else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Response doesn't contain expected content: ${expected_content}"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response excerpt (first 10 lines):"
-                # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
-                while IFS= read -r line; do
-                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
-                done < <(head -n 10 "${response_file}" || true)
-                return 1
-            fi
-        else
-            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
-                return 1
-            else
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Connection failed on attempt ${attempt}, retrying..."
-                ((attempt++))
-                continue
-            fi
-        fi
-    done
-    
-    return 1
+    # shellcheck disable=SC2310 # Function invoked in if condition but we want set -e disabled here
+    if curl_with_retry "${url}" "${response_file}" "${timing_file}" "${follow_redirects}" "${expected_content}"; then
+        # Show response excerpt
+        local line_count
+        line_count=$(wc -l < "${response_file}")
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response contains ${line_count} lines"
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Function to check HTTP redirect with retry logic for subsystem readiness
@@ -143,162 +184,59 @@ check_redirect_response() {
     local url="$1"
     local expected_location="$2"
     local redirect_file="$3"
-    
+    local timing_file="$4"  # New parameter for timing data
+
     print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -v -s --max-time 10 -o /dev/null \"${url}\""
-    
-    # Retry logic for subsystem readiness (especially important in parallel execution)
-    local max_attempts=25
-    local attempt=1
-    local curl_exit_code=0
-    
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        if [[ "${attempt}" -gt 1 ]]; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Redirect check attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
-            # sleep 0.05  # Brief delay between attempts for subsystem initialization
-        fi
-        
-        # Run curl and capture exit code
-        curl -v -s --max-time 10 -o /dev/null "${url}" 2> "${redirect_file}"
-        curl_exit_code=$?
-        
-        if [[ "${curl_exit_code}" -eq 0 ]]; then
-            # Check if we got a 404 or connection error
-            if "${GREP}" -q "404 Not Found" "${redirect_file}"; then
-                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint still not ready after ${max_attempts} attempts"
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Endpoint returned 404 error"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response headers:"
-                    # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
-                    while IFS= read -r line; do
-                        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
-                    done < <("${GREP}" -E "< HTTP/|< Location:" "${redirect_file}" || true)
-                    return 1
-                else
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint not ready yet (got 404), retrying..."
-                    ((attempt++))
-                    continue
-                fi
-            fi
-            
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully received response from ${url}"
-            
-            # Check for redirect
-            if "${GREP}" -q "< HTTP/1.1 301" "${redirect_file}" && "${GREP}" -q "< Location: ${expected_location}" "${redirect_file}"; then
-                if [[ "${attempt}" -gt 1 ]]; then
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response is a 301 redirect to ${expected_location} (succeeded on attempt ${attempt})"
-                else
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response is a 301 redirect to ${expected_location}"
-                fi
-                return 0
-            else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Response is not a redirect to ${expected_location}"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response headers:"
-                # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
-                while IFS= read -r line; do
-                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
-                done < <("${GREP}" -E "< HTTP/|< Location:" "${redirect_file}" || true)
-                return 1
-            fi
-        else
-            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
-                return 1
-            else
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Connection failed on attempt ${attempt}, retrying..."
-                ((attempt++))
-                continue
-            fi
-        fi
-    done
-    
-    return 1
+
+    # Use curl with verbose output for headers
+    # shellcheck disable=SC2310 # Function invoked in if condition but we want set -e disabled here
+    if curl_with_retry "${url}" "${redirect_file}" "${timing_file}" "false" "" "${expected_location}" "true"; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Function to check swagger.json file content with retry logic for subsystem readiness
 check_swagger_json() {
     local url="$1"
     local response_file="$2"
-    
+    local timing_file="$3"  # New parameter for timing data
+
     print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 \"${url}\""
-    
-    # Retry logic for subsystem readiness (especially important in parallel execution)
-    local max_attempts=25
-    local attempt=1
-    local curl_exit_code=0
-    
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        if [[ "${attempt}" -gt 1 ]]; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Swagger JSON request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
-            #sleep 0.05  # Brief delay between attempts for subsystem initialization
-        fi
-        
-        # Run curl and capture exit code
-        curl -s --max-time 10 "${url}" > "${response_file}"
-        curl_exit_code=$?
-        
-        if [[ "${curl_exit_code}" -eq 0 ]]; then
-            # Check if we got a 404 or other error response
-            if "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; then
-                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Swagger endpoint still not ready after ${max_attempts} attempts"
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger endpoint returned 404 or HTML error page"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response content:"
-                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "$(cat "${response_file}" || true)"
-                    return 1
+
+    # shellcheck disable=SC2310 # Function invoked in if condition but we want set -e disabled here
+    if curl_with_retry "${url}" "${response_file}" "${timing_file}"; then
+        # Check if it's valid JSON and contains expected swagger content
+        if jq -e '.openapi // .swagger' "${response_file}" >/dev/null 2>&1; then
+            local openapi_version
+            openapi_version=$(jq -r '.openapi // .swagger // "unknown"' "${response_file}")
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Valid OpenAPI/Swagger specification found (version: ${openapi_version})"
+
+            # Check for required Hydrogen API components
+            if jq -e '.info.title' "${response_file}" >/dev/null 2>&1; then
+                local api_title
+                api_title=$(jq -r '.info.title' "${response_file}")
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API Title: ${api_title}"
+
+                if [[ "${api_title}" == *"Hydrogen"* ]]; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "swagger.json contains valid Hydrogen API specification"
+                    return 0
                 else
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Swagger endpoint not ready yet (got 404/HTML), retrying..."
-                    ((attempt++))
-                    continue
-                fi
-            fi
-            
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully received swagger.json from ${url}"
-            
-            # Check if it's valid JSON and contains expected swagger content
-            # Use jq to validate JSON and check for required fields
-            if jq -e '.openapi // .swagger' "${response_file}" >/dev/null 2>&1; then
-                local openapi_version
-                openapi_version=$(jq -r '.openapi // .swagger // "unknown"' "${response_file}")
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Valid OpenAPI/Swagger specification found (version: ${openapi_version})"
-                
-                # Check for required Hydrogen API components
-                if jq -e '.info.title' "${response_file}" >/dev/null 2>&1; then
-                    local api_title
-                    api_title=$(jq -r '.info.title' "${response_file}")
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API Title: ${api_title}"
-                    
-                    if [[ "${api_title}" == *"Hydrogen"* ]]; then
-                        if [[ "${attempt}" -gt 1 ]]; then
-                            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "swagger.json contains valid Hydrogen API specification (succeeded on attempt ${attempt})"
-                        else
-                            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "swagger.json contains valid Hydrogen API specification"
-                        fi
-                        return 0
-                    else
-                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json doesn't appear to be for Hydrogen API (title: ${api_title})"
-                        return 1
-                    fi
-                else
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json missing required 'info.title' field"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json doesn't appear to be for Hydrogen API (title: ${api_title})"
                     return 1
                 fi
             else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json contains invalid JSON or missing OpenAPI/Swagger version"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json missing required 'info.title' field"
                 return 1
             fi
         else
-            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to retrieve swagger.json from ${url} (curl exit code: ${curl_exit_code})"
-                return 1
-            else
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Connection failed on attempt ${attempt}, retrying..."
-                ((attempt++))
-                continue
-            fi
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json contains invalid JSON or missing OpenAPI/Swagger version"
+            return 1
         fi
-    done
-    
-    return 1
+    else
+        return 1
+    fi
 }
 
 # Function to test Swagger UI configuration in parallel
@@ -310,7 +248,7 @@ run_swagger_test_parallel() {
     local description="$5"
     
     local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
-    local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
+    local result_file="${LOG_PREFIX}_${log_suffix}.result"
     local port
     port=$(get_webserver_port "${config_file}")
     
@@ -353,115 +291,132 @@ run_swagger_test_parallel() {
             local all_tests_passed=true
             
             # Test Swagger UI with trailing slash
-            local trailing_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_trailing_slash.html"
+            local trailing_file="${LOG_PREFIX}_${log_suffix}_trailing_slash.html"
+            local trailing_timing_file="${LOG_PREFIX}_${log_suffix}_trailing_slash.timing"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing Swagger UI with trailing slash: ${base_url}${swagger_prefix}/"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Output file: ${trailing_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Timing file: ${trailing_timing_file}"
             # shellcheck disable=SC2310 # We want to continue even if the test fails
-            if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${trailing_file}" "true"; then
+            if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${trailing_file}" "true" "${trailing_timing_file}"; then
                 echo "TRAILING_SLASH_TEST_PASSED" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ Trailing slash test PASSED"
             else
                 echo "TRAILING_SLASH_TEST_FAILED" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Trailing slash test FAILED"
                 all_tests_passed=false
             fi
             
             # Test redirect without trailing slash
-            local redirect_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_redirect.txt"
+            local redirect_file="${LOG_PREFIX}_${log_suffix}_redirect.txt"
+            local redirect_timing_file="${LOG_PREFIX}_${log_suffix}_redirect.timing"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing redirect without trailing slash: ${base_url}${swagger_prefix}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Expected redirect to: ${swagger_prefix}/"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Output file: ${redirect_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Timing file: ${redirect_timing_file}"
             # shellcheck disable=SC2310 # We want to continue even if the test fails
-            if check_redirect_response "${base_url}${swagger_prefix}" "${swagger_prefix}/" "${redirect_file}"; then
+            if check_redirect_response "${base_url}${swagger_prefix}" "${swagger_prefix}/" "${redirect_file}" "${redirect_timing_file}"; then
                 echo "REDIRECT_TEST_PASSED" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ Redirect test PASSED"
             else
                 echo "REDIRECT_TEST_FAILED" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Redirect test FAILED"
                 all_tests_passed=false
             fi
 
             # Test exact prefix redirect (coverage: lines 163-174) - critical for redirect logic
-            local exact_redirect_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_exact_redirect.txt"
+            local exact_redirect_file="${LOG_PREFIX}_${log_suffix}_exact_redirect.txt"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing exact prefix redirect: ${base_url}${swagger_prefix}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Output file: ${exact_redirect_file}"
             print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -v -s --max-time 10 -w '%{http_code}' -o /dev/null \"${base_url}${swagger_prefix}\""
             local http_code
             http_code=$(curl -v -s --max-time 10 -w '%{http_code}' -o /dev/null "${base_url}${swagger_prefix}" 2>"${exact_redirect_file}")
             if [[ "${http_code}" == "301" ]] && "${GREP}" -q "< Location: ${swagger_prefix}/" "${exact_redirect_file}"; then
                 echo "EXACT_REDIRECT_TEST_PASSED" >> "${result_file}"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Exact prefix redirect working correctly (301 -> ${swagger_prefix}/)"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ Exact prefix redirect working correctly (301 -> ${swagger_prefix}/)"
             else
                 echo "EXACT_REDIRECT_TEST_FAILED" >> "${result_file}"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Expected 301 redirect for exact prefix, got ${http_code}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Expected 301 redirect for exact prefix, got HTTP ${http_code}"
+                if [[ -f "${exact_redirect_file}" ]]; then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response headers:"
+                    while IFS= read -r line; do
+                        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
+                    done < <("${GREP}" -E "< HTTP/|< Location:" "${exact_redirect_file}" || true)
+                fi
                 all_tests_passed=false
             fi
             
             # Test Swagger UI content
-            local content_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_content.html"
+            local content_file="${LOG_PREFIX}_${log_suffix}_content.html"
+            local content_timing_file="${LOG_PREFIX}_${log_suffix}_content.timing"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing Swagger UI content: ${base_url}${swagger_prefix}/"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Looking for content: swagger-ui"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Output file: ${content_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Timing file: ${content_timing_file}"
             # shellcheck disable=SC2310 # We want to continue even if the test fails
-            if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${content_file}" "true"; then
+            if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${content_file}" "true" "${content_timing_file}"; then
                 echo "CONTENT_TEST_PASSED" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ Content test PASSED"
             else
                 echo "CONTENT_TEST_FAILED" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Content test FAILED"
                 all_tests_passed=false
             fi
             
             # Test JavaScript initializer
-            local js_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_initializer.js"
+            local js_file="${LOG_PREFIX}_${log_suffix}_initializer.js"
+            local js_timing_file="${LOG_PREFIX}_${log_suffix}_initializer.timing"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing JavaScript initializer: ${base_url}${swagger_prefix}/swagger-initializer.js"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Looking for content: window.ui = SwaggerUIBundle"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Output file: ${js_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Timing file: ${js_timing_file}"
             # shellcheck disable=SC2310 # We want to continue even if the test fails
-            if check_response_content "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "${js_file}" "true"; then
+            if check_response_content "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "${js_file}" "true" "${js_timing_file}"; then
                 echo "JAVASCRIPT_TEST_PASSED" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ JavaScript test PASSED"
             else
                 echo "JAVASCRIPT_TEST_FAILED" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ JavaScript test FAILED"
                 all_tests_passed=false
             fi
             
             # Test swagger.json
-            local swagger_json_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_swagger_json_.json"
+            local swagger_json_file="${LOG_PREFIX}_${log_suffix}_swagger_json_.json"
+            local swagger_json_timing_file="${LOG_PREFIX}_${log_suffix}_swagger_json.timing"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing swagger.json: ${base_url}${swagger_prefix}/swagger.json"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Output file: ${swagger_json_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Timing file: ${swagger_json_timing_file}"
             # shellcheck disable=SC2310 # We want to continue even if the test fails
-            if check_swagger_json "${base_url}${swagger_prefix}/swagger.json" "${swagger_json_file}"; then
+            if check_swagger_json "${base_url}${swagger_prefix}/swagger.json" "${swagger_json_file}" "${swagger_json_timing_file}"; then
                 echo "SWAGGER_JSON_TEST_PASSED" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ Swagger JSON test PASSED"
 
                 # Validate swagger.json format using jsonlint (test_93)
                 if command -v jsonlint >/dev/null 2>&1; then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running jsonlint validation on swagger.json"
                     if jsonlint -q "${swagger_json_file}" >/dev/null 2>&1; then
                         echo "SWAGGER_JSON_LINT_PASSED" >> "${result_file}"
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ JSON lint validation PASSED"
                     else
                         echo "SWAGGER_JSON_LINT_FAILED" >> "${result_file}"
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ JSON lint validation FAILED"
                         all_tests_passed=false
                     fi
                 else
                     echo "JSONLINT_NOT_AVAILABLE" >> "${result_file}"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "! jsonlint not available, skipping validation"
                 fi
             else
                 echo "SWAGGER_JSON_TEST_FAILED" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Swagger JSON test FAILED"
                 all_tests_passed=false
             fi
 
-            # Test CSS file download to trigger content-type detection (coverage: line 441)
-            local css_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_swagger_css.css"
-            print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed \"${base_url}${swagger_prefix}/swagger-ui.css\""
-            if curl -s --max-time 10 --compressed "${base_url}${swagger_prefix}/swagger-ui.css" > "${css_file}"; then
-                if [[ -s "${css_file}" ]]; then
-                    echo "CSS_FILE_TEST_PASSED" >> "${result_file}"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded CSS file ($(wc -c < "${css_file}" || true) bytes)"
-                else
-                    echo "CSS_FILE_TEST_FAILED" >> "${result_file}"
-                    all_tests_passed=false
-                fi
-            else
-                echo "CSS_FILE_TEST_FAILED" >> "${result_file}"
-                all_tests_passed=false
-            fi
-
-            # Test PNG file download to trigger image content-type detection (coverage: lines 446-447)
-            local png_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_swagger_png.png"
-            print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed \"${base_url}${swagger_prefix}/favicon-32x32.png\""
-            if curl -s --max-time 10 --compressed "${base_url}${swagger_prefix}/favicon-32x32.png" > "${png_file}"; then
-                if [[ -s "${png_file}" ]]; then
-                    echo "PNG_FILE_TEST_PASSED" >> "${result_file}"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded PNG file ($(wc -c < "${png_file}" || true) bytes)"
-                else
-                    echo "PNG_FILE_TEST_FAILED" >> "${result_file}"
-                    all_tests_passed=false
-                fi
-            else
-                echo "PNG_FILE_TEST_FAILED" >> "${result_file}"
-                all_tests_passed=false
-            fi
+            # Test file downloads using helper function
+            test_file_download "${base_url}${swagger_prefix}/swagger-ui.css" "${LOG_PREFIX}_${log_suffix}_swagger_css.css" "CSS" "CSS_FILE_TEST" "${result_file}" || all_tests_passed=false
+            test_file_download "${base_url}${swagger_prefix}/favicon-32x32.png" "${LOG_PREFIX}_${log_suffix}_swagger_png.png" "PNG" "PNG_FILE_TEST" "${result_file}" || all_tests_passed=false
 
             # Test Brotli compressed file handling (coverage: lines 463-464)
-            local br_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_swagger_br.br"
+            local br_file="${LOG_PREFIX}_${log_suffix}_swagger_br.br"
             print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s -H \"Accept-Encoding: br\" --max-time 10 \"${base_url}${swagger_prefix}/swagger-ui.css.br\""
             if curl -s -H "Accept-Encoding: br" --max-time 10 "${base_url}${swagger_prefix}/swagger-ui.css.br" > "${br_file}"; then
                 if [[ -s "${br_file}" ]]; then
@@ -548,51 +503,83 @@ analyze_swagger_test_results() {
     local log_suffix="$2"
     local swagger_prefix="$3"
     local description="$4"
-    local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
+    local result_file="${LOG_PREFIX}_${log_suffix}.result"
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Analyzing results for ${description}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Result file: ${result_file}"
 
     if [[ ! -f "${result_file}" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No result file found for ${test_name}"
         return 1
     fi
-    
+
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Result file contents:"
+    # while IFS= read -r line; do
+    #     print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
+    # done < "${result_file}"
+
     # Check startup
     if ! "${GREP}" -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen for ${description} test"
         return 1
     fi
-    
+
     # Check server readiness
     if ! "${GREP}" -q "SERVER_READY" "${result_file}" 2>/dev/null; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server not ready for ${description} test"
         return 1
     fi
-    
+
     # Check individual Swagger tests
     local trailing_slash_passed=false
     local redirect_passed=false
     local content_passed=false
     local javascript_passed=false
     local swagger_json_passed=false
-    
+
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking individual test results:"
+
     if "${GREP}" -q "TRAILING_SLASH_TEST_PASSED" "${result_file}" 2>/dev/null; then
         trailing_slash_passed=true
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ Trailing slash test: PASSED"
+    # else
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Trailing slash test: FAILED"
     fi
-    
+
     if "${GREP}" -q "REDIRECT_TEST_PASSED" "${result_file}" 2>/dev/null; then
         redirect_passed=true
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ Redirect test: PASSED"
+    # else
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Redirect test: FAILED"
     fi
-    
+
     if "${GREP}" -q "CONTENT_TEST_PASSED" "${result_file}" 2>/dev/null; then
         content_passed=true
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ Content test: PASSED"
+    # else
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Content test: FAILED"
     fi
-    
+
     if "${GREP}" -q "JAVASCRIPT_TEST_PASSED" "${result_file}" 2>/dev/null; then
         javascript_passed=true
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ JavaScript test: PASSED"
+    # else
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ JavaScript test: FAILED"
     fi
-    
+
     if "${GREP}" -q "SWAGGER_JSON_TEST_PASSED" "${result_file}" 2>/dev/null; then
         swagger_json_passed=true
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ Swagger JSON test: PASSED"
+    # else
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Swagger JSON test: FAILED"
     fi
+
+    # Show diagnostic file links
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diagnostic files for ${description}:"
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  HTML content: ${LOG_PREFIX}_${log_suffix}_content.html"
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  JavaScript: ${LOG_PREFIX}_${log_suffix}_initializer.js"
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Swagger JSON: ${LOG_PREFIX}_${log_suffix}_swagger_json_.json"
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Timing data: ${LOG_PREFIX}_${log_suffix}_*.timing"
     
     # Return results via global variables for detailed reporting
     TRAILING_SLASH_TEST_RESULT=${trailing_slash_passed}
@@ -603,8 +590,11 @@ analyze_swagger_test_results() {
     
     # Return success only if all tests passed
     if "${GREP}" -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ All Swagger tests PASSED for ${description}"
         return 0
     else
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Some Swagger tests FAILED for ${description}"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Check the diagnostic files above for detailed error information"
         return 1
     fi
 }
@@ -818,8 +808,11 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     
     # Start all Swagger tests in parallel with job limiting
     for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
-        # shellcheck disable=SC2312 # Job control with wc -l is standard practice
-        while (( $(jobs -r | wc -l) >= CORES )); do
+        while true; do
+            running_jobs=$(jobs -r | wc -l)
+            if (( running_jobs < CORES )); then
+                break
+            fi
             wait -n  # Wait for any job to finish
         done
         
@@ -854,40 +847,44 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             # Test individual endpoint results for detailed feedback
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Trailing Slash Access - ${description}"
             if [[ "${TRAILING_SLASH_TEST_RESULT}" = true ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger UI with trailing slash test passed"
+                trailing_timing_ms=$(handle_timing_file "${LOG_PREFIX}_${log_suffix}_trailing_slash.timing" "trailing slash")
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger UI with trailing slash test passed (${trailing_timing_ms}ms)"
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger UI with trailing slash test failed"
                 EXIT_CODE=1
             fi
-            
+
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Redirect Test - ${description}"
             if [[ "${REDIRECT_TEST_RESULT}" = true ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger UI redirect test passed"
+                redirect_timing_ms=$(handle_timing_file "${LOG_PREFIX}_${log_suffix}_redirect.timing" "redirect")
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger UI redirect test passed (${redirect_timing_ms}ms)"
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger UI redirect test failed"
                 EXIT_CODE=1
             fi
-            
+
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Content Verification - ${description}"
             if [[ "${CONTENT_TEST_RESULT}" = true ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger UI content test passed"
+                content_timing_ms=$(handle_timing_file "${LOG_PREFIX}_${log_suffix}_content.timing" "content")
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger UI content test passed (${content_timing_ms}ms)"
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger UI content test failed"
                 EXIT_CODE=1
             fi
-            
+
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "JavaScript Loading - ${description}"
             if [[ "${JAVASCRIPT_TEST_RESULT}" = true ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "JavaScript initializer test passed"
+                js_timing_ms=$(handle_timing_file "${LOG_PREFIX}_${log_suffix}_initializer.timing" "JavaScript")
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "JavaScript initializer test passed (${js_timing_ms}ms)"
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "JavaScript initializer test failed"
                 EXIT_CODE=1
             fi
-            
+
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Swagger JSON Validation - ${description}"
             if [[ "${SWAGGER_JSON_TEST_RESULT}" = true ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger JSON test passed"
@@ -908,15 +905,39 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     successful_configs=0
     for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
         IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
-        result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
+        result_file="${LOG_PREFIX}_${log_suffix}.result"
         if [[ -f "${result_file}" ]] && "${GREP}" -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
             successful_configs=$(( successful_configs + 1 ))
         fi
     done
-    
+
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ${successful_configs}/${#SWAGGER_TEST_CONFIGS[@]} Swagger configurations passed all tests"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Parallel execution completed - SO_REUSEADDR allows immediate port reuse"
-    
+
+    # Calculate average response time from actual timing data
+    total_response_time="0"
+    timing_count=0
+    for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
+        IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
+        result_file="${LOG_PREFIX}_${log_suffix}.result"
+        if [[ -f "${result_file}" ]] && "${GREP}" -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+            config_total="0"
+            config_count=0
+            collect_timing_data "${LOG_PREFIX}" "${log_suffix}" "config_total" "config_count"
+            total_response_time=$(echo "scale=6; ${total_response_time} + ${config_total}" | bc 2>/dev/null || echo "${total_response_time}")
+            timing_count=$((timing_count + config_count))
+        fi
+    done
+
+    # Calculate average response time from actual timing data
+    if [[ ${timing_count} -gt 0 ]]; then
+        avg_response_time=$(echo "scale=6; ${total_response_time} / ${timing_count}" | bc 2>/dev/null || echo "0.000500")
+        # Convert to milliseconds for more readable display
+        # shellcheck disable=SC2312 # We want to continue even if printf fails
+        avg_response_time_ms=$(printf "%.3f" "$(echo "scale=6; ${avg_response_time} * 1000" | bc 2>/dev/null || echo "0.500")" 2>/dev/null || echo "0.500")
+        TEST_NAME="${TEST_NAME} {BLUE}(Response Avg: ${avg_response_time_ms}ms){RESET}"
+    fi
+
 else
     # Skip Swagger tests if prerequisites failed
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping Swagger tests due to prerequisite failures"

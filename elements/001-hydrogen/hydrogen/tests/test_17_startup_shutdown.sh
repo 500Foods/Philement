@@ -4,7 +4,8 @@
 # Tests startup and shutdown of the application with minimal and maximal configurations
 
 # CHANGELOG
-# 4.1.0 - 2025-08-08 - Reviewed. Changed JSON filenames. 
+# 5.0.0 - 2025-09-19 - Added server log output and elapsed time display in test name for both min/max configs
+# 4.1.0 - 2025-08-08 - Reviewed. Changed JSON filenames.
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
@@ -18,7 +19,7 @@ TEST_NAME="Startup/Shutdown"
 TEST_ABBR="UPD"
 TEST_NUMBER="17"
 TEST_COUNTER=0
-TEST_VERSION="4.1.0"
+TEST_VERSION="5.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUAR:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -71,6 +72,35 @@ fi
 # Test maximal configuration
 config_name=$(basename "${MAX_CONFIG}" .json)
 run_lifecycle_test "${MAX_CONFIG}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_MAX}" "PASS_COUNT" "EXIT_CODE"
+
+# Add server logs to output
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Min Config Server Log: ..${LOG_MIN}"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Max Config Server Log: ..${LOG_MAX}"
+
+# Extract elapsed times from logs and update test name
+min_elapsed="" max_elapsed=""
+if [[ -f "${LOG_MIN}" ]]; then
+    min_elapsed=$("${AWK}" "/Total elapsed time:/ {print \$NF}" "${LOG_MIN}" 2>/dev/null | tail -1 || true)
+fi
+if [[ -f "${LOG_MAX}" ]]; then
+    max_elapsed=$("${AWK}" "/Total elapsed time:/ {print \$NF}" "${LOG_MAX}" 2>/dev/null | tail -1 || true)
+fi
+
+# Update test name with timing info
+if [[ -n "${min_elapsed}" || -n "${max_elapsed}" ]]; then
+    timing_info=""
+    if [[ -n "${min_elapsed}" ]]; then
+        timing_info="${min_elapsed} / "
+    fi
+    if [[ -n "${max_elapsed}" ]]; then
+        if [[ -n "${timing_info}" ]]; then
+            timing_info="${timing_info} ${max_elapsed}"
+        else
+            timing_info="Max: ${max_elapsed}"
+        fi
+    fi
+    TEST_NAME="${TEST_NAME} {BLUE}(Cycle: ${timing_info}){RESET}"
+fi
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

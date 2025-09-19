@@ -4,12 +4,16 @@
 # Provides network-related functions for test scripts, including TIME_WAIT socket management
 
 # LIBRARY FUNCTIONS
+# curl_with_retry()
 # check_port_in_use()
 # count_time_wait_sockets()
 # check_time_wait_sockets()
 # make_http_requests()
 
 # CHANGELOG
+# 3.2.0 - 2025-09-19 - Fixed curl_with_retry() to check file existence before using grep/head commands to prevent "No such file or directory" errors
+# 3.1.0 - 2025-09-19 - Fixed curl_with_retry() to ensure parent directories exist before writing files
+# 3.0.0 - 2025-09-19 - Added curl_with_retry() function for robust HTTP requests with retry logic and timing support
 # 2.2.1 - 2025-08-03 - Removed extraneous command -v calls
 # 2.2.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 2.1.0 - 2025-07-18 - Fixed subshell issue in check_time_wait_sockets function that prevented TIME_WAIT socket details from being displayed; added whitespace compression for cleaner output formatting
@@ -23,7 +27,7 @@ export NETWORK_UTILS_GUARD="true"
 
 # Library metadata
 NETWORK_UTILS_NAME="Network Utilities Library"
-NETWORK_UTILS_VERSION="2.2.1"
+NETWORK_UTILS_VERSION="3.2.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${NETWORK_UTILS_NAME} ${NETWORK_UTILS_VERSION}" "info"
 
@@ -83,15 +87,179 @@ check_time_wait_sockets() {
     return 0
 }
 
+# Generic function for curl requests with retry logic
+curl_with_retry() {
+    local url="$1"
+    local response_file="$2"
+    local timing_file="$3"
+    local follow_redirects="${4:-false}"
+    local expected_content="${5:-}"
+    local redirect_location="${6:-}"
+    local verbose_headers="${7:-false}"
+
+
+    local max_attempts=25
+    local attempt=1
+    local curl_exit_code=0
+    local response_time="0.000"
+
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        if [[ "${attempt}" -gt 1 ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
+        fi
+
+        # Ensure parent directory exists for response file
+        local response_dir
+        response_dir=$(dirname "${response_file}")
+        mkdir -p "${response_dir}" 2>/dev/null || true
+
+        # Run curl with timing and capture exit code
+        local timing_output
+        local curl_cmd_base="curl -s --max-time 10 --compressed"
+
+        if [[ "${follow_redirects}" = "true" ]]; then
+            curl_cmd_base="${curl_cmd_base} -L"
+        fi
+
+        if [[ "${verbose_headers}" = "true" ]]; then
+            curl_cmd_base="${curl_cmd_base} -v"
+        fi
+
+        # Use a simpler timing format to avoid issues with multiline strings
+
+        if [[ "${verbose_headers}" = "true" ]]; then
+            timing_output=$(${curl_cmd_base} -w '%{time_total}' -o "${response_file}" "${url}" 2>"${response_file}.headers")
+            curl_exit_code=$?
+            # Combine headers and body for response_file
+            if [[ -f "${response_file}" ]] && [[ -f "${response_file}.headers" ]]; then
+                cat "${response_file}.headers" "${response_file}" > "${response_file}.combined" 2>/dev/null || true
+                mv "${response_file}.combined" "${response_file}" 2>/dev/null || true
+            fi
+        else
+            timing_output=$(${curl_cmd_base} -w '%{time_total}' -o "${response_file}" "${url}" 2>/dev/null)
+            curl_exit_code=$?
+        fi
+
+        # Extract total time from timing output (now it's just the time value)
+        if [[ -n "${timing_output}" ]]; then
+            # Remove any trailing 's' and ensure it's a valid number
+            response_time=$(echo "${timing_output}" | sed 's/s$//' | sed 's/[^0-9.]//g' || echo "0.000")
+            # Ensure we have a valid number
+            if [[ ! "${response_time}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+                response_time="0.000"
+            fi
+        else
+            response_time="0.000"
+        fi
+
+        # Write timing data to file if timing_file is provided and we have a valid response
+        if [[ -n "${timing_file}" ]] && [[ "${response_time}" != "0.000" ]]; then
+            echo "${response_time}" > "${timing_file}"
+        fi
+
+        # Timing extraction already done above, no need to do it again
+
+        if [[ "${curl_exit_code}" -eq 0 ]]; then
+            # Check if we got a 404 or other error response
+            if [[ -f "${response_file}" ]] && { "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; }; then
+                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint still not ready after ${max_attempts} attempts"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Endpoint returned 404 or HTML error page"
+                    if [[ -f "${response_file}" ]]; then
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response content (first 5 lines):"
+                        while IFS= read -r line; do
+                            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
+                        done < <(head -n 5 "${response_file}" || true)
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Full response saved to: ${response_file}"
+                    else
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response file not found: ${response_file}"
+                    fi
+                    return 1
+                else
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint not ready yet (got 404/HTML), retrying..."
+                    attempt=$(( attempt + 1 ))
+                    continue
+                fi
+            fi
+
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully received response from ${url}"
+
+            # Store timing data if file provided
+            if [[ -n "${timing_file}" ]]; then
+                echo "${response_time}" > "${timing_file}"
+            fi
+
+            # Check for expected content if provided
+            if [[ -n "${expected_content}" ]]; then
+                if [[ -f "${response_file}" ]] && "${GREP}" -q "${expected_content}" "${response_file}"; then
+                    if [[ "${attempt}" -gt 1 ]]; then
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_content} (succeeded on attempt ${attempt})"
+                    else
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_content}"
+                    fi
+                    return 0
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Response doesn't contain expected content: ${expected_content}"
+                    if [[ -f "${response_file}" ]]; then
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response excerpt (first 10 lines):"
+                        while IFS= read -r line; do
+                            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
+                        done < <(head -n 10 "${response_file}" || true)
+                    else
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response file not found for excerpt: ${response_file}"
+                    fi
+                    return 1
+                fi
+            fi
+
+            # Check for redirect if location provided
+            if [[ -n "${redirect_location}" ]]; then
+                if [[ -f "${response_file}" ]] && "${GREP}" -q "< HTTP/1.1 301" "${response_file}" && "${GREP}" -q "< Location: ${redirect_location}" "${response_file}"; then
+                    if [[ "${attempt}" -gt 1 ]]; then
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response is a 301 redirect to ${redirect_location} (succeeded on attempt ${attempt})"
+                    else
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response is a 301 redirect to ${redirect_location}"
+                    fi
+                    return 0
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Response is not a redirect to ${redirect_location}"
+                    if [[ -f "${response_file}" ]]; then
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response headers:"
+                        while IFS= read -r line; do
+                            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
+                        done < <("${GREP}" -E "< HTTP/|< Location:" "${response_file}" || true)
+                    else
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response file not found for headers: ${response_file}"
+                    fi
+                    return 1
+                fi
+            fi
+
+            return 0
+        else
+            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
+                return 1
+            else
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Connection failed on attempt ${attempt}, retrying..."
+                attempt=$(( attempt + 1 ))
+                continue
+            fi
+        fi
+    done
+
+    return 1
+}
+
 # Function to make HTTP requests to create active connections
 make_http_requests() {
     local base_url="$1"
     local results_dir="$2"
     local timestamp="$3"
-    
+
     # Log start
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Making HTTP requests to create active connections"
-    
+
     # Extract port from base_url (e.g., http://localhost:8080 -> 8080)
     local port
     if [[ "${base_url}" =~ :([0-9]+) ]]; then
@@ -99,10 +267,10 @@ make_http_requests() {
     else
         port=80
     fi
-    
+
     # Wait for server to be ready
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for server to be ready..."
-    
+
     local max_wait_ms=5000  # 5s in milliseconds
     local check_interval_ms=100  # 0.2s in milliseconds
     local elapsed_ms=0
@@ -124,10 +292,10 @@ make_http_requests() {
     if [[ "${elapsed_ms}" -ge "${max_wait_ms}" ]]; then
         print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Server did not become ready on port ${port} within $((max_wait_ms / 1000))s"
     fi
-    
+
     # Make requests to common web files
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Requesting index.html..."
     curl -s --max-time 5 "${base_url}/" -o "${results_dir}/index_response_${timestamp}.html" 2>/dev/null || true
-       
+
     return 0
 }

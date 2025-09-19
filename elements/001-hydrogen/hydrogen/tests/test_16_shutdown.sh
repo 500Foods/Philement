@@ -4,6 +4,7 @@
 # Tests the shutdown functionality of the application with a minimal configuration
 #
 # CHANGELOG
+# 4.0.0 - 2025-09-19 - Added server log output and elapsed time display in test name
 # 3.1.0 - 2025-08-08 - Reviewed, updated logging conventions
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-06 - Added missing shellcheck justifications
@@ -18,7 +19,7 @@ TEST_NAME="Shutdown"
 TEST_ABBR="SHD"
 TEST_NUMBER="16"
 TEST_COUNTER=0
-TEST_VERSION="3.0.0"
+TEST_VERSION="4.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -55,6 +56,18 @@ fi
 
 # Run cycle - that's all this test is for
 run_lifecycle_test "${MIN_CONFIG}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_FILE}" "PASS_COUNT" "EXIT_CODE"
+
+# Add server log to output
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server Log: ..${LOG_FILE}"
+
+# Extract elapsed time from log and update test name
+if [[ -f "${LOG_FILE}" ]]; then
+    # Extract "Total elapsed time" from log file
+    elapsed_time=$("${AWK}" "/Total elapsed time:/ {print \$NF}" "${LOG_FILE}" 2>/dev/null | tail -1 || true)
+    if [[ -n "${elapsed_time}" ]]; then
+        TEST_NAME="${TEST_NAME} {BLUE}(Cycle: ${elapsed_time}){RESET}"
+    fi
+fi
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

@@ -422,18 +422,22 @@ wait_for_server_ready() {
     local base_url="$1"
     local max_attempts=100   # 2.5 seconds total (0.1s * 25)
     local attempt=1
-    
+
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for server to be ready at ${base_url}..."
-    
+
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
+        # Try multiple endpoints to check server readiness
+        if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1 || \
+           curl -s --max-time 2 "${base_url}/" >/dev/null 2>&1 || \
+           curl -s --max-time 2 "${base_url}/swagger/" >/dev/null 2>&1 || \
+           curl -s --max-time 2 "${base_url}/apidocs/" >/dev/null 2>&1; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server is ready after ${attempt} attempt(s)"
             return 0
         fi
         sleep 0.05
         ((attempt++))
     done
-    
+
     print_error "${TEST_NUMBER}" "${TEST_COUNTER}" "Server failed to respond within the expected time"
     return 1
 }
