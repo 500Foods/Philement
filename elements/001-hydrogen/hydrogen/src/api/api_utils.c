@@ -137,7 +137,7 @@ json_t *api_extract_jwt_claims(struct MHD_Connection *connection, const char *jw
 /**
  * Extract query parameters into a JSON object
  */
-static enum MHD_Result query_param_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value) {
+enum MHD_Result query_param_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value) {
     (void)kind; // Mark parameter as intentionally unused
     json_t *params_obj = (json_t *)cls;
     if (key && value) {
@@ -164,7 +164,7 @@ json_t *api_extract_query_params(struct MHD_Connection *connection) {
 /**
  * Extract POST data into a JSON object
  */
-static enum MHD_Result post_data_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value) {
+enum MHD_Result post_data_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value) {
     (void)kind; // Mark parameter as intentionally unused
     json_t *post_obj = (json_t *)cls;
     if (key && value) {

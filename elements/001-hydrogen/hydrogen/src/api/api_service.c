@@ -17,14 +17,15 @@
 #include "system/upload/upload.h"
 
 // Simple hardcoded endpoint validator and handler for /api/version
-static bool is_exact_api_version_endpoint(const char *url) {
+bool is_exact_api_version_endpoint(const char *url) {
+    if (!url) return false;
     return strcmp(url, "/api/version") == 0;
 }
 
-static enum MHD_Result handle_exact_api_version_request(void *cls, struct MHD_Connection *connection,
-                                                       const char *url, const char *method,
-                                                       const char *version, const char *upload_data,
-                                                       size_t *upload_data_size, void **con_cls) {
+enum MHD_Result handle_exact_api_version_request(void *cls, struct MHD_Connection *connection,
+                                                        const char *url, const char *method,
+                                                        const char *version, const char *upload_data,
+                                                        size_t *upload_data_size, void **con_cls) {
     (void)cls; (void)url; (void)method; (void)version; (void)upload_data;
     (void)upload_data_size; (void)con_cls;  // Unused parameters
 
@@ -33,14 +34,15 @@ static enum MHD_Result handle_exact_api_version_request(void *cls, struct MHD_Co
 }
 
 // Simple hardcoded endpoint validator and handler for /api/files/local
-static bool is_exact_api_files_local_endpoint(const char *url) {
+bool is_exact_api_files_local_endpoint(const char *url) {
+    if (!url) return false;
     return strcmp(url, "/api/files/local") == 0;
 }
 
-static enum MHD_Result handle_exact_api_files_local_request(void *cls, struct MHD_Connection *connection,
-                                                           const char *url, const char *method,
-                                                           const char *version, const char *upload_data,
-                                                           size_t *upload_data_size, void **con_cls) {
+enum MHD_Result handle_exact_api_files_local_request(void *cls, struct MHD_Connection *connection,
+                                                            const char *url, const char *method,
+                                                            const char *version, const char *upload_data,
+                                                            size_t *upload_data_size, void **con_cls) {
     (void)cls; (void)url; (void)version; // Unused parameters
     // log_this(SR_API, "Handling exact /api/files/local request", LOG_LEVEL_STATE, 0);
     // Delegate to the same handler as /api/system/upload
@@ -71,10 +73,10 @@ void cleanup_api_endpoints(void) {
 }
 
 // Main API handler that matches the WebServerEndpoint handler signature
-static enum MHD_Result api_handler(void *cls, struct MHD_Connection *connection,
-                                 const char *url, const char *method,
-                                 const char *version, const char *upload_data,
-                                 size_t *upload_data_size, void **con_cls) {
+enum MHD_Result api_handler(void *cls, struct MHD_Connection *connection,
+                                  const char *url, const char *method,
+                                  const char *version, const char *upload_data,
+                                  size_t *upload_data_size, void **con_cls) {
     (void)cls;  // Currently unused but must be passed through
     return handle_api_request(connection, url, method, version,
                             upload_data, upload_data_size, con_cls);
@@ -178,6 +180,10 @@ bool register_api_endpoints(void) {
  * subsystems without conflict.
  */
 bool is_api_endpoint(const char *url, char *service, char *endpoint) {
+    if (!url) {
+        return false;
+    }
+
     if (!app_config || !app_config->api.prefix || !app_config->api.prefix[0]) {
         log_this(SR_API, "API prefix not configured", LOG_LEVEL_ERROR, 0);
         return false;
@@ -247,6 +253,10 @@ bool is_api_endpoint(const char *url, char *service, char *endpoint) {
 }
 
 bool is_api_request(const char *url) {
+    if (!url) {
+        return false;
+    }
+
     // Use is_api_endpoint but with dummy buffers since we don't need the values
     char service[32], endpoint[32];
     return is_api_endpoint(url, service, endpoint);

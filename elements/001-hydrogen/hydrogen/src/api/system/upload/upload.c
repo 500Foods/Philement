@@ -17,6 +17,7 @@
 // Validate HTTP method for upload requests
 // Returns MHD_YES if method is valid (POST), MHD_NO if invalid
 enum MHD_Result validate_upload_method(const char *method) {
+    if (!method) return MHD_NO;
     return (strcmp(method, "POST") == 0) ? MHD_YES : MHD_NO;
 }
 

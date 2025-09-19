@@ -5,9 +5,11 @@
 #include "mock_libmicrohttpd.h"
 #include <string.h>
 #include <stdlib.h>
+#include <microhttpd.h>
 
 // Mock state variables
 static const char* mock_mhd_lookup_result = NULL;
+static const union MHD_ConnectionInfo* mock_mhd_connection_info = NULL;
 
 /*
  * Mock implementation of MHD_lookup_connection_value
@@ -26,6 +28,21 @@ const char* MHD_lookup_connection_value(struct MHD_Connection *connection,
 }
 
 /*
+ * Mock implementation of MHD_get_connection_info
+ * Matches the actual microhttpd.h signature
+ */
+__attribute__((weak))
+const union MHD_ConnectionInfo* MHD_get_connection_info(struct MHD_Connection *connection,
+                                                       enum MHD_ConnectionInfoType info_type,
+                                                       ...) {
+    (void)connection; // Suppress unused parameter warning
+    (void)info_type;  // Suppress unused parameter warning
+
+    // Return the mock connection info
+    return mock_mhd_connection_info;
+}
+
+/*
  * Reset all mock state
  */
 void mock_mhd_reset_all(void) {
@@ -33,6 +50,7 @@ void mock_mhd_reset_all(void) {
         free((void*)mock_mhd_lookup_result);
         mock_mhd_lookup_result = NULL;
     }
+    mock_mhd_connection_info = NULL;
 }
 
 /*
@@ -55,6 +73,13 @@ void mock_mhd_set_lookup_result(const char *result) {
  */
 const char* mock_mhd_get_lookup_result(void) {
     return mock_mhd_lookup_result;
+}
+
+/*
+ * Set the mock connection info result
+ */
+void mock_mhd_set_connection_info(const union MHD_ConnectionInfo *info) {
+    mock_mhd_connection_info = info;
 }
 
 // Session management mock state variables

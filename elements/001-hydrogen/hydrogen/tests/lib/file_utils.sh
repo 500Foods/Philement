@@ -12,8 +12,14 @@
 # extract_web_server_port()
 # validate_json()
 # get_webserver_port()
+# handle_timing_file()
+# test_file_download()
+# collect_timing_data()
 
 # CHANGELOG
+# 1.3.0 - 2025-09-19 - Added timing and file download functions from test_22_swagger.sh
+#                    - Added handle_timing_file(), test_file_download(), collect_timing_data()
+#                    - Support for test script refactoring and code reuse
 # 1.2.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.2.0 - 2025-07-30 - Added common should_exclude_file() from other scripts
 # 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
@@ -27,7 +33,7 @@ export FILE_UTILS_GUARD="true"
 
 # Library metadata
 FILE_UTILS_NAME="File Utilities Library"
-FILE_UTILS_VERSION="1.2.1"
+FILE_UTILS_VERSION="1.3.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${FILE_UTILS_NAME} ${FILE_UTILS_VERSION}" "info"
 
@@ -160,4 +166,83 @@ get_webserver_port() {
         port=8080
     fi
     echo "${port}"
+}
+
+# Function to handle timing file operations
+handle_timing_file() {
+    local timing_file="$1"
+    # local test_name="$2"
+
+    if [[ -f "${timing_file}" ]]; then
+        local timing
+        timing=$(cat "${timing_file}" 2>/dev/null || echo "0.000")
+        local timing_calc
+        timing_calc=$(echo "scale=6; ${timing} * 1000" | bc 2>/dev/null || echo "0.000")
+        local timing_ms
+        # shellcheck disable=SC2312 # Intentional command substitution to format timing
+        timing_ms=$(printf "%.3f" "${timing_calc}" 2>/dev/null || echo "0.000")
+        echo "${timing_ms}"
+    else
+        echo "0.000"
+    fi
+}
+
+# Function to test file downloads
+test_file_download() {
+    local url="$1"
+    local output_file="$2"
+    local file_type="$3"
+    local result_marker="$4"
+    local result_file="$5"
+
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed \"${url}\""
+    if curl -s --max-time 10 --compressed "${url}" > "${output_file}"; then
+        if [[ -s "${output_file}" ]]; then
+            echo "${result_marker}_PASSED" >> "${result_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded ${file_type} file ($(wc -c < "${output_file}" || true) bytes)"
+        else
+            echo "${result_marker}_FAILED" >> "${result_file}"
+            return 1
+        fi
+    else
+        echo "${result_marker}_FAILED" >> "${result_file}"
+        return 1
+    fi
+    return 0
+}
+
+# Function to collect timing data from multiple files
+collect_timing_data() {
+    local log_prefix="$1"
+    local log_suffix="$2"
+    local total_time_var="$3"
+    local count_var="$4"
+
+    local timing_files=(
+        "${log_prefix}_${log_suffix}_trailing_slash.timing"
+        "${log_prefix}_${log_suffix}_redirect.timing"
+        "${log_prefix}_${log_suffix}_content.timing"
+        "${log_prefix}_${log_suffix}_initializer.timing"
+    )
+
+    local total="0"
+    local count=0
+
+    for timing_file in "${timing_files[@]}"; do
+        if [[ -f "${timing_file}" ]]; then
+            local timing_value
+            timing_value=$(tr -d '\n' < "${timing_file}" 2>/dev/null || echo "0")
+            if [[ -n "${timing_value}" ]] && [[ "${timing_value}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+                # shellcheck disable=SC2312 # Intentional command substitution with || true to ignore return value
+                if (( $(echo "${timing_value} > 0" | bc -l 2>/dev/null || echo "0") )); then
+                    total=$(echo "scale=6; ${total} + ${timing_value}" | bc 2>/dev/null || echo "${total}")
+                    count=$(( count + 1 ))
+                fi
+            fi
+        fi
+    done
+
+    # Use eval to set the variables in the caller's scope
+    eval "${total_time_var}=\"${total}\""
+    eval "${count_var}=\"${count}\""
 }
