@@ -67,7 +67,14 @@ int create_multicast_socket(int family, const char *group, const char *if_name) 
 
     int yes = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) < 0) {
-        log_this(SR_MDNS_SERVER, "Failed to set SO_REUSEADDR: %s", LOG_LEVEL_DEBUG, 2, strerror(errno));
+        log_this(SR_MDNS_SERVER, "Failed to set SO_REUSEADDR: %s", LOG_LEVEL_DEBUG, 1, strerror(errno));
+        close(sockfd);
+        return -1;
+    }
+
+    // Add SO_REUSEPORT for better multicast socket sharing
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof(yes)) < 0) {
+        log_this(SR_MDNS_SERVER, "Failed to set SO_REUSEPORT: %s", LOG_LEVEL_DEBUG, 1, strerror(errno));
         close(sockfd);
         return -1;
     }
