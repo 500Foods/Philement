@@ -24,9 +24,9 @@ mdns_server_t *mdns_server_allocate(void);
 network_info_t *mdns_server_get_network_info(mdns_server_t *server);
 int mdns_server_allocate_interfaces(mdns_server_t *server, const network_info_t *net_info_instance);
 int mdns_server_init_interfaces(mdns_server_t *server, const network_info_t *net_info_instance);
-int mdns_server_validate_services(mdns_server_service_t *services, size_t num_services);
+int mdns_server_validate_services(const mdns_server_service_t *services, size_t num_services);
 int mdns_server_allocate_services(mdns_server_t *server, mdns_server_service_t *services, size_t num_services);
-int mdns_server_init_services(mdns_server_t *server, mdns_server_service_t *services, size_t num_services);
+int mdns_server_init_services(mdns_server_t *server, const mdns_server_service_t *services, size_t num_services);
 int mdns_server_setup_hostname(mdns_server_t *server);
 int mdns_server_init_service_info(mdns_server_t *server, const char *app_name, const char *id,
                                   const char *friendly_name, const char *model, const char *manufacturer,
@@ -66,7 +66,7 @@ network_info_t *mdns_server_get_network_info(mdns_server_t *server __attribute__
     return net_info_instance;
 }
 
-int mdns_server_allocate_interfaces(mdns_server_t *server, network_info_t *net_info_instance) {
+int mdns_server_allocate_interfaces(mdns_server_t *server, const network_info_t *net_info_instance) {
     // Allocate space for interfaces
     size_t interface_count = (net_info_instance->count >= 0) ? (size_t)net_info_instance->count : 0;
     server->interfaces = malloc(sizeof(mdns_server_interface_t) * interface_count);
@@ -78,10 +78,10 @@ int mdns_server_allocate_interfaces(mdns_server_t *server, network_info_t *net_i
     return 0;
 }
 
-int mdns_server_init_interfaces(mdns_server_t *server, network_info_t *net_info_instance) {
+int mdns_server_init_interfaces(mdns_server_t *server, const network_info_t *net_info_instance) {
     // Initialize each interface
     for (int i = 0; i < net_info_instance->count; i++) {
-        const interface_t *iface = &net_info->interfaces[i];
+        const interface_t *iface = &net_info_instance->interfaces[i];
 
         // Skip loopback and interfaces without IPs
         if (strcmp(iface->name, "lo") == 0 || iface->ip_count == 0) {
@@ -143,7 +143,7 @@ int mdns_server_init_interfaces(mdns_server_t *server, network_info_t *net_info_
     return 0;
 }
 
-int mdns_server_validate_services(mdns_server_service_t *services, size_t num_services) {
+int mdns_server_validate_services(const mdns_server_service_t *services, size_t num_services) {
     if (num_services > 0 && !services) {
         log_this(SR_MDNS_SERVER, "Services array is NULL but num_services > 0", LOG_LEVEL_ERROR, 0);
         return -1;
@@ -165,7 +165,7 @@ int mdns_server_allocate_services(mdns_server_t *server, mdns_server_service_t *
     return 0;
 }
 
-int mdns_server_init_services(mdns_server_t *server, mdns_server_service_t *services, size_t num_services) {
+int mdns_server_init_services(mdns_server_t *server, const mdns_server_service_t *services, size_t num_services) {
     for (size_t i = 0; i < num_services; i++) {
         server->services[i].name = strdup(services[i].name);
         server->services[i].type = strdup(services[i].type);
