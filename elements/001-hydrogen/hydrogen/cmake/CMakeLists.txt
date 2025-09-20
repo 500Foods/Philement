@@ -815,6 +815,8 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_launch.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_status.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_landing.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_network.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.c
 )
 
 # Create Unity test object files in build/unity/src directory structure (same as original)
@@ -1001,15 +1003,19 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(TEST_OUTPUT_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${TEST_BASENAME}.o")
     endif()
     
-    # Check if this is a websocket or terminal test to include mock headers
+    # Check if this is a websocket, terminal, or mdns test to include mock headers
     string(FIND "${TEST_SOURCE}" "websocket" IS_WEBSOCKET_TEST)
     string(FIND "${TEST_SOURCE}" "terminal" IS_TERMINAL_TEST)
+    string(FIND "${TEST_SOURCE}" "mdns" IS_MDNS_TEST)
     if(IS_WEBSOCKET_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS -DUSE_MOCK_STATUS")
     elseif(IS_TERMINAL_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LIBMICROHTTPD")
+    elseif(IS_MDNS_TEST GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_NETWORK -DUSE_MOCK_SYSTEM")
     else()
         set(MOCK_INCLUDES "")
         set(MOCK_DEFINES "")

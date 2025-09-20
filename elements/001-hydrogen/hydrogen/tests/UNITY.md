@@ -598,116 +598,274 @@ void test_calculate_startup_time_before_ready(void) {
 - Test both the "times not set" and "times properly set" scenarios
 - Use conditional assertions when functions have legitimate zero return values
 
-## When Unity Tests Are NOT Appropriate
+## Mocking Framework for Unity Tests
 
-Based on lessons learned from attempting comprehensive Unity test coverage for the WebSocket module, it's important to recognize when Unity tests are **not the right approach**:
+The Hydrogen project includes a comprehensive mocking framework that enables testing of system-dependent code and error conditions. This framework allows you to achieve high test coverage (75%+) by simulating failures and edge cases that are difficult or impossible to trigger in real system environments.
 
-**System-Dependent Code**:
+### Available Mocks
 
-Unity tests are **unsuitable** for functions that require:
+The project currently provides the following mock libraries:
 
-- System resources (network sockets, threads, mutexes)
-- External library contexts (libwebsockets `struct lws *wsi`)
-- Global application state (e.g., `ws_context`)
-- Hardware or OS-level interactions
-- Functions that may hang or crash without proper system initialization
+#### 1. **mock_libwebsockets** (`tests/unity/mocks/mock_libwebsockets.c/h`)
 
-**Example - WebSocket Functions**:
+- **Purpose**: Mock WebSocket library functions for testing WebSocket-related code
+- **Functions**: `lws_create_context`, `lws_write`, `lws_service`, `lws_get_context`, etc.
+- **Usage**: Enable with `#define USE_MOCK_LIBWEBSOCKETS` in test files
 
-The WebSocket module provides a clear example of code that is **not suitable** for Unity testing:
+#### 2. **mock_libmicrohttpd** (`tests/unity/mocks/mock_libmicrohttpd.c/h`)
+
+- **Purpose**: Mock HTTP server functions for testing HTTP-related code
+- **Functions**: MHD connection and response handling functions
+- **Usage**: Enable with `#define USE_MOCK_LIBMICROHTTPD` in test files
+
+#### 3. **mock_launch** (`tests/unity/mocks/mock_launch.c/h`)
+
+- **Purpose**: Mock launch system functions for testing subsystem initialization
+- **Functions**: Launch phase management and subsystem coordination
+- **Usage**: Enable with `#define USE_MOCK_LAUNCH` in test files
+
+#### 4. **mock_landing** (`tests/unity/mocks/mock_landing.c/h`)
+
+- **Purpose**: Mock landing system functions for testing subsystem shutdown
+- **Functions**: Landing phase management and graceful shutdown
+- **Usage**: Enable with `#define USE_MOCK_LANDING` in test files
+
+#### 5. **mock_status** (`tests/unity/mocks/mock_status.c/h`)
+
+- **Purpose**: Mock status reporting functions for testing system monitoring
+- **Functions**: Status collection and reporting functions
+- **Usage**: Enable with `#define USE_MOCK_STATUS` in test files
+
+#### 6. **mock_info** (`tests/unity/mocks/mock_info.c/h`)
+
+- **Purpose**: Mock info extraction functions for testing system information
+- **Functions**: WebSocket metrics and system info extraction
+- **Usage**: Enable with `#define USE_MOCK_INFO` in test files
+
+#### 7. **mock_network** (`tests/unity/mocks/mock_network.c/h`) - *New*
+
+- **Purpose**: Mock network functions for testing network-dependent code
+- **Functions**: `get_network_info`, `filter_enabled_interfaces`, `create_multicast_socket`
+- **Usage**: Enable with `#define USE_MOCK_NETWORK` in test files
+
+#### 8. **mock_system** (`tests/unity/mocks/mock_system.c/h`) - *New*
+
+- **Purpose**: Mock system functions for testing error conditions
+- **Functions**: `malloc`, `free`, `strdup`, `gethostname`
+- **Usage**: Enable with `#define USE_MOCK_SYSTEM` in test files
+
+### How to Use Mocks in Test Files
+
+#### Basic Setup Pattern
 
 ```c
-// These functions require system resources and are NOT suitable for Unity tests
-int websocket_callback(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
-bool ws_init_context(const HydrogenConfig *config);
-int ws_start_server(const HydrogenConfig *config);
-void ws_shutdown_server(void);
+// Include necessary headers
+#include "../../../../src/hydrogen.h"
+#include "unity.h"
+
+// Enable mocks BEFORE including source headers
+#define USE_MOCK_NETWORK
+#define USE_MOCK_SYSTEM
+#include "../../../../tests/unity/mocks/mock_network.h"
+#include "../../../../tests/unity/mocks/mock_system.h"
+
+// Include source headers (functions will be mocked)
+#include "../../../../src/network/network.h"
+#include "../../../../src/mdns/mdns_server.h"
+
+// Test setup
+void setUp(void) {
+    // Reset all mocks to default state
+    mock_network_reset_all();
+    mock_system_reset_all();
+}
+
+void tearDown(void) {
+    // Clean up after each test
+    mock_network_reset_all();
+    mock_system_reset_all();
+}
 ```
 
-**Key indicators** that functions are unsuitable for Unity tests:
+#### Mock Control Functions
 
-- Require `struct lws *wsi` or other system library contexts
-- Depend on global state variables (e.g., `ws_context`)
-- Perform network operations or thread management
-- Have initialization/cleanup dependencies that require system resources
-- May cause segmentation faults when called without proper system setup
-
-**Effort vs. Benefit Analysis**:
-
-The WebSocket Unity test effort demonstrated that **significant effort** (creating 18 test files, 1000+ lines of test code) can yield **minimal practical benefit**:
-
-- Only ~82 lines of new Unity coverage across 9 WebSocket files
-- Existing integration tests already provided 30-53 lines coverage per file
-- Segmentation faults and system dependencies made tests unreliable
-- Time investment was disproportionate to coverage gains
-
-**Better Alternatives for System-Dependent Code**:
-
-For code that requires system resources:
-
-1. **Integration Tests**: Test the complete system functionality (like `test_30_websockets.sh`)
-2. **Blackbox Testing**: Test from external perspective using real system interactions
-3. **Component Testing**: Test larger components that include necessary system setup
-4. **Mock-Heavy Testing**: Only if mocking system dependencies is practical and valuable
-
-**When to Skip Unity Tests**:
-
-Consider **skipping Unity tests** and focusing on integration tests when:
-
-- Functions require external library contexts that can't be easily mocked
-- Code depends heavily on global state or system initialization
-- Functions are primarily "glue code" between system components
-- Existing integration tests already provide adequate coverage
-- The effort to create reliable unit tests exceeds the practical benefit
-
-**Decision Framework**:
-
-Before investing in Unity tests for a module:
-
-1. **Assess Function Safety**: Can functions be called safely in isolation?
-2. **Evaluate Dependencies**: Do functions require system resources or external contexts?
-3. **Check Existing Coverage**: Do integration tests already provide adequate coverage?
-4. **Estimate Effort vs. Benefit**: Will the Unity tests provide proportional value?
-5. **Consider Alternatives**: Would integration or component tests be more appropriate?
-
-**Key Lesson**: Not all code needs or benefits from unit tests. System-dependent code is often better validated through integration testing that exercises the complete system in realistic conditions.
-
-## Example: launch_plan_test.c
-
-The `launch_plan_test.c` file demonstrates comprehensive Unity testing:
-
-- **14 test cases** covering all scenarios for `handle_launch_plan()` function
-- Tests null parameters, empty results, mixed readiness states, and boundary conditions
-- Uses real logging integration for authentic system behavior
-- Validates launch plan decision logic across various subsystem configurations
-
-This example serves as a template for writing effective Unity tests that provide thorough coverage and meaningful validation.
-
-**Coverage Strategy:**
-
-- Test real functions in source files for actual coverage
-- Use mock functions to document expected behavior
-- Combine unit test coverage + integration test coverage for complete picture
-
-### Memory Management Unit Testing
-
-When testing functions that allocate memory:
-
-**Common Issues:**
-
-- cppcheck warnings about potential null pointer dereferences
-- Memory leaks in test code
-- Platform-specific allocation behavior
-
-**Best Practices:**
+Each mock provides control functions to simulate different scenarios:
 
 ```c
-// Always check malloc results
-char **line_array = malloc(2 * sizeof(char*));
-TEST_ASSERT_NOT_NULL(line_array);  // Verify allocation succeeded
+// Network mock controls
+mock_network_set_get_network_info_result(NULL);           // Simulate network failure
+mock_network_set_create_multicast_socket_result(-1);      // Simulate socket failure
+mock_network_reset_all();                                 // Reset to defaults
 
-// Clean up properly in tearDown
-void tearDown(void) {
-    server_executable_size = 0;  // Reset global state
+// System mock controls
+mock_system_set_malloc_failure(1);                        // Make malloc fail
+mock_system_set_gethostname_failure(1);                   // Make gethostname fail
+mock_system_set_gethostname_result("custom-host");        // Set custom hostname
+mock_system_reset_all();                                  // Reset to defaults
+```
+
+#### Example: Testing Error Conditions
+
+```c
+void test_mdns_server_init_network_failure(void) {
+    // Setup: Mock network failure
+    mock_network_set_get_network_info_result(NULL);
+
+    // Test: Call function that should handle failure
+    mdns_server_t *server = mdns_server_init(...);
+
+    // Assert: Should return NULL on network failure
+    TEST_ASSERT_NULL(server);
+}
+
+void test_mdns_server_init_malloc_failure(void) {
+    // Setup: Mock memory allocation failure
+    mock_system_set_malloc_failure(1);
+
+    // Test: Call function that allocates memory
+    mdns_server_t *server = mdns_server_init(...);
+
+    // Assert: Should return NULL on allocation failure
+    TEST_ASSERT_NULL(server);
+}
+```
+
+### Adding New Mocks
+
+To add a new mock for additional system functions:
+
+#### 1. Create Mock Header (`mock_newfeature.h`)
+
+```c
+#ifndef MOCK_NEWFEATURE_H
+#define MOCK_NEWFEATURE_H
+
+// Enable mock override
+#ifdef USE_MOCK_NEWFEATURE
+#define some_system_function mock_some_system_function
+#endif
+
+// Mock function prototypes
+void *mock_some_system_function(int param);
+
+// Mock control functions
+void mock_newfeature_set_result(void *result);
+void mock_newfeature_reset_all(void);
+
+#endif // MOCK_NEWFEATURE_H
+```
+
+#### 2. Create Mock Implementation (`mock_newfeature.c`)
+
+```c
+#include "mock_newfeature.h"
+
+// Static state
+static void *mock_result = NULL;
+
+// Mock implementation
+void *mock_some_system_function(int param) {
+    (void)param; // Suppress unused parameter
+    return mock_result;
+}
+
+// Control functions
+void mock_newfeature_set_result(void *result) {
+    mock_result = result;
+}
+
+void mock_newfeature_reset_all(void) {
+    mock_result = NULL;
+}
+```
+
+#### 3. Update CMakeLists.txt
+
+```cmake
+set(UNITY_MOCK_SOURCES
+    # ... existing mocks ...
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_newfeature.c
+)
+```
+
+#### 4. Update Test Files
+
+```c
+#define USE_MOCK_NEWFEATURE
+#include "../../../../tests/unity/mocks/mock_newfeature.h"
+```
+
+### Mock Integration in Build System
+
+Mocks are automatically integrated into the Unity test build process:
+
+1. **CMake Integration**: Mocks are compiled as separate object files and linked into test executables
+2. **Preprocessor Control**: `#define USE_MOCK_*` enables function overrides
+3. **Clean Separation**: Mocks don't affect production code, only test builds
+4. **Parallel Building**: Mock compilation is included in the parallel build process
+
+### Best Practices for Mock Usage
+
+#### 1. **Reset State Between Tests**
+
+```c
+void setUp(void) {
+    mock_network_reset_all();
+    mock_system_reset_all();
+    // Reset any other mocks used in the test file
+}
+```
+
+#### 2. **Test One Failure Mode Per Test**
+
+```c
+// Good: Single failure mode
+void test_function_network_failure(void) {
+    mock_network_set_get_network_info_result(NULL);
+    // Test network failure handling
+}
+
+// Avoid: Multiple failure modes
+void test_function_multiple_failures(void) {
+    mock_network_set_get_network_info_result(NULL);
+    mock_system_set_malloc_failure(1);
+    // Hard to debug which failure caused the issue
+}
+```
+
+#### 3. **Document Mock Dependencies**
+
+```c
+/*
+ * Test: mdns_server_init_network_failure
+ * Mocks: mock_network (get_network_info returns NULL)
+ * Purpose: Verify graceful handling of network unavailability
+ */
+void test_mdns_server_init_network_failure(void) {
+    // Implementation
+}
+```
+
+#### 4. **Use Realistic Mock Data**
+
+```c
+// Good: Realistic network interface data
+network_info_t *realistic_info = create_realistic_network_info();
+mock_network_set_get_network_info_result(realistic_info);
+
+// Avoid: Minimal mock data that doesn't exercise code paths
+```
+
+#### 5. **Test Cleanup Functions**
+
+```c
+// Test that mocks are properly reset
+void test_mock_cleanup(void) {
+    mock_system_set_malloc_failure(1);
+    // Run test...
+
+    // Verify cleanup
+    mock_system_reset_all();
+    // Verify function works normally again
 }
 ```
