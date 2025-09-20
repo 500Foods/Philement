@@ -119,7 +119,12 @@ bool validate_payload_key(const char *key) {
     return true;
 }
 
-// Initialize OpenSSL once at startup
+/**
+ * Initialize OpenSSL once at startup
+ *
+ * This function initializes OpenSSL algorithms and error strings.
+ * It is safe to call this function multiple times as it will only initialize once.
+ */
 void init_openssl(void) {
     static bool initialized = false;
     if (!initialized) {
@@ -131,7 +136,7 @@ void init_openssl(void) {
 
 /**
  * Clean up OpenSSL resources
- * 
+ *
  * This function cleans up resources allocated by OpenSSL during payload processing.
  * It should be called during shutdown to prevent memory leaks.
  * It is safe to call this function multiple times as it will only clean up
@@ -139,20 +144,20 @@ void init_openssl(void) {
  */
 void cleanup_openssl(void) {
     static bool cleaned_up = false;
-    
+
     // Only clean up once
     if (cleaned_up) {
         log_this(SR_PAYLOAD, "OpenSSL resources already cleaned up", LOG_LEVEL_STATE, 0);
         return;
     }
-    
+
     // Clean up OpenSSL resources
     EVP_cleanup();
     ERR_free_strings();
-    
+
     // Set the flag to indicate resources have been cleaned up
     cleaned_up = true;
-    
+
     // Log the cleanup
     log_this(SR_PAYLOAD, "OpenSSL resources cleaned up", LOG_LEVEL_STATE, 0);
 }
