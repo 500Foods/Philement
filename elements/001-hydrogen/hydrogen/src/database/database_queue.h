@@ -11,6 +11,7 @@
 // Project includes
 #include "../hydrogen.h"
 #include "../queue/queue.h"
+#include "database_types.h"
 
 // Forward declarations to avoid circular dependencies
 typedef struct DatabaseHandle DatabaseHandle;
@@ -29,6 +30,7 @@ typedef struct DatabaseQueue DatabaseQueue;
 struct DatabaseQueue {
     char* database_name;           // Database identifier (e.g., "Acuranzo")
     char* connection_string;       // Database connection string
+    DatabaseEngine engine_type;    // Database engine type (PostgreSQL, SQLite, MySQL, DB2)
     char* queue_type;              // Queue type: "Lead", "slow", "medium", "fast", "cache"
     char* bootstrap_query;         // Bootstrap query from config (only used by Lead queues)
 
