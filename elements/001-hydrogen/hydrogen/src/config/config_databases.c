@@ -137,6 +137,14 @@ bool load_database_config(json_t* root, AppConfig* config) {
             json_t* database_obj = json_object_get(conn_obj, "Database");
             if (database_obj && json_is_string(database_obj)) {
                 conn->database = strdup(json_string_value(database_obj));
+                log_this(SR_CONFIG_CURRENT, "Database config: Loaded database field: %s", LOG_LEVEL_DEBUG, 1, conn->database);
+            } else {
+                log_this(SR_CONFIG_CURRENT, "Database config: WARNING - Database field not found or not a string", LOG_LEVEL_ERROR, 0);
+                if (database_obj) {
+                    log_this(SR_CONFIG_CURRENT, "Database config: Database object type: %d", LOG_LEVEL_DEBUG, 1, json_typeof(database_obj));
+                } else {
+                    log_this(SR_CONFIG_CURRENT, "Database config: Database object is NULL", LOG_LEVEL_DEBUG, 0);
+                }
             }
 
             // Extract Bootstrap query

@@ -156,11 +156,22 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
     const char* db_path = NULL;
     if (config->database && strlen(config->database) > 0) {
         db_path = config->database;
+        log_this(designator, "SQLite connection: Using database field: %s", LOG_LEVEL_DEBUG, 1, db_path);
     } else if (config->connection_string && strncmp(config->connection_string, "sqlite://", 9) == 0) {
         db_path = config->connection_string + 9; // Skip "sqlite://"
+        log_this(designator, "SQLite connection: Using connection string: %s", LOG_LEVEL_DEBUG, 1, db_path);
     } else {
         db_path = ":memory:"; // Default to in-memory database
+        log_this(designator, "SQLite connection: WARNING - Using in-memory database! config->database='%s', connection_string='%s'",
+                 LOG_LEVEL_ERROR, 2, config->database ? config->database : "NULL", config->connection_string ? config->connection_string : "NULL");
     }
+
+    // Log current working directory and resolved path for debugging
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        log_this(designator, "SQLite connection: Current working directory: %s", LOG_LEVEL_DEBUG, 1, cwd);
+    }
+    log_this(designator, "SQLite connection: Attempting to open database: %s", LOG_LEVEL_DEBUG, 1, db_path);
 
     // Open database
     void* sqlite_db = NULL;

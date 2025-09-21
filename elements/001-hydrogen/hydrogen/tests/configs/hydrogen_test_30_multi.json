@@ -10,14 +10,15 @@
         "ConnectionCount": 4,
         "Connections": [
             {
-                "Name": "Acuranzo",
-                "Engine": "postgresql",
                 "Enabled": true,
-                "Host": "localhost",
-                "Port": "5432",
-                "Database": "acuranzo_test",
-                "User": "test_user",
-                "Pass": "test_pass",
+                "Name": "ACZ",
+                "Engine": "${env.ACURANZO_DB_TYPE}",
+                "Host": "${env.ACURANZO_DB_HOST}",
+                "Port": "${env.ACURANZO_DB_PORT}",
+                "Database": "${env.ACURANZO_DB_NAME}",
+                "User": "${env.ACURANZO_DB_USER}",
+                "Pass": "${env.ACURANZO_DB_PASS}",
+                "Bootstrap":"SELECT * FROM app.queries;",
                 "Queues": {
                     "Slow": {
                         "start": 1,
@@ -101,7 +102,8 @@
                 "Name": "Helium",
                 "Engine": "sqlite",
                 "Enabled": true,
-                "Database": "/tmp/hydrogen_helium_test_multi.db",
+                "Database": "tests/artifacts/database/sqlite/hydrotst.sqlite",
+                "Bootstrap": "select * from queries;",
                 "Queues": {
                     "Slow": {
                         "start": 0,

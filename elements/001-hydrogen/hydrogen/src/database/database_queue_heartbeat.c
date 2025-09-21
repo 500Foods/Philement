@@ -11,6 +11,7 @@
 // Local includes
 #include "database_queue.h"
 #include "database.h"
+#include "sqlite/types.h"
 
 
 /*
@@ -159,9 +160,20 @@ static ConnectionConfig* parse_connection_string(const char* conn_string) {
         if (!config->host) goto cleanup;
     }
     if (!config->port) config->port = 5432;
+
+    // Handle database field based on connection string format
     if (!config->database) {
-        config->database = strdup("postgres");
-        if (!config->database) goto cleanup;
+        // Check if this is a SQLite file path (doesn't match PostgreSQL or DB2 formats)
+        if (conn_string && strncmp(conn_string, "postgresql://", 13) != 0 &&
+            !strstr(conn_string, "DATABASE=")) {
+            // This is likely a SQLite file path - use it as the database
+            config->database = strdup(conn_string);
+            if (!config->database) goto cleanup;
+        } else {
+            // Default to postgres for PostgreSQL connections
+            config->database = strdup("postgres");
+            if (!config->database) goto cleanup;
+        }
     }
     if (!config->username) {
         config->username = strdup("");
@@ -292,16 +304,17 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
     }
 
     // Determine database engine type from connection string
-    DatabaseEngine engine_type = DB_ENGINE_POSTGRESQL; // Default to PostgreSQL
+    DatabaseEngine engine_type = DB_ENGINE_SQLITE; // Default to SQLite for unrecognized formats
     if (strncmp(db_queue->connection_string, "postgresql://", 13) == 0) {
         engine_type = DB_ENGINE_POSTGRESQL;
     } else if (strncmp(db_queue->connection_string, "mysql://", 8) == 0) {
         engine_type = DB_ENGINE_MYSQL;
-    } else if (strncmp(db_queue->connection_string, "sqlite:", 7) == 0) {
-        engine_type = DB_ENGINE_SQLITE;
     } else if (strstr(db_queue->connection_string, "DATABASE=") != NULL) {
         // DB2 connection string format contains "DATABASE="
         engine_type = DB_ENGINE_DB2;
+    } else {
+        // If it doesn't match other patterns, assume SQLite
+        engine_type = DB_ENGINE_SQLITE;
     }
 
     // Initialize database engine system if not already done
@@ -691,6 +704,17 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 
             // CRITICAL: Dump connection BEFORE the call to see if it's valid
             // debug_dump_connection("BEFORE", connection_to_use, dqm_label);
+
+            // Add diagnostic logging for SQLite connections
+            if (connection_to_use->engine_type == DB_ENGINE_SQLITE) {
+                // Cast to SQLiteConnection to access db_path
+                const void* sqlite_handle = connection_to_use->connection_handle;
+                if (sqlite_handle) {
+                    // We can't directly access the SQLiteConnection struct from here due to header dependencies
+                    // Instead, log that we're using SQLite and the connection appears valid
+                    log_this(dqm_label, "SQLite bootstrap query: Connection handle is valid", LOG_LEVEL_DEBUG, 0);
+                }
+            }
 
             // Call with minimal parameters to reduce stack corruption risk
             query_success = database_engine_execute(connection_to_use, request, &result);
