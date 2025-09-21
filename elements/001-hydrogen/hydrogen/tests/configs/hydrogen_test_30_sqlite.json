@@ -13,7 +13,8 @@
                 "Name": "Helium",
                 "Engine": "sqlite",
                 "Enabled": true,
-                "Database": "/tmp/hydrogen_helium_test.db",
+                "Database": "tests/artifacts/database/sqlite/hydrotst.sqlite",
+                "Bootstrap": "select * from queries;",
                 "Queues": {
                     "Slow": {
                         "start": 0,

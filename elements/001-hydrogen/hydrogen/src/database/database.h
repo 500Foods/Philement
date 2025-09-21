@@ -15,6 +15,7 @@
 
 // Project includes
 #include "../hydrogen.h"
+#include "database_types.h"
 #include "database_queue.h"
 
 // Subsystem name for logging (defined in globals.h)
@@ -38,16 +39,6 @@ typedef enum {
     DB_CONNECTION_ERROR,
     DB_CONNECTION_SHUTTING_DOWN
 } DatabaseConnectionStatus;
-
-// Database engine types (for Phase 2 expansion)
-typedef enum {
-    DB_ENGINE_POSTGRESQL = 0,
-    DB_ENGINE_SQLITE,
-    DB_ENGINE_MYSQL,
-    DB_ENGINE_DB2,
-    DB_ENGINE_AI,         // For future AI/ML query processing
-    DB_ENGINE_MAX
-} DatabaseEngine;
 
 // Query result status
 typedef enum {
