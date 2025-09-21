@@ -358,10 +358,11 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
         log_this(designator, "This indicates severe memory corruption in the connection structure", LOG_LEVEL_ERROR, 0);
     }
 
-    if (captured_engine_type != DB_ENGINE_POSTGRESQL) {
-        log_this(designator, "WARNING: Unexpected engine type %d (expected %d for PostgreSQL)", LOG_LEVEL_ERROR, 2,
-            (int)captured_engine_type, 
-            DB_ENGINE_POSTGRESQL);
+    // Log engine type for debugging (no longer assume PostgreSQL is expected)
+    if (captured_engine_type != direct_engine_type) {
+        log_this(designator, "DEBUG: Engine type mismatch detected: volatile=%d, direct=%d", LOG_LEVEL_DEBUG, 2,
+            (int)captured_engine_type,
+            (int)direct_engine_type);
     }
     
     // Compare the connection pointer values
@@ -375,8 +376,8 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     }
 
     // Validate expected engine type for this connection
-    if (captured_engine_type != DB_ENGINE_POSTGRESQL) {
-        log_this(designator, "CRITICAL ERROR: Connection engine_type corrupted! Expected PostgreSQL(0), got %d", LOG_LEVEL_ERROR, 1, (int)captured_engine_type);
+    if (captured_engine_type >= DB_ENGINE_MAX || captured_engine_type < 0) {
+        log_this(designator, "CRITICAL ERROR: Connection engine_type corrupted! Invalid value %d (must be 0-%d)", LOG_LEVEL_ERROR, 2, (int)captured_engine_type, DB_ENGINE_MAX-1);
         log_this(designator, "This should have returned false but continuing for debugging", LOG_LEVEL_ERROR, 0);
         // Don't return false yet - let's see what happens
     }

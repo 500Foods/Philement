@@ -139,10 +139,17 @@ bool database_add_database(const char* name, const char* engine, const char* con
     // Create database queue with connection string
     char* conn_str = NULL;
     if (engine_interface && engine_interface->get_connection_string) {
-        // Use the engine's connection string builder
+        // Use the engine's connection string builder with engine-specific defaults
+        int default_port = 5432; // PostgreSQL default
+        if (strcmp(engine, "mysql") == 0) {
+            default_port = 3306;
+        } else if (strcmp(engine, "db2") == 0) {
+            default_port = 50000; // DB2 default port
+        }
+
         ConnectionConfig temp_config = {
             .host = conn_config->host,
-            .port = conn_config->port ? atoi(conn_config->port) : 5432,
+            .port = conn_config->port ? atoi(conn_config->port) : default_port,
             .database = conn_config->database,
             .username = conn_config->user,
             .password = conn_config->pass,

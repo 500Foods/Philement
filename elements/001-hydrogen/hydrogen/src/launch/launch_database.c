@@ -461,9 +461,9 @@ LaunchReadiness check_database_launch_readiness(void) {
                 conn_valid = false;
             }
 
-            // For SQLite, host/port/user/pass are optional
-            bool is_sqlite = (conn->type && strcmp(conn->type, "sqlite") == 0);
-            if (!is_sqlite) {
+            // For SQLite and DB2, host/port are optional (DB2 client can determine them)
+            bool is_sqlite_or_db2 = (conn->type && (strcmp(conn->type, "sqlite") == 0 || strcmp(conn->type, "db2") == 0));
+            if (!is_sqlite_or_db2) {
                 if (!conn->database || !conn->host || !conn->port || !conn->user || !conn->pass) {
                     char* fields_msg = malloc(256);
                     if (fields_msg) {
@@ -473,11 +473,15 @@ LaunchReadiness check_database_launch_readiness(void) {
                     conn_valid = false;
                 }
             } else {
-                // SQLite only requires database (file path)
-                if (!conn->database) {
+                // SQLite and DB2 only require database, user, pass (host/port optional)
+                if (!conn->database || !conn->user || !conn->pass) {
                     char* fields_msg = malloc(256);
                     if (fields_msg) {
-                        snprintf(fields_msg, 256, "  No-Go:   Missing database path for %s", conn->name);
+                        if (strcmp(conn->type, "sqlite") == 0) {
+                            snprintf(fields_msg, 256, "  No-Go:   Missing database path for %s", conn->name);
+                        } else {
+                            snprintf(fields_msg, 256, "  No-Go:   Missing required fields (database, user, pass) for %s", conn->name);
+                        }
                         add_launch_message(&messages, &count, &capacity, fields_msg);
                     }
                     conn_valid = false;
