@@ -8,6 +8,23 @@
 #include "../database_queue.h"
 #include "types.h"
 #include "connection.h"
+#include "utils.h"
+
+// ODBC type definitions for DB2
+typedef signed short SQLSMALLINT;
+typedef long SQLINTEGER;
+typedef unsigned char SQLCHAR;
+typedef short SQLRETURN;
+typedef void* SQLHANDLE;
+typedef void* SQLHWND;
+typedef unsigned short SQLUSMALLINT;
+
+// ODBC constants
+#define SQL_SUCCESS 0
+#define SQL_SUCCESS_WITH_INFO 1
+#define SQL_HANDLE_DBC 2
+#define SQL_HANDLE_ENV 1
+#define SQL_NTS -3
 
 // DB2 function pointers (loaded dynamically)
 SQLAllocHandle_t SQLAllocHandle_ptr = NULL;
@@ -23,6 +40,13 @@ SQLEndTran_t SQLEndTran_ptr = NULL;
 SQLPrepare_t SQLPrepare_ptr = NULL;
 SQLExecute_t SQLExecute_ptr = NULL;
 SQLFreeStmt_t SQLFreeStmt_ptr = NULL;
+SQLDescribeCol_t SQLDescribeCol_ptr = NULL;
+
+// Additional function pointers for error handling
+typedef SQLRETURN (*SQLGetDiagRec_t)(SQLSMALLINT, SQLHANDLE, SQLSMALLINT, SQLCHAR*, SQLINTEGER*, SQLCHAR*, SQLSMALLINT, SQLSMALLINT*);
+typedef SQLRETURN (*SQLDriverConnect_t)(SQLHANDLE, SQLHWND, SQLCHAR*, SQLSMALLINT, SQLCHAR*, SQLSMALLINT, SQLSMALLINT*, SQLUSMALLINT);
+SQLGetDiagRec_t SQLGetDiagRec_ptr = NULL;
+SQLDriverConnect_t SQLDriverConnect_ptr = NULL;
 
 // Library handle
 void* libdb2_handle = NULL;
@@ -61,6 +85,7 @@ bool load_libdb2_functions(void) {
 #pragma GCC diagnostic ignored "-Wpedantic"
     SQLAllocHandle_ptr = (SQLAllocHandle_t)dlsym(libdb2_handle, "SQLAllocHandle");
     SQLConnect_ptr = (SQLConnect_t)dlsym(libdb2_handle, "SQLConnect");
+    SQLDriverConnect_ptr = (SQLDriverConnect_t)dlsym(libdb2_handle, "SQLDriverConnect");
     SQLExecDirect_ptr = (SQLExecDirect_t)dlsym(libdb2_handle, "SQLExecDirect");
     SQLFetch_ptr = (SQLFetch_t)dlsym(libdb2_handle, "SQLFetch");
     SQLGetData_ptr = (SQLGetData_t)dlsym(libdb2_handle, "SQLGetData");
@@ -72,10 +97,12 @@ bool load_libdb2_functions(void) {
     SQLPrepare_ptr = (SQLPrepare_t)dlsym(libdb2_handle, "SQLPrepare");
     SQLExecute_ptr = (SQLExecute_t)dlsym(libdb2_handle, "SQLExecute");
     SQLFreeStmt_ptr = (SQLFreeStmt_t)dlsym(libdb2_handle, "SQLFreeStmt");
+    SQLDescribeCol_ptr = (SQLDescribeCol_t)dlsym(libdb2_handle, "SQLDescribeCol");
+    SQLGetDiagRec_ptr = (SQLGetDiagRec_t)dlsym(libdb2_handle, "SQLGetDiagRec");
 #pragma GCC diagnostic pop
 
     // Check if all required functions were loaded
-    if (!SQLAllocHandle_ptr || !SQLConnect_ptr || !SQLExecDirect_ptr ||
+    if (!SQLAllocHandle_ptr || !SQLConnect_ptr || !SQLDriverConnect_ptr || !SQLExecDirect_ptr ||
         !SQLFetch_ptr || !SQLGetData_ptr || !SQLNumResultCols_ptr ||
         !SQLFreeHandle_ptr || !SQLDisconnect_ptr) {
         log_this(SR_DATABASE, "Failed to load all required libdb2 functions", LOG_LEVEL_ERROR, 0);
@@ -143,42 +170,105 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
 
     // Load libdb2 library if not already loaded
     if (!load_libdb2_functions()) {
-        log_this(SR_DATABASE, "DB2 library not available", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "DB2 connection failed: DB2 library not available", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Allocate environment handle
     void* env_handle = NULL;
     if (SQLAllocHandle_ptr(SQL_HANDLE_ENV, NULL, &env_handle) != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 environment allocation failed", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "DB2 connection failed: Environment handle allocation failed", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Allocate connection handle
     void* conn_handle = NULL;
     if (SQLAllocHandle_ptr(SQL_HANDLE_DBC, env_handle, &conn_handle) != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 connection allocation failed", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "DB2 connection failed: Connection handle allocation failed", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    // Connect to database
-    char dsn[256];
+    // Connect to database using SQLDriverConnect for full connection string support
+    char* conn_string = NULL;
     if (config->connection_string) {
-        strcpy(dsn, config->connection_string);
+        conn_string = strdup(config->connection_string);
+        log_this(SR_DATABASE, "DB2 connecting using provided connection string", LOG_LEVEL_DEBUG, 0);
     } else {
-        // Build DSN from config
-        snprintf(dsn, sizeof(dsn), "%s", config->database ? config->database : "SAMPLE");
+        // Build full connection string from config
+        conn_string = db2_get_connection_string(config);
+        log_this(SR_DATABASE, "DB2 connecting using built connection string", LOG_LEVEL_DEBUG, 0);
     }
 
-    int result = SQLConnect_ptr(
+    if (!conn_string) {
+        log_this(SR_DATABASE, "DB2 connection failed: Unable to get connection string", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    // Mask password in logs for security
+    char safe_conn_str[1024];
+    strcpy(safe_conn_str, conn_string);
+    char* pwd_pos = strstr(safe_conn_str, "PWD=");
+    if (pwd_pos) {
+        const char* end_pos = strchr(pwd_pos, ';');
+        if (end_pos) {
+            memset(pwd_pos + 4, '*', (size_t)(end_pos - (pwd_pos + 4)));
+        } else {
+            memset(pwd_pos + 4, '*', strlen(pwd_pos + 4));
+        }
+    }
+
+    log_this(SR_DATABASE, "DB2 connection attempt: %s", LOG_LEVEL_DEBUG, 1, safe_conn_str);
+
+    // Use SQLDriverConnect for full connection string support
+    char out_conn_string[1024] = {0};
+    SQLSMALLINT out_conn_string_len = 0;
+    SQLUSMALLINT driver_completion = 0; // SQL_DRIVER_NOPROMPT
+
+    int result = SQLDriverConnect_ptr(
         conn_handle,
-        (char*)dsn, SQL_NTS,
-        config->username ? (char*)config->username : NULL, SQL_NTS,
-        config->password ? (char*)config->password : NULL, SQL_NTS
+        NULL,  // No window handle
+        (SQLCHAR*)conn_string, SQL_NTS,
+        (SQLCHAR*)out_conn_string, sizeof(out_conn_string),
+        &out_conn_string_len,
+        driver_completion
     );
 
+    // Clean up connection string
+    free(conn_string);
+
     if (result != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 connection failed", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "DB2 connection failed: SQLDriverConnect returned %d", LOG_LEVEL_ERROR, 1, result);
+        log_this(SR_DATABASE, "DB2 connection details: %s", LOG_LEVEL_ERROR, 1, safe_conn_str);
+
+        // Try to get detailed DB2 error information
+        log_this(SR_DATABASE, "DB2 diagnostic: Connection handle is %p", LOG_LEVEL_DEBUG, 1, (void*)conn_handle);
+        if (conn_handle) {
+            log_this(SR_DATABASE, "DB2 attempting to retrieve diagnostic information", LOG_LEVEL_DEBUG, 0);
+
+            // Check if SQLGetDiagRec is available
+            log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec_ptr is %s", LOG_LEVEL_DEBUG, 1, SQLGetDiagRec_ptr ? "available" : "NULL");
+            if (!SQLGetDiagRec_ptr) {
+                log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec function not available", LOG_LEVEL_ERROR, 0);
+            } else {
+                char sql_state[6] = {0};
+                char error_msg[1024] = {0};
+                SQLINTEGER native_error = 0;
+                SQLSMALLINT msg_len = 0;
+
+                SQLRETURN diag_result = SQLGetDiagRec_ptr(SQL_HANDLE_DBC, conn_handle, 1,
+                                                         (SQLCHAR*)sql_state, &native_error,
+                                                         (SQLCHAR*)error_msg, sizeof(error_msg), &msg_len);
+                if (diag_result == SQL_SUCCESS || diag_result == SQL_SUCCESS_WITH_INFO) {
+                    log_this(SR_DATABASE, "DB2 diagnostic: SQLSTATE='%s', Native Error=%d, Message='%s'",
+                             LOG_LEVEL_ERROR, 3, sql_state, (int)native_error, error_msg);
+                } else {
+                    log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec returned %d (unable to retrieve error details)", LOG_LEVEL_ERROR, 1, (int)diag_result);
+                }
+            }
+        } else {
+            log_this(SR_DATABASE, "DB2 diagnostic: No connection handle available for error retrieval", LOG_LEVEL_ERROR, 0);
+        }
+
         return false;
     }
 
@@ -258,11 +348,33 @@ bool db2_health_check(DatabaseHandle* connection) {
         return false;
     }
 
-    // TODO: Implement DB2 health check query
-    // For now, assume healthy if connection exists
-    connection->last_health_check = time(NULL);
-    connection->consecutive_failures = 0;
-    return true;
+    // Implement basic DB2 health check with a simple query
+    void* stmt_handle = NULL;
+    bool health_check_passed = false;
+
+    // Allocate statement handle for health check
+    if (SQLAllocHandle_ptr(SQL_HANDLE_STMT, db2_conn->connection, &stmt_handle) == SQL_SUCCESS) {
+        // Execute a simple health check query
+        const char* health_query = "SELECT 1 FROM SYSIBM.SYSDUMMY1";
+        int exec_result = SQLExecDirect_ptr(stmt_handle, (char*)health_query, SQL_NTS);
+
+        if (exec_result == SQL_SUCCESS || exec_result == SQL_SUCCESS_WITH_INFO) {
+            health_check_passed = true;
+        }
+
+        // Clean up statement handle
+        SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+    }
+
+    if (health_check_passed) {
+        connection->last_health_check = time(NULL);
+        connection->consecutive_failures = 0;
+        return true;
+    } else {
+        connection->consecutive_failures++;
+        log_this(SR_DATABASE, "DB2 health check failed", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
 }
 
 bool db2_reset_connection(DatabaseHandle* connection) {

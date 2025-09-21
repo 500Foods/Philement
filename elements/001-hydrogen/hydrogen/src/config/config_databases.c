@@ -153,8 +153,15 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 }
 
                 json_t* port_obj = json_object_get(conn_obj, "Port");
-                if (port_obj && json_is_string(port_obj)) {
-                    conn->port = strdup(json_string_value(port_obj));
+                if (port_obj) {
+                    if (json_is_string(port_obj)) {
+                        conn->port = strdup(json_string_value(port_obj));
+                    } else if (json_is_integer(port_obj)) {
+                        // Convert integer to string
+                        char port_str[16];
+                        snprintf(port_str, sizeof(port_str), "%lld", (long long)json_integer_value(port_obj));
+                        conn->port = strdup(port_str);
+                    }
                 }
 
                 json_t* user_obj = json_object_get(conn_obj, "User");

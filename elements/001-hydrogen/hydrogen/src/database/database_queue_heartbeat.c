@@ -89,6 +89,69 @@ static ConnectionConfig* parse_connection_string(const char* conn_string) {
             }
         }
     }
+    // Parse DB2 ODBC connection string format: DRIVER={...};DATABASE=...;HOSTNAME=...;PORT=...;PROTOCOL=...;UID=...;PWD=...
+    else if (strstr(conn_string, "DRIVER=") != NULL && strstr(conn_string, "DATABASE=") != NULL) {
+        // Parse key=value pairs separated by semicolons
+        char* conn_str_copy = strdup(conn_string);
+        if (!conn_str_copy) goto cleanup;
+
+        char* token = strtok(conn_str_copy, ";");
+        while (token != NULL) {
+            // Skip whitespace
+            while (*token == ' ') token++;
+
+            // Find the = separator
+            char* equals_pos = strchr(token, '=');
+            if (equals_pos) {
+                *equals_pos = '\0';
+                const char* key = token;
+                const char* value = equals_pos + 1;
+
+                // Remove quotes around values if present
+                if (*value == '{' && value[strlen(value) - 1] == '}') {
+                    // Handle {value} format for DRIVER
+                    value++;
+                    char* end_quote = strrchr((char*)value, '}');
+                    if (end_quote) *end_quote = '\0';
+                } else if (*value == '"' && value[strlen(value) - 1] == '"') {
+                    // Handle "value" format
+                    value++;
+                    char* end_quote = strrchr((char*)value, '"');
+                    if (end_quote) *end_quote = '\0';
+                }
+
+                if (strcmp(key, "DATABASE") == 0) {
+                    config->database = strdup(value);
+                    if (!config->database) {
+                        free(conn_str_copy);
+                        goto cleanup;
+                    }
+                } else if (strcmp(key, "HOSTNAME") == 0) {
+                    config->host = strdup(value);
+                    if (!config->host) {
+                        free(conn_str_copy);
+                        goto cleanup;
+                    }
+                } else if (strcmp(key, "PORT") == 0) {
+                    config->port = atoi(value);
+                } else if (strcmp(key, "UID") == 0) {
+                    config->username = strdup(value);
+                    if (!config->username) {
+                        free(conn_str_copy);
+                        goto cleanup;
+                    }
+                } else if (strcmp(key, "PWD") == 0) {
+                    config->password = strdup(value);
+                    if (!config->password) {
+                        free(conn_str_copy);
+                        goto cleanup;
+                    }
+                }
+            }
+            token = strtok(NULL, ";");
+        }
+        free(conn_str_copy);
+    }
 
     // Set defaults if not specified - with proper error handling
     if (!config->host) {
@@ -160,7 +223,45 @@ void database_queue_start_heartbeat(DatabaseQueue* db_queue) {
     // Perform immediate connection check and log result
     bool is_connected = database_queue_check_connection(db_queue);
 
-    log_this(dqm_label, "Connection attempt: %s", LOG_LEVEL_STATE, 1, is_connected ? "SUCCESS" : "FAILED");
+    if (is_connected) {
+        log_this(dqm_label, "Connection attempt: SUCCESS", LOG_LEVEL_STATE, 0);
+    } else {
+        log_this(dqm_label, "Connection attempt: FAILED", LOG_LEVEL_ERROR, 0);
+
+        // Determine engine type from connection string for better error reporting
+        const char* engine_name = "unknown";
+        if (db_queue->connection_string) {
+            if (strncmp(db_queue->connection_string, "postgresql://", 13) == 0) {
+                engine_name = "PostgreSQL";
+            } else if (strncmp(db_queue->connection_string, "mysql://", 8) == 0) {
+                engine_name = "MySQL";
+            } else if (strncmp(db_queue->connection_string, "sqlite:", 7) == 0) {
+                engine_name = "SQLite";
+            } else {
+                // For DB2 and other engines, the connection string is just the database name
+                engine_name = "DB2";
+            }
+        }
+
+        // Log connection details without password for security
+        char* safe_conn_str = strdup(db_queue->connection_string);
+        if (safe_conn_str) {
+            char* pwd_pos = strstr(safe_conn_str, "PWD=");
+            if (pwd_pos) {
+                // Mask the password value
+                const char* end_pos = strchr(pwd_pos, ';');
+                if (end_pos) {
+                    memset(pwd_pos + 4, '*', (size_t)(end_pos - (pwd_pos + 4)));
+                } else {
+                    // Password at end of string
+                    memset(pwd_pos + 4, '*', strlen(pwd_pos + 4));
+                }
+            }
+            log_this(dqm_label, "Connection details: string='%s', engine='%s'",
+                     LOG_LEVEL_ERROR, 2, safe_conn_str, engine_name);
+            free(safe_conn_str);
+        }
+    }
 
     free(dqm_label);
 }
@@ -198,6 +299,9 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
         engine_type = DB_ENGINE_MYSQL;
     } else if (strncmp(db_queue->connection_string, "sqlite:", 7) == 0) {
         engine_type = DB_ENGINE_SQLITE;
+    } else if (strstr(db_queue->connection_string, "DATABASE=") != NULL) {
+        // DB2 connection string format contains "DATABASE="
+        engine_type = DB_ENGINE_DB2;
     }
 
     // Initialize database engine system if not already done
@@ -222,10 +326,36 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
     // Attempt real database connection with DQM designator
     DatabaseHandle* db_handle = NULL;
     char* dqm_designator = database_queue_generate_label(db_queue);
+
+    char* dqm_label_conn = database_queue_generate_label(db_queue);
+    // Log connection attempt without password for security
+    if (config->connection_string) {
+        // For connection strings, mask password if present
+        char* safe_conn_str = strdup(config->connection_string);
+        if (safe_conn_str) {
+            char* pwd_pos = strstr(safe_conn_str, "PWD=");
+            if (pwd_pos) {
+                // Mask the password value
+                const char* end_pos = strchr(pwd_pos, ';');
+                if (end_pos) {
+                    memset(pwd_pos + 4, '*', (size_t)(end_pos - (pwd_pos + 4)));
+                } else {
+                    // Password at end of string
+                    memset(pwd_pos + 4, '*', strlen(pwd_pos + 4));
+                }
+            }
+            log_this(dqm_label_conn, "Attempting database connection to: %s", LOG_LEVEL_DEBUG, 1, safe_conn_str);
+            free(safe_conn_str);
+        }
+    } else {
+        log_this(dqm_label_conn, "Attempting database connection to: %s", LOG_LEVEL_DEBUG, 1, config->database);
+    }
+
     bool connection_success = database_engine_connect_with_designator(engine_type, config, &db_handle, dqm_designator);
     free(dqm_designator);
 
     if (connection_success && db_handle) {
+        log_this(dqm_label_conn, "Database connection established successfully", LOG_LEVEL_DEBUG, 0);
         // Connection successful - store the persistent connection
         MutexResult result = MUTEX_LOCK(&db_queue->connection_lock, SR_DATABASE);
         if (result == MUTEX_SUCCESS) {
@@ -301,7 +431,10 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
     } else {
         // Connection failed
         db_queue->is_connected = false;
+        log_this(dqm_label_conn, "Database connection failed - no handle returned", LOG_LEVEL_ERROR, 0);
     }
+
+    free(dqm_label_conn);
 
     db_queue->last_connection_attempt = time(NULL);
 
@@ -503,10 +636,10 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             // CRITICAL: Validate connection integrity before use
             DatabaseEngine original_engine_type = db_queue->persistent_connection->engine_type;
             // log_this(dqm_label, "Connection engine_type: %d", LOG_LEVEL_DEBUG, 1, (int)original_engine_type);
-            
-            // Add memory corruption detection
-            if (original_engine_type != DB_ENGINE_POSTGRESQL) {
-                log_this(dqm_label, "CRITICAL ERROR: Connection engine_type corrupted! Expected 0 (PostgreSQL), got %d", LOG_LEVEL_ERROR, 1, (int)original_engine_type);
+
+            // Add memory corruption detection - check for valid engine types
+            if (original_engine_type >= DB_ENGINE_MAX || original_engine_type < 0) {
+                log_this(dqm_label, "CRITICAL ERROR: Connection engine_type corrupted! Invalid value %d (must be 0-%d)", LOG_LEVEL_ERROR, 2, (int)original_engine_type, DB_ENGINE_MAX-1);
                 log_this(dqm_label, "Aborting bootstrap query to prevent hang", LOG_LEVEL_ERROR, 0);
                 mutex_unlock(&db_queue->connection_lock);
                 goto cleanup;
@@ -548,8 +681,8 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 
             // log_this(dqm_label, "Stack validation: checking engine type", LOG_LEVEL_ERROR, 0);
 
-            if (connection_to_use->engine_type != DB_ENGINE_POSTGRESQL) {
-                log_this(dqm_label, "CRITICAL ERROR: Connection engine_type corrupted - aborting", LOG_LEVEL_ERROR, 0);
+            if (connection_to_use->engine_type >= DB_ENGINE_MAX || connection_to_use->engine_type < 0) {
+                log_this(dqm_label, "CRITICAL ERROR: Connection engine_type corrupted (invalid value %d) - aborting", LOG_LEVEL_ERROR, 1, (int)connection_to_use->engine_type);
                 mutex_unlock(&db_queue->connection_lock);
                 goto cleanup;
             }

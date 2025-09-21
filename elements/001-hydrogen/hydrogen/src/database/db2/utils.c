@@ -18,10 +18,10 @@ char* db2_get_connection_string(const ConnectionConfig* config) {
     if (config->connection_string) {
         strcpy(conn_str, config->connection_string);
     } else {
-        // DB2 connection string format
-        // Format: DATABASE=database;HOSTNAME=host;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;
+        // DB2 ODBC connection string format with DRIVER specification
+        // Format: DRIVER={IBM DB2 ODBC DRIVER};DATABASE=database;HOSTNAME=host;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;
         snprintf(conn_str, 1024,
-                 "DATABASE=%s;HOSTNAME=%s;PORT=%d;PROTOCOL=TCPIP;UID=%s;PWD=%s;",
+                 "DRIVER={IBM DB2 ODBC DRIVER};DATABASE=%s;HOSTNAME=%s;PORT=%d;PROTOCOL=TCPIP;UID=%s;PWD=%s;",
                  config->database ? config->database : "",
                  config->host ? config->host : "localhost",
                  config->port > 0 ? config->port : 50000,  // Default DB2 port

@@ -23,6 +23,7 @@ typedef int (*SQLEndTran_t)(int, void*, int);
 typedef int (*SQLPrepare_t)(void*, char*, int);
 typedef int (*SQLExecute_t)(void*);
 typedef int (*SQLFreeStmt_t)(void*, int);
+typedef int (*SQLDescribeCol_t)(void*, int, unsigned char*, int, short*, int*, int*, short*, short*);
 
 // DB2 function pointers (loaded dynamically)
 extern SQLAllocHandle_t SQLAllocHandle_ptr;
@@ -38,6 +39,7 @@ extern SQLEndTran_t SQLEndTran_ptr;
 extern SQLPrepare_t SQLPrepare_ptr;
 extern SQLExecute_t SQLExecute_ptr;
 extern SQLFreeStmt_t SQLFreeStmt_ptr;
+extern SQLDescribeCol_t SQLDescribeCol_ptr;
 
 // Library handle
 extern void* libdb2_handle;
@@ -48,10 +50,13 @@ extern pthread_mutex_t libdb2_mutex;
 #define SQL_HANDLE_DBC 2
 #define SQL_HANDLE_STMT 3
 #define SQL_SUCCESS 0
+#define SQL_SUCCESS_WITH_INFO 1
 #define SQL_COMMIT 0
 #define SQL_ROLLBACK 1
 #define SQL_CLOSE 0
 #define SQL_NTS -3
+#define SQL_NULL_DATA -1
+#define SQL_C_CHAR 1
 
 // Prepared statement cache structure
 typedef struct PreparedStatementCache {
