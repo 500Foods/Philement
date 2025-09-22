@@ -30,7 +30,7 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Databases {BLUE}(postgres, sqlite, mysql, db2){RESET}"
+TEST_NAME="Databases {BLUE}(pg, sqlite, mysql, db2){RESET}"
 TEST_ABBR="DBS"
 TEST_NUMBER="30"
 TEST_COUNTER=0
