@@ -19,17 +19,29 @@
 #define free mock_free
 #define strdup mock_strdup
 #define gethostname mock_gethostname
+#define nanosleep mock_nanosleep
+#define clock_gettime mock_clock_gettime
+#define poll mock_poll
+#define recvfrom mock_recvfrom
 
 // Always declare mock function prototypes for the .c file
 void *mock_malloc(size_t size);
 void mock_free(void *ptr);
 char *mock_strdup(const char *s);
 int mock_gethostname(char *name, size_t len);
+int mock_nanosleep(const struct timespec *req, struct timespec *rem);
+int mock_clock_gettime(clockid_t clk_id, struct timespec *tp);
+int mock_poll(struct pollfd *fds, nfds_t nfds, int timeout);
+ssize_t mock_recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
 
 // Mock control functions for tests
 void mock_system_set_malloc_failure(int should_fail);
 void mock_system_set_gethostname_failure(int should_fail);
 void mock_system_set_gethostname_result(const char *result);
+void mock_system_set_nanosleep_failure(int should_fail);
+void mock_system_set_clock_gettime_failure(int should_fail);
+void mock_system_set_poll_failure(int should_fail);
+void mock_system_set_recvfrom_failure(int should_fail);
 void mock_system_reset_all(void);
 
 #endif // USE_MOCK_SYSTEM

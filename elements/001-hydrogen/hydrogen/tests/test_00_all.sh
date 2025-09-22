@@ -54,7 +54,6 @@ commands=(
     "${GIT}" "${MD5SUM}" "${CLOC}"
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "xmlstarlet" "jsonlint" "swagger-cli"
     "${OH}" "${TABLES}" 
-    "coverage_table.sh" "github-sitemap.sh"
     "db2level" "mysql_config" "pg_config" "sqlite3"
     "lua" "sqruff"
 )
