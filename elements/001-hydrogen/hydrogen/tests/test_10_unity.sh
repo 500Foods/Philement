@@ -297,7 +297,7 @@ run_unity_tests() {
             batch_tests+=("${sorted_tests[${j}]}")
         done
         
-        ((batch_num++))
+        batch_num=$(( batch_num + 1 ))
         local batch_count=${#batch_tests[@]}
         
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting batch ${batch_num}: ${batch_count} tests"

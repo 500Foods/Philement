@@ -116,6 +116,7 @@ tests/          Test framework
 - ALWAYS use `jq` for JSON parsing, filtering, and validation
 - NEVER use `grep` or text manipulation tools for JSON data
 - Try to reduce external calls wherever possible to increase performance
+- Do NOT use a statement like ((x++)) instead use x=$(( x + 1 ))
   
 ## LINTING GUIDANCE
 

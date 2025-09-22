@@ -158,7 +158,7 @@ parse_sitemap_output "${MARKDOWN_CHECK}" ISSUES_FOUND MISSING_LINKS_COUNT ORPHAN
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Missing links found: ${MISSING_LINKS_COUNT}"
 if [[ "${MISSING_LINKS_COUNT}" -eq 0 ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No missing links found"
-    ((PASS_COUNT++))
+    # ((PASS_COUNT++))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found ${MISSING_LINKS_COUNT} missing links"
     EXIT_CODE=1
@@ -170,7 +170,7 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Orphaned files found: ${ORPHAN
 
 if [[ "${ORPHANED_FILES_COUNT}" -eq 0 ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No orphaned markdown files found"
-    ((PASS_COUNT++))
+    # ((PASS_COUNT++))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found ${ORPHANED_FILES_COUNT} orphaned markdown files"
     EXIT_CODE=1
