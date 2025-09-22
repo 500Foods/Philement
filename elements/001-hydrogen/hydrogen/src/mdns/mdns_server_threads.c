@@ -16,6 +16,11 @@
 #include "mdns_server.h"
 #include "mdns_dns_utils.h"
 
+// Include mock headers for Unity testing
+#ifdef USE_MOCK_THREADS
+#include "../../tests/unity/mocks/mock_threads.h"
+#endif
+
 extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t mdns_server_system_shutdown;
 extern pthread_cond_t terminate_cond;
@@ -24,7 +29,22 @@ extern pthread_mutex_t terminate_mutex;
 void mdns_server_send_announcement(mdns_server_t *mdns_server_instance, const network_info_t *net_info_instance);
 
 void *mdns_server_announce_loop(void *arg) {
+    // Handle NULL argument gracefully
+    // cppcheck-suppress knownConditionTrueFalse
+    if (!arg) {
+        log_this(SR_MDNS_SERVER, "mDNS Server announce loop called with NULL argument", LOG_LEVEL_DEBUG, 0);
+        return NULL;
+    }
+
     mdns_server_thread_arg_t *thread_arg = (mdns_server_thread_arg_t *)arg;
+
+    // Handle NULL thread_arg or mdns_server gracefully
+    // cppcheck-suppress knownConditionTrueFalse
+    if (!thread_arg || !thread_arg->mdns_server) {
+        log_this(SR_MDNS_SERVER, "mDNS Server announce loop called with NULL thread_arg or mdns_server", LOG_LEVEL_DEBUG, 0);
+        return NULL;
+    }
+
     mdns_server_t *mdns_server_instance = thread_arg->mdns_server;
     add_service_thread(&mdns_server_threads, pthread_self());
 
@@ -57,12 +77,27 @@ void *mdns_server_announce_loop(void *arg) {
 
     log_this(SR_MDNS_SERVER, "Shutdown: mDNS Server announce loop exiting", LOG_LEVEL_STATE, 0);
     remove_service_thread(&mdns_server_threads, pthread_self());
-    free(thread_arg);
+    // Note: thread_arg is not freed here as it may be stack-allocated by the caller
     return NULL;
 }
 
 void *mdns_server_responder_loop(void *arg) {
+    // Handle NULL argument gracefully
+    // cppcheck-suppress knownConditionTrueFalse
+    if (!arg) {
+        log_this(SR_MDNS_SERVER, "mDNS Server responder loop called with NULL argument", LOG_LEVEL_DEBUG, 0);
+        return NULL;
+    }
+
     mdns_server_thread_arg_t *thread_arg = (mdns_server_thread_arg_t *)arg;
+
+    // Handle NULL thread_arg or mdns_server gracefully
+    // cppcheck-suppress knownConditionTrueFalse
+    if (!thread_arg || !thread_arg->mdns_server) {
+        log_this(SR_MDNS_SERVER, "mDNS Server responder loop called with NULL thread_arg or mdns_server", LOG_LEVEL_DEBUG, 0);
+        return NULL;
+    }
+
     mdns_server_t *mdns_server_instance = thread_arg->mdns_server;
     uint8_t buffer[MDNS_MAX_PACKET_SIZE];
     char name[256];
@@ -76,11 +111,20 @@ void *mdns_server_responder_loop(void *arg) {
     if (!fds) {
         log_this(SR_MDNS_SERVER, "Out of memory for poll fds", LOG_LEVEL_DEBUG, 0);
         remove_service_thread(&mdns_server_threads, pthread_self());
-        free(thread_arg);
+        // Note: thread_arg is not freed here as it may be stack-allocated by the caller
         return NULL;
     }
 
     nfds_t nfds = 0;  // Use nfds_t type to avoid sign conversion
+
+    // Check if interfaces array is properly initialized
+    if (!mdns_server_instance->interfaces) {
+        log_this(SR_MDNS_SERVER, "mDNS Server interfaces array is NULL", LOG_LEVEL_DEBUG, 0);
+        free(fds);
+        remove_service_thread(&mdns_server_threads, pthread_self());
+        return NULL;
+    }
+
     for (size_t i = 0; i < mdns_server_instance->num_interfaces; i++) {
         const mdns_server_interface_t *iface = &mdns_server_instance->interfaces[i];
         if (iface->sockfd_v4 >= 0) {
@@ -99,7 +143,7 @@ void *mdns_server_responder_loop(void *arg) {
         log_this(SR_MDNS_SERVER, "No sockets to monitor", LOG_LEVEL_DEBUG, 0);
         free(fds);
         remove_service_thread(&mdns_server_threads, pthread_self());
-        free(thread_arg);
+        // Note: thread_arg is not freed here as it may be stack-allocated by the caller
         return NULL;
     }
 
@@ -167,6 +211,6 @@ void *mdns_server_responder_loop(void *arg) {
 
     log_this(SR_MDNS_SERVER, "Shutdown: mDNS Server responder loop exiting", LOG_LEVEL_STATE, 0);
     remove_service_thread(&mdns_server_threads, pthread_self());
-    free(thread_arg);
+    // Note: thread_arg is not freed here as it may be stack-allocated by the caller
     return NULL;
 }

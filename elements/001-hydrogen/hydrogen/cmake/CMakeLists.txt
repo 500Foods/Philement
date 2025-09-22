@@ -36,6 +36,7 @@
 # cmake --build . --target ccache_stats      : Show ccache statistics and performance metrics
 
 # CHANGELOG
+# 2025-09-21: Added mock libraries to unity build profile, including mock_system, mock_threads, and mock_network, joining mock_info, mock_launch, mock_landing, mock_libmicrohttpd, mock_libwebsockets and mock_status
 # 2025-09-18: Added hydrogen_unity static library with precompiled headers for src/hydrogen.h to improve Unity test build performance and ccache effectiveness. Unity tests now link to static library instead of individual object files. Added ccache optimization targets (configure_ccache, ccache_stats) with optimal settings for coverage builds.
 # 2025-08-17: Added additional compiler flags for better warnings and error checking when building with clang on macOS.
 # 2025-07-01: Added targets for building OIDC client example programs (auth_code_flow, client_credentials, password_flow) with regular and debug builds. Updated help and clean targets to include examples.
@@ -273,13 +274,13 @@ endif()
 
 # Base libraries
 set(HYDROGEN_BASE_LIBS
-    ${JANSSON_LIBRARIES}
-    Threads::Threads
-    ${MICROHTTPD_LIBRARIES}
     m
+    Threads::Threads
     OpenSSL::SSL
     OpenSSL::Crypto
     ${WEBSOCKETS_LIBRARIES}
+    ${MICROHTTPD_LIBRARIES}
+    ${JANSSON_LIBRARIES}
     ${BROTLI_LIBRARIES}
     ${UUID_LIBRARIES}
     ${LUA_LIBRARIES}
@@ -817,6 +818,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_landing.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_network.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_threads.c
 )
 
 # Create Unity test object files in build/unity/src directory structure (same as original)
@@ -879,15 +881,19 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     endif()
     
-    # Check if this is a websocket source file to include mock headers
+    # Check if this is a websocket, terminal, or mdns source file to include mock headers
     string(FIND "${SOURCE_FILE}" "websocket" IS_WEBSOCKET_SOURCE)
     string(FIND "${SOURCE_FILE}" "terminal" IS_TERMINAL_SOURCE)
+    string(FIND "${SOURCE_FILE}" "mdns" IS_MDNS_SOURCE)
     if(IS_WEBSOCKET_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS")
     elseif(IS_TERMINAL_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LIBMICROHTTPD")
+    elseif(IS_MDNS_SOURCE GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_THREADS")
     else()
         set(MOCK_INCLUDES "")
         set(MOCK_DEFINES "")
@@ -1015,7 +1021,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(MOCK_DEFINES "-DUSE_MOCK_LIBMICROHTTPD")
     elseif(IS_MDNS_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
-        set(MOCK_DEFINES "-DUSE_MOCK_NETWORK -DUSE_MOCK_SYSTEM")
+        set(MOCK_DEFINES "-DUSE_MOCK_NETWORK -DUSE_MOCK_SYSTEM -DUSE_MOCK_THREADS")
     else()
         set(MOCK_INCLUDES "")
         set(MOCK_DEFINES "")
