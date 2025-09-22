@@ -842,7 +842,8 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                          LOG_LEVEL_STATE, 4, execution_time, result->row_count, result->column_count, result->affected_rows);
 
                 // Log completion message for test synchronization
-                log_this(dqm_label, "Lead DQM initialization is complete", LOG_LEVEL_STATE, 0);
+                log_this(dqm_label, "Lead DQM initialization is complete for %s", LOG_LEVEL_STATE, 1, db_queue->database_name
+                );
 
                 // Log detailed result information
                 if (result->row_count > 0 && result->column_count > 0 && result->data_json) {

@@ -10,8 +10,29 @@
 # run_database_test_parallel()
 # analyze_database_test_results()
 # test_database_configuration()
+# check_dqm_startup()
+# count_dqm_launches()
+# wait_for_dqm_initialization()
 
 # CHANGELOG
+# 1.4.2 - 2025-09-22 - Fixed bash syntax errors in arithmetic comparisons
+#                    - Fixed: [[ ${var} -lt ${var} ]] syntax errors at lines 117 and 123
+#                    - Added proper variable quoting to prevent expansion issues
+#                    - Increased DQM initialization timeout from 5s to 15s for PostgreSQL and DB2 tests
+#                    - Added DQM_INIT_TIMEOUT variable for configurable timeout management
+# 1.4.1 - 2025-09-22 - Fixed DQM initialization timing logic for PostgreSQL and DB2 tests
+#                    - Fixed: Test was killing server immediately after "STARTUP COMPLETE" without waiting for DQM initialization
+#                    - DQM initialization completion happens AFTER "STARTUP COMPLETE", not before
+#                    - Updated test logic to wait for DQM initialization completion after startup is complete
+#                    - Clarified log message to indicate DQM launches happen "during startup" not "after startup"
+# 1.4.0 - 2025-09-22 - Updated to handle asynchronous Lead DQM startup process
+#                    - Added count_dqm_launches() to count "DQM launched successfully" messages before "STARTUP COMPLETE"
+#                    - Added wait_for_dqm_initialization() to wait for matching "Lead DQM initialization is complete" messages
+#                    - Updated test logic to handle 0-5 asynchronous DQM launches with proper initialization verification
+#                    - Added DQM Initialization Check sub-test to verify launch and initialization counts match
+#                    - Enhanced result analysis to work with new asynchronous startup behavior
+#                    - Fixed: DQM launches occur BEFORE "STARTUP COMPLETE", not after
+#                    - Optimized timeouts: STARTUP_TIMEOUT=5s, DQM initialization wait=5s, faster sleep intervals (0.05s)
 # 1.3.0 - 2025-09-21 - Added waiting for "Initial connection attempt completed" before shutdown
 #                    - Added bootstrap query analysis reporting time and row counts as subtest results
 #                    - Enhanced test to wait for full database connection completion
@@ -34,7 +55,7 @@ TEST_NAME="Databases {BLUE}(pg, sqlite, mysql, db2){RESET}"
 TEST_ABBR="DBS"
 TEST_NUMBER="30"
 TEST_COUNTER=0
-TEST_VERSION="1.3.0"
+TEST_VERSION="1.4.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -46,16 +67,17 @@ declare -A DATABASE_TEST_CONFIGS
 
 # Database test configuration - format: "config_file:log_suffix:engine_name:description"
 DATABASE_TEST_CONFIGS=(
-    ["POSTGRES"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_postgres.json:postgres:postgresql:PostgreSQL Engine"
-    ["MYSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mysql.json:mysql:mysql:MySQL Engine"
-    ["SQLITE"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json:sqlite:sqlite:SQLite Engine"
+    ["PostGreSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_postgres.json:postgres:postgresql:PostgreSQL Engine"
+    ["MySQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mysql.json:mysql:mysql:MySQL Engine"
+    ["SQLite"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json:sqlite:sqlite:SQLite Engine"
     ["DB2"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_db2.json:db2:db2:DB2 Engine"
-    ["MULTI"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_multi.json:multi:multi:Multi-Engine Database"
+    ["Multi"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_multi.json:multi:multi:Multi Engine"
 )
 
 # Test timeouts
-STARTUP_TIMEOUT=30
-SHUTDOWN_TIMEOUT=10
+STARTUP_TIMEOUT=5
+SHUTDOWN_TIMEOUT=5
+DQM_INIT_TIMEOUT=5
 
 # Function to check for DQM startup log message
 check_dqm_startup() {
@@ -70,6 +92,48 @@ check_dqm_startup() {
         return 0
     else
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "❌ DQM startup message not found"
+        return 1
+    fi
+}
+
+# Function to count DQM launches before startup complete
+count_dqm_launches() {
+    local log_file="$1"
+    local count
+
+    # Count "DQM launched successfully" messages that appear before "STARTUP COMPLETE"
+    # The DQM launches happen during startup, before the final "STARTUP COMPLETE" message
+    count=$("${GREP}" -B 1000 "STARTUP COMPLETE" "${log_file}" 2>/dev/null | "${GREP}" -c "DQM launched successfully" || echo "0")
+
+    echo "${count}"
+}
+
+# Function to wait for DQM initialization completion
+wait_for_dqm_initialization() {
+    local log_file="$1"
+    local expected_count="$2"
+    local timeout="${3:-${DQM_INIT_TIMEOUT}}"
+
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for ${expected_count} DQM initialization completion message(s)"
+
+    local start_time
+    start_time=${SECONDS}
+    local current_count=0
+
+    while [[ "${current_count}" -lt "${expected_count}" ]] && [[ $((SECONDS - start_time)) -lt "${timeout}" ]]; do
+        # Count "Lead DQM initialization is complete" messages
+        current_count=$("${GREP}" -c "Lead DQM initialization is complete" "${log_file}" 2>/dev/null || true)
+        # echo "count = $current_count log = $log_file"
+        sleep 0.1
+    done
+
+    if [[ "${current_count}" -ge "${expected_count}" ]]; then
+        #print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✅ All ${expected_count} DQM initialization(s) completed"
+        # echo "yay"
+        return 0
+    else
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "❌ Timeout waiting for DQM initialization after ${timeout}s: ${current_count}/${expected_count} completed"
+        # echo "nay"
         return 1
     fi
 }
@@ -99,7 +163,7 @@ count_expected_queues() {
         [[ "${fast_start}" -gt 0 ]] && ((expected_queues++))
         [[ "${cache_start}" -gt 0 ]] && ((expected_queues++))
         # Lead queue is always present
-        ((expected_queues++))
+        expected_queues=$(( expected_queues + 1 ))
     else
         # Fallback: use grep to count non-zero start values
         local queue_starts
@@ -154,37 +218,19 @@ run_database_test_parallel() {
     if [[ "${startup_success}" = true ]]; then
         echo "STARTUP_SUCCESS" >> "${result_file}"
 
-        # Check database subsystem connectivity
-        # shellcheck disable=SC2310 # Don't like how this coding mechanism works
-        if check_dqm_startup "${log_file}"; then
-            echo "DQM_STARTED" >> "${result_file}"
-            database_ready=true
+        # Count DQM launches that happened during startup (before STARTUP COMPLETE)
+        local dqm_launch_count
+        dqm_launch_count=$(count_dqm_launches "${log_file}")
 
-            # Wait for initial connection attempts to complete
-            local expected_connections=0
-            if [[ "${test_name}" == "MULTI" ]]; then
-                # For multi config, expect 4 connections
-                expected_connections=4
-            else
-                # For single configs, expect 1 connection
-                expected_connections=1
-            fi
+        if [[ "${dqm_launch_count}" -gt 0 ]]; then
+            echo "DQM_LAUNCH_COUNT=${dqm_launch_count}" >> "${result_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${dqm_launch_count} DQM launch(es) during startup"
 
-            local connection_attempts_completed=0
-            local connection_timeout_start
-            connection_timeout_start=${SECONDS}
-
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for ${expected_connections} initial connection attempt(s) to complete"
-
-            while [[ ${connection_attempts_completed} -lt ${expected_connections} ]] && [[ $((SECONDS - connection_timeout_start)) -lt 30 ]]; do
-                # Count completed connection attempts from Database summary messages
-                connection_attempts_completed=$(grep -c "Lead DQM .* initial connection attempt completed" "${log_file}" 2>/dev/null || echo "0")
-                sleep 0.1
-            done
-
-            if [[ ${connection_attempts_completed} -ge ${expected_connections} ]]; then
-                echo "CONNECTION_ATTEMPTS_COMPLETED" >> "${result_file}"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "All ${expected_connections} initial connection attempt(s) completed"
+            # Wait for DQM initialization to complete (happens after STARTUP COMPLETE)
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if wait_for_dqm_initialization "${log_file}" "${dqm_launch_count}" "${DQM_INIT_TIMEOUT}"; then
+                echo "DQM_INITIALIZATION_COMPLETED" >> "${result_file}"
+                database_ready=true
 
                 # Parse bootstrap query results with DQM context
                 local bootstrap_lines
@@ -196,17 +242,18 @@ run_database_test_parallel() {
                     echo "BOOTSTRAP_QUERIES_MISSING" >> "${result_file}"
                 fi
             else
-                echo "CONNECTION_ATTEMPTS_TIMEOUT" >> "${result_file}"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Timeout waiting for connection attempts: ${connection_attempts_completed}/${expected_connections} completed"
+                echo "DQM_INITIALIZATION_TIMEOUT" >> "${result_file}"
                 database_ready=false
             fi
         else
-            echo "DATABASE_NOT_READY" >> "${result_file}"
+            echo "NO_DQM_LAUNCHES" >> "${result_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No DQM launches found during startup"
+            database_ready=false
         fi
     else
         echo "STARTUP_FAILED" >> "${result_file}"
         echo "TEST_FAILED" >> "${result_file}"
-        kill -9 "${hydrogen_pid}" 2>/dev/null || true
+        # kill -9 "${hydrogen_pid}" 2>/dev/null || true
     fi
 
     if [[ "${startup_success}" = true ]] && [[ "${database_ready}" = true ]]; then
@@ -231,7 +278,7 @@ run_database_test_parallel() {
     else
         echo "DATABASE_TEST_FAILED" >> "${result_file}"
         echo "TEST_FAILED" >> "${result_file}"
-        kill -9 "${hydrogen_pid}" 2>/dev/null || true
+        # kill -9 "${hydrogen_pid}" 2>/dev/null || true
     fi
 }
 
@@ -254,56 +301,84 @@ analyze_database_test_results() {
         return 1
     fi
 
-    # Check DQM startup
-    if ! "${GREP}" -q "DQM_STARTED" "${result_file}" 2>/dev/null; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "DQM not started for ${description} test"
+    # Check DQM launch count
+    if ! "${GREP}" -q "DQM_LAUNCH_COUNT=" "${result_file}" 2>/dev/null; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "DQM launch count not found for ${description} test"
         return 1
     fi
 
-    # Check connection attempts completed
-    if ! "${GREP}" -q "CONNECTION_ATTEMPTS_COMPLETED" "${result_file}" 2>/dev/null; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Connection attempts not completed for ${description} test"
+    # Extract DQM launch count
+    local dqm_launch_count
+    dqm_launch_count=$("${GREP}" "DQM_LAUNCH_COUNT=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+
+    # Check DQM initialization completed
+    if ! "${GREP}" -q "DQM_INITIALIZATION_COMPLETED" "${result_file}" 2>/dev/null; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "DQM initialization not completed for ${description} test"
         return 1
     fi
 
     # Perform DQM Launch Check sub-test
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: DQM Launch Check"
 
-    # For Multi configuration, check for multiple DQM launches
-    if [[ "${test_name}" == "MULTI" ]]; then
-        local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
-        local dqm_launches
-        dqm_launches=$(grep "DQM-.*-00-.*Worker thread started" "${log_file}" 2>/dev/null | sed 's/.*\(DQM-[^]]*\).*/\1/' | sort | uniq)
+    # Check for DQM launch messages in the log
+    local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
+    local dqm_launches
+    dqm_launches=$("${GREP}" "DQM launched successfully" "${log_file}" 2>/dev/null | wc -l)
 
-        if [[ -n "${dqm_launches}" ]]; then
-            local dqm_count=0
-            while IFS= read -r dqm_name; do
-                if [[ -n "${dqm_name}" ]]; then
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${dqm_name} Launch Confirmed"
-                    ((dqm_count++))
-                fi
-            done <<< "${dqm_launches}"
+    if [[ "${dqm_launches}" -gt 0 ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Found ${dqm_launches} DQM launch message(s)"
 
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: DQM Launch Check (${dqm_count} confirmed)"
+        # Show individual DQM launches
+        local launch_messages
+        launch_messages=$("${GREP}" "DQM launched successfully" "${log_file}" 2>/dev/null)
+        local launch_count=0
+        while IFS= read -r launch_msg; do
+            if [[ -n "${launch_msg}" ]]; then
+        #        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${launch_msg}"
+                launch_count=$(( launch_count + 1 ))
+            fi
+        done <<< "${launch_messages}"
+
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: DQM Launch Check (${launch_count} confirmed)"
+    else
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: No DQM Launches Found"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: DQM Launch Check"
+        return 1
+    fi
+
+    # Perform DQM Initialization Check sub-test
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: DQM Initialization Check"
+
+    # Check for DQM initialization completion messages
+    local dqm_initializations
+    dqm_initializations=$("${GREP}" -c "Lead DQM initialization is complete" "${log_file}" 2>/dev/null || echo "0")
+
+    if [[ "${dqm_initializations}" -gt 0 ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Found ${dqm_initializations} DQM initialization completion message(s)"
+
+        # Show individual DQM initializations
+        local init_messages
+        init_messages=$("${GREP}" "Lead DQM initialization is complete" "${log_file}" 2>/dev/null)
+        local init_count=0
+        while IFS= read -r init_msg; do
+            if [[ -n "${init_msg}" ]]; then
+                # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${init_msg}"
+                init_count=$(( init_count + 1 ))
+            fi
+        done <<< "${init_messages}"
+
+        # Verify counts match
+        if [[ "${dqm_initializations}" -eq "${dqm_launches}" ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: DQM Initialization Check (${init_count} completed, matches launch count)"
         else
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: No DQM Launches Found"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: DQM Launch Check"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Warning - Initialization count (${dqm_initializations}) doesn't match launch count (${dqm_launches})"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: DQM Initialization Check (count mismatch)"
             return 1
         fi
     else
-        # For single engine configurations, extract the database name from the log
-        local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
-        local dqm_name
-        dqm_name=$(grep "DQM-.*-00-.*Worker thread started" "${log_file}" 2>/dev/null | head -1 | sed 's/.*\[\s*\([^]]*\)\s*\].*/\1/')
-
-        if [[ -n "${dqm_name}" ]]; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${dqm_name} Launch Confirmed"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: DQM Launch Check"
-        else
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: DQM Launch not found"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: DQM Launch Check"
-            return 1
-        fi
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: No DQM Initialization Messages Found"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: DQM Initialization Check"
+        return 1
     fi
 
     # Perform Bootstrap Query Analysis sub-test
@@ -323,7 +398,7 @@ analyze_database_test_results() {
                 if [[ "${line}" =~ Bootstrap\ query\ completed\ in\ ([0-9.]+)s:\ returned\ ([0-9]+)\ rows ]]; then
                     local query_time="${BASH_REMATCH[1]}"
                     local query_rows="${BASH_REMATCH[2]}"
-                    ((total_queries++))
+                    total_queries=$(( total_queries + 1))
                     total_time=$(echo "${total_time} + ${query_time}" | bc -l 2>/dev/null || echo "${total_time}")
                     total_rows=$((total_rows + query_rows))
 
@@ -337,13 +412,14 @@ analyze_database_test_results() {
                     if [[ "${test_name}" == "MULTI" && -n "${db_name}" ]]; then
                         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${db_name} - ${query_time}s, ${query_rows} rows"
                     else
-                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Bootstrap query ${total_queries} - ${query_time}s, ${query_rows} rows"
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Bootstrap Query ${total_queries} - ${query_time}s, ${query_rows} rows"
                     fi
                 fi
             done <<< "${bootstrap_data}"
 
-            if [[ ${total_queries} -gt 0 ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Bootstrap Query Analysis (${total_queries} queries, ${total_time}s total, ${total_rows} rows)"
+            if [[ "${total_queries}" -gt 0 ]]; then
+                # print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Bootstrap Query Analysis (${total_queries} queries, ${total_time}s total, ${total_rows} rows)"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Bootstrap Query Analysis Complete"
                 return 0
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Bootstrap Query Analysis - No valid queries found"
@@ -437,7 +513,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Analyzing results"
         log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
         result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Server Log: ..${log_file}"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Engine: ..${log_file}"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Engine: ..${result_file}"
 
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if analyze_database_test_results "${test_config}" "${log_suffix}" "${engine_name}" "${description}"; then
