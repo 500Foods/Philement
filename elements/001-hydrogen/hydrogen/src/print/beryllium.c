@@ -1,14 +1,26 @@
 /*
  * G-code Analysis
- * 
  */
-
 // Global includes
 #include "../hydrogen.h"
-#include <math.h>
 
 // Local includes
 #include "beryllium.h"
+
+// Function prototypes for non-static functions
+double calculate_layer_height(const double *z_values, int z_values_count);
+double parse_parameter(const char *line, const char *parameter);
+int parse_current_layer(const char *line);
+bool parse_object_commands(const char *line, ObjectInfo **object_infos, int *num_objects,
+                           int *current_object);
+double process_movement_command(const char *line, BerylliumConfig *config,
+                                double *current_x, double *current_y, double *current_z,
+                                double *extrusion, double *current_extrusion_pos,
+                                bool *relative_mode, bool *relative_extrusion,
+                                double *current_feedrate, double *z_values, int *z_values_count,
+                                int *z_values_capacity, int current_layer, int current_object,
+                                int num_objects, double ***object_times);
+double accelerated_move(double length, double acceleration, double max_velocity);
 
 /**
  * Create a BerylliumConfig from AppConfig
@@ -31,12 +43,7 @@ BerylliumConfig beryllium_create_config(void) {
 }
 
 // Generate ISO8601 timestamps for print metadata
-//
-// Uses static buffer for efficiency since:
-// - Timestamps are frequently generated
-// - Memory allocation would be wasteful
-// - Thread safety not required for timestamps
-// - Format is fixed and known at compile time
+// Uses static buffer for efficiency
 char* get_iso8601_timestamp(void) {
     static char buffer[sizeof "2011-10-08T07:07:09Z"];
     time_t now = time(NULL);
@@ -55,19 +62,14 @@ void format_time(double seconds, char *buffer) {
 }
 
 // Format numbers with thousands separators for better readability
-//
-// Handles large numbers by adding commas for thousands separation
 // Returns a static buffer for efficiency - not thread safe
 char* format_number_with_separators(double value, int decimals) {
     static char buffer[64];
     char temp[64];
 
     // Format the number with specified decimal places
-    if (decimals >= 0) {
-        sprintf(temp, "%.*f", decimals, value);
-    } else {
-        sprintf(temp, "%.0f", value);
-    }
+    if (decimals >= 0) sprintf(temp, "%.*f", decimals, value);
+    else sprintf(temp, "%.0f", value);
 
     char *result = buffer;
     const char *input = temp;
@@ -75,10 +77,7 @@ char* format_number_with_separators(double value, int decimals) {
     int comma_count = 0;
 
     // Handle negative numbers
-    if (*input == '-') {
-        *result++ = *input++;
-        len--;
-    }
+    if (*input == '-') { *result++ = *input++; len--; }
 
     // Find decimal point position
     const char *decimal_point = strchr(input, '.');
@@ -106,24 +105,13 @@ char* format_number_with_separators(double value, int decimals) {
 }
 
 // Calculate layer height from Z values array
-//
-// Layer height calculation strategy:
-// 1. Sort Z values to ensure proper order
-// 2. Calculate differences between consecutive Z values
-// 3. Use most common difference as layer height
-// 4. Handle variable layer heights by using median
-//
 // Returns layer height in mm, or 0.0 if calculation fails
-static double calculate_layer_height(const double *z_values, int z_values_count) {
-    if (z_values_count < 2) {
-        return 0.0;  // Need at least 2 Z values to calculate height
-    }
+double calculate_layer_height(const double *z_values, int z_values_count) {
+    if (z_values == NULL || z_values_count < 2) return 0.0;  // Need at least 2 Z values to calculate height
 
     // Create a sorted copy of Z values
     double *sorted_z = malloc((size_t)z_values_count * sizeof(double));
-    if (sorted_z == NULL) {
-        return 0.0;
-    }
+    if (sorted_z == NULL) return 0.0;
 
     memcpy(sorted_z, z_values, (size_t)z_values_count * sizeof(double));
 
@@ -140,10 +128,7 @@ static double calculate_layer_height(const double *z_values, int z_values_count)
 
     // Calculate differences and find most common layer height
     double *differences = malloc((size_t)(z_values_count - 1) * sizeof(double));
-    if (differences == NULL) {
-        free(sorted_z);
-        return 0.0;
-    }
+    if (differences == NULL) { free(sorted_z); return 0.0; }
 
     int diff_count = 0;
     for (int i = 1; i < z_values_count; i++) {
@@ -180,19 +165,9 @@ static double calculate_layer_height(const double *z_values, int z_values_count)
 }
 
 // Extract numeric parameters from G-code commands
-//
-// Design choices for parameter parsing:
-// 1. No memory allocation - Uses direct string scanning
-// 2. Return NaN for missing parameters - distinguishes from 0.0
-// 3. Minimal validation - Assumes well-formed input
-// 4. No error reporting - Speed over detailed errors
-//
-// This approach prioritizes performance since parameter
-// parsing is one of the most frequent operations
-static double parse_parameter(const char *line, const char *parameter) {
-    if (line == NULL || parameter == NULL) {
-        return NAN;
-    }
+// Returns NaN for missing parameters, prioritizes performance
+double parse_parameter(const char *line, const char *parameter) {
+    if (line == NULL || parameter == NULL) return NAN;
 
     const char *current = line;
     size_t param_len = strlen(parameter);
@@ -227,9 +202,7 @@ static double parse_parameter(const char *line, const char *parameter) {
 }
 
 char* parse_parameter_string(const char *line, const char *parameter) {
-    if (line == NULL || parameter == NULL) {
-        return strdup("undefined");
-    }
+    if (line == NULL || parameter == NULL) return strdup("undefined");
 
     // Handle empty parameter string
     if (strlen(parameter) == 0) {
@@ -307,14 +280,11 @@ char* parse_parameter_string(const char *line, const char *parameter) {
         }
         current++;
     }
-
     return strdup("undefined");
 }
 
 char* parse_name_parameter(const char *line) {
-    if (line == NULL) {
-        return strdup(""); // Return an empty string if line is NULL
-    }
+    if (line == NULL) return strdup(""); // Return an empty string if line is NULL
 
     // Look for "NAME" followed by optional whitespace and then "="
     const char *current = line;
@@ -355,21 +325,98 @@ char* parse_name_parameter(const char *line) {
         }
         current++;
     }
-
     return strdup(""); // Return an empty string if NAME= is not found or if value is empty
 }
 
+// Parse object definitions and state changes from G-code
+// Returns: true if object state changed, false otherwise
+bool parse_object_commands(const char *line, ObjectInfo **object_infos, int *num_objects,
+                           int *current_object) {
+    if (line == NULL) return false;
+
+    if (strstr(line, "EXCLUDE_OBJECT_DEFINE") != NULL) {
+        char *name_pos = strstr(line, "NAME=");
+        if (name_pos != NULL) {
+            char *name_start = name_pos + 5;
+            const char *name_end = strchr(name_start, ' ');
+            if (name_end == NULL) {
+                name_end = strchr(name_start, '\n');
+            }
+            if (name_end == NULL) {
+                name_end = strchr(name_start, '\r');
+            }
+            if (name_end == NULL) {
+                name_end = name_start + strlen(name_start);
+            }
+
+            if (name_end > name_start) {
+                size_t name_length = (size_t)(name_end - name_start);
+                ObjectInfo *temp = realloc(*object_infos, ((size_t)*num_objects + 1) * sizeof(ObjectInfo));
+                if (temp == NULL) {
+                    log_this(SR_BERYLLIUM, "Memory reallocation failed for object_infos", LOG_LEVEL_ERROR, 0);
+                    return false;
+                }
+                *object_infos = temp;
+                (*object_infos)[*num_objects].name = strndup(name_start, name_length);
+                if ((*object_infos)[*num_objects].name == NULL) {
+                    log_this(SR_BERYLLIUM, "Memory allocation failed for object name", LOG_LEVEL_ERROR, 0);
+                    return false;
+                }
+                (*object_infos)[*num_objects].index = *num_objects;
+                (*num_objects)++;
+            }
+            return true;
+        }
+        return false;  // Malformed EXCLUDE_OBJECT_DEFINE without NAME=
+    }
+
+    if (strstr(line, "EXCLUDE_OBJECT_START") != NULL) {
+        char *name_pos = strstr(line, "NAME=");
+        if (name_pos != NULL) {
+            char *name_start = name_pos + 5;
+            const char *name_end = strchr(name_start, ' ');
+            if (name_end == NULL) {
+                name_end = strchr(name_start, '\n');
+            }
+            if (name_end == NULL) {
+                name_end = strchr(name_start, '\r');
+            }
+            if (name_end == NULL) {
+                name_end = name_start + strlen(name_start);
+            }
+
+            if (name_end > name_start) {
+                size_t name_length = (size_t)(name_end - name_start);
+                char object_name[name_length + 1];
+                strncpy(object_name, name_start, name_length);
+                object_name[name_length] = '\0';
+
+                // Find the index of the current object based on its name
+                for (int i = 0; i < *num_objects; i++) {
+                    if (*object_infos != NULL && (*object_infos)[i].name != NULL &&
+                        strcmp((*object_infos)[i].name, object_name) == 0) {
+                        *current_object = i;
+                        break;
+                    }
+                }
+            }
+            return true;
+        }
+        return false;  // Malformed EXCLUDE_OBJECT_START without NAME=
+    }
+
+    if (strstr(line, "EXCLUDE_OBJECT_END") != NULL) {
+        *current_object = -1;
+        return true;
+    }
+    return false;
+}
+
 // Parse layer changes from G-code metadata
-//
-// Layer detection strategy:
-// 1. Comment-based tracking - More reliable than Z changes
-// 2. Support multiple slicer formats - SET_PRINT_STATS_INFO and LAYER_CHANGE
-// 3. Immediate state update - Ensures accurate timing
-// 4. Explicit numbering - Handles non-sequential layers
-// 5. Fast string matching - Optimized for frequent checks
-//
 // Returns -1 for non-layer lines to distinguish from layer 0
-static int parse_current_layer(const char *line) {
+int parse_current_layer(const char *line) {
+    if (line == NULL) return -1;
+
     // Check for SET_PRINT_STATS_INFO format (Klipper/PrusaSlicer)
     char *pos = strstr(line, "SET_PRINT_STATS_INFO CURRENT_LAYER=");
     if (pos != NULL) {
@@ -403,27 +450,147 @@ static int parse_current_layer(const char *line) {
     return -1;
 }
 
-// Calculate move duration using real-world motion profiles
-//
-// Motion planning algorithm chosen to balance:
-// 1. Accuracy - Models actual stepper behavior
-//    - Trapezoidal velocity profiles
-//    - Proper acceleration/deceleration
-//    - Maximum velocity limits
-//
-// 2. Performance - Fast computation for millions of moves
-//    - Minimal floating point operations
-//    - No trigonometry or complex math
-//    - Early exit for zero moves
-//
-// 3. Mechanical Constraints
-//    - Prevents excessive acceleration
-//    - Respects maximum velocities
-//    - Models actual motor capabilities
-static double accelerated_move(double length, double acceleration, double max_velocity) {
-    if (length == 0.0) {
-        return 0.0;
+// Process G-code movement commands (G0, G1, G4, G92)
+// Returns: movement time added to print duration
+double process_movement_command(const char *line, BerylliumConfig *config,
+                                double *current_x, double *current_y, double *current_z,
+                                double *extrusion, double *current_extrusion_pos,
+                                bool *relative_mode, bool *relative_extrusion,
+                                double *current_feedrate, double *z_values, int *z_values_count,
+                                int *z_values_capacity, int current_layer, int current_object,
+                                int num_objects, double ***object_times) {
+    if (line == NULL) return 0.0;
+    double move_time = 0.0;
+
+    if (strstr(line, "G91") != NULL) {
+        *relative_mode = true;
+        *relative_extrusion = true;
+    } else if (strstr(line, "G90") != NULL) {
+        *relative_mode = false;
+        *relative_extrusion = false;
+    } else if (strstr(line, "M83") != NULL) {
+        *relative_extrusion = true;
+    } else if (strstr(line, "M82") != NULL) {
+        *relative_extrusion = false;
+    } else if (strncmp(line, "G1 ", 3) == 0 || strncmp(line, "G0 ", 3) == 0) {
+        double x = parse_parameter(line, "X");
+        double y = parse_parameter(line, "Y");
+        double z = parse_parameter(line, "Z");
+        double e = parse_parameter(line, "E");
+        double f = parse_parameter(line, "F");
+
+        // Update current feedrate if F parameter is specified
+        if (!isnan(f) && f > 0.0) {
+            *current_feedrate = f;
+        }
+        double max_speed_xy = isnan(e) || e <= 0.0 ? config->max_speed_travel : config->max_speed_xy;
+
+        double next_x = *relative_mode ? (isnan(x) ? *current_x : *current_x + x) : (isnan(x) ? *current_x : x);
+        double next_y = *relative_mode ? (isnan(y) ? *current_y : *current_y + y) : (isnan(y) ? *current_y : y);
+        double next_z = *relative_mode ? (isnan(z) ? *current_z : *current_z + z) : (isnan(z) ? *current_z : z);
+
+        double distance_xy = sqrt(pow(next_x - *current_x, 2) + pow(next_y - *current_y, 2));
+        double distance_z = fabs(next_z - *current_z);
+
+        // Only calculate movement time if there's actually movement
+        if (distance_xy > 0.0 || distance_z > 0.0 || !isnan(e)) {
+            double max_velocity_xy = fmin(*current_feedrate / 60.0, max_speed_xy);
+            double max_velocity_z = fmin(*current_feedrate / 60.0, config->max_speed_z);
+            double max_velocity_e = fmin(*current_feedrate / 60.0, config->max_speed_xy);
+
+            double time_xy = distance_xy > 0.0 ? accelerated_move(distance_xy, config->acceleration, max_velocity_xy) : 0.0;
+            double time_z = distance_z > 0.0 ? accelerated_move(distance_z, config->z_acceleration, max_velocity_z) : 0.0;
+            double time_e = !isnan(e) && fabs(e) > 0.0 ? accelerated_move(fabs(e), config->extruder_acceleration, max_velocity_e) : 0.0;
+
+            // Assume XY and E move concurrently, Z moves separately
+            move_time = fmax(time_xy, time_e) + time_z;
+        }
+
+        // Track object time if we have valid layer and object
+        if (object_times && *object_times && current_layer >= 0 && current_object >= 0 && current_layer < MAX_LAYERS &&
+            current_object < num_objects && (*object_times)[current_layer] != NULL) {
+            (*object_times)[current_layer][current_object] += move_time;
+        }
+
+        *current_x = next_x;
+        *current_y = next_y;
+
+        // Track Z values for layer height calculation
+        if (*current_z != next_z) {
+            bool z_exists = false;
+            for (int i = 0; i < *z_values_count; i++) {
+                if (fabs(z_values[i] - next_z) < 1e-6) {
+                    z_exists = true;
+                    break;
+                }
+            }
+
+            if (!z_exists) {
+                if (*z_values_count == *z_values_capacity) {
+                    *z_values_capacity += Z_VALUES_CHUNK_SIZE;
+                    double *new_z_values = realloc(z_values, (size_t)*z_values_capacity * sizeof(double));
+                    if (new_z_values == NULL) {
+                        log_this(SR_BERYLLIUM, "Memory reallocation failed for z_values", LOG_LEVEL_ERROR, 0);
+                        return 0.0;
+                    }
+                    z_values = new_z_values;
+                }
+                z_values[(*z_values_count)++] = next_z;
+            }
+
+            *current_z = next_z;
+        }
+
+        // Handle extrusion
+        if (!isnan(e)) {
+            if (*relative_extrusion) {
+                *extrusion += e;
+                *current_extrusion_pos += e;
+            } else {
+                // In absolute mode, calculate the difference from current position
+                double extrusion_diff = e - *current_extrusion_pos;
+                if (extrusion_diff > 0.0) {  // Only count positive extrusion
+                    *extrusion += extrusion_diff;
+                }
+                *current_extrusion_pos = e;
+            }
+        }
+    } else if (strncmp(line, "G4 ", 3) == 0) {
+        // Handle G4 (dwell) command
+        double p = parse_parameter(line, "P") / 1000.0;  // P is in milliseconds
+        double s = parse_parameter(line, "S");  // S is in seconds
+        double time = 0.0;
+        if (!isnan(p) && p > 0.0) {
+            time = p;
+        } else if (!isnan(s) && s > 0.0) {
+            time = s;
+        }
+
+        if (time > 0.0) {
+            move_time = time;
+            if (object_times && *object_times && current_layer >= 0 && current_object >= 0 && current_layer < MAX_LAYERS &&
+                current_object < num_objects && (*object_times)[current_layer] != NULL) {
+                (*object_times)[current_layer][current_object] += time;
+            }
+        }
+    } else if (strncmp(line, "G92", 3) == 0) {
+        // Handle G92 (set position) command - might reset extrusion
+        double e = parse_parameter(line, "E");
+        if (!isnan(e)) {
+            *current_extrusion_pos = e;
+            // Don't modify total extrusion count when resetting position
+        }
     }
+
+    return move_time;
+}
+
+// Calculate move duration using real-world motion profiles
+// Uses trapezoidal velocity profiles for accuracy and performance
+double accelerated_move(double length, double acceleration, double max_velocity) {
+    if (length == 0.0) return 0.0;
+    // Handle edge cases that would cause division by zero or invalid math
+    if (acceleration <= 0.0 || max_velocity <= 0.0) return 0.0;  // Can't move with zero or negative acceleration/velocity
 
     double accel_distance = max_velocity * max_velocity / (2.0 * acceleration);
 
@@ -446,9 +613,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     stats.object_infos = NULL;  // Explicitly initialize pointer to NULL
 
     // Check for NULL parameters
-    if (file == NULL || config == NULL) {
-        return stats;
-    }
+    if (file == NULL || config == NULL) return stats;
 
     double current_x = 0.0, current_y = 0.0, current_z = 0.0, extrusion = 0.0, current_extrusion_pos = 0.0;
     bool relative_mode = false, relative_extrusion = false;
@@ -661,7 +826,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
 
 	        // printf("Current layer: %d, Current object: %d, Move time: %.2f\n", current_layer, current_object, move_time);
 
-    if (current_layer >= 0 && current_object >= 0 && current_layer < MAX_LAYERS && current_object < num_objects && stats.object_times[current_layer] != NULL) {
+    if (stats.object_times && current_layer >= 0 && current_object >= 0 && current_layer < MAX_LAYERS && current_object < num_objects && stats.object_times[current_layer] != NULL) {
         stats.object_times[current_layer][current_object] += move_time;
     }
 
@@ -773,9 +938,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
 }
 
 void beryllium_format_stats(const BerylliumStats *stats) {
-    if (!stats || !stats->success) {
-        return;
-    }
+    if (!stats || !stats->success) return;
 
     // Format time as Hh Mm Ss
     int hours = (int)(stats->print_time / 3600);
@@ -803,19 +966,9 @@ void beryllium_format_stats(const BerylliumStats *stats) {
 }
 
 // Clean up analysis results with complete resource release
-//
-// Memory management strategy:
-// 1. Hierarchical cleanup - Parent structures last
-// 2. Null protection - Safe for partial initialization
-// 3. Pointer nulling - Prevents use-after-free
-// 4. Preserve computed values - Don't reset success flag or core metrics
-//
-// This careful cleanup prevents memory leaks while preserving
-// the computed analysis results for the caller to access
+// Preserves computed values while freeing allocated memory
 void beryllium_free_stats(BerylliumStats *stats) {
-    if (!stats) {
-        return;
-    }
+    if (!stats) return;
 
     // Free object_times array and its layer arrays
     if (stats->object_times) {
