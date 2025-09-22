@@ -158,11 +158,11 @@ bool database_add_database(const char* name, const char* engine, const char* con
         };
 
         // Add diagnostic logging to show what database field is being used
-        log_this(SR_DATABASE, "Database connection config: database='%s', host='%s', port=%d",
-                 LOG_LEVEL_DEBUG, 3,
-                 conn_config->database ? conn_config->database : "NULL",
-                 conn_config->host ? conn_config->host : "NULL",
-                 conn_config->port ? atoi(conn_config->port) : default_port);
+        // log_this(SR_DATABASE, "Database connection config: database='%s', host='%s', port=%d",
+        //          LOG_LEVEL_DEBUG, 3,
+        //          conn_config->database ? conn_config->database : "NULL",
+        //          conn_config->host ? conn_config->host : "NULL",
+        //          conn_config->port ? atoi(conn_config->port) : default_port);
         conn_str = engine_interface->get_connection_string(&temp_config);
     } else {
         // Fallback connection string building
