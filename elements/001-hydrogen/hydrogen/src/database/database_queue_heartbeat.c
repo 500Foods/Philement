@@ -90,6 +90,65 @@ static ConnectionConfig* parse_connection_string(const char* conn_string) {
             }
         }
     }
+    // Parse MySQL connection string format: mysql://user:pass@host:port/database
+    else if (strncmp(conn_string, "mysql://", 8) == 0) {
+        const char* after_proto = conn_string + 8; // Skip "mysql://"
+
+        // Find @ symbol to separate user:pass from host:port/database
+        const char* at_pos = strchr(after_proto, '@');
+        if (at_pos) {
+            // Parse user:pass part
+            char user_pass[256] = {0};
+            size_t user_pass_len = (size_t)(at_pos - after_proto);
+            if (user_pass_len < sizeof(user_pass) && user_pass_len > 0) {
+                strncpy(user_pass, after_proto, user_pass_len);
+                user_pass[user_pass_len] = '\0';
+
+                // Split user:pass
+                char* colon_pos = strchr(user_pass, ':');
+                if (colon_pos) {
+                    *colon_pos = '\0';
+                    config->username = strdup(user_pass);
+                    if (!config->username) goto cleanup;
+                    config->password = strdup(colon_pos + 1);
+                    if (!config->password) goto cleanup;
+                } else {
+                    config->username = strdup(user_pass);
+                    if (!config->username) goto cleanup;
+                }
+            }
+
+            // Parse host:port/database part
+            const char* host_start = at_pos + 1;
+            const char* slash_pos = strchr(host_start, '/');
+            if (slash_pos) {
+                // Parse host:port
+                char host_port[256] = {0};
+                size_t host_port_len = (size_t)(slash_pos - host_start);
+                if (host_port_len < sizeof(host_port) && host_port_len > 0) {
+                    strncpy(host_port, host_start, host_port_len);
+                    host_port[host_port_len] = '\0';
+
+                    // Split host:port
+                    char* colon_pos = strchr(host_port, ':');
+                    if (colon_pos) {
+                        *colon_pos = '\0';
+                        config->host = strdup(host_port);
+                        if (!config->host) goto cleanup;
+                        config->port = atoi(colon_pos + 1);
+                    } else {
+                        config->host = strdup(host_port);
+                        if (!config->host) goto cleanup;
+                        config->port = 3306; // Default MySQL port
+                    }
+                }
+
+                // Parse database
+                config->database = strdup(slash_pos + 1);
+                if (!config->database) goto cleanup;
+            }
+        }
+    }
     // Parse DB2 ODBC connection string format: DRIVER={...};DATABASE=...;HOSTNAME=...;PORT=...;PROTOCOL=...;UID=...;PWD=...
     else if (strstr(conn_string, "DRIVER=") != NULL && strstr(conn_string, "DATABASE=") != NULL) {
         // Parse key=value pairs separated by semicolons
@@ -258,15 +317,38 @@ void database_queue_start_heartbeat(DatabaseQueue* db_queue) {
         // Log connection details without password for security
         char* safe_conn_str = strdup(db_queue->connection_string);
         if (safe_conn_str) {
+            // Mask passwords in different connection string formats
             char* pwd_pos = strstr(safe_conn_str, "PWD=");
             if (pwd_pos) {
-                // Mask the password value
+                // DB2 format: PWD=password;
                 const char* end_pos = strchr(pwd_pos, ';');
                 if (end_pos) {
                     memset(pwd_pos + 4, '*', (size_t)(end_pos - (pwd_pos + 4)));
                 } else {
                     // Password at end of string
                     memset(pwd_pos + 4, '*', strlen(pwd_pos + 4));
+                }
+            } else if (strncmp(safe_conn_str, "mysql://", 8) == 0) {
+                // MySQL format: mysql://user:password@host:port/database
+                const char* after_proto = safe_conn_str + 8; // Skip "mysql://"
+                const char* at_pos = strchr(after_proto, '@');
+                if (at_pos) {
+                    const char* colon_pos = strchr(after_proto, ':');
+                    if (colon_pos && colon_pos < at_pos) {
+                        // Mask from after colon to @
+                        memset((char*)colon_pos + 1, '*', (size_t)(at_pos - (colon_pos + 1)));
+                    }
+                }
+            } else if (strncmp(safe_conn_str, "postgresql://", 13) == 0) {
+                // PostgreSQL format: postgresql://user:password@host:port/database
+                const char* after_proto = safe_conn_str + 13; // Skip "postgresql://"
+                const char* at_pos = strchr(after_proto, '@');
+                if (at_pos) {
+                    const char* colon_pos = strchr(after_proto, ':');
+                    if (colon_pos && colon_pos < at_pos) {
+                        // Mask from after colon to @
+                        memset((char*)colon_pos + 1, '*', (size_t)(at_pos - (colon_pos + 1)));
+                    }
                 }
             }
             log_this(dqm_label, "Connection details: string='%s', engine='%s'",
@@ -346,15 +428,38 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
         // For connection strings, mask password if present
         char* safe_conn_str = strdup(config->connection_string);
         if (safe_conn_str) {
+            // Mask passwords in different connection string formats
             char* pwd_pos = strstr(safe_conn_str, "PWD=");
             if (pwd_pos) {
-                // Mask the password value
+                // DB2 format: PWD=password;
                 const char* end_pos = strchr(pwd_pos, ';');
                 if (end_pos) {
                     memset(pwd_pos + 4, '*', (size_t)(end_pos - (pwd_pos + 4)));
                 } else {
                     // Password at end of string
                     memset(pwd_pos + 4, '*', strlen(pwd_pos + 4));
+                }
+            } else if (strncmp(safe_conn_str, "mysql://", 8) == 0) {
+                // MySQL format: mysql://user:password@host:port/database
+                const char* after_proto = safe_conn_str + 8; // Skip "mysql://"
+                const char* at_pos = strchr(after_proto, '@');
+                if (at_pos) {
+                    const char* colon_pos = strchr(after_proto, ':');
+                    if (colon_pos && colon_pos < at_pos) {
+                        // Mask from after colon to @
+                        memset((char*)colon_pos + 1, '*', (size_t)(at_pos - (colon_pos + 1)));
+                    }
+                }
+            } else if (strncmp(safe_conn_str, "postgresql://", 13) == 0) {
+                // PostgreSQL format: postgresql://user:password@host:port/database
+                const char* after_proto = safe_conn_str + 13; // Skip "postgresql://"
+                const char* at_pos = strchr(after_proto, '@');
+                if (at_pos) {
+                    const char* colon_pos = strchr(after_proto, ':');
+                    if (colon_pos && colon_pos < at_pos) {
+                        // Mask from after colon to @
+                        memset((char*)colon_pos + 1, '*', (size_t)(at_pos - (colon_pos + 1)));
+                    }
                 }
             }
             log_this(dqm_label_conn, "Attempting database connection to: %s", LOG_LEVEL_DEBUG, 1, safe_conn_str);
