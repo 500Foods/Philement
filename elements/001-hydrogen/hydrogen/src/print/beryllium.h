@@ -111,4 +111,19 @@ void beryllium_free_stats(BerylliumStats *stats);
 char* parse_parameter_string(const char *line, const char *parameter);
 char* parse_name_parameter(const char *line);
 
+// Additional function prototypes for extracted helper functions
+double calculate_layer_height(const double *z_values, int z_values_count);
+double parse_parameter(const char *line, const char *parameter);
+int parse_current_layer(const char *line);
+bool parse_object_commands(const char *line, ObjectInfo **object_infos, int *num_objects,
+                           int *current_object);
+double process_movement_command(const char *line, BerylliumConfig *config,
+                                double *current_x, double *current_y, double *current_z,
+                                double *extrusion, double *current_extrusion_pos,
+                                bool *relative_mode, bool *relative_extrusion,
+                                double *current_feedrate, double *z_values, int *z_values_count,
+                                int *z_values_capacity, int current_layer, int current_object,
+                                int num_objects, double ***object_times);
+double accelerated_move(double length, double acceleration, double max_velocity);
+
 #endif // BERYLLIUM_H

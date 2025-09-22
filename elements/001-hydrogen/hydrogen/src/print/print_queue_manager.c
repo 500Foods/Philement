@@ -18,7 +18,7 @@ Queue* print_queue = NULL;
 // Cleanup handler registered with pthread_cleanup_push
 // Ensures proper resource cleanup if thread is cancelled
 // Logs cleanup status for debugging
-static void cleanup_print_queue_manager(void* arg) {
+void cleanup_print_queue_manager(void* arg) {
     (void)arg;  // Unused parameter
     
     // Remove this thread from tracking before cleanup
@@ -34,9 +34,12 @@ static void cleanup_print_queue_manager(void* arg) {
 // 3. Logs job status and progress
 // 4. Handles errors and cleanup
 // Returns: void, errors handled via logging
-static void process_print_job(const char* job_data) {
+void process_print_job(const char* job_data) {
+    fprintf(stderr, "DEBUG: process_print_job called with job_data=%p\n", job_data);
     if (!job_data) {
+        fprintf(stderr, "DEBUG: job_data is NULL, about to call log_this\n");
         log_this(SR_QUEUES, "Received null job data", LOG_LEVEL_ERROR, 0);
+        fprintf(stderr, "DEBUG: log_this call completed\n");
         return;
     }
 

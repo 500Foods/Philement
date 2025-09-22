@@ -819,6 +819,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_network.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_threads.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_logging.c
 )
 
 # Create Unity test object files in build/unity/src directory structure (same as original)
@@ -847,6 +848,7 @@ foreach(MOCK_SOURCE ${UNITY_MOCK_SOURCES})
             -DBUILD_TYPE='"Unity"'
             -DUNITY_INCLUDE_DOUBLE
             -DUSE_MOCK_LIBWEBSOCKETS
+            -DUSE_MOCK_LOGGING
             -I${CMAKE_CURRENT_SOURCE_DIR}/../src
             -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
             -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks
@@ -911,6 +913,8 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             -DBUILD_TYPE='"Unity"'
             -DUNITY_INCLUDE_DOUBLE
             -DUNITY_TEST_MODE
+            -DUSE_MOCK_LOGGING
+            -Dlog_this=mock_log_this
             ${MOCK_DEFINES}
             -I${CMAKE_CURRENT_SOURCE_DIR}/../src
             -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
@@ -1009,10 +1013,11 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(TEST_OUTPUT_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${TEST_BASENAME}.o")
     endif()
     
-    # Check if this is a websocket, terminal, or mdns test to include mock headers
+    # Check if this is a websocket, terminal, mdns, or print test to include mock headers
     string(FIND "${TEST_SOURCE}" "websocket" IS_WEBSOCKET_TEST)
     string(FIND "${TEST_SOURCE}" "terminal" IS_TERMINAL_TEST)
     string(FIND "${TEST_SOURCE}" "mdns" IS_MDNS_TEST)
+    string(FIND "${TEST_SOURCE}" "print" IS_PRINT_TEST)
     if(IS_WEBSOCKET_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS -DUSE_MOCK_STATUS")
@@ -1022,6 +1027,9 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     elseif(IS_MDNS_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_NETWORK -DUSE_MOCK_SYSTEM -DUSE_MOCK_THREADS")
+    elseif(IS_PRINT_TEST GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_LOGGING")
     else()
         set(MOCK_INCLUDES "")
         set(MOCK_DEFINES "")
