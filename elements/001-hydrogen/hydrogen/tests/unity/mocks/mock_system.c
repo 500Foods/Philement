@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
+#include <poll.h>
+#include <sys/socket.h>
 
 // Include the header but undefine the macros to access real functions
 #include "mock_system.h"
@@ -17,21 +20,37 @@
 #undef free
 #undef strdup
 #undef gethostname
+#undef nanosleep
+#undef clock_gettime
+#undef poll
+#undef recvfrom
 
 // Function prototypes
 void *mock_malloc(size_t size);
 void mock_free(void *ptr);
 char *mock_strdup(const char *s);
 int mock_gethostname(char *name, size_t len);
+int mock_nanosleep(const struct timespec *req, struct timespec *rem);
+int mock_clock_gettime(int clk_id, struct timespec *tp);
+int mock_poll(struct pollfd *fds, nfds_t nfds, int timeout);
+ssize_t mock_recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
 void mock_system_set_malloc_failure(int should_fail);
 void mock_system_set_gethostname_failure(int should_fail);
 void mock_system_set_gethostname_result(const char *result);
+void mock_system_set_nanosleep_failure(int should_fail);
+void mock_system_set_clock_gettime_failure(int should_fail);
+void mock_system_set_poll_failure(int should_fail);
+void mock_system_set_recvfrom_failure(int should_fail);
 void mock_system_reset_all(void);
 
 // Static variables to store mock state
 static int mock_malloc_should_fail = 0;
 static int mock_gethostname_should_fail = 0;
 static const char *mock_gethostname_result = NULL;
+static int mock_nanosleep_should_fail = 0;
+static int mock_clock_gettime_should_fail = 0;
+static int mock_poll_should_fail = 0;
+static int mock_recvfrom_should_fail = 0;
 
 // Mock implementation of malloc
 void *mock_malloc(size_t size) {
@@ -80,6 +99,62 @@ int mock_gethostname(char *name, size_t len) {
     return -1;
 }
 
+// Mock implementation of nanosleep
+int mock_nanosleep(const struct timespec *req, struct timespec *rem) {
+    (void)req;  // Suppress unused parameter
+    (void)rem;  // Suppress unused parameter
+
+    if (mock_nanosleep_should_fail) {
+        return -1;
+    }
+
+    // Call the real nanosleep function
+    return nanosleep(req, rem);
+}
+
+// Mock implementation of clock_gettime
+int mock_clock_gettime(int clk_id, struct timespec *tp) {
+    (void)clk_id;  // Suppress unused parameter
+
+    if (mock_clock_gettime_should_fail) {
+        return -1;
+    }
+
+    // Call the real clock_gettime function
+    return clock_gettime(clk_id, tp);
+}
+
+// Mock implementation of poll
+int mock_poll(struct pollfd *fds, nfds_t nfds, int timeout) {
+    (void)fds;    // Suppress unused parameter
+    (void)nfds;   // Suppress unused parameter
+    (void)timeout; // Suppress unused parameter
+
+    if (mock_poll_should_fail) {
+        return -1;
+    }
+
+    // Default behavior - return 0 (timeout)
+    return 0;
+}
+
+// Mock implementation of recvfrom
+ssize_t mock_recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen) {
+    (void)sockfd;  // Suppress unused parameter
+    (void)buf;     // Suppress unused parameter
+    (void)len;     // Suppress unused parameter
+    (void)flags;   // Suppress unused parameter
+    (void)src_addr; // Suppress unused parameter
+    (void)addrlen;  // Suppress unused parameter
+
+    if (mock_recvfrom_should_fail) {
+        return -1;
+    }
+
+    // Default behavior - return 0 (no data)
+    return 0;
+}
+
 // Mock control functions
 void mock_system_set_malloc_failure(int should_fail) {
     mock_malloc_should_fail = should_fail;
@@ -93,8 +168,28 @@ void mock_system_set_gethostname_result(const char *result) {
     mock_gethostname_result = result;
 }
 
+void mock_system_set_nanosleep_failure(int should_fail) {
+    mock_nanosleep_should_fail = should_fail;
+}
+
+void mock_system_set_clock_gettime_failure(int should_fail) {
+    mock_clock_gettime_should_fail = should_fail;
+}
+
+void mock_system_set_poll_failure(int should_fail) {
+    mock_poll_should_fail = should_fail;
+}
+
+void mock_system_set_recvfrom_failure(int should_fail) {
+    mock_recvfrom_should_fail = should_fail;
+}
+
 void mock_system_reset_all(void) {
     mock_malloc_should_fail = 0;
     mock_gethostname_should_fail = 0;
     mock_gethostname_result = NULL;
+    mock_nanosleep_should_fail = 0;
+    mock_clock_gettime_should_fail = 0;
+    mock_poll_should_fail = 0;
+    mock_recvfrom_should_fail = 0;
 }
