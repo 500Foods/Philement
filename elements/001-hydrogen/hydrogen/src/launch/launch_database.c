@@ -665,7 +665,7 @@ int launch_database_subsystem(void) {
     }
 
     // Phase 4.51: Proceeding without waiting for Lead DQMs to complete initial connection attempts
-    log_this(SR_DATABASE, "Proceeding to next subsystem without waiting for Lead DQM connections", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Proceeding to next subsystem without waiting for Lead DQM connections", LOG_LEVEL_STATE, 0);
 
     // log_this(SR_DATABASE, "Phase 4.52: Database connections established", LOG_LEVEL_STATE, 0);
     // log_this(SR_DATABASE, "Phase 4.53: Preparing queue count message", LOG_LEVEL_STATE, 0);

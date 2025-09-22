@@ -81,7 +81,7 @@ run_cppcheck() {
         if [[ -f "${CACHE_DIR}/last_run" ]]; then
             for file in "${files[@]}"; do
                 if [[ "${file}" -nt "${CACHE_DIR}/last_run" ]]; then
-                    ((modified_count++))
+                    modified_count=$(( modified_count + 1 ))
                 fi
             done
         else
