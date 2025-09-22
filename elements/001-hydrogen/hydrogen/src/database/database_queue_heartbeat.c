@@ -841,6 +841,9 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 log_this(dqm_label, "Bootstrap query completed in %.3fs: returned %zu rows, %zu columns, affected %d rows",
                          LOG_LEVEL_STATE, 4, execution_time, result->row_count, result->column_count, result->affected_rows);
 
+                // Log completion message for test synchronization
+                log_this(dqm_label, "Lead DQM initialization is complete", LOG_LEVEL_STATE, 0);
+
                 // Log detailed result information
                 if (result->row_count > 0 && result->column_count > 0 && result->data_json) {
                     // log_this(dqm_label, "Bootstrap query result data: %s", LOG_LEVEL_DEBUG, 1, result->data_json);
