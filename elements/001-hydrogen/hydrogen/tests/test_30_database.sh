@@ -12,6 +12,9 @@
 # test_database_configuration()
 
 # CHANGELOG
+# 1.3.0 - 2025-09-21 - Added waiting for "Initial connection attempt completed" before shutdown
+#                    - Added bootstrap query analysis reporting time and row counts as subtest results
+#                    - Enhanced test to wait for full database connection completion
 # 1.2.1 - 2025-09-10 - Updated to check for new DQM logging format with queue numbers and tags
 #                    - Changed from "DQM-{DatabaseName} Lead queue worker thread started" to
 #                      "DQM-{DatabaseName}-00-{TagLetters} Worker thread started" format
@@ -31,7 +34,7 @@ TEST_NAME="Databases {BLUE}(postgres, sqlite, mysql, db2){RESET}"
 TEST_ABBR="DBS"
 TEST_NUMBER="30"
 TEST_COUNTER=0
-TEST_VERSION="1.2.1"
+TEST_VERSION="1.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -157,7 +160,46 @@ run_database_test_parallel() {
             echo "DQM_STARTED" >> "${result_file}"
             database_ready=true
 
-            # Skip queue counting for now - focus on DQM startup verification
+            # Wait for initial connection attempts to complete
+            local expected_connections=0
+            if [[ "${test_name}" == "MULTI" ]]; then
+                # For multi config, expect 4 connections
+                expected_connections=4
+            else
+                # For single configs, expect 1 connection
+                expected_connections=1
+            fi
+
+            local connection_attempts_completed=0
+            local connection_timeout_start
+            connection_timeout_start=${SECONDS}
+
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for ${expected_connections} initial connection attempt(s) to complete"
+
+            while [[ ${connection_attempts_completed} -lt ${expected_connections} ]] && [[ $((SECONDS - connection_timeout_start)) -lt 30 ]]; do
+                # Count completed connection attempts from Database summary messages
+                connection_attempts_completed=$(grep -c "Lead DQM .* initial connection attempt completed" "${log_file}" 2>/dev/null || echo "0")
+                sleep 0.1
+            done
+
+            if [[ ${connection_attempts_completed} -ge ${expected_connections} ]]; then
+                echo "CONNECTION_ATTEMPTS_COMPLETED" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "All ${expected_connections} initial connection attempt(s) completed"
+
+                # Parse bootstrap query results with DQM context
+                local bootstrap_lines
+                bootstrap_lines=$(grep -B 1 "Bootstrap query completed" "${log_file}" 2>/dev/null | grep -E "(DQM-.*|Bootstrap query completed)" || echo "")
+                if [[ -n "${bootstrap_lines}" ]]; then
+                    echo "BOOTSTRAP_QUERIES_FOUND" >> "${result_file}"
+                    echo "${bootstrap_lines}" >> "${result_file}"
+                else
+                    echo "BOOTSTRAP_QUERIES_MISSING" >> "${result_file}"
+                fi
+            else
+                echo "CONNECTION_ATTEMPTS_TIMEOUT" >> "${result_file}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Timeout waiting for connection attempts: ${connection_attempts_completed}/${expected_connections} completed"
+                database_ready=false
+            fi
         else
             echo "DATABASE_NOT_READY" >> "${result_file}"
         fi
@@ -218,6 +260,12 @@ analyze_database_test_results() {
         return 1
     fi
 
+    # Check connection attempts completed
+    if ! "${GREP}" -q "CONNECTION_ATTEMPTS_COMPLETED" "${result_file}" 2>/dev/null; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Connection attempts not completed for ${description} test"
+        return 1
+    fi
+
     # Perform DQM Launch Check sub-test
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: DQM Launch Check"
 
@@ -237,7 +285,6 @@ analyze_database_test_results() {
             done <<< "${dqm_launches}"
 
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: DQM Launch Check (${dqm_count} confirmed)"
-            return 0
         else
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: No DQM Launches Found"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: DQM Launch Check"
@@ -252,12 +299,63 @@ analyze_database_test_results() {
         if [[ -n "${dqm_name}" ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${dqm_name} Launch Confirmed"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: DQM Launch Check"
-            return 0
         else
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: DQM Launch not found"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: DQM Launch Check"
             return 1
         fi
+    fi
+
+    # Perform Bootstrap Query Analysis sub-test
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Bootstrap Query Analysis"
+
+    if "${GREP}" -q "BOOTSTRAP_QUERIES_FOUND" "${result_file}" 2>/dev/null; then
+        # Parse bootstrap query results from result file
+        local bootstrap_data
+        bootstrap_data=$("${GREP}" -A 100 "BOOTSTRAP_QUERIES_FOUND" "${result_file}" 2>/dev/null | tail -n +2)
+
+        if [[ -n "${bootstrap_data}" ]]; then
+            local total_queries=0
+            local total_time=0
+            local total_rows=0
+
+            while IFS= read -r line; do
+                if [[ "${line}" =~ Bootstrap\ query\ completed\ in\ ([0-9.]+)s:\ returned\ ([0-9]+)\ rows ]]; then
+                    local query_time="${BASH_REMATCH[1]}"
+                    local query_rows="${BASH_REMATCH[2]}"
+                    ((total_queries++))
+                    total_time=$(echo "${total_time} + ${query_time}" | bc -l 2>/dev/null || echo "${total_time}")
+                    total_rows=$((total_rows + query_rows))
+
+                    # Extract database name from the DQM in the same line
+                    local db_name=""
+                    if echo "${line}" | grep -q "\[ DQM-.*-00-"; then
+                        db_name="${line#*\[ DQM-}"
+                        db_name="${db_name%%-*}"
+                    fi
+
+                    if [[ "${test_name}" == "MULTI" && -n "${db_name}" ]]; then
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${db_name} - ${query_time}s, ${query_rows} rows"
+                    else
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Bootstrap query ${total_queries} - ${query_time}s, ${query_rows} rows"
+                    fi
+                fi
+            done <<< "${bootstrap_data}"
+
+            if [[ ${total_queries} -gt 0 ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Bootstrap Query Analysis (${total_queries} queries, ${total_time}s total, ${total_rows} rows)"
+                return 0
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Bootstrap Query Analysis - No valid queries found"
+                return 1
+            fi
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Bootstrap Query Analysis - No data found"
+            return 1
+        fi
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Bootstrap Query Analysis - Queries not found"
+        return 1
     fi
 }
 
