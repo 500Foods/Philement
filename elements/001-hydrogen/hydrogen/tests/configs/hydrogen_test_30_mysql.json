@@ -10,14 +10,15 @@
         "ConnectionCount": 1,
         "Connections": [
             {
-                "Name": "Canvas",
-                "Engine": "mysql",
                 "Enabled": true,
-                "Host": "localhost",
-                "Port": "3306",
-                "Database": "canvas_test",
-                "User": "test_user",
-                "Pass": "test_pass",
+                "Name": "CNV",
+                "Engine": "${env.CANVAS_DB_TYPE}",
+                "Host": "${env.CANVAS_DB_HOST}",
+                "Port": "${env.CANVAS_DB_PORT}",
+                "Database": "${env.CANVAS_DB_NAME}",
+                "User": "${env.CANVAS_DB_USER}",
+                "Pass": "${env.CANVAS_DB_PASS}",
+                "Bootstrap": "select * from canvas.queries;",
                 "Queues": {
                     "Slow": {
                         "start": 1,
