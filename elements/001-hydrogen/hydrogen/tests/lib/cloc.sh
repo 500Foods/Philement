@@ -332,7 +332,8 @@ EOF
             "header": "Description",
             "key": "description",
             "datatype": "text",
-            "justification": "left"
+            "justification": "left",
+            "width": 46
         }
     ]
 }
@@ -412,25 +413,25 @@ EOF
          "section": "ratios",
          "metric": "Code/Docs",
          "value": "${codedoc_ratio}",
-         "description": "Ratio of code lines to documentation lines"
+         "description": "Ratio of Code to Docs        {CYAN}Target: 1.5-2.5{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Docs/Code",
          "value": "${docscode_ratio}",
-         "description": "Ratio of documentation lines to code lines"
+         "description": "Ratio of Docs to Code        {CYAN}Target: 0.4-0.7{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Code/Comments",
          "value": "${codecomment_ratio}",
-         "description": "Ratio of code lines to comment lines"
+         "description": "Ratio of Code to Comments    {CYAN}Target: 3.0-5.0{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Comments/Code",
          "value": "${commentscode_ratio}",
-         "description": "Ratio of comment lines to code lines"
+         "description": "Ratio of Comments to Code    {CYAN}Target: 0.2-0.3{RESET}"
      },
      {
          "section": "coverage_lines",
@@ -440,7 +441,7 @@ EOF
      },
      {
          "section": "coverage_lines",
-         "metric": "Instrumented Black",
+         "metric": "Instrumented Blackbox",
          "value": "${format_instrumented_black}",
          "description": "Lines of instrumented code - Blackbox"
      },
@@ -452,7 +453,7 @@ EOF
      },
      {
          "section": "coverage_lines",
-         "metric": "Coverage Black",
+         "metric": "Coverage Blackbox",
          "value": "${format_covered_black}",
          "description": "Lines of covered code - Blackbox"
      },
@@ -460,25 +461,25 @@ EOF
          "section": "coverage_percentages",
          "metric": "Coverage Unity %",
          "value": "${coverage_unity_fmt}%",
-         "description": "Unity test coverage percentage"
+         "description": "Unity test coverage              {CYAN}Target: 60%{RESET}"
      },
      {
          "section": "coverage_percentages",
-         "metric": "Coverage Black %",
+         "metric": "Coverage Blackbox %",
          "value": "${coverage_black_fmt}%",
-         "description": "Blackbox test coverage percentage"
+         "description": "Blackbox test coverage           {CYAN}Target: 70%{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Combined %",
          "value": "${coverage_combined_fmt}%",
-         "description": "Combined test coverage percentage"
-     },
+         "description": "Combined test coverage           {CYAN}Target: 80%{RESET}"
+     }, 
      {
          "section": "coverage_percentages",
          "metric": "Unity Ratio",
          "value": "${unity_ratio}",
-         "description": "Test C/Headers / Core C/Headers code"
+         "description": "Test/Core C/Headers        {CYAN}Target: 100%-200%{RESET}"
      }
 ]
 EOF
