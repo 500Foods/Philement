@@ -16,7 +16,7 @@ echo "$(date +%H:%M:%S.%3N || true) - Default Build"
 
 # Build main project and check for errors
 BUILD_OUTPUT=$(cmake --build ../build --preset default 2>&1)
-ERRORS=$(echo "${BUILD_OUTPUT}" | grep -E "error:|warning:|undefined reference|collect2:|ld returned" || true)
+ERRORS=$(echo "${BUILD_OUTPUT}" | grep -B 2 -E "error:|warning:|undefined reference|collect2:|ld returned" || true)
 if [[ -n "${ERRORS}" ]]; then
     echo "${ERRORS}"
     exit 1
@@ -26,7 +26,7 @@ echo "$(date +%H:%M:%S.%3N || true) - Unity Build"
 
 # Build Unity tests and check for errors
 UNITY_BUILD_OUTPUT=$(cmake --build ../build --target unity_tests 2>&1)
-UNITY_ERRORS=$(echo "${UNITY_BUILD_OUTPUT}" | grep -E "error:|warning:|undefined reference|collect2:|ld returned" || true)
+UNITY_ERRORS=$(echo "${UNITY_BUILD_OUTPUT}" | grep -B 2 -E "error:|warning:|undefined reference|collect2:|ld returned" || true)
 if [[ -n "${UNITY_ERRORS}" ]]; then
     echo "${UNITY_ERRORS}"
     exit 1
