@@ -73,13 +73,13 @@ Hydrogen is currently designed for technical users who:
 ## Latest Test Results
 
 <div style="display: flex; flex-direction: column; align-items: start; gap: 0px;">
-  <img src="COMPLETE.svg" alt="Complete Test Results" style="margin: -25px 0px 0px -20px;">
-  <img src="COVERAGE.svg" alt="Coverage Test Results" style="margin: -25px 0px 0px -20px;">
+  <img src="images/COMPLETE.svg" alt="Complete Test Results" style="margin: -25px 0px 0px -20px;">
+  <img src="images/COVERAGE.svg" alt="Coverage Test Results" style="margin: -25px 0px 0px -20px;">
 </div>
 
 ## Repository Information
 
 <div style="display: flex; background: none !important; border: none !impoertant; flex-direction: column; align-items: start; gap: 0px;">
-  <img src="CLOC_CODE.svg" alt="CLOC Code Analysis" style="margin: -25px 0px 0px -20px;">
-  <img src="CLOC_STAT.svg" alt="CLOC Extended Statistics" style="margin: -25px 0px 0px -20px;">
+  <img src="images/CLOC_CODE.svg" alt="CLOC Code Analysis" style="margin: -25px 0px 0px -20px;">
+  <img src="images/CLOC_STAT.svg" alt="CLOC Extended Statistics" style="margin: -25px 0px 0px -20px;">
 </div>
