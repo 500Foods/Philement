@@ -20,12 +20,12 @@
 #define log_this mock_log_this
 
 // Debug output to verify the define is working
-#pragma message("USE_MOCK_LOGGING is defined - mock logging is active")
+// #pragma message("USE_MOCK_LOGGING is defined - mock logging is active")
 
 #endif // USE_MOCK_LOGGING
 
 #ifndef USE_MOCK_LOGGING
-#pragma message("USE_MOCK_LOGGING is NOT defined - using real logging")
+// #pragma message("USE_MOCK_LOGGING is NOT defined - using real logging")
 #endif
 
 // Mock function prototypes (always available)

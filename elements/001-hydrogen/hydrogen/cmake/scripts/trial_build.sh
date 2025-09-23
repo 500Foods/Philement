@@ -17,13 +17,13 @@ fi
 cd "${BUILD_DIR}"
 
 # Clean and build, suppressing cmake configuration noise
-cmake --build . --target clean >/dev/null 2>&1 || true
+# cmake --build . --target clean >/dev/null 2>&1 || true
 
 # Remove hydrogen_naked if it exists (byproduct of release builds)
 if [[ -f "${SOURCE_DIR}/../hydrogen_naked" ]]; then
     rm -f "${SOURCE_DIR}/../hydrogen_naked"
 fi
-BUILD_OUTPUT=$(cmake --build . --target hydrogen 2>&1)
+BUILD_OUTPUT=$(cmake --build . --target unity_tests 2>&1)
 
 # Show only compiler/linker errors and warnings 
 ERRORS=$(echo "${BUILD_OUTPUT}" | grep -E "error:|warning:|undefined reference|collect2:|ld returned" || true)

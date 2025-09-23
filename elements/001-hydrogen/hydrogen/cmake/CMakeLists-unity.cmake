@@ -45,14 +45,108 @@ set(UNITY_PRINT_MOCK_SOURCES
 set(UNITY_HYDROGEN_SOURCES ${HYDROGEN_SOURCES})
 set(UNITY_HYDROGEN_SOURCES_FOR_LINKING ${UNITY_HYDROGEN_SOURCES})
 list(REMOVE_ITEM UNITY_HYDROGEN_SOURCES_FOR_LINKING "${CMAKE_CURRENT_SOURCE_DIR}/../src/hydrogen.c")
-# Remove print_queue_manager.c from regular Unity compilation since it will be built with mock defines
-list(REMOVE_ITEM UNITY_HYDROGEN_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../src/print/print_queue_manager.c")
+
+set(UNITY_OBJECT_FILES "")
+
+# Create object files for Unity sources (shared across all tests)
+foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
+    # Get relative path from src directory
+    file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../src" ${SOURCE_FILE})
+    get_filename_component(OBJ_DIR ${REL_PATH} DIRECTORY)
+    get_filename_component(OBJ_BASENAME ${REL_PATH} NAME_WE)
+
+    # Set up output directory structure to mirror source in build/unity/src/
+    if(OBJ_DIR)
+        set(OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${OBJ_DIR}")
+        set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
+    else()
+        set(OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src")
+        set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
+    endif()
+
+    # Check if this is a websocket, terminal, or mdns source file to include mock headers
+    string(FIND "${SOURCE_FILE}" "websocket" IS_WEBSOCKET_SOURCE)
+    string(FIND "${SOURCE_FILE}" "terminal" IS_TERMINAL_SOURCE)
+    string(FIND "${SOURCE_FILE}" "mdns" IS_MDNS_SOURCE)
+    if(IS_WEBSOCKET_SOURCE GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS")
+    elseif(IS_TERMINAL_SOURCE GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_LIBMICROHTTPD")
+    elseif(IS_MDNS_SOURCE GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_THREADS")
+    else()
+        set(MOCK_INCLUDES "")
+        set(MOCK_DEFINES "")
+    endif()
+
+    # Create custom command to compile source file to object file with Unity-specific flags
+    add_custom_command(
+        OUTPUT ${OUTPUT_OBJ}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
+        COMMAND ${CMAKE_C_COMPILER}
+            ${HYDROGEN_BASE_CFLAGS}
+            -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+            -DVERSION='"${HYDROGEN_VERSION}"'
+            -DRELEASE='"${HYDROGEN_RELEASE}"'
+            -DBUILD_TYPE='"Unity"'
+            -DUNITY_INCLUDE_DOUBLE
+            -DUNITY_TEST_MODE
+            -DUSE_MOCK_LOGGING
+            -Dlog_this=mock_log_this
+            ${MOCK_DEFINES}
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../src
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
+            -I${UNITY_FRAMEWORK_DIR}/src
+            ${MOCK_INCLUDES}
+            ${JANSSON_CFLAGS}
+            ${MICROHTTPD_CFLAGS}
+            ${WEBSOCKETS_CFLAGS}
+            ${BROTLI_CFLAGS}
+            ${UUID_CFLAGS}
+            ${LUA_CFLAGS}
+            -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
+        DEPENDS ${SOURCE_FILE}
+        COMMENT "Compiling ${REL_PATH} to Unity object file"
+    )
+
+    list(APPEND UNITY_OBJECT_FILES ${OUTPUT_OBJ})
+endforeach()
+
+# Create target that depends on all Unity object files
+add_custom_target(unity_objects DEPENDS ${UNITY_OBJECT_FILES})
+
+# Create static library for Unity tests to improve build performance and ccache effectiveness
+add_library(hydrogen_unity STATIC ${UNITY_OBJECT_FILES})
+add_dependencies(hydrogen_unity unity_objects)
+
+# Set linker language explicitly for the static library
+set_target_properties(hydrogen_unity PROPERTIES LINKER_LANGUAGE C)
+
+# Set include directories for the Unity library
+target_include_directories(hydrogen_unity PRIVATE ${HYDROGEN_INCLUDE_DIRS})
+
+# Add precompiled headers for hydrogen.h (included in nearly every file)
+target_precompile_headers(hydrogen_unity PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/hydrogen.h"
+)
+
+# Set Unity-specific compile definitions
+target_compile_definitions(hydrogen_unity PRIVATE
+    VERSION="${HYDROGEN_VERSION}"
+    RELEASE="${HYDROGEN_RELEASE}"
+    BUILD_TYPE="Unity"
+    UNITY_INCLUDE_DOUBLE
+    UNITY_TEST_MODE
+)
 
 # Create object libraries for Unity components
 add_library(unity_framework OBJECT ${UNITY_FRAMEWORK_SOURCES})
 target_compile_options(unity_framework PRIVATE
     ${HYDROGEN_BASE_CFLAGS}
-    -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+    -O0 -g3 -ggdb3 -fno-omit-frame-pointer
     -Wno-double-promotion
     -I${UNITY_FRAMEWORK_DIR}/src
     -DUNITY_INCLUDE_DOUBLE
@@ -61,7 +155,7 @@ target_compile_options(unity_framework PRIVATE
 add_library(unity_mocks OBJECT ${UNITY_MOCK_SOURCES})
 target_compile_options(unity_mocks PRIVATE
     ${HYDROGEN_BASE_CFLAGS}
-    -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+    -O0 -g3 -ggdb3 -fno-omit-frame-pointer
     -DVERSION="${HYDROGEN_VERSION}"
     -DRELEASE="${HYDROGEN_RELEASE}"
     -DBUILD_TYPE="Unity"
@@ -82,7 +176,7 @@ target_compile_options(unity_mocks PRIVATE
 add_library(unity_print_mocks OBJECT ${UNITY_PRINT_MOCK_SOURCES})
 target_compile_options(unity_print_mocks PRIVATE
     ${HYDROGEN_BASE_CFLAGS}
-    -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+    -O0 -g3 -ggdb3 -fno-omit-frame-pointer
     -DVERSION="${HYDROGEN_VERSION}"
     -DRELEASE="${HYDROGEN_RELEASE}"
     -DBUILD_TYPE="Unity"
@@ -98,48 +192,6 @@ target_compile_options(unity_print_mocks PRIVATE
     ${BROTLI_CFLAGS}
     ${UUID_CFLAGS}
     ${LUA_CFLAGS}
-)
-
-# Create static library for Unity tests to improve build performance and ccache effectiveness
-add_library(hydrogen_unity STATIC ${UNITY_HYDROGEN_SOURCES_FOR_LINKING})
-target_compile_options(hydrogen_unity PRIVATE
-    ${HYDROGEN_BASE_CFLAGS}
-    -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
-    -DVERSION="${HYDROGEN_VERSION}"
-    -DRELEASE="${HYDROGEN_RELEASE}"
-    -DBUILD_TYPE="Unity"
-    -DUNITY_INCLUDE_DOUBLE
-    -DUNITY_TEST_MODE
-)
-target_include_directories(hydrogen_unity PRIVATE ${HYDROGEN_INCLUDE_DIRS})
-target_precompile_headers(hydrogen_unity PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../src/hydrogen.h")
-
-# Custom target to build print_queue_manager.c with MOCK_LOGGING for Unity tests
-add_custom_target(print_queue_manager_mock
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/unity/src/print
-    COMMAND ${CMAKE_C_COMPILER}
-        ${HYDROGEN_BASE_CFLAGS}
-        -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
-        -DVERSION="${HYDROGEN_VERSION}"
-        -DRELEASE="${HYDROGEN_RELEASE}"
-        -DBUILD_TYPE="Unity"
-        -DUNITY_INCLUDE_DOUBLE
-        -DUNITY_TEST_MODE
-        -DUSE_MOCK_LOGGING -Dlog_this=mock_log_this
-        -I${CMAKE_CURRENT_SOURCE_DIR}/../src
-        -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
-        -I${UNITY_FRAMEWORK_DIR}/src
-        -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks
-        ${JANSSON_CFLAGS}
-        ${MICROHTTPD_CFLAGS}
-        ${WEBSOCKETS_CFLAGS}
-        ${BROTLI_CFLAGS}
-        ${UUID_CFLAGS}
-        ${LUA_CFLAGS}
-        -c ${CMAKE_CURRENT_SOURCE_DIR}/../src/print/print_queue_manager.c
-        -o ${CMAKE_BINARY_DIR}/unity/src/print/print_queue_manager.o
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/print/print_queue_manager.c
-    COMMENT "Building print_queue_manager.c with MOCK_LOGGING support"
 )
 
 # Create Unity test executables for each test file
@@ -179,70 +231,86 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(MOCK_DEFINES "")
     endif()
 
-    # Create the Unity test executable
-    add_executable(${TEST_NAME} ${TEST_SOURCE})
+    # Create test source object file in the appropriate subdirectory
+    get_filename_component(TEST_BASENAME ${TEST_SOURCE} NAME_WE)
+    if(TEST_DIR AND NOT TEST_DIR STREQUAL ".")
+        set(TEST_OUTPUT_OBJ "${CMAKE_BINARY_DIR}/unity/src/${TEST_DIR}/${TEST_BASENAME}.o")
+    else()
+        set(TEST_OUTPUT_OBJ "${CMAKE_BINARY_DIR}/unity/src/${TEST_BASENAME}.o")
+    endif()
 
-    # Set compile options for the test
-    target_compile_options(${TEST_NAME} PRIVATE
-        ${HYDROGEN_BASE_CFLAGS}
-        -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
-        -DVERSION="${HYDROGEN_VERSION}"
-        -DRELEASE="${HYDROGEN_RELEASE}"
-        -DBUILD_TYPE="Coverage"
-        -DUNITY_INCLUDE_DOUBLE
-        ${MOCK_DEFINES}
-        -I${CMAKE_CURRENT_SOURCE_DIR}/../src
-        -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
-        -I${UNITY_FRAMEWORK_DIR}/src
-        ${MOCK_INCLUDES}
-        ${JANSSON_CFLAGS}
-        ${MICROHTTPD_CFLAGS}
-        ${WEBSOCKETS_CFLAGS}
-        ${BROTLI_CFLAGS}
+    # Create custom command to compile test source file to object file
+    add_custom_command(
+        OUTPUT ${TEST_OUTPUT_OBJ}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${TEST_OUTPUT_DIR}
+        COMMAND ${CMAKE_C_COMPILER}
+            ${HYDROGEN_BASE_CFLAGS}
+            -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+            -DVERSION='"${HYDROGEN_VERSION}"'
+            -DRELEASE='"${HYDROGEN_RELEASE}"'
+            -DBUILD_TYPE='"Coverage"'
+            -DUNITY_INCLUDE_DOUBLE
+            ${MOCK_DEFINES}
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../src
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
+            -I${UNITY_FRAMEWORK_DIR}/src
+            ${MOCK_INCLUDES}
+            ${JANSSON_CFLAGS}
+            ${MICROHTTPD_CFLAGS}
+            ${WEBSOCKETS_CFLAGS}
+            ${BROTLI_CFLAGS}
+            -c ${TEST_SOURCE} -o ${TEST_OUTPUT_OBJ}
+        DEPENDS ${TEST_SOURCE}
+        COMMENT "Compiling ${TEST_BASENAME} test to object file"
     )
 
-    # Link libraries
+    # Create the Unity test executable using the test object and shared library
+    add_executable(${TEST_NAME} ${TEST_OUTPUT_OBJ})
+
+    # Link with Unity static library and required libraries (excluding hydrogen.c which has main())
     target_link_libraries(${TEST_NAME}
+        hydrogen_unity
         unity_framework
         unity_mocks
-        hydrogen_unity
         ${HYDROGEN_BASE_LIBS}
         --coverage
         -lgcov
     )
 
-    # For print tests, also link print mocks and mock print_queue_manager
+    # For print tests, also link print mocks
     if(IS_PRINT_TEST GREATER -1)
         target_link_libraries(${TEST_NAME} unity_print_mocks)
-        add_dependencies(${TEST_NAME} print_queue_manager_mock)
-        target_link_options(${TEST_NAME} PRIVATE "${CMAKE_BINARY_DIR}/unity/src/print/print_queue_manager.o")
     endif()
 
     # Add extra link flags
     target_link_options(${TEST_NAME} PRIVATE -Wl,--gc-sections)
 
-    # Set output directory for test executable
+    # Set output directory for test executable (place in subdirectory to match source structure)
+    if(TEST_DIR AND NOT TEST_DIR STREQUAL ".")
+        set(TEST_RUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${TEST_DIR}")
+    else()
+        set(TEST_RUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src")
+    endif()
+
     set_target_properties(${TEST_NAME} PROPERTIES
         OUTPUT_NAME ${TEST_NAME}
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/unity/src"
+        RUNTIME_OUTPUT_DIRECTORY "${TEST_RUNTIME_DIR}"
         LINKER_LANGUAGE C
     )
 
     # Add custom command to show build completion
     add_custom_command(TARGET ${TEST_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} ${BOLD}Unity test build${NORMAL} ${GREEN}completed successfully: ${TEST_NAME}${NORMAL}"
-        COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Unity test artifacts located in: ${TEST_OUTPUT_DIR}/${NORMAL}"
+        COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Unity test executable located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${NORMAL}"
         VERBATIM
     )
 
     # Add test to CTest
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/unity/src
+        WORKING_DIRECTORY ${TEST_RUNTIME_DIR}
     )
 endforeach()
 
-# Create target that depends on all Unity object files
-add_custom_target(unity_objects DEPENDS ${UNITY_OBJECT_FILES})
 
 # Create list of all Unity test targets
 set(UNITY_TEST_TARGETS "")
@@ -258,7 +326,7 @@ add_custom_target(unity_tests
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target unity_objects --parallel
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target ${UNITY_TEST_TARGETS} --parallel
     COMMAND ${CMAKE_COMMAND} -E echo "✅ Unity tests built successfully"
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Unity coverage files located in: ${CMAKE_BINARY_DIR}/unity/src/"
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Unity coverage files located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Building Unity tests with coverage instrumentation"
 )

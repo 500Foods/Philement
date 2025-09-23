@@ -19,7 +19,7 @@
 
 // External libraries
 #ifdef USE_MOCK_LIBWEBSOCKETS
-#include "../tests/unity/mocks/mock_libwebsockets.h"
+#include "mock_libwebsockets.h"
 #else
 #include <libwebsockets.h>
 #endif
