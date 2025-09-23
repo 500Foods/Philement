@@ -1,19 +1,21 @@
 # Hydrogen Encrypted Payload System
 
-This directory contains the encrypted payload system for the Hydrogen project, which currently includes the OpenAPI/Swagger integration for REST API documentation, with provisions for future expansion to other payloads.
-
 ## Overview
 
-The payload system for Hydrogen provides a secure way to embed various assets directly into the executable. The current implementation includes SwaggerUI for API documentation, with a robust hybrid encryption system and optimized compression.
+Hydrogen uses an encrypted payload system to securely embed assets directly into executables. The system supports multiple payload types with RSA+AES hybrid encryption, environment-based key management, and Brotli compression.
 
-Key features:
+**Current Payloads:**
 
-- **General-purpose payload system** - Designed to handle multiple payload types
-- **RSA+AES hybrid encryption** - Secure key exchange with efficient payload encryption
-- **Environment variable-based key management** - Flexible and secure key distribution
-- **OpenAPI 3.1.0 compatibility** - Full support for latest OpenAPI specification
-- **Optimized with Brotli compression** - High compression ratio for static assets
-- **Dynamic content adaptation** - Server URL and configuration auto-adjustment
+- **SwaggerUI**: OpenAPI 3.1.0 documentation interface
+- **Terminal**: xterm.js-based web terminal interface
+- **Database Migrations**: Helium project database schema files
+
+**Key Features:**
+
+- Hybrid RSA+AES encryption with environment variable key management
+- Brotli compression for optimal size
+- Dynamic content adaptation for server URLs and configuration
+- Extensible architecture for future payload types
 
 ## Payload Mechanism
 
@@ -24,12 +26,22 @@ of the payload so the program can properly locate and decode it.
 
 Of special note, when using the release build, it is compressed with UPX and stripped of symbols. So strings like the payload marker appear exactly once, where one would expect the payload marker to appear. The coverage build, on the other hand, is neither compressed nor stripped of its debug symbols, leading to the revelation that the payload marker appears numerous times in the file, and thus we have to be mindful to examine the *last* payload marker when using it as designed.
 
-## Payload Contents
+## Payload Scripts
 
-- `swagger-generate.sh` - Script that processes annotations and generates the OpenAPI specification
-- `swagger.json` - Generated OpenAPI 3.1.0 specification
-- `payload-generate.sh` - Script to download, package, and encrypt payloads for distribution
-- `payload.tar.br` - Encrypted, Brotli-compressed tarball containing payload files
+| Script | Purpose |
+|--------|---------|
+| `swagger-generate.sh` | Scans C source code for annotations and generates OpenAPI 3.1.0 specification |
+| `terminal-generate.sh` | Downloads xterm.js and creates web terminal interface assets |
+| `payload-generate.sh` | Downloads dependencies, compresses assets, packages payloads, and creates encrypted tarball |
+
+## Generated Files
+
+| File | Description |
+|------|-------------|
+| `swagger.json` | Generated OpenAPI 3.1.0 specification |
+| `payload.tar.br.enc` | Encrypted, Brotli-compressed payload tarball |
+| `xtermjs/` | Temporary directory with xterm.js assets (cleaned up after packaging) |
+| `swaggerui/` | Temporary directory with SwaggerUI assets (cleaned up after packaging) |
 
 ## Payload Encryption System
 
@@ -70,222 +82,158 @@ The Hydrogen project uses a hybrid RSA+AES encryption approach for payloads:
    - iv: 16-byte initialization vector for AES-CBC
    - encrypted_payload: AES-encrypted, Brotli-compressed tar file
 
-## SwaggerUI Implementation
+## SwaggerUI Payload
 
-The primary payload currently embedded is a highly optimized SwaggerUI implementation:
+The SwaggerUI payload provides an interactive API documentation interface:
 
-- **SwaggerUI Version**: SwaggerUI 5.19.0 with selective file inclusion
-- **Optimized Distribution**:
-  - Static assets are Brotli-compressed:
-    - swagger-ui-bundle.js
-    - swagger-ui-standalone-preset.js
-    - swagger-ui.css
-    - oauth2-redirect.html
-  - Dynamic files remain uncompressed for runtime modification:
-    - index.html
-    - swagger-initializer.js
-    - favicon-32x32.png
-    - favicon-16x16.png
-  - All packaged in a tar structure with organized directories for future extensibility
-- **Organized Directory Structure**: Files are organized in a `swagger/` directory within the tar file for easy separation from future payload types
-- **Dynamic Server URL**: Automatically adapts to the current server host and protocol
-- **OAuth Support**: Full OAuth 2.0 authorization flow support
-- **SwaggerUI Configuration**: All UI options can be configured in `hydrogen.json`:
+**Features:**
 
-  ```json
-  "Swagger": {
-    "Enabled": true,
-    "Prefix": "/swagger",
-    "UIOptions": {
-      "tryItEnabled": true,        // Enable/disable Try It Out by default
-      "displayOperationId": false, // Show/hide operation IDs
-      "defaultModelsExpandDepth": 1, // How deep to expand the models section
-      "defaultModelExpandDepth": 1,  // How deep to expand individual models
-      "showExtensions": false,     // Show/hide vendor extensions
-      "showCommonExtensions": true, // Show/hide common extensions
-      "docExpansion": "list",     // "list", "full", or "none"
-      "syntaxHighlightTheme": "agate" // Code syntax highlighting theme
-    }
+- Latest SwaggerUI version with selective file inclusion
+- Brotli compression for static assets (JS/CSS/HTML)
+- Dynamic server URL adaptation
+- OAuth 2.0 authorization support
+- Configurable UI options in `hydrogen.json`
+
+**Configuration Example:**
+
+```json
+"Swagger": {
+  "Enabled": true,
+  "Prefix": "/swagger",
+  "UIOptions": {
+    "tryItEnabled": true,
+    "docExpansion": "list",
+    "syntaxHighlightTheme": "agate"
   }
-  ```
+}
+```
 
-  Each option controls a specific aspect of the UI:
-  - `tryItEnabled`: When true, enables the "Try It Out" feature by default
-  - `displayOperationId`: When false, hides operation IDs from the UI
-  - `defaultModelsExpandDepth`: Controls initial expansion depth of the models section
-  - `defaultModelExpandDepth`: Controls initial expansion depth of individual models
-  - `showExtensions`: Shows vendor-specific OpenAPI extensions when true
-  - `showCommonExtensions`: Shows commonly used OpenAPI extensions when true
-  - `docExpansion`: Controls initial expansion of operations ("list", "full", "none")
-  - `syntaxHighlightTheme`: Theme for code samples and responses
+**Key UI Options:**
 
-The `payload-generate.sh` script handles downloading, compressing, encrypting, and packaging the payload distribution. Run this script when you want to update or recreate the payload package.
+- `tryItEnabled`: Enable "Try It Out" by default
+- `docExpansion`: Initial expansion mode ("list", "full", "none")
+- `syntaxHighlightTheme`: Code highlighting theme
+
+## Terminal Payload
+
+The terminal payload provides a web-based terminal interface using xterm.js:
+
+**Features:**
+
+- Latest xterm.js with fit and attach addons
+- WebSocket-based communication with Hydrogen server
+- VS Code Dark theme with custom styling
+- Automatic terminal resizing and reconnection
+- Secure connection with configurable WebSocket key
+
+**Components:**
+
+- `xterm.js`: Core terminal emulation library
+- `xterm-addon-fit.js`: Automatic terminal sizing
+- `xterm-addon-attach.js`: WebSocket data streaming
+- `terminal.html`: Main interface with VS Code-style theming
+- `terminal.css`: Additional styling and scrollbar customization
+
+**WebSocket Connection:**
+
+- Connects to port 5261 with 'terminal' protocol
+- Requires WebSocket key for authentication
+- Supports terminal resize events and data streaming
 
 ## Payload Structure
 
-The payload is organized in a structured tar format to support multiple payload types:
+The payload uses a structured tar format supporting multiple payload types:
 
-```structure
-payload.tar.br (encrypted, brotli-compressed)
-└── swagger/
-    ├── swagger-ui-bundle.js.br (brotli-compressed)
-    ├── swagger-ui-standalone-preset.js.br (brotli-compressed)
-    ├── swagger-ui.css.br (brotli-compressed)
-    ├── oauth2-redirect.html.br (brotli-compressed)
-    ├── swagger.json (uncompressed for runtime modification)
-    ├── index.html (uncompressed for runtime modification)
-    ├── swagger-initializer.js (uncompressed for runtime modification)
-    ├── favicon-32x32.png (uncompressed)
-    └── favicon-16x16.png (uncompressed)
+```directory
+payload.tar.br.enc (encrypted, brotli-compressed)
+├── swagger/
+│   ├── swagger-ui-bundle.js.br (brotli-compressed)
+│   ├── swagger-ui-standalone-preset.js.br (brotli-compressed)
+│   ├── swagger-ui.css.br (brotli-compressed)
+│   ├── oauth2-redirect.html.br (brotli-compressed)
+│   ├── swagger.json (uncompressed for runtime modification)
+│   ├── swagger.html (uncompressed for runtime modification)
+│   ├── swagger-initializer.js (uncompressed for runtime modification)
+│   ├── favicon-32x32.png (uncompressed)
+│   └── favicon-16x16.png (uncompressed)
+├── terminal/
+│   ├── terminal.html.br (brotli-compressed)
+│   ├── terminal.css.br (brotli-compressed)
+│   ├── xterm.js.br (brotli-compressed)
+│   ├── xterm.css.br (brotli-compressed)
+│   ├── xterm-addon-attach.js.br (brotli-compressed)
+│   ├── xterm-addon-fit.js.br (brotli-compressed)
+│   └── xtermjs_version.txt (version info)
+└── helium/, acuranzo/, etc./
+    ├── database.lua (database configuration)
+    └── *.lua (migration files)
 ```
 
-This structure allows for easy addition of new payload types in the future by creating additional directories (e.g., `docs/`, `assets/`, `config/`) alongside the `swagger/` directory.
+This modular structure allows easy addition of new payload types in separate directories.
 
-## API Documentation Annotation System
+## API Documentation Annotations
 
-API endpoints are documented using special comments in the C source code files. These annotations are processed by the `swagger-generate.sh` script to generate the OpenAPI specification.
+API endpoints are documented using C source code annotations processed by `swagger-generate.sh`:
 
-### Annotation Format
-
-Annotations use the following format:
+**Format:**
 
 ```c
-//@ swagger:<annotation_type> <annotation_value>
+//@ swagger:<type> <value>
 ```
 
-### Common Annotations
+**Common Annotations:**
 
-#### Service-level Annotations (in service header files)
+- `@swagger:tag "Name" Description` - Service-level tags
+- `@swagger:path /endpoint` - Endpoint path
+- `@swagger:method GET|POST|PUT|DELETE` - HTTP method
+- `@swagger:summary Brief description` - Endpoint summary
+- `@swagger:description Detailed description` - Full description
+- `@swagger:response 200 application/json {...}` - Response schema
+- `@swagger:operationId customOperationId` - Optional operation ID
 
-```c
-//@ swagger:tag "System Service" Provides system-level operations and monitoring
-```
+## Workflow
 
-#### Endpoint Annotations (in endpoint header files)
-
-```c
-//@ swagger:path /system/info
-//@ swagger:method GET
-//@ swagger:summary System information endpoint
-//@ swagger:description Returns comprehensive system information
-//@ swagger:response 200 application/json {"type":"object","properties":{"status":{"type":"string"}}}
-```
-
-The `operationId` field is optional and can be added if needed:
-
-```c
-//@ swagger:operationId getSystemInfo
-```
-
-#### Parameter Annotations
-
-```c
-//@ swagger:parameter name type required|optional|conditional Description
-```
-
-#### Response Annotations
-
-```c
-//@ swagger:response 200 application/json {"type":"object","properties":{...}}
-//@ swagger:response 400 application/json {"type":"object","properties":{...}}
-```
-
-#### Security Annotations
-
-```c
-//@ swagger:security SecurityScheme
-```
-
-## Generating Documentation
-
-To generate the OpenAPI specification:
+**Generate API Documentation:**
 
 ```bash
 cd payloads
-./swagger-generate.sh
+./swagger-generate.sh  # Creates swagger.json from C annotations
 ```
 
-This will scan the source code for annotations and produce an updated `swagger.json` file.
-
-## Building the Encrypted Payload
-
-To build the encrypted payload:
+**Build Encrypted Payload:**
 
 ```bash
-cd payloads
-export PAYLOAD_LOCK="base64-encoded-rsa-public-key"
-./payload-generate.sh
+export PAYLOAD_LOCK="base64-encoded-rsa-public-key"  # Required for encryption
+./payload-generate.sh  # Downloads dependencies, compresses, encrypts
 ```
 
-If `PAYLOAD_LOCK` is not set, the script will generate a test key pair for development purposes only.
+**View Documentation:**
 
-## Viewing Documentation
+1. Configure Swagger in `hydrogen.json` and set `PAYLOAD_KEY` environment variable
+2. Start Hydrogen server
+3. Access at `http://localhost:8080/swagger/`
 
-You can view the API documentation using Swagger UI:
+## Development Guidelines
 
-1. Generate the required files (if not already done):
+**Adding New Endpoints:**
 
-   ```bash
-   # Generate the OpenAPI specification
-   ./swagger-generate.sh
-   
-   # Package and encrypt the payloads
-   ./payload-generate.sh
-   ```
+1. Add Swagger annotations to endpoint header files
+2. Run `./swagger-generate.sh` to update `swagger.json`
+3. Run `./payload-generate.sh` to rebuild encrypted payload
+4. Test in Swagger UI
 
-2. Ensure Swagger is enabled in `hydrogen.json` configuration:
+**Adding New Payload Types:**
 
-   ```json
-   "Swagger": {
-     "Enabled": true,
-     "Prefix": "/swagger",
-     "UIOptions": { ... }
-   },
-   "PayloadKey": "${env.PAYLOAD_KEY}"
-   ```
-
-3. Set the PAYLOAD_KEY environment variable for decryption:
-
-   ```bash
-   export PAYLOAD_KEY="base64-encoded-rsa-private-key"
-   ```
-
-4. Start the Hydrogen server:
-
-   ```bash
-   cd ..
-   make run
-   ```
-
-5. Access SwaggerUI in your browser:
-   - Default URL: <http://localhost:8080/swagger/>
-   - The UI will automatically load the API specification
-   - Try out endpoints directly from the interface
-
-## Adding New Endpoints
-
-When adding new API endpoints, follow these steps:
-
-1. Add Swagger annotations to the header file for your endpoint
-2. Follow the annotation patterns established in existing endpoints
-3. Run `./swagger-generate.sh` to update the documentation
-4. Run `./payload-generate.sh` to rebuild the encrypted payload
-5. Test the documentation in Swagger UI to ensure it displays correctly
-
-## Adding New Payload Types
-
-To add new payload types in the future:
-
-1. Add your files to the payload directory structure
-2. Update the payload-generate.sh script if necessary to include these files
-3. Rebuild the encrypted payload using the script
-4. Update the web_server_swagger.c file if necessary to handle the new payload types
+1. Add files to payload directory structure
+2. Update `payload-generate.sh` to include new files
+3. Modify server code to handle new payload types
+4. Rebuild and test
 
 ## Security Considerations
 
-- Always keep the PAYLOAD_KEY secure and never commit it to version control
-- Use environment variables or secure secrets management for production deployments
-- The PAYLOAD_LOCK can be shared more widely since it's only used for encryption
-- Periodically rotate encryption keys for enhanced security
-- Test both encryption and decryption processes when making changes to the payload system
-- For detailed information about secrets management using environment variables, see [SECRETS.md](../SECRETS.md)
+- Keep `PAYLOAD_KEY` secure; never commit to version control
+- Use environment variables or secure secrets management in production
+- `PAYLOAD_LOCK` can be shared (used only for encryption)
+- Rotate encryption keys periodically
+- Test encryption/decryption when modifying payload system
+- See [SECRETS.md](../SECRETS.md) for environment variable management

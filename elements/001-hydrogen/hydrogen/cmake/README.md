@@ -2,11 +2,11 @@
 
 ## Overview
 
-The Hydrogen project uses a comprehensive CMake build system that provides multiple build variants optimized for different use cases. This system mirrors the functionality of the original Makefile while leveraging CMake's modern features and cross-platform capabilities.
+Hydrogen is a C project that implements a comprehensive suite of capabilities including REST API with Swagger provided by embedded payload, web services (Web, WebSocket, SMTP, mDNS), and both blackbox integration and Unity unit tests with gcov coverage reporting. The CMake build system provides multiple build variants optimized for different use cases, mirroring the functionality of the original Makefile while leveraging CMake's modern features and cross-platform capabilities.
 
-## Build Variants
+## Available Targets
 
-### Available Targets
+### Executable Variants
 
 | Target | Description | Optimization | Use Case |
 |--------|-------------|--------------|----------|
@@ -14,19 +14,34 @@ The Hydrogen project uses a comprehensive CMake build system that provides multi
 | `hydrogen_debug` | Debug build | AddressSanitizer | Memory debugging |
 | `hydrogen_valgrind` | Valgrind-compatible | `-O0` | Memory analysis |
 | `hydrogen_perf` | Performance build | `-O3 -march=native` | Maximum performance |
+| `hydrogen_coverage` | Coverage build | gcov instrumentation | Unit testing with coverage |
 | `hydrogen_release` | Release build | `-s -DNDEBUG -flto` | Production deployment |
 
-### Special Targets
+### Build Utilities
 
 | Target | Description |
 |--------|-------------|
-| `payload` | Generates OpenAPI specs and payload contents |
-| `all_variants` | Builds all variants and generates payload |
+| `all_variants` | Builds all executable variants and generates payload |
 | `trial` | Runs diagnostic build with warnings/errors only |
+| `payload` | Generates OpenAPI specs and payload contents |
+| `coverage` | Builds coverage executable with embedded payload |
 | `release_enhanced` | Creates UPX-compressed release with embedded payload |
+| `unity_tests` | Builds Unity unit tests with coverage instrumentation |
 | `clean_all` | Removes all build artifacts |
 | `cleanish` | Cleans while preserving release executables |
-| `help` | Displays available targets and usage |
+
+### Examples & Tools
+
+| Target | Description |
+|--------|-------------|
+| `all_examples` | Builds all OIDC client example programs |
+| `auth_code_flow` | Builds Authorization Code flow OIDC example |
+| `client_credentials` | Builds Client Credentials flow OIDC example |
+| `password_flow` | Builds Resource Owner Password flow OIDC example |
+| `configure_ccache` | Configures ccache with optimal settings |
+| `ccache_stats` | Shows ccache performance statistics |
+| `check_version` | Checks if version number needs updating |
+| `cmake_help` | Displays available targets and usage |
 
 ## Quick Start
 
@@ -76,11 +91,17 @@ cmake --build --preset debug
 ctest --preset debug
 ```
 
+## Critical Build Commands
+
+Following any C code changes, use these commands for testing and building:
+
+- **Trial Build** (`mkt` equivalent): `cmake --build build --target trial` - Performs diagnostic compilation showing only warnings/errors, detects unused source files, and runs shutdown tests
+- **Build All Variants** (`mka` equivalent): `cmake --build build --target all_variants` - Builds all targets (default, debug, valgrind, perf, coverage, release) and generates payload
+- **Build and Run Unit Test** (`mku <test>` equivalent): After `trial`, use `ctest --test-dir build -R <test_name>` to run specific Unity unit tests
+
 ## Build Configuration
 
 ### CMake Options
-
-The build system supports several configuration options:
 
 ```bash
 # Set build type
@@ -89,89 +110,37 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 # Enable verbose output
 cmake --build build --verbose
 
-# Parallel builds
-cmake --build build --parallel 4
+# Parallel builds (use all cores)
+cmake --build build --parallel $(nproc)
 ```
 
-### Environment Variables
+## Key Build Targets
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CMAKE_BUILD_TYPE` | Build configuration | `RelWithDebInfo` |
-| `CMAKE_C_COMPILER` | C compiler to use | `gcc` |
-| `CMAKE_INSTALL_PREFIX` | Installation directory | `/usr/local` |
+### Primary Executables
 
-## Detailed Target Information
+- **`hydrogen`** (default): Balanced optimization with debug symbols for development
+- **`hydrogen_debug`**: AddressSanitizer enabled for memory error detection
+- **`hydrogen_valgrind`**: Optimized for Valgrind memory analysis (`-O0`)
+- **`hydrogen_perf`**: Maximum performance with aggressive optimizations (`-O3 -march=native`)
+- **`hydrogen_coverage`**: gcov instrumentation for unit test coverage reporting
+- **`hydrogen_release`**: Production build with stripping and LTO
 
-### Default Build (`hydrogen`)
+### Special Operations
 
-- **Optimization**: `-O2` with debug symbols
-- **Purpose**: Balanced performance and debuggability
-- **Output**: `build/hydrogen`
+- **`trial`**: Diagnostic build showing only warnings/errors and unused file detection
+- **`all_variants`**: Builds all executables plus payload generation
+- **`release_enhanced`**: Creates UPX-compressed release with embedded payload, producing both `hydrogen_release` (with payload) and `hydrogen_naked` (compressed backup without payload)
 
-```bash
-cmake --build build --target hydrogen
-```
+### Examples
 
-### Debug Build (`hydrogen_debug`)
+- **`all_examples`**: Builds all OIDC client example programs
+- Individual examples: `auth_code_flow`, `client_credentials`, `password_flow` (with `_debug` variants)
 
-- **Features**: AddressSanitizer, leak detection
-- **Optimization**: Standard with frame pointers
-- **Purpose**: Memory error detection
-- **Output**: `build/hydrogen_debug`
-
-```bash
-cmake --build build --target hydrogen_debug
-# Run with ASAN_OPTIONS for detailed output
-ASAN_OPTIONS=verbosity=1:halt_on_error=1 ./build/hydrogen_debug
-```
-
-### Valgrind Build (`hydrogen_valgrind`)
-
-- **Optimization**: `-O0` for accurate analysis
-- **Purpose**: Memory profiling with Valgrind
-- **Output**: `build/hydrogen_valgrind`
-
-```bash
-cmake --build build --target hydrogen_valgrind
-valgrind --tool=memcheck --leak-check=full ./build/hydrogen_valgrind
-```
-
-### Performance Build (`hydrogen_perf`)
-
-- **Optimization**: `-O3 -march=native -ffast-math`
-- **Features**: LTO, aggressive inlining
-- **Purpose**: Maximum runtime performance
-- **Output**: `build/hydrogen_perf`
-
-```bash
-cmake --build build --target hydrogen_perf
-```
-
-### Release Build (`hydrogen_release`)
-
-- **Optimization**: `-s -DNDEBUG -flto`
-- **Features**: Stripped, LTO, stack protection
-- **Purpose**: Production deployment
-- **Output**: `build/hydrogen_release`
-
-```bash
-cmake --build build --target hydrogen_release
-```
-
-### Enhanced Release (`release_enhanced`)
-
-- **Features**: UPX compression, embedded payload
-- **Dependencies**: Requires `payload` target
-- **Output**: `build/hydrogen_release` (with payload), `build/hydrogen_naked` (compressed only)
-
-```bash
-cmake --build build --target release_enhanced
-```
+See the target tables above for complete listings and build commands for each target.
 
 ## Payload System
 
-The payload system packages OpenAPI specifications and other resources:
+The payload system packages OpenAPI specifications and other resources. More information can be found in the [Payload Documentatio](../payloads/README.md).
 
 ### Payload Generation
 
@@ -191,41 +160,21 @@ cmake --build build --target payload
 
 ### Trial Build
 
-Performs diagnostic compilation showing only warnings and errors:
+Diagnostic build that shows only warnings/errors and detects build issues:
 
 ```bash
 cmake --build build --target trial
 ```
 
-Features:
+Features: Filters output, detects unused files, runs shutdown tests.
 
-- Filters compilation output
-- Detects unused source files
-- Runs shutdown tests
-- Provides build diagnostics
+### Build Analysis
 
-### Map File Analysis
-
-Each build variant generates a map file for analysis:
+Each variant generates a `.map` file for linker analysis:
 
 ```bash
-# View symbol layout
-less build/hydrogen.map
-
-# Analyze unused symbols
-grep "DISCARD" build/hydrogen.map
-```
-
-### Unused File Detection
-
-The build system can detect source files not linked into the final executable:
-
-```bash
-# Files listed in .trial-ignore are expected to be unused
-cat .trial-ignore
-
-# Trial build reports unexpected unused files
-cmake --build build --target trial
+less build/hydrogen.map  # View symbol layout
+grep "DISCARD" build/hydrogen.map  # Find unused symbols
 ```
 
 ## Build Artifacts
@@ -234,8 +183,14 @@ cmake --build build --target trial
 
 | File | Description |
 |------|-------------|
-| `build/hydrogen*` | Executable variants |
-| `build/*.map` | Linker map files |
+| `hydrogen` | Default build executable |
+| `hydrogen_debug` | Debug build with AddressSanitizer |
+| `hydrogen_valgrind` | Valgrind-compatible build |
+| `hydrogen_perf` | Performance-optimized build |
+| `hydrogen_coverage` | Coverage build with gcov instrumentation |
+| `hydrogen_release` | Production release with embedded payload |
+| `hydrogen_naked` | UPX-compressed release (without payload) |
+| `build/*.map` | Linker map files for each variant |
 | `build/CMakeCache.txt` | CMake configuration cache |
 | `build/compile_commands.json` | Compilation database |
 
@@ -295,7 +250,6 @@ ctest --test-dir build --verbose
 ```bash
 # Check for missing packages
 cmake -B build 2>&1 | grep "Could NOT find"
-
 # Install missing dependencies
 sudo apt-get install <missing-package>-dev
 ```
@@ -304,44 +258,25 @@ sudo apt-get install <missing-package>-dev
 
 ```bash
 # Clean and rebuild
-rm -rf build
-cmake -B build
-cmake --build build --verbose
+rm -rf build && cmake -B build && cmake --build build --verbose
 ```
 
-#### UPX Not Found
+#### UPX Not Found (for release builds)
 
 ```bash
-# Install UPX for release builds
 sudo apt-get install upx-ucl
-
-# Or skip UPX compression (warning will be shown)
+# Or build release without UPX compression
 cmake --build build --target hydrogen_release
 ```
 
-### Debug Information
-
-#### Verbose Output
+#### Verbose Debugging
 
 ```bash
-# CMake configuration
+# Enable detailed output
 cmake -B build --debug-output
-
-# Build process
 cmake --build build --verbose
-
 # Show all CMake variables
 cmake -B build -LAH
-```
-
-#### Environment Debugging
-
-```bash
-# Show CMake variables
-cmake -B build -LAH
-
-# Show compiler information
-cmake -B build --system-information
 ```
 
 ## Performance Considerations
@@ -358,57 +293,42 @@ cmake -B build --system-information
 - Profile with `perf`: `perf record ./build/hydrogen_perf`
 - Analyze with `gprof` (compile with `-pg`)
 
-## Migration from Makefile
+## Appendix: CMakeLists File Organization
 
-### Command Equivalents
+The CMake build system is organized into multiple specialized files, each managing distinct aspects of the build process:
 
-| Makefile | CMake |
-|----------|-------|
-| `make` | `cmake --build build --target hydrogen` |
-| `make debug` | `cmake --build build --target hydrogen_debug` |
-| `make valgrind` | `cmake --build build --target hydrogen_valgrind` |
-| `make perf` | `cmake --build build --target hydrogen_perf` |
-| `make release` | `cmake --build build --target hydrogen_release` |
-| `make all` | `cmake --build build --target all_variants` |
-| `make trial` | `cmake --build build --target trial` |
-| `make payload` | `cmake --build build --target payload` |
-| `make clean` | `cmake --build build --target clean_all` |
-| `make cleanish` | `cmake --build build --target cleanish` |
+- **CMakeLists.txt**: Main configuration file that defines the project, includes all other CMakeLists files, and orchestrates the overall build structure.
 
-### Key Differences
+- **CMakeLists-version.cmake**: Manages version numbering using git commit counts and release timestamps.
 
-- CMake requires explicit build directory
-- Configuration and build are separate steps
-- Better dependency tracking
-- Cross-platform compatibility
-- IDE integration support
+- **CMakeLists-init.cmake**: Handles fundamental CMake setup including package discovery, compiler flags, library dependencies, and source file enumeration.
 
-## Best Practices
+- **CMakeLists-base.cmake**: Configures common build optimizations, CPU-specific flags, and parallel build settings.
 
-### Development Workflow
+- **CMakeLists-cache.cmake**: Sets up compiler caching with ccache for improved build performance.
 
-1. Use `hydrogen_debug` for development
-2. Run `trial` target regularly
-3. Test with `hydrogen_valgrind` for memory issues
-4. Use `hydrogen_perf` for performance testing
-5. Create `hydrogen_release` for deployment
+- **CMakeLists-ninja.cmake**: Contains Ninja generator-specific configurations and targets.
 
-### Continuous Integration
+- **CMakeLists-regular.cmake**: Defines the regular build target with standard optimizations.
 
-```bash
-# CI build script
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --target all_variants
-cmake --build build --target trial
-ctest --test-dir build
-```
+- **CMakeLists-debug.cmake**: Defines the debug build target with AddressSanitizer instrumentation.
 
-### Release Process
+- **CMakeLists-valgrind.cmake**: Defines the Valgrind-compatible build target optimized for memory analysis.
 
-```bash
-# Complete release build
-cmake --build build --target payload
-cmake --build build --target release_enhanced
-# Verify release executable
-./build/hydrogen_release --version
-```
+- **CMakeLists-perf.cmake**: Defines the performance build target with aggressive optimizations.
+
+- **CMakeLists-coverage.cmake**: Defines the coverage build target with gcov instrumentation for unit testing.
+
+- **CMakeLists-release.cmake**: Defines the release build target with compression and payload embedding.
+
+- **CMakeLists-examples.cmake**: Manages build targets for OIDC client example programs.
+
+- **CMakeLists-unity.cmake**: Handles Unity unit test framework integration and test executable generation.
+
+- **CMakeLists-package.cmake**: Configures packaging and installation targets using CPack.
+
+- **CMakeLists-targets.cmake**: Defines high-level build targets including all_variants, trial, clean operations, and help.
+
+- **CMakeLists-output.cmake**: Provides terminal output formatting and build status display.
+
+This modular organization allows for targeted modifications when specific build aspects require changes.
