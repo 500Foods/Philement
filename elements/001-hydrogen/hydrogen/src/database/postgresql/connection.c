@@ -8,6 +8,10 @@
 #include "../database_queue.h"
 #include "connection.h"
 
+#ifdef USE_MOCK_LIBPQ
+#include "../../../tests/unity/mocks/mock_libpq.h"
+#endif
+
 // Function pointer types for libpq functions
 typedef void* (*PQconnectdb_t)(const char* conninfo);
 typedef int (*PQstatus_t)(void* conn);
@@ -27,6 +31,25 @@ typedef size_t (*PQescapeStringConn_t)(void* conn, char* to, const char* from, s
 typedef int (*PQping_t)(const char* conninfo);
 
 // PostgreSQL function pointers (loaded dynamically)
+#ifdef USE_MOCK_LIBPQ
+// For mocking, define pointers used in transaction testing, others NULL
+PQexec_t PQexec_ptr = mock_PQexec;
+PQresultStatus_t PQresultStatus_ptr = mock_PQresultStatus;
+PQclear_t PQclear_ptr = mock_PQclear;
+PQconnectdb_t PQconnectdb_ptr = NULL;
+PQstatus_t PQstatus_ptr = NULL;
+PQerrorMessage_t PQerrorMessage_ptr = NULL;
+PQfinish_t PQfinish_ptr = NULL;
+PQntuples_t PQntuples_ptr = NULL;
+PQnfields_t PQnfields_ptr = NULL;
+PQfname_t PQfname_ptr = NULL;
+PQgetvalue_t PQgetvalue_ptr = NULL;
+PQcmdTuples_t PQcmdTuples_ptr = NULL;
+PQreset_t PQreset_ptr = NULL;
+PQprepare_t PQprepare_ptr = NULL;
+PQescapeStringConn_t PQescapeStringConn_ptr = NULL;
+PQping_t PQping_ptr = NULL;
+#else
 PQconnectdb_t PQconnectdb_ptr = NULL;
 PQstatus_t PQstatus_ptr = NULL;
 PQerrorMessage_t PQerrorMessage_ptr = NULL;
@@ -43,10 +66,13 @@ PQreset_t PQreset_ptr = NULL;
 PQprepare_t PQprepare_ptr = NULL;
 PQescapeStringConn_t PQescapeStringConn_ptr = NULL;
 PQping_t PQping_ptr = NULL;
+#endif
 
 // Library handle
+#ifndef USE_MOCK_LIBPQ
 static void* libpq_handle = NULL;
 static pthread_mutex_t libpq_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 // Constants (defined since we can't include libpq-fe.h)
 #define CONNECTION_OK 0
@@ -62,11 +88,19 @@ static pthread_mutex_t libpq_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Simple timeout mechanism without signals
 bool check_timeout_expired(time_t start_time, int timeout_seconds) {
+#ifdef USE_MOCK_LIBPQ
+    return mock_check_timeout_expired(start_time, timeout_seconds);
+#else
     return (time(NULL) - start_time) >= timeout_seconds;
+#endif
 }
 
 // Library Loading Functions
 bool load_libpq_functions(void) {
+#ifdef USE_MOCK_LIBPQ
+    // For mocking, functions are already set
+    return true;
+#else
     if (libpq_handle) {
         return true; // Already loaded
     }
@@ -130,6 +164,7 @@ bool load_libpq_functions(void) {
     pthread_mutex_unlock(&libpq_mutex);
     log_this(SR_DATABASE, "Successfully loaded libpq library", LOG_LEVEL_STATE, 0);
     return true;
+#endif
 }
 
 // Utility Functions for Prepared Statement Cache

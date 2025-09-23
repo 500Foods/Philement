@@ -41,9 +41,7 @@ extern SQLExecute_t SQLExecute_ptr;
 extern SQLFreeStmt_t SQLFreeStmt_ptr;
 extern SQLDescribeCol_t SQLDescribeCol_ptr;
 
-// Library handle
-extern void* libdb2_handle;
-extern pthread_mutex_t libdb2_mutex;
+// Library handle (declared in connection.c)
 
 // Constants (defined since we can't include sql.h)
 #define SQL_HANDLE_ENV 1

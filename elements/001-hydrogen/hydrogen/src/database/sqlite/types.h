@@ -52,9 +52,7 @@ extern sqlite3_bind_null_t sqlite3_bind_null_ptr;
 extern sqlite3_errmsg_t sqlite3_errmsg_ptr;
 extern sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr;
 
-// Library handle
-extern void* libsqlite_handle;
-extern pthread_mutex_t libsqlite_mutex;
+// Library handle (declared in connection.c)
 
 // Constants (defined since we can't include sqlite3.h)
 #define SQLITE_OK 0

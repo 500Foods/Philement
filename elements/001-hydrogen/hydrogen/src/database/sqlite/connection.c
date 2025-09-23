@@ -9,7 +9,34 @@
 #include "types.h"
 #include "connection.h"
 
+#ifdef USE_MOCK_LIBSQLITE3
+#include "../../../tests/unity/mocks/mock_libsqlite3.h"
+#endif
+
 // SQLite function pointers (loaded dynamically)
+#ifdef USE_MOCK_LIBSQLITE3
+// For mocking, define pointers used in transaction testing, others NULL
+sqlite3_exec_t sqlite3_exec_ptr = mock_sqlite3_exec;
+sqlite3_errmsg_t sqlite3_errmsg_ptr = mock_sqlite3_errmsg;
+sqlite3_open_t sqlite3_open_ptr = NULL;
+sqlite3_close_t sqlite3_close_ptr = NULL;
+sqlite3_prepare_v2_t sqlite3_prepare_v2_ptr = NULL;
+sqlite3_step_t sqlite3_step_ptr = NULL;
+sqlite3_finalize_t sqlite3_finalize_ptr = NULL;
+sqlite3_column_count_t sqlite3_column_count_ptr = NULL;
+sqlite3_column_name_t sqlite3_column_name_ptr = NULL;
+sqlite3_column_text_t sqlite3_column_text_ptr = NULL;
+sqlite3_column_type_t sqlite3_column_type_ptr = NULL;
+sqlite3_changes_t sqlite3_changes_ptr = NULL;
+sqlite3_reset_t sqlite3_reset_ptr = NULL;
+sqlite3_clear_bindings_t sqlite3_clear_bindings_ptr = NULL;
+sqlite3_bind_text_t sqlite3_bind_text_ptr = NULL;
+sqlite3_bind_int_t sqlite3_bind_int_ptr = NULL;
+sqlite3_bind_double_t sqlite3_bind_double_ptr = NULL;
+sqlite3_bind_null_t sqlite3_bind_null_ptr = NULL;
+sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr = NULL;
+sqlite3_free_t sqlite3_free_ptr = NULL;
+#else
 sqlite3_open_t sqlite3_open_ptr = NULL;
 sqlite3_close_t sqlite3_close_ptr = NULL;
 sqlite3_exec_t sqlite3_exec_ptr = NULL;
@@ -30,13 +57,20 @@ sqlite3_bind_null_t sqlite3_bind_null_ptr = NULL;
 sqlite3_errmsg_t sqlite3_errmsg_ptr = NULL;
 sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr = NULL;
 sqlite3_free_t sqlite3_free_ptr = NULL;
+#endif
 
 // Library handle
-void* libsqlite_handle = NULL;
-pthread_mutex_t libsqlite_mutex = PTHREAD_MUTEX_INITIALIZER;
+#ifndef USE_MOCK_LIBSQLITE3
+static void* libsqlite_handle = NULL;
+static pthread_mutex_t libsqlite_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 // Library Loading Functions
 bool load_libsqlite_functions(void) {
+#ifdef USE_MOCK_LIBSQLITE3
+    // For mocking, functions are already set
+    return true;
+#else
     if (libsqlite_handle) {
         return true; // Already loaded
     }
@@ -108,6 +142,7 @@ bool load_libsqlite_functions(void) {
     pthread_mutex_unlock(&libsqlite_mutex);
     log_this(SR_DATABASE, "Successfully loaded libsqlite3 library", LOG_LEVEL_STATE, 0);
     return true;
+#endif
 }
 
 // Utility Functions for Prepared Statement Cache
