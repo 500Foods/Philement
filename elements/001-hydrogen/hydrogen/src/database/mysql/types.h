@@ -53,9 +53,7 @@ extern mysql_stmt_prepare_t mysql_stmt_prepare_ptr;
 extern mysql_stmt_execute_t mysql_stmt_execute_ptr;
 extern mysql_stmt_close_t mysql_stmt_close_ptr;
 
-// Library handle
-extern void* libmysql_handle;
-extern pthread_mutex_t libmysql_mutex;
+// Library handle (declared in connection.c)
 
 // Constants (defined since we can't include mysql.h)
 #define MYSQL_OPT_RECONNECT 20

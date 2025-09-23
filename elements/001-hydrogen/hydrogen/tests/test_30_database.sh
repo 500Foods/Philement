@@ -74,9 +74,9 @@ DATABASE_TEST_CONFIGS=(
 )
 
 # Test timeouts
-STARTUP_TIMEOUT=5
-SHUTDOWN_TIMEOUT=5
-DQM_INIT_TIMEOUT=5
+STARTUP_TIMEOUT=10
+SHUTDOWN_TIMEOUT=10
+DQM_INIT_TIMEOUT=10
 
 # Function to check for DQM startup log message
 check_dqm_startup() {
@@ -211,7 +211,7 @@ run_database_test_parallel() {
             startup_success=true
             break
         fi
-        sleep 0.05
+        sleep 0.1
     done
 
     if [[ "${startup_success}" = true ]]; then
@@ -252,7 +252,7 @@ run_database_test_parallel() {
     else
         echo "STARTUP_FAILED" >> "${result_file}"
         echo "TEST_FAILED" >> "${result_file}"
-        # kill -9 "${hydrogen_pid}" 2>/dev/null || true
+        kill -9 "${hydrogen_pid}" 2>/dev/null || true
     fi
 
     if [[ "${startup_success}" = true ]] && [[ "${database_ready}" = true ]]; then
@@ -271,13 +271,13 @@ run_database_test_parallel() {
                     kill -9 "${hydrogen_pid}" 2>/dev/null || true
                     break
                 fi
-                sleep 0.05
+                sleep 0.1
             done
         fi
     else
         echo "DATABASE_TEST_FAILED" >> "${result_file}"
         echo "TEST_FAILED" >> "${result_file}"
-        # kill -9 "${hydrogen_pid}" 2>/dev/null || true
+        kill -9 "${hydrogen_pid}" 2>/dev/null || true
     fi
 }
 

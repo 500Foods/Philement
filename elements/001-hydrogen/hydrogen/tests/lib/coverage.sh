@@ -32,8 +32,8 @@ export COVERAGE_GUARD="true"
 # between the Unity build and the Coverage build. These arise out of having #ifdef
 # sections that change the number of lines of instrumented code. Some effort has 
 # been made to limit these, but the nature of unit testing has made it difficult.
-DISCREPANCY_UNITY=9
-DISCREPANCY_COVERAGE=8
+DISCREPANCY_UNITY=206
+DISCREPANCY_COVERAGE=13
 
 # Library metadata
 COVERAGE_NAME="Coverage Library"

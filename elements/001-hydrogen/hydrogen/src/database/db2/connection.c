@@ -10,6 +10,10 @@
 #include "connection.h"
 #include "utils.h"
 
+#ifdef USE_MOCK_LIBDB2
+#include "../../../tests/unity/mocks/mock_libdb2.h"
+#endif
+
 // ODBC type definitions for DB2
 typedef signed short SQLSMALLINT;
 typedef long SQLINTEGER;
@@ -27,6 +31,23 @@ typedef unsigned short SQLUSMALLINT;
 #define SQL_NTS -3
 
 // DB2 function pointers (loaded dynamically)
+#ifdef USE_MOCK_LIBDB2
+// For mocking, define pointers used in transaction testing, others NULL
+SQLEndTran_t SQLEndTran_ptr = mock_SQLEndTran;
+SQLAllocHandle_t SQLAllocHandle_ptr = NULL;
+SQLConnect_t SQLConnect_ptr = NULL;
+SQLExecDirect_t SQLExecDirect_ptr = NULL;
+SQLFetch_t SQLFetch_ptr = NULL;
+SQLGetData_t SQLGetData_ptr = NULL;
+SQLNumResultCols_t SQLNumResultCols_ptr = NULL;
+SQLRowCount_t SQLRowCount_ptr = NULL;
+SQLFreeHandle_t SQLFreeHandle_ptr = NULL;
+SQLDisconnect_t SQLDisconnect_ptr = NULL;
+SQLPrepare_t SQLPrepare_ptr = NULL;
+SQLExecute_t SQLExecute_ptr = NULL;
+SQLFreeStmt_t SQLFreeStmt_ptr = NULL;
+SQLDescribeCol_t SQLDescribeCol_ptr = NULL;
+#else
 SQLAllocHandle_t SQLAllocHandle_ptr = NULL;
 SQLConnect_t SQLConnect_ptr = NULL;
 SQLExecDirect_t SQLExecDirect_ptr = NULL;
@@ -41,6 +62,7 @@ SQLPrepare_t SQLPrepare_ptr = NULL;
 SQLExecute_t SQLExecute_ptr = NULL;
 SQLFreeStmt_t SQLFreeStmt_ptr = NULL;
 SQLDescribeCol_t SQLDescribeCol_ptr = NULL;
+#endif
 
 // Additional function pointers for error handling
 typedef SQLRETURN (*SQLGetDiagRec_t)(SQLSMALLINT, SQLHANDLE, SQLSMALLINT, SQLCHAR*, SQLINTEGER*, SQLCHAR*, SQLSMALLINT, SQLSMALLINT*);
@@ -49,14 +71,20 @@ SQLGetDiagRec_t SQLGetDiagRec_ptr = NULL;
 SQLDriverConnect_t SQLDriverConnect_ptr = NULL;
 
 // Library handle
-void* libdb2_handle = NULL;
-pthread_mutex_t libdb2_mutex = PTHREAD_MUTEX_INITIALIZER;
+#ifndef USE_MOCK_LIBDB2
+static void* libdb2_handle = NULL;
+static pthread_mutex_t libdb2_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 /*
  * Library Loading Functions
  */
 
 bool load_libdb2_functions(void) {
+#ifdef USE_MOCK_LIBDB2
+    // For mocking, functions are already set
+    return true;
+#else
     if (libdb2_handle) {
         return true; // Already loaded
     }
@@ -123,6 +151,7 @@ bool load_libdb2_functions(void) {
     pthread_mutex_unlock(&libdb2_mutex);
     log_this(SR_DATABASE, "Successfully loaded libdb2 library", LOG_LEVEL_STATE, 0);
     return true;
+#endif
 }
 
 /*
