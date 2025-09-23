@@ -68,8 +68,8 @@ export CACHE_CMD_DIR
 
 # SVG locations
 # shellcheck disable=SC2154 # PROJECT_DIR defined externally in framework.sh
-results_svg_path="${PROJECT_DIR}/COMPLETE.svg"
-coverage_svg_path="${PROJECT_DIR}/COVERAGE.svg"
+results_svg_path="${PROJECT_DIR}/images/COMPLETE.svg"
+coverage_svg_path="${PROJECT_DIR}/images/COVERAGE.svg"
 
 # shellcheck disable=SC2154 # PROJECT_DIR defined externally in framework.sh
 pushd "${PROJECT_DIR}" > /dev/null || return 1

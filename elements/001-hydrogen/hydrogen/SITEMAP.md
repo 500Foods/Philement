@@ -13,8 +13,6 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [SETUP.md](SETUP.md): Describes how to setup the dev environment
 - [SITEMAP.md](SITEMAP.md): An index to all the Markdown files in the proejct
 - [STRUCTURE.md](STRUCTURE.md): An index to all of the files in the project
-- [COMPLETE.svg](COMPLETE.svg): Latest Test Suite Results table rendered as SVG
-- [COVERAGE.svg](COVERAGE.svg): Latest Test Suite Coverage table rendered as SVG
 
 ## Folder: /cmake
 
@@ -211,6 +209,13 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ## Folder: /extras
 
 - [README.md](extras/README.md): Build scripts and diagnostic tools
+
+## Folder: /images
+
+- [CLOC_CODE.svg](images/CLOC_CODE.svg): Output of cloc reformatted and rendered as SVG
+- [CLOC_STAT.svg](images/CLOC_STAT.svg): Extended statistics based on cloc and rendered as SVG
+- [COMPLETE.svg](images/COMPLETE.svg): Latest Test Suite Results table rendered as SVG
+- [COVERAGE.svg](images/COVERAGE.svg): Latest Test Suite Coverage table rendered as SVG
 
 ## Folder: /payloads
 

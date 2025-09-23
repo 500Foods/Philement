@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 6.0.0 - 2025-09-23 - Added horizontal section breaks to main cloc table (primary/secondary sections)
 # 5.0.0 - 2025-09-18 - Updated Extended Statistics table with additional rows
 # 4.0.0 - 2025-09-06 - Use TABLES program for formatting, thousands separators, JSON-based processing
 # 3.0.0 - 2025-09-06 - Added separate 'Unit Tests' language for tests/unity/src files
@@ -28,7 +29,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="5.0.0"
+CLOC_VERSION="6.0.0"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
@@ -117,6 +118,13 @@ run_cloc_analysis() {
     "columns": [
         {
             "header": "Language",
+            "key": "section",
+            "datatype": "text",
+            "visible": false,
+            "break": true
+        },
+        {
+            "header": "Language",
             "key": "language",
             "datatype": "text",
             "justification": "left"
@@ -166,11 +174,12 @@ EOF
                 input as $core |
                 # Process test JSON
                 input as $test |
-                # Build the data array
+                # Build the data array with section breaks
                 [
-                    # Core C entry
+                    # Core C entry (primary section)
                     (if $core.C then
                         {
+                            section: "primary",
                             language: "Core C/Headers",
                             files: ($core.C.nFiles // 0),
                             blank: ($core.C.blank // 0),
@@ -179,9 +188,10 @@ EOF
                             lines: (($core.C.blank // 0) + ($core.C.comment // 0) + ($core.C.code // 0))
                         }
                     else empty end),
-                    # Test C entry
+                    # Test C entry (primary section)
                     (if $test.C then
                         {
+                            section: "primary",
                             language: "Test C/Headers",
                             files: ($test.C.nFiles // 0),
                             blank: ($test.C.blank // 0),
@@ -190,9 +200,22 @@ EOF
                             lines: (($test.C.blank // 0) + ($test.C.comment // 0) + ($test.C.code // 0))
                         }
                     else empty end),
-                    # Other languages from core
-                    ($core | to_entries[] | select(.key != "C" and .key != "header" and .key != "SUM") |
+                    # Primary section languages: Markdown, Bourne Shell, Lua, CMake
+                    ($core | to_entries[] | select(.key != "C" and .key != "header" and .key != "SUM" and (.key == "Markdown" or .key == "Bourne Shell" or .key == "Lua" or .key == "CMake")) |
                         {
+                            section: "primary",
+                            language: .key,
+                            files: (.value.nFiles // 0),
+                            blank: (.value.blank // 0),
+                            comment: (.value.comment // 0),
+                            code: (.value.code // 0),
+                            lines: ((.value.blank // 0) + (.value.comment // 0) + (.value.code // 0))
+                        }
+                    ),
+                    # Secondary section languages: everything else
+                    ($core | to_entries[] | select(.key != "C" and .key != "header" and .key != "SUM" and (.key != "Markdown" and .key != "Bourne Shell" and .key != "Lua" and .key != "CMake")) |
+                        {
+                            section: "secondary",
                             language: .key,
                             files: (.value.nFiles // 0),
                             blank: (.value.blank // 0),
