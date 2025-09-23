@@ -26,10 +26,10 @@ static FILE* log_file = NULL;
 
 // Private function declarations
 static void cleanup_log_queue_manager(void* arg);
-static bool should_log_to_console(const char* subsystem, int priority, const LoggingConfig* config);
-static bool should_log_to_file(const char* subsystem, int priority, const LoggingConfig* config);
-static bool should_log_to_database(const char* subsystem, int priority, const LoggingConfig* config);
-static bool should_log_to_notify(const char* subsystem, int priority, const LoggingConfig* config);
+bool should_log_to_console(const char* subsystem, int priority, const LoggingConfig* config);
+bool should_log_to_file(const char* subsystem, int priority, const LoggingConfig* config);
+bool should_log_to_database(const char* subsystem, int priority, const LoggingConfig* config);
+bool should_log_to_notify(const char* subsystem, int priority, const LoggingConfig* config);
 static void process_log_message(const char* message, int priority);
 
 // Thread cleanup handler with guaranteed file closure
@@ -74,7 +74,7 @@ static void cleanup_log_queue_manager(void* arg) {
 //    - Memory allocation checks
 //    - Partial write detection
 // Check if a message should be logged to a specific destination
-static bool should_log_to_console(const char* subsystem, int priority, const LoggingConfig* config) {
+bool should_log_to_console(const char* subsystem, int priority, const LoggingConfig* config) {
     if (!config->console.enabled) {
         return false;
     }
@@ -179,7 +179,7 @@ static void process_log_message(const char* message, int priority) {
 
         if (logFile && log_file && should_log_to_file(subsystem, priority, &app_config->logging)) {
             fputs(log_entry, log_file);
-            fflush(log_file);  // Ensure the log is written immediately
+          // fflush(log_file);  // Ensure the log is written immediately
         }
 
         if (logDatabase && should_log_to_database(subsystem, priority, &app_config->logging)) {
