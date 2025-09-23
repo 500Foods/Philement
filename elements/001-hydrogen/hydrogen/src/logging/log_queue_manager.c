@@ -25,12 +25,12 @@ extern pthread_mutex_t terminate_mutex;
 static FILE* log_file = NULL;
 
 // Private function declarations
-static void cleanup_log_queue_manager(void* arg);
+void cleanup_log_queue_manager(void* arg);
 bool should_log_to_console(const char* subsystem, int priority, const LoggingConfig* config);
 bool should_log_to_file(const char* subsystem, int priority, const LoggingConfig* config);
 bool should_log_to_database(const char* subsystem, int priority, const LoggingConfig* config);
 bool should_log_to_notify(const char* subsystem, int priority, const LoggingConfig* config);
-static void process_log_message(const char* message, int priority);
+void process_log_message(const char* message, int priority);
 
 // Thread cleanup handler with guaranteed file closure
 //
@@ -44,7 +44,7 @@ static void process_log_message(const char* message, int priority);
 //    - Prevents file handle leaks
 //    - Ensures final flush
 //    - Maintains file system integrity
-static void cleanup_log_queue_manager(void* arg) {
+void cleanup_log_queue_manager(void* arg) {
     (void)arg;  // Unused parameter
     
     // Remove this thread from tracking before cleanup
@@ -89,7 +89,7 @@ bool should_log_to_console(const char* subsystem, int priority, const LoggingCon
     return priority >= configured_level;
 }
 
-static bool should_log_to_file(const char* subsystem, int priority, const LoggingConfig* config) {
+bool should_log_to_file(const char* subsystem, int priority, const LoggingConfig* config) {
     if (!config->file.enabled) {
         return false;
     }
@@ -104,7 +104,7 @@ static bool should_log_to_file(const char* subsystem, int priority, const Loggin
     return priority >= configured_level;
 }
 
-static bool should_log_to_notify(const char* subsystem, int priority, const LoggingConfig* config) {
+bool should_log_to_notify(const char* subsystem, int priority, const LoggingConfig* config) {
     if (!config->notify.enabled) {
         return false;
     }
@@ -119,7 +119,7 @@ static bool should_log_to_notify(const char* subsystem, int priority, const Logg
     return priority >= configured_level;
 }
 
-static bool should_log_to_database(const char* subsystem, int priority, const LoggingConfig* config) {
+bool should_log_to_database(const char* subsystem, int priority, const LoggingConfig* config) {
     if (!config->database.enabled) {
         return false;
     }
@@ -134,7 +134,7 @@ static bool should_log_to_database(const char* subsystem, int priority, const Lo
     return priority >= configured_level;
 }
 
-static void process_log_message(const char* message, int priority) {
+void process_log_message(const char* message, int priority) {
     if (!app_config) return;
 
     json_error_t error;
