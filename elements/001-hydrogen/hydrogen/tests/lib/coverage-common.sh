@@ -189,7 +189,7 @@ analyze_all_gcov_coverage_batch() {
     local pattern_checksum
     # shellcheck disable=SC2154 # PRINTF defined externally in framework.sh
     pattern_checksum=$("${PRINTF}" '%s\n' "${IGNORE_PATTERNS[@]}" | sort | sha256sum | cut -d' ' -f1 2>/dev/null || echo "no_checksum" || true)
-    local pattern_marker="${BUILD_DIR}/gcov_pattern_${pattern_checksum}"
+    local pattern_marker="${BUILD_DIR}/gcov_${pattern_checksum}_marker"
 
     # Check if cache marker, pattern marker, and cache file exist
     if [[ -f "${marker_file}" && -f "${cache_file}" && -f "${pattern_marker}" ]]; then

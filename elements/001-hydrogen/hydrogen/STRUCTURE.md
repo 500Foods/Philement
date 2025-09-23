@@ -14,10 +14,16 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [SECRETS.md](SECRETS.md) - Security configuration guide
 - [SITEMAP.md](SITEMAP.md) - Project navigation and file index
 - [STRUCTURE.md](STRUCTURE.md) - This file - project structure overview
-- [COVERAGE.svg](COVERAGE.svg) - Visual coverage analysis report (auto-generated)
-- [COMPLETE.svg](COMPLETE.svg) - Complete test suite results visualization (auto-generated)
 
 </details>
+
+<details>
+<summary><b>Images / Statistics</b></summary>
+
+- [CLOC_CODE.svg](images/CLOC_CODE.svg) - Reformatted output from cloc (auto-generated)
+- [CLOC_STAT.svg](images/CLOC_STAT.svg) - Extended statistics generated from cloc data (auto-generated)
+- [COVERAGE.svg](images/COVERAGE.svg) - Visual coverage analysis report (auto-generated)
+- [COMPLETE.svg](images/COMPLETE.svg) - Complete test suite results visualization (auto-generated)
 
 ## Core Application
 

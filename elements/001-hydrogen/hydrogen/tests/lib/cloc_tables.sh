@@ -4,6 +4,7 @@
 # Generates the two cloc tables (main code table and extended statistics) without test framework overhead
 
 # CHANGELOG
+# 1.1.0 - 2025-09-23 - Updated to use CLOC Library 6.0.0 with table section breaks
 # 1.0.0 - 2025-09-16 - Initial creation, extracted from test_98_code_size.sh
 
 set -euo pipefail
@@ -13,7 +14,7 @@ TEST_NAME="Cloc Tables"
 TEST_ABBR="CLT"
 TEST_NUMBER="CT"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/framework.sh" >/dev/null 2>&1
