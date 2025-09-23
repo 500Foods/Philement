@@ -57,6 +57,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-version.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-init.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-base.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-cache.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-ninja.cmake")
 
 
 # Include build variant configurations

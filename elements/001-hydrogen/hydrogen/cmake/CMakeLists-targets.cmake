@@ -2,6 +2,10 @@
 #
 # This file contains the various build targets for Hydrogen.
 
+# Resolve paths for consistent display
+set(HYDROGEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
+get_filename_component(HYDROGEN_DIR "${HYDROGEN_DIR}" ABSOLUTE)
+
 # Payload generation target
 add_custom_target(payload
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
@@ -41,10 +45,10 @@ add_custom_target(all_variants
     COMMAND ${CMAKE_COMMAND} -E echo "  Debug:       $<TARGET_FILE:debug>"
     COMMAND ${CMAKE_COMMAND} -E echo "  Valgrind:    $<TARGET_FILE:valgrind>"
     COMMAND ${CMAKE_COMMAND} -E echo "  Performance: $<TARGET_FILE:perf>"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Coverage:    ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Release:     ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Naked:       ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Unity Tests: ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Coverage:    $<TARGET_FILE:hydrogen_coverage>"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Release:     ${HYDROGEN_DIR}/hydrogen_release"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Naked:       ${HYDROGEN_DIR}/hydrogen_naked"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Unity Tests: ${HYDROGEN_DIR}/build/unity/src/"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     COMMENT "Building all variants with optimized parallel execution (${PARALLEL_JOBS} jobs)"
 )
