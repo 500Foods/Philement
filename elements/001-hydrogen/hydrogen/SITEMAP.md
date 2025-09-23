@@ -210,8 +210,13 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [README.md](extras/README.md): Build scripts and diagnostic tools
 
+## Folder: /installer
+
+- [README.md](installer/README.md): Hydrogen installer system documentation
+
 ## Folder: /images
 
+- [README.md](images/README.md): Documentation for generated SVG visualization files
 - [CLOC_CODE.svg](images/CLOC_CODE.svg): Output of cloc reformatted and rendered as SVG
 - [CLOC_STAT.svg](images/CLOC_STAT.svg): Extended statistics based on cloc and rendered as SVG
 - [COMPLETE.svg](images/COMPLETE.svg): Latest Test Suite Results table rendered as SVG

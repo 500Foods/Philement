@@ -20,6 +20,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <details>
 <summary><b>Images / Statistics</b></summary>
 
+- [README.md](images/README.md) - Documentation for generated SVG visualization files
 - [CLOC_CODE.svg](images/CLOC_CODE.svg) - Reformatted output from cloc (auto-generated)
 - [CLOC_STAT.svg](images/CLOC_STAT.svg) - Extended statistics generated from cloc data (auto-generated)
 - [COVERAGE.svg](images/COVERAGE.svg) - Visual coverage analysis report (auto-generated)
@@ -523,6 +524,15 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [extras/make-clean.sh](extras/make-clean.sh) - Comprehensive build cleanup script
 - [extras/make-trial.sh](extras/make-trial.sh) - Quick trial build and diagnostics script
 - [extras/filter-log.sh](extras/filter-log.sh) - Log output filtering utility
+
+</details>
+
+<details>
+<summary><b>Installer System</b></summary>
+
+- [installer/README.md](installer/README.md) - Hydrogen installer system documentation
+- [installer/installer_wrapper.sh](installer/installer_wrapper.sh) - Installer template script
+- [installer/hydrogen_installer_*.sh](installer/hydrogen_installer_*.sh) - Generated installer executables
 
 </details>
 
