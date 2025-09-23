@@ -11,7 +11,7 @@
 
 #include <stdbool.h>
 #ifdef USE_MOCK_LIBMICROHTTPD
-#include "../../../../tests/unity/mocks/mock_libmicrohttpd.h"
+#include "mock_libmicrohttpd.h"
 #else
 #include <microhttpd.h>
 #endif
