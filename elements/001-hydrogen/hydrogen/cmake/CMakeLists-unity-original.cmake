@@ -98,7 +98,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LIBSQLITE3")
     else()
-        set(MOCK_INCLUDES "")Q
+        set(MOCK_INCLUDES "")
         set(MOCK_DEFINES "")
     endif()
 
@@ -108,7 +108,6 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
         COMMAND ${CMAKE_C_COMPILER}
             ${HYDROGEN_BASE_CFLAGS}
-            -fPIC
             -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
             -DVERSION='"${HYDROGEN_VERSION}"'
             -DRELEASE='"${HYDROGEN_RELEASE}"'
@@ -139,20 +138,12 @@ endforeach()
 # Create target that depends on all Unity object files
 add_custom_target(unity_objects DEPENDS ${UNITY_OBJECT_FILES})
 
-# Create shared library for Unity tests to improve build performance and ccache effectiveness
-add_library(hydrogen_unity SHARED ${UNITY_OBJECT_FILES})
+# Create static library for Unity tests to improve build performance and ccache effectiveness
+add_library(hydrogen_unity STATIC ${UNITY_OBJECT_FILES})
 add_dependencies(hydrogen_unity unity_objects)
 
-# Link libgcov to resolve gcov symbols in the shared library
-target_link_libraries(hydrogen_unity PRIVATE -lgcov)
-
-# Set linker language explicitly for the shared library
+# Set linker language explicitly for the static library
 set_target_properties(hydrogen_unity PROPERTIES LINKER_LANGUAGE C)
-
-# Set output directory for the shared library
-set_target_properties(hydrogen_unity PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity"
-)
 
 # Set include directories for the Unity library
 target_include_directories(hydrogen_unity PRIVATE ${HYDROGEN_INCLUDE_DIRS})
@@ -175,7 +166,6 @@ target_compile_definitions(hydrogen_unity PRIVATE
 add_library(unity_framework OBJECT ${UNITY_FRAMEWORK_SOURCES})
 target_compile_options(unity_framework PRIVATE
     ${HYDROGEN_BASE_CFLAGS}
-    -fPIC
     -O0 -g3 -ggdb3 -fno-omit-frame-pointer
     -Wno-double-promotion
     -I${UNITY_FRAMEWORK_DIR}/src
@@ -185,7 +175,6 @@ target_compile_options(unity_framework PRIVATE
 add_library(unity_mocks OBJECT ${UNITY_MOCK_SOURCES})
 target_compile_options(unity_mocks PRIVATE
     ${HYDROGEN_BASE_CFLAGS}
-    -fPIC
     -O0 -g3 -ggdb3 -fno-omit-frame-pointer
     -DVERSION="${HYDROGEN_VERSION}"
     -DRELEASE="${HYDROGEN_RELEASE}"
@@ -207,7 +196,6 @@ target_compile_options(unity_mocks PRIVATE
 add_library(unity_print_mocks OBJECT ${UNITY_PRINT_MOCK_SOURCES})
 target_compile_options(unity_print_mocks PRIVATE
     ${HYDROGEN_BASE_CFLAGS}
-    -fPIC
     -O0 -g3 -ggdb3 -fno-omit-frame-pointer
     -DVERSION="${HYDROGEN_VERSION}"
     -DRELEASE="${HYDROGEN_RELEASE}"
@@ -293,7 +281,6 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         COMMAND ${CMAKE_COMMAND} -E make_directory ${TEST_OUTPUT_DIR}
         COMMAND ${CMAKE_C_COMPILER}
             ${HYDROGEN_BASE_CFLAGS}
-            -fPIC
             -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
             -DVERSION='"${HYDROGEN_VERSION}"'
             -DRELEASE='"${HYDROGEN_RELEASE}"'
@@ -316,7 +303,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     # Create the Unity test executable using the test object and shared library
     add_executable(${TEST_NAME} ${TEST_OUTPUT_OBJ})
 
-    # Link with Unity shared library and required libraries (excluding hydrogen.c which has main())
+    # Link with Unity static library and required libraries (excluding hydrogen.c which has main())
     target_link_libraries(${TEST_NAME}
         hydrogen_unity
         unity_framework
@@ -331,11 +318,8 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         target_link_libraries(${TEST_NAME} unity_print_mocks)
     endif()
 
-    # Add extra link flags including rpath to find the shared lib
-    target_link_options(${TEST_NAME} PRIVATE
-        -Wl,--gc-sections
-        -Wl,-rpath,"$ORIGIN/.."
-    )
+    # Add extra link flags
+    target_link_options(${TEST_NAME} PRIVATE -Wl,--gc-sections)
 
     # Set output directory for test executable (place in subdirectory to match source structure)
     if(TEST_DIR AND NOT TEST_DIR STREQUAL ".")

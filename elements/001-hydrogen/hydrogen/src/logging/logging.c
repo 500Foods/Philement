@@ -7,6 +7,13 @@
 
 // Local includes
 #include "logging.h"
+#include <stdarg.h>
+#include <time.h>
+#include <sys/time.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
 
 // Public interface declarations
 void log_this(const char* subsystem, const char* format, int priority, int num_args, ...);
@@ -21,9 +28,99 @@ extern int queue_system_initialized;  // From queue.c
 
 // Internal state
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
-static __thread bool in_log_group = false;  // Thread-local flag for group logging
-static __thread bool in_logging_operation = false;  // Thread-local flag to prevent recursive logging
 static unsigned long log_counter = 0;  // Global log counter
+
+// TLS Keys (static/internal - no extern needed)
+static pthread_key_t logging_operation_key;
+static pthread_key_t log_group_key;
+static pthread_key_t mutex_operation_key;  // NEW: To detect mutex context
+static bool tls_keys_initialized = false;
+
+// Destructor for logging flag (frees malloc'd bool)
+static void free_logging_flag(void *ptr) {
+    if (ptr) free(ptr);
+}
+
+// Lazy init TLS keys
+static void init_tls_keys(void) {
+    if (!tls_keys_initialized) {
+        pthread_key_create(&logging_operation_key, free_logging_flag);
+        pthread_key_create(&log_group_key, free_logging_flag);
+        pthread_key_create(&mutex_operation_key, free_logging_flag);
+        tls_keys_initialized = true;
+    }
+}
+
+// Accessors for logging_operation
+static bool* get_logging_operation_flag(void) {
+    init_tls_keys();
+    bool *flag = pthread_getspecific(logging_operation_key);
+    if (!flag) {
+        flag = malloc(sizeof(bool));
+        if (flag) {
+            *flag = false;
+            pthread_setspecific(logging_operation_key, flag);
+        } else {
+            static bool fallback_flag = false;
+            return &fallback_flag;
+        }
+    }
+    return flag;
+}
+
+bool log_is_in_logging_operation(void) {
+    const bool *flag = get_logging_operation_flag();
+    return *flag;
+}
+
+static void set_logging_operation_flag(bool val) {
+    bool *flag = get_logging_operation_flag();
+    if (flag) *flag = val;
+}
+
+// Accessors for log_group
+static bool* get_log_group_flag(void) {
+    init_tls_keys();
+    bool *flag = pthread_getspecific(log_group_key);
+    if (!flag) {
+        flag = malloc(sizeof(bool));
+        if (flag) {
+            *flag = false;
+            pthread_setspecific(log_group_key, flag);
+        } else {
+            static bool fallback_flag = false;
+            return &fallback_flag;
+        }
+    }
+    return flag;
+}
+
+static void set_log_group_flag(bool val) {
+    bool *flag = get_log_group_flag();
+    if (flag) *flag = val;
+}
+
+// Accessors for mutex_operation
+static bool* get_mutex_operation_flag(void) {
+    init_tls_keys();
+    bool *flag = pthread_getspecific(mutex_operation_key);
+    if (!flag) {
+        flag = malloc(sizeof(bool));
+        if (flag) {
+            *flag = false;
+            pthread_setspecific(mutex_operation_key, flag);
+        } else {
+            static bool fallback_flag = false;
+            return &fallback_flag;
+        }
+    }
+    return flag;
+}
+
+static void set_mutex_operation_flag(bool val) {
+    bool *flag = get_mutex_operation_flag();
+    if (flag) *flag = val;
+}
 
 // Rolling buffer for recent messages
 static struct {
@@ -49,12 +146,14 @@ bool init_message_slot(size_t index) {
 
 // Add a message to the rolling buffer
 void add_to_buffer(const char* message) {
+    set_mutex_operation_flag(true);  // NEW: Mark mutex context
     MutexResult lock_result = MUTEX_LOCK(&log_buffer.mutex, SR_LOGGING);
     if (lock_result == MUTEX_SUCCESS) {
         // Initialize or move to next slot
         size_t index = log_buffer.head;
         if (!init_message_slot(index)) {
             MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+            set_mutex_operation_flag(false);
             return;
         }
 
@@ -69,12 +168,14 @@ void add_to_buffer(const char* message) {
 
         MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
     }
+    set_mutex_operation_flag(false);  // NEW: Clear mutex context
 }
 
 // Get messages matching a subsystem
 char* log_get_messages(const char* subsystem) {
     if (!subsystem) return NULL;
 
+    set_mutex_operation_flag(true);  // NEW: Mark mutex context
     MutexResult lock_result = MUTEX_LOCK(&log_buffer.mutex, SR_LOGGING);
     if (lock_result == MUTEX_SUCCESS) {
         // Calculate total size needed
@@ -90,6 +191,7 @@ char* log_get_messages(const char* subsystem) {
 
         if (matches == 0) {
             MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+            set_mutex_operation_flag(false);
             return NULL;
         }
 
@@ -97,6 +199,7 @@ char* log_get_messages(const char* subsystem) {
         char* result = malloc(total_size + 1);  // +1 for null terminator
         if (!result) {
             MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+            set_mutex_operation_flag(false);
             return NULL;
         }
 
@@ -114,13 +217,16 @@ char* log_get_messages(const char* subsystem) {
         *pos = '\0';
 
         MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+        set_mutex_operation_flag(false);
         return result;
     }
+    set_mutex_operation_flag(false);
     return NULL;
 }
 
 // Get the last N messages
 char* log_get_last_n(size_t count) {
+    set_mutex_operation_flag(true);  // NEW: Mark mutex context
     MutexResult lock_result = MUTEX_LOCK(&log_buffer.mutex, SR_LOGGING);
     if (lock_result == MUTEX_SUCCESS) {
         // Adjust count if it's larger than available messages
@@ -130,6 +236,7 @@ char* log_get_last_n(size_t count) {
 
         if (count == 0) {
             MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+            set_mutex_operation_flag(false);
             return NULL;
         }
 
@@ -146,6 +253,7 @@ char* log_get_last_n(size_t count) {
         char* result = malloc(total_size + 1);  // +1 for null terminator
         if (!result) {
             MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+            set_mutex_operation_flag(false);
             return NULL;
         }
 
@@ -163,31 +271,16 @@ char* log_get_last_n(size_t count) {
         *pos = '\0';
 
         MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+        set_mutex_operation_flag(false);
         return result;
     }
+    set_mutex_operation_flag(false);
     return NULL;
 }
 
 // Private function declarations
 static void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count);
-bool init_message_slot(size_t index);
-void add_to_buffer(const char* message);
 
-// Public interface declarations
-bool log_is_in_logging_operation(void);
-
-/*
- * INTERNAL USE ONLY - Do not call directly!
- * 
- * This is an internal helper function used by log_this() to handle console output
- * when the logging system is not fully initialized or during shutdown.
- * 
- * All logging should go through log_this() which handles:
- * - Proper initialization checks
- * - Configuration-based filtering
- * - Output routing
- * - Thread safety
- */
 // Fallback priority labels for when config is unavailable
 const char* get_fallback_priority_label(int priority) {
     static const char* fallback_labels[] = {
@@ -203,7 +296,7 @@ static void console_log(const char* subsystem, int priority, const char* message
     // Format the counter as two 3-digit numbers
     char counter_prefix[16];
     snprintf(counter_prefix, sizeof(counter_prefix), "[ %03lu %03lu ]",
-              (current_count / 1000) % 1000, current_count % 1000);
+             (current_count / 1000) % 1000, current_count % 1000);
 
     // Use fallback labels if config system is unavailable
     const char* priority_label = (!app_config || !app_config->logging.levels)
@@ -228,7 +321,7 @@ static void console_log(const char* subsystem, int priority, const char* message
     // Format the complete log line
     char log_line[DEFAULT_LOG_ENTRY_SIZE];
     snprintf(log_line, sizeof(log_line), "%s  %s  %s  %s  %s",
-              counter_prefix, timestamp_ms, formatted_priority, formatted_subsystem, message);
+             counter_prefix, timestamp_ms, formatted_priority, formatted_subsystem, message);
 
     // Add to rolling buffer and output
     add_to_buffer(log_line);
@@ -242,6 +335,13 @@ size_t count_format_specifiers(const char* format) {
 
     size_t count = 0;
     const char* ptr = format;
+
+    // TEMPORARY: Debug hex dump to diagnose corruption
+    fprintf(stderr, "DEBUG format hex: ");
+    for (size_t i = 0; i < 20 && format[i]; i++) {
+        fprintf(stderr, "%02x ", (unsigned char)format[i]);
+    }
+    fprintf(stderr, "\n");
 
     while ((ptr = strchr(ptr, '%')) != NULL) {
         ptr++;  // Move past %
@@ -285,61 +385,52 @@ size_t count_format_specifiers(const char* format) {
     return count;
 }
 
-
 // Log a message based on configuration settings
 void log_group_begin(void) {
     MutexResult lock_result = MUTEX_LOCK(&log_mutex, SR_LOGGING);
     if (lock_result == MUTEX_SUCCESS) {
-        in_log_group = true;
+        set_log_group_flag(true);
     }
 }
 
 void log_group_end(void) {
-    in_log_group = false;
+    set_log_group_flag(false);
     // Use the macro instead of direct function call to get proper logging
     MUTEX_UNLOCK(&log_mutex, SR_LOGGING);
 }
 
 void log_this(const char* subsystem, const char* format, int priority, int num_args, ...) {
+    
+    // NEW: Skip logging if in mutex operation to break recursion
+    if (*get_mutex_operation_flag()) {
+        return;
+    }
+    
     // Set thread-local flag to prevent recursive logging
-    bool was_in_logging = in_logging_operation;
-    in_logging_operation = true;
+    bool was_in_logging = log_is_in_logging_operation();
+    set_logging_operation_flag(true);
 
     // Validate inputs and normalize priority level early
     if (!subsystem) subsystem = "Unknown";
     if (!format) format = "No message";
 
-    // Ensure priority is valid, defaulting to STATE if:
-    // 1. Priority is out of bounds
-    // 2. Priority is corrupted (e.g., during shutdown)
-    // 3. app_config is not available
-    if (priority < LOG_LEVEL_TRACE || priority > LOG_LEVEL_QUIET ||
-        !app_config || !app_config->logging.levels) {
-        // For TRACE level, preserve it even if config is not available
-        if (priority == LOG_LEVEL_TRACE) {
-            // Keep TRACE level for early startup logging
-        } else {
-            priority = LOG_LEVEL_STATE;
-        }
-    }
-
     // DEFENSIVE PROGRAMMING: Check that num_args matches the number of format specifiers
-    // This helps prevent the type of bug we just spent hours fixing
     if (format && strlen(format) > 0) {
         size_t specifier_count = count_format_specifiers(format);
         if ((size_t)num_args != specifier_count) {
-            fprintf(stderr, "WARNING: log_this parameter mismatch! Format string '%s' has %zu specifiers but received %d arguments\n",
+            fprintf(stderr, "WARNING: log_this parameter mismatch: Format string '%s' has %zu specifiers but received %d arguments\n",
                     format, specifier_count, num_args);
             fflush(stderr);
         }
     }
 
     // Only lock if we're not already in a group
-    if (!in_log_group) {
+    bool is_in_group = get_log_group_flag();
+    if (!is_in_group) {
         MutexResult lock_result = MUTEX_LOCK(&log_mutex, SR_LOGGING);
         if (lock_result != MUTEX_SUCCESS) {
             // Failed to lock, skip logging to avoid infinite recursion
-            in_logging_operation = was_in_logging;  // Restore flag
+            set_logging_operation_flag(was_in_logging);  // Restore flag
             return;
         }
     }
@@ -361,17 +452,14 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
              "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"counter_high\":%lu,\"counter_low\":%lu,\"LogConsole\":true,\"LogFile\":true,\"LogDatabase\":true}",
              subsystem, details, priority, counter_high, counter_low);
 
-    // Check if app_config is NULL (during startup or after cleanup_application_config)
+    // Check if we're in startup phase (server not yet running)
     // or if this is the final shutdown message
-    // In these cases, always use console_log regardless of queue status
-    if (!app_config || (strcmp(details, "Shutdown complete") == 0)) {
-        // During startup, shutdown, or for final message, always use console output
-        console_log(subsystem, priority, details, current_count);
+    // In these cases, filter by startup log level
+    if (server_running == 0 || (strcmp(details, "Shutdown complete") == 0)) {
+        if (priority >= startup_log_level) {
+            console_log(subsystem, priority, details, current_count);
+        }
     }
-    // During very early startup (before queue system init), always use console
-    else if (!queue_system_initialized) {
-        console_log(subsystem, priority, details, current_count);
-    } 
     // Normal operation with initialized queue system
     else {
         // During shutdown, always use console output like we do for NULL app_config
@@ -393,21 +481,17 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
             }
 
             // Only check console enabled during normal operation
-            if (use_console && app_config->logging.console.enabled) {
+            if (use_console && app_config && app_config->logging.console.enabled) {
                 console_log(subsystem, priority, details, current_count);
             }
         }
     }
 
     // Only unlock if we're not in a group
-    if (!in_log_group) {
+    if (!is_in_group) {
         MUTEX_UNLOCK(&log_mutex, SR_LOGGING);
     }
 
     // Restore the logging operation flag
-    in_logging_operation = was_in_logging;
-}
-
-bool log_is_in_logging_operation(void) {
-    return in_logging_operation;
+    set_logging_operation_flag(was_in_logging);
 }
