@@ -2,15 +2,29 @@
 
 # CHANGELOG
 # 2025-07-15: Added Unity test compilation to catch errors in test code during trial builds
+# 2025-09-24: Added QUICK parameter to skip cleaning and cmake configuration
 
 pushd . >/dev/null 2>&1 || return
 
-echo "$(date +%H:%M:%S.%3N || true) - Cleaning Build Directory"
-rm -rf build/*
-rm -rf hydrogen_*
+# Check if QUICK parameter is supplied
+QUICK_MODE=false
+for arg in "$@"; do
+    if [[ "${arg}" == "QUICK" ]]; then
+        QUICK_MODE=true
+        break
+    fi
+done
 
-echo "$(date +%H:%M:%S.%3N || true) - Configuring CMake"
-cd cmake && cmake -S . -B ../build --preset default >/dev/null 2>&1
+if [[ "${QUICK_MODE}" != "true" ]]; then
+    echo "$(date +%H:%M:%S.%3N || true) - Cleaning Build Directory"
+    rm -rf build/*
+    rm -rf hydrogen_*
+
+    echo "$(date +%H:%M:%S.%3N || true) - Configuring CMake"
+    cd cmake && cmake -S . -B ../build --preset default >/dev/null 2>&1
+else
+    cd cmake || return
+fi
 
 echo "$(date +%H:%M:%S.%3N || true) - Default Build"
 
@@ -41,7 +55,7 @@ fi
 
 
 # Check if build was successful
-if echo "${UNITY_BUILD_OUTPUT}" | grep -q "completed successfully" && [[ -z "${ERRORS}" ]]; then
+if (echo "${UNITY_BUILD_OUTPUT}" | grep -q "completed successfully" || echo "${UNITY_BUILD_OUTPUT}" | grep -q "no work to do") && [[ -z "${ERRORS}" ]]; then
     echo "$(date +%H:%M:%S.%3N || true) - Build Successful"
     
     # Copy binary for testing
@@ -78,8 +92,8 @@ if echo "${UNITY_BUILD_OUTPUT}" | grep -q "completed successfully" && [[ -z "${E
         done
         USED_SRCS=$(echo -e "${USED_SRCS}" | grep -v "^$" | sort -u || true)
         
-        # Find all source files relative to src directory  
-        ALL_SRCS=$(find "src" -name "*.c" | sed "s|/src/|./|g" | sort || true)
+        # Find all source files relative to src directory
+        ALL_SRCS=$(find "src" -name "*.c" | sed "s|^src/|./|" | sort || true)
         
         # Read ignored files (already in ./ format)
         IGNORED_SRCS=""
@@ -94,13 +108,13 @@ if echo "${UNITY_BUILD_OUTPUT}" | grep -q "completed successfully" && [[ -z "${E
         if [[ -z "${REPORTABLE_SRCS}" ]]; then
             echo "$(date +%H:%M:%S.%3N || true) - Source Files Checked"
         else
-            echo "$(date +%H:%M:%S.%3N || true) - Source Files NOT Checked"
-        #     echo "⚠️  Unused source files:"
-        #     echo "${REPORTABLE_SRCS}" | while read -r file; do
-        #         if [[ -n "${file}" ]]; then
-        #             echo "  ${file}"
-        #         fi
-        #     done
+            echo "$(date +%H:%M:%S.%3N || true) - Source Files Checked"
+            echo "⚠️  Unused source files:"
+            echo "${REPORTABLE_SRCS}" | while read -r file; do
+                if [[ -n "${file}" ]]; then
+                    echo "  ${file}"
+                fi
+            done
         fi
     else
         echo "⚠️  Map file not found, skipping unused file analysis"

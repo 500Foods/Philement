@@ -38,7 +38,7 @@ void handle_launch_review(const ReadinessResults* results) {
     
     // Begin LAUNCH REVIEW logging section
     log_group_begin();
-        log_this(SR_LAUNCH, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+        log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
         log_this(SR_LAUNCH, "LAUNCH REVIEW", LOG_LEVEL_STATE, 0);
         
         // Track launch statistics

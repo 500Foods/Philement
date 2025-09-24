@@ -64,15 +64,15 @@ bool handle_landing_plan(const ReadinessResults* results) {
     if (!results) return false;
     
     // Begin LANDING PLAN logging section
-    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
-    log_this(SR_LANDING, "LANDING PLAN", LOG_LEVEL_STATE, 0);
+    log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_LANDING, "LANDING PLAN", LOG_LEVEL_DEBUG, 0);
     
     // Log overall readiness status
     log_landing_status(results);
     
     if (!results->any_ready) {
-        log_this(SR_LANDING, "No-Go: No subsystems ready for landing", LOG_LEVEL_ALERT, 0);
-        log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+        log_this(SR_LANDING, "No-Go: No subsystems ready for landing", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
         return false;
     }
     
@@ -115,14 +115,14 @@ bool handle_landing_plan(const ReadinessResults* results) {
         }
         
         if (!found) {
-            log_this(SR_LANDING, "  No-Go: %s", LOG_LEVEL_STATE, 1, subsystem);
+            log_this(SR_LANDING, "  No-Go: %s", LOG_LEVEL_DEBUG, 1, subsystem);
             continue;
         }
         
         // Get subsystem ID for dependency checking
         int subsystem_id = get_subsystem_id_by_name(subsystem);
         if (subsystem_id < 0) {
-            log_this(SR_LANDING, "  No-Go: %s", LOG_LEVEL_STATE, 1, subsystem);
+            log_this(SR_LANDING, "  No-Go: %s", LOG_LEVEL_DEBUG, 1, subsystem);
             continue;
         }
         
@@ -132,14 +132,14 @@ bool handle_landing_plan(const ReadinessResults* results) {
         
         // Show Go/No-Go status
         if (is_ready && can_land) {
-            log_this(SR_LANDING, "  Go:    %s", LOG_LEVEL_STATE, 1, subsystem);
+            log_this(SR_LANDING, "  Go:    %s", LOG_LEVEL_DEBUG, 1, subsystem);
         } else {
-            log_this(SR_LANDING, "  No-Go: %s", LOG_LEVEL_STATE, 1, subsystem);
+            log_this(SR_LANDING, "  No-Go: %s", LOG_LEVEL_DEBUG, 1, subsystem);
         }
     }
     
     // Make final landing decision
-    log_this(SR_LANDING, "LANDING PLAN: Go for landing", LOG_LEVEL_STATE, 0);
+    log_this(SR_LANDING, "LANDING PLAN: Go for landing", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -170,7 +170,7 @@ bool check_dependent_states(const char* subsystem, bool* can_land) {
         SubsystemState state = get_subsystem_state(j);
         if (state != SUBSYSTEM_INACTIVE && state != SUBSYSTEM_ERROR) {
             *can_land = false;
-            log_this(SR_LANDING, "  %s waiting for dependent %s to land", LOG_LEVEL_STATE, 2, subsystem, dependent->name);
+            log_this(SR_LANDING, "  %s waiting for dependent %s to land", LOG_LEVEL_DEBUG, 2, subsystem, dependent->name);
             return false;
         }
     }
@@ -182,7 +182,7 @@ bool check_dependent_states(const char* subsystem, bool* can_land) {
  * Provides a summary of subsystem readiness
  */
 void log_landing_status(const ReadinessResults* results) {
-    log_this(SR_LANDING, "Total Subsystems Checked: %3d", LOG_LEVEL_STATE, 1, results->total_checked);
-    log_this(SR_LANDING, "Ready Subsystems:         %3d", LOG_LEVEL_STATE, 1, results->total_ready);
-    log_this(SR_LANDING, "Not Ready Subsystems:     %3d", LOG_LEVEL_STATE, 1, results->total_not_ready);
+    log_this(SR_LANDING, "Total Subsystems Checked: %3d", LOG_LEVEL_DEBUG, 1, results->total_checked);
+    log_this(SR_LANDING, "Ready Subsystems:         %3d", LOG_LEVEL_DEBUG, 1, results->total_ready);
+    log_this(SR_LANDING, "Not Ready Subsystems:     %3d", LOG_LEVEL_DEBUG, 1, results->total_not_ready);
 }

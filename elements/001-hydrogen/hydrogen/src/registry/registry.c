@@ -342,7 +342,7 @@ bool stop_subsystem(int subsystem_id) {
     
     pthread_mutex_unlock(&subsystem_registry.mutex);
     
-    log_this(SR_REGISTRY, "Stopping subsystem '%s'", LOG_LEVEL_STATE, 1, subsystem->name);
+    log_this(SR_REGISTRY, "Stopping subsystem '%s'", LOG_LEVEL_DEBUG, 1, subsystem->name);
     
     // Set the shutdown flag if provided
     if (subsystem->shutdown_flag) {
@@ -363,7 +363,7 @@ bool stop_subsystem(int subsystem_id) {
     // Update state to inactive
     update_subsystem_state(subsystem_id, SUBSYSTEM_INACTIVE);
     
-    log_this(SR_REGISTRY, "Subsystem '%s' stopped successfully", LOG_LEVEL_STATE, 1, subsystem->name);
+    log_this(SR_REGISTRY, "Subsystem '%s' stopped successfully", LOG_LEVEL_DEBUG, 1, subsystem->name);
     
     return true;
 }
@@ -537,9 +537,9 @@ void print_subsystem_status(void) {
     pthread_mutex_lock(&subsystem_registry.mutex);
     
     // Header for the status report
-    log_this(SR_REGISTRY, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
-    log_this(SR_REGISTRY, "SUBSYSTEM STATUS REPORT", LOG_LEVEL_STATE, 0);
-    log_this(SR_REGISTRY, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_REGISTRY, "SUBSYSTEM STATUS REPORT", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
     
     time_t now = time(NULL);
     char time_buffer[64];
@@ -558,7 +558,7 @@ void print_subsystem_status(void) {
         snprintf(time_buffer, sizeof(time_buffer), "%02d:%02d:%02d", hours, minutes, seconds);
         
         // Determine log level based on state
-        int log_level = LOG_LEVEL_STATE;
+        int log_level = LOG_LEVEL_DEBUG;
         if (subsystem->state == SUBSYSTEM_ERROR) {
             log_level = LOG_LEVEL_ERROR;
         } else if (subsystem->state == SUBSYSTEM_STOPPING) {
@@ -583,22 +583,22 @@ void print_subsystem_status(void) {
                 if (j > 0) strcat(deps, ", ");
                 strcat(deps, subsystem->dependencies[j]);
             }
-            log_this(SR_REGISTRY, "  Dependencies: %s", LOG_LEVEL_STATE, 1, deps);
+            log_this(SR_REGISTRY, "  Dependencies: %s", LOG_LEVEL_DEBUG, 1, deps);
         }
         
         // Log thread information if available
         if (subsystem->threads) {
             update_service_thread_metrics(subsystem->threads);
-            log_this(SR_REGISTRY, "  Threads: %d - Memory: %zu bytes", LOG_LEVEL_STATE, 2,
+            log_this(SR_REGISTRY, "  Threads: %d - Memory: %zu bytes", LOG_LEVEL_DEBUG, 2,
                 subsystem->threads->thread_count, 
                 subsystem->threads->resident_memory);
         }
     }
     
     // Summary information
-    log_this(SR_REGISTRY, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
-    log_this(SR_REGISTRY, "Total subsystems: %d - Running: %d", LOG_LEVEL_STATE, 2, subsystem_registry.count, running_count);
-    log_this(SR_REGISTRY, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_REGISTRY, "Total subsystems: %d - Running: %d", LOG_LEVEL_DEBUG, 2, subsystem_registry.count, running_count);
+    log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
     
     pthread_mutex_unlock(&subsystem_registry.mutex);
 }

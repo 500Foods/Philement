@@ -114,7 +114,7 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
         mail->OutboundServerCount = 2;
 
         // Log default server setup
-        log_this(SR_CONFIG, "――― Using default environment variables for SMTP servers (*)", LOG_LEVEL_STATE, 0);
+        log_this(SR_CONFIG, "――― Using default environment variables for SMTP servers (*)", LOG_LEVEL_DEBUG, 0);
     }
 
     if (!success) {

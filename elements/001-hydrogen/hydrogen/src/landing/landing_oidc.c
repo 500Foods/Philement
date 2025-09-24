@@ -52,27 +52,27 @@ LaunchReadiness check_oidc_landing_readiness(void) {
  */
 static void free_oidc_resources(void) {
     // Begin LANDING: OIDC section
-    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
-    log_this(SR_LANDING, "LANDING: OIDC", LOG_LEVEL_STATE, 0);
+    log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_LANDING, "LANDING: OIDC", LOG_LEVEL_DEBUG, 0);
     
     // Check if OIDC is enabled before attempting cleanup
     if (app_config && !app_config->oidc.enabled) {
-        log_this(SR_LANDING, "  Step 1: OIDC disabled, skipping cleanup", LOG_LEVEL_STATE, 0);
+        log_this(SR_LANDING, "  Step 1: OIDC disabled, skipping cleanup", LOG_LEVEL_DEBUG, 0);
         update_subsystem_after_shutdown("OIDC");
-        log_this(SR_LANDING, "  Step 2: OIDC subsystem marked as inactive", LOG_LEVEL_STATE, 0);
-        log_this(SR_LANDING, "LANDING: OIDC cleanup complete", LOG_LEVEL_STATE, 0);
+        log_this(SR_LANDING, "  Step 2: OIDC subsystem marked as inactive", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_LANDING, "LANDING: OIDC cleanup complete", LOG_LEVEL_DEBUG, 0);
         return;
     }
 
     // Shut down the OIDC service
-    log_this(SR_LANDING, "  Step 1: Shutting down OIDC service", LOG_LEVEL_STATE, 0);
+    log_this(SR_LANDING, "  Step 1: Shutting down OIDC service", LOG_LEVEL_DEBUG, 0);
     shutdown_oidc_service();
 
     // Update the registry that OIDC has been shut down
     update_subsystem_after_shutdown("OIDC");
-    log_this(SR_LANDING, "  Step 7: OIDC subsystem marked as inactive", LOG_LEVEL_STATE, 0);
+    log_this(SR_LANDING, "  Step 7: OIDC subsystem marked as inactive", LOG_LEVEL_DEBUG, 0);
 
-    log_this(SR_LANDING, "LANDING: OIDC cleanup complete", LOG_LEVEL_STATE, 0);
+    log_this(SR_LANDING, "LANDING: OIDC cleanup complete", LOG_LEVEL_DEBUG, 0);
 }
 
 /**
@@ -80,19 +80,19 @@ static void free_oidc_resources(void) {
  */
 int land_oidc_subsystem(void) {
     // Begin LANDING: OIDC section
-    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
-    log_this(SR_LANDING, "LANDING: OIDC", LOG_LEVEL_STATE, 0);
+    log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_LANDING, "LANDING: OIDC", LOG_LEVEL_DEBUG, 0);
 
     // Get current subsystem state through registry
     int subsys_id = get_subsystem_id_by_name("OIDC");
     if (subsys_id < 0 || !is_subsystem_running(subsys_id)) {
-        log_this(SR_LANDING, "OIDC not running, skipping shutdown", LOG_LEVEL_STATE, 0);
+        log_this(SR_LANDING, "OIDC not running, skipping shutdown", LOG_LEVEL_DEBUG, 0);
         return 1;  // Success - nothing to do
     }
 
     // Step 1: Mark as stopping
     update_subsystem_state(subsys_id, SUBSYSTEM_STOPPING);
-    log_this(SR_LANDING, "LANDING: OIDC - Beginning shutdown sequence", LOG_LEVEL_STATE, 0);
+    log_this(SR_LANDING, "LANDING: OIDC - Beginning shutdown sequence", LOG_LEVEL_DEBUG, 0);
 
     // Step 2: Free resources and mark as inactive
     free_oidc_resources();
@@ -100,9 +100,9 @@ int land_oidc_subsystem(void) {
     // Step 3: Verify final state for restart capability
     SubsystemState final_state = get_subsystem_state(subsys_id);
     if (final_state == SUBSYSTEM_INACTIVE) {
-        log_this(SR_LANDING, "LANDING: OIDC - Successfully landed and ready for future restart", LOG_LEVEL_STATE, 0);
+        log_this(SR_LANDING, "LANDING: OIDC - Successfully landed and ready for future restart", LOG_LEVEL_DEBUG, 0);
     } else {
-        log_this(SR_LANDING, "LANDING: OIDC - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
+        log_this(SR_LANDING, "LANDING: OIDC - Warning: Unexpected final state: %s", LOG_LEVEL_DEBUG, 1, subsystem_state_to_string(final_state));
     }
 
     return 1;  // Success

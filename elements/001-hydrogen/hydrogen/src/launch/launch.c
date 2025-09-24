@@ -154,7 +154,7 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
         // Get subsystem ID
         int subsystem_id = get_subsystem_id_by_name(subsystem);
         if (subsystem_id < 0) {
-            log_this(SR_STARTUP, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+            log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_ERROR, 0);
             log_this(SR_LAUNCH, "LAUNCH: Failed to get subsystem ID for '%s'", LOG_LEVEL_ERROR, 1, subsystem);
             free(upper_name);
             continue;
@@ -199,7 +199,7 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
 
 // Log early startup information (before any initialization)
 static void log_early_info(void) {
-    log_this(SR_STARTUP, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_STARTUP, "HYDROGEN STARTUP", LOG_LEVEL_STATE, 0);
     log_this(SR_STARTUP, "PID:     %d", LOG_LEVEL_STATE, 1, getpid());
     log_this(SR_STARTUP, "Version: %s", LOG_LEVEL_STATE, 1, VERSION);
@@ -229,7 +229,7 @@ bool check_all_launch_readiness(void) {
      * Each subsystem's specific launch code is in its own launch_*.c file
      */
     if (launch_success) {
-        // log_this(SR_LAUNCH, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+        // log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
         launch_success = launch_approved_subsystems(&results);
     }
     
@@ -271,7 +271,7 @@ int startup_hydrogen(const char* config_path) {
 
     // For restart, ensure clean state
     if (restart_requested) {
-        log_this(SR_STARTUP, "Resetting system state for restart", LOG_LEVEL_STATE, 0);
+        log_this(SR_STARTUP, "Resetting system state for restart", LOG_LEVEL_DEBUG, 0);
         
         // Reset all subsystem states
         for (int i = 0; i < subsystem_registry.count; i++) {
@@ -331,8 +331,8 @@ int startup_hydrogen(const char* config_path) {
     }
     
     // Log successful configuration loading
-    log_this(SR_STARTUP, "Configuration loading complete", LOG_LEVEL_STATE, 0);
-    log_this(SR_STARTUP, "Starting launch sequence...", LOG_LEVEL_STATE, 0);
+    log_this(SR_STARTUP, "Configuration loading complete", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_STARTUP, "Starting launch sequence...", LOG_LEVEL_DEBUG, 0);
     
     // Initialize registry first as it's needed for subsystem tracking
     initialize_registry();
@@ -352,9 +352,9 @@ int startup_hydrogen(const char* config_path) {
     }
 
     // Launch Registry first after plan is approved
-    // log_this(SR_LAUNCH, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    // log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     if (!launch_registry_subsystem(restart_requested)) {
-        log_this(SR_STARTUP, "Failed to launch registry - cannot continue", LOG_LEVEL_ERROR, 0);
+        log_this(SR_STARTUP, "Failed to launch registry - cannot continue", LOG_LEVEL_FATAL, 0);
         return 0;
     }
 
@@ -370,7 +370,7 @@ int startup_hydrogen(const char* config_path) {
     
     // Log if any subsystems failed but continue startup
     if (!launch_success) {
-        log_this(SR_STARTUP, "One or more subsystems failed to launch", LOG_LEVEL_ALERT, 0);
+        log_this(SR_STARTUP, "One or more subsystems failed to launch", LOG_LEVEL_DEBUG, 0);
     }
     
     // Set startup time and update server state
@@ -387,7 +387,7 @@ int startup_hydrogen(const char* config_path) {
     
     // Final Startup Message
     log_group_begin();
-        log_this(SR_STARTUP, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+        log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
         log_this(SR_STARTUP, "STARTUP COMPLETE", LOG_LEVEL_STATE, 0);
         log_this(SR_STARTUP, "- Version Information", LOG_LEVEL_STATE, 0);
         log_this(SR_STARTUP, "    PID:      %d", LOG_LEVEL_STATE, 1, getpid());
@@ -468,31 +468,31 @@ int startup_hydrogen(const char* config_path) {
             log_this(SR_STARTUP, "    Application restarts:  %d", LOG_LEVEL_STATE, 1, restart_count);
         }
 
-        log_this(SR_STARTUP, "- Resources Information", LOG_LEVEL_STATE, 0);
+        log_this(SR_STARTUP, "- Resources Information", LOG_LEVEL_DEBUG, 0);
 
         size_t vmsize = 0, vmrss = 0, vmswap = 0;
         get_process_memory(&vmsize, &vmrss, &vmswap);
-        log_this(SR_STARTUP, "    Memory (RSS): %.1f MB", LOG_LEVEL_STATE, 1, (double)vmrss / 1024.0);
+        log_this(SR_STARTUP, "    Memory (RSS): %.1f MB", LOG_LEVEL_DEBUG, 1, (double)vmrss / 1024.0);
             
-        log_this(SR_STARTUP, "    AppConfig: %'7d bytes", LOG_LEVEL_STATE, 1, sizeof(*app_config));
-        log_this(SR_STARTUP, "    Subsystems:  %'5d Registered", LOG_LEVEL_STATE, 1, registry_registered);
-        log_this(SR_STARTUP, "    - Active:    %'5d", LOG_LEVEL_STATE, 1, registry_running);
-        log_this(SR_STARTUP, "    - Failed:    %'5d", LOG_LEVEL_STATE, 1, registry_failed);
-        log_this(SR_STARTUP, "    - Unused:    %'5d", LOG_LEVEL_STATE, 1, registry_registered - (registry_running + registry_failed));
-        log_this(SR_STARTUP, "    Threads:     %'5d Total", LOG_LEVEL_STATE, 1,
+        log_this(SR_STARTUP, "    AppConfig: %'7d bytes", LOG_LEVEL_DEBUG, 1, sizeof(*app_config));
+        log_this(SR_STARTUP, "    Subsystems:  %'5d Registered", LOG_LEVEL_DEBUG, 1, registry_registered);
+        log_this(SR_STARTUP, "    - Active:    %'5d", LOG_LEVEL_DEBUG, 1, registry_running);
+        log_this(SR_STARTUP, "    - Failed:    %'5d", LOG_LEVEL_DEBUG, 1, registry_failed);
+        log_this(SR_STARTUP, "    - Unused:    %'5d", LOG_LEVEL_DEBUG, 1, registry_registered - (registry_running + registry_failed));
+        log_this(SR_STARTUP, "    Threads:     %'5d Total", LOG_LEVEL_DEBUG, 1,
                 logging_threads.thread_count + webserver_threads.thread_count +
                 websocket_threads.thread_count + mdns_server_threads.thread_count +
                 print_threads.thread_count);
-        log_this(SR_STARTUP, "    - Logging:   %'5d", LOG_LEVEL_STATE, 1, logging_threads.thread_count);
-        log_this(SR_STARTUP, "    - WebServer: %'5d", LOG_LEVEL_STATE, 1, webserver_threads.thread_count);
-        log_this(SR_STARTUP, "    - WebSocket: %'5d", LOG_LEVEL_STATE, 1, websocket_threads.thread_count);
-        log_this(SR_STARTUP, "    - mDNS:      %'5d", LOG_LEVEL_STATE, 1, mdns_server_threads.thread_count);
-        log_this(SR_STARTUP, "    - Print:     %'5d", LOG_LEVEL_STATE, 1, print_threads.thread_count);
-        log_this(SR_STARTUP, "    Queues:      %'5d", LOG_LEVEL_STATE, 1, 0,0);
-        log_this(SR_STARTUP, "    Databases:   %'5d", LOG_LEVEL_STATE, 1, 0,0);
+        log_this(SR_STARTUP, "    - Logging:   %'5d", LOG_LEVEL_DEBUG, 1, logging_threads.thread_count);
+        log_this(SR_STARTUP, "    - WebServer: %'5d", LOG_LEVEL_DEBUG, 1, webserver_threads.thread_count);
+        log_this(SR_STARTUP, "    - WebSocket: %'5d", LOG_LEVEL_DEBUG, 1, websocket_threads.thread_count);
+        log_this(SR_STARTUP, "    - mDNS:      %'5d", LOG_LEVEL_DEBUG, 1, mdns_server_threads.thread_count);
+        log_this(SR_STARTUP, "    - Print:     %'5d", LOG_LEVEL_DEBUG, 1, print_threads.thread_count);
+        log_this(SR_STARTUP, "    Queues:      %'5d", LOG_LEVEL_DEBUG, 1, 0,0);
+        log_this(SR_STARTUP, "    Databases:   %'5d", LOG_LEVEL_DEBUG, 1, 0,0);
         
-        log_this(SR_STARTUP, "Press Ctrl+C to exit (SIGINT)", LOG_LEVEL_STATE, 0);
-        log_this(SR_STARTUP, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+        log_this(SR_STARTUP, "Press Ctrl+C to exit (SIGINT)", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
     log_group_end();
  
     return 1;
