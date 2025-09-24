@@ -52,6 +52,11 @@ static MutexId* get_current_mutex_op_id(void) {
 
 static void set_current_mutex_op_id(const MutexId *id) {
     init_mutex_tls_keys();
+    // Free any existing MutexId before setting new one
+    MutexId *existing = pthread_getspecific(mutex_op_id_key);
+    if (existing) {
+        free(existing);
+    }
     if (id == NULL) {
         pthread_setspecific(mutex_op_id_key, NULL);
         return;

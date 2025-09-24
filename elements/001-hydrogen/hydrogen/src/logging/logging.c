@@ -336,13 +336,6 @@ size_t count_format_specifiers(const char* format) {
     size_t count = 0;
     const char* ptr = format;
 
-    // TEMPORARY: Debug hex dump to diagnose corruption
-    fprintf(stderr, "DEBUG format hex: ");
-    for (size_t i = 0; i < 20 && format[i]; i++) {
-        fprintf(stderr, "%02x ", (unsigned char)format[i]);
-    }
-    fprintf(stderr, "\n");
-
     while ((ptr = strchr(ptr, '%')) != NULL) {
         ptr++;  // Move past %
         if (*ptr == '%') {
