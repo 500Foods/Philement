@@ -108,7 +108,8 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
         COMMAND ${CMAKE_C_COMPILER}
             ${HYDROGEN_BASE_CFLAGS}
-            -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+            -O0 -g -fno-omit-frame-pointer
+            --coverage -fprofile-arcs -ftest-coverage
             -DVERSION='"${HYDROGEN_VERSION}"'
             -DRELEASE='"${HYDROGEN_RELEASE}"'
             -DBUILD_TYPE='"Unity"'
@@ -166,7 +167,7 @@ target_compile_definitions(hydrogen_unity PRIVATE
 add_library(unity_framework OBJECT ${UNITY_FRAMEWORK_SOURCES})
 target_compile_options(unity_framework PRIVATE
     ${HYDROGEN_BASE_CFLAGS}
-    -O0 -g3 -ggdb3 -fno-omit-frame-pointer
+    -O0 -g -fno-omit-frame-pointer
     -Wno-double-promotion
     -I${UNITY_FRAMEWORK_DIR}/src
     -DUNITY_INCLUDE_DOUBLE
@@ -175,7 +176,7 @@ target_compile_options(unity_framework PRIVATE
 add_library(unity_mocks OBJECT ${UNITY_MOCK_SOURCES})
 target_compile_options(unity_mocks PRIVATE
     ${HYDROGEN_BASE_CFLAGS}
-    -O0 -g3 -ggdb3 -fno-omit-frame-pointer
+    -O0 -g -fno-omit-frame-pointer
     -DVERSION="${HYDROGEN_VERSION}"
     -DRELEASE="${HYDROGEN_RELEASE}"
     -DBUILD_TYPE="Unity"
@@ -196,7 +197,7 @@ target_compile_options(unity_mocks PRIVATE
 add_library(unity_print_mocks OBJECT ${UNITY_PRINT_MOCK_SOURCES})
 target_compile_options(unity_print_mocks PRIVATE
     ${HYDROGEN_BASE_CFLAGS}
-    -O0 -g3 -ggdb3 -fno-omit-frame-pointer
+    -O0 -g -fno-omit-frame-pointer
     -DVERSION="${HYDROGEN_VERSION}"
     -DRELEASE="${HYDROGEN_RELEASE}"
     -DBUILD_TYPE="Unity"
@@ -281,7 +282,8 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         COMMAND ${CMAKE_COMMAND} -E make_directory ${TEST_OUTPUT_DIR}
         COMMAND ${CMAKE_C_COMPILER}
             ${HYDROGEN_BASE_CFLAGS}
-            -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+            -O0 -g -fno-omit-frame-pointer
+            --coverage -fprofile-arcs -ftest-coverage
             -DVERSION='"${HYDROGEN_VERSION}"'
             -DRELEASE='"${HYDROGEN_RELEASE}"'
             -DBUILD_TYPE='"Coverage"'
@@ -361,6 +363,8 @@ add_custom_target(unity_tests
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Building Unity tests with coverage instrumentation..."
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target unity_objects --parallel
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target ${UNITY_TEST_TARGETS} --parallel
+    # COMMAND ${CMAKE_COMMAND} -E echo "🛈  Cleaning up Unity object files..."
+    # COMMAND find ${CMAKE_BINARY_DIR}/unity/src/ -type f -name "*.o" -delete
     COMMAND ${CMAKE_COMMAND} -E echo "✅ Unity tests built successfully"
     COMMAND ${CMAKE_COMMAND} -E echo "🛈 Unity coverage files located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
