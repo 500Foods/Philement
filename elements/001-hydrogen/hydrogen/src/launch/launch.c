@@ -205,7 +205,8 @@ static void log_early_info(void) {
     log_this(SR_STARTUP, "Version: %s", LOG_LEVEL_STATE, 1, VERSION);
     log_this(SR_STARTUP, "Release: %s", LOG_LEVEL_STATE, 1, RELEASE);
     log_this(SR_STARTUP, "Build:   %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
-    log_this(SR_STARTUP, "Size:    %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);    
+    log_this(SR_STARTUP, "Size:    %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
+    log_this(SR_STARTUP, "Logging: %s", LOG_LEVEL_STATE, 1, DEFAULT_PRIORITY_LEVELS[startup_log_level].label);
 }
 
 // Check readiness of all subsystems and coordinate launch
@@ -289,6 +290,9 @@ int startup_hydrogen(const char* config_path) {
     // Record current time for logging
     struct timeval tv;
     gettimeofday(&tv, NULL);
+
+    // Initialize startup log level from environment
+    init_startup_log_level();
 
     // Log startup information
     log_early_info();

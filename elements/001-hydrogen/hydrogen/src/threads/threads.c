@@ -65,15 +65,12 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
             // Only log if not in final shutdown mode
             if (!final_shutdown_mode) {
                 char msg[128];
-                // Use log group to ensure consistent formatting
-                log_group_begin();
                 snprintf(msg, sizeof(msg), "%s: Thread %lu (tid: %d) added, count: %d",
                          threads->subsystem, (unsigned long)thread_id, tid, threads->thread_count);
-                log_this(SR_THREADS_LIB, msg, LOG_LEVEL_STATE, 0);
-                log_group_end();
+                log_this(SR_THREADS_LIB, msg, LOG_LEVEL_TRACE, 0);
             }
         } else {
-            log_this(SR_THREADS_LIB, "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_DEBUG, 0);
+            log_this(SR_THREADS_LIB, "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_ERROR, 0);
         }
         mutex_unlock(&thread_mutex);
     }
@@ -106,7 +103,7 @@ static void remove_thread_internal(ServiceThreads *threads, int index, bool skip
         log_group_begin();
         snprintf(msg, sizeof(msg), "%s: Thread %lu removed, count: %d", 
                  threads->subsystem, (unsigned long)thread_id, threads->thread_count);
-        log_this(SR_THREADS_LIB, msg, LOG_LEVEL_STATE, 0);
+        log_this(SR_THREADS_LIB, msg, LOG_LEVEL_TRACE, 0);
         log_group_end();
     }
 }

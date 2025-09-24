@@ -79,6 +79,7 @@
 #define SR_LANDING          "Landing"
 #define SR_STATUS           "Status"
 #define SR_QUEUES           "Queues"
+#define SR_MUTEXES          "Mutexes"         
 
 // The primary 18 Subsystems
 #define SR_REGISTRY         "Registry"
@@ -141,7 +142,7 @@ extern PriorityLevel DEFAULT_PRIORITY_LEVELS[];
 #define DEFAULT_CONSOLE_LEVEL  0 // TRACE
 #define DEFAULT_FILE_LEVEL     1 // DEBUG
 #define DEFAULT_SYSLOG_LEVEL   2 // STATE
-#define DEFAULT_DATABASE_LEVEL 3 // ERROR
+#define DEFAULT_DATABASE_LEVEL 2 // STATE
 #define DEFAULT_NOTIFY_LEVEL   4 // ERROR
 
 #define DEFAULT_LOG_ENTRY_SIZE        1024  /* Size of individual log entries */
@@ -149,6 +150,12 @@ extern PriorityLevel DEFAULT_PRIORITY_LEVELS[];
 
 #define LOG_BUFFER_SIZE 500
 #define MAX_LOG_LINE_LENGTH DEFAULT_LOG_ENTRY_SIZE
+
+// Global startup log level for filtering during initialization
+extern int startup_log_level;
+
+// Initialize startup log level from environment variable
+void init_startup_log_level(void);
 
 // QUEUES /////////////////////////////////////////////////////////////////////////////////////////
 
