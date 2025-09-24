@@ -74,8 +74,8 @@ DATABASE_TEST_CONFIGS=(
 )
 
 # Test timeouts
-STARTUP_TIMEOUT=10
-SHUTDOWN_TIMEOUT=10
+STARTUP_TIMEOUT=5
+SHUTDOWN_TIMEOUT=5
 DQM_INIT_TIMEOUT=10
 
 # Function to check for DQM startup log message
@@ -111,7 +111,7 @@ count_dqm_launches() {
 wait_for_dqm_initialization() {
     local log_file="$1"
     local expected_count="$2"
-    local timeout="${3:-${DQM_INIT_TIMEOUT}}"
+    local timeout="${3}"
 
     # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for ${expected_count} DQM initialization completion message(s)"
 
