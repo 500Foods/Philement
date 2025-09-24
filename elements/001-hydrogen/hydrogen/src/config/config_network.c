@@ -138,7 +138,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
         success = success && PROCESS_SECTION(root, "Network.Available");
 
         // Log the Available section header (like other sections)
-        log_this(SR_CONFIG, "―― Available", LOG_LEVEL_STATE, 0);
+        log_this(SR_CONFIG, "―― Available", LOG_LEVEL_DEBUG, 0);
 
         // Get all interface names for sorting
         const char** interface_names = malloc(json_object_size(available) * sizeof(char*));
@@ -179,7 +179,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
 
             // Log the interface availability with proper format (but only if not "all")
             if (strcmp(interface_name, "all") != 0) {
-                log_this(SR_CONFIG, "――― %s: %s", LOG_LEVEL_STATE, 2, interface_name, is_enabled ? "enabled" : "disabled");
+                log_this(SR_CONFIG, "――― %s: %s", LOG_LEVEL_DEBUG, 2, interface_name, is_enabled ? "enabled" : "disabled");
             }
         }
 

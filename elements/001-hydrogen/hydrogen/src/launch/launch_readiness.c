@@ -338,12 +338,12 @@ void log_readiness_messages(LaunchReadiness* readiness) {
 
     // Log each message (first message is the subsystem name)
     for (int i = 0; readiness->messages[i] != NULL; i++) {
-        int level = LOG_LEVEL_STATE;
+        int level = LOG_LEVEL_DEBUG;
 
         // Use appropriate log level based on the message content
-        if (strstr(readiness->messages[i], "No-Go") != NULL) {
-            level = LOG_LEVEL_ALERT;
-        }
+        // if (strstr(readiness->messages[i], "No-Go") != NULL) {
+        //     level = LOG_LEVEL_ALERT;
+        // }
 
         // Print the message directly (formatting is already in the message)
         log_this(SR_LAUNCH, "%s", level, 1, readiness->messages[i]);
@@ -399,8 +399,8 @@ ReadinessResults handle_readiness_checks(void) {
     
     // Begin LAUNCH READINESS logging section
     log_group_begin();
-        log_this(SR_LAUNCH, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
-        log_this(SR_LAUNCH, "LAUNCH READINESS", LOG_LEVEL_STATE, 0);
+        log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+        log_this(SR_LAUNCH, "LAUNCH READINESS", LOG_LEVEL_DEBUG, 0);
         process_subsystem_readiness(&results, &index, SR_REGISTRY, check_registry_launch_readiness());
         process_subsystem_readiness(&results, &index, SR_PAYLOAD, check_payload_launch_readiness());
         process_subsystem_readiness(&results, &index, SR_THREADS, check_threads_launch_readiness());

@@ -62,7 +62,7 @@ void log_landing_readiness_messages(const LaunchReadiness* readiness) {
     
     // Log each message (first message is the subsystem name)
     for (int i = 0; readiness->messages[i] != NULL; i++) {
-        int level = LOG_LEVEL_STATE;
+        int level = LOG_LEVEL_DEBUG;
         
         // Use appropriate log level based on the message content
         if (strstr(readiness->messages[i], "No-Go") != NULL) {
@@ -112,8 +112,8 @@ ReadinessResults handle_landing_readiness(void) {
     size_t index = 0;
     
     // Begin LANDING READINESS logging section
-    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
-    log_this(SR_LANDING, "LANDING READINESS", LOG_LEVEL_STATE, 0);
+    log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_LANDING, "LANDING READINESS", LOG_LEVEL_DEBUG, 0);
     
     // Define subsystem order and readiness check functions
     struct {

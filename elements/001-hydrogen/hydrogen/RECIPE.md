@@ -101,40 +101,34 @@ tests/          Test framework
 
 ## C CODING REQUIREMENTS
 
+- cppcheck configured with all directives enabled
 - src/hydrogen.h is included first in all .c source files
 - Function Prototypes declared for every function
-- cppcheck configured with all directives enabled
 - Grouped/commented include files at the top of every .c/.h file
 - src/config/config_defaults.c contains many useful subsystem defaults
 - Use `log_this` when outputing anything to the log
 - cmake/CMakeLists.txt is used for all project builds including Unity
-- Don't change CMakeLists.txt without explicit confirmation
+- Run tests/test_91_cppcheck.sh whenever C code is changed
 
 ## BASH CODING REQUIREMENTS
 
+- shellcheck configured with all directives enabled
 - Update CHANGELOG and TEST_VERSION at top of every script after every change
 - ALWAYS use `jq` for JSON parsing, filtering, and validation
 - NEVER use `grep` or text manipulation tools for JSON data
 - Try to reduce external calls wherever possible to increase performance
 - Do NOT use a statement like ((x++)) instead use x=$(( x + 1 ))
-  
-## LINTING GUIDANCE
-
-### cppcheck
-
-- Use cppcheck-friendly patterns (e.g., check malloc returns, avoid unused vars, unused params)
-
-### shellcheck
-
-- Compliance with shellcheck --enable=all directives
+- Use the full "${variable}" declaration  instead of $variable wherever possible
 - SC2292: Prefer [[ ]] over [ ]
 - SC2250: Braces around variable preferences even when not strictly required
 - SC2312: Invoke commands separately to avoid masking return values (or use `|| true` to ignore)
 - SC2248: Add double quotes even when variables don't contain special characters
-
-### Markdown
+- Run tests/test_92_cppcheck.sh whenever Bash code is changed
+  
+## MARKDOWN CODING REQUIREMENTS
 
 - Use consistent headings (# H1, ## H2), valid links
+- Use headings instead of **topic** for emphasis
 - Fix common markdown issues such as these
 - MD009/no-trailing-spaces: Trailing spaces
 - MD012/no-multiple-blanks: Multiple consecutive blank lines

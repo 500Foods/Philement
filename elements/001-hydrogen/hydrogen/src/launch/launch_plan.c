@@ -36,7 +36,7 @@ bool handle_launch_plan(const ReadinessResults* results) {
     if (!results) return false;
     
     // Begin LAUNCH PLAN logging section
-    log_this(SR_LAUNCH, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_LAUNCH, "LAUNCH PLAN", LOG_LEVEL_STATE, 0);
     
     // Log overall readiness status
