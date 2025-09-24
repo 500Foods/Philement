@@ -305,7 +305,7 @@ verify_multi_signals() {
     
     # Check for single shutdown sequence
     local shutdown_count
-    shutdown_count=$("${GREP}" -c "Initiating graceful shutdown sequence" "${log_file}" 2>/dev/null || echo "0")
+    shutdown_count=$("${GREP}" -c "Initiating shutdown sequence" "${log_file}" 2>/dev/null || echo "0")
     if [[ "${shutdown_count}" -eq 1 ]]; then
         echo "MULTI_SIGNAL_SUCCESS" >> "${result_file}"
         return 0
@@ -331,7 +331,7 @@ run_signal_test_parallel() {
     true > "${result_file}"
     
     # Start hydrogen server directly
-    "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${log_file}" 2>&1 &
+    HYDROGEN_LOG_LEVEL="DEBUG" "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${log_file}" 2>&1 &
     local hydrogen_pid=$!
     
     # Wait for startup
@@ -731,7 +731,7 @@ display_multi_log() {
 
         # Check how many shutdown sequences there are
         local shutdown_count
-        shutdown_count=$("${GREP}" -c "Initiating graceful shutdown sequence" "${log_file}" 2>/dev/null || echo "0")
+        shutdown_count=$("${GREP}" -c "Initiating shutdown sequence" "${log_file}" 2>/dev/null || echo "0")
         print_message "${test_number}" "${test_counter}" "[DEBUG] Found ${shutdown_count} shutdown sequences (should be 1 for proper handling)"
     else
         print_message "${test_number}" "${test_counter}" "[DEBUG] No 'Press Ctrl+C' anchor found in log]"

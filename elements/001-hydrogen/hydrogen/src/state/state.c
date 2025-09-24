@@ -130,8 +130,8 @@ void graceful_shutdown(void) {
     const char* subsystem = restart_requested ? SR_RESTART : SR_SHUTDOWN;
     log_this(subsystem, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(subsystem, restart_requested ?
-        "Initiating graceful restart sequence" :
-        "Initiating graceful shutdown sequence", LOG_LEVEL_STATE, 0);
+        "Initiating restart sequence" :
+        "Initiating shutdown sequence", LOG_LEVEL_STATE, 0);
 
     // Trigger landing sequence
     bool landing_ok = check_all_landing_readiness();

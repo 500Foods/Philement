@@ -442,7 +442,7 @@ void cleanup_database_config(DatabaseConfig* config) {
 
 void dump_database_config(const DatabaseConfig* config) {
     if (!config) {
-        log_this(SR_CONFIG_CURRENT, "Cannot dump NULL database config", LOG_LEVEL_TRACE, 0);
+        log_this(SR_CONFIG_CURRENT, "Cannot dump NULL database config", LOG_LEVEL_ERROR, 0);
         return;
     }
 

@@ -156,13 +156,13 @@ void handle_sighup(void) {
     if (!restart_requested) {
         restart_requested = 1;
         restart_count++;
-        log_this(SR_RESTART, "SIGHUP received, initiating restart", LOG_LEVEL_STATE, 0);
+        log_this(SR_RESTART, "SIGHUP received, initiating restart", LOG_LEVEL_ALERT, 0);
         log_this(SR_RESTART, "Restart count: %d", LOG_LEVEL_STATE, 1, restart_count);
     }
 }
 
 void handle_sigint(void) {
-    log_this(SR_SHUTDOWN, "SIGINT received, initiating shutdown", LOG_LEVEL_STATE, 0);
+    log_this(SR_SHUTDOWN, "SIGINT received, initiating shutdown", LOG_LEVEL_ALERT, 0);
     __sync_bool_compare_and_swap(&server_running, 1, 0);
     __sync_bool_compare_and_swap(&server_stopping, 0, 1);
     __sync_synchronize();
@@ -185,10 +185,10 @@ bool check_all_landing_readiness(void) {
     const char* subsystem = restart_requested ? SR_RESTART : SR_SHUTDOWN;
     
     // log_group_begin();
-    // log_this(subsystem, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+    // log_this(subsystem, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
     // log_this(subsystem, restart_requested ?
     //     "Initiating graceful restart sequence" :
-    //     "Landing sequence initiated", LOG_LEVEL_STATE, 0);
+    //     "Landing sequence initiated", LOG_LEVEL_DEBUG, 0);
     // log_group_end();
     
     /*
@@ -198,7 +198,7 @@ bool check_all_landing_readiness(void) {
      */
     ReadinessResults results = handle_landing_readiness();
     if (!results.any_ready) {
-        log_this(SR_LANDING, "No subsystems ready for landing", LOG_LEVEL_ALERT, 0);
+        log_this(SR_LANDING, "No subsystems ready for landing", LOG_LEVEL_DEBUG, 0);
         return false;
     }
     
@@ -232,8 +232,8 @@ bool check_all_landing_readiness(void) {
         const char* config_path = (program_args && program_args[1]) ? program_args[1] : NULL;
         
         // Land Registry as final step
-        log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
-        log_this(SR_LANDING, "LANDING: REGISTRY (Final Step)", LOG_LEVEL_STATE, 0);
+        log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+        log_this(SR_LANDING, "LANDING: REGISTRY (Final Step)", LOG_LEVEL_DEBUG, 0);
         bool registry_ok = land_registry_subsystem(restart_requested);
         landing_success &= registry_ok;
         
@@ -242,10 +242,10 @@ bool check_all_landing_readiness(void) {
             double shutdown_time = calculate_shutdown_time();
             
             log_group_begin();
-            log_this(subsystem, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
-            log_this(subsystem, "LANDING COMPLETE", LOG_LEVEL_STATE, 0);
-            log_this(subsystem, "%s Duration: %.3fs", LOG_LEVEL_STATE, 2, restart_requested ? SR_RESTART : SR_SHUTDOWN, shutdown_time);
-            log_this(subsystem, "All subsystems landed successfully", LOG_LEVEL_STATE, 0);
+            log_this(subsystem, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+            log_this(subsystem, "LANDING COMPLETE", LOG_LEVEL_DEBUG, 0);
+            log_this(subsystem, "%s Duration: %.3fs", LOG_LEVEL_DEBUG, 2, restart_requested ? SR_RESTART : SR_SHUTDOWN, shutdown_time);
+            log_this(subsystem, "All subsystems landed successfully", LOG_LEVEL_DEBUG, 0);
             log_group_end();
         }
         
@@ -256,7 +256,7 @@ bool check_all_landing_readiness(void) {
         __sync_synchronize();
         
         // Log restart sequence start
-        log_this(SR_RESTART, "Initiating in-process restart", LOG_LEVEL_STATE, 0);
+        log_this(SR_RESTART, "Initiating in-process restart", LOG_LEVEL_DEBUG, 0);
         
         // Reset signal handlers if needed
         if (handler_flags_reset_needed) {
@@ -287,9 +287,9 @@ bool check_all_landing_readiness(void) {
         set_server_start_time();
         __sync_synchronize();
         
-        // log_this(SR_RESTART, "In-process restart successful", LOG_LEVEL_STATE, 0);
-        // log_this(SR_RESTART, "Restart count: %d", LOG_LEVEL_STATE, 1, restart_count);
-        // log_this(SR_RESTART, "Restart completed successfully", LOG_LEVEL_STATE, 0);
+        // log_this(SR_RESTART, "In-process restart successful", LOG_LEVEL_DEBUG, 0);
+        // log_this(SR_RESTART, "Restart count: %d", LOG_LEVEL_DEBUG, 1, restart_count);
+        // log_this(SR_RESTART, "Restart completed successfully", LOG_LEVEL_DEBUG, 0);
         
         return true;
     } else {
@@ -303,14 +303,14 @@ bool check_all_landing_readiness(void) {
         
         // Log completion message with timing information
         log_group_begin();
-        log_this(SR_SHUTDOWN, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+        log_this(SR_SHUTDOWN, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
         log_this(SR_SHUTDOWN, "SHUTDOWN COMPLETE", LOG_LEVEL_STATE, 0);
         log_this(SR_SHUTDOWN, "Shutdown elapsed time:  %.3fs", LOG_LEVEL_STATE, 1, shutdown_elapsed_time);
         if (total_running_time > 0.0) {
             log_this(SR_SHUTDOWN, "Total running time:     %.3fs", LOG_LEVEL_STATE, 1, total_running_time);
         }
         log_this(SR_SHUTDOWN, "Total elapsed time:     %.3fs", LOG_LEVEL_STATE, 1, total_elapsed_time);
-        log_this(SR_SHUTDOWN, "%s", LOG_LEVEL_STATE, 1, LOG_LINE_BREAK);
+        log_this(SR_SHUTDOWN, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
         log_group_end();
         
         // Clean up application config after all logging is complete

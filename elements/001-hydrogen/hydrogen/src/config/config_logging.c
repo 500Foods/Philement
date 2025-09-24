@@ -282,22 +282,22 @@ static int get_subsystem_level_internal(const LoggingDestConfig* dest_config,
 }
 
 int get_subsystem_level_console(const LoggingConfig* config, const char* subsystem) {
-    return config ? get_subsystem_level_internal(&config->console, subsystem, LOG_LEVEL_STATE) 
+    return config ? get_subsystem_level_internal(&config->console, subsystem, LOG_LEVEL_DEBUG) 
                  : LOG_LEVEL_STATE;
 }
 
 int get_subsystem_level_file(const LoggingConfig* config, const char* subsystem) {
-    return config ? get_subsystem_level_internal(&config->file, subsystem, LOG_LEVEL_STATE)
-                 : LOG_LEVEL_STATE;
+    return config ? get_subsystem_level_internal(&config->file, subsystem, LOG_LEVEL_DEBUG)
+                 : LOG_LEVEL_DEBUG;
 }
 
 int get_subsystem_level_database(const LoggingConfig* config, const char* subsystem) {
-    return config ? get_subsystem_level_internal(&config->database, subsystem, LOG_LEVEL_ERROR)
+    return config ? get_subsystem_level_internal(&config->database, subsystem, LOG_LEVEL_DEBUG)
                  : LOG_LEVEL_ERROR;
 }
 
 int get_subsystem_level_notify(const LoggingConfig* config, const char* subsystem) {
-    return config ? get_subsystem_level_internal(&config->notify, subsystem, LOG_LEVEL_ERROR)
+    return config ? get_subsystem_level_internal(&config->notify, subsystem, LOG_LEVEL_DEBUG)
                  : LOG_LEVEL_ERROR;
 }
 
