@@ -251,12 +251,12 @@ int launch_swagger_subsystem(void) {
     }
 
     // Verify swagger files are in cache
-    PayloadFile *swagger_files = NULL;
-    size_t num_swagger_files = 0;
+    PayloadFile *local_swagger_files = NULL;
+    size_t local_num_swagger_files = 0;
     size_t capacity = 0;
 
-    bool files_retrieved = get_payload_files_by_prefix("swagger/", &swagger_files, &num_swagger_files, &capacity);
-    if (!files_retrieved || !swagger_files || num_swagger_files == 0) {
+    bool files_retrieved = get_payload_files_by_prefix("swagger/", &local_swagger_files, &local_num_swagger_files, &capacity);
+    if (!files_retrieved || !local_swagger_files || local_num_swagger_files == 0) {
         log_this(SR_SWAGGER, "    No swagger files found in payload cache", LOG_LEVEL_STATE, 0);
         log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Failed: Missing Swagger UI files", LOG_LEVEL_STATE, 0);
         return 0;
@@ -268,25 +268,25 @@ int launch_swagger_subsystem(void) {
         mutable_config->swagger.payload_available = 1;
     }
 
-    log_this(SR_SWAGGER, "    Swagger files verified (%zu files in cache):", LOG_LEVEL_STATE, 1, num_swagger_files);
-    for (size_t i = 0; i < num_swagger_files; i++) {
+    log_this(SR_SWAGGER, "    Swagger files verified (%zu files in cache):", LOG_LEVEL_STATE, 1, local_num_swagger_files);
+    for (size_t i = 0; i < local_num_swagger_files; i++) {
         log_this(SR_SWAGGER, "      -> %s (%s)", LOG_LEVEL_STATE, 2,
-                swagger_files[i].name,
-                swagger_files[i].size < 1024 ?
-                    swagger_files[i].size < 512 ? 
+                local_swagger_files[i].name,
+                local_swagger_files[i].size < 1024 ?
+                    local_swagger_files[i].size < 512 ?
                         "small file" : "medium file" : "large file");
     }
 
     // Set the global config so validators and handlers can access it and load files
-    if (!init_swagger_support_from_payload(&app_config->swagger, swagger_files, num_swagger_files)) {
+    if (!init_swagger_support_from_payload(&app_config->swagger, local_swagger_files, local_num_swagger_files)) {
         log_this(SR_SWAGGER, "    Failed to load swagger files into memory", LOG_LEVEL_ERROR, 0);
         log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: File loading failed", LOG_LEVEL_STATE, 0);
-        free(swagger_files);
+        free(local_swagger_files);
         return 0;
     }
 
     // Free the retrieved files array (but not individual data - owned by swagger now)
-    free(swagger_files);
+    free(local_swagger_files);
     log_this(SR_SWAGGER, "    All dependencies verified", LOG_LEVEL_STATE, 0);
 
     // Register Swagger endpoint with webserver
