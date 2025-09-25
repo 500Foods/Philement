@@ -25,7 +25,7 @@ add_custom_target(all_variants
     COMMAND ${CMAKE_COMMAND} -E echo "🛈 Phase 1: Building independent targets in parallel..."
 
     # Phase 1: Build independent targets that can run in parallel
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target regular debug valgrind perf --parallel ${PARALLEL_JOBS}
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target debug valgrind perf --parallel ${PARALLEL_JOBS}
 
     # Phase 2: Build coverage and unity tests (can run in parallel with each other)
     COMMAND ${CMAKE_COMMAND} -E echo "🛈 Phase 2: Building coverage and unity tests..."
@@ -36,12 +36,12 @@ add_custom_target(all_variants
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target payload
 
     # Phase 4: Build targets that depend on payload
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Phase 4: Building release and coverage with payload..."
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target coverage hydrogen_release --parallel ${PARALLEL_JOBS}
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Phase 4: Building regular, release and coverage with payload..."
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen coverage hydrogen_release --parallel ${PARALLEL_JOBS}
 
     COMMAND ${CMAKE_COMMAND} -E echo "✅ All variants built successfully!"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Default:     $<TARGET_FILE:regular>"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Default:     ${HYDROGEN_DIR}/hydrogen"
     COMMAND ${CMAKE_COMMAND} -E echo "  Debug:       $<TARGET_FILE:debug>"
     COMMAND ${CMAKE_COMMAND} -E echo "  Valgrind:    $<TARGET_FILE:valgrind>"
     COMMAND ${CMAKE_COMMAND} -E echo "  Performance: $<TARGET_FILE:perf>"
@@ -69,7 +69,7 @@ add_custom_target(clean_all
 )
 
 add_custom_target(cleanish
-    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:regular>
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${HYDROGEN_DIR}/hydrogen
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:debug>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:valgrind>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:perf>
@@ -93,7 +93,7 @@ add_custom_target(cmake_help
     COMMAND ${CMAKE_COMMAND} -E echo "CPU Cores: ${CPU_CORES}, Parallel Jobs: ${PARALLEL_JOBS}"
     COMMAND ${CMAKE_COMMAND} -E echo ""
     COMMAND ${CMAKE_COMMAND} -E echo "Available targets:"
-    COMMAND ${CMAKE_COMMAND} -E echo "  hydrogen          - Build default version with standard optimizations"
+    COMMAND ${CMAKE_COMMAND} -E echo "  hydrogen          - Build default version with standard optimizations and embedded payload"
     COMMAND ${CMAKE_COMMAND} -E echo "  hydrogen_debug    - Build with AddressSanitizer for debugging"
     COMMAND ${CMAKE_COMMAND} -E echo "  hydrogen_valgrind - Build optimized for Valgrind analysis"
     COMMAND ${CMAKE_COMMAND} -E echo "  hydrogen_perf     - Build with aggressive optimizations"

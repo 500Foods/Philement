@@ -343,6 +343,15 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         VERBATIM
     )
 
+    # Special case: Embed payload into payload_test_process_payload_data for testing real payload processing
+    if(TEST_NAME STREQUAL "payload_test_process_payload_data")
+        add_custom_command(TARGET ${TEST_NAME} POST_BUILD
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_payload.sh $<TARGET_FILE:${TEST_NAME}> ${CMAKE_CURRENT_SOURCE_DIR}/../payloads/payload.tar.br.enc
+            COMMENT "Embedding payload into ${TEST_NAME} for real payload processing tests"
+            VERBATIM
+        )
+    endif()
+
     # Add test to CTest
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
         WORKING_DIRECTORY ${TEST_RUNTIME_DIR}

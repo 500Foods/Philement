@@ -17,6 +17,7 @@
 // Override system functions with our mocks
 #define malloc mock_malloc
 #define free mock_free
+#define realloc mock_realloc
 #define strdup mock_strdup
 #define gethostname mock_gethostname
 #define nanosleep mock_nanosleep
@@ -26,6 +27,7 @@
 
 // Always declare mock function prototypes for the .c file
 void *mock_malloc(size_t size);
+void *mock_realloc(void *ptr, size_t size);
 void mock_free(void *ptr);
 char *mock_strdup(const char *s);
 int mock_gethostname(char *name, size_t len);
@@ -36,6 +38,7 @@ ssize_t mock_recvfrom(int sockfd, void *buf, size_t len, int flags, struct socka
 
 // Mock control functions for tests
 void mock_system_set_malloc_failure(int should_fail);
+void mock_system_set_realloc_failure(int should_fail);
 void mock_system_set_gethostname_failure(int should_fail);
 void mock_system_set_gethostname_result(const char *result);
 void mock_system_set_nanosleep_failure(int should_fail);

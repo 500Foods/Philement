@@ -512,6 +512,25 @@ else
 fi
 evaluate_test_result_silent "Verify examples executables" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify Default Executable Payload"
+print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "test -f hydrogen && grep -q '<<< HERE BE ME TREASURE >>>' hydrogen"
+
+if [[ -f "hydrogen" ]]; then
+    # Check if the default binary has payload embedded using the correct marker
+    if "${GREP}" -q "<<< HERE BE ME TREASURE >>>" "hydrogen" 2>/dev/null; then
+        hydrogen_size=$(get_file_size "hydrogen")
+        formatted_size=$(format_file_size "${hydrogen_size}")
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Default executable has embedded payload (${formatted_size} bytes total)"
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Default executable appears to be missing embedded payload marker"
+        EXIT_CODE=1
+    fi
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Default executable not found for payload verification"
+    EXIT_CODE=1
+fi
+evaluate_test_result_silent "Verify default executable payload" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
+
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify Coverage Executable Payload"
 print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "test -f hydrogen_coverage && grep -q '<<< HERE BE ME TREASURE >>>' hydrogen_coverage"
 
@@ -553,6 +572,26 @@ else
     EXIT_CODE=1
 fi
 evaluate_test_result_silent "Verify release executable payload" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify Unity Payload Test Executable Payload"
+print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "test -f build/unity/src/payload/payload_test_process_payload_data && grep -q '<<< HERE BE ME TREASURE >>>' build/unity/src/payload/payload_test_process_payload_data"
+
+if [[ -f "build/unity/src/payload/payload_test_process_payload_data" ]]; then
+    # Check if the unity payload test binary has payload embedded using the correct marker
+    if "${GREP}" -q "<<< HERE BE ME TREASURE >>>" "build/unity/src/payload/payload_test_process_payload_data" 2>/dev/null; then
+        unity_payload_size=$(get_file_size "build/unity/src/payload/payload_test_process_payload_data")
+        formatted_size=$(format_file_size "${unity_payload_size}")
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Unity payload test executable has embedded payload (${formatted_size} bytes total)"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Unity payload test executable appears to be missing embedded payload marker"
+        EXIT_CODE=1
+    fi
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Unity payload test executable not found for payload verification"
+    EXIT_CODE=1
+fi
+evaluate_test_result_silent "Verify unity payload test executable payload" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

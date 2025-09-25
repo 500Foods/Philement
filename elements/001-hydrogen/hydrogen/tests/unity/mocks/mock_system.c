@@ -17,6 +17,7 @@
 
 // Undefine the macros in this file so we can call the real functions
 #undef malloc
+#undef realloc
 #undef free
 #undef strdup
 #undef gethostname
@@ -27,6 +28,7 @@
 
 // Function prototypes
 void *mock_malloc(size_t size);
+void *mock_realloc(void *ptr, size_t size);
 void mock_free(void *ptr);
 char *mock_strdup(const char *s);
 int mock_gethostname(char *name, size_t len);
@@ -35,6 +37,7 @@ int mock_clock_gettime(int clk_id, struct timespec *tp);
 int mock_poll(struct pollfd *fds, nfds_t nfds, int timeout);
 ssize_t mock_recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
 void mock_system_set_malloc_failure(int should_fail);
+void mock_system_set_realloc_failure(int should_fail);
 void mock_system_set_gethostname_failure(int should_fail);
 void mock_system_set_gethostname_result(const char *result);
 void mock_system_set_nanosleep_failure(int should_fail);
@@ -45,6 +48,7 @@ void mock_system_reset_all(void);
 
 // Static variables to store mock state
 static int mock_malloc_should_fail = 0;
+static int mock_realloc_should_fail = 0;
 static int mock_gethostname_should_fail = 0;
 static const char *mock_gethostname_result = NULL;
 static int mock_nanosleep_should_fail = 0;
@@ -59,6 +63,15 @@ void *mock_malloc(size_t size) {
     }
     // Now we can call the real malloc since we undefined the macro
     return malloc(size);
+}
+
+// Mock implementation of realloc
+void *mock_realloc(void *ptr, size_t size) {
+    if (mock_realloc_should_fail) {
+        return NULL;
+    }
+    // Now we can call the real realloc since we undefined the macro
+    return realloc(ptr, size);
 }
 
 // Mock implementation of free
@@ -160,6 +173,10 @@ void mock_system_set_malloc_failure(int should_fail) {
     mock_malloc_should_fail = should_fail;
 }
 
+void mock_system_set_realloc_failure(int should_fail) {
+    mock_realloc_should_fail = should_fail;
+}
+
 void mock_system_set_gethostname_failure(int should_fail) {
     mock_gethostname_should_fail = should_fail;
 }
@@ -186,6 +203,7 @@ void mock_system_set_recvfrom_failure(int should_fail) {
 
 void mock_system_reset_all(void) {
     mock_malloc_should_fail = 0;
+    mock_realloc_should_fail = 0;
     mock_gethostname_should_fail = 0;
     mock_gethostname_result = NULL;
     mock_nanosleep_should_fail = 0;
