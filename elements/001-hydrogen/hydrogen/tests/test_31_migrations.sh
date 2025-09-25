@@ -13,7 +13,7 @@
 set -euo pipefail
 
 # Test configuration
-TEST_NAME="Database Migration Validation"
+TEST_NAME="Migrations"
 TEST_ABBR="MGR"
 TEST_NUMBER="31"
 TEST_COUNTER=0
@@ -223,7 +223,7 @@ done
 if [[ ${TOTAL_DESIGNS} -gt 0 ]]; then
     # Calculate total number of migration files across all designs
     total_migration_files=$(( TOTAL_MIGRATIONS / ${#ENGINES[@]} ))
-    TEST_NAME="${TEST_NAME} {BLUE}(${TOTAL_DESIGNS}d, ${total_migration_files}m, ${TOTAL_MIGRATIONS}v){RESET}"
+    TEST_NAME="${TEST_NAME} {BLUE}(${TOTAL_DESIGNS} designs, ${total_migration_files} migrations, ${TOTAL_MIGRATIONS} combos){RESET}"
 fi
 
 

@@ -14,14 +14,14 @@ typedef struct {
     bool is_compressed; // Whether content is Brotli compressed
 } SwaggerFile;
 
-// Static function declarations
-static void free_swagger_files(void);
+// Function declarations
+void free_swagger_files(void);
 
 // Global state
-static SwaggerFile *swagger_files = NULL;
-static size_t num_swagger_files = 0;
-static bool swagger_initialized = false;
-static const SwaggerConfig *global_swagger_config = NULL;  // Global config for validator
+SwaggerFile *swagger_files = NULL;
+size_t num_swagger_files = 0;
+bool swagger_initialized = false;
+const SwaggerConfig *global_swagger_config = NULL;  // Global config for validator
 
 /**
  * Web server validator wrapper - matches MHD signature
@@ -495,14 +495,15 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
 
 
 
-static void free_swagger_files(void) {
+void free_swagger_files(void) {
     if (!swagger_files) {
         return;
     }
 
     for (size_t i = 0; i < num_swagger_files; i++) {
         free(swagger_files[i].name);
-        free(swagger_files[i].data);
+        // Note: data pointers are references to payload data and should not be freed here
+        // They are owned by the payload cache system
     }
 
     free(swagger_files);
