@@ -102,11 +102,20 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
                                      const SwaggerConfig *config);
 
 /**
+ * Free Swagger files memory
+ *
+ * Frees the in-memory Swagger file structures.
+ * Called internally by cleanup_swagger_support.
+ */
+void free_swagger_files(void);
+
+/**
  * Clean up Swagger support
  *
  * Frees any resources allocated for Swagger support.
  * Must be called during server shutdown.
  */
 void cleanup_swagger_support(void);
+
 
 #endif // SWAGGER_H
