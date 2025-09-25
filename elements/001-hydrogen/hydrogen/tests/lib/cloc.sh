@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 6.0.1 - 2025-09-25 - Fixed count to match C files found in Test 01 and Test 91
 # 6.0.0 - 2025-09-23 - Added horizontal section breaks to main cloc table (primary/secondary sections)
 # 5.0.0 - 2025-09-18 - Updated Extended Statistics table with additional rows
 # 4.0.0 - 2025-09-06 - Use TABLES program for formatting, thousands separators, JSON-based processing
@@ -29,7 +30,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="6.0.0"
+CLOC_VERSION="6.0.1"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
@@ -201,16 +202,52 @@ EOF
                         }
                     else empty end),
                     # Primary section languages: Markdown, Bourne Shell, Lua, CMake
-                    ($core | to_entries[] | select(.key != "C" and .key != "header" and .key != "SUM" and (.key == "Markdown" or .key == "Bourne Shell" or .key == "Lua" or .key == "CMake")) |
-                        {
-                            section: "primary",
-                            language: .key,
-                            files: (.value.nFiles // 0),
-                            blank: (.value.blank // 0),
-                            comment: (.value.comment // 0),
-                            code: (.value.code // 0),
-                            lines: ((.value.blank // 0) + (.value.comment // 0) + (.value.code // 0))
-                        }
+                    # Combine counts from core and test scans for these languages
+                    (
+                        # Markdown
+                        (($core.Markdown // {}) as $core_md | ($test.Markdown // {}) as $test_md |
+                            {
+                                section: "primary",
+                                language: "Markdown",
+                                files: (($core_md.nFiles // 0) + ($test_md.nFiles // 0)),
+                                blank: (($core_md.blank // 0) + ($test_md.blank // 0)),
+                                comment: (($core_md.comment // 0) + ($test_md.comment // 0)),
+                                code: (($core_md.code // 0) + ($test_md.code // 0))
+                            } | .lines = (.blank + .comment + .code)
+                        ),
+                        # Bourne Shell
+                        (($core."Bourne Shell" // {}) as $core_sh | ($test."Bourne Shell" // {}) as $test_sh |
+                            {
+                                section: "primary",
+                                language: "Bourne Shell",
+                                files: (($core_sh.nFiles // 0) + ($test_sh.nFiles // 0)),
+                                blank: (($core_sh.blank // 0) + ($test_sh.blank // 0)),
+                                comment: (($core_sh.comment // 0) + ($test_sh.comment // 0)),
+                                code: (($core_sh.code // 0) + ($test_sh.code // 0))
+                            } | .lines = (.blank + .comment + .code)
+                        ),
+                        # Lua
+                        (($core.Lua // {}) as $core_lua | ($test.Lua // {}) as $test_lua |
+                            {
+                                section: "primary",
+                                language: "Lua",
+                                files: (($core_lua.nFiles // 0) + ($test_lua.nFiles // 0)),
+                                blank: (($core_lua.blank // 0) + ($test_lua.blank // 0)),
+                                comment: (($core_lua.comment // 0) + ($test_lua.comment // 0)),
+                                code: (($core_lua.code // 0) + ($test_lua.code // 0))
+                            } | .lines = (.blank + .comment + .code)
+                        ),
+                        # CMake
+                        (($core.CMake // {}) as $core_cmake | ($test.CMake // {}) as $test_cmake |
+                            {
+                                section: "primary",
+                                language: "CMake",
+                                files: (($core_cmake.nFiles // 0) + ($test_cmake.nFiles // 0)),
+                                blank: (($core_cmake.blank // 0) + ($test_cmake.blank // 0)),
+                                comment: (($core_cmake.comment // 0) + ($test_cmake.comment // 0)),
+                                code: (($core_cmake.code // 0) + ($test_cmake.code // 0))
+                            } | .lines = (.blank + .comment + .code)
+                        )
                     ),
                     # Secondary section languages: everything else
                     ($core | to_entries[] | select(.key != "C" and .key != "header" and .key != "SUM" and (.key != "Markdown" and .key != "Bourne Shell" and .key != "Lua" and .key != "CMake")) |
