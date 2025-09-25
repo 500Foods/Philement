@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 6.5.0 - 2025-09-25 - Added metrics file generation with four ANSI tables (test results, coverage, cloc main, cloc stats) saved to docs/metrics/YYYY-MM/YYYY-MM-DD.txt
 # 6.4.0 - 2025-08-10 - Cleaned out some mktemp calls
 # 6.3.0 - 2025-08-09 - Minor log file adjustmeents
 # 6.2.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
@@ -36,7 +37,7 @@ TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
 TEST_COUNTER=0
-TEST_VERSION="6.4.0"
+TEST_VERSION="6.5.0"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -777,5 +778,36 @@ fi
 ("${OH}" --width 108 -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
 # shellcheck disable=SC2154 # OH defined externally in framework.sh
 ("${OH}" --width 108 -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
+
+# Create metrics file with four ANSI tables
+# shellcheck disable=SC2154 # DATE defined externally in framework.sh
+current_date=$("${DATE}" +%Y-%m-%d)
+current_month=$("${DATE}" +%Y-%m)
+metrics_dir="${PROJECT_DIR}/docs/metrics/${current_month}"
+metrics_file="${metrics_dir}/${current_date}.txt"
+
+mkdir -p "${metrics_dir}"
+
+cloc_output=""
+if cloc_output=$(env -i bash -c "${SCRIPT_DIR}/lib/cloc_tables.sh"); then
+    :
+else
+    cloc_output="Error: cloc_tables.sh failed"
+fi
+
+# Append the four tables to the metrics file
+{
+    # Main test results table
+    cat "${results_table_file}"
+
+    # CLOC tables (main and stats)
+    echo "${cloc_output}"
+
+    cat "${coverage_table_file}"
+    echo ""
+
+    
+} > "${metrics_file}"
+
 
 exit "${OVERALL_EXIT_CODE}"

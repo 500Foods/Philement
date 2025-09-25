@@ -6,6 +6,7 @@
 # FUNCTIONS
 
 # CHANGELOG
+# 3.3.0 - 2025-09-25 - Added total links count extraction from github-sitemap table and display in test title (e.g., "links: 1,163")
 # 3.2.0 - 2025-08-08 - Optimized parsing using single-pass batch processing (md5sum batching pattern)
 #                    - Applied md5sum optimization principles: minimize external process forks
 #                    - Replaced 6+ file reads and grep|sed|awk pipelines with single awk command
@@ -25,11 +26,11 @@
 set -euo pipefail
 
 # Test configuration
-TEST_NAME="Markdown Links Check {BLUE}(github-sitemap){RESET}"
+TEST_NAME="Markdown Links {BLUE}(github-sitemap){RESET}"
 TEST_ABBR="LNK"
 TEST_NUMBER="04"
 TEST_COUNTER=0
-TEST_VERSION="3.2.0"
+TEST_VERSION="3.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -71,12 +72,14 @@ parse_sitemap_output() {
     local -n issues_ref="$2"
     local -n missing_ref="$3"
     local -n orphaned_ref="$4"
-    
+    local -n total_ref="$5"
+
     # Initialize defaults
     issues_ref="0"
     missing_ref="0"
     orphaned_ref="0"
-    
+    total_ref="0"
+
     # Single pass parsing with awk (following md5sum batching pattern)
     local results
     results=$(awk '
@@ -84,10 +87,12 @@ parse_sitemap_output() {
         issues_found = "0"
         missing_count = "0"
         orphaned_count = "0"
+        total_links = "0"
         in_missing_table = 0
         in_orphaned_table = 0
+        in_reviewed_table = 0
     }
-    
+
     # Clean ANSI codes and table delimiters once per line
     {
         # Remove ANSI escape sequences
@@ -96,30 +101,47 @@ parse_sitemap_output() {
         gsub(/│/, "")
         gsub(/^[[:space:]]+|[[:space:]]+$/, "")
     }
-    
+
     # Extract issues found count
     /Issues found:/ {
         if (match($0, /Issues found: *([0-9]+)/, arr)) {
             issues_found = arr[1]
         }
     }
-    
+
+    # Detect Reviewed Files Summary table
+    $0 == "Reviewed Files Summary" {
+        in_reviewed_table = 1
+        reviewed_table_start = NR
+        next
+    }
+
     # Detect Missing Links table
     $0 == "Missing Links" {
         in_missing_table = 1
         missing_table_start = NR
         next
     }
-    
+
     # Detect Orphaned Markdown Files table
     $0 == "Orphaned Markdown Files" {
         in_orphaned_table = 1
         orphaned_table_start = NR
         next
     }
-    
+
     # Extract counts from table footers (line before ╰)
     /╰/ {
+        if (in_reviewed_table && prev_line) {
+            # Parse totals line: fields separated by spaces, get second field (Total Links)
+            split(prev_line, fields)
+            if (length(fields) >= 2) {
+                total_links = fields[2]
+                # Remove commas from number
+                gsub(/,/, "", total_links)
+            }
+            in_reviewed_table = 0
+        }
         if (in_missing_table && prev_line && match(prev_line, /([0-9]+)/)) {
             missing_count = substr(prev_line, RSTART, RLENGTH)
             in_missing_table = 0
@@ -129,22 +151,23 @@ parse_sitemap_output() {
             in_orphaned_table = 0
         }
     }
-    
+
     # Store previous line for table parsing
     { prev_line = $0 }
-    
+
     END {
-        print issues_found ":" missing_count ":" orphaned_count
+        print issues_found ":" missing_count ":" orphaned_count ":" total_links
     }
     ' "${file}")
-    
+
     # Parse results from single awk call
-    IFS=':' read -r issues_ref missing_ref orphaned_ref <<< "${results}"
-    
+    IFS=':' read -r issues_ref missing_ref orphaned_ref total_ref <<< "${results}"
+
     # Ensure numeric values
     [[ "${issues_ref}" =~ ^[0-9]+$ ]] || issues_ref="0"
     [[ "${missing_ref}" =~ ^[0-9]+$ ]] || missing_ref="0"
     [[ "${orphaned_ref}" =~ ^[0-9]+$ ]] || orphaned_ref="0"
+    [[ "${total_ref}" =~ ^[0-9]+$ ]] || total_ref="0"
 }
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Missing Links Count"
@@ -153,7 +176,13 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Missing Links Count"
 ISSUES_FOUND=""
 MISSING_LINKS_COUNT=0
 ORPHANED_FILES_COUNT=0
-parse_sitemap_output "${MARKDOWN_CHECK}" ISSUES_FOUND MISSING_LINKS_COUNT ORPHANED_FILES_COUNT
+TOTAL_LINKS=0
+parse_sitemap_output "${MARKDOWN_CHECK}" ISSUES_FOUND MISSING_LINKS_COUNT ORPHANED_FILES_COUNT TOTAL_LINKS
+
+# Update test name to include total links count
+if [[ "${TOTAL_LINKS}" -gt 0 ]]; then
+    TEST_NAME="Markdown Links {BLUE}(github-sitemap links: $("${PRINTF}" "%'d" "${TOTAL_LINKS}" || true)){RESET}"
+fi
 
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Missing links found: ${MISSING_LINKS_COUNT}"
 if [[ "${MISSING_LINKS_COUNT}" -eq 0 ]]; then

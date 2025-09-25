@@ -17,10 +17,12 @@ TEST_COUNTER=0
 TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/framework.sh" >/dev/null 2>&1
-setup_test_environment >/dev/null 2>&1
+if [[ -z "${FRAMEWORK_GUARD:-}" ]]; then
+    source "$(dirname "${BASH_SOURCE[0]}")/framework.sh" >/dev/null 2>&1
+    setup_test_environment >/dev/null 2>&1
+fi
 
-# Create temporary files for cloc analysis
+# reate temporary files for cloc analysis
 CLOC_OUTPUT=""
 CLOC_DATA=""
 CLOC_OUTPUT=$(mktemp)
