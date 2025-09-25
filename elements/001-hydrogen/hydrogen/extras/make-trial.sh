@@ -28,8 +28,8 @@ fi
 
 echo "$(date +%H:%M:%S.%3N || true) - Default Build"
 
-# Build main project and check for errors
-BUILD_OUTPUT=$(cmake --build ../build --preset default 2>&1)
+# Build main project with payload and check for errors
+BUILD_OUTPUT=$(cmake --build ../build --target hydrogen 2>&1)
 ERRORS=$(echo "${BUILD_OUTPUT}" | grep -B 2 -E "error:|warning:|undefined reference|collect2:|ld returned" || true)
 if [[ -n "${ERRORS}" ]]; then
     echo "${ERRORS}"
@@ -58,10 +58,7 @@ fi
 if (echo "${UNITY_BUILD_OUTPUT}" | grep -q "completed successfully" || echo "${UNITY_BUILD_OUTPUT}" | grep -q "no work to do") && [[ -z "${ERRORS}" ]]; then
     echo "$(date +%H:%M:%S.%3N || true) - Build Successful"
     
-    # Copy binary for testing
-    if [[ -f "build/regular/hydrogen" ]]; then
-        cp "build/regular/hydrogen" "hydrogen"
-    fi
+    # Binary is already created in root directory by hydrogen target
     
     # Run shutdown test
     echo "$(date +%H:%M:%S.%3N || true) - Running Shutdown Test"
