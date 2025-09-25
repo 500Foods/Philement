@@ -7,6 +7,7 @@
 # download_unity_framework()
 
 # CHANGELOG
+# 3.3.1 - 2025-09-25 - Updated find command so it matches Test 91's search (cppcheck)
 # 3.3.0 - 2025-09-07 - Added installer build functionality and base64 encoding of distributables
 # 3.2.0 - 2025-09-05 - Added CMock framework check and download alongside Unity framework
 # 3.1.3 - 2025-08-23 - Added console dumps to give a more nuanced progress update
@@ -27,7 +28,7 @@ TEST_NAME="Compilation"
 TEST_ABBR="CMP"
 TEST_NUMBER="01"
 TEST_COUNTER=0
-TEST_VERSION="3.2.0"
+TEST_VERSION="3.3.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -274,7 +275,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Check Source Files"
 print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "test -d src && test -f src/hydrogen.c"
 
 if [[ -d "src" ]] && [[ -f "src/hydrogen.c" ]]; then
-    src_count=$("${FIND}" . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" -o -path "./extras/*" -o -path "./examples/*" \) \( -name "*.c" -o -name "*.h" \) | wc -l || true) 
+    src_count=$("${FIND}" . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" -o -path "./tests/unity/mocks/*" -o -path "./extras/*" -o -path "./examples/*" -o -path "./tests/unity/unity_config.h" \) \( -name "*.c" -o -name "*.h" \) | wc -l || true)
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Project search found ${src_count} source files"
     TEST_NAME="${TEST_NAME} {BLUE}(source code: ${src_count} files){RESET}"
 else
