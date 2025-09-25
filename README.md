@@ -67,13 +67,13 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-09-25 10:24:59 UTC
+Last updated at 2025-09-25 11:02:34 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              594          21238          21933          76482
 Markdown                       289           8476             58          26514
-Bourne Shell                    76           3420          59529          15813
+Bourne Shell                    76           3420          59535          15844
 C/C++ Header                   154           1676           4573           4517
 SVG                              4              0              0           4180
 JSON                            40              0              0           3435
@@ -90,9 +90,9 @@ Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                          1242          35468          86679         135636
+SUM:                          1242          35468          86685         135667
 -------------------------------------------------------------------------------
-47 Files were skipped (duplicate, binary, or without source code):
+49 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
   lua: 4
   jpg: 3
@@ -118,6 +118,8 @@ SUM:                          1242          35468          86679         135636
   lintignore-c: 1
   lintignore-markdown: 1
   lintignore: 1
+  list1: 1
+  list2: 1
   sqlite: 1
   stl: 1
   stylelintcache: 1
