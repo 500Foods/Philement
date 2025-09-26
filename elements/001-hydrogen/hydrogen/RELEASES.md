@@ -10,13 +10,14 @@ Step 1: Gather Changes
   ```
   git log --since="2025-04-04 00:00" --until="2025-04-04 23:59" --numstat --pretty=format: | awk '{add[$3]+=$1; del[$3]+=$2} END {for (f in add) printf "%d\t%d\t%s\n", add[f], del[f], f}' | sort -rn
   ```
+- Ignore automatic build artifacts like COVERAGE.svg, COMPLETE.svg, CLOC_CODE.svg, CLOC_STAT.svg as they are updated by the build system
 - Group files by subsystem/component
 - For each significant component, examine detailed changes. Please request one file at a time as these can be quite large.
 - Any file with more than 25 lines changed should guarantee an entry in the release notes, though lesser changes could qualify
   ```
   git log --since="YYYY-MM-DD 00:00" --until="YYYY-MM-DD 23:59" -p -- path/to/component
   ```
-- Also use grep to search the repo, eg `grep -r '2025-08-07'` might return a list of CHANGELOG entries from various files
+- Also use grep to search the repo for CHANGELOG entries, eg `grep -r '2025-08-07'` might return a list of CHANGELOG entries from various files
 
 Step 2: Document Changes
 - Keep entries concise and factual
@@ -56,7 +57,44 @@ Remember:
 - Group by topic to maintain clarity
 -->
 
+- September 2025
+  - [2025-Sep-26 (Fri)](docs/releases/2025-09/2025-09-26.md): Installer System, Database Migration Testing
+  - [2025-Sep-25 (Thu)](docs/releases/2025-09/2025-09-25.md): Helium Database System, Test Framework Improvements
+  - [2025-Sep-24 (Wed)](docs/releases/2025-09/2025-09-24.md): Payload Subsystem Enhancement, Build Optimization
+  - [2025-Sep-23 (Tue)](docs/releases/2025-09/2025-09-23.md): Build System Enhancement, File Organization
+  - [2025-Sep-22 (Mon)](docs/releases/2025-09/2025-09-22.md): Build System Enhancement, Unity Testing Expansion
+  - [2025-Sep-21 (Sun)](docs/releases/2025-09/2025-09-21.md): Database Backend Refinement, Testing Framework
+  - [2025-Sep-20 (Sat)](docs/releases/2025-09/2025-09-20.md): Database System Optimization, Test Coverage
+  - [2025-Sep-19 (Fri)](docs/releases/2025-09/2025-09-19.md): WebSocket Server Enhancement, Database Integration
+  - [2025-Sep-18 (Thu)](docs/releases/2025-09/2025-09-18.md): Terminal Subsystem Refinement, API Improvements
+  - [2025-Sep-17 (Wed)](docs/releases/2025-09/2025-09-17.md): Configuration System Updates, Mutex Integration
+  - [2025-Sep-16 (Tue)](docs/releases/2025-09/2025-09-16.md): Launch System Enhancement, Payload Processing
+  - [2025-Sep-15 (Mon)](docs/releases/2025-09/2025-09-15.md): mDNS Server Improvements, Web Server Updates
+  - [2025-Sep-14 (Sun)](docs/releases/2025-09/2025-09-14.md): Logging System Refinement, System Integration
+  - [2025-Sep-13 (Sat)](docs/releases/2025-09/2025-09-13.md): Database Backend Enhancements, Test Framework
+  - [2025-Sep-12 (Fri)](docs/releases/2025-09/2025-09-12.md): Database Backend Enhancements, WebSocket Testing
+  - [2025-Sep-11 (Thu)](docs/releases/2025-09/2025-09-11.md): Database Backends Implementation, Mutex Library, System Integration
+  - [2025-Sep-10 (Wed)](docs/releases/2025-09/2025-09-10.md): Database Modularization
+  - [2025-Sep-09 (Tue)](docs/releases/2025-09/2025-09-09.md): Database Queue Refinement, WebSocket Processing, Terminal I/O
+  - [2025-Sep-08 (Mon)](docs/releases/2025-09/2025-09-08.md): Database Architecture, Terminal Enhancements, Test Framework
+  - [2025-Sep-07 (Sat)](docs/releases/2025-09/2025-09-07.md): Installer System, Test Framework Improvements
+  - [2025-Sep-06 (Fri)](docs/releases/2025-09/2025-09-06.md): Installer System, Test Framework Improvements
+  - [2025-Sep-05 (Thu)](docs/releases/2025-09/2025-09-05.md): Database Subsystem Implementation, Test Framework Improvements
+  - [2025-Sep-04 (Wed)](docs/releases/2025-09/2025-09-04.md): Installer System, Test Framework Improvements
+  - [2025-Sep-03 (Tue)](docs/releases/2025-09/2025-09-03.md): Database System Planning, Test Framework Improvements
+  - [2025-Sep-01 (Sun)](docs/releases/2025-09/2025-09-01.md): Terminal Subsystem Implementation, WebSocket Server Enhancement
+
 - August 2025
+  - [2025-Aug-31 (Sun)](docs/releases/2025-08/2025-08-31.md): Terminal Subsystem Implementation, Test Framework Improvements
+  - [2025-Aug-30 (Sat)](docs/releases/2025-08/2025-08-30.md): Launch/Landing System Enhancement, Documentation Updates
+  - [2025-Aug-29 (Fri)](docs/releases/2025-08/2025-08-29.md): mDNS Subsystem Enhancement, Test Framework Improvements
+  - [2025-Aug-28 (Thu)](docs/releases/2025-08/2025-08-28.md): Test Framework Improvements, Unity Testing Expansion
+  - [2025-Aug-27 (Wed)](docs/releases/2025-08/2025-08-27.md): Configuration System Enhancement, Unity Testing Expansion
+  - [2025-Aug-26 (Tue)](docs/releases/2025-08/2025-08-26.md): Configuration System Enhancement, Unity Testing Expansion
+  - [2025-Aug-25 (Mon)](docs/releases/2025-08/2025-08-25.md): Launch/Landing System Enhancement, Unity Testing Expansion
+  - [2025-Aug-24 (Sun)](docs/releases/2025-08/2025-08-24.md): Print Subsystem Enhancement, Upload System Implementation
+  - [2025-Aug-23 (Sat)](docs/releases/2025-08/2025-08-23.md): Unity Testing Expansion
+  - [2025-Aug-22 (Fri)](docs/releases/2025-08/2025-08-22.md): Documentation Updates
   - [2025-Aug-21 (Thu)](docs/releases/2025-08/2025-08-21.md): Test Framework Improvements
   - [2025-Aug-20 (Wed)](docs/releases/2025-08/2025-08-20.md): Thread Management Enhancement
   - [2025-Aug-19 (Tue)](docs/releases/2025-08/2025-08-19.md): Core System Architecture Updates
