@@ -67,14 +67,14 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-09-26 23:11:32 UTC
+Last updated at 2025-09-26 23:29:48 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              599          21468          22102          77567
+C                              599          21543          22154          77966
 Markdown                       338           9366             59          28273
 Bourne Shell                    82           3615          59869          16673
-C/C++ Header                   154           1675           4574           4569
+C/C++ Header                   154           1675           4574           4584
 SVG                              4              0              0           4248
 Lua                             32            307            334           4222
 JSON                            44              0              0           3555
@@ -90,7 +90,7 @@ Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                          1333          37000          87446         143700
+SUM:                          1333          37075          87498         144114
 -------------------------------------------------------------------------------
 48 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
