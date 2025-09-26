@@ -63,8 +63,8 @@ validate_migration() {
         IFS=':' read -ra SCHEMA_ARRAY <<< "${design_schemas}"
         # Find engine index
         for i in "${!ENGINES[@]}"; do
-            if [[ "${ENGINES[$i]}" == "${engine}" ]]; then
-                schema_name="${SCHEMA_ARRAY[$i]:-}"
+            if [[ "${ENGINES[${i}]}" == "${engine}" ]]; then
+                schema_name="${SCHEMA_ARRAY[${i}]:-}"
                 break
             fi
         done
@@ -179,7 +179,7 @@ for design in "${DESIGNS[@]}"; do
             migration_name=$(basename "${migration_file}" .lua)
             migration_num="${migration_name#"${design}"_}"
             for i in "${!ENGINES[@]}"; do
-                schema="${SCHEMA_ARRAY[$i]:-}"
+                schema="${SCHEMA_ARRAY[${i}]:-}"
                 total_combos=$((total_combos + 1))
             done
         done
@@ -212,8 +212,8 @@ for design in "${DESIGNS[@]}"; do
 
             # Validate against each database engine
             for i in "${!ENGINES[@]}"; do
-                engine="${ENGINES[$i]}"
-                schema="${SCHEMA_ARRAY[$i]:-}"
+                engine="${ENGINES[${i}]}"
+                schema="${SCHEMA_ARRAY[${i}]:-}"
 
                 # Call function and capture both status and result
                 cache_info=$(validate_migration "${design}" "${engine}" "${migration_num}" "${migration_file}"; echo "exit:$?")
