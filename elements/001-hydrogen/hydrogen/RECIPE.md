@@ -78,6 +78,10 @@ tests/          Test framework
 - tests/test_25_mdns.sh - mDNS announcements
 - tests/test_26_terminal.sh - Testing xterm.js implementation
 - tests/test_30_database.sh - All Engines Parallel Operational Test
+- tests/test_32_postgres_migrations.sh - PostgreSQL migration performance test
+- tests/test_33_mysql_migrations.sh - MySQL migration performance test
+- tests/test_34_sqlite_migrations.sh - SQLite migration performance test
+- tests/test_35_db2_migrations.sh - DB2 migration performance test
 - tests/test_90_markdownlint.sh - Lint for Markdown
 - tests/test_91_cppcheck.sh - Lint for C
 - tests/test_92_shellcheck.sh - Lint for Bash

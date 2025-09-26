@@ -329,6 +329,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [docs/coding_guidelines.md](docs/coding_guidelines.md) - Coding standards and practices
 - [docs/api.md](docs/api.md) - API reference documentation
 - [docs/testing.md](docs/testing.md) - Testing guide and procedures
+- [docs/metrics/README.md](docs/metrics/README.md) - Build metrics documentation
 - [docs/configuration.md](docs/configuration.md) - Configuration system documentation
 - [docs/data_structures.md](docs/data_structures.md) - Data structure documentation
 - [docs/service.md](docs/service.md) - Service architecture documentation
@@ -479,6 +480,15 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_21_system_endpoints.sh](tests/test_21_system_endpoints.sh) - System endpoint tests
 - [tests/test_22_swagger.sh](tests/test_22_swagger.sh) - Swagger functionality tests
 - [tests/test_23_websockets.sh](tests/test_23_websockets.sh) - Swagger functionality tests
+
+### Database Tests
+
+- [tests/test_30_database.sh](tests/test_30_database.sh) - All Engines Parallel Operational Test
+- [tests/test_31_migrations.sh](tests/test_31_migrations.sh) - Database migration validation
+- [tests/test_32_postgres_migrations.sh](tests/test_32_postgres_migrations.sh) - PostgreSQL migration performance test
+- [tests/test_33_mysql_migrations.sh](tests/test_33_mysql_migrations.sh) - MySQL migration performance test
+- [tests/test_34_sqlite_migrations.sh](tests/test_34_sqlite_migrations.sh) - SQLite migration performance test
+- [tests/test_35_db2_migrations.sh](tests/test_35_db2_migrations.sh) - DB2 migration performance test
 
 ### Linting Tests
 

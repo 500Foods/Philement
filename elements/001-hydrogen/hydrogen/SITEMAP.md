@@ -36,6 +36,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [testing.md](docs/testing.md)
 - [thread_monitoring.md](docs/thread_monitoring.md)
 - [web_socket.md](docs/web_socket.md)
+- [metrics/README.md](docs/metrics/README.md) - Build metrics documentation
 
 ### Folder: /docs/api/system
 
@@ -239,6 +240,13 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [cloc.md](tests/docs/cloc.md): CLOC (Count Lines of Code) library documentation for code analysis and line counting functionality
 - [coverage.md](tests/docs/coverage.md): Comprehensive coverage analysis system documentation including coverage.sh, coverage-common.sh, coverage-unity.sh, coverage-blackbox.sh, and coverage_table.sh
+- [coverage-common.md](tests/docs/coverage-common.md): Shared coverage utilities, batch processing, and ignore pattern management
+- [coverage-combined.md](tests/docs/coverage-combined.md): Combined coverage calculation and uncovered file identification
+- [coverage_table.md](tests/docs/coverage_table.md): Professional ANSI table formatting for coverage metrics display
+- [cloc_tables.md](tests/docs/cloc_tables.md): CLOC table generation for metrics reporting without test framework overhead
+- [migrations.md](tests/docs/migrations.md): Multi-engine SQL generation and database abstraction for migration testing
+- [get_migration_wrapper.md](tests/docs/get_migration_wrapper.md): Command-line interface for database migration SQL generation
+- [profile_test_suite.md](tests/docs/profile_test_suite.md): Strace-based performance profiling and system call analysis for test scripts
 - [env_utils.md](tests/docs/env_utils.md): Environment utility functions documentation
 - [file_utils.md](tests/docs/file_utils.md): File utility functions documentation
 - [framework.md](tests/docs/framework.md): Testing framework overview and architecture
@@ -265,7 +273,16 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_21_system_endpoints.md](tests/docs/test_21_system_endpoints.md): System endpoint functionality tests
 - [test_22_swagger.md](tests/docs/test_22_swagger.md): Swagger documentation tests
 - [test_23_websockets.md](tests/docs/test_23_websockets.md): WebSocket server functionality and integration tests
-- [test_24_markdownlint.md](tests/docs/test_90_markdownlint.md): Markdown linting tests
+- [test_24_uploads.md](tests/docs/test_24_uploads.md): File upload functionality tests
+- [test_25_mdns.md](tests/docs/test_25_mdns.md): mDNS server and client functionality and integration tests
+- [test_26_terminal.md](tests/docs/test_26_terminal.md): Terminal functionality, payload serving, and WebSocket connections
+- [test_30_database.md](tests/docs/test_30_database.md): All Engines Parallel Operational Test
+- [test_31_migrations.md](tests/docs/test_31_migrations.md): Database migration validation
+- [test_32_postgres_migrations.md](tests/docs/test_32_postgres_migrations.md): PostgreSQL migration performance test
+- [test_33_mysql_migrations.md](tests/docs/test_33_mysql_migrations.md): MySQL migration performance test
+- [test_34_sqlite_migrations.md](tests/docs/test_34_sqlite_migrations.md): SQLite migration performance test
+- [test_35_db2_migrations.md](tests/docs/test_35_db2_migrations.md): DB2 migration performance test
+- [test_90_markdownlint.md](tests/docs/test_90_markdownlint.md): Markdown linting tests
 - [test_91_cppcheck.md](tests/docs/test_91_cppcheck.md): C/C++ static analysis tests
 - [test_92_shellcheck.md](tests/docs/test_92_shellcheck.md): Shell script linting tests
 - [test_93_jsonlint.md](tests/docs/test_93_jsonlint.md): JSON validation tests
