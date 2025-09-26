@@ -90,8 +90,8 @@ local database = {
             JSON_INGEST_FUNCTION = [[
 CREATE SCHEMA IF NOT EXISTS app;
 
-CREATE OR REPLACE FUNCTION app.json_ingest(s text)
-RETURNS jsonb
+CREATE OR REPLACE FUNCTION app.json_ingest(s TEXT)
+RETURNS JSONB
 LANGUAGE plpgsql
 STRICT
 STABLE
