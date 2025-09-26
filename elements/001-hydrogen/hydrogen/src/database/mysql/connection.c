@@ -15,23 +15,23 @@
 
 // MySQL function pointers (loaded dynamically)
 #ifdef USE_MOCK_LIBMYSQLCLIENT
-// For mocking, define pointers used in transaction testing, others NULL
+// For mocking, assign all mock function pointers
+mysql_init_t mysql_init_ptr = mock_mysql_init;
+mysql_real_connect_t mysql_real_connect_ptr = mock_mysql_real_connect;
 mysql_query_t mysql_query_ptr = mock_mysql_query;
-mysql_autocommit_t mysql_autocommit_ptr = mock_mysql_autocommit;
-mysql_commit_t mysql_commit_ptr = mock_mysql_commit;
-mysql_rollback_t mysql_rollback_ptr = mock_mysql_rollback;
-mysql_error_t mysql_error_ptr = mock_mysql_error;
-mysql_init_t mysql_init_ptr = NULL;
-mysql_real_connect_t mysql_real_connect_ptr = NULL;
-mysql_store_result_t mysql_store_result_ptr = NULL;
+mysql_store_result_t mysql_store_result_ptr = mock_mysql_store_result;
 mysql_num_rows_t mysql_num_rows_ptr = NULL;
 mysql_num_fields_t mysql_num_fields_ptr = NULL;
 mysql_fetch_row_t mysql_fetch_row_ptr = NULL;
 mysql_fetch_fields_t mysql_fetch_fields_ptr = NULL;
-mysql_free_result_t mysql_free_result_ptr = NULL;
-mysql_close_t mysql_close_ptr = NULL;
-mysql_options_t mysql_options_ptr = NULL;
-mysql_ping_t mysql_ping_ptr = NULL;
+mysql_free_result_t mysql_free_result_ptr = mock_mysql_free_result;
+mysql_error_t mysql_error_ptr = mock_mysql_error;
+mysql_close_t mysql_close_ptr = mock_mysql_close;
+mysql_options_t mysql_options_ptr = mock_mysql_options;
+mysql_ping_t mysql_ping_ptr = mock_mysql_ping;
+mysql_autocommit_t mysql_autocommit_ptr = mock_mysql_autocommit;
+mysql_commit_t mysql_commit_ptr = mock_mysql_commit;
+mysql_rollback_t mysql_rollback_ptr = mock_mysql_rollback;
 mysql_stmt_init_t mysql_stmt_init_ptr = NULL;
 mysql_stmt_prepare_t mysql_stmt_prepare_ptr = NULL;
 mysql_stmt_execute_t mysql_stmt_execute_ptr = NULL;
