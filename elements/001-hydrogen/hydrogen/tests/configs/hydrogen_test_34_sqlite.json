@@ -1,0 +1,27 @@
+{
+    "ServerName": "hydrogen-test-34-sqlite",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "WebServer": {
+        "Enabled": true,
+        "EnableIPv6": false,
+        "Port": 5340
+    },
+    "Databases": {
+        "Connections": [
+            {
+                "Name": "Helium",
+                "Engine": "sqlite",
+                "Enabled": true,
+                "Database": "tests/artifacts/database/sqlite/hydrotst.sqlite",
+                "Bootstrap": "select * from queries;",
+                "AutoMigration": true,
+                "TestMigration": true,
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            }
+        ]
+    }
+}

@@ -1,0 +1,31 @@
+{
+    "ServerName": "hydrogen-test-33-mysql",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "WebServer": {
+        "Enabled": true,
+        "EnableIPv6": false,
+        "Port": 5330
+    },
+    "Databases": {
+        "Connections": [
+            {
+                "Enabled": true,
+                "Name": "CNV",
+                "Engine": "${env.CANVAS_DB_TYPE}",
+                "Host": "${env.CANVAS_DB_HOST}",
+                "Port": "${env.CANVAS_DB_PORT}",
+                "Database": "${env.CANVAS_DB_NAME}",
+                "User": "${env.CANVAS_DB_USER}",
+                "Pass": "${env.CANVAS_DB_PASS}",
+                "Bootstrap": "select * from canvas.queries;",
+                "AutoMigration": true,
+                "TestMigration": true,
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            }
+        ]
+    }
+}

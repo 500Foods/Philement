@@ -27,6 +27,22 @@ These libraries were created as part of the test suite migration to replace supp
 ## Coverage Libraries
 
 - **[Coverage Analysis System](coverage.md)** - Comprehensive documentation for the coverage analysis system, including `coverage.sh`, `coverage-common.sh`, `coverage-combined.sh`, and the advanced `coverage_table.sh` script for detailed visual coverage reporting.
+- **[Coverage Common Library](coverage-common.md)** - Documentation for `coverage-common.sh`, providing shared utilities, batch processing, and ignore pattern management for coverage analysis.
+- **[Coverage Combined Library](coverage-combined.md)** - Documentation for `coverage-combined.sh`, providing combined coverage calculation and uncovered file identification.
+- **[Coverage Table Library](coverage_table.md)** - Documentation for `coverage_table.sh`, providing professional ANSI table formatting for coverage metrics display.
+
+## CLOC Libraries
+
+- **[CLOC Tables Library](cloc_tables.md)** - Documentation for `cloc_tables.sh`, generating CLOC table data for metrics reporting without test framework overhead.
+
+## Database Migration Libraries
+
+- **[Migrations Lua Module](migrations.md)** - Documentation for `migrations.lua`, providing multi-engine SQL generation and database abstraction for migration testing.
+- **[Get Migration Wrapper](get_migration_wrapper.md)** - Documentation for `get_migration_wrapper.lua`, providing command-line interface for database migration SQL generation.
+
+## Profiling Libraries
+
+- **[Profile Test Suite](profile_test_suite.md)** - Documentation for `profile_test_suite.sh`, providing strace-based performance profiling and system call analysis for test scripts.
 
 ## Related Documentation
 

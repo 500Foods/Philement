@@ -75,10 +75,15 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_23_websockets.sh](docs/test_23_websockets.md)**: Tests WebSocket server functionality and integration.
 - **[test_24_uploads.sh](docs/test_24_uploads.md)**: Tests uploading a file to the server
 - **[test_25_mdns.sh](docs/test_25_mdns.md)**: Tests mDNS server and client functionality and integration
+- **[test_26_terminal.sh](docs/test_26_terminal.md)**: Tests terminal functionality, payload serving, and WebSocket connections
 
 ### Database Tests
 
 - **[test_30_database.sh](docs/test_30_database.md)**: All Engines Parallel Operational Test
+- **[test_32_postgres_migrations.sh](docs/test_32_postgres_migrations.md)**: PostgreSQL migration performance test
+- **[test_33_mysql_migrations.sh](docs/test_33_mysql_migrations.md)**: MySQL migration performance test
+- **[test_34_sqlite_migrations.sh](docs/test_34_sqlite_migrations.md)**: SQLite migration performance test
+- **[test_35_db2_migrations.sh](docs/test_35_db2_migrations.md)**: DB2 migration performance test
 
 ### Static Analysis & Code Quality Tests
 

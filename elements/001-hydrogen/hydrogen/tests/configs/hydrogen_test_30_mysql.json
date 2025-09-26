@@ -4,7 +4,7 @@
     "WebServer": {
         "Enabled": false,
         "EnableIPv6": false,
-        "Port": 5271
+        "Port": 5301
     },
     "Databases": {
         "ConnectionCount": 1,

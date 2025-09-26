@@ -1,10 +1,10 @@
 {
-    "ServerName": "hydrogen-test-27-postgres",
+    "ServerName": "hydrogen-test-32-postgres",
     "PayloadKey": "${env.PAYLOAD_KEY}",
     "WebServer": {
         "Enabled": true,
         "EnableIPv6": false,
-        "Port": 5300
+        "Port": 5320
     },
     "Databases": {
         "Connections": [
@@ -18,6 +18,8 @@
                 "User": "${env.ACURANZO_DB_USER}",
                 "Pass": "${env.ACURANZO_DB_PASS}",
                 "Bootstrap":"SELECT * FROM app.queries;",
+                "AutoMigration": true,
+                "TestMigration": true,
                 "Queues": {
                     "Slow": {
                         "start": 2
