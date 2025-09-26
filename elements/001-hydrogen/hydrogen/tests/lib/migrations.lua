@@ -86,16 +86,24 @@ migrations.defaults = {
 }
 
 -- Replace query placeholders with engine-specific values
-function migrations.replace_query(template, engine, design_name)
+function migrations.replace_query(template, engine, design_name, schema_name)
     if not migrations.engines[engine] then
         error("Unsupported engine: " .. engine)
     end
 
     local cfg = migrations.defaults[engine]
 
-    -- Generate schema prefix based on design name and database conventions
+    -- Generate schema prefix based on schema_name if provided, otherwise design_name
     local schema_prefix
-    if design_name then
+    if schema_name and schema_name ~= "" then
+        if engine == "db2" then
+            schema_prefix = schema_name:upper() .. "."
+        elseif engine == "postgresql" then
+            schema_prefix = schema_name .. "."  -- Use provided schema_name
+        else
+            schema_prefix = schema_name .. "."
+        end
+    elseif design_name then
         if engine == "db2" then
             schema_prefix = design_name:upper() .. "."
         elseif engine == "postgresql" then
@@ -140,23 +148,24 @@ function migrations.replace_query(template, engine, design_name)
 end
 
 -- Run migration queries for a specific engine and design
-function migrations.run_migration(queries, engine, design_name)
+function migrations.run_migration(queries, engine, design_name, schema_name)
     local sql_parts = {}
     for _, q in ipairs(queries) do
-        local formatted = string.format(q.sql, engine)
-        table.insert(sql_parts, migrations:replace_query(formatted, engine, design_name))
+        if q and q.sql then
+            table.insert(sql_parts, migrations:replace_query(q.sql, engine, design_name, schema_name))
+        end
     end
     return table.concat(sql_parts, "")
 end
 
 -- Get migration SQL for specific design, engine, and migration number
-function migrations.get_migration(design_name, engine, migration_num)
+function migrations.get_migration(design_name, engine, migration_num, schema_name)
     -- Load the migration file dynamically
     local migration_file = design_name .. '_' .. migration_num
     local migration = require(migration_file)
 
     -- Generate SQL for this engine
-    local sql = migrations:run_migration(migration.queries, engine, design_name)
+    local sql = migrations:run_migration(migration.queries, engine, design_name, schema_name)
 
     return sql
 end
