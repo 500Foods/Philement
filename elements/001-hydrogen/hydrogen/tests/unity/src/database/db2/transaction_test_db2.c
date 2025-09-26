@@ -43,6 +43,9 @@ void destroy_test_database_handle(DatabaseHandle* handle);
 void setUp(void) {
     // Reset all mocks to default state
     mock_libdb2_reset_all();
+
+    // Ensure libdb2 functions are loaded (mocked)
+    load_libdb2_functions();
 }
 
 void tearDown(void) {

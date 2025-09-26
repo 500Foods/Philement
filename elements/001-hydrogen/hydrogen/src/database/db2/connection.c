@@ -10,9 +10,11 @@
 #include "connection.h"
 #include "utils.h"
 
+// Include mock functions when testing
 #ifdef USE_MOCK_LIBDB2
 #include "../../../tests/unity/mocks/mock_libdb2.h"
 #endif
+
 
 // ODBC type definitions for DB2
 typedef signed short SQLSMALLINT;
@@ -30,24 +32,7 @@ typedef unsigned short SQLUSMALLINT;
 #define SQL_HANDLE_ENV 1
 #define SQL_NTS -3
 
-// DB2 function pointers (loaded dynamically)
-#ifdef USE_MOCK_LIBDB2
-// For mocking, define pointers used in transaction testing, others NULL
-SQLEndTran_t SQLEndTran_ptr = mock_SQLEndTran;
-SQLAllocHandle_t SQLAllocHandle_ptr = NULL;
-SQLConnect_t SQLConnect_ptr = NULL;
-SQLExecDirect_t SQLExecDirect_ptr = NULL;
-SQLFetch_t SQLFetch_ptr = NULL;
-SQLGetData_t SQLGetData_ptr = NULL;
-SQLNumResultCols_t SQLNumResultCols_ptr = NULL;
-SQLRowCount_t SQLRowCount_ptr = NULL;
-SQLFreeHandle_t SQLFreeHandle_ptr = NULL;
-SQLDisconnect_t SQLDisconnect_ptr = NULL;
-SQLPrepare_t SQLPrepare_ptr = NULL;
-SQLExecute_t SQLExecute_ptr = NULL;
-SQLFreeStmt_t SQLFreeStmt_ptr = NULL;
-SQLDescribeCol_t SQLDescribeCol_ptr = NULL;
-#else
+// DB2 function pointers (loaded dynamically or mocked)
 SQLAllocHandle_t SQLAllocHandle_ptr = NULL;
 SQLConnect_t SQLConnect_ptr = NULL;
 SQLExecDirect_t SQLExecDirect_ptr = NULL;
@@ -62,13 +47,8 @@ SQLPrepare_t SQLPrepare_ptr = NULL;
 SQLExecute_t SQLExecute_ptr = NULL;
 SQLFreeStmt_t SQLFreeStmt_ptr = NULL;
 SQLDescribeCol_t SQLDescribeCol_ptr = NULL;
-#endif
-
-// Additional function pointers for error handling
-typedef SQLRETURN (*SQLGetDiagRec_t)(SQLSMALLINT, SQLHANDLE, SQLSMALLINT, SQLCHAR*, SQLINTEGER*, SQLCHAR*, SQLSMALLINT, SQLSMALLINT*);
-typedef SQLRETURN (*SQLDriverConnect_t)(SQLHANDLE, SQLHWND, SQLCHAR*, SQLSMALLINT, SQLCHAR*, SQLSMALLINT, SQLSMALLINT*, SQLUSMALLINT);
-SQLGetDiagRec_t SQLGetDiagRec_ptr = NULL;
 SQLDriverConnect_t SQLDriverConnect_ptr = NULL;
+SQLGetDiagRec_t SQLGetDiagRec_ptr = NULL;
 
 // Library handle
 #ifndef USE_MOCK_LIBDB2
@@ -82,7 +62,23 @@ static pthread_mutex_t libdb2_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 bool load_libdb2_functions(void) {
 #ifdef USE_MOCK_LIBDB2
-    // For mocking, functions are already set
+    // For mocking, directly assign mock function pointers
+    SQLAllocHandle_ptr = mock_SQLAllocHandle;
+    SQLConnect_ptr = mock_SQLConnect;
+    SQLDriverConnect_ptr = mock_SQLDriverConnect;
+    SQLExecDirect_ptr = mock_SQLExecDirect;
+    SQLFetch_ptr = mock_SQLFetch;
+    SQLGetData_ptr = mock_SQLGetData;
+    SQLNumResultCols_ptr = mock_SQLNumResultCols;
+    SQLRowCount_ptr = mock_SQLRowCount;
+    SQLFreeHandle_ptr = mock_SQLFreeHandle;
+    SQLDisconnect_ptr = mock_SQLDisconnect;
+    SQLEndTran_ptr = mock_SQLEndTran;
+    SQLPrepare_ptr = mock_SQLPrepare;
+    SQLExecute_ptr = mock_SQLExecute;
+    SQLFreeStmt_ptr = mock_SQLFreeStmt;
+    SQLDescribeCol_ptr = mock_SQLDescribeCol;
+    SQLGetDiagRec_ptr = mock_SQLGetDiagRec;
     return true;
 #else
     if (libdb2_handle) {
@@ -275,6 +271,26 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
             log_this(SR_DATABASE, "DB2 attempting to retrieve diagnostic information", LOG_LEVEL_DEBUG, 0);
 
             // Check if SQLGetDiagRec is available
+#ifdef USE_MOCK_LIBDB2
+            log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec is available (mocked)", LOG_LEVEL_DEBUG, 0);
+            // Always available in mock
+            {
+                char sql_state[6] = {0};
+                char error_msg[1024] = {0};
+                SQLINTEGER native_error = 0;
+                SQLSMALLINT msg_len = 0;
+
+                int diag_result = SQLGetDiagRec_ptr(SQL_HANDLE_DBC, conn_handle, 1,
+                                                   (SQLCHAR*)sql_state, &native_error,
+                                                   (SQLCHAR*)error_msg, sizeof(error_msg), &msg_len);
+                if (diag_result == SQL_SUCCESS || diag_result == SQL_SUCCESS_WITH_INFO) {
+                    log_this(SR_DATABASE, "DB2 diagnostic: SQLSTATE='%s', Native Error=%d, Message='%s'",
+                             LOG_LEVEL_ERROR, 3, sql_state, (int)native_error, error_msg);
+                } else {
+                    log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec returned %d (unable to retrieve error details)", LOG_LEVEL_ERROR, 1, (int)diag_result);
+                }
+            }
+#else
             log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec_ptr is %s", LOG_LEVEL_DEBUG, 1, SQLGetDiagRec_ptr ? "available" : "NULL");
             if (!SQLGetDiagRec_ptr) {
                 log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec function not available", LOG_LEVEL_ERROR, 0);
@@ -284,9 +300,9 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
                 SQLINTEGER native_error = 0;
                 SQLSMALLINT msg_len = 0;
 
-                SQLRETURN diag_result = SQLGetDiagRec_ptr(SQL_HANDLE_DBC, conn_handle, 1,
-                                                         (SQLCHAR*)sql_state, &native_error,
-                                                         (SQLCHAR*)error_msg, sizeof(error_msg), &msg_len);
+                int diag_result = SQLGetDiagRec_ptr(SQL_HANDLE_DBC, conn_handle, 1,
+                                                   (SQLCHAR*)sql_state, &native_error,
+                                                   (SQLCHAR*)error_msg, sizeof(error_msg), &msg_len);
                 if (diag_result == SQL_SUCCESS || diag_result == SQL_SUCCESS_WITH_INFO) {
                     log_this(SR_DATABASE, "DB2 diagnostic: SQLSTATE='%s', Native Error=%d, Message='%s'",
                              LOG_LEVEL_ERROR, 3, sql_state, (int)native_error, error_msg);
@@ -294,6 +310,7 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
                     log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec returned %d (unable to retrieve error details)", LOG_LEVEL_ERROR, 1, (int)diag_result);
                 }
             }
+#endif
         } else {
             log_this(SR_DATABASE, "DB2 diagnostic: No connection handle available for error retrieval", LOG_LEVEL_ERROR, 0);
         }
