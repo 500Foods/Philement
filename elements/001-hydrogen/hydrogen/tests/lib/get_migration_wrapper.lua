@@ -1,16 +1,22 @@
 -- get_migration_wrapper.lua
--- Command line wrapper for migrations.lua
--- Usage: lua get_migration_wrapper.lua <design> <engine> <migration>
-
-local migrations = require 'migrations'
+-- Command line wrapper for database.lua from design folders
+-- Usage: lua get_migration_wrapper.lua <engine> <design> <schema> <migration>
 
 -- Get command line arguments
-local design_name = arg[1] or 'helium'
-local engine = arg[2] or 'postgresql'
-local migration_num = arg[3] or '0000'
+local engine = arg[1] or 'postgresql'
+local design_name = arg[2] or 'helium'
+local schema_name = arg[3] or nil
+local migration_num = arg[4] or '0000'
 
--- Get migration SQL
-local sql = migrations.get_migration(design_name, engine, migration_num)
+-- Load the design's database module
+local database = require('database')
+
+-- Load the migration file
+local migration_file = design_name .. '_' .. migration_num
+local migration = require(migration_file)
+
+-- Generate SQL using the design's database
+local sql = database:run_migration(migration.queries, engine, design_name, schema_name)
 
 -- Output the SQL
 print(sql)

@@ -36,6 +36,12 @@ DESIGNS=("helium" "acuranzo")
 # Supported database engines
 ENGINES=("postgresql" "sqlite" "mysql" "db2")
 
+# Schema mapping per design per engine (corresponding to ENGINES array order)
+# ENGINES=("postgresql" "sqlite" "mysql" "db2")
+declare -A DESIGN_SCHEMAS
+DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM"
+DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO"
+
 # Function to get file hash (using md5sum or equivalent)
 get_file_hash() {
     # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
@@ -49,10 +55,25 @@ validate_migration() {
     local migration="$3"
     local migration_file="$4"
 
-    # Generate cache key based on design, engine, migration, and file hash
+    # Get schema_name from design mapping based on engine index
+    local design_schemas="${DESIGN_SCHEMAS[${design}]:-}"
+    local schema_name=""
+    if [[ -n "${design_schemas}" ]]; then
+        # Split by colon and get the schema for this engine
+        IFS=':' read -ra SCHEMA_ARRAY <<< "${design_schemas}"
+        # Find engine index
+        for i in "${!ENGINES[@]}"; do
+            if [[ "${ENGINES[$i]}" == "${engine}" ]]; then
+                schema_name="${SCHEMA_ARRAY[$i]:-}"
+                break
+            fi
+        done
+    fi
+
+    # Generate cache key based on design, engine, schema, migration, and file hash
     local file_hash
     file_hash=$(get_file_hash "${migration_file}")
-    local cache_key="${design}_${engine}_${migration}_${file_hash}"
+    local cache_key="${design}_${engine}_${schema_name}_${migration}_${file_hash}"
     local cache_file="${CACHE_DIR}/${cache_key}"
 
     # Check if we have cached result
@@ -62,10 +83,10 @@ validate_migration() {
         cached_result=$(cat "${cache_file}")
         if [[ "${cached_result}" == *"PASSED"* ]]; then
             # Return cache status via stdout (0 = cached, 1 = not cached)
-            echo "cached"
+            echo "cached|"
             return 0
         else
-            echo "cached"
+            echo "cached|"
             return 1
         fi
     fi
@@ -75,8 +96,15 @@ validate_migration() {
     # Set LUA_PATH to include both the lib directory and design directory
     local design_dir="${HELIUM_DIR}/${design}"
     local lua_path="${SCRIPT_DIR}/lib/?.lua;${design_dir}/?.lua"
-    if ! sql_output=$(LUA_PATH="${lua_path}" lua "${SCRIPT_DIR}/lib/get_migration_wrapper.lua" "${design}" "${engine}" "${migration}" 2>/dev/null); then
+
+    if ! sql_output=$(LUA_PATH="${lua_path}" lua "${SCRIPT_DIR}/lib/get_migration_wrapper.lua" "${engine}" "${design}" "${schema_name}" "${migration}" 2>&1); then
+        # SQL generation failed, save error to diags_file
+        local diags_file="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}/${design}_${engine}_${schema_name}_${migration_num}.txt"
+        mkdir -p "$(dirname "${diags_file}")"
+        echo "SQL generation failed:" > "${diags_file}"
+        echo "${sql_output}" >> "${diags_file}"
         echo "❌ ${design} ${engine} ${migration} FAILED (SQL generation)" > "${cache_file}"
+        echo "fresh|${diags_file}"
         return 1
     fi
 
@@ -98,9 +126,13 @@ validate_migration() {
     temp_sql=$(mktemp)
     echo "${sql_output}" > "${temp_sql}"
 
-    # Run sqruff validation
+    # Create diagnostics file for sqruff output
+    local diags_file="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}/${design}_${engine}_${schema_name}_${migration_num}.txt"
+    mkdir -p "$(dirname "${diags_file}")"
+
+    # Run sqruff validation and capture output
     local lint_exit_code=0
-    if ! sqruff lint --format github-annotation-native --config "${config_file}" "${temp_sql}" >/dev/null 2>&1; then
+    if ! sqruff lint --format github-annotation-native --config "${config_file}" "${temp_sql}" > "${diags_file}" 2>&1; then
         lint_exit_code=1
     fi
 
@@ -109,26 +141,50 @@ validate_migration() {
 
     if [[ ${lint_exit_code} -eq 0 ]]; then
         echo "✅ ${design} ${engine} ${migration} PASSED" > "${cache_file}"
-        echo "fresh"
+        echo "fresh|${diags_file}"
         return 0
     else
         echo "❌ ${design} ${engine} ${migration} FAILED" > "${cache_file}"
-        echo "fresh"
+        echo "fresh|${diags_file}"
         return 1
     fi
 }
 
 # Initialize counters
-TOTAL_DESIGNS=0
 TOTAL_MIGRATIONS=0
 PASSED_VALIDATIONS=0
 FAILED_VALIDATIONS=0
 CACHED_VALIDATIONS=0
 
 # Arrays to collect results for final reporting
-DESIGN_RESULTS=()
 VALIDATION_RESULTS=()
-DESIGN_VALIDATION_RESULTS=()
+
+# Calculate total combos
+total_combos=0
+for design in "${DESIGNS[@]}"; do
+    design_dir="${HELIUM_DIR}/${design}"
+    migration_files=()
+    if [[ -d "${design_dir}" ]]; then
+        while IFS= read -r -d '' file; do
+            migration_files+=("${file}")
+        done < <("${FIND}" "${design_dir}" -name "${design}_????.lua" -type f -print0 2>/dev/null | sort -z || true)
+    fi
+    if [[ ${#migration_files[@]} -eq 0 ]]; then
+        continue
+    fi
+    design_schemas="${DESIGN_SCHEMAS[${design}]:-}"
+    if [[ -n "${design_schemas}" ]]; then
+        IFS=':' read -ra SCHEMA_ARRAY <<< "${design_schemas}"
+        for migration_file in "${migration_files[@]}"; do
+            migration_name=$(basename "${migration_file}" .lua)
+            migration_num="${migration_name#"${design}"_}"
+            for i in "${!ENGINES[@]}"; do
+                schema="${SCHEMA_ARRAY[$i]:-}"
+                total_combos=$((total_combos + 1))
+            done
+        done
+    fi
+done
 
 # Process each design
 for design in "${DESIGNS[@]}"; do
@@ -139,111 +195,88 @@ for design in "${DESIGNS[@]}"; do
         while IFS= read -r -d '' file; do
             migration_files+=("${file}")
         done < <("${FIND}" "${design_dir}" -name "${design}_????.lua" -type f -print0 2>/dev/null | sort -z || true)
-    else
-        DESIGN_RESULTS+=("Design ${design}: Directory not found")
-        continue
     fi
 
     if [[ ${#migration_files[@]} -eq 0 ]]; then
-        DESIGN_RESULTS+=("Design ${design}: No migration files found")
         continue
     fi
 
-    TOTAL_DESIGNS=$(( TOTAL_DESIGNS + 1 ))
-    design_passed=true
-    design_migrations=0
-    design_validations=0
-    DESIGN_VALIDATION_RESULTS=()  # Reset for this design
+    design_schemas="${DESIGN_SCHEMAS[${design}]:-}"
+    if [[ -n "${design_schemas}" ]]; then
+        IFS=':' read -ra SCHEMA_ARRAY <<< "${design_schemas}"
 
-    # Use print_subtest for this design
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Design ${design} Migration Validation"
+        # Process each migration file (already sorted)
+        for migration_file in "${migration_files[@]}"; do
+            migration_name=$(basename "${migration_file}" .lua)
+            migration_num="${migration_name#"${design}"_}"
 
-    # Process each migration file (already sorted)
-    for migration_file in "${migration_files[@]}"; do
-        migration_name=$(basename "${migration_file}" .lua)
-        migration_num="${migration_name#"${design}"_}"
+            # Validate against each database engine
+            for i in "${!ENGINES[@]}"; do
+                engine="${ENGINES[$i]}"
+                schema="${SCHEMA_ARRAY[$i]:-}"
 
-        migration_validations=0
+                # Call function and capture both status and result
+                cache_info=$(validate_migration "${design}" "${engine}" "${migration_num}" "${migration_file}"; echo "exit:$?")
+                validation_result=${cache_info##*exit:}
+                cache_info=${cache_info%exit:*}
+                IFS='|' read -r cache_status diags_file <<< "${cache_info}"
 
-        # Validate against each database engine
-        for engine in "${ENGINES[@]}"; do
-            # Call function separately to maintain set -e behavior
-            cache_status=$(validate_migration "${design}" "${engine}" "${migration_num}" "${migration_file}")
-            validation_result=$?
-
-            if [[ ${validation_result} -eq 0 ]]; then
-                PASSED_VALIDATIONS=$(( PASSED_VALIDATIONS + 1 ))
-                cache_indicator=""
-                if [[ "${cache_status}" == "cached" ]]; then
-                    cache_indicator=" (cached)"
-                    CACHED_VALIDATIONS=$(( CACHED_VALIDATIONS + 1 ))
+                if [[ -z "${schema}" ]]; then
+                    subtest_name="${engine} ${design} (no schema) ${migration_num}"
+                else
+                    subtest_name="${engine} ${design} ${schema} ${migration_num}"
                 fi
-                result_msg="✅ ${design} ${engine} ${migration_num} PASSED${cache_indicator}"
-                VALIDATION_RESULTS+=("${result_msg}")
-                DESIGN_VALIDATION_RESULTS+=("${result_msg}")
-            else
-                FAILED_VALIDATIONS=$(( FAILED_VALIDATIONS + 1 ))
-                cache_indicator=""
-                if [[ "${cache_status}" == "cached" ]]; then
-                    cache_indicator=" (cached)"
-                    CACHED_VALIDATIONS=$(( CACHED_VALIDATIONS + 1 ))
+                print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${subtest_name}"
+                if [[ ${validation_result} -eq 0 ]]; then
+                    PASSED_VALIDATIONS=$(( PASSED_VALIDATIONS + 1 ))
+                    cache_indicator=""
+                    if [[ "${cache_status}" == "cached" ]]; then
+                        cache_indicator=" (cached)"
+                        CACHED_VALIDATIONS=$(( CACHED_VALIDATIONS + 1 ))
+                    fi
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Migration validation passed${cache_indicator}"
+                    VALIDATION_RESULTS+=("✅ ${subtest_name} PASSED${cache_indicator}")
+                else
+                    FAILED_VALIDATIONS=$(( FAILED_VALIDATIONS + 1 ))
+                    cache_indicator=""
+                    if [[ "${cache_status}" == "cached" ]]; then
+                        cache_indicator=" (cached)"
+                        CACHED_VALIDATIONS=$(( CACHED_VALIDATIONS + 1 ))
+                    fi
+                    if [[ "${cache_status}" == "fresh" ]]; then
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diagnostics: ..${diags_file}"
+                    fi
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Migration validation failed${cache_indicator}"
+                    VALIDATION_RESULTS+=("❌ ${subtest_name} FAILED${cache_indicator}")
+                    EXIT_CODE=1
                 fi
-                result_msg="❌ ${design} ${engine} ${migration_num} FAILED${cache_indicator}"
-                VALIDATION_RESULTS+=("${result_msg}")
-                DESIGN_VALIDATION_RESULTS+=("${result_msg}")
-                design_passed=false
-            fi
-            migration_validations=$(( migration_validations + 1 ))
-            design_validations=$(( design_validations + 1 ))
-            TOTAL_MIGRATIONS=$(( TOTAL_MIGRATIONS + 1 ))
+                TOTAL_MIGRATIONS=$(( TOTAL_MIGRATIONS + 1 ))
+            done
         done
-
-        design_migrations=$(( design_migrations + 1 ))
-    done
-
-    # Display validation results for this design
-    if [[ ${#DESIGN_VALIDATION_RESULTS[@]} -gt 0 ]]; then
-        for result in "${DESIGN_VALIDATION_RESULTS[@]}"; do
-            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${result}"
-        done
-    fi
-
-    # Use print_result for this design
-    if [[ ${design_passed} == true ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Design ${design}: ${design_migrations} migrations (${design_validations} validations) passed"
-        DESIGN_RESULTS+=("✅ Design ${design}: ${design_migrations} migrations validated successfully")
-    else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Design ${design}: ${design_migrations} migrations had validation failures"
-        DESIGN_RESULTS+=("❌ Design ${design}: ${design_migrations} migrations had validation failures")
-        EXIT_CODE=1
     fi
 done
 
 # Update test name with final counts
-if [[ ${TOTAL_DESIGNS} -gt 0 ]]; then
+TOTAL_DESIGNS=${#DESIGNS[@]}
+if [[ ${total_combos} -gt 0 ]]; then
     # Calculate total number of migration files across all designs
-    total_migration_files=$(( TOTAL_MIGRATIONS / ${#ENGINES[@]} ))
+    total_migration_files=$(( total_combos / ${#ENGINES[@]} ))
     TEST_NAME="${TEST_NAME} {BLUE}(${TOTAL_DESIGNS} designs, ${total_migration_files} migrations, ${TOTAL_MIGRATIONS} combos){RESET}"
 fi
 
 
 # Summary
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validation Summary:"
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Designs processed: ${TOTAL_DESIGNS}"
-if [[ ${TOTAL_DESIGNS} -gt 0 ]]; then
-    total_migration_files=$(( TOTAL_MIGRATIONS / ${#ENGINES[@]} ))
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Migrations processed: ${total_migration_files}"
-fi
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Engines tested: ${#ENGINES[@]}"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Validation Summary:"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Combos processed: ${total_combos}"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Total validations: ${TOTAL_MIGRATIONS}"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Passed validations: ${PASSED_VALIDATIONS}"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Failed validations: ${FAILED_VALIDATIONS}"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Cached validations: ${CACHED_VALIDATIONS} of ${TOTAL_MIGRATIONS}"
 
 if [[ ${FAILED_VALIDATIONS} -eq 0 ]]; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All database migration validations passed"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "All database migration validations passed"
 else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${FAILED_VALIDATIONS} database migration validations failed"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${FAILED_VALIDATIONS} database migration validations failed"
 fi
 
 # Print test completion summary
