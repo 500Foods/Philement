@@ -15,11 +15,10 @@
 
 // SQLite function pointers (loaded dynamically)
 #ifdef USE_MOCK_LIBSQLITE3
-// For mocking, define pointers used in transaction testing, others NULL
+// For mocking, assign all mock function pointers
+sqlite3_open_t sqlite3_open_ptr = mock_sqlite3_open;
+sqlite3_close_t sqlite3_close_ptr = mock_sqlite3_close;
 sqlite3_exec_t sqlite3_exec_ptr = mock_sqlite3_exec;
-sqlite3_errmsg_t sqlite3_errmsg_ptr = mock_sqlite3_errmsg;
-sqlite3_open_t sqlite3_open_ptr = NULL;
-sqlite3_close_t sqlite3_close_ptr = NULL;
 sqlite3_prepare_v2_t sqlite3_prepare_v2_ptr = NULL;
 sqlite3_step_t sqlite3_step_ptr = NULL;
 sqlite3_finalize_t sqlite3_finalize_ptr = NULL;
@@ -34,8 +33,9 @@ sqlite3_bind_text_t sqlite3_bind_text_ptr = NULL;
 sqlite3_bind_int_t sqlite3_bind_int_ptr = NULL;
 sqlite3_bind_double_t sqlite3_bind_double_ptr = NULL;
 sqlite3_bind_null_t sqlite3_bind_null_ptr = NULL;
-sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr = NULL;
-sqlite3_free_t sqlite3_free_ptr = NULL;
+sqlite3_errmsg_t sqlite3_errmsg_ptr = mock_sqlite3_errmsg;
+sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr = mock_sqlite3_extended_result_codes;
+sqlite3_free_t sqlite3_free_ptr = mock_sqlite3_free;
 #else
 sqlite3_open_t sqlite3_open_ptr = NULL;
 sqlite3_close_t sqlite3_close_ptr = NULL;
