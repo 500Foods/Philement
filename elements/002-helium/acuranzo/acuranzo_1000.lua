@@ -135,7 +135,8 @@ return {
 
                                 This is the first PlantUML code for the query table. 
                             ]=],
-                            NULL,                               -- query_code, collection
+                            'PlantUML JSON in collection',      -- query_code, 
+                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
                             %%JSON_INGEST_START%%
                             [=[
                                 {
@@ -167,8 +168,6 @@ return {
                             ]=]
                             %%JSON_INGEST_END%%
                             ,
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27
-                            NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
