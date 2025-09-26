@@ -25,7 +25,11 @@ typedef int (*SQLExecute_t)(void*);
 typedef int (*SQLFreeStmt_t)(void*, int);
 typedef int (*SQLDescribeCol_t)(void*, int, unsigned char*, int, short*, int*, int*, short*, short*);
 
-// DB2 function pointers (loaded dynamically)
+// Additional function pointers for connection and error handling
+typedef int (*SQLDriverConnect_t)(void*, void*, unsigned char*, short, unsigned char*, short, short*, unsigned short);
+typedef int (*SQLGetDiagRec_t)(short, void*, short, unsigned char*, long*, unsigned char*, short, short*);
+
+// DB2 function pointers (loaded dynamically or mocked)
 extern SQLAllocHandle_t SQLAllocHandle_ptr;
 extern SQLConnect_t SQLConnect_ptr;
 extern SQLExecDirect_t SQLExecDirect_ptr;
@@ -40,6 +44,9 @@ extern SQLPrepare_t SQLPrepare_ptr;
 extern SQLExecute_t SQLExecute_ptr;
 extern SQLFreeStmt_t SQLFreeStmt_ptr;
 extern SQLDescribeCol_t SQLDescribeCol_ptr;
+// Additional function pointers for connection and error handling
+extern SQLDriverConnect_t SQLDriverConnect_ptr;
+extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
 
 // Library handle (declared in connection.c)
 

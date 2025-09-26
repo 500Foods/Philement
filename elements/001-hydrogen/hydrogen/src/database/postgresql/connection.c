@@ -30,25 +30,25 @@ typedef void* (*PQprepare_t)(void* conn, const char* stmtName, const char* query
 typedef size_t (*PQescapeStringConn_t)(void* conn, char* to, const char* from, size_t length, int* error);
 typedef int (*PQping_t)(const char* conninfo);
 
-// PostgreSQL function pointers (loaded dynamically)
+// PostgreSQL function pointers (loaded dynamically or mocked)
 #ifdef USE_MOCK_LIBPQ
-// For mocking, define pointers used in transaction testing, others NULL
+// For mocking, assign all mock function pointers
+PQconnectdb_t PQconnectdb_ptr = mock_PQconnectdb;
+PQstatus_t PQstatus_ptr = mock_PQstatus;
+PQerrorMessage_t PQerrorMessage_ptr = mock_PQerrorMessage;
+PQfinish_t PQfinish_ptr = mock_PQfinish;
 PQexec_t PQexec_ptr = mock_PQexec;
 PQresultStatus_t PQresultStatus_ptr = mock_PQresultStatus;
 PQclear_t PQclear_ptr = mock_PQclear;
-PQconnectdb_t PQconnectdb_ptr = NULL;
-PQstatus_t PQstatus_ptr = NULL;
-PQerrorMessage_t PQerrorMessage_ptr = NULL;
-PQfinish_t PQfinish_ptr = NULL;
-PQntuples_t PQntuples_ptr = NULL;
-PQnfields_t PQnfields_ptr = NULL;
-PQfname_t PQfname_ptr = NULL;
-PQgetvalue_t PQgetvalue_ptr = NULL;
-PQcmdTuples_t PQcmdTuples_ptr = NULL;
-PQreset_t PQreset_ptr = NULL;
-PQprepare_t PQprepare_ptr = NULL;
-PQescapeStringConn_t PQescapeStringConn_ptr = NULL;
-PQping_t PQping_ptr = NULL;
+PQntuples_t PQntuples_ptr = mock_PQntuples;
+PQnfields_t PQnfields_ptr = mock_PQnfields;
+PQfname_t PQfname_ptr = mock_PQfname;
+PQgetvalue_t PQgetvalue_ptr = mock_PQgetvalue;
+PQcmdTuples_t PQcmdTuples_ptr = mock_PQcmdTuples;
+PQreset_t PQreset_ptr = mock_PQreset;
+PQprepare_t PQprepare_ptr = mock_PQprepare;
+PQescapeStringConn_t PQescapeStringConn_ptr = mock_PQescapeStringConn;
+PQping_t PQping_ptr = mock_PQping;
 #else
 PQconnectdb_t PQconnectdb_ptr = NULL;
 PQstatus_t PQstatus_ptr = NULL;
@@ -98,7 +98,23 @@ bool check_timeout_expired(time_t start_time, int timeout_seconds) {
 // Library Loading Functions
 bool load_libpq_functions(void) {
 #ifdef USE_MOCK_LIBPQ
-    // For mocking, functions are already set
+    // For mocking, assign all mock function pointers
+    PQconnectdb_ptr = mock_PQconnectdb;
+    PQstatus_ptr = mock_PQstatus;
+    PQerrorMessage_ptr = mock_PQerrorMessage;
+    PQfinish_ptr = mock_PQfinish;
+    PQexec_ptr = mock_PQexec;
+    PQresultStatus_ptr = mock_PQresultStatus;
+    PQclear_ptr = mock_PQclear;
+    PQntuples_ptr = mock_PQntuples;
+    PQnfields_ptr = mock_PQnfields;
+    PQfname_ptr = mock_PQfname;
+    PQgetvalue_ptr = mock_PQgetvalue;
+    PQcmdTuples_ptr = mock_PQcmdTuples;
+    PQreset_ptr = mock_PQreset;
+    PQprepare_ptr = mock_PQprepare;
+    PQescapeStringConn_ptr = mock_PQescapeStringConn;
+    PQping_ptr = mock_PQping;
     return true;
 #else
     if (libpq_handle) {
