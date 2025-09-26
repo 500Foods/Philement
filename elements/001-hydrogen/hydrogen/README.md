@@ -43,6 +43,7 @@ Hydrogen is currently designed for technical users who:
 - [**Developer Onboarding**](docs/developer_onboarding.md) - Visual architecture overview and code navigation
 - [**Quick Start Guide**](docs/guides/quick-start.md) - Get up and running quickly
 - [**AI Integration**](docs/ai_integration.md) - AI capabilities and implementations
+- [**Build Metrics**](docs/metrics/README.md) - Daily build metrics and quality tracking
 
 ### Technical References
 

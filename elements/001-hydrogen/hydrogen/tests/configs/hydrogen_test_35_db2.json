@@ -1,0 +1,31 @@
+{
+    "ServerName": "hydrogen-test-35-db2",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "WebServer": {
+        "Enabled": true,
+        "EnableIPv6": false,
+        "Port": 5350
+    },
+    "Databases": {
+        "Connections": [
+            {
+                "Enabled": true,
+                "Name": "HTST",
+                "Engine": "${env.HYDROTST_DB_TYPE}",
+                "Database": "${env.HYDROTST_DB_NAME}",
+                "Host":"localhost",
+                "Port": 55555,
+                "User": "${env.HYDROTST_DB_USER}",
+                "Pass": "${env.HYDROTST_DB_PASS}",
+                "Bootstrap":"SELECT * FROM acuranzo.queries;",
+                "AutoMigration": true,
+                "TestMigration": true,
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            }
+        ]
+    }
+}
