@@ -22,7 +22,7 @@ if [[ -z "${FRAMEWORK_GUARD:-}" ]]; then
     setup_test_environment >/dev/null 2>&1
 fi
 
-# reate temporary files for cloc analysis
+# Create temporary files for cloc analysis
 CLOC_OUTPUT=""
 CLOC_DATA=""
 CLOC_OUTPUT=$(mktemp)
@@ -40,6 +40,17 @@ if [[ $? -eq 0 ]]; then
     cloc_stats="${CLOC_OUTPUT%.txt}_stats.txt"
     if [[ -f "${cloc_stats}" ]]; then
         cat "${cloc_stats}"
+    fi
+
+    # Save JSON data to results directory for capture by test_00_all.sh
+    if [[ -f "${CLOC_DATA}" ]]; then
+        # shellcheck disable=SC2154 # RESULTS_DIR defined externally in framework.sh
+        cp "${CLOC_DATA}" "${RESULTS_DIR}/cloc_main_data.json"
+    fi
+
+    # Save stats JSON data if it exists
+    if [[ -f "${CLOC_DATA%.json}_stats.json" ]]; then
+        cp "${CLOC_DATA%.json}_stats.json" "${RESULTS_DIR}/cloc_stats_data.json"
     fi
 else
     echo "Error: cloc analysis failed" >&2

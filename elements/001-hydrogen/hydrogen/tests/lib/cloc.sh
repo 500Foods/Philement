@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 6.1.0 - 2025-09-26 - Added C/C column to table 1, color coded targets in table 2
 # 6.0.1 - 2025-09-25 - Fixed count to match C files found in Test 01 and Test 91
 # 6.0.0 - 2025-09-23 - Added horizontal section breaks to main cloc table (primary/secondary sections)
 # 5.0.0 - 2025-09-18 - Updated Extended Statistics table with additional rows
@@ -30,7 +31,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="6.0.1"
+CLOC_VERSION="6.1.0"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
@@ -159,6 +160,12 @@ run_cloc_analysis() {
             "summary": "sum"
         },
         {
+            "header": "C/C %",
+            "key": "comment_code_percentage",
+            "datatype": "text",
+            "justification": "right"
+        },
+        {
             "header": "Lines",
             "key": "lines",
             "datatype": "int",
@@ -186,6 +193,7 @@ EOF
                             blank: ($core.C.blank // 0),
                             comment: ($core.C.comment // 0),
                             code: ($core.C.code // 0),
+                            comment_code_percentage: (if ($core.C.code // 0) > 0 then (if (($core.C.comment // 0) / ($core.C.code // 0) * 100) > 0 then ((($core.C.comment // 0) / ($core.C.code // 0) * 100 | . * 10 | round / 10) | tostring + " %") else "" end) else "" end),
                             lines: (($core.C.blank // 0) + ($core.C.comment // 0) + ($core.C.code // 0))
                         }
                     else empty end),
@@ -198,6 +206,7 @@ EOF
                             blank: ($test.C.blank // 0),
                             comment: ($test.C.comment // 0),
                             code: ($test.C.code // 0),
+                            comment_code_percentage: (if ($test.C.code // 0) > 0 then (if (($test.C.comment // 0) / ($test.C.code // 0) * 100) > 0 then ((($test.C.comment // 0) / ($test.C.code // 0) * 100 | . * 10 | round / 10) | tostring + " %") else "" end) else "" end),
                             lines: (($test.C.blank // 0) + ($test.C.comment // 0) + ($test.C.code // 0))
                         }
                     else empty end),
@@ -212,7 +221,8 @@ EOF
                                 files: (($core_md.nFiles // 0) + ($test_md.nFiles // 0)),
                                 blank: (($core_md.blank // 0) + ($test_md.blank // 0)),
                                 comment: (($core_md.comment // 0) + ($test_md.comment // 0)),
-                                code: (($core_md.code // 0) + ($test_md.code // 0))
+                                code: (($core_md.code // 0) + ($test_md.code // 0)),
+                                comment_code_percentage: (if (($core_md.code // 0) + ($test_md.code // 0)) > 0 then (if (((($core_md.comment // 0) + ($test_md.comment // 0))) / (($core_md.code // 0) + ($test_md.code // 0)) * 100) > 0 then (((($core_md.comment // 0) + ($test_md.comment // 0))) / (($core_md.code // 0) + ($test_md.code // 0)) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end)
                             } | .lines = (.blank + .comment + .code)
                         ),
                         # Bourne Shell
@@ -223,7 +233,8 @@ EOF
                                 files: (($core_sh.nFiles // 0) + ($test_sh.nFiles // 0)),
                                 blank: (($core_sh.blank // 0) + ($test_sh.blank // 0)),
                                 comment: (($core_sh.comment // 0) + ($test_sh.comment // 0)),
-                                code: (($core_sh.code // 0) + ($test_sh.code // 0))
+                                code: (($core_sh.code // 0) + ($test_sh.code // 0)),
+                                comment_code_percentage: (if (($core_sh.code // 0) + ($test_sh.code // 0)) > 0 then (if (((($core_sh.comment // 0) + ($test_sh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0)) * 100) > 0 then (((($core_sh.comment // 0) + ($test_sh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0)) * 100 | . * 10 | round / 10 | tostring | . + ".0" | tostring + " %") else "" end) else "" end)
                             } | .lines = (.blank + .comment + .code)
                         ),
                         # Lua
@@ -234,7 +245,8 @@ EOF
                                 files: (($core_lua.nFiles // 0) + ($test_lua.nFiles // 0)),
                                 blank: (($core_lua.blank // 0) + ($test_lua.blank // 0)),
                                 comment: (($core_lua.comment // 0) + ($test_lua.comment // 0)),
-                                code: (($core_lua.code // 0) + ($test_lua.code // 0))
+                                code: (($core_lua.code // 0) + ($test_lua.code // 0)),
+                                comment_code_percentage: (if (($core_lua.code // 0) + ($test_lua.code // 0)) > 0 then (if (((($core_lua.comment // 0) + ($test_lua.comment // 0))) / (($core_lua.code // 0) + ($test_lua.code // 0)) * 100) > 0 then (((($core_lua.comment // 0) + ($test_lua.comment // 0))) / (($core_lua.code // 0) + ($test_lua.code // 0)) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end)
                             } | .lines = (.blank + .comment + .code)
                         ),
                         # CMake
@@ -245,7 +257,8 @@ EOF
                                 files: (($core_cmake.nFiles // 0) + ($test_cmake.nFiles // 0)),
                                 blank: (($core_cmake.blank // 0) + ($test_cmake.blank // 0)),
                                 comment: (($core_cmake.comment // 0) + ($test_cmake.comment // 0)),
-                                code: (($core_cmake.code // 0) + ($test_cmake.code // 0))
+                                code: (($core_cmake.code // 0) + ($test_cmake.code // 0)),
+                                comment_code_percentage: (if (($core_cmake.code // 0) + ($test_cmake.code // 0)) > 0 then (if (((($core_cmake.comment // 0) + ($test_cmake.comment // 0))) / (($core_cmake.code // 0) + ($test_cmake.code // 0)) * 100) > 0 then (((($core_cmake.comment // 0) + ($test_cmake.comment // 0))) / (($core_cmake.code // 0) + ($test_cmake.code // 0)) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end)
                             } | .lines = (.blank + .comment + .code)
                         )
                     ),
@@ -258,6 +271,7 @@ EOF
                             blank: (.value.blank // 0),
                             comment: (.value.comment // 0),
                             code: (.value.code // 0),
+                            comment_code_percentage: (if (.value.code // 0) > 0 then (if ((.value.comment // 0) / (.value.code // 0) * 100) > 0 then ((.value.comment // 0) / (.value.code // 0) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end),
                             lines: ((.value.blank // 0) + (.value.comment // 0) + (.value.code // 0))
                         }
                     )
@@ -414,9 +428,115 @@ EOF
             local test_c_code unity_ratio
             test_c_code=$(jq -r '.C.code // 0' "${test_json}" 2>/dev/null || echo 0)
             if [[ "${c_code}" -gt 0 ]]; then
-                unity_ratio=$(printf "%.3f%%" "$(bc -l <<< "scale=2; (${test_c_code} * 100) / ${c_code}" || true)")
+                unity_ratio=$(printf "%.3f %%" "$(bc -l <<< "scale=2; (${test_c_code} * 100) / ${c_code}" || true)")
             else
                 unity_ratio="N/A"
+            fi
+
+
+            # Compute all bc-based checks before creating JSON to avoid nested command substitutions
+            local codedoc_color docscode_color codecomment_color commentscode_color coverage_unity_color coverage_black_color coverage_combined_color unity_color
+            
+            if [[ "${codedoc_ratio}" != "N/A" ]]; then
+                local codedoc_check1 codedoc_check2
+                codedoc_check1=$(echo "${codedoc_ratio} >= 1.5" | bc -l 2>/dev/null || echo 0)
+                codedoc_check2=$(echo "${codedoc_ratio} <= 2.5" | bc -l 2>/dev/null || echo 0)
+                if (( codedoc_check1 )) && (( codedoc_check2 )); then
+                    codedoc_color="{GREEN}"
+                else
+                    codedoc_color="{CYAN}"
+                fi
+            else
+                codedoc_color="{CYAN}"
+            fi
+            
+            if [[ "${docscode_ratio}" != "N/A" ]]; then
+                local docscode_check1 docscode_check2
+                docscode_check1=$(echo "${docscode_ratio} >= 0.4" | bc -l 2>/dev/null || echo 0)
+                docscode_check2=$(echo "${docscode_ratio} <= 0.7" | bc -l 2>/dev/null || echo 0)
+                if (( docscode_check1 )) && (( docscode_check2 )); then
+                    docscode_color="{GREEN}"
+                else
+                    docscode_color="{CYAN}"
+                fi
+            else
+                docscode_color="{CYAN}"
+            fi
+            
+            if [[ "${codecomment_ratio}" != "N/A" ]]; then
+                local codecomment_check1 codecomment_check2
+                codecomment_check1=$(echo "${codecomment_ratio} >= 3.0" | bc -l 2>/dev/null || echo 0)
+                codecomment_check2=$(echo "${codecomment_ratio} <= 5.0" | bc -l 2>/dev/null || echo 0)
+                if (( codecomment_check1 )) && (( codecomment_check2 )); then
+                    codecomment_color="{GREEN}"
+                else
+                    codecomment_color="{CYAN}"
+                fi
+            else
+                codecomment_color="{CYAN}"
+            fi
+            
+            if [[ "${commentscode_ratio}" != "N/A" ]]; then
+                local commentscode_check1 commentscode_check2
+                commentscode_check1=$(echo "${commentscode_ratio} >= 0.2" | bc -l 2>/dev/null || echo 0)
+                commentscode_check2=$(echo "${commentscode_ratio} <= 0.3" | bc -l 2>/dev/null || echo 0)
+                if (( commentscode_check1 )) && (( commentscode_check2 )); then
+                    commentscode_color="{GREEN}"
+                else
+                    commentscode_color="{CYAN}"
+                fi
+            else
+                commentscode_color="{CYAN}"
+            fi
+            
+            if [[ "${coverage_unity_fmt}" != "N/A" ]]; then
+                local coverage_unity_check
+                coverage_unity_check=$(echo "${coverage_unity_fmt} >= 60" | bc -l 2>/dev/null || echo 0)
+                if (( coverage_unity_check )); then
+                    coverage_unity_color="{GREEN}"
+                else
+                    coverage_unity_color="{CYAN}"
+                fi
+            else
+                coverage_unity_color="{CYAN}"
+            fi
+            
+            if [[ "${coverage_black_fmt}" != "N/A" ]]; then
+                local coverage_black_check
+                coverage_black_check=$(echo "${coverage_black_fmt} >= 70" | bc -l 2>/dev/null || echo 0)
+                if (( coverage_black_check )); then
+                    coverage_black_color="{GREEN}"
+                else
+                    coverage_black_color="{CYAN}"
+                fi
+            else
+                coverage_black_color="{CYAN}"
+            fi
+            
+            if [[ "${coverage_combined_fmt}" != "N/A" ]]; then
+                local coverage_combined_check
+                coverage_combined_check=$(echo "${coverage_combined_fmt} >= 80" | bc -l 2>/dev/null || echo 0)
+                if (( coverage_combined_check )); then
+                    coverage_combined_color="{GREEN}"
+                else
+                    coverage_combined_color="{CYAN}"
+                fi
+            else
+                coverage_combined_color="{CYAN}"
+            fi
+            
+            if [[ "${unity_ratio}" != "N/A" ]]; then
+                local unity_numeric unity_check1 unity_check2
+                unity_numeric=${unity_ratio%'%'}
+                unity_check1=$(echo "${unity_numeric} >= 100" | bc -l 2>/dev/null || echo 0)
+                unity_check2=$(echo "${unity_numeric} <= 200" | bc -l 2>/dev/null || echo 0)
+                if (( unity_check1 )) && (( unity_check2 )); then
+                    unity_color="{GREEN}"
+                else
+                    unity_color="{CYAN}"
+                fi
+            else
+                unity_color="{CYAN}"
             fi
 
             # Create data for extended statistics table
@@ -450,25 +570,25 @@ EOF
          "section": "ratios",
          "metric": "Code/Docs",
          "value": "${codedoc_ratio}",
-         "description": "Ratio of Code to Docs        {CYAN}Target: 1.5-2.5{RESET}"
+         "description": "Ratio of Code to Docs        ${codedoc_color}Target: 1.5-2.5{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Docs/Code",
          "value": "${docscode_ratio}",
-         "description": "Ratio of Docs to Code        {CYAN}Target: 0.4-0.7{RESET}"
+         "description": "Ratio of Docs to Code        ${docscode_color}Target: 0.4-0.7{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Code/Comments",
          "value": "${codecomment_ratio}",
-         "description": "Ratio of Code to Comments    {CYAN}Target: 3.0-5.0{RESET}"
+         "description": "Ratio of Code to Comments    ${codecomment_color}Target: 3.0-5.0{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Comments/Code",
          "value": "${commentscode_ratio}",
-         "description": "Ratio of Comments to Code    {CYAN}Target: 0.2-0.3{RESET}"
+         "description": "Ratio of Comments to Code    ${commentscode_color}Target: 0.2-0.3{RESET}"
      },
      {
          "section": "coverage_lines",
@@ -497,32 +617,38 @@ EOF
      {
          "section": "coverage_percentages",
          "metric": "Coverage Unity %",
-         "value": "${coverage_unity_fmt}%",
-         "description": "Unity test coverage              {CYAN}Target: 60%{RESET}"
+         "value": "${coverage_unity_fmt} %",
+         "description": "Unity test coverage              ${coverage_unity_color}Target: 60%{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Blackbox %",
-         "value": "${coverage_black_fmt}%",
-         "description": "Blackbox test coverage           {CYAN}Target: 70%{RESET}"
+         "value": "${coverage_black_fmt} %",
+         "description": "Blackbox test coverage           ${coverage_black_color}Target: 70%{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Combined %",
-         "value": "${coverage_combined_fmt}%",
-         "description": "Combined test coverage           {CYAN}Target: 80%{RESET}"
-     }, 
+         "value": "${coverage_combined_fmt} %",
+         "description": "Combined test coverage           ${coverage_combined_color}Target: 80%{RESET}"
+     },
      {
          "section": "coverage_percentages",
          "metric": "Unity Ratio",
          "value": "${unity_ratio}",
-         "description": "Test/Core C/Headers        {CYAN}Target: 100%-200%{RESET}"
+         "description": "Test/Core C/Headers        ${unity_color}Target: 100%-200%{RESET}"
      }
 ]
 EOF
 
             # Generate second table to separate file
             "${TABLES}" "${stats_layout_json}" "${stats_data_json}" > "${stats_output}"
+
+            # Save stats JSON data to results directory for capture by test_00_all.sh
+            # shellcheck disable=SC2154 # RESULTS_DIR defined externally in framework.sh
+            if [[ -n "${RESULTS_DIR:-}" ]]; then
+                cp "${stats_data_json}" "${RESULTS_DIR}/cloc_stats_data.json"
+            fi
 
             # If no output_file was provided, output both tables to stdout and clean up
             if [[ -z "${output_file}" ]]; then
