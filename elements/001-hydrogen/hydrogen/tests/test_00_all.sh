@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 6.6.0 - 2025-09-26 - Added JSON generation so that we have easier access to the table data later when we want to analyze historical trends
 # 6.5.0 - 2025-09-25 - Added metrics file generation with four ANSI tables (test results, coverage, cloc main, cloc stats) saved to docs/metrics/YYYY-MM/YYYY-MM-DD.txt
 # 6.4.0 - 2025-08-10 - Cleaned out some mktemp calls
 # 6.3.0 - 2025-08-09 - Minor log file adjustmeents
@@ -37,7 +38,7 @@ TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
 TEST_COUNTER=0
-TEST_VERSION="6.5.0"
+TEST_VERSION="6.6.0"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -785,14 +786,61 @@ current_date=$("${DATE}" +%Y-%m-%d)
 current_month=$("${DATE}" +%Y-%m)
 metrics_dir="${PROJECT_DIR}/docs/metrics/${current_month}"
 metrics_file="${metrics_dir}/${current_date}.txt"
+metrics_json_file="${metrics_dir}/${current_date}.json"
 
 mkdir -p "${metrics_dir}"
 
 cloc_output=""
+cloc_json_main=""
+cloc_json_stats=""
 if cloc_output=$(env -i bash -c "${SCRIPT_DIR}/lib/cloc_tables.sh"); then
+    # Capture CLOC JSON data if available
+    cloc_json_main="${RESULTS_DIR}/cloc_main_data.json"
+    cloc_json_stats="${RESULTS_DIR}/cloc_stats_data.json"
     :
 else
     cloc_output="Error: cloc_tables.sh failed"
+fi
+
+# Capture coverage JSON data
+coverage_json=""
+if [[ -f "${RESULTS_DIR}/coverage_data.json" ]]; then
+    coverage_json="${RESULTS_DIR}/coverage_data.json"
+fi
+
+# Combine all JSON data into one file
+if [[ -f "${data_json}" ]] && [[ -f "${cloc_json_main}" ]] && [[ -f "${cloc_json_stats}" ]] && [[ -f "${coverage_json}" ]]; then
+    # Read the JSON content from each file
+    test_results_json=$(cat "${data_json}")
+    cloc_main_json=$(cat "${cloc_json_main}")
+    cloc_stats_json=$(cat "${cloc_json_stats}")
+    coverage_data_json=$(cat "${coverage_json}")
+
+    # Create combined JSON structure
+    combined_json=$(
+        cat << EOF
+{
+    "metadata": {
+        "generated": "${current_date}",
+        "timestamp": "${TIMESTAMP_DISPLAY}",
+        "version": "1.0.0"
+    },
+    "test_results": {
+        "data": ${test_results_json}
+    },
+    "cloc": {
+        "main": ${cloc_main_json},
+        "stats": ${cloc_stats_json}
+    },
+    "coverage": {
+        "data": ${coverage_data_json}
+    }
+}
+EOF
+    )
+
+    # Write combined JSON to file
+    echo "${combined_json}" > "${metrics_json_file}"
 fi
 
 # Append the four tables to the metrics file
@@ -806,7 +854,7 @@ fi
     cat "${coverage_table_file}"
     echo ""
 
-    
+
 } > "${metrics_file}"
 
 

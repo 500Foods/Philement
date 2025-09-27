@@ -627,6 +627,12 @@ EOF
 # Use tables executable to render the table
 "${TABLES}" "${layout_json}" "${data_json}" 2>/dev/null
 
+# Save JSON data to results directory for capture by test_00_all.sh
+# shellcheck disable=SC2154 # RESULTS_DIR defined externally in framework.sh
+if [[ -f "${data_json}" ]]; then
+    cp "${data_json}" "${RESULTS_DIR}/coverage_data.json"
+fi
+
 # Clean up temporary files
 rm -rf "${temp_dir}" 2>/dev/null || true
 
