@@ -264,8 +264,8 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LOGGING -Dlog_this=mock_log_this")
     else()
-        set(MOCK_INCLUDES "")
-        set(MOCK_DEFINES "")
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_LOGGING -DUSE_MOCK_LIBMICROHTTPD -DUSE_MOCK_SYSTEM -Dlog_this=mock_log_this")
     endif()
 
     # Create test source object file in the appropriate subdirectory
@@ -310,15 +310,11 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         hydrogen_unity
         unity_framework
         unity_mocks
+        unity_print_mocks
         ${HYDROGEN_BASE_LIBS}
         --coverage
         -lgcov
     )
-
-    # For print tests, also link print mocks
-    if(IS_PRINT_TEST GREATER -1)
-        target_link_libraries(${TEST_NAME} unity_print_mocks)
-    endif()
 
     # Add extra link flags
     target_link_options(${TEST_NAME} PRIVATE -Wl,--gc-sections)
