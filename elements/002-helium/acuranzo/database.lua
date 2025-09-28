@@ -462,7 +462,8 @@ END
                     -- If we're reducing indentation (like with ); )} )) @enduml) it applies on the current line
                     -- If we're increasing indentation (like with ( { @startuml), it applies on subsequent lines
                     if processed_line:sub(-2) == ");" or processed_line:sub(-1) == ")" or 
-                       processed_line:sub(-2) == "};" or processed_line:sub(-1) == "}" or
+                       processed_line:sub(-2) == "};" or processed_line:sub(-1) == "}" or processed_line:sub(-2) == "}," or
+                       processed_line:sub(-1) == "]" or processed_line:sub(-2) == "]," or 
                        processed_line:find("@enduml") then
                         -- Reducing indentation - apply to current line
                         current_indent = current_indent - 1
@@ -520,7 +521,7 @@ END
                     table.insert(indented_lines, indent .. final_line)
 
                     -- Handle opening brackets - increase indentation for subsequent lines
-                    if processed_line:sub(-1) == "(" or processed_line:sub(-1) == "{" or
+                    if processed_line:sub(-1) == "(" or processed_line:sub(-1) == "{" or processed_line:sub(-1) == "[" or
                        processed_line:find("@startuml") then
                         -- Increasing indentation - apply to subsequent lines
                         current_indent = current_indent + 1

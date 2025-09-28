@@ -2,6 +2,7 @@
 -- Creates the workflow_steps table and populating it with the next migration.
 
 -- CHANGELOG
+-- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
 -- 1.0.0 -0 2025-09-13 - Initial creation for workflow_steps table with PostgreSQL support.
 
 local config = require 'database'
@@ -98,39 +99,114 @@ return {
                             1022,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Workflow Steps Table Query', -- name, summary
+                            'Diagram Tables: app.workflow_steps', -- name, summary
                             [=[
-                                # Diagram Migration 1022: Diagram Workflow Steps Table Query
+                                # Diagram Migration 1022
 
-                                This is the PlantUML code for the workflow_steps table. 
+                                ## Diagram Tables: app.workflow_steps
+
+                                This is the first JSON Diagram code for the workflow_steps table.
                             ]=],
-                            'PlantUML JSON in collection',      -- query_code, 
+                            'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
                             %%JSON_INGEST_START%%
                             [=[
                                 {
                                     "object_type": "table",
                                     "object_id": "table.workflow_steps",
-                                    "plant_uml": 
-                                    [==[
-                                        @startuml
-                                            entity workflow_steps {
-                                            * workflow_id : INTEGER [NOT NULL]
-                                            * step_id : INTEGER [NOT NULL]
-                                            * name : VARCHAR_100 [NOT NULL]
-                                            summary : VARCHAR_500
-                                            * sort_seq : INTEGER [NOT NULL]
-                                            * status_lua_11 : INTEGER [NOT NULL]
-                                            collection : JSONB
-                                            valid_after : TIMESTAMP_TZ
-                                            valid_until : TIMESTAMP_TZ
-                                            * created_id : INTEGER [NOT NULL]
-                                            * created_at : TIMESTAMP_TZ [NOT NULL]
-                                            * updated_id : INTEGER [NOT NULL]
-                                            * updated_at : TIMESTAMP_TZ [NOT NULL]
-                                            }
-                                        @enduml
-                                    ]==]
+                                    "table": [
+                                        {
+                                            "name": "workflow_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "step_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": true,
+                                            "unique": true
+                                        },
+                                        {
+                                            "name": "name",
+                                            "datatype": "%%VARCHAR_100%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "summary",
+                                            "datatype": "%%VARCHAR_500%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "sort_seq",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "status_lua_11",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "collection",
+                                            "datatype": "%%JSONB%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "valid_after",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "valid_until",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "created_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "created_at",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "updated_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "updated_at",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        }
+                                    ]
                                 }
                             ]=]
                             %%JSON_INGEST_END%%
