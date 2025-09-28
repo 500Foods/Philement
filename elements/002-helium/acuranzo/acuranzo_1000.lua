@@ -2,6 +2,7 @@
 -- Bootstraps the migration system by creating the queries table and populating it with the next migration.
 
 -- CHANGELOG
+-- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
 -- 1.0.0 -0 2025-09-13 - Initial creation for queries table with SQLite, PostgreSQL, MySQL, DB2 support.
 
 local config = require 'database'
@@ -125,67 +126,132 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            3,                                  -- query_id
-                            1000,                               -- query_ref
-                            %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables Query',             -- name, summary
+                            3,                                   -- query_id
+                            1000,                                -- query_ref
+                            %%TYPE_DIAGRAM_MIGRATIO%%,           -- query_type_lua_28    
+                            %%DIALECT%%,                         -- query_dialect_lua_30    
+                            'Diagram Tables: %%SCHEMA%%queries', -- name, summary
                             [=[
-                                # Diagram Migration 1000: Diagram Tables Query
+                                # Diagram Migration 1000
+                                
+                                ## Diagram Tables: %%SCHEMA%%queries
 
-                                This is the first PlantUML code for the query table. 
+                                This is the first JSON Diagram code for the queries table.
                             ]=],
-                            'PlantUML JSON in collection',      -- query_code, 
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
+                            'JSON Table Definition in collection',     -- query_code,
+                            %%STATUS_ACTIVE%%,                         -- query_status_lua_27, collection
                             %%JSON_INGEST_START%%
                             [=[
                                 {
                                     "object_type": "table",
                                     "object_id": "table.queries",
-                                    "plant_uml": 
-                                    [==[
-                                    @startuml
-                                    hide circle
-                                    left to right direction
-
-                                    entity queries {
-                                        *   query_id                \t SERIAL
-                                            query_ref               \t INTEGER      \t [NOT NULL]
-                                            query_type_lua_28       \t INTEGER      \t [NOT NULL]
-                                            query_dialect_lua_30    \t INTEGER      \t [NOT NULL]
-                                            name                    \t VARCHAR_100  \t [NOT NULL]
-                                            summary                 \t TEXT
-                                            query_code              \t TEXT         \t [NOT NULL]
-                                            query_status_lua_27     \t INTEGER      \t [NOT NULL]
-
-                                            collection              \t JSONB
-
-                                            valid_after             \t TIMESTAMP
-                                            valid_until             \t TIMESTAMP
-                                            created_id              \t INTEGER      \t [NOT NULL]
-                                            created_at              \t TIMESTAMP    \t [NOT NULL]
-                                            updated_id              \t INTEGER      \t [NOT NULL]
-                                            updated_at              \t TIMESTAMP    \t [NOT NULL]
-                                    }
-
-
-                                        entity "Users" {
-                                            * user_id     \t int      \t NOT NULL   \t <<PK>> 
-                                            username    \t varchar  \t NOT NULL            
+                                    "table": [
+                                        {
+                                            "name": "query_id",
+                                            "datatype": "%%SERIAL%%",
+                                            "nullable": false,
+                                            "primary_key": true,
+                                            "unique": true
+                                        },
+                                        {
+                                            "name": "query_ref",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "query_type_lua_28",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "query_dialect_lua_30",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "name",
+                                            "datatype": "%%VARCHAR_100%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "summary",
+                                            "datatype": "%%TEXT%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "query_code",
+                                            "datatype": "%%TEXT%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "query_status_lua_27",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "collection",
+                                            "datatype": "%%JSONB%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "valid_after",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "valid_until",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "created_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "created_at",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "updated_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "updated_at",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
                                         }
-
-                                        entity "Orders" {
-                                            * order_id     \t int     \t NOT NULL    \t <<PK>> 
-                                            * order_date   \t date    \t NOT NULL    \t <<PK>>
-                                            other        \t string  
-                                            misc         \t float   
-                                            user_id      \t int     \t NOT NULL    \t <<FK>>
-                                        }
-
-                                        Users::user_id ||.up.o{ Orders::user_id : FK 
-
-                                        @enduml
-                                    ]==]
+                                    ]
                                 }
                             ]=]
                             %%JSON_INGEST_END%%

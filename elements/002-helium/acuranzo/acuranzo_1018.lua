@@ -2,6 +2,7 @@
 -- Creates the sessions table and populating it with the next migration.
 
 -- CHANGELOG
+-- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
 -- 1.0.0 -0 2025-09-13 - Initial creation for sessions table with PostgreSQL support.
 
 local config = require 'database'
@@ -95,37 +96,100 @@ return {
                             1018,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Sessions Table Query',     -- name, summary
+                            'Diagram Tables: app.sessions',     -- name, summary
                             [=[
-                                # Diagram Migration 1018: Diagram Sessions Table Query
+                                # Diagram Migration 1018
 
-                                This is the PlantUML code for the sessions table. 
+                                ## Diagram Tables: app.sessions
+
+                                This is the first JSON Diagram code for the sessions table.
                             ]=],
-                            'PlantUML JSON in collection',      -- query_code, 
+                            'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
                             %%JSON_INGEST_START%%
                             [=[
                                 {
                                     "object_type": "table",
                                     "object_id": "table.sessions",
-                                    "plant_uml": 
-                                    [==[
-                                        @startuml
-                                            entity sessions {
-                                            * session_id : TEXT [NOT NULL]
-                                            * account_id : INTEGER [NOT NULL]
-                                            * session : TEXT [NOT NULL]
-                                            * session_length : INTEGER [NOT NULL]
-                                            * session_issues : INTEGER [NOT NULL]
-                                            * session_secs : INTEGER [NOT NULL]
-                                            * status_lua_25 : INTEGER [NOT NULL]
-                                            * flag_lua_26 : INTEGER [NOT NULL]
-                                            * created_at : TIMESTAMP_TZ [NOT NULL]
-                                            * updated_at : TIMESTAMP_TZ [NOT NULL]
-                                            session_changes : INTEGER
-                                            }
-                                        @enduml
-                                    ]==]
+                                    "table": [
+                                        {
+                                            "name": "session_id",
+                                            "datatype": "%%TEXT%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "account_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "session",
+                                            "datatype": "%%TEXT%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "session_length",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "session_issues",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "session_secs",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "status_lua_25",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "flag_lua_26",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "created_at",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "updated_at",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "session_changes",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        }
+                                    ]
                                 }
                             ]=]
                             %%JSON_INGEST_END%%

@@ -2,6 +2,7 @@
 -- Creates the convos table and populating it with the next migration.
 
 -- CHANGELOG
+-- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
 -- 1.0.0 -0 2025-09-13 - Initial creation for convos table with PostgreSQL support.
 
 local config = require 'database'
@@ -100,41 +101,128 @@ return {
                             1008,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Convos Table Query',       -- name, summary
+                            'Diagram Tables: app.convos',       -- name, summary
                             [=[
-                                # Diagram Migration 1008: Diagram Convos Table Query
+                                # Diagram Migration 1008
 
-                                This is the PlantUML code for the convos table. 
+                                ## Diagram Tables: app.convos
+
+                                This is the first JSON Diagram code for the convos table.
                             ]=],
-                            'PlantUML JSON in collection',      -- query_code, 
+                            'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
                             %%JSON_INGEST_START%%
                             [=[
                                 {
                                     "object_type": "table",
                                     "object_id": "table.convos",
-                                    "plant_uml": 
-                                    [==[
-                                        @startuml
-                                            entity convos {
-                                            * convos_id : INTEGER [NOT NULL]
-                                            * convos_ref : CHAR_50 [NOT NULL]
-                                            convos_keywords : TEXT
-                                            convos_icon : TEXT
-                                            prompt : TEXT
-                                            response : TEXT
-                                            context : TEXT
-                                            history : TEXT
-                                            collection : JSONB
-                                            valid_after : TIMESTAMP_TZ
-                                            valid_until : TIMESTAMP_TZ
-                                            * created_id : INTEGER [NOT NULL]
-                                            * created_at : TIMESTAMP_TZ [NOT NULL]
-                                            * updated_id : INTEGER [NOT NULL]
-                                            * updated_at : TIMESTAMP_TZ [NOT NULL]
-                                            }
-                                        @enduml
-                                    ]==]
+                                    "table": [
+                                        {
+                                            "name": "convos_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": true,
+                                            "unique": true
+                                        },
+                                        {
+                                            "name": "convos_ref",
+                                            "datatype": "%%CHAR_50%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "convos_keywords",
+                                            "datatype": "%%TEXT%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "convos_icon",
+                                            "datatype": "%%TEXT%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "prompt",
+                                            "datatype": "%%TEXT%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "response",
+                                            "datatype": "%%TEXT%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "context",
+                                            "datatype": "%%TEXT%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "history",
+                                            "datatype": "%%TEXT%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "collection",
+                                            "datatype": "%%JSONB%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "valid_after",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "valid_until",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "created_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "created_at",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "updated_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "updated_at",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        }
+                                    ]
                                 }
                             ]=]
                             %%JSON_INGEST_END%%
