@@ -144,24 +144,46 @@ return {
                                     "object_id": "table.queries",
                                     "plant_uml": 
                                     [==[
-                                        @startuml
-                                            entity queries {
-                                            * query_id : SERIAL
-                                            query_ref : INTEGER [NOT NULL]
-                                            query_type_lua_28 : INTEGER [NOT NULL]
-                                            query_dialect_lua_30 : INTEGER [NOT NULL]
-                                            name : VARCHAR_100 [NOT NULL]
-                                            summary : TEXT
-                                            query_code : TEXT [NOT NULL]
-                                            query_status_lua_27 : INTEGER [NOT NULL]
-                                            collection : JSONB
-                                            valid_after : TIMESTAMP_TZ
-                                            valid_until : TIMESTAMP_TZ
-                                            created_id : INTEGER [NOT NULL]
-                                            created_at : TIMESTAMP_TZ [NOT NULL]
-                                            updated_id : INTEGER [NOT NULL]
-                                            updated_at : TIMESTAMP_TZ [NOT NULL]
-                                            }
+                                    @startuml
+                                    hide circle
+                                    left to right direction
+
+                                    entity queries {
+                                        *   query_id                \t SERIAL
+                                            query_ref               \t INTEGER      \t [NOT NULL]
+                                            query_type_lua_28       \t INTEGER      \t [NOT NULL]
+                                            query_dialect_lua_30    \t INTEGER      \t [NOT NULL]
+                                            name                    \t VARCHAR_100  \t [NOT NULL]
+                                            summary                 \t TEXT
+                                            query_code              \t TEXT         \t [NOT NULL]
+                                            query_status_lua_27     \t INTEGER      \t [NOT NULL]
+
+                                            collection              \t JSONB
+
+                                            valid_after             \t TIMESTAMP
+                                            valid_until             \t TIMESTAMP
+                                            created_id              \t INTEGER      \t [NOT NULL]
+                                            created_at              \t TIMESTAMP    \t [NOT NULL]
+                                            updated_id              \t INTEGER      \t [NOT NULL]
+                                            updated_at              \t TIMESTAMP    \t [NOT NULL]
+                                    }
+
+
+                                        entity "Users" {
+                                            * user_id     \t int      \t NOT NULL   \t <<PK>> 
+                                            username    \t varchar  \t NOT NULL            
+                                        }
+
+                                        entity "Orders" {
+                                            * order_id     \t int     \t NOT NULL    \t <<PK>> 
+                                            * order_date   \t date    \t NOT NULL    \t <<PK>>
+                                            other        \t string  
+                                            misc         \t float   
+                                            user_id      \t int     \t NOT NULL    \t <<FK>>
+                                        }
+
+                                        Users::user_id ||.up.o{ Orders::user_id : FK 
+
                                         @enduml
                                     ]==]
                                 }
