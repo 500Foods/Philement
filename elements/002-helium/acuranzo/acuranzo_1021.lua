@@ -2,6 +2,7 @@
 -- Creates the tokens table and populating it with the next migration.
 
 -- CHANGELOG
+-- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
 -- 1.0.0 -0 2025-09-13 - Initial creation for tokens table with PostgreSQL support.
 
 local config = require 'database'
@@ -93,34 +94,79 @@ return {
                             1021,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tokens Table Query',       -- name, summary
+                            'Diagram Tables: app.tokens',       -- name, summary
                             [=[
-                                # Diagram Migration 1021: Diagram Tokens Table Query
+                                # Diagram Migration 1021
 
-                                This is the PlantUML code for the tokens table. 
+                                ## Diagram Tables: app.tokens
+
+                                This is the first JSON Diagram code for the tokens table.
                             ]=],
-                            'PlantUML JSON in collection',      -- query_code, 
+                            'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
                             %%JSON_INGEST_START%%
                             [=[
                                 {
                                     "object_type": "table",
                                     "object_id": "table.tokens",
-                                    "plant_uml": 
-                                    [==[
-                                        @startuml
-                                            entity tokens {
-                                            * token_hash : CHAR_128 [NOT NULL]
-                                            * account_id : INTEGER [NOT NULL]
-                                            * system_id : INTEGER [NOT NULL]
-                                            * application_id : INTEGER [NOT NULL]
-                                            * application_version : VARCHAR_20 [NOT NULL]
-                                            * ip_address : VARCHAR_50 [NOT NULL]
-                                            * valid_after : TIMESTAMP_TZ [NOT NULL]
-                                            * valid_until : TIMESTAMP_TZ [NOT NULL]
-                                            }
-                                        @enduml
-                                    ]==]
+                                    "table": [
+                                        {
+                                            "name": "token_hash",
+                                            "datatype": "%%CHAR_128%%",
+                                            "nullable": false,
+                                            "primary_key": true,
+                                            "unique": true
+                                        },
+                                        {
+                                            "name": "account_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "system_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "application_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "application_version",
+                                            "datatype": "%%VARCHAR_20%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "ip_address",
+                                            "datatype": "%%VARCHAR_50%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "valid_after",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "valid_until",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        }
+                                    ]
                                 }
                             ]=]
                             %%JSON_INGEST_END%%

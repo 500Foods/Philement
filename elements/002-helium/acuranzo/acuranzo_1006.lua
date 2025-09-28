@@ -2,6 +2,7 @@
 -- Creates the actions table and populating it with the next migration.
 
 -- CHANGELOG
+-- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
 -- 1.0.0 -0 2025-09-13 - Initial creation for actions table with PostgreSQL support.
 
 local config = require 'database'
@@ -96,38 +97,107 @@ return {
                             1006,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Actions Table Query',      -- name, summary
+                            'Diagram Tables: app.actions',      -- name, summary
                             [=[
-                                # Diagram Migration 1006: Diagram Actions Table Query
+                                # Diagram Migration 1006
 
-                                This is the PlantUML code for the actions table. 
+                                ## Diagram Tables: app.actions
+
+                                This is the first JSON Diagram code for the actions table.
                             ]=],
-                            'PlantUML JSON in collection',      -- query_code, 
+                            'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
                             %%JSON_INGEST_START%%
                             [=[
                                 {
                                     "object_type": "table",
                                     "object_id": "table.actions",
-                                    "plant_uml": 
-                                    [==[
-                                        @startuml
-                                            entity actions {
-                                            action_id : INTEGER [NOT NULL]
-                                            * action_type_lua_24 : INTEGER [NOT NULL]
-                                            system_id : INTEGER
-                                            application_id : INTEGER
-                                            application_version : VARCHAR_20
-                                            account_id : INTEGER
-                                            * feature_lua_21 : INTEGER [NOT NULL]
-                                            action : VARCHAR_500
-                                            * action_msecs : INTEGER [NOT NULL]
-                                            ip_address : VARCHAR_50
-                                            * created_id : INTEGER [NOT NULL]
-                                            * created_at : TIMESTAMP_TZ [NOT NULL]
-                                            }
-                                        @enduml
-                                    ]==]
+                                    "table": [
+                                        {
+                                            "name": "action_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "action_type_lua_24",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "system_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "application_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "application_version",
+                                            "datatype": "%%VARCHAR_20%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "account_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "feature_lua_21",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "action",
+                                            "datatype": "%%VARCHAR_500%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "action_msecs",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "ip_address",
+                                            "datatype": "%%VARCHAR_50%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "created_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "created_at",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        }
+                                    ]
                                 }
                             ]=]
                             %%JSON_INGEST_END%%

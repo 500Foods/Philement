@@ -2,6 +2,7 @@
 -- Creates the account_roles table and populating it with the next migration.
 
 -- CHANGELOG
+-- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
 -- 1.0.0 -0 2025-09-13 - Initial creation for account_roles table with PostgreSQL support.
 
 local config = require 'database'
@@ -97,39 +98,114 @@ return {
                             1004,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Account Roles Table Query', -- name, summary
+                            'Diagram Tables: app.account_roles', -- name, summary
                             [=[
-                                # Diagram Migration 1004: Diagram Account Roles Table Query
+                                # Diagram Migration 1004
 
-                                This is the PlantUML code for the account_roles table. 
+                                ## Diagram Tables: app.account_roles
+
+                                This is the first JSON Diagram code for the account_roles table.
                             ]=],
-                            'PlantUML JSON in collection',      -- query_code, 
+                            'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
                             %%JSON_INGEST_START%%
                             [=[
                                 {
                                     "object_type": "table",
                                     "object_id": "table.account_roles",
-                                    "plant_uml": 
-                                    [==[
-                                        @startuml
-                                            entity account_roles {
-                                            * system_id : INTEGER [NOT NULL]
-                                            * account_id : INTEGER [NOT NULL]
-                                            * role_id : INTEGER [NOT NULL]
-                                            name : VARCHAR_100
-                                            summary : VARCHAR_500
-                                            * status_lua_37 : INTEGER [NOT NULL]
-                                            collection : JSONB
-                                            valid_after : TIMESTAMP_TZ
-                                            valid_until : TIMESTAMP_TZ
-                                            * created_id : INTEGER [NOT NULL]
-                                            * created_at : TIMESTAMP_TZ [NOT NULL]
-                                            * updated_id : INTEGER [NOT NULL]
-                                            * updated_at : TIMESTAMP_TZ [NOT NULL]
-                                            }
-                                        @enduml
-                                    ]==]
+                                    "table": [
+                                        {
+                                            "name": "system_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "account_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "role_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "name",
+                                            "datatype": "%%VARCHAR_100%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "summary",
+                                            "datatype": "%%VARCHAR_500%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "status_lua_37",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "collection",
+                                            "datatype": "%%JSONB%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "valid_after",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "valid_until",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": true,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "created_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "created_at",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "updated_id",
+                                            "datatype": "%%INTEGER%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "name": "updated_at",
+                                            "datatype": "%%TIMESTAMP_TZ%%",
+                                            "nullable": false,
+                                            "primary_key": false,
+                                            "unique": false
+                                        }
+                                    ]
                                 }
                             ]=]
                             %%JSON_INGEST_END%%
