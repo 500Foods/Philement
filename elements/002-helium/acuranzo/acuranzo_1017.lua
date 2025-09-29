@@ -27,7 +27,7 @@ return {
                                 This migration creates the rules table for storing rule data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS app.rules
+                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%rules
                                 (
                                     rule_id integer NOT NULL,
                                     name character varying(100) COLLATE pg_catalog."default" NOT NULL,
@@ -48,9 +48,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -73,16 +73,16 @@ return {
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE app.rules; 
+                                DROP TABLE %%SCHEMA%%rules; 
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
                             NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -97,19 +97,20 @@ return {
                             1017,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: app.rules',        -- name, summary
+                            'Diagram Tables: %%SCHEMA%%rules',        -- name, summary
                             [=[
                                 # Diagram Migration 1017
 
-                                ## Diagram Tables: app.rules
+                                ## Diagram Tables: %%SCHEMA%%rules
 
                                 This is the first JSON Diagram code for the rules table.
                             ]=],
                             'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%
+                            %%JSON_INGEST_START%%               -- DIAGRAM_START
                             [=[
-                                {
+                                [
+                                    {
                                     "object_type": "table",
                                     "object_id": "table.rules",
                                     "table": [
@@ -192,15 +193,16 @@ return {
                                         }
                                     ]
                                 }
-                            ]=]
-                            %%JSON_INGEST_END%%
+                            ]
+                        ]=]
+                            %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         }

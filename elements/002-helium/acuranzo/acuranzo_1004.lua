@@ -27,7 +27,7 @@ return {
                                 This migration creates the account_roles table for storing account role data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS app.account_roles
+                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%account_roles
                                 (
                                     system_id integer NOT NULL,
                                     account_id integer NOT NULL,
@@ -49,9 +49,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -74,16 +74,16 @@ return {
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE app.account_roles; 
+                                DROP TABLE %%SCHEMA%%account_roles; 
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
                             NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -98,19 +98,20 @@ return {
                             1004,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: app.account_roles', -- name, summary
+                            'Diagram Tables: %%SCHEMA%%account_roles', -- name, summary
                             [=[
                                 # Diagram Migration 1004
 
-                                ## Diagram Tables: app.account_roles
+                                ## Diagram Tables: %%SCHEMA%%account_roles
 
                                 This is the first JSON Diagram code for the account_roles table.
                             ]=],
                             'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%
+                            %%JSON_INGEST_START%%               -- DIAGRAM_START
                             [=[
-                                {
+                                [
+                                    {
                                     "object_type": "table",
                                     "object_id": "table.account_roles",
                                     "table": [
@@ -207,15 +208,16 @@ return {
                                         }
                                     ]
                                 }
-                            ]=]
-                            %%JSON_INGEST_END%%
+                            ]
+                        ]=]
+                            %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         }

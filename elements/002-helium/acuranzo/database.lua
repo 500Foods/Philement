@@ -65,11 +65,15 @@ local database = {
         sqlite = {
             SERIAL = "INTEGER PRIMARY KEY AUTOINCREMENT",
             INTEGER = "INTEGER",
+            VARCHAR_20 = "VARCHAR(20)",
+            VARCHAR_50 = "VARCHAR(50)",
             VARCHAR_100 = "VARCHAR(100)",
+            VARCHAR_128 = "VARCHAR(128)",
+            VARCHAR_500 = "VARCHAR(500)",
             TEXT = "TEXT",
             JSONB = "TEXT", -- SQLite doesn't have native JSON, store as TEXT
             TIMESTAMP_TZ = "TEXT", -- SQLite stores as TEXT in ISO format
-            TIMESTAMP = "CURRENT_TIMESTAMP",
+            NOW = "CURRENT_TIMESTAMP",
             CHECK_CONSTRAINT = "CHECK(status IN ('Pending', 'Applied', 'Utility'))",
             JSON_INGEST_START = "",
             JSON_INGEST_END = "",
@@ -79,18 +83,22 @@ local database = {
         postgresql = {
             SERIAL = "SERIAL",
             INTEGER = "INTEGER",
+            VARCHAR_20 = "VARCHAR(20)",
+            VARCHAR_50 = "VARCHAR(50)",
             VARCHAR_100 = "VARCHAR(100)",
+            VARCHAR_128 = "VARCHAR(128)",
+            VARCHAR_500 = "VARCHAR(500)",
             TEXT = "TEXT",
             JSONB = "JSONB",
             TIMESTAMP_TZ = "TIMESTAMP WITH TIME ZONE",
-            TIMESTAMP = "CURRENT_TIMESTAMP",
+            NOW = "CURRENT_TIMESTAMP",
             CHECK_CONSTRAINT = "CHECK(status IN ('Pending', 'Applied', 'Utility'))",
             JSON_INGEST_START = "%%SCHEMA%%json_ingest (",
             JSON_INGEST_END = ")",
             JSON_INGEST_FUNCTION = [[
 CREATE SCHEMA IF NOT EXISTS app;
 
-CREATE OR REPLACE FUNCTION app.json_ingest(s TEXT)
+CREATE OR REPLACE FUNCTION %%SCHEMA%%json_ingest(s TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
 STRICT
@@ -154,11 +162,15 @@ $fn$;
         mysql = {
             SERIAL = "INT AUTO_INCREMENT",
             INTEGER = "INT",
+            VARCHAR_20 = "VARCHAR(20)",
+            VARCHAR_50 = "VARCHAR(50)",
             VARCHAR_100 = "VARCHAR(100)",
+            VARCHAR_128 = "VARCHAR(128)",
+            VARCHAR_500 = "VARCHAR(500)",
             TEXT = "TEXT",
             JSONB = "JSON",
             TIMESTAMP_TZ = "TIMESTAMP",
-            TIMESTAMP = "CURRENT_TIMESTAMP",
+            NOW = "CURRENT_TIMESTAMP",
             CHECK_CONSTRAINT = "ENUM('Pending', 'Applied', 'Utility')",
             JSON_INGEST_START = "%%SCHEMA%%json_ingest(",
             JSON_INGEST_END = ")",
@@ -225,11 +237,15 @@ DELIMITER ;
         db2 = {
             SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
             INTEGER = "INTEGER",
+            VARCHAR_20 = "VARCHAR(20)",
+            VARCHAR_50 = "VARCHAR(50)",
             VARCHAR_100 = "VARCHAR(100)",
+            VARCHAR_128 = "VARCHAR(128)",
+            VARCHAR_500 = "VARCHAR(500)",
             TEXT = "VARCHAR(255)", -- DB2 TEXT equivalent
             JSONB = "VARCHAR(4000)", -- DB2 JSON stored as VARCHAR
             TIMESTAMP_TZ = "TIMESTAMP",
-            TIMESTAMP = "CURRENT TIMESTAMP",
+            NOW = "CURRENT TIMESTAMP",
             CHECK_CONSTRAINT = "CHECK(status IN ('Pending', 'Applied', 'Utility'))",
             JSON_INGEST_START = "%%SCHEMA%%json_ingest(",
             JSON_INGEST_END = ")",

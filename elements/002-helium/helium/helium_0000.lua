@@ -84,9 +84,9 @@ return {
                             NULL,
                             NULL,
                             0,
-                            %%TIMESTAMP%%,
+                            %%NOW%%,
                             0,
-                            %%TIMESTAMP%%
+                            %%NOW%%
                         );
                     ]]
         },
@@ -140,9 +140,9 @@ return {
                             NULL,
                             NULL,
                             0,
-                            %%TIMESTAMP%%,
+                            %%NOW%%,
                             0,
-                            %%TIMESTAMP%%
+                            %%NOW%%
                         );
                     ]]
         }

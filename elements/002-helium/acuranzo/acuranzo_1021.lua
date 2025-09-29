@@ -27,7 +27,7 @@ return {
                                 This migration creates the tokens table for storing token data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS app.tokens
+                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%tokens
                                 (
                                     token_hash character(128) COLLATE pg_catalog."default" NOT NULL,
                                     account_id integer NOT NULL,
@@ -45,9 +45,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -70,16 +70,16 @@ return {
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE app.tokens; 
+                                DROP TABLE %%SCHEMA%%tokens; 
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
                             NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -94,19 +94,20 @@ return {
                             1021,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: app.tokens',       -- name, summary
+                            'Diagram Tables: %%SCHEMA%%tokens',       -- name, summary
                             [=[
                                 # Diagram Migration 1021
 
-                                ## Diagram Tables: app.tokens
+                                ## Diagram Tables: %%SCHEMA%%tokens
 
                                 This is the first JSON Diagram code for the tokens table.
                             ]=],
                             'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%
+                            %%JSON_INGEST_START%%               -- DIAGRAM_START
                             [=[
-                                {
+                                [
+                                    {
                                     "object_type": "table",
                                     "object_id": "table.tokens",
                                     "table": [
@@ -168,15 +169,16 @@ return {
                                         }
                                     ]
                                 }
-                            ]=]
-                            %%JSON_INGEST_END%%
+                            ]
+                        ]=]
+                            %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         }
