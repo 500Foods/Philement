@@ -12,6 +12,8 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 6.3.0 - 2025-09-29 - Added sorting by total lines within primary/secondary sections in table 1
+# 6.2.0 - 2025-09-29 - Promoted JavaScript to primary section in table 1, included in Code metrics in table 2
 # 6.1.0 - 2025-09-26 - Added C/C column to table 1, color coded targets in table 2
 # 6.0.1 - 2025-09-25 - Fixed count to match C files found in Test 01 and Test 91
 # 6.0.0 - 2025-09-23 - Added horizontal section breaks to main cloc table (primary/secondary sections)
@@ -31,7 +33,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="6.1.0"
+CLOC_VERSION="6.3.0"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
@@ -103,7 +105,7 @@ run_cloc_analysis() {
     core_json=$(mktemp) || return 1
     test_json=$(mktemp) || return 1
 
-    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" . --quiet --json --exclude-list-file="${exclude_list}" --not-match-d='tests/unity' --not-match-f='hydrogen_installer' --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${core_json}" 2>&1); then
+    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" . --quiet --json --exclude-list-file="${exclude_list}" --not-match-d='images' --not-match-d='tests/lib/node_modules' --not-match-d='tests/unity' --not-match-f='hydrogen_installer' --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${core_json}" 2>&1); then
         if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" tests/unity --not-match-d='tests/unity/framework' --quiet --json --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${test_json}" 2>&1); then
             # Extract cloc version from core JSON
             local cloc_header
@@ -210,7 +212,7 @@ EOF
                             lines: (($test.C.blank // 0) + ($test.C.comment // 0) + ($test.C.code // 0))
                         }
                     else empty end),
-                    # Primary section languages: Markdown, Bourne Shell, Lua, CMake
+                    # Primary section languages: Markdown, Bourne Shell, Lua, CMake, JavaScript
                     # Combine counts from core and test scans for these languages
                     (
                         # Markdown
@@ -260,10 +262,22 @@ EOF
                                 code: (($core_cmake.code // 0) + ($test_cmake.code // 0)),
                                 comment_code_percentage: (if (($core_cmake.code // 0) + ($test_cmake.code // 0)) > 0 then (if (((($core_cmake.comment // 0) + ($test_cmake.comment // 0))) / (($core_cmake.code // 0) + ($test_cmake.code // 0)) * 100) > 0 then (((($core_cmake.comment // 0) + ($test_cmake.comment // 0))) / (($core_cmake.code // 0) + ($test_cmake.code // 0)) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end)
                             } | .lines = (.blank + .comment + .code)
+                        ),
+                        # JavaScript
+                        (($core.JavaScript // {}) as $core_js | ($test.JavaScript // {}) as $test_js |
+                            {
+                                section: "primary",
+                                language: "JavaScript",
+                                files: (($core_js.nFiles // 0) + ($test_js.nFiles // 0)),
+                                blank: (($core_js.blank // 0) + ($test_js.blank // 0)),
+                                comment: (($core_js.comment // 0) + ($test_js.comment // 0)),
+                                code: (($core_js.code // 0) + ($test_js.code // 0)),
+                                comment_code_percentage: (if (($core_js.code // 0) + ($test_js.code // 0)) > 0 then (if (((($core_js.comment // 0) + ($test_js.comment // 0))) / (($core_js.code // 0) + ($test_js.code // 0)) * 100) > 0 then (((($core_js.comment // 0) + ($test_js.comment // 0))) / (($core_js.code // 0) + ($test_js.code // 0)) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end)
+                            } | .lines = (.blank + .comment + .code)
                         )
                     ),
                     # Secondary section languages: everything else
-                    ($core | to_entries[] | select(.key != "C" and .key != "header" and .key != "SUM" and (.key != "Markdown" and .key != "Bourne Shell" and .key != "Lua" and .key != "CMake")) |
+                    ($core | to_entries[] | select(.key != "C" and .key != "header" and .key != "SUM" and (.key != "Markdown" and .key != "Bourne Shell" and .key != "Lua" and .key != "CMake" and .key != "JavaScript")) |
                         {
                             section: "secondary",
                             language: .key,
@@ -275,7 +289,8 @@ EOF
                             lines: ((.value.blank // 0) + (.value.comment // 0) + (.value.code // 0))
                         }
                     )
-                ] | map(select(. != null))
+                ] | map(select(. != null)) |
+                ( . | map(select(.section == "primary")) | sort_by(.lines) | reverse ) + ( . | map(select(.section == "secondary")) | sort_by(.lines) | reverse )
             ' "${core_json}" "${test_json}" > "${data_json_file}"
 
             # Calculate totals from the generated JSON data
@@ -298,21 +313,23 @@ EOF
             shell_comment=$(jq -r '."Bourne Shell".comment // 0' "${core_json}" 2>/dev/null || echo 0)
             lua_code=$(jq -r '.Lua.code // 0' "${core_json}" 2>/dev/null || echo 0)
             lua_comment=$(jq -r '.Lua.comment // 0' "${core_json}" 2>/dev/null || echo 0)
+            javascript_code=$(jq -r '.JavaScript.code // 0' "${core_json}" 2>/dev/null || echo 0)
+            javascript_comment=$(jq -r '.JavaScript.comment // 0' "${core_json}" 2>/dev/null || echo 0)
             markdown_code=$(jq -r '.Markdown.code // 0' "${core_json}" 2>/dev/null || echo 0)
 
             # Calculate summary values to match ratio calculations (for consistency)
             local total_code_summary
-            total_code_summary=$("${PRINTF}" "%'d" "$((c_code + header_code + cmake_code + shell_code + lua_code))")
+            total_code_summary=$("${PRINTF}" "%'d" "$((c_code + header_code + cmake_code + shell_code + lua_code + javascript_code))")
             local total_docs_summary
             total_docs_summary=$("${PRINTF}" "%'d" "$((markdown_code))")
             local total_comments_summary
-            total_comments_summary=$("${PRINTF}" "%'d" "$((c_comment + header_comment + cmake_comment + shell_comment + lua_comment))")
+            total_comments_summary=$("${PRINTF}" "%'d" "$((c_comment + header_comment + cmake_comment + shell_comment + lua_comment + javascript_comment))")
             local total_combined_summary
             total_combined_summary=$("${PRINTF}" "%'d" "$((c_code + header_code + cmake_code + shell_code + lua_code + markdown_code + c_comment + header_comment + cmake_comment + shell_comment + lua_comment))")
 
-            # Calculate totals for the 4 code languages
-            local total_code_stats=$((c_code + header_code + cmake_code + shell_code))
-            local total_comment=$((c_comment + header_comment + cmake_comment + shell_comment))
+            # Calculate totals for the 5 code languages
+            local total_code_stats=$((c_code + header_code + cmake_code + shell_code + lua_code + javascript_code))
+            local total_comment=$((c_comment + header_comment + cmake_comment + shell_comment + lua_comment + javascript_comment))
 
             # Calculate ratios
             local codedoc_ratio codecomment_ratio docscode_ratio commentscode_ratio
@@ -384,7 +401,7 @@ EOF
             "key": "description",
             "datatype": "text",
             "justification": "left",
-            "width": 46
+            "width": 51
         }
     ]
 }
@@ -552,13 +569,13 @@ EOF
          "section": "code_metrics",
          "metric": "Code",
          "value": "${total_code_summary}",
-         "description": "Core C/Headers + Bash + CMake + Lua code"
+         "description": "Core C/Headers + Bash + CMake + Lua + JS code"
      },
      {
          "section": "code_metrics",
          "metric": "Comments",
          "value": "${total_comments_summary}",
-         "description": "Core C/Headers + Bash + CMake + Lua comments"
+         "description": "Core C/Headers + Bash + CMake + Lua + JS comments"
      },
      {
          "section": "code_metrics",
@@ -570,25 +587,25 @@ EOF
          "section": "ratios",
          "metric": "Code/Docs",
          "value": "${codedoc_ratio}",
-         "description": "Ratio of Code to Docs        ${codedoc_color}Target: 1.5-2.5{RESET}"
+         "description": "Ratio of Code to Docs             ${codedoc_color}Target: 1.5-2.5{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Docs/Code",
          "value": "${docscode_ratio}",
-         "description": "Ratio of Docs to Code        ${docscode_color}Target: 0.4-0.7{RESET}"
+         "description": "Ratio of Docs to Code             ${docscode_color}Target: 0.4-0.7{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Code/Comments",
          "value": "${codecomment_ratio}",
-         "description": "Ratio of Code to Comments    ${codecomment_color}Target: 3.0-5.0{RESET}"
+         "description": "Ratio of Code to Comments         ${codecomment_color}Target: 3.0-5.0{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Comments/Code",
          "value": "${commentscode_ratio}",
-         "description": "Ratio of Comments to Code    ${commentscode_color}Target: 0.2-0.3{RESET}"
+         "description": "Ratio of Comments to Code         ${commentscode_color}Target: 0.2-0.3{RESET}"
      },
      {
          "section": "coverage_lines",
@@ -618,25 +635,25 @@ EOF
          "section": "coverage_percentages",
          "metric": "Coverage Unity %",
          "value": "${coverage_unity_fmt} %",
-         "description": "Unity test coverage              ${coverage_unity_color}Target: 60%{RESET}"
+         "description": "Unity test coverage                   ${coverage_unity_color}Target: 60%{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Blackbox %",
          "value": "${coverage_black_fmt} %",
-         "description": "Blackbox test coverage           ${coverage_black_color}Target: 70%{RESET}"
+         "description": "Blackbox test coverage                ${coverage_black_color}Target: 70%{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Combined %",
          "value": "${coverage_combined_fmt} %",
-         "description": "Combined test coverage           ${coverage_combined_color}Target: 80%{RESET}"
+         "description": "Combined test coverage                ${coverage_combined_color}Target: 80%{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Unity Ratio",
          "value": "${unity_ratio}",
-         "description": "Test/Core C/Headers        ${unity_color}Target: 100%-200%{RESET}"
+         "description": "Test/Core C/Headers             ${unity_color}Target: 100%-200%{RESET}"
      }
 ]
 EOF
