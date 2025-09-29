@@ -1,114 +1,138 @@
+#!/usr/bin/env node
+
+// generate_diagram.js
+// Converts JSON table definition into SVG database diagram
+
 import fs from 'fs';
-import * as d3 from 'd3';
-import { JSDOM } from 'jsdom';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Sample JSON data
-const data = [
-  {
-    table: "Customer",
-    columns: [
-      { name: "customer_id", type: "int", isPrimary: true },
-      { name: "name", type: "varchar" }
-    ],
-    position: { x: 50, y: 50 }
-  },
-  {
-    table: "Order",
-    columns: [
-      { name: "order_id", type: "int", isPrimary: true },
-      { name: "customer_id", type: "int", isForeign: true }
-    ],
-    position: { x: 300, y: 50 }
-  },
-  {
-    relationship: {
-      from: { table: "Customer", column: "customer_id" },
-      to: { table: "Order", column: "customer_id" },
-      type: "one-to-many"
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Template will be provided in JSON data
+
+// Function to generate SVG for a table
+function generateTableSVG(tableDef, x, y) {
+    const tableName = tableDef.object_id.replace('table.', '');
+    const columns = tableDef.table;
+
+    // Calculate dimensions
+    const headerHeight = 30;
+    const rowHeight = 20;
+    const colWidth = 200;
+    const tableWidth = colWidth;
+    const tableHeight = headerHeight + (columns.length * rowHeight);
+
+    let svg = '';
+
+    // Table background
+    svg += `<rect x="${x}" y="${y}" width="${tableWidth}" height="${tableHeight}" fill="white" stroke="black" stroke-width="2"/>`;
+
+    // Table header
+    svg += `<rect x="${x}" y="${y}" width="${tableWidth}" height="${headerHeight}" fill="#e1f5fe" stroke="black" stroke-width="1"/>`;
+    svg += `<text x="${x + 10}" y="${y + 20}" font-family="Arial" font-size="14" font-weight="bold">${tableName}</text>`;
+
+    // Column rows
+    columns.forEach((col, index) => {
+        const rowY = y + headerHeight + (index * rowHeight);
+
+        // Column background
+        svg += `<rect x="${x}" y="${rowY}" width="${tableWidth}" height="${rowHeight}" fill="white" stroke="black" stroke-width="1"/>`;
+
+        // Column name
+        let colText = col.name;
+        if (col.primary_key) colText += ' (PK)';
+        if (col.unique && !col.primary_key) colText += ' (UQ)';
+
+        svg += `<text x="${x + 10}" y="${rowY + 15}" font-family="Arial" font-size="12">${colText}</text>`;
+
+        // Data type (right-aligned)
+        svg += `<text x="${x + tableWidth - 10}" y="${rowY + 15}" font-family="Arial" font-size="10" text-anchor="end">${col.datatype}</text>`;
+    });
+
+    return svg;
+}
+
+// Function to clean and validate JSON input
+function cleanJSONInput(jsonInput) {
+    // The JSON should already be properly cleaned by the awk script
+    // Just trim whitespace and return
+    return jsonInput.trim();
+}
+
+// Main function
+function generateDiagram(jsonInput) {
+    try {
+        // Clean the JSON input (should already be properly formatted by awk)
+        const cleanedJSON = cleanJSONInput(jsonInput);
+        const data = JSON.parse(cleanedJSON);
+
+        // Ensure we have an array
+        const objects = Array.isArray(data) ? data : [data];
+
+        // Find the template object
+        const templateObj = objects.find(obj => obj.object_type === 'template');
+        if (!templateObj || !templateObj.object_value) {
+            throw new Error('Template object not found in JSON data');
+        }
+        const template = templateObj.object_value;
+
+        // Find all table objects
+        const tables = objects.filter(obj => obj.object_type === 'table');
+
+        let svgContent = '';
+
+        // Position tables in a simple layout
+        tables.forEach((tableDef, index) => {
+            const x = 50 + (index % 2) * 350; // Two columns
+            const y = 50 + Math.floor(index / 2) * 250;
+            svgContent += generateTableSVG(tableDef, x, y);
+        });
+
+        // Replace placeholder in template
+        const finalSVG = template.replace('<!-- ERD SVG content goes here -->', svgContent);
+
+        return finalSVG;
+    } catch (error) {
+        if (error instanceof SyntaxError && error.message.includes('JSON')) {
+            console.error('JSON parsing error:', error.message);
+            console.error('Position:', error.message.match(/position (\d+)/) ?
+                error.message.match(/position (\d+)/)[1] : 'unknown');
+            console.error('Please check the JSON formatting in the input data.');
+        } else {
+            console.error('Error generating diagram:', error.message);
+        }
+        process.exit(1);
     }
-  }
-];
+}
 
-// Create virtual DOM
-const dom = new JSDOM('<!DOCTYPE html><body><svg width="600" height="400"></svg></body>');
-const svg = d3.select(dom.window.document.querySelector('svg'));
+// CLI interface
+if (import.meta.url === `file://${process.argv[1]}`) {
+    // Check if we have file arguments or should read from stdin
+    const args = process.argv.slice(2);
 
-const tableWidth = 150;
-const tableHeight = 80;
-const columnHeight = 20;
+    let jsonContent;
 
-// Add styles
-const style = `
-  <style>
-    .table { stroke: black; fill: white; }
-    .table-name { font-weight: bold; }
-    .primary-key { font-weight: bold; fill: blue; }
-    .relationship { stroke: black; stroke-width: 2; }
-    .crow-foot { stroke: black; stroke-width: 2; }
-  </style>
-`;
-dom.window.document.head.innerHTML += style;
+    if (args.length === 0) {
+        // Read from stdin
+        jsonContent = fs.readFileSync(0, 'utf8');
+    } else {
+        // Read from file (legacy support)
+        const jsonFile = args[0];
 
-// Draw tables
-const tables = data.filter(d => d.table);
-svg.selectAll('.table-group')
-  .data(tables)
-  .enter()
-  .append('g')
-  .attr('class', 'table-group')
-  .attr('transform', d => `translate(${d.position.x}, ${d.position.y})`)
-  .each(function(d) {
-    const group = d3.select(this);
-    group.append('rect')
-      .attr('class', 'table')
-      .attr('width', tableWidth)
-      .attr('height', tableHeight);
-    group.append('text')
-      .attr('class', 'table-name')
-      .attr('x', 10)
-      .attr('y', 20)
-      .text(d.table);
-    group.selectAll('.column')
-      .data(d.columns)
-      .enter()
-      .append('text')
-      .attr('class', d => d.isPrimary ? 'column primary-key' : 'column')
-      .attr('x', 10)
-      .attr('y', (d, i) => 40 + i * columnHeight)
-      .text(d => `${d.name} (${d.type})`);
-  });
+        if (!fs.existsSync(jsonFile)) {
+            console.error(`File not found: ${jsonFile}`);
+            process.exit(1);
+        }
 
-// Draw relationships
-const relationships = data.filter(d => d.relationship);
-relationships.forEach(rel => {
-  const fromTable = tables.find(t => t.table === rel.relationship.from.table);
-  const toTable = tables.find(t => t.table === rel.relationship.to.table);
-  const startX = fromTable.position.x + tableWidth;
-  const startY = fromTable.position.y + tableHeight / 2;
-  const endX = toTable.position.x;
-  const endY = toTable.position.y + tableHeight / 2;
-  const midX = (startX + endX) / 2;
+        jsonContent = fs.readFileSync(jsonFile, 'utf8');
+    }
 
-  svg.append('path')
-    .attr('class', 'relationship')
-    .attr('d', `M${startX},${startY} H${midX} V${endY} H${endX}`)
-    .attr('fill', 'none');
+    const svgOutput = generateDiagram(jsonContent);
 
-  if (rel.relationship.type === 'one-to-many') {
-    const crowLength = 10;
-    svg.append('path')
-      .attr('class', 'crow-foot')
-      .attr('d', `M${endX},${endY - crowLength} L${endX - crowLength},${endY} L${endX},${endY + crowLength}`)
-      .attr('fill', 'none');
-    svg.append('line')
-      .attr('class', 'crow-foot')
-      .attr('x1', startX)
-      .attr('y1', startY - crowLength)
-      .attr('x2', startX)
-      .attr('y2', startY + crowLength);
-  }
-});
+    // Output to stdout
+    console.log(svgOutput);
+}
 
-// Save SVG
-fs.writeFileSync('erd.svg', dom.window.document.documentElement.outerHTML);
-console.log('ERD generated as erd.svg');
+export { generateDiagram };
