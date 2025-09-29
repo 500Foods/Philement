@@ -140,121 +140,159 @@ return {
                             ]=],
                             'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                         -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%
+                            %%JSON_INGEST_START%%                      -- DIAGRAM_START
                             [=[
-                                {
-                                    "object_type": "table",
-                                    "object_id": "table.queries",
-                                    "table": [
-                                        {
-                                            "name": "query_id",
-                                            "datatype": "%%SERIAL%%",
-                                            "nullable": false,
-                                            "primary_key": true,
-                                            "unique": true
-                                        },
-                                        {
-                                            "name": "query_ref",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "query_type_lua_28",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "query_dialect_lua_30",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "name",
-                                            "datatype": "%%VARCHAR_100%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "summary",
-                                            "datatype": "%%TEXT%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "query_code",
-                                            "datatype": "%%TEXT%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "query_status_lua_27",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "collection",
-                                            "datatype": "%%JSONB%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "valid_after",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "valid_until",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "created_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "created_at",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "updated_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "updated_at",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        }
-                                    ]
-                                }
+                                [
+                                    {
+                                        "object_type": "template",
+                                        "object_id": "base template",
+                                        "object_value":     "<svg xmlns=\"http://www.w3.org/2000/svg\"
+                                                                    xmlns:xlink=\"http://www.w3.org/1999/xlink\"
+                                                                    width=\"840\"
+                                                                    height=\"660\"
+                                                                    viewBox=\"0 0 840 660\">
+
+                                                                <!-- Define clipPath for rounded border with 2mm margin -->
+                                                                <defs>
+                                                                    <clipPath id=\"border-clip\">
+                                                                    <rect x=\"6\" y=\"6\" width=\"828\" height=\"648\" rx=\"14.17\" ry=\"14.17\"/>
+                                                                    </clipPath>
+                                                                </defs>
+
+                                                                <!-- Thin black border with 2mm margin -->
+                                                                <rect x=\"6\" y=\"6\" width=\"828\" height=\"648\" fill=\"none\" stroke=\"black\" stroke-width=\"1\" rx=\"14.17\" ry=\"14.17\"/>
+
+                                                                <!-- White background within border, clipped to rounded shape -->
+                                                                <rect x=\"6\" y=\"6\" width=\"828\" height=\"648\" fill=\"white\" clip-path=\"url(#border-clip)\"/>
+
+                                                                <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
+                                                                <defs>
+                                                                    <pattern id=\"grid\" width=\"28.3\" height=\"28.3\" patternUnits=\"userSpaceOnUse\" x=\"6\" y=\"6\">
+                                                                        <path d=\"M 28.3 0 L 0 0 0 28.3\" fill=\"none\" stroke=\"silver\" stroke-width=\"0.5\" stroke-dasharray=\"2,2\"/>
+                                                                    </pattern>
+                                                                </defs>
+                                                                <rect x=\"6\" y=\"6\" width=\"828\" height=\"648\" fill=\"url(#grid)\" clip-path=\"url(#border-clip)\"/>
+                                                                
+                                                                <!-- ERD content placeholder -->
+                                                                <g id=\"erd-content\" transform=\"translate(6, 6)\">
+                                                                    <!-- ERD SVG content goes here -->\n
+                                                                </g>
+                                                            </svg>"
+                                    },
+                                    {
+                                        "object_type": "table",
+                                        "object_id": "table.queries",
+                                        "table": [
+                                            {
+                                                "name": "query_id",
+                                                "datatype": "%%SERIAL%%",
+                                                "nullable": false,
+                                                "primary_key": true,
+                                                "unique": true
+                                            },
+                                            {
+                                                "name": "query_ref",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "query_type_lua_28",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "query_dialect_lua_30",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "name",
+                                                "datatype": "%%VARCHAR_100%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "summary",
+                                                "datatype": "%%TEXT%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "query_code",
+                                                "datatype": "%%TEXT%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "query_status_lua_27",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "collection",
+                                                "datatype": "%%JSONB%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "valid_after",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "valid_until",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "created_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "created_at",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "updated_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "updated_at",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            }
+                                        ]
+                                    }
+                                ]
                             ]=]
-                            %%JSON_INGEST_END%%
+                            %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until

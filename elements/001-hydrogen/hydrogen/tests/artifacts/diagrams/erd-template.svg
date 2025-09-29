@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="792" height="612" viewBox="0 0 792 612">
+  <!-- Define clipPath for rounded border (full canvas) -->
+  <defs>
+    <clipPath id="border-clip">
+      <rect x="0" y="0" width="792" height="612" rx="14.17" ry="14.17"/>
+    </clipPath>
+  </defs>
+  
+  <!-- Thin black border (full canvas, no margin) -->
+  <rect x="0" y="0" width="792" height="612" fill="none" stroke="black" stroke-width="1" rx="14.17" ry="14.17"/>
+  
+  <!-- White background within border, clipped to rounded shape -->
+  <rect x="0" y="0" width="792" height="612" fill="white" clip-path="url(#border-clip)"/>
+  
+  <!-- 1cm (28.3pt) dashed silver grid, origin at top-left (x=0, y=0) -->
+  <defs>
+    <pattern id="grid" width="28.3" height="28.3" patternUnits="userSpaceOnUse" x="0" y="0">
+      <path d="M 28.3 0 L 0 0 0 28.3" fill="none" stroke="silver" stroke-width="0.5" stroke-dasharray="2,2"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="792" height="612" fill="url(#grid)" clip-path="url(#border-clip)"/>
+  
+  <!-- Placeholder for PlantUML ERD (full canvas) -->
+  <g id="erd-placeholder" transform="translate(0, 0)">
+    <!-- PlantUML SVG content goes here -->
+  </g>
+</svg>

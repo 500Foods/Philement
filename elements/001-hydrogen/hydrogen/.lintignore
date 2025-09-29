@@ -45,6 +45,9 @@ LICENSE.md
 # We know the installers are huge so let's try to not pay attention to them
 installer/hydrogen_installer_*
 
-# These are large and well understood, and also generated automatically. 
+# These are large and well understood, and also generated automatically.
 # Not much reason to be analyzing them.
 docs/metrics/*
+
+# Node.js dependencies - these are third-party code and shouldn't be linted
+**/node_modules/**

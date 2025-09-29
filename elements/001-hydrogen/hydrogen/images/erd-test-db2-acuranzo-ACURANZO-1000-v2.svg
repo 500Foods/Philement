@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="792" height="612" viewBox="0 0 792 612">
+  <!-- Define clipPath for rounded border (full canvas) -->
+  <defs>
+    <clipPath id="border-clip">
+      <rect x="0" y="0" width="792" height="612" rx="14.17" ry="14.17"/>
+    </clipPath>
+  </defs>
+
+  <!-- Thin black border (full canvas, no margin) -->
+  <rect x="0" y="0" width="792" height="612" fill="none" stroke="black" stroke-width="1" rx="14.17" ry="14.17"/>
+
+  <!-- White background within border, clipped to rounded shape -->
+  <rect x="0" y="0" width="792" height="612" fill="white" clip-path="url(#border-clip)"/>
+
+  <!-- 1cm (28.3pt) dashed silver grid, origin at top-left (x=0, y=0) -->
+  <defs>
+    <pattern id="grid" width="28.3" height="28.3" patternUnits="userSpaceOnUse" x="0" y="0">
+      <path d="M 28.3 0 L 0 0 0 28.3" fill="none" stroke="silver" stroke-width="0.5" stroke-dasharray="2,2"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="792" height="612" fill="url(#grid)" clip-path="url(#border-clip)"/>
+
+  <!-- Placeholder for PlantUML ERD (full canvas) -->
+  <g id="erd-placeholder" transform="translate(0, 0)">
+    <rect x="50" y="50" width="200" height="330" fill="white" stroke="black" stroke-width="2"/><rect x="50" y="50" width="200" height="30" fill="#e1f5fe" stroke="black" stroke-width="1"/><text x="60" y="70" font-family="Arial" font-size="14" font-weight="bold">queries</text><rect x="50" y="80" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="95" font-family="Arial" font-size="12">query_id (PK)</text><text x="240" y="95" font-family="Arial" font-size="10" text-anchor="end">INTEGER GENERATED ALWAYS AS IDENTITY</text><rect x="50" y="100" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="115" font-family="Arial" font-size="12">query_ref</text><text x="240" y="115" font-family="Arial" font-size="10" text-anchor="end">INTEGER</text><rect x="50" y="120" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="135" font-family="Arial" font-size="12">query_type_lua_28</text><text x="240" y="135" font-family="Arial" font-size="10" text-anchor="end">INTEGER</text><rect x="50" y="140" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="155" font-family="Arial" font-size="12">query_dialect_lua_30</text><text x="240" y="155" font-family="Arial" font-size="10" text-anchor="end">INTEGER</text><rect x="50" y="160" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="175" font-family="Arial" font-size="12">name</text><text x="240" y="175" font-family="Arial" font-size="10" text-anchor="end">VARCHAR(100)</text><rect x="50" y="180" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="195" font-family="Arial" font-size="12">summary</text><text x="240" y="195" font-family="Arial" font-size="10" text-anchor="end">VARCHAR(255)</text><rect x="50" y="200" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="215" font-family="Arial" font-size="12">query_code</text><text x="240" y="215" font-family="Arial" font-size="10" text-anchor="end">VARCHAR(255)</text><rect x="50" y="220" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="235" font-family="Arial" font-size="12">query_status_lua_27</text><text x="240" y="235" font-family="Arial" font-size="10" text-anchor="end">INTEGER</text><rect x="50" y="240" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="255" font-family="Arial" font-size="12">collection</text><text x="240" y="255" font-family="Arial" font-size="10" text-anchor="end">VARCHAR(4000)</text><rect x="50" y="260" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="275" font-family="Arial" font-size="12">valid_after</text><text x="240" y="275" font-family="Arial" font-size="10" text-anchor="end">TIMESTAMP</text><rect x="50" y="280" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="295" font-family="Arial" font-size="12">valid_until</text><text x="240" y="295" font-family="Arial" font-size="10" text-anchor="end">TIMESTAMP</text><rect x="50" y="300" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="315" font-family="Arial" font-size="12">created_id</text><text x="240" y="315" font-family="Arial" font-size="10" text-anchor="end">INTEGER</text><rect x="50" y="320" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="335" font-family="Arial" font-size="12">created_at</text><text x="240" y="335" font-family="Arial" font-size="10" text-anchor="end">TIMESTAMP</text><rect x="50" y="340" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="355" font-family="Arial" font-size="12">updated_id</text><text x="240" y="355" font-family="Arial" font-size="10" text-anchor="end">INTEGER</text><rect x="50" y="360" width="200" height="20" fill="white" stroke="black" stroke-width="1"/><text x="60" y="375" font-family="Arial" font-size="12">updated_at</text><text x="240" y="375" font-family="Arial" font-size="10" text-anchor="end">TIMESTAMP</text>
+  </g>
+</svg>

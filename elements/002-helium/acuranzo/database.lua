@@ -483,7 +483,10 @@ END
                         local content_only = content_part:gsub("%s+$", "") -- trim trailing spaces from content
                         local comment_only = comment_part:match("(%-%-.*)") -- extract just the comment part
                         
-                        if last_comment_position > 0 then
+                        -- Skip alignment for HTML comments containing <!-- or -->
+                        local is_html_comment = comment_only:find("<!%-%-") or comment_only:find("%-%->");
+                        
+                        if not is_html_comment and last_comment_position > 0 then
                             -- Try to align with previous comment position
                             local current_content_length = #(indent .. content_only)
                             local target_comment_pos = last_comment_position
@@ -496,7 +499,7 @@ END
                                 final_line = content_only .. "  " .. comment_only
                                 last_comment_position = current_content_length + 2
                             end
-                        else
+                        elseif not is_html_comment then
                             -- First comment in a new block, establish the position based on longest expected line
                             -- Use a reasonable alignment position (e.g., 40 characters from start of indent)
                             local target_pos = #indent + 40
@@ -511,6 +514,9 @@ END
                                 final_line = content_only .. "  " .. comment_only
                                 last_comment_position = current_content_length + 2
                             end
+                        else
+                            -- HTML comment - don't align, keep original spacing
+                            final_line = processed_line
                         end
                     else
                         -- No comment with content on this line, reset tracking for next comment block
