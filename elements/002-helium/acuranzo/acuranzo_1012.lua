@@ -27,7 +27,7 @@ return {
                                 This migration creates the licenses table for storing license data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS app.licenses
+                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%licenses
                                 (
                                     license_id integer NOT NULL,
                                     name character varying(100) COLLATE pg_catalog."default" NOT NULL,
@@ -50,9 +50,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -75,16 +75,16 @@ return {
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE app.licenses; 
+                                DROP TABLE %%SCHEMA%%licenses; 
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
                             NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -99,19 +99,20 @@ return {
                             1012,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: app.licenses',     -- name, summary
+                            'Diagram Tables: %%SCHEMA%%licenses',     -- name, summary
                             [=[
                                 # Diagram Migration 1012
 
-                                ## Diagram Tables: app.licenses
+                                ## Diagram Tables: %%SCHEMA%%licenses
 
                                 This is the first JSON Diagram code for the licenses table.
                             ]=],
                             'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%
+                            %%JSON_INGEST_START%%               -- DIAGRAM_START
                             [=[
-                                {
+                                [
+                                    {
                                     "object_type": "table",
                                     "object_id": "table.licenses",
                                     "table": [
@@ -208,15 +209,16 @@ return {
                                         }
                                     ]
                                 }
-                            ]=]
-                            %%JSON_INGEST_END%%
+                            ]
+                        ]=]
+                            %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         }

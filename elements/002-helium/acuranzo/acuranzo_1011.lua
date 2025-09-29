@@ -27,7 +27,7 @@ return {
                                 This migration creates the languages table for storing language data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS app.languages
+                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%languages
                                 (
                                     language_id integer NOT NULL,
                                     name character varying(100) COLLATE pg_catalog."default" NOT NULL,
@@ -49,9 +49,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -74,16 +74,16 @@ return {
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE app.languages; 
+                                DROP TABLE %%SCHEMA%%languages; 
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
                             NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -98,19 +98,20 @@ return {
                             1011,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: app.languages',    -- name, summary
+                            'Diagram Tables: %%SCHEMA%%languages',    -- name, summary
                             [=[
                                 # Diagram Migration 1011
 
-                                ## Diagram Tables: app.languages
+                                ## Diagram Tables: %%SCHEMA%%languages
 
                                 This is the first JSON Diagram code for the languages table.
                             ]=],
                             'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%
+                            %%JSON_INGEST_START%%               -- DIAGRAM_START
                             [=[
-                                {
+                                [
+                                    {
                                     "object_type": "table",
                                     "object_id": "table.languages",
                                     "table": [
@@ -200,15 +201,16 @@ return {
                                         }
                                     ]
                                 }
-                            ]=]
-                            %%JSON_INGEST_END%%
+                            ]
+                        ]=]
+                            %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         }

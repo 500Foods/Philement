@@ -13,7 +13,7 @@ return {
         {
             sql =   [[
                         CREATE TABLE %%SCHEMA%%queries (
-                            query_id %%SERIAL%%,
+                            query_id %%INTEGER%%,
                             query_ref %%INTEGER%% NOT NULL,
                             query_type_lua_28 %%INTEGER%% NOT NULL,
                             query_dialect_lua_30 %%INTEGER%% NOT NULL,
@@ -81,9 +81,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -113,9 +113,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -185,7 +185,7 @@ return {
                                         "table": [
                                             {
                                                 "name": "query_id",
-                                                "datatype": "%%SERIAL%%",
+                                                "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": true,
                                                 "unique": true
@@ -297,9 +297,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         }

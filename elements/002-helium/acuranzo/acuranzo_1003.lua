@@ -27,10 +27,10 @@ return {
                                 This migration creates the account_contacts table for storing account contact data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS app.account_contacts
+                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%account_contacts
                                 (
                                     account_id integer NOT NULL,
-                                    contact_id integer NOT NULL DEFAULT nextval('app.account_contacts_contact_id_seq'::regclass),
+                                    contact_id integer NOT NULL DEFAULT nextval('%%SCHEMA%%account_contacts_contact_id_seq'::regclass),
                                     contact_type_lua_18 integer NOT NULL,
                                     contact_seq integer NOT NULL,
                                     contact character varying(100) COLLATE pg_catalog."default" NOT NULL,
@@ -52,9 +52,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -77,16 +77,16 @@ return {
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE app.account_contacts; 
+                                DROP TABLE %%SCHEMA%%account_contacts; 
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
                             NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -101,19 +101,20 @@ return {
                             1003,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: app.account_contacts', -- name, summary
+                            'Diagram Tables: %%SCHEMA%%account_contacts', -- name, summary
                             [=[
                                 # Diagram Migration 1003
 
-                                ## Diagram Tables: app.account_contacts
+                                ## Diagram Tables: %%SCHEMA%%account_contacts
 
                                 This is the first JSON Diagram code for the account_contacts table.
                             ]=],
                             'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%
+                            %%JSON_INGEST_START%%               -- DIAGRAM_START
                             [=[
-                                {
+                                [
+                                    {
                                     "object_type": "table",
                                     "object_id": "table.account_contacts",
                                     "table": [
@@ -224,15 +225,16 @@ return {
                                         }
                                     ]
                                 }
-                            ]=]
-                            %%JSON_INGEST_END%%
+                            ]
+                        ]=]
+                            %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         }

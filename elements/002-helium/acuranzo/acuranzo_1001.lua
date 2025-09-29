@@ -27,7 +27,7 @@ return {
                                 This migration creates the lookups table for storing key-value lookup data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS app.lookups
+                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%lookups
                                 (
                                     lookup_id integer NOT NULL,
                                     key_idx integer NOT NULL,
@@ -52,9 +52,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -77,16 +77,16 @@ return {
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE app.lookups; 
+                                DROP TABLE %%SCHEMA%%lookups; 
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
                             NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         },        
@@ -101,138 +101,140 @@ return {
                             1001,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: app.lookups',      -- name, summary
+                            'Diagram Tables: %%SCHEMA%%lookups',      -- name, summary
                             [=[
                                 # Diagram Migration 1001
 
-                                ## Diagram Tables: app.lookups
+                                ## Diagram Tables: %%SCHEMA%%lookups
 
                                 This is the first JSON Diagram code for the lookups table.
                             ]=],
                             'JSON Table Definition in collection',     -- query_code,
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%
+                            %%JSON_INGEST_START%%               -- DIAGRAM_START
                             [=[
-                                {
-                                    "object_type": "table",
-                                    "object_id": "table.lookups",
-                                    "table": [
-                                        {
-                                            "name": "lookup_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": true,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "key_idx",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": true,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "value_txt",
-                                            "datatype": "%%VARCHAR_100%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "value_int",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "sort_seq",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "status_lua_1",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "collection",
-                                            "datatype": "%%JSONB%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "valid_after",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "valid_until",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "created_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "created_at",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "updated_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "updated_at",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "summary",
-                                            "datatype": "%%TEXT%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "code",
-                                            "datatype": "%%TEXT%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        }
-                                    ]
-                                }
+                                [
+                                    {
+                                        "object_type": "table",
+                                        "object_id": "table.lookups",
+                                        "table": [
+                                            {
+                                                "name": "lookup_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": true,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "key_idx",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": true,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "value_txt",
+                                                "datatype": "%%VARCHAR_100%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "value_int",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "sort_seq",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "status_lua_1",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "collection",
+                                                "datatype": "%%JSONB%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "valid_after",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "valid_until",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "created_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "created_at",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "updated_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "updated_at",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "summary",
+                                                "datatype": "%%TEXT%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "code",
+                                                "datatype": "%%TEXT%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            }
+                                        ]
+                                    }
+                                ]
                             ]=]
-                            %%JSON_INGEST_END%%
+                            %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%TIMESTAMP%%,                      -- created_at
+                            %%NOW%%,                      -- created_at
                             0,                                  -- updated_id
-                            %%TIMESTAMP%%                       -- updated_at
+                            %%NOW%%                       -- updated_at
                         );
                     ]]
         }
