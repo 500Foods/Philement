@@ -176,7 +176,7 @@ for design in "${DESIGNS[@]}"; do
             done
 
             # Create result file for this combination
-            result_file="${LOG_PREFIX}${TIMESTAMP}_${design}_${engine}.result"
+            result_file="${LOG_PREFIX}_${design}_${engine}.result"
 
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel generation: ${design} ${engine} ${schema}"
 
@@ -214,7 +214,9 @@ for design in "${DESIGNS[@]}"; do
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${subtest_name}"
 
             # Check result file
-            result_file="${LOG_PREFIX}${TIMESTAMP}_${design}_${engine}.result"
+            result_file="${LOG_PREFIX}_${design}_${engine}.result"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ..${result_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diagram in ../images/${design}/${design}-${engine}-${schema}-1023.svg"
             if [[ -f "${result_file}" ]]; then
                 result_content=$(cat "${result_file}")
                 if [[ "${result_content}" == "SUCCESS" ]]; then
