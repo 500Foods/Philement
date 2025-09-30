@@ -25,10 +25,39 @@ setup_test_environment
 # Parallel execution configuration
 declare -a PARALLEL_PIDS
 
-# Helium project path (absolute path from project root)
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
-HELIUM_DIR="${PROJECT_DIR}/../../../elements/002-helium"
-HELIUM_DIR="$(cd "${HELIUM_DIR}" && pwd)"  # Resolve any .. in path
+# Find global project root reliably
+find_project_root() {
+    # Try to get the script directory using a simple approach
+    local script_dir
+    # Use readlink -f if available, otherwise use pwd
+    if command -v readlink >/dev/null 2>&1; then
+        script_dir="$(dirname "$(readlink -f "$0" || true)")"
+    else
+        script_dir="$(cd "$(dirname "$0")" && pwd)"
+    fi
+
+    # Go up directories until we find the global project root (which contains elements/)
+    local current_dir="${script_dir}"
+    while [[ "${current_dir}" != "/" ]]; do
+        # Check if this is the global project root (has elements/ subdirectory)
+        if [[ -d "${current_dir}/elements" ]]; then
+            echo "${current_dir}"
+            return 0
+        fi
+        current_dir="$(dirname "${current_dir}")"
+    done
+
+    # Fallback: go up four levels from tests directory to reach project root
+    # tests -> hydrogen -> 001-hydrogen -> elements -> project root
+    current_dir="$(cd "${script_dir}/../../.." && pwd)"
+    echo "${current_dir}"
+    return 0
+}
+
+# Calculate absolute path to helium directory
+PROJECT_DIR="$(find_project_root)"
+HELIUM_DIR="${PROJECT_DIR}/elements/002-helium"
+HELIUM_DIR="$(cd "${HELIUM_DIR}" && pwd 2>/dev/null || echo "${HELIUM_DIR}")"
 
 # List of designs to process
 # DESIGNS=("helium" "acuranzo")
@@ -67,8 +96,10 @@ generate_database_diagram() {
     migration_name=$(basename "${highest_migration_file}" .lua)
     local migration_num="${migration_name#"${design}"_}"
 
-    # Create output directory
-    local output_dir="${PROJECT_DIR}/images/${design}"
+    # Create output directory in hydrogen project (not global project root)
+    local hydrogen_dir
+    hydrogen_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
+    local output_dir="${hydrogen_dir}/images/${design}"
     mkdir -p "${output_dir}"
 
     # Generate filename (lowercase, handle empty schema)
@@ -155,6 +186,33 @@ run_diagram_generation_parallel() {
     fi
 }
 
+# Function to get the actual migration number for a design
+get_migration_number() {
+    local design="$1"
+
+    # Find the highest numbered migration file for this design
+    local design_dir="${HELIUM_DIR}/${design}"
+    local migration_files=()
+    if [[ -d "${design_dir}" ]]; then
+        while IFS= read -r -d '' file; do
+            migration_files+=("${file}")
+        done < <("${FIND}" "${design_dir}" -name "${design}_*.lua" -type f -print0 2>/dev/null | sort -z -V || true)
+    fi
+
+    if [[ ${#migration_files[@]} -eq 0 ]]; then
+        echo ""
+        return 1
+    fi
+
+    # Get the highest numbered migration (last in sorted array)
+    local highest_migration_file="${migration_files[-1]}"
+    local migration_name
+    migration_name=$(basename "${highest_migration_file}" .lua)
+    local migration_num="${migration_name#"${design}"_}"
+
+    echo "${migration_num}"
+}
+
 # Start parallel diagram generation
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Diagram Generation in Parallel"
 
@@ -167,7 +225,12 @@ for design in "${DESIGNS[@]}"; do
         # Process each engine/schema combination
         for i in "${!ENGINES[@]}"; do
             engine="${ENGINES[${i}]}"
-            schema="${SCHEMA_ARRAY[${i}]:-}"
+            # Get schema for this engine index, or empty if index is out of bounds
+            if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
+                schema="${SCHEMA_ARRAY[${i}]}"
+            else
+                schema=""
+            fi
 
             # Job limiting - wait if we have too many parallel jobs
             # shellcheck disable=SC2312 # Job control with wc -l is standard practice
@@ -203,7 +266,12 @@ for design in "${DESIGNS[@]}"; do
         # Process each engine/schema combination
         for i in "${!ENGINES[@]}"; do
             engine="${ENGINES[${i}]}"
-            schema="${SCHEMA_ARRAY[${i}]:-}"
+            # Get schema for this engine index, or empty if index is out of bounds
+            if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
+                schema="${SCHEMA_ARRAY[${i}]}"
+            else
+                schema=""
+            fi
 
             if [[ -z "${schema}" ]]; then
                 subtest_name="${engine} ${design} (no schema)"
@@ -216,7 +284,21 @@ for design in "${DESIGNS[@]}"; do
             # Check result file
             result_file="${LOG_PREFIX}_${design}_${engine}.result"
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ..${result_file}"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diagram in ../images/${design}/${design}-${engine}-${schema}-1023.svg"
+
+            # Get the actual migration number for this design
+            actual_migration_num=$(get_migration_number "${design}")
+            if [[ -z "${actual_migration_num}" ]]; then
+                actual_migration_num="unknown"
+            fi
+
+            # Generate the correct filename with proper schema handling
+            display_schema=""
+            if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
+                if [[ -n "${SCHEMA_ARRAY[${i}]}" ]]; then
+                    display_schema="-${SCHEMA_ARRAY[${i}],,}"
+                fi
+            fi
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diagram in ../images/${design}/${design}-${engine}${display_schema}-${actual_migration_num}.svg"
             if [[ -f "${result_file}" ]]; then
                 result_content=$(cat "${result_file}")
                 if [[ "${result_content}" == "SUCCESS" ]]; then
