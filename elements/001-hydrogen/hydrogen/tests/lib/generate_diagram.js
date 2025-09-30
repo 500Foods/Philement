@@ -71,10 +71,10 @@ function preprocessJSONData(data) {
  * @param {number} scale - Scale factor (affects stroke width)
  * @returns {string} - SVG rectangle element
  */
-function renderTableBorder(x, y, width, height, scale = 1) {
-    const strokeWidth = 6 * scale; // 2 * 3 * scale
+function renderTableBorder(x, y, width, height, scale = 1, fill = "white", stroke = "black") {
+    const strokeWidth = 3 * scale; // Thinner but noticeable border - 1 * 3 * scale
     const radius = 27 * scale; // Lightly rounded corners * 3 * 3 (more visible)
-    return `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="white" stroke="transparent" stroke-width="${strokeWidth}" rx="${radius}" ry="${radius}"/>`;
+    return `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" rx="${radius}" ry="${radius}"/>`;
 }
 
 /**
@@ -90,9 +90,9 @@ function renderTableBorder(x, y, width, height, scale = 1) {
 function renderTableHeader(tableName, x, y, width, height, scale = 1) {
     const strokeWidth = 6 * scale; // Keep title separator black and thicker * 3
     const radius = 27 * scale; // Radius for rounded corners * 3 * 3 (more visible)
-    const fontSize = 72 * scale; // Reduced from 14pt to 12pt * 3 * 2 (2x for better readability)
-    const textOffsetX = 54 * scale; // 10 * 3 * scale * 2 * 0.9 (10% reduction)
-    const textOffsetY = 94.5 * scale; // Move down 25% from center (75.6 * scale * 1.25)
+    const fontSize = 48 * scale; // Reduced proportionally with table width (from 12pt * 3 * 1.33)
+    const textOffsetX = 30 * scale; // Reduced to match iconMargin (10 * 3 * scale)
+    const textOffsetY = 62.37 * scale; // Moved down 10% from center (56.7 * scale * 1.1)
     let svg = '';
 
     // Create path with only top corners rounded
@@ -116,10 +116,10 @@ function renderTableHeader(tableName, x, y, width, height, scale = 1) {
  */
 function renderTableRow(column, x, y, width, height, scale = 1, isFirstRow = false, isLastRow = false) {
     const strokeWidth = 1.5 * scale; // Thinner lines * 3
-    const fontSizeName = 60 * scale; // Changed from 12pt to 10pt to match datatype * 3 * 2
-    const fontSizeType = 60 * scale; // 10 * 3 * scale * 2
-    const textOffsetX = 54 * scale; // 10 * 3 * scale * 2 * 0.9 (10% reduction)
-    const textOffsetY = 81 * scale; // 13.5 * 3 * scale * 2
+    const fontSizeName = 40 * scale; // Reduced proportionally with table width (from 10pt * 3 * 1.33)
+    const fontSizeType = 40 * scale; // 10 * 3 * scale * 1.33
+    const textOffsetX = 30 * scale; // Reduced to match iconMargin (10 * 3 * scale)
+    const textOffsetY = 59.4 * scale; // Moved down 10% (54 * scale * 1.1)
     const textEndOffset = 10 * scale;
 
     let svg = '';
@@ -142,9 +142,9 @@ function renderTableRow(column, x, y, width, height, scale = 1, isFirstRow = fal
         fontColor = "forestgreen";
     }
 
-    // Icon positioning and sizing (fixed spaces reserved) - scaled 1x for better proportion
-    const iconMargin = 54 * scale; // Same as textOffsetX * 3 * 1 * 0.9 (10% reduction)
-    const iconSize = 72 * scale; // 12 * 3 * scale * 2
+    // Icon positioning and sizing (fixed spaces reserved) - scaled for reduced table width
+    const iconMargin = 30 * scale; // Reduced a bit more to bring text closer to icons
+    const iconSize = 48 * scale; // 12 * 3 * scale * 1.33 (proportional reduction)
     const iconY = y + (height - iconSize) / 2;
 
     // Left icon space (always reserved) - key for primary_key, lookup for lookup attribute
@@ -161,6 +161,8 @@ function renderTableRow(column, x, y, width, height, scale = 1, isFirstRow = fal
         } else {
             leftIconId = "key-icon-gray";
         }
+    } else if (column.unique) {
+        leftIconId = "unique-icon-gray";
     } else if (column.lookup) {
         leftIconId = "lookup-icon-gray";
     }
@@ -220,9 +222,9 @@ function renderTable(tableDef, x, y, scale = 1) {
 
 
     // Calculate dimensions (60mm table width * 3 for scaling)
-    const headerHeight = 151.2 * scale; // 30 * 3 * scale * 3 * 0.7 * 0.8
-    const rowHeight = 120 * scale; // 20 * 3 * scale * 2
-    const colWidth = 1326.78 * scale; // 283.5 * 3 * scale * 1.33 * 1.3 * 0.9 (90mm ≈ 283.5pt * 4.68)
+    const headerHeight = 102.06 * scale; // 30 * 3 * scale * 3 * 0.7 * 0.8 * 0.75 * 0.9
+    const rowHeight = 90 * scale; // 20 * 3 * scale * 1.5
+    const colWidth = 850.5 * scale; // Reduced to allow more columns (3x base width)
     const tableWidth = colWidth;
     const tableHeight = headerHeight + (columns.length * rowHeight);
 
@@ -246,10 +248,10 @@ function renderTable(tableDef, x, y, scale = 1) {
     // Table group with shadow
     svg += `<g transform="translate(${x}, ${y})" filter="url(#${shadowId})">\n`;
 
-    // Table border (with margin accounted for)
-    svg += `    ${renderTableBorder(tableX, tableY, tableWidth, tableHeight, scale)}\n`;
+    // White background rectangle (no border) - bottom layer
+    svg += `    ${renderTableBorder(tableX, tableY, tableWidth, tableHeight, scale, "white", "transparent")}\n`;
 
-    // Table header
+    // Table header (rendered second)
     svg += `    ${renderTableHeader(tableName, tableX, tableY, tableWidth, headerHeight, scale)}\n`;
 
     // Column rows
@@ -259,6 +261,9 @@ function renderTable(tableDef, x, y, scale = 1) {
         const isLastRow = index === columns.length - 1;
         svg += `    ${renderTableRow(col, tableX, rowY, tableWidth, rowHeight, scale, isFirstRow, isLastRow)}\n`;
     });
+
+    // Border-only rectangle (no background) - top layer
+    svg += `    ${renderTableBorder(tableX, tableY, tableWidth, tableHeight, scale, "transparent", "silver")}\n`;
 
     svg += `</g>\n`;
 
@@ -284,7 +289,7 @@ function renderLayoutRegion(x, y, width, height) {
     svg += `</defs>\n`;
 
     // Render the visible layout region rectangle with solid orange fill and no border
-    svg += `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="#ffa500" rx="${radius}" ry="${radius}"/>\n`;
+    // svg += `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="#ffa500" rx="${radius}" ry="${radius}"/>\n`;
 
     return svg;
 }
@@ -300,9 +305,9 @@ function renderLayoutRegion(x, y, width, height) {
  */
 function calculateTableDimensions(tableDef) {
     const columns = tableDef.table;
-    const headerHeight = 151.2; // 30 * 3 * 3 * 0.7 * 0.8 for 3x scaling + tripled height - 30% - 20%
-    const rowHeight = 120; // 20 * 3 * 2 for 3x scaling + doubled for text
-    const colWidth = 1326.78; // 283.5 * 3 * 1.33 * 1.3 * 0.9 for 3x scaling + 1x icons + 30% width - 10% (90mm ≈ 283.5pt * 4.68)
+    const headerHeight = 102.06; // 30 * 3 * 3 * 0.7 * 0.8 * 0.75 * 0.9 for 3x scaling + tripled height - 30% - 20% - 25% - 10%
+    const rowHeight = 90; // 20 * 3 * 1.5 for 3x scaling + 50% increase (more proportional to reduced width)
+    const colWidth = 850.5; // Reduced from 1326.78 to 850.5 to allow more columns (back to 3x base width)
     const tableWidth = colWidth;
     const tableHeight = headerHeight + (columns.length * rowHeight);
     return { width: tableWidth, height: tableHeight };
@@ -517,23 +522,23 @@ function generateTablesSVG(tables) {
     svg += `<defs>\n`;
 
     // Cairo font definition
-    svg += `    <!-- Cairo Font (Google Fonts) -->\n`;
-    svg += `    <style type="text/css">\n`;
-    svg += `        @font-face {\n`;
-    svg += `            font-family: 'Cairo';\n`;
-    svg += `            src: url(data:font/ttf;base64,AAEAAAAQAQAABAAAR0RFRr0Hn+QAAAI8AAACGEdQT1OOWAWJAABKUAAAYmZHU1VCO9dHKQAAFkgAAAosT1MvMql1jZoAAAHcAAAAYFNUQVTxa9kpAAABmAAAAERjbWFw5H2zVgAADQAAAAlIZ2FzcAAAABAAAAEUAAAACGdseWZI0DkyAACsuAAAuLRoZWFkJQKeYgAAAWAAAAA2aGhlYQq9Bl8AAAE8AAAAJGhtdHhDdWI+AAAgdAAADNZsb2Nh+MrKOQAABpAAAAZubWF4cANSAQcAAAEcAAAAIG5hbWUwZVdGAAAEVAAAAjxwb3N042TgLgAALUwAAB0CcHJlcGgGjIUAAAEMAAAAB7gB/4WwBI0AAAEAAf//AA8AAQAAAzYAcAAMAJUADAABAAAAAAAAAAAAAAAAAAMAAQABAAAFF/3FAAAGb/8g/vUGgwABAAAAAAAAAAAAAAAAAAADNQABAAAAAyFIL20ZmV8PPPUAAwPoAAAAAOAanXsAAAAA4CucLv8g/lIGgwQ8AAAABgACAAAAAAAAAAEAAQAIAAIAAAAUAAIAAAAkAAJzbG50AQEAAHdnaHQBAAABABQABAADAAEAAgEEAZAAAAK8AAAAAQAAAAIBHgAAAAAABAJjAZAABQAAAooCWAAAAEsCigJYAAABXgAyASwAAAAAAAAAAAAAAACgACCvkAAgSwAAAAgAAAAAMUtURgDAABD+/AUX/cUAAAUgAjsgAADTAAgAAAH0ArwAAAAgAAQAAQACAW4AAAAOAAABugDoAHIBWAFYAVgBWAFYAVgBWAFYAVgBUAFQAUgBQAFAAUABOAE4AVgBUAFQAUgBQAFAAUABUAFQAUgBQAFAAUABUAFQAUgBQAFAAUABMAEwASgBKAEoASgBMAEwASABIAEgASABKAEoATABMAEwATABIAEgASgBKAEoASgBKAEoAVABUAFQAVABIAEgASABIAEYARgBGAEYARgBGAFQAVABUAFQ) format('truetype');\n`;
-    svg += `            font-weight: normal;\n`;
-    svg += `            font-style: normal;\n`;
-    svg += `        }\n`;
-    svg += `        text {\n`;
-    svg += `            font-family: 'Cairo', Arial, sans-serif;\n`;
-    svg += `            font-weight: 400;\n`;
-    svg += `            font-kerning: auto;\n`;
-    svg += `            letter-spacing: -0.02em;\n`;
-    svg += `            text-rendering: optimizeLegibility;\n`;
-    svg += `            font-feature-settings: "kern" 1;\n`;
-    svg += `        }\n`;
-    svg += `    </style>\n`;
+    // svg += `    <!-- Cairo Font (Google Fonts) -->\n`;
+    // svg += `    <style type="text/css">\n`;
+    // svg += `        @font-face {\n`;
+    // svg += `            font-family: 'Cairo';\n`;
+    // svg += `            src: url(data:font/ttf;base64,AAEAAAAQAQAABAAAR0RFRr0Hn+QAAAI8AAACGEdQT1OOWAWJAABKUAAAYmZHU1VCO9dHKQAAFkgAAAosT1MvMql1jZoAAAHcAAAAYFNUQVTxa9kpAAABmAAAAERjbWFw5H2zVgAADQAAAAlIZ2FzcAAAABAAAAEUAAAACGdseWZI0DkyAACsuAAAuLRoZWFkJQKeYgAAAWAAAAA2aGhlYQq9Bl8AAAE8AAAAJGhtdHhDdWI+AAAgdAAADNZsb2Nh+MrKOQAABpAAAAZubWF4cANSAQcAAAEcAAAAIG5hbWUwZVdGAAAEVAAAAjxwb3N042TgLgAALUwAAB0CcHJlcGgGjIUAAAEMAAAAB7gB/4WwBI0AAAEAAf//AA8AAQAAAzYAcAAMAJUADAABAAAAAAAAAAAAAAAAAAMAAQABAAAFF/3FAAAGb/8g/vUGgwABAAAAAAAAAAAAAAAAAAADNQABAAAAAyFIL20ZmV8PPPUAAwPoAAAAAOAanXsAAAAA4CucLv8g/lIGgwQ8AAAABgACAAAAAAAAAAEAAQAIAAIAAAAUAAIAAAAkAAJzbG50AQEAAHdnaHQBAAABABQABAADAAEAAgEEAZAAAAK8AAAAAQAAAAIBHgAAAAAABAJjAZAABQAAAooCWAAAAEsCigJYAAABXgAyASwAAAAAAAAAAAAAAACgACCvkAAgSwAAAAgAAAAAMUtURgDAABD+/AUX/cUAAAUgAjsgAADTAAgAAAH0ArwAAAAgAAQAAQACAW4AAAAOAAABugDoAHIBWAFYAVgBWAFYAVgBWAFYAVgBUAFQAUgBQAFAAUABOAE4AVgBUAFQAUgBQAFAAUABUAFQAUgBQAFAAUABUAFQAUgBQAFAAUABMAEwASgBKAEoASgBMAEwASABIAEgASABKAEoATABMAEwATABIAEgASgBKAEoASgBKAEoAVABUAFQAVABIAEgASABIAEYARgBGAEYARgBGAFQAVABUAFQ) format('truetype');\n`;
+    // svg += `            font-weight: normal;\n`;
+    // svg += `            font-style: normal;\n`;
+    // svg += `        }\n`;
+    // svg += `        text {\n`;
+    // svg += `            font-family: 'Cairo', Arial, sans-serif;\n`;
+    // svg += `            font-weight: 400;\n`;
+    // svg += `            font-kerning: auto;\n`;
+    // svg += `            letter-spacing: -0.02em;\n`;
+    // svg += `            text-rendering: optimizeLegibility;\n`;
+    // svg += `            font-feature-settings: "kern" 1;\n`;
+    // svg += `        }\n`;
+    // svg += `    </style>\n`;
 
     // Icon definitions - defined once for the entire diagram
     svg += `    <!-- Icon Definitions (Font Awesome Free v7.0.1) -->\n`;
@@ -562,6 +567,11 @@ function generateTablesSVG(tables) {
     svg += `    <!-- Lookup icons -->\n`;
     svg += `    <symbol id="lookup-icon-gray" viewBox="0 0 640 640">\n`;
     svg += `        <path d="M96.5 160L96.5 309.5C96.5 326.5 103.2 342.8 115.2 354.8L307.2 546.8C332.2 571.8 372.7 571.8 397.7 546.8L547.2 397.3C572.2 372.3 572.2 331.8 547.2 306.8L355.2 114.8C343.2 102.7 327 96 310 96L160.5 96C125.2 96 96.5 124.7 96.5 160zM208.5 176C226.2 176 240.5 190.3 240.5 208C240.5 225.7 226.2 240 208.5 240C190.8 240 176.5 225.7 176.5 208C176.5 190.3 190.8 176 208.5 176z" fill="gray"/>\n`;
+    svg += `    </symbol>\n`;
+
+    svg += `    <!-- Unique icons -->\n`;
+    svg += `    <symbol id="unique-icon-gray" viewBox="0 0 640 640">\n`;
+    svg += `        <path d="M512 320C512 214 426 128 320 128C214 128 128 214 128 320C128 426 214 512 320 512C426 512 512 426 512 320zM64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576C178.6 576 64 461.4 64 320zM320 400C364.2 400 400 364.2 400 320C400 275.8 364.2 240 320 240C275.8 240 240 275.8 240 320C240 364.2 275.8 400 320 400zM320 176C399.5 176 464 240.5 464 320C464 399.5 399.5 464 320 464C240.5 464 176 399.5 176 320C176 240.5 240.5 176 320 176zM288 320C288 302.3 302.3 288 320 288C337.7 288 352 302.3 352 320C352 337.7 337.7 352 320 352C302.3 352 288 337.7 288 320z" fill="gray"/>\n`;
     svg += `    </symbol>\n`;
     svg += `</defs>\n`;
 

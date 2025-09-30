@@ -190,7 +190,7 @@ return {
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": true
                                             },
                                             {
                                                 "name": "query_type_lua_28",
@@ -213,7 +213,8 @@ return {
                                                 "datatype": "%%VARCHAR_100%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "highlight": true
                                             },
                                             {
                                                 "name": "summary",
@@ -251,42 +252,47 @@ return {
                                                 "nullable": true,
                                                 "primary_key": false,
                                                 "unique": false,
-                                                "highlight": true
+                                                "standard": true
                                             },
                                             {
                                                 "name": "valid_until",
                                                 "datatype": "%%TIMESTAMP_TZ%%",
                                                 "nullable": true,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             },
                                             {
                                                 "name": "created_id",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             },
                                             {
                                                 "name": "created_at",
                                                 "datatype": "%%TIMESTAMP_TZ%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             },
                                             {
                                                 "name": "updated_id",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             },
                                             {
                                                 "name": "updated_at",
                                                 "datatype": "%%TIMESTAMP_TZ%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             }
                                         ]
                                     }
