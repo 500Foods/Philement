@@ -164,7 +164,7 @@ return {
                                                                 <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
                                                                 <defs>
                                                                     <pattern id=\"grid\" width=\"84.9\" height=\"84.9\" patternUnits=\"userSpaceOnUse\" x=\"18\" y=\"18\">
-                                                                        <path d=\"M 84.9 0 L 0 0 0 84.9\" fill=\"none\" stroke=\"silver\" stroke-width=\"1.5\" stroke-dasharray=\"6,6\"/>
+                                                                        <path d=\"M 84.9 0 L 0 0 0 84.9\" fill=\"none\" stroke=\"black\" stroke-width=\"1.5\" stroke-dasharray=\"6,6\"/>
                                                                     </pattern>
                                                                 </defs>
                                                                 <rect x=\"18\" y=\"18\" width=\"2484\" height=\"1944\" fill=\"url(#grid)\" clip-path=\"url(#border-clip)\"/>

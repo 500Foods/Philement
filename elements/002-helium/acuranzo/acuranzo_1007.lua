@@ -29,20 +29,19 @@ return {
                             [=[
                                 CREATE TABLE IF NOT EXISTS %%SCHEMA%%connections
                                 (
-                                    connection_id integer NOT NULL,
-                                    connection_type_lua_4 integer NOT NULL,
-                                    name character varying(100) COLLATE pg_catalog."default" NOT NULL,
-                                    summary character varying(500) COLLATE pg_catalog."default",
-                                    connected_lua_5 integer NOT NULL,
-                                    status_lua_6 integer NOT NULL,
-                                    collection jsonb,
-                                    valid_after timestamp with time zone,
-                                    valid_until timestamp with time zone,
-                                    created_id integer NOT NULL,
-                                    created_at timestamp with time zone NOT NULL,
-                                    updated_id integer NOT NULL,
-                                    updated_at timestamp with time zone NOT NULL,
-                                    CONSTRAINT connections_pkey PRIMARY KEY (connection_id)
+                                    connection_id %%INTEGER%% NOT NULL,
+                                    connection_type_lua_4 %%INTEGER%% NOT NULL,
+                                    name %%VARCHAR_100%% NOT NULL,
+                                    summary %%VARCHAR_500%%,
+                                    connected_lua_5 %%INTEGER%% NOT NULL,
+                                    status_lua_6 %%INTEGER%% NOT NULL,
+                                    collection %%JSONB%%,
+                                    valid_after %%TIMEZONE_TZ%%,
+                                    valid_until %%TIMEZONE_TZ%%,
+                                    created_id %%INTEGER%% NOT NULL,
+                                    created_at %%TIMEZONE_TZ%% NOT NULL,
+                                    updated_id %%INTEGER%% NOT NULL,
+                                    updated_at %%TIMEZONE_TZ%% NOT NULL
                                 );
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
@@ -50,9 +49,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         },        
@@ -82,9 +81,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         },        
@@ -95,11 +94,11 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            24,                                 -- query_id
-                            1007,                               -- query_ref
-                            %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%connections',  -- name, summary
+                            24,                                         -- query_id
+                            1007,                                       -- query_ref
+                            %%TYPE_DIAGRAM_MIGRATIO%%,                  -- query_type_lua_28    
+                            %%DIALECT%%,                                -- query_dialect_lua_30    
+                            'Diagram Tables: %%SCHEMA%%connections',    -- name, summary
                             [=[
                                 # Diagram Migration 1007
 
@@ -107,118 +106,129 @@ return {
 
                                 This is the first JSON Diagram code for the connections table.
                             ]=],
-                            'JSON Table Definition in collection',     -- query_code,
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%               -- DIAGRAM_START
+                            'JSON Table Definition in collection',      -- query_code,
+                            %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
+                            %%JSON_INGEST_START%%                       -- DIAGRAM_START
                             [=[
                                 [
                                     {
-                                    "object_type": "table",
-                                    "object_id": "table.connections",
-                                    "table": [
-                                        {
-                                            "name": "connection_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": true,
-                                            "unique": true
-                                        },
-                                        {
-                                            "name": "connection_type_lua_4",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "name",
-                                            "datatype": "%%VARCHAR_100%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "summary",
-                                            "datatype": "%%VARCHAR_500%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "connected_lua_5",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "status_lua_6",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "collection",
-                                            "datatype": "%%JSONB%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "valid_after",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "valid_until",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "created_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "created_at",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "updated_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "updated_at",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        }
-                                    ]
-                                }
-                            ]
-                        ]=]
+                                        "object_type": "table",
+                                        "object_id": "table.connections",
+                                        "object_ref": "1007",
+                                        "table": [
+                                            {
+                                                "name": "connection_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": true,
+                                                "unique": true
+                                            },
+                                            {
+                                                "name": "connection_type_lua_4",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "lookup": true
+                                            },
+                                            {
+                                                "name": "name",
+                                                "datatype": "%%VARCHAR_100%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "summary",
+                                                "datatype": "%%VARCHAR_500%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "connected_lua_5",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "lookup": true
+                                            },
+                                            {
+                                                "name": "status_lua_6",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "lookup": true
+                                            },
+                                            {
+                                                "name": "collection",
+                                                "datatype": "%%JSONB%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "standard": true
+                                            },
+                                            {
+                                                "name": "valid_after",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "standard": true
+                                            },
+                                            {
+                                                "name": "valid_until",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "standard": true
+                                            },
+                                            {
+                                                "name": "created_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "standard": true
+                                            },
+                                            {
+                                                "name": "created_at",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "standard": true
+                                            },
+                                            {
+                                                "name": "updated_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "standard": true
+                                            },
+                                            {
+                                                "name": "updated_at",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "standard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            ]=]
                             %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         }

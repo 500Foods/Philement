@@ -29,18 +29,18 @@ return {
                             [=[
                                 CREATE TABLE IF NOT EXISTS %%SCHEMA%%actions
                                 (
-                                    action_id integer NOT NULL DEFAULT nextval('%%SCHEMA%%actions_action_id_seq'::regclass),
-                                    action_type_lua_24 integer NOT NULL,
-                                    system_id integer,
-                                    application_id integer,
-                                    application_version character varying(20) COLLATE pg_catalog."default",
-                                    account_id integer,
-                                    feature_lua_21 integer NOT NULL,
-                                    action character varying(500) COLLATE pg_catalog."default",
-                                    action_msecs integer NOT NULL,
-                                    ip_address character varying(50) COLLATE pg_catalog."default",
-                                    created_id integer NOT NULL,
-                                    created_at timestamp with time zone NOT NULL
+                                    action_id %%INTEGER%% NOT NULL,
+                                    action_type_lua_24 %%INTEGER%% NOT NULL,
+                                    system_id %%INTEGER%%,
+                                    application_id %%INTEGER%%,
+                                    application_version %%VARCHAR_50%%,
+                                    account_id %%INTEGER%%,
+                                    feature_lua_21 %%INTEGER%% NOT NULL,
+                                    action %%VARCHAR_500%%,
+                                    action_msecs %%INTEGER%% NOT NULL,
+                                    ip_address %%VARCHAR_50%%,
+                                    created_id %%INTEGER%% NOT NULL,
+                                    created_at %%TIMESTAMP_TZ%% 
                                 );
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
@@ -48,9 +48,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         },        
@@ -80,9 +80,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         },        
@@ -93,11 +93,11 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            21,                                 -- query_id
-                            1006,                               -- query_ref
-                            %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%actions',      -- name, summary
+                            21,                                         -- query_id
+                            1006,                                       -- query_ref
+                            %%TYPE_DIAGRAM_MIGRATIO%%,                  -- query_type_lua_28    
+                            %%DIALECT%%,                                -- query_dialect_lua_30    
+                            'Diagram Tables: %%SCHEMA%%actions',        -- name, summary
                             [=[
                                 # Diagram Migration 1006
 
@@ -105,111 +105,117 @@ return {
 
                                 This is the first JSON Diagram code for the actions table.
                             ]=],
-                            'JSON Table Definition in collection',     -- query_code,
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%               -- DIAGRAM_START
+                            'JSON Table Definition in collection',      -- query_code,
+                            %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
+                            %%JSON_INGEST_START%%                       -- DIAGRAM_START
                             [=[
                                 [
                                     {
-                                    "object_type": "table",
-                                    "object_id": "table.actions",
-                                    "table": [
-                                        {
-                                            "name": "action_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "action_type_lua_24",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "system_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "application_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "application_version",
-                                            "datatype": "%%VARCHAR_20%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "account_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "feature_lua_21",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "action",
-                                            "datatype": "%%VARCHAR_500%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "action_msecs",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "ip_address",
-                                            "datatype": "%%VARCHAR_50%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "created_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "created_at",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        }
-                                    ]
-                                }
-                            ]
-                        ]=]
+                                        "object_type": "table",
+                                        "object_id": "table.actions",
+                                        "object_ref": "1006",
+                                        "table": [
+                                            {
+                                                "name": "action_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": true,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "action_type_lua_24",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "lookup": true
+                                            },
+                                            {
+                                                "name": "system_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "application_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "application_version",
+                                                "datatype": "%%VARCHAR_50%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "account_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "feature_lua_21",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "lookup": true
+                                        
+                                            },
+                                            {
+                                                "name": "action",
+                                                "datatype": "%%VARCHAR_500%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "action_msecs",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "ip_address",
+                                                "datatype": "%%VARCHAR_50%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "created_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "standard": true
+                                            },
+                                            {
+                                                "name": "created_at",
+                                                "datatype": "%%TIMESTAMP_TZ%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "standard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            ]=]
                             %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         }
