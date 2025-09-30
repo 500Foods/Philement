@@ -16,11 +16,11 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            7,                                  -- query_id
-                            1002,                               -- query_ref
-                            %%TYPE_FORWARD_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Create Account Access Table Query', -- name, summary, query_code
+                            7,                                      -- query_id
+                            1002,                                   -- query_ref
+                            %%TYPE_FORWARD_MIGRATIO%%,              -- query_type_lua_28    
+                            %%DIALECT%%,                            -- query_dialect_lua_30    
+                            'Create Account Access Table Query',    -- name, summary, query_code
                             [=[
                                 # Forward Migration 1002: Create Account Access Table Query
 
@@ -49,9 +49,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         },        
@@ -62,11 +62,11 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            8,                                  -- query_id
-                            1002,                               -- query_ref
-                            %%TYPE_REVERSE_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Delete Account Access Table Query', -- name, summary, query_code
+                            8,                                      -- query_id
+                            1002,                                   -- query_ref
+                            %%TYPE_REVERSE_MIGRATIO%%,              -- query_type_lua_28    
+                            %%DIALECT%%,                            -- query_dialect_lua_30    
+                            'Delete Account Access Table Query',    -- name, summary, query_code
                             [=[
                                 # Reverse Migration 1002: Delete Account Access Table Query
 
@@ -81,9 +81,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         },        
@@ -94,11 +94,11 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            9,                                  -- query_id
-                            1002,                               -- query_ref
-                            %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%account_access', -- name, summary
+                            9,                                              -- query_id
+                            1002,                                           -- query_ref
+                            %%TYPE_DIAGRAM_MIGRATIO%%,                      -- query_type_lua_28    
+                            %%DIALECT%%,                                    -- query_dialect_lua_30    
+                            'Diagram Tables: %%SCHEMA%%account_access',     -- name, summary
                             [=[
                                 # Diagram Migration 1002
 
@@ -106,22 +106,16 @@ return {
 
                                 This is the first JSON Diagram code for the account_access table.
                             ]=],
-                            'JSON Table Definition in collection',     -- query_code,
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%               -- DIAGRAM_START
+                            'JSON Table Definition in collection',      -- query_code,
+                            %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
+                            %%JSON_INGEST_START%%                       -- DIAGRAM_START
                             [=[
                                 [ 
                                     {
                                         "object_type": "table",
                                         "object_id": "table.account_access",
+                                        "object_ref": "1002",
                                         "table": [
-                                            {
-                                                "name": "account_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
                                             {
                                                 "name": "access_id",
                                                 "datatype": "%%INTEGER%%",
@@ -130,74 +124,91 @@ return {
                                                 "unique": true
                                             },
                                             {
-                                                "name": "feature_lua_21",
+                                                "name": "account_id",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
                                                 "unique": false
+                                            },
+                                            {
+                                                "name": "feature_lua_21",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "lookup": true
                                             },
                                             {
                                                 "name": "access_type_lua_22",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "lookup": true
                                             },
                                             {
                                                 "name": "status_lua_23",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "lookup": true
                                             },
                                             {
                                                 "name": "collection",
                                                 "datatype": "%%JSONB%%",
                                                 "nullable": true,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             },
                                             {
                                                 "name": "valid_after",
                                                 "datatype": "%%TIMESTAMP_TZ%%",
                                                 "nullable": true,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             },
                                             {
                                                 "name": "valid_until",
                                                 "datatype": "%%TIMESTAMP_TZ%%",
                                                 "nullable": true,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             },
                                             {
                                                 "name": "created_id",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             },
                                             {
                                                 "name": "created_at",
                                                 "datatype": "%%TIMESTAMP_TZ%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             },
                                             {
                                                 "name": "updated_id",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             },
                                             {
                                                 "name": "updated_at",
                                                 "datatype": "%%TIMESTAMP_TZ%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": false
+                                                "unique": false,
+                                                "standard": true
                                             }
                                         ]
                                     }
@@ -208,9 +219,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%MOW%%                             -- updated_at
                         );
                     ]]
         }

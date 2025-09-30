@@ -81,9 +81,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         },        
@@ -113,9 +113,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         },        
@@ -177,6 +177,7 @@ return {
                                     {
                                         "object_type": "table",
                                         "object_id": "table.queries",
+                                        "object_ref": "1000",
                                         "table": [
                                             {
                                                 "name": "query_id",
