@@ -114,6 +114,7 @@ return {
                                     {
                                     "object_type": "table",
                                     "object_id": "table.languages",
+                                    "object_ref": "1011",
                                     "table": [
                                         {
                                             "name": "language_id",
@@ -138,7 +139,7 @@ return {
                                         },
                                         {
                                             "name": "iso639",
-                                            "datatype": "%%CHAR_2%%",
+                                            "datatype": "CHAR(2)",
                                             "nullable": false,
                                             "primary_key": false,
                                             "unique": false
@@ -148,56 +149,64 @@ return {
                                             "datatype": "%%INTEGER%%",
                                             "nullable": false,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "lookup": true
                                         },
                                         {
                                             "name": "collection",
                                             "datatype": "%%JSONB%%",
                                             "nullable": true,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "valid_after",
                                             "datatype": "%%TIMESTAMP_TZ%%",
                                             "nullable": true,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "valid_until",
                                             "datatype": "%%TIMESTAMP_TZ%%",
                                             "nullable": true,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "created_id",
                                             "datatype": "%%INTEGER%%",
                                             "nullable": false,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "created_at",
                                             "datatype": "%%TIMESTAMP_TZ%%",
                                             "nullable": false,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "updated_id",
                                             "datatype": "%%INTEGER%%",
                                             "nullable": false,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "updated_at",
                                             "datatype": "%%TIMESTAMP_TZ%%",
                                             "nullable": false,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         }
                                     ]
                                 }

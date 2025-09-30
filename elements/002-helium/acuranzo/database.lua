@@ -242,7 +242,7 @@ DELIMITER ;
             VARCHAR_100 = "VARCHAR(100)",
             VARCHAR_128 = "VARCHAR(128)",
             VARCHAR_500 = "VARCHAR(500)",
-            TEXT = "VARCHAR(255)", -- DB2 TEXT equivalent
+            TEXT = "VARCHAR(250)", -- DB2 TEXT equivalent
             JSONB = "VARCHAR(4000)", -- DB2 JSON stored as VARCHAR
             TIMESTAMP_TZ = "TIMESTAMP",
             NOW = "CURRENT TIMESTAMP",
