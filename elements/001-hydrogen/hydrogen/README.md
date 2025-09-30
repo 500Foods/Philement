@@ -71,6 +71,14 @@ Hydrogen is currently designed for technical users who:
 - [**Payload System**](payloads/README.md) - Payload system with encryption
 - [**Testing Suite**](tests/README.md) - Test framework and procedures
 
+## Attributions
+
+### Icons
+
+This project uses [Font Awesome Free](https://fontawesome.com) icons. Font Awesome Free is free for use with attribution. The embedded comments in the Font Awesome Free files contain the full attribution details required by the licenses (MIT, SIL OFL 1.1, and CC BY 4.0).
+
+The SVG data for a handful of these icons are currently used in the database diagrams. The code for these is found in  tests/lib/generate_database.js.
+
 ## Latest Test Results
 
 <div style="display: flex; flex-direction: column; align-items: start; gap: 0px;">
