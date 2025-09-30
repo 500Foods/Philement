@@ -101,7 +101,7 @@ return {
                             1008,                               -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%convos',       -- name, summary
+                            'Diagram Tables: %%SCHEMA%%convos', -- name, summary
                             [=[
                                 # Diagram Migration 1008
 
@@ -110,13 +110,14 @@ return {
                                 This is the first JSON Diagram code for the convos table.
                             ]=],
                             'JSON Table Definition in collection',     -- query_code,
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%               -- DIAGRAM_START
+                            %%STATUS_ACTIVE%%,                         -- query_status_lua_27, collection
+                            %%JSON_INGEST_START%%                      -- DIAGRAM_START
                             [=[
                                 [
                                     {
                                     "object_type": "table",
                                     "object_id": "table.convos",
+                                    "object_id": "1008",
                                     "table": [
                                         {
                                             "name": "convos_id",
@@ -127,10 +128,10 @@ return {
                                         },
                                         {
                                             "name": "convos_ref",
-                                            "datatype": "%%CHAR_50%%",
+                                            "datatype": "%%VARCHAR_50%%",
                                             "nullable": false,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": true
                                         },
                                         {
                                             "name": "convos_keywords",
@@ -179,49 +180,56 @@ return {
                                             "datatype": "%%JSONB%%",
                                             "nullable": true,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "valid_after",
                                             "datatype": "%%TIMESTAMP_TZ%%",
                                             "nullable": true,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "valid_until",
                                             "datatype": "%%TIMESTAMP_TZ%%",
                                             "nullable": true,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "created_id",
                                             "datatype": "%%INTEGER%%",
                                             "nullable": false,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "created_at",
                                             "datatype": "%%TIMESTAMP_TZ%%",
                                             "nullable": false,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "updated_id",
                                             "datatype": "%%INTEGER%%",
                                             "nullable": false,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         },
                                         {
                                             "name": "updated_at",
                                             "datatype": "%%TIMESTAMP_TZ%%",
                                             "nullable": false,
                                             "primary_key": false,
-                                            "unique": false
+                                            "unique": false,
+                                            "standard": true
                                         }
                                     ]
                                 }
@@ -232,9 +240,9 @@ return {
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         }

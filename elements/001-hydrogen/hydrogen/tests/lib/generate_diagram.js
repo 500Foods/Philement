@@ -3,6 +3,10 @@
 // generate_diagram.js
 // Converts JSON table definition into SVG database diagram
 
+// CHANGELOG
+// 1.1.0 - 2025-09-30 - Added metadata, starting with 'Tables included' to output
+// 1.0.0 - 2025-09-28 - Initial creation for database diagram generation
+
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ============================================================================
-// FONT CONFIGURATION
+// THEME DEFAULTS
 // ============================================================================
 
 /**
@@ -19,8 +23,8 @@ const __dirname = path.dirname(__filename);
  * Easy to change fonts across the entire diagram
  */
 const FONTS = {
-    header: 'Cairo, Arial, sans-serif',    // Title font (bold, larger) - Cairo embedded in SVG
-    row: 'Cairo, Arial, sans-serif'        // Row text font - Cairo embedded in SVG for consistency
+    header: 'Cairo, Arial, sans-serif',    // Title font (bold, larger)
+    row: 'Cairo, Arial, sans-serif'        // Row text font
 };
 
 // ============================================================================
@@ -79,7 +83,7 @@ function renderTableBorder(x, y, width, height, scale = 1, fill = "white", strok
 
 /**
  * Render table header
- * @param {string} tableName - Name of the table
+ * @param {Object} tableDef - Table definition object
  * @param {number} x - X position
  * @param {number} y - Y position
  * @param {number} width - Header width
@@ -87,7 +91,8 @@ function renderTableBorder(x, y, width, height, scale = 1, fill = "white", strok
  * @param {number} scale - Scale factor
  * @returns {string} - SVG header elements
  */
-function renderTableHeader(tableName, x, y, width, height, scale = 1) {
+function renderTableHeader(tableDef, x, y, width, height, scale = 1) {
+    const tableName = tableDef.object_id.replace('table.', '');
     const strokeWidth = 6 * scale; // Keep title separator black and thicker * 3
     const radius = 27 * scale; // Radius for rounded corners * 3 * 3 (more visible)
     const fontSize = 48 * scale; // Reduced proportionally with table width (from 12pt * 3 * 1.33)
@@ -100,6 +105,15 @@ function renderTableHeader(tableName, x, y, width, height, scale = 1) {
 
     svg += `<path d="${pathData}" fill="skyblue" stroke="transparent" stroke-width="${strokeWidth}"/>\n`; // Sky blue background with only top corners rounded
     svg += `    <text x="${x + textOffsetX}" y="${y + textOffsetY}" font-family="${FONTS.header}" font-size="${fontSize}" font-weight="bold">${tableName}</text>`;
+
+    // Add object_ref if present - right-justified in navy color
+    if (tableDef.object_ref) {
+        const objectRefFontSize = 36 * scale; // Slightly smaller than main title
+        const objectRefOffsetX = 30 * scale; // Same left margin as main title
+        const objectRefX = x + width - objectRefOffsetX; // Right-aligned with margin
+        svg += `    <text x="${objectRefX}" y="${y + textOffsetY}" font-family="${FONTS.header}" font-size="${objectRefFontSize}" font-weight="bold" fill="navy" text-anchor="end">${tableDef.object_ref}</text>`;
+    }
+
     return svg;
 }
 
@@ -252,7 +266,7 @@ function renderTable(tableDef, x, y, scale = 1) {
     svg += `    ${renderTableBorder(tableX, tableY, tableWidth, tableHeight, scale, "white", "transparent")}\n`;
 
     // Table header (rendered second)
-    svg += `    ${renderTableHeader(tableName, tableX, tableY, tableWidth, headerHeight, scale)}\n`;
+    svg += `    ${renderTableHeader(tableDef, tableX, tableY, tableWidth, headerHeight, scale)}\n`;
 
     // Column rows
     columns.forEach((col, index) => {
@@ -521,25 +535,6 @@ function generateTablesSVG(tables) {
     // Add global definitions (fonts and icons) once for the entire diagram
     svg += `<defs>\n`;
 
-    // Cairo font definition
-    // svg += `    <!-- Cairo Font (Google Fonts) -->\n`;
-    // svg += `    <style type="text/css">\n`;
-    // svg += `        @font-face {\n`;
-    // svg += `            font-family: 'Cairo';\n`;
-    // svg += `            src: url(data:font/ttf;base64,AAEAAAAQAQAABAAAR0RFRr0Hn+QAAAI8AAACGEdQT1OOWAWJAABKUAAAYmZHU1VCO9dHKQAAFkgAAAosT1MvMql1jZoAAAHcAAAAYFNUQVTxa9kpAAABmAAAAERjbWFw5H2zVgAADQAAAAlIZ2FzcAAAABAAAAEUAAAACGdseWZI0DkyAACsuAAAuLRoZWFkJQKeYgAAAWAAAAA2aGhlYQq9Bl8AAAE8AAAAJGhtdHhDdWI+AAAgdAAADNZsb2Nh+MrKOQAABpAAAAZubWF4cANSAQcAAAEcAAAAIG5hbWUwZVdGAAAEVAAAAjxwb3N042TgLgAALUwAAB0CcHJlcGgGjIUAAAEMAAAAB7gB/4WwBI0AAAEAAf//AA8AAQAAAzYAcAAMAJUADAABAAAAAAAAAAAAAAAAAAMAAQABAAAFF/3FAAAGb/8g/vUGgwABAAAAAAAAAAAAAAAAAAADNQABAAAAAyFIL20ZmV8PPPUAAwPoAAAAAOAanXsAAAAA4CucLv8g/lIGgwQ8AAAABgACAAAAAAAAAAEAAQAIAAIAAAAUAAIAAAAkAAJzbG50AQEAAHdnaHQBAAABABQABAADAAEAAgEEAZAAAAK8AAAAAQAAAAIBHgAAAAAABAJjAZAABQAAAooCWAAAAEsCigJYAAABXgAyASwAAAAAAAAAAAAAAACgACCvkAAgSwAAAAgAAAAAMUtURgDAABD+/AUX/cUAAAUgAjsgAADTAAgAAAH0ArwAAAAgAAQAAQACAW4AAAAOAAABugDoAHIBWAFYAVgBWAFYAVgBWAFYAVgBUAFQAUgBQAFAAUABOAE4AVgBUAFQAUgBQAFAAUABUAFQAUgBQAFAAUABUAFQAUgBQAFAAUABMAEwASgBKAEoASgBMAEwASABIAEgASABKAEoATABMAEwATABIAEgASgBKAEoASgBKAEoAVABUAFQAVABIAEgASABIAEYARgBGAEYARgBGAFQAVABUAFQ) format('truetype');\n`;
-    // svg += `            font-weight: normal;\n`;
-    // svg += `            font-style: normal;\n`;
-    // svg += `        }\n`;
-    // svg += `        text {\n`;
-    // svg += `            font-family: 'Cairo', Arial, sans-serif;\n`;
-    // svg += `            font-weight: 400;\n`;
-    // svg += `            font-kerning: auto;\n`;
-    // svg += `            letter-spacing: -0.02em;\n`;
-    // svg += `            text-rendering: optimizeLegibility;\n`;
-    // svg += `            font-feature-settings: "kern" 1;\n`;
-    // svg += `        }\n`;
-    // svg += `    </style>\n`;
-
     // Icon definitions - defined once for the entire diagram
     svg += `    <!-- Icon Definitions (Font Awesome Free v7.0.1) -->\n`;
     svg += `    <!-- Not-null icons -->\n`;
@@ -601,6 +596,13 @@ function generateTablesSVG(tables) {
 function generateDiagramCore(jsonInput, options = {}) {
     console.error(`\n=== DEBUG: generateDiagramCore called with input length: ${jsonInput.length} ===`);
 
+    // Initialize metadata collection
+    const metadata = {
+        object_refs: [],
+        table_count: 0,
+        processing_timestamp: new Date().toISOString()
+    };
+
     try {
         // Parse and preprocess JSON data
         const data = JSON.parse(jsonInput.trim());
@@ -617,6 +619,20 @@ function generateDiagramCore(jsonInput, options = {}) {
 
         // Find all table objects
         const tables = objects.filter(obj => obj.object_type === 'table');
+        metadata.table_count = tables.length;
+
+        // Collect object_ref metadata from tables
+        tables.forEach(table => {
+            if (table.object_ref) {
+                metadata.object_refs.push({
+                    table_name: table.object_id.replace('table.', ''),
+                    object_ref: table.object_ref
+                });
+            }
+        });
+
+        // Output metadata to STDERR for shell script consumption
+        console.error(`METADATA: ${JSON.stringify(metadata)}`);
 
         // Generate SVG with auto-fitting layout
         const svgContent = generateTablesSVG(tables);

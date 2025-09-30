@@ -7,6 +7,7 @@
 # generate_database_diagram()
 
 # CHANGELOG
+# 1.1.0 - 2025-09-30 - Added metadata, starting with 'Tables included' to output
 # 1.0.0 - 2025-09-29 - Initial creation for database diagram generation
 
 set -euo pipefail
@@ -16,7 +17,7 @@ TEST_NAME="Database Diagrams"
 TEST_ABBR="ERD"
 TEST_NUMBER="39"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -109,18 +110,42 @@ generate_database_diagram() {
     fi
     local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${migration_num}.svg"
 
-    # Run generate_diagram.sh and capture error output
+    # Run generate_diagram.sh and capture both SVG output and metadata
     local error_file
     error_file=$(mktemp)
     local error_output=""
+    local metadata=""
+
+    # Capture both stdout (SVG) and stderr (metadata + errors)
     if "${SCRIPT_DIR}/lib/generate_diagram.sh" "${engine}" "${design}" "${schema}" "${migration_num}" > "${output_file}" 2> "${error_file}"; then
-        # Success
+        # Success - check for metadata in error output
+        error_output=$(cat "${error_file}")
         rm -f "${error_file}"
+
+        # Extract metadata if present
+        metadata_line=$(echo "${error_output}" | grep "^DIAGRAM_METADATA:" || true)
+        if [[ -n "${metadata_line}" ]]; then
+            metadata="${metadata_line#DIAGRAM_METADATA: }"
+            # Save metadata to a file for later use
+            local metadata_file="${output_file%.svg}.metadata"
+            echo "${metadata}" > "${metadata_file}"
+            # Suppress success messages for cleaner output
+        fi
+
         return 0
     else
         # Failure - read error output
         error_output=$(cat "${error_file}")
         rm -f "${error_file}"
+
+        # Extract metadata if present (even on failure, for debugging)
+        metadata_line=$(echo "${error_output}" | grep "^DIAGRAM_METADATA:" || true)
+        if [[ -n "${metadata_line}" ]]; then
+            metadata="${metadata_line#DIAGRAM_METADATA: }"
+            # Save metadata to a file for later use even on failure
+            local metadata_file="${output_file%.svg}.metadata"
+            echo "${metadata}" > "${metadata_file}"
+        fi
 
         # Determine failure reason from error output
         if echo "${error_output}" | grep -q "No JSON data extracted"; then
@@ -168,6 +193,9 @@ run_diagram_generation_parallel() {
 
     # Clear result file
     true > "${result_file}"
+
+    # Create metadata file for this combination
+    local metadata_file="${result_file%.result}.metadata"
 
     # Run diagram generation and capture output
     local output
@@ -283,7 +311,6 @@ for design in "${DESIGNS[@]}"; do
 
             # Check result file
             result_file="${LOG_PREFIX}_${design}_${engine}.result"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ..${result_file}"
 
             # Get the actual migration number for this design
             actual_migration_num=$(get_migration_number "${design}")
@@ -298,7 +325,28 @@ for design in "${DESIGNS[@]}"; do
                     display_schema="-${SCHEMA_ARRAY[${i}],,}"
                 fi
             fi
+
+            # Calculate output directory in the right scope
+            hydrogen_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
+            output_dir="${hydrogen_dir}/images/${design}"
+            metadata_file="${output_dir}/${design,,}-${engine,,}${display_schema}-${actual_migration_num}.metadata"
+
+            # Show table count on separate line if available
+            if [[ -f "${metadata_file}" ]]; then
+                metadata=$(cat "${metadata_file}")
+                table_count=$(echo "${metadata}" | jq -r '.table_count // empty' 2>/dev/null || true)
+
+                if [[ -n "${table_count}" ]] && [[ "${table_count}" != "null" ]]; then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Tables included: ${table_count}"
+                fi
+
+                # Clean up metadata file after use
+                rm -f "${metadata_file}"
+            fi
+
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ..${result_file}"
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diagram in ../images/${design}/${design}-${engine}${display_schema}-${actual_migration_num}.svg"
+
             if [[ -f "${result_file}" ]]; then
                 result_content=$(cat "${result_file}")
                 if [[ "${result_content}" == "SUCCESS" ]]; then

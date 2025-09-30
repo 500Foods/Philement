@@ -4,6 +4,7 @@
 # Generate SVG database diagram from migration JSON
 
 # CHANGELOG
+# 1.1.0 - 2025-09-30 - Passing metadata
 # 1.0.0 - 2025-09-28 - Initial creation
 
 set -euo pipefail
@@ -227,6 +228,41 @@ if [[ ${migration_count} -eq 1 ]]; then
 else
     echo "Generating SVG diagram from ${migration_count} migrations..." >&2
 fi
-echo "${JSON_DATA}" | node "${LIB_DIR}/generate_diagram.js"
+
+# Generate diagram and capture both stdout (SVG) and stderr (metadata)
+# Use unique temporary file to avoid conflicts in parallel execution
+METADATA_TMP=$(mktemp)
+SVG_OUTPUT=$(echo "${JSON_DATA}" | node "${LIB_DIR}/generate_diagram.js" 2>"${METADATA_TMP}")
+
+# Extract metadata from stderr if available
+METADATA=""
+if [[ -f "${METADATA_TMP}" ]] && [[ -s "${METADATA_TMP}" ]]; then
+    # Find the METADATA line in stderr output
+    METADATA_LINE=$(grep "^METADATA:" "${METADATA_TMP}" 2>/dev/null || true)
+
+    if [[ -n "${METADATA_LINE}" ]]; then
+        # Extract JSON part after "METADATA:"
+        METADATA_JSON="${METADATA_LINE#METADATA: }"
+
+        # Validate that it's valid JSON
+        if jq empty <<< "${METADATA_JSON}" 2>/dev/null; then
+            METADATA="${METADATA_JSON}"
+            echo "Metadata captured: ${METADATA}" >&2
+        else
+            echo "Warning: Invalid metadata JSON format, ignoring..." >&2
+        fi
+    fi
+
+    # Clean up temporary file
+    rm -f "${METADATA_TMP}"
+fi
+
+# Output SVG to stdout (main purpose)
+echo "${SVG_OUTPUT}"
+
+# Output metadata to stderr in a format the calling script can easily parse
+if [[ -n "${METADATA}" ]]; then
+    echo "DIAGRAM_METADATA: ${METADATA}" >&2
+fi
 
 echo "Diagram generation complete." >&2
