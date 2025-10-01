@@ -154,6 +154,8 @@ function renderTableRow(column, x, y, width, height, scale = 1, isFirstRow = fal
         fontWeight = "bold";
     } else if (column.standard) {
         fontColor = "forestgreen";
+    } else if (column.lookup) {
+        fontColor = "maroon";
     }
 
     // Icon positioning and sizing (fixed spaces reserved) - scaled for reduced table width
@@ -178,7 +180,7 @@ function renderTableRow(column, x, y, width, height, scale = 1, isFirstRow = fal
     } else if (column.unique) {
         leftIconId = "unique-icon-gray";
     } else if (column.lookup) {
-        leftIconId = "lookup-icon-gray";
+        leftIconId = "lookup-icon-maroon";
     }
 
     // Right icon space (always reserved) - not-null icon
@@ -192,6 +194,8 @@ function renderTableRow(column, x, y, width, height, scale = 1, isFirstRow = fal
             rightIconId = "not-null-icon-navy";
         } else if (fontColor === "forestgreen") {
             rightIconId = "not-null-icon-darkgreen";
+        } else if (fontColor === "maroon") {
+            rightIconId = "not-null-icon-maroon";
         } else {
             rightIconId = "not-null-icon-black";
         }
@@ -547,6 +551,9 @@ function generateTablesSVG(tables) {
     svg += `    <symbol id="not-null-icon-navy" viewBox="0 0 640 640">\n`;
     svg += `        <path d="M320 64C324.6 64 329.2 65 333.4 66.9L521.8 146.8C543.8 156.1 560.2 177.8 560.1 204C559.6 303.2 518.8 484.7 346.5 567.2C329.8 575.2 310.4 575.2 293.7 567.2C121.3 484.7 80.6 303.2 80.1 204C80 177.8 96.4 156.1 118.4 146.8L306.7 66.9C310.9 65 315.4 64 320 64z" fill="navy"/>\n`;
     svg += `    </symbol>\n`;
+    svg += `    <symbol id="not-null-icon-maroon" viewBox="0 0 640 640">\n`;
+    svg += `        <path d="M320 64C324.6 64 329.2 65 333.4 66.9L521.8 146.8C543.8 156.1 560.2 177.8 560.1 204C559.6 303.2 518.8 484.7 346.5 567.2C329.8 575.2 310.4 575.2 293.7 567.2C121.3 484.7 80.6 303.2 80.1 204C80 177.8 96.4 156.1 118.4 146.8L306.7 66.9C310.9 65 315.4 64 320 64z" fill="maroon"/>\n`;
+    svg += `    </symbol>\n`;
 
     svg += `    <!-- Key icons for primary keys -->\n`;
     svg += `    <symbol id="key-icon-navy" viewBox="0 0 640 640">\n`;
@@ -562,6 +569,9 @@ function generateTablesSVG(tables) {
     svg += `    <!-- Lookup icons -->\n`;
     svg += `    <symbol id="lookup-icon-gray" viewBox="0 0 640 640">\n`;
     svg += `        <path d="M96.5 160L96.5 309.5C96.5 326.5 103.2 342.8 115.2 354.8L307.2 546.8C332.2 571.8 372.7 571.8 397.7 546.8L547.2 397.3C572.2 372.3 572.2 331.8 547.2 306.8L355.2 114.8C343.2 102.7 327 96 310 96L160.5 96C125.2 96 96.5 124.7 96.5 160zM208.5 176C226.2 176 240.5 190.3 240.5 208C240.5 225.7 226.2 240 208.5 240C190.8 240 176.5 225.7 176.5 208C176.5 190.3 190.8 176 208.5 176z" fill="gray"/>\n`;
+    svg += `    </symbol>\n`;
+    svg += `    <symbol id="lookup-icon-maroon" viewBox="0 0 640 640">\n`;
+    svg += `        <path d="M96.5 160L96.5 309.5C96.5 326.5 103.2 342.8 115.2 354.8L307.2 546.8C332.2 571.8 372.7 571.8 397.7 546.8L547.2 397.3C572.2 372.3 572.2 331.8 547.2 306.8L355.2 114.8C343.2 102.7 327 96 310 96L160.5 96C125.2 96 96.5 124.7 96.5 160zM208.5 176C226.2 176 240.5 190.3 240.5 208C240.5 225.7 226.2 240 208.5 240C190.8 240 176.5 225.7 176.5 208C176.5 190.3 190.8 176 208.5 176z" fill="maroon"/>\n`;
     svg += `    </symbol>\n`;
 
     svg += `    <!-- Unique icons -->\n`;

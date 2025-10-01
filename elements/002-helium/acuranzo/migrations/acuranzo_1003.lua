@@ -1,9 +1,9 @@
--- Migration: acuranzo_1005.lua
--- Creates the accounts table and populating it with the next migration.
+-- Migration: acuranzo_1003.lua
+-- Creates the account_contacts table and populating it with the next migration.
 
 -- CHANGELOG
 -- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 -0 2025-09-13 - Initial creation for accounts table with PostgreSQL support.
+-- 1.0.0 -0 2025-09-13 - Initial creation for account_contacts table with PostgreSQL support.
 
 local config = require 'database'
 
@@ -16,35 +16,34 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            16,                                 -- query_id
-                            1005,                               -- query_ref
-                            %%TYPE_FORWARD_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Create Accounts Table Query',      -- name, summary, query_code
+                            10,                                         -- query_id
+                            1003,                                       -- query_ref
+                            %%TYPE_FORWARD_MIGRATIO%%,                  -- query_type_lua_28    
+                            %%DIALECT%%,                                -- query_dialect_lua_30    
+                            'Create Account Contacts Table Query',      -- name, summary, query_code
                             [=[
-                                # Forward Migration 1005: Create Accounts Table Query
+                                # Forward Migration 1003: Create Account Contacts Table Query
 
-                                This migration creates the accounts table for storing account data.
+                                This migration creates the account_contacts table for storing account contact data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%accounts
+                                CREATE TABLE %%SCHEMA%%account_contacts
                                 (
+                                    contact_id %%INTEGER%% NOT NULL,
                                     account_id %%INTEGER%% NOT NULL,
-                                    name %%VARCHAR_100%% NOT NULL,
-                                    summary %%VARCHAR_500%% NOT NULL,
-                                    first_name %%VARCHAR_50%% NOT NULL,
-                                    middle_name %%VARCHAR_50%%,
-                                    last_name %%VARCHAR_50%% NOT NULL,
-                                    password_hash %%VARCHAR_128%% NOT NULL,
-                                    iana_timezone_lua_17 %%INTEGER%% NOT NULL,
-                                    status_lua_16 %%INTEGER%% NOT NULL,
+                                    contact_type_lua_18 %%INTEGER%% NOT NULL,
+                                    contact_seq %%INTEGER%% NOT NULL,
+                                    contact %%VARCHAR_100%% NOT NULL,
+                                    summary %%VARCHAR_500%%,
+                                    authenticate_lua_19 %%INTEGER%% NOT NULL,
+                                    status_lua_20 %%INTEGER%% NOT NULL,
                                     collection %%JSONB%%,
                                     valid_after %%TIMESTAMP_TZ%%,
                                     valid_until %%TIMESTAMP_TZ%%,
                                     created_id %%INTEGER%% NOT NULL,
-                                    created_at %%TIMESTAMP_TZ%% NOT NULL,
+                                    created_at %%TIMEZONE_TZ%% NOT NULL,
                                     updated_id %%INTEGER%% NOT NULL,
-                                    updated_at %%TIMESTAMP_TZ%% NOT NULL
+                                    updated_at %%TIMEZONE_TZ%% NOT NULL
                                 );
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
@@ -65,28 +64,28 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            17,                                 -- query_id
-                            1005,                               -- query_ref
-                            %%TYPE_REVERSE_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Delete Accounts Table Query',      -- name, summary, query_code
+                            11,                                         -- query_id
+                            1003,                                       -- query_ref
+                            %%TYPE_REVERSE_MIGRATIO%%,                  -- query_type_lua_28    
+                            %%DIALECT%%,                                -- query_dialect_lua_30    
+                            'Delete Account Contacts Table Query',      -- name, summary, query_code
                             [=[
-                                # Reverse Migration 1005: Delete Accounts Table Query
+                                # Reverse Migration 1003: Delete Account Contacts Table Query
 
                                 This is provided for completeness when testing the migration system
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE %%SCHEMA%%accounts; 
+                                DROP TABLE %%SCHEMA%%account_contacts; 
                             ]=],
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27
-                            NULL,                               -- collection
-                            NULL,                               -- valid_after
-                            NULL,                               -- valid_until
-                            0,                                  -- created_id
-                            %%NOW%%,                            -- created_at
-                            0,                                  -- updated_id
-                            %%NOW%%                             -- updated_at
+                            %%STATUS_ACTIVE%%,                          -- query_status_lua_27
+                            NULL,                                       -- collection
+                            NULL,                                       -- valid_after
+                            NULL,                                       -- valid_until
+                            0,                                          -- created_id
+                            %%NOW%%,                                    -- created_at
+                            0,                                          -- updated_id
+                            %%NOW%%                                     -- updated_at
                         );
                     ]]
         },        
@@ -97,41 +96,55 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            18,                                         -- query_id
-                            1005,                                       -- query_ref
-                            %%TYPE_DIAGRAM_MIGRATIO%%,                  -- query_type_lua_28    
-                            %%DIALECT%%,                                -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%accounts',       -- name, summary
+                            12,                                             -- query_id
+                            1003,                                           -- query_ref
+                            %%TYPE_DIAGRAM_MIGRATIO%%,                      -- query_type_lua_28    
+                            %%DIALECT%%,                                    -- query_dialect_lua_30    
+                            'Diagram Tables: %%SCHEMA%%account_contacts',   -- name, summary
                             [=[
-                                # Diagram Migration 1005
+                                # Diagram Migration 1003
 
-                                ## Diagram Tables: %%SCHEMA%%accounts
+                                ## Diagram Tables: %%SCHEMA%%account_contacts
 
-                                This is the first JSON Diagram code for the accounts table.
+                                This is the first JSON Diagram code for the account_contacts table.
                             ]=],
-                            'JSON Table Definition in collection',      -- query_code,
-                            %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%                       -- DIAGRAM_START
+                            'JSON Table Definition in collection',          -- query_code,
+                            %%STATUS_ACTIVE%%,                              -- query_status_lua_27, collection
+                            %%JSON_INGEST_START%%                           -- DIAGRAM_START
                             [=[
                                 [
                                     {
                                         "object_type": "table",
-                                        "object_id": "table.accounts",
-                                        "object_ref": "1005",
+                                        "object_id": "table.account_contacts",
+                                        "object_ref": "1003",
                                         "table": [
                                             {
                                                 "name": "account_id",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": true,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "contact_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": true,
                                                 "unique": true
                                             },
                                             {
-                                                "name": "name",
+                                                "name": "contact_seq",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": true,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "contact",
                                                 "datatype": "%%VARCHAR_100%%",
                                                 "nullable": false,
                                                 "primary_key": false,
-                                                "unique": true
+                                                "unique": false
                                             },
                                             {
                                                 "name": "summary",
@@ -141,35 +154,7 @@ return {
                                                 "unique": false
                                             },
                                             {
-                                                "name": "first_name",
-                                                "datatype": "%%VARCHAR_50%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "middle_name",
-                                                "datatype": "%%VARCHAR_50%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "last_name",
-                                                "datatype": "%%VARCHAR_50%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "password_hash",
-                                                "datatype": "%%VARCHAR_128%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "iana_timezone_lua_17",
+                                                "name": "contact_type_lua_18",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
@@ -177,7 +162,15 @@ return {
                                                 "lookup": true
                                             },
                                             {
-                                                "name": "status_lua_16",
+                                                "name": "authenticate_lua_19",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false,
+                                                "lookup": true
+                                            },
+                                            {
+                                                "name": "status_lua_20",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,

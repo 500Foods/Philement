@@ -72,7 +72,7 @@ case "${ENGINE}" in
 esac
 
 # Validate design directory exists
-DESIGN_DIR="${HELIUM_DIR}/${DESIGN}"
+DESIGN_DIR="${HELIUM_DIR}/${DESIGN}/migrations"
 if [[ ! -d "${DESIGN_DIR}" ]]; then
     echo "Error: Design directory not found: ${DESIGN_DIR}" >&2
     exit 1
@@ -130,7 +130,7 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
 
     # Run Lua script to generate SQL for this migration (from lib directory for consistent paths)
     pushd "${LIB_DIR}" >/dev/null
-    SQL_OUTPUT=$(LUA_PATH="./?.lua;${DESIGN_DIR}/?.lua" lua "./get_migration_wrapper.lua" "${ENGINE}" "${DESIGN}" "${PREFIX}" "${migration_num}")
+    SQL_OUTPUT=$(LUA_PATH="./?.lua;${DESIGN_DIR}/?.lua" lua "./get_migration.lua" "${ENGINE}" "${DESIGN}" "${PREFIX}" "${migration_num}")
     popd >/dev/null
 
     # Extract JSON from the diagram migration using DIAGRAM_START and DIAGRAM_END markers

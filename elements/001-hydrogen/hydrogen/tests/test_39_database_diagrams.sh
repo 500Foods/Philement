@@ -78,7 +78,7 @@ generate_database_diagram() {
     local schema="$3"
 
     # Find the highest numbered migration file for this design
-    local design_dir="${HELIUM_DIR}/${design}"
+    local design_dir="${HELIUM_DIR}/${design}/migrations"
     local migration_files=()
     if [[ -d "${design_dir}" ]]; then
         while IFS= read -r -d '' file; do
@@ -219,7 +219,7 @@ get_migration_number() {
     local design="$1"
 
     # Find the highest numbered migration file for this design
-    local design_dir="${HELIUM_DIR}/${design}"
+    local design_dir="${HELIUM_DIR}/${design}/migrations"
     local migration_files=()
     if [[ -d "${design_dir}" ]]; then
         while IFS= read -r -d '' file; do

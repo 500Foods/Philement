@@ -1,6 +1,6 @@
 -- get_migration_wrapper.lua
 -- Command line wrapper for database.lua from design folders
--- Usage: lua get_migration_wrapper.lua <engine> <design> <schema> <migration>
+-- Usage: lua get_migration.lua <engine> <design> <schema> <migration>
 
 -- Get command line arguments
 local engine = arg[1] or 'postgresql'

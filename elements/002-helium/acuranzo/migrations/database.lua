@@ -42,23 +42,23 @@ local database = {
     },
 
     -- Saves repeating it in virtually every single template
-    query_insert_columns = [[
-                            query_id,
-                            query_ref,
-                            query_type_lua_28,
-                            query_dialect_lua_30,
-                            name,
-                            summary,
-                            query_code,
-                            query_status_lua_27,
-                            collection,
-                            valid_after,
-                            valid_until,
-                            created_id,
-                            created_at,
-                            updated_id,
-                            updated_at
-    ]],
+    query_insert_columns =  [[
+                              query_id,
+                              query_ref,
+                              query_type_lua_28,
+                              query_dialect_lua_30,
+                              name,
+                              summary,
+                              query_code,
+                              query_status_lua_27,
+                              collection,
+                              valid_after,
+                              valid_until,
+                              created_id,
+                              created_at,
+                              updated_id,
+                              updated_at
+                            ]],
 
     defaults = {
 
@@ -98,66 +98,66 @@ local database = {
             JSON_INGEST_START = "%%SCHEMA%%json_ingest (",
             JSON_INGEST_END = ")",
             JSON_INGEST_FUNCTION = [[
-CREATE SCHEMA IF NOT EXISTS app;
+                CREATE SCHEMA IF NOT EXISTS app;
 
-CREATE OR REPLACE FUNCTION %%SCHEMA%%json_ingest(s TEXT)
-RETURNS JSONB
-LANGUAGE plpgsql
-STRICT
-STABLE
-AS $fn$
-DECLARE
-  i      int := 1;
-  L      int := length(s);
-  ch     text;
-  out    text := '';
-  in_str boolean := false;  -- are we inside a "..." JSON string?
-  esc    boolean := false;  -- previous char was a backslash
-BEGIN
-  -- Fast path: already valid JSON
-  BEGIN
-    RETURN s::jsonb;
-  EXCEPTION WHEN others THEN
-    -- fall through to fix-up pass
-  END;
+                CREATE OR REPLACE FUNCTION %%SCHEMA%%json_ingest(s TEXT)
+                RETURNS JSONB
+                LANGUAGE plpgsql
+                STRICT
+                STABLE
+                AS $fn$
+                DECLARE
+                  i      int := 1;
+                  L      int := length(s);
+                  ch     text;
+                  out    text := '';
+                  in_str boolean := false;  -- are we inside a "..." JSON string?
+                  esc    boolean := false;  -- previous char was a backslash
+                BEGIN
+                  -- Fast path: already valid JSON
+                  BEGIN
+                    RETURN s::jsonb;
+                  EXCEPTION WHEN others THEN
+                    -- fall through to fix-up pass
+                  END;
 
-  -- Fix-up pass: escape only control chars *inside* JSON strings
-  WHILE i <= L LOOP
-    ch := substr(s, i, 1);
+                  -- Fix-up pass: escape only control chars *inside* JSON strings
+                  WHILE i <= L LOOP
+                    ch := substr(s, i, 1);
 
-    IF esc THEN
-      -- we were in an escape sequence: keep this char verbatim
-      out := out || ch;
-      esc := false;
+                    IF esc THEN
+                      -- we were in an escape sequence: keep this char verbatim
+                      out := out || ch;
+                      esc := false;
 
-    ELSIF ch = E'\\' THEN
-      out := out || ch;
-      esc := true;
+                    ELSIF ch = E'\\' THEN
+                      out := out || ch;
+                      esc := true;
 
-    ELSIF ch = '"' THEN
-      out := out || ch;
-      in_str := NOT in_str;
+                    ELSIF ch = '"' THEN
+                      out := out || ch;
+                      in_str := NOT in_str;
 
-    ELSIF in_str AND ch = E'\n' THEN
-      out := out || E'\\n';
+                    ELSIF in_str AND ch = E'\n' THEN
+                      out := out || E'\\n';
 
-    ELSIF in_str AND ch = E'\r' THEN
-      out := out || E'\\r';
+                    ELSIF in_str AND ch = E'\r' THEN
+                      out := out || E'\\r';
 
-    ELSIF in_str AND ch = E'\t' THEN
-      out := out || E'\\t';
+                    ELSIF in_str AND ch = E'\t' THEN
+                      out := out || E'\\t';
 
-    ELSE
-      out := out || ch;
-    END IF;
+                    ELSE
+                      out := out || ch;
+                    END IF;
 
-    i := i + 1;
-  END LOOP;
+                    i := i + 1;
+                  END LOOP;
 
-  -- Parse after fix-ups
-  RETURN out::jsonb;
-END
-$fn$;
+                  -- Parse after fix-ups
+                  RETURN out::jsonb;
+                END
+                $fn$;
             ]]
         },
 
@@ -178,62 +178,62 @@ $fn$;
             JSON_INGEST_START = "%%SCHEMA%%json_ingest(",
             JSON_INGEST_END = ")",
             JSON_INGEST_FUNCTION = [[
-DELIMITER $$
+                DELIMITER $$
 
-DROP FUNCTION IF EXISTS json_ingest $$
-CREATE FUNCTION json_ingest(s LONGTEXT)
-RETURNS JSON
-DETERMINISTIC
-BEGIN
-  DECLARE ok BOOL DEFAULT TRUE;
-  DECLARE fixed LONGTEXT DEFAULT '';
-  DECLARE i INT DEFAULT 1;
-  DECLARE L INT DEFAULT CHAR_LENGTH(s);
-  DECLARE ch CHAR(1);
-  DECLARE in_str BOOL DEFAULT FALSE;
-  DECLARE esc    BOOL DEFAULT FALSE;
+                DROP FUNCTION IF EXISTS json_ingest $$
+                CREATE FUNCTION json_ingest(s LONGTEXT)
+                RETURNS JSON
+                DETERMINISTIC
+                BEGIN
+                  DECLARE ok BOOL DEFAULT TRUE;
+                  DECLARE fixed LONGTEXT DEFAULT '';
+                  DECLARE i INT DEFAULT 1;
+                  DECLARE L INT DEFAULT CHAR_LENGTH(s);
+                  DECLARE ch CHAR(1);
+                  DECLARE in_str BOOL DEFAULT FALSE;
+                  DECLARE esc    BOOL DEFAULT FALSE;
 
-  -- fast path
-  BEGIN
-    RETURN CAST(s AS JSON);
-  EXCEPTION
-    WHEN SQLEXCEPTION THEN SET ok = FALSE;
-  END;
+                  -- fast path
+                  BEGIN
+                    RETURN CAST(s AS JSON);
+                  EXCEPTION
+                    WHEN SQLEXCEPTION THEN SET ok = FALSE;
+                  END;
 
-  WHILE i <= L DO
-    SET ch = SUBSTRING(s, i, 1);
+                  WHILE i <= L DO
+                    SET ch = SUBSTRING(s, i, 1);
 
-    IF esc THEN
-      SET fixed = CONCAT(fixed, ch);
-      SET esc = FALSE;
+                    IF esc THEN
+                      SET fixed = CONCAT(fixed, ch);
+                      SET esc = FALSE;
 
-    ELSEIF ch = '\\' THEN
-      SET fixed = CONCAT(fixed, ch);
-      SET esc = TRUE;
+                    ELSEIF ch = '\\' THEN
+                      SET fixed = CONCAT(fixed, ch);
+                      SET esc = TRUE;
 
-    ELSEIF ch = '"' THEN
-      SET fixed = CONCAT(fixed, ch);
-      SET in_str = NOT in_str;
+                    ELSEIF ch = '"' THEN
+                      SET fixed = CONCAT(fixed, ch);
+                      SET in_str = NOT in_str;
 
-    ELSEIF in_str AND ch = '\n' THEN
-      SET fixed = CONCAT(fixed, '\\n');
+                    ELSEIF in_str AND ch = '\n' THEN
+                      SET fixed = CONCAT(fixed, '\\n');
 
-    ELSEIF in_str AND ch = '\r' THEN
-      SET fixed = CONCAT(fixed, '\\r');
+                    ELSEIF in_str AND ch = '\r' THEN
+                      SET fixed = CONCAT(fixed, '\\r');
 
-    ELSEIF in_str AND ch = '\t' THEN
-      SET fixed = CONCAT(fixed, '\\t');
+                    ELSEIF in_str AND ch = '\t' THEN
+                      SET fixed = CONCAT(fixed, '\\t');
 
-    ELSE
-      SET fixed = CONCAT(fixed, ch);
-    END IF;
+                    ELSE
+                      SET fixed = CONCAT(fixed, ch);
+                    END IF;
 
-    SET i = i + 1;
-  END WHILE;
+                    SET i = i + 1;
+                  END WHILE;
 
-  RETURN CAST(fixed AS JSON);
-END $$
-DELIMITER ;
+                  RETURN CAST(fixed AS JSON);
+                END $$
+                DELIMITER ;
             ]]
         },
 
@@ -254,62 +254,62 @@ DELIMITER ;
             JSON_INGEST_START = "%%SCHEMA%%json_ingest(",
             JSON_INGEST_END = ")",
             JSON_INGEST_FUNCTION = [[
-CREATE OR REPLACE FUNCTION %%SCHEMA%%json_ingest(s CLOB)
-RETURNS CLOB
-LANGUAGE SQL
-DETERMINISTIC
-BEGIN
-  DECLARE i INTEGER DEFAULT 1;
-  DECLARE L INTEGER DEFAULT LENGTH(s);
-  DECLARE ch CHAR(1);
-  DECLARE out CLOB(10M) DEFAULT '';
-  DECLARE in_str SMALLINT DEFAULT 0;
-  DECLARE esc    SMALLINT DEFAULT 0;
+                CREATE OR REPLACE FUNCTION %%SCHEMA%%json_ingest(s CLOB)
+                RETURNS CLOB
+                LANGUAGE SQL
+                DETERMINISTIC
+                BEGIN
+                  DECLARE i INTEGER DEFAULT 1;
+                  DECLARE L INTEGER DEFAULT LENGTH(s);
+                  DECLARE ch CHAR(1);
+                  DECLARE out CLOB(10M) DEFAULT '';
+                  DECLARE in_str SMALLINT DEFAULT 0;
+                  DECLARE esc    SMALLINT DEFAULT 0;
 
-  -- fast path
-  IF s IS JSON THEN
-    RETURN s;
-  END IF;
+                  -- fast path
+                  IF s IS JSON THEN
+                    RETURN s;
+                  END IF;
 
-  WHILE i <= L DO
-    SET ch = SUBSTR(s, i, 1);
+                  WHILE i <= L DO
+                    SET ch = SUBSTR(s, i, 1);
 
-    IF esc = 1 THEN
-      SET out = out || ch;
-      SET esc = 0;
+                    IF esc = 1 THEN
+                      SET out = out || ch;
+                      SET esc = 0;
 
-    ELSEIF ch = '\' THEN
-      SET out = out || ch;
-      SET esc = 1;
+                    ELSEIF ch = '\' THEN
+                      SET out = out || ch;
+                      SET esc = 1;
 
-    ELSEIF ch = '"' THEN
-      SET out = out || ch;
-      SET in_str = 1 - in_str;
+                    ELSEIF ch = '"' THEN
+                      SET out = out || ch;
+                      SET in_str = 1 - in_str;
 
-    ELSEIF in_str = 1 AND ch = X'0A' THEN     -- \n
-      SET out = out || '\n';
+                    ELSEIF in_str = 1 AND ch = X'0A' THEN     -- \n
+                      SET out = out || '\n';
 
-    ELSEIF in_str = 1 AND ch = X'0D' THEN     -- \r
-      SET out = out || '\r';
+                    ELSEIF in_str = 1 AND ch = X'0D' THEN     -- \r
+                      SET out = out || '\r';
 
-    ELSEIF in_str = 1 AND ch = X'09' THEN     -- \t
-      SET out = out || '\t';
+                    ELSEIF in_str = 1 AND ch = X'09' THEN     -- \t
+                      SET out = out || '\t';
 
-    ELSE
-      SET out = out || ch;
-    END IF;
+                    ELSE
+                      SET out = out || ch;
+                    END IF;
 
-    SET i = i + 1;
-  END WHILE;
+                    SET i = i + 1;
+                  END WHILE;
 
-  -- ensure result is JSON
-  IF out IS JSON THEN
-    RETURN out;
-  ELSE
-    SIGNAL SQLSTATE '22032' SET MESSAGE_TEXT = 'Invalid JSON after normalization';
-  END IF;
-END
-@            
+                  -- ensure result is JSON
+                  IF out IS JSON THEN
+                    RETURN out;
+                  ELSE
+                    SIGNAL SQLSTATE '22032' SET MESSAGE_TEXT = 'Invalid JSON after normalization';
+                  END IF;
+                END
+                @            
             ]]
         }
     },
