@@ -14,6 +14,7 @@
 # - Cleans up all temporary files
 
 # CHANGELONG
+# 3.0.0 - 2025-09-30 - Added Helium migration files to payload
 # 2.2.0 - Added terminal payload generation with xterm.js
 # 2.1.0 - Added swagger/ directory structure within tar file for better organization
 # 2.0.0 - Better at downloading latest version of swagger
@@ -24,7 +25,7 @@
 set -e
 
 # Display script information
-echo "payload-generate.sh version 2.2.0"
+echo "payload-generate.sh version 3.0.0"
 echo "Encrypted Payload Generator for Hydrogen"
 
 # Helium project Migrations to include (same as test_31_migrations.sh)
@@ -278,10 +279,10 @@ copy_migration_files() {
         mkdir -p "${design_dir}"
 
         # Copy database.lua for this design
-        local source_db="${HELIUM_DIR}/${design}/database.lua"
+        local source_db="${HELIUM_DIR}/${design}/migrations/database.lua"
         if [[ -f "${source_db}" ]]; then
             cp "${source_db}" "${design_dir}/"
-            echo -e "${GREEN}${PASS} Copied ${design}/database.lua${NC}"
+            echo -e "${GREEN}${PASS} Copied ${design}/migrations/database.lua${NC}"
         else
             echo -e "${YELLOW}${WARN} Warning: ${source_db} not found${NC}"
         fi
@@ -291,14 +292,14 @@ copy_migration_files() {
         local migration_files=()
         while IFS= read -r -d '' file; do
             migration_files+=("${file}")
-        done < <("${FIND}" "${HELIUM_DIR}/${design}" -name "${design}_????.lua" -type f -print0 2>/dev/null || true)
+        done < <("${FIND}" "${HELIUM_DIR}/${design}/migrations" -name "${design}_????.lua" -type f -print0 2>/dev/null | sort -z || true)
 
         for migration_file in "${migration_files[@]}"; do
             if [[ -f "${migration_file}" ]]; then
                 local filename
                 filename=$(basename "${migration_file}")
                 cp "${migration_file}" "${design_dir}/"
-                echo -e "${GREEN}${PASS} Copied ${design}/${filename}${NC}"
+                echo -e "${GREEN}${PASS} Copied ${design}/migrations/${filename}${NC}"
                 migration_count=$(( migration_count + 1 ))
             fi
         done
@@ -721,7 +722,7 @@ create_tarball() {
     print_header "Tarball Contents"
     echo -e "${CYAN}${INFO} Listing contents of compressed tarball:${NC}"
     echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
-    brotli -d < "${TEMP_DIR}/payload.tar.br" | "${TAR}" -tvf - | \
+    brotli -d < "${TEMP_DIR}/payload.tar.br" | "${TAR}" -tvf - | sort -k 6 | \
     while read -r line; do
         # Check if the file is a brotli-compressed file
         if [[ "${line}" == *".br" ]]; then
