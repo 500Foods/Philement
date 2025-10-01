@@ -16,6 +16,7 @@ if(CCACHE_EXECUTABLE)
         "CCACHE_DEPEND=yes"
         "CCACHE_HARDLINK=yes"
         "CCACHE_BASEDIR=${CMAKE_CURRENT_SOURCE_DIR}/.."
+        "CCACHE_IGNOREOPTIONS=-DVERSION* -DRELEASE*"
     )
 
     # Create target to configure ccache environment
