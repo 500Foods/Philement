@@ -11,6 +11,7 @@
 #include <time.h>
 #include <poll.h>
 #include <sys/socket.h>
+#include <dlfcn.h>
 
 // Include the header but undefine the macros to access real functions
 #include "mock_system.h"
@@ -25,6 +26,10 @@
 #undef clock_gettime
 #undef poll
 #undef recvfrom
+#undef dlopen
+#undef dlclose
+#undef dlerror
+#undef access
 
 // Function prototypes
 void *mock_malloc(size_t size);
@@ -36,6 +41,10 @@ int mock_nanosleep(const struct timespec *req, struct timespec *rem);
 int mock_clock_gettime(int clk_id, struct timespec *tp);
 int mock_poll(struct pollfd *fds, nfds_t nfds, int timeout);
 ssize_t mock_recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
+void *mock_dlopen(const char *filename, int flags);
+int mock_dlclose(void *handle);
+char *mock_dlerror(void);
+int mock_access(const char *pathname, int mode);
 void mock_system_set_malloc_failure(int should_fail);
 void mock_system_set_realloc_failure(int should_fail);
 void mock_system_set_gethostname_failure(int should_fail);
@@ -44,6 +53,10 @@ void mock_system_set_nanosleep_failure(int should_fail);
 void mock_system_set_clock_gettime_failure(int should_fail);
 void mock_system_set_poll_failure(int should_fail);
 void mock_system_set_recvfrom_failure(int should_fail);
+void mock_system_set_dlopen_result(void *result);
+void mock_system_set_dlopen_failure(int should_fail);
+void mock_system_set_dlerror_result(const char *result);
+void mock_system_set_access_result(int result);
 void mock_system_reset_all(void);
 
 // Static variables to store mock state
@@ -55,6 +68,10 @@ static int mock_nanosleep_should_fail = 0;
 static int mock_clock_gettime_should_fail = 0;
 static int mock_poll_should_fail = 0;
 static int mock_recvfrom_should_fail = 0;
+static void *mock_dlopen_result = NULL;
+static int mock_dlopen_should_fail = 0;
+static const char *mock_dlerror_result = NULL;
+static int mock_access_result = 0;
 
 // Mock implementation of malloc
 void *mock_malloc(size_t size) {
@@ -201,6 +218,22 @@ void mock_system_set_recvfrom_failure(int should_fail) {
     mock_recvfrom_should_fail = should_fail;
 }
 
+void mock_system_set_dlopen_result(void *result) {
+    mock_dlopen_result = result;
+}
+
+void mock_system_set_dlopen_failure(int should_fail) {
+    mock_dlopen_should_fail = should_fail;
+}
+
+void mock_system_set_dlerror_result(const char *result) {
+    mock_dlerror_result = result;
+}
+
+void mock_system_set_access_result(int result) {
+    mock_access_result = result;
+}
+
 void mock_system_reset_all(void) {
     mock_malloc_should_fail = 0;
     mock_realloc_should_fail = 0;
@@ -210,4 +243,48 @@ void mock_system_reset_all(void) {
     mock_clock_gettime_should_fail = 0;
     mock_poll_should_fail = 0;
     mock_recvfrom_should_fail = 0;
+    mock_dlopen_result = NULL;
+    mock_dlopen_should_fail = 0;
+    mock_dlerror_result = NULL;
+    mock_access_result = 0;
+}
+
+// Mock implementation of dlopen
+void *mock_dlopen(const char *filename, int flags) {
+    (void)filename;  // Suppress unused parameter
+    (void)flags;     // Suppress unused parameter
+
+    if (mock_dlopen_should_fail) {
+        return NULL;
+    }
+
+    return mock_dlopen_result;
+}
+
+// Mock implementation of dlclose
+int mock_dlclose(void *handle) {
+    (void)handle;  // Suppress unused parameter
+
+    if (mock_dlopen_should_fail) {
+        return -1;
+    }
+
+    return 0;
+}
+
+// Mock implementation of dlerror
+char *mock_dlerror(void) {
+    if (mock_dlerror_result) {
+        return strdup(mock_dlerror_result);
+    }
+
+    return strdup("Mock dlerror");
+}
+
+// Mock implementation of access
+int mock_access(const char *pathname, int mode) {
+    (void)pathname;  // Suppress unused parameter
+    (void)mode;      // Suppress unused parameter
+
+    return mock_access_result;
 }
