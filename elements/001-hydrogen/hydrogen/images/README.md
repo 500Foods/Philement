@@ -2,6 +2,13 @@
 
 This directory contains automatically generated SVG visualization files that provide visual representations of various project metrics and test results.
 
+## Database Diagrams
+
+In addition to the files described in detail in the sections that follow, there is also a subdirectory for each database design that is built into Hydrogen. These are essentially table relationship diagrams, simplified versions of a traditional Entity-Relationship Diagram (ERD) for each supported database engine, based off of the most current migration available during the most recent build.
+
+- [Acuranzo](acuranzo/README.md)
+- [Helium](helium/README.md)
+
 ## Available Images
 
 ### CLOC_CODE.svg
