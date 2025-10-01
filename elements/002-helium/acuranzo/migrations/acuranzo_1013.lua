@@ -1,9 +1,9 @@
--- Migration: acuranzo_1004.lua
--- Creates the account_roles table and populating it with the next migration.
+-- Migration: acuranzo_1013.lua
+-- Creates the lists table and populating it with the next migration.
 
 -- CHANGELOG
 -- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 -0 2025-09-13 - Initial creation for account_roles table with PostgreSQL support.
+-- 1.0.0 -0 2025-09-13 - Initial creation for lists table with PostgreSQL support.
 
 local config = require 'database'
 
@@ -16,26 +16,25 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            13,                                     -- query_id
-                            1004,                                   -- query_ref
-                            %%TYPE_FORWARD_MIGRATIO%%,              -- query_type_lua_28    
-                            %%DIALECT%%,                            -- query_dialect_lua_30    
-                            'Create Account Roles Table Query',     -- name, summary, query_code
+                            40,                                 -- query_id
+                            1013,                               -- query_ref
+                            %%TYPE_FORWARD_MIGRATIO%%,          -- query_type_lua_28    
+                            %%DIALECT%%,                        -- query_dialect_lua_30    
+                            'Create Lists Table Query',         -- name, summary, query_code
                             [=[
-                                # Forward Migration 1004: Create Account Roles Table Query
+                                # Forward Migration 1013: Create Lists Table Query
 
-                                This migration creates the account_roles table for storing account role data.
+                                This migration creates the lists table for storing list data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%account_roles
+                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%lists
                                 (
-                                    system_id %%INTEGER%% NOT NULL,
-                                    account_id %%INTEGER%% NOT NULL,
-                                    role_id %%INTEGER%% NOT NULL,
-                                    name %%VARCHAR_100%%,
-                                    summary %%VARCHAR_500%%,
-                                    status_lua_37 %%INTEGER%% NOT NULL,
-                                    collection %%JSONB%%,
+                                    list_key %%INTEGER%% NOT NULL,
+                                    list_value %%VARCHAR_100%%,
+                                    list_note %%VARCHAR_100%%,
+                                    list_type_lua_31 %%INTEGER%% NOT NULL,
+                                    status_lua_32 %%INTEGER%% NOT NULL,
+                                    collection %%KSONB%%,
                                     valid_after %%TIMESTAMP_TZ%%,
                                     valid_until %%TIMESTAMP_TZ%%,
                                     created_id %%INTEGER%% NOT NULL,
@@ -62,19 +61,19 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            14,                                     -- query_id
-                            1004,                                   -- query_ref
-                            %%TYPE_REVERSE_MIGRATIO%%,              -- query_type_lua_28    
-                            %%DIALECT%%,                            -- query_dialect_lua_30    
-                            'Delete Account Roles Table Query',     -- name, summary, query_code
+                            41,                                 -- query_id
+                            1013,                               -- query_ref
+                            %%TYPE_REVERSE_MIGRATIO%%,          -- query_type_lua_28    
+                            %%DIALECT%%,                        -- query_dialect_lua_30    
+                            'Delete Lists Table Query',         -- name, summary, query_code
                             [=[
-                                # Reverse Migration 1004: Delete Account Roles Table Query
+                                # Reverse Migration 1013: Delete Lists Table Query
 
                                 This is provided for completeness when testing the migration system
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE %%SCHEMA%%account_roles; 
+                                DROP TABLE %%SCHEMA%%lists; 
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
                             NULL,                               -- collection
@@ -94,65 +93,58 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            15,                                             -- query_id
-                            1004,                                           -- query_ref
-                            %%TYPE_DIAGRAM_MIGRATIO%%,                      -- query_type_lua_28    
-                            %%DIALECT%%,                                    -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%account_roles',      -- name, summary
+                        42,                                             -- query_id
+                            1013,                                       -- query_ref
+                            %%TYPE_DIAGRAM_MIGRATIO%%,                  -- query_type_lua_28    
+                            %%DIALECT%%,                                -- query_dialect_lua_30    
+                            'Diagram Tables: %%SCHEMA%%lists',          -- name, summary
                             [=[
-                                # Diagram Migration 1004
+                                # Diagram Migration 1013
 
-                                ## Diagram Tables: %%SCHEMA%%account_roles
+                                ## Diagram Tables: %%SCHEMA%%lists
 
-                                This is the first JSON Diagram code for the account_roles table.
+                                This is the first JSON Diagram code for the lists table.
                             ]=],
-                            'JSON Table Definition in collection',          -- query_code,
-                            %%STATUS_ACTIVE%%,                              -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%                           -- DIAGRAM_START
+                            'JSON Table Definition in collection',      -- query_code,
+                            %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
+                            %%JSON_INGEST_START%%                       -- DIAGRAM_START
                             [=[
                                 [
                                     {
                                         "object_type": "table",
-                                        "object_id": "table.account_roles",
-                                        "object_ref": "1004",
+                                        "object_id": "table.lists",
+                                        "object_ref": "1013",
                                         "table": [
                                             {
-                                                "name": "role_id",
+                                                "name": "list_key",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": true,
                                                 "unique": false
                                             },
                                             {
-                                                "name": "system_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "account_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "name",
+                                                "name": "list_value",
                                                 "datatype": "%%VARCHAR_100%%",
                                                 "nullable": true,
                                                 "primary_key": false,
                                                 "unique": false
                                             },
                                             {
-                                                "name": "summary",
-                                                "datatype": "%%VARCHAR_500%%",
+                                                "name": "list_note",
+                                                "datatype": "%%VARCHAR_100%%",
                                                 "nullable": true,
                                                 "primary_key": false,
                                                 "unique": false
                                             },
                                             {
-                                                "name": "status_lua_37",
+                                                "name": "list_type_lua_31",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "status_lua_32",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,

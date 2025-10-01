@@ -1,9 +1,9 @@
--- Migration: acuranzo_1007.lua
--- Creates the connections table and populating it with the next migration.
+-- Migration: acuranzo_1006.lua
+-- Creates the actions table and populating it with the next migration.
 
 -- CHANGELOG
 -- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 -0 2025-09-13 - Initial creation for connections table with PostgreSQL support.
+-- 1.0.0 -0 2025-09-13 - Initial creation for actions table with PostgreSQL support.
 
 local config = require 'database'
 
@@ -16,32 +16,31 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            22,                                 -- query_id
-                            1007,                               -- query_ref
+                            19,                                 -- query_id
+                            1006,                               -- query_ref
                             %%TYPE_FORWARD_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Create Connections Table Query',   -- name, summary, query_code
+                            'Create Actions Table Query',       -- name, summary, query_code
                             [=[
-                                # Forward Migration 1007: Create Connections Table Query
+                                # Forward Migration 1006: Create Actions Table Query
 
-                                This migration creates the connections table for storing connection data.
+                                This migration creates the actions table for storing action data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%connections
+                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%actions
                                 (
-                                    connection_id %%INTEGER%% NOT NULL,
-                                    connection_type_lua_4 %%INTEGER%% NOT NULL,
-                                    name %%VARCHAR_100%% NOT NULL,
-                                    summary %%VARCHAR_500%%,
-                                    connected_lua_5 %%INTEGER%% NOT NULL,
-                                    status_lua_6 %%INTEGER%% NOT NULL,
-                                    collection %%JSONB%%,
-                                    valid_after %%TIMEZONE_TZ%%,
-                                    valid_until %%TIMEZONE_TZ%%,
+                                    action_id %%INTEGER%% NOT NULL,
+                                    action_type_lua_24 %%INTEGER%% NOT NULL,
+                                    system_id %%INTEGER%%,
+                                    application_id %%INTEGER%%,
+                                    application_version %%VARCHAR_50%%,
+                                    account_id %%INTEGER%%,
+                                    feature_lua_21 %%INTEGER%% NOT NULL,
+                                    action %%VARCHAR_500%%,
+                                    action_msecs %%INTEGER%% NOT NULL,
+                                    ip_address %%VARCHAR_50%%,
                                     created_id %%INTEGER%% NOT NULL,
-                                    created_at %%TIMEZONE_TZ%% NOT NULL,
-                                    updated_id %%INTEGER%% NOT NULL,
-                                    updated_at %%TIMEZONE_TZ%% NOT NULL
+                                    created_at %%TIMESTAMP_TZ%% 
                                 );
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
@@ -62,19 +61,19 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            23,                                 -- query_id
-                            1007,                               -- query_ref
+                            20,                                 -- query_id
+                            1006,                               -- query_ref
                             %%TYPE_REVERSE_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Delete Connections Table Query',   -- name, summary, query_code
+                            'Delete Actions Table Query',       -- name, summary, query_code
                             [=[
-                                # Reverse Migration 1007: Delete Connections Table Query
+                                # Reverse Migration 1006: Delete Actions Table Query
 
                                 This is provided for completeness when testing the migration system
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE %%SCHEMA%%connections; 
+                                DROP TABLE %%SCHEMA%%actions; 
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
                             NULL,                               -- collection
@@ -94,17 +93,17 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            24,                                         -- query_id
-                            1007,                                       -- query_ref
+                            21,                                         -- query_id
+                            1006,                                       -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,                  -- query_type_lua_28    
                             %%DIALECT%%,                                -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%connections',    -- name, summary
+                            'Diagram Tables: %%SCHEMA%%actions',        -- name, summary
                             [=[
-                                # Diagram Migration 1007
+                                # Diagram Migration 1006
 
-                                ## Diagram Tables: %%SCHEMA%%connections
+                                ## Diagram Tables: %%SCHEMA%%actions
 
-                                This is the first JSON Diagram code for the connections table.
+                                This is the first JSON Diagram code for the actions table.
                             ]=],
                             'JSON Table Definition in collection',      -- query_code,
                             %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
@@ -113,77 +112,81 @@ return {
                                 [
                                     {
                                         "object_type": "table",
-                                        "object_id": "table.connections",
-                                        "object_ref": "1007",
+                                        "object_id": "table.actions",
+                                        "object_ref": "1006",
                                         "table": [
                                             {
-                                                "name": "connection_id",
+                                                "name": "action_id",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": true,
-                                                "unique": true
+                                                "unique": false
                                             },
                                             {
-                                                "name": "connection_type_lua_4",
+                                                "name": "system_id",
                                                 "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "lookup": true
-                                            },
-                                            {
-                                                "name": "name",
-                                                "datatype": "%%VARCHAR_100%%",
-                                                "nullable": false,
+                                                "nullable": true,
                                                 "primary_key": false,
                                                 "unique": false
                                             },
                                             {
-                                                "name": "summary",
+                                                "name": "application_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "application_version",
+                                                "datatype": "%%VARCHAR_50%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "account_id",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "action",
                                                 "datatype": "%%VARCHAR_500%%",
                                                 "nullable": true,
                                                 "primary_key": false,
                                                 "unique": false
                                             },
                                             {
-                                                "name": "connected_lua_5",
+                                                "name": "action_msecs",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "ip_address",
+                                                "datatype": "%%VARCHAR_50%%",
+                                                "nullable": true,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "feature_lua_21",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
                                                 "unique": false,
                                                 "lookup": true
+                                        
                                             },
                                             {
-                                                "name": "status_lua_6",
+                                                "name": "action_type_lua_24",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
                                                 "unique": false,
                                                 "lookup": true
-                                            },
-                                            {
-                                                "name": "collection",
-                                                "datatype": "%%JSONB%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "valid_after",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "valid_until",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
                                             },
                                             {
                                                 "name": "created_id",
@@ -195,22 +198,6 @@ return {
                                             },
                                             {
                                                 "name": "created_at",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "updated_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "updated_at",
                                                 "datatype": "%%TIMESTAMP_TZ%%",
                                                 "nullable": false,
                                                 "primary_key": false,

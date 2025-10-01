@@ -1,9 +1,9 @@
--- Migration: acuranzo_1001.lua
--- Creates the lookups table and populating it with the next migration.
+-- Migration: acuranzo_1018.lua
+-- Creates the sessions table and populating it with the next migration.
 
 -- CHANGELOG
 -- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 -0 2025-09-13 - Initial creation for lookups table with PostgreSQL support.
+-- 1.0.0 -0 2025-09-13 - Initial creation for sessions table with PostgreSQL support.
 
 local config = require 'database'
 
@@ -16,35 +16,30 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            4,                                  -- query_id
-                            1001,                               -- query_ref
+                            55,                                 -- query_id
+                            1018,                               -- query_ref
                             %%TYPE_FORWARD_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Create Lookups Table Query',       -- name, summary, query_code
+                            'Create Sessions Table Query',      -- name, summary, query_code
                             [=[
-                                # Forward Migration 1001: Create Lookups Table Query
+                                # Forward Migration 1018: Create Sessions Table Query
 
-                                This migration creates the lookups table for storing key-value lookup data.
+                                This migration creates the sessions table for storing session data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%lookups
+                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%sessions
                                 (
-                                    lookup_id integer NOT NULL,
-                                    key_idx integer NOT NULL,
-                                    value_txt character varying(100) COLLATE pg_catalog."default",
-                                    value_int integer,
-                                    sort_seq integer NOT NULL,
-                                    status_lua_1 integer NOT NULL,
-                                    collection jsonb,
-                                    valid_after timestamp with time zone,
-                                    valid_until timestamp with time zone,
-                                    created_id integer NOT NULL,
-                                    created_at timestamp with time zone NOT NULL,
-                                    updated_id integer NOT NULL,
-                                    updated_at timestamp with time zone NOT NULL,
-                                    summary text COLLATE pg_catalog."default",
-                                    code text COLLATE pg_catalog."default",
-                                    CONSTRAINT lookups_pkey PRIMARY KEY (lookup_id, key_idx)
+                                    session_id CHAR(20) PRIMARY KEY NOT NULL,   
+                                    account_id %%INTEGER%% NOT NULL,
+                                    session %%BIGTEXT%% NOT NULL,
+                                    session_length %%INTEGER%% NOT NULL,
+                                    session_issues %%INTEGER%% NOT NULL,
+                                    session_changes %%INTEGER%% NOT NULL,
+                                    session_secs %%INTEGER%% NOT NULL,
+                                    status_lua_25 %%INTEGER%% NOT NULL,
+                                    flag_lua_26 %%INTEGER%% NOT NULL,
+                                    created_at %%TIMESTAMP_TZ%% NOT NULL,
+                                    updated_at %%TIMESTAMP_TZ%% NOT NULL,
                                 );
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
@@ -65,19 +60,19 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            5,                                  -- query_id
-                            1001,                               -- query_ref
+                            56,                                 -- query_id
+                            1018,                               -- query_ref
                             %%TYPE_REVERSE_MIGRATIO%%,          -- query_type_lua_28    
                             %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Delete Lookups Table Query',       -- name, summary, query_code
+                            'Delete Sessions Table Query',      -- name, summary, query_code
                             [=[
-                                # Reverse Migration 1001: Delete Lookups Table Query
+                                # Reverse Migration 1018: Delete Sessions Table Query
 
                                 This is provided for completeness when testing the migration system
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE %%SCHEMA%%lookups; 
+                                DROP TABLE %%SCHEMA%%sessions; 
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
                             NULL,                               -- collection
@@ -97,17 +92,17 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            6,                                          -- query_id
-                            1001,                                       -- query_ref
+                            57,                                         -- query_id
+                            1018,                                       -- query_ref
                             %%TYPE_DIAGRAM_MIGRATIO%%,                  -- query_type_lua_28    
                             %%DIALECT%%,                                -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%lookups',        -- name, summary
+                            'Diagram Tables: %%SCHEMA%%sessions',       -- name, summary
                             [=[
-                                # Diagram Migration 1001
+                                # Diagram Migration 1018
 
-                                ## Diagram Tables: %%SCHEMA%%lookups
+                                ## Diagram Tables: %%SCHEMA%%sessions
 
-                                This is the first JSON Diagram code for the lookups table.
+                                This is the first JSON Diagram code for the sessions table.
                             ]=],
                             'JSON Table Definition in collection',      -- query_code,
                             %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
@@ -116,46 +111,60 @@ return {
                                 [
                                     {
                                         "object_type": "table",
-                                        "object_id": "table.lookups",
-                                        "object_ref": "1001",
+                                        "object_id": "table.sessions",
+                                        "object_ref": "1018",
                                         "table": [
                                             {
-                                                "name": "lookup_id",
-                                                "datatype": "%%INTEGER%%",
+                                                "name": "session_id",
+                                                "datatype": "%%TEXT%%",
                                                 "nullable": false,
-                                                "primary_key": true,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "key_idx",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": true,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "value_txt",
-                                                "datatype": "%%VARCHAR_100%%",
-                                                "nullable": true,
                                                 "primary_key": false,
                                                 "unique": false
                                             },
                                             {
-                                                "name": "value_int",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "sort_seq",
+                                                "name": "account_id",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
                                                 "unique": false
                                             },
                                             {
-                                                "name": "status_lua_1",
+                                                "name": "session",
+                                                "datatype": "%%BIGTEXT%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "session_length",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "session_issues",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "session_changes",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "session_secs",
+                                                "datatype": "%%INTEGER%%",
+                                                "nullable": false,
+                                                "primary_key": false,
+                                                "unique": false
+                                            },
+                                            {
+                                                "name": "status_lua_25",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
@@ -163,62 +172,16 @@ return {
                                                 "lookup": true
                                             },
                                             {
-                                                "name": "summary",
-                                                "datatype": "%%TEXT%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "code",
-                                                "datatype": "%%TEXT%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "collection",
-                                                "datatype": "%%JSONB%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "valid_after",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "valid_until",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "created_id",
+                                                "name": "flag_lua_26",
                                                 "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
                                                 "unique": false,
-                                                "standard": true
+                                                "lookup": true
                                             },
                                             {
                                                 "name": "created_at",
                                                 "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "updated_id",
-                                                "datatype": "%%INTEGER%%",
                                                 "nullable": false,
                                                 "primary_key": false,
                                                 "unique": false,

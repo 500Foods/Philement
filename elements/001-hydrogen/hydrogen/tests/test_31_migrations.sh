@@ -8,6 +8,7 @@
 # validate_migration()
 
 # CHANGELOG
+# 1.1.0 - 2025-09-30 - Updated location of Helium migration files
 # 1.0.0 - 2025-09-14 - Initial creation for database migration validation
 
 set -euo pipefail
@@ -17,7 +18,7 @@ TEST_NAME="Migrations"
 TEST_ABBR="MGR"
 TEST_NUMBER="31"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -94,10 +95,10 @@ validate_migration() {
     # Generate SQL using our Lua script (silently)
     local sql_output
     # Set LUA_PATH to include both the lib directory and design directory
-    local design_dir="${HELIUM_DIR}/${design}"
-    local lua_path="${SCRIPT_DIR}/lib/?.lua;${design_dir}/?.lua"
+    local design_dir="${HELIUM_DIR}/${design}/migrations"
+    # local lua_path="${SCRIPT_DIR}/lib/?.lua;${design_dir}/?.lua"
 
-    if ! sql_output=$(LUA_PATH="${lua_path}" lua "${SCRIPT_DIR}/lib/get_migration_wrapper.lua" "${engine}" "${design}" "${schema_name}" "${migration}" 2>&1); then
+    if ! sql_output=$("${SCRIPT_DIR}/lib/get_migration.sh" "${engine}" "${design}" "${schema_name}" "${migration}" 2>&1); then
         # SQL generation failed, save error to diags_file
         local diags_file="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}/${design}_${engine}_${schema_name}_${migration_num}.txt"
         mkdir -p "$(dirname "${diags_file}")"
@@ -162,7 +163,7 @@ VALIDATION_RESULTS=()
 # Calculate total combos
 total_combos=0
 for design in "${DESIGNS[@]}"; do
-    design_dir="${HELIUM_DIR}/${design}"
+    design_dir="${HELIUM_DIR}/${design}/migrations"
     migration_files=()
     if [[ -d "${design_dir}" ]]; then
         while IFS= read -r -d '' file; do
@@ -189,7 +190,7 @@ done
 # Process each design
 for design in "${DESIGNS[@]}"; do
     # Find migration files for this design (sorted)
-    design_dir="${HELIUM_DIR}/${design}"
+    design_dir="${HELIUM_DIR}/${design}/migrations"
     migration_files=()
     if [[ -d "${design_dir}" ]]; then
         while IFS= read -r -d '' file; do
