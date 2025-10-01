@@ -1,2 +1,1 @@
 # Acuranzo Database Diagrams
-
