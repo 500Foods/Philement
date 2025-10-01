@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 6.3.1 - 2025-09-30 - Fixed decimal .0 problem
 # 6.3.0 - 2025-09-29 - Added sorting by total lines within primary/secondary sections in table 1
 # 6.2.0 - 2025-09-29 - Promoted JavaScript to primary section in table 1, included in Code metrics in table 2
 # 6.1.0 - 2025-09-26 - Added C/C column to table 1, color coded targets in table 2
@@ -33,7 +34,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="6.3.0"
+CLOC_VERSION="6.3.1"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
@@ -105,7 +106,7 @@ run_cloc_analysis() {
     core_json=$(mktemp) || return 1
     test_json=$(mktemp) || return 1
 
-    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" . --quiet --json --exclude-list-file="${exclude_list}" --not-match-d='images' --not-match-d='tests/lib/node_modules' --not-match-d='tests/unity' --not-match-f='hydrogen_installer' --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${core_json}" 2>&1); then
+    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" . --quiet --json --exclude-list-file="${exclude_list}" --not-match-d="build" --not-match-d='images' --not-match-d='tests/lib/node_modules' --not-match-d='tests/unity' --not-match-f='hydrogen_installer' --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${core_json}" 2>&1); then
         if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" tests/unity --not-match-d='tests/unity/framework' --quiet --json --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${test_json}" 2>&1); then
             # Extract cloc version from core JSON
             local cloc_header
@@ -236,7 +237,7 @@ EOF
                                 blank: (($core_sh.blank // 0) + ($test_sh.blank // 0)),
                                 comment: (($core_sh.comment // 0) + ($test_sh.comment // 0)),
                                 code: (($core_sh.code // 0) + ($test_sh.code // 0)),
-                                comment_code_percentage: (if (($core_sh.code // 0) + ($test_sh.code // 0)) > 0 then (if (((($core_sh.comment // 0) + ($test_sh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0)) * 100) > 0 then (((($core_sh.comment // 0) + ($test_sh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0)) * 100 | . * 10 | round / 10 | tostring | . + ".0" | tostring + " %") else "" end) else "" end)
+                                comment_code_percentage: (if (($core_sh.code // 0) + ($test_sh.code // 0)) > 0 then (if (((($core_sh.comment // 0) + ($test_sh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0)) * 100) > 0 then (((($core_sh.comment // 0) + ($test_sh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0)) * 100 | . * 10 | round / 10 | tostring | if contains(".") then . else . + ".0" end | . + " %") else "" end) else "" end)
                             } | .lines = (.blank + .comment + .code)
                         ),
                         # Lua
