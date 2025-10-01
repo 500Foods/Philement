@@ -5,6 +5,11 @@
 # Description: Checks local markdown links in a repository using xargs parallel processing
 
 # CHANGELOG
+# 1.4.4 - 2025-10-01 - Restored parallel processing with optimal batching (8 workers, 40 files/batch)
+# 1.4.3 - 2025-10-01 - Fixed find to prune major directories: build/ (~46k), node_modules (~2k), unity/framework (~500 files)
+# 1.4.2 - 2025-10-01 - Attempted xargs fix (but accidentally broke parallelization)
+# 1.4.1 - 2025-10-01 - Added pure bash path normalization to eliminate all realpath subprocess calls
+# 1.4.0 - 2025-10-01 - Eliminated double-pass link processing (50% speedup), optimized path normalization
 # 1.3.0 - 2025-08-08 - Removed cksum deduplication (added overhead for repositories with few duplicates)
 # 1.2.0 - 2025-08-08 - Added cksum-based within-run deduplication (10x faster than md5sum)
 # 1.1.0 - 2025-08-08 - Fork reduction optimizations: replaced wc -l and dirname with bash builtins
@@ -15,7 +20,7 @@
 set -euo pipefail
 
 # Application version
-declare -r APPVERSION="1.3.0"
+declare -r APPVERSION="1.4.4"
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
 PRINTF=$(command -v gprintf 2>/dev/null || command -v printf)
@@ -199,7 +204,7 @@ build_file_cache() {
             file_exists_cache["${path}"]="${type}"
             cache_count=$(( cache_count + 1 ))
         fi
-    done < <("${FIND}" "${repo_root}" -name .git -prune -o \( -type f -printf '%p:f\0' \) -o \( -type d -printf '%p:d\0' \) 2>/dev/null || true)
+    done < <("${FIND}" "${repo_root}" \( -name .git -o -name build -o -name node_modules -o -path '*/tests/logs' -o -path '*/tests/results' -o -path '*/tests/diagnostics' -o -path '*/tests/unity/framework' \) -prune -o \( -type f -printf '%p:f\0' \) -o \( -type d -printf '%p:d\0' \) 2>/dev/null || true)
     
     debug_log "Built file existence cache with ${cache_count} entries"
 }
@@ -221,10 +226,6 @@ process_file_batch() {
         local_cache["${path}"]="${type}"
     done < "${cache_file}"
     
-    
-    # Path normalization cache (following md5sum batching pattern)
-    declare -A normalize_candidates
-    declare -A normalized_cache
     
     # Fast file existence check
     file_exists() {
@@ -275,6 +276,41 @@ process_file_batch() {
         fi
         
         return 1  # Should not ignore
+    }
+    
+    # Pure bash path normalization - eliminates realpath subprocess calls
+    normalize_path() {
+        local path="$1"
+        
+        # Handle absolute paths
+        local prefix=""
+        if [[ "${path}" == /* ]]; then
+            prefix="/"
+            path="${path#/}"
+        fi
+        
+        # Split into parts and normalize
+        local -a parts=()
+        local IFS='/'
+        for part in ${path}; do
+            case "${part}" in
+                ""|".") continue ;;
+                "..")
+                    if [[ ${#parts[@]} -gt 0 ]]; then
+                        unset 'parts[-1]'
+                    fi
+                    ;;
+                *) parts+=("${part}") ;;
+            esac
+        done
+        
+        # Rebuild path
+        if [[ ${#parts[@]} -eq 0 ]]; then
+            echo "${prefix:-.}"
+        else
+            local IFS='/'
+            echo "${prefix}${parts[*]}"
+        fi
     }
     
     # Optimized link extraction - single awk command instead of grep|sed|awk pipeline
@@ -359,7 +395,7 @@ process_file_batch() {
         local linked_files=()
         local missing_list=()
         
-        # Process all links
+        # Single-pass link processing with inline normalization
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         while IFS= read -r link; do
             links_total=$(( links_total + 1 ))
@@ -381,10 +417,14 @@ process_file_batch() {
                 abs_link="${base_dir}/${actual_link}"
             fi
             
-            # Collect paths needing normalization (batching optimization)
+            # Normalize inline only if needed (pure bash - no subprocess calls)
             case "${abs_link}" in
-                */./*|*/../*) normalize_candidates["${abs_link}"]=1 ;;
-                *) ;;
+                */./*|*/../*)
+                    abs_link=$(normalize_path "${abs_link}")
+                    ;;
+                *)
+                    # Path doesn't need normalization
+                    ;;
             esac
             
             local link_file="${abs_link%%#*}"
@@ -398,69 +438,6 @@ process_file_batch() {
             else
                 # Check if the missing link should be ignored
                 # shellcheck disable=SC2310 # We want to continue even if the test fails
-                if should_ignore_path "${link_file}"; then
-                    # Treat ignored missing links as checked to avoid reporting them
-                    links_checked=$(( links_checked + 1 ))
-                else
-                    links_missing=$(( links_missing + 1 ))
-                    missing_list+=("${rel_file}:${actual_link}")
-                fi
-            fi
-        done < <(extract_links "${abs_file}" || true)
-        
-        # Batch normalize all collected paths (md5sum pattern optimization)
-        XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
-        if [[ ${#normalize_candidates[@]} -gt 0 ]]; then
-            # shellcheck disable=SC2312,SC2016 # This has been optimized so let's not fuss with it more
-            while IFS=' ' read -r original normalized; do
-                normalized_cache["${original}"]="${normalized}"
-            done < <(
-                "${PRINTF}" '%s\n' "${!normalize_candidates[@]}" | \
-                "${XARGS}" -r -I {} sh -c '"${PRINTF}" "%s %s\n" "{}" "$("${REALPATH}" -m "{}" 2>/dev/null || echo "{}")"'
-            )
-        fi
-        
-        # Second pass: process links with normalized paths from cache
-        links_total=0 links_checked=0 links_missing=0
-        linked_files=()
-        missing_list=()
-        
-        # Re-process all links using cached normalized paths
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
-        while IFS= read -r link; do
-            links_total=$(( links_total + 1 ))
-            local actual_link="${link}"
-            local traverse=true
-            
-            if [[ "${link}" =~ ^non_md:(.+)$ ]]; then
-                actual_link="${BASH_REMATCH[1]}"
-                traverse=false
-            fi
-            
-            # Resolve link path with cached normalization
-            local abs_link
-            if [[ "${actual_link}" =~ ^https://github.com/[^/]+/[^/]+/blob/main/(.+)$ ]]; then
-                abs_link="${repo_root}/${BASH_REMATCH[1]}"
-            elif [[ "${actual_link}" == /* ]]; then
-                abs_link="${repo_root}${actual_link}"
-            else
-                abs_link="${base_dir}/${actual_link}"
-            fi
-            
-            # Use cached normalized path if available
-            if [[ -n "${normalized_cache[${abs_link}]}" ]]; then
-                abs_link="${normalized_cache[${abs_link}]}"
-            fi
-            
-            local link_file="${abs_link%%#*}"
-            # shellcheck disable=SC2310 # We want to continue even if the test fails
-            if file_exists "${link_file}"; then
-                links_checked=$(( links_checked + 1 ))
-                if [[ "${traverse}" == "true" && "${link_file}" =~ \.md$ ]]; then
-                    linked_files+=("${link_file}")
-                fi
-            else
-                # Check if the missing link should be ignored
                 if should_ignore_path "${link_file}"; then
                     # Treat ignored missing links as checked to avoid reporting them
                     links_checked=$(( links_checked + 1 ))
@@ -525,8 +502,13 @@ while [[ -s "${files_to_process}" ]]; do
     while IFS= read -r; do file_count=$(( file_count + 1 )); done < "${files_to_process}"
     debug_log "Processing iteration ${iteration} with ${file_count} files"
     
-    # Process current batch in parallel using xargs
-    "${XARGS}" -P 0 -I {} bash -c "process_file_batch \"\$1\" \"\$2\" \"\$3\" \"\$4\" <<< \"\$5\"" _ "${cache_file}" "${repo_root}" "${original_dir}" "${results_file}" {} < "${files_to_process}"
+    # Process files in parallel batches (split into groups for parallel processing)
+    # shellcheck disable=SC2016 # Single quotes intentional - variables passed as positional params
+    "${XARGS}" -P 8 -n 40 bash -c '
+        for file; do
+            echo "$file"
+        done | process_file_batch "$1" "$2" "$3" "$4"
+    ' _ "${cache_file}" "${repo_root}" "${original_dir}" "${results_file}" < "${files_to_process}"
     # Extract newly discovered files from results
     new_files_temp="${temp_dir}/new_files_${iteration}.txt"
     true > "${new_files_temp}"
