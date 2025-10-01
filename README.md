@@ -67,21 +67,21 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-10-01 04:29:46 UTC
+Last updated at 2025-10-01 12:32:20 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              605          21970          22586          79082
-Markdown                       342           9380             59          28291
-Bourne Shell                    85           3814          60600          17556
+Markdown                       344           9382             59          28293
+Bourne Shell                    85           3814          60598          17559
 JSON                            48              4              0          17479
-SVG                              9             12            150          10476
-Lua                             31            307            339           6178
+SVG                             13             20            202          11004
+Lua                             31            297            342           6676
 C/C++ Header                   154           1675           4574           4590
 Text                             6              5              0           1668
 CMake                           19            255            412           1605
 HTML                             8            138             23            882
-SQL                             33             44              6            880
+SQL                              9             10              6            475
 JavaScript                       2            131            191            444
 Python                           1             36              9            195
 CSS                              3             14              7             80
@@ -90,11 +90,13 @@ Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 -------------------------------------------------------------------------------
-SUM:                          1358          37869          89016         169661
+SUM:                          1340          37835          89069         170287
 -------------------------------------------------------------------------------
-47 Files were skipped (duplicate, binary, or without source code):
+57 Files were skipped (duplicate, binary, or without source code):
+  svg: 8
   gitignore: 4
   jpg: 3
+  lua: 3
   png: 3
   sqruff_db2: 3
   sqruff_mysql: 3
@@ -116,7 +118,6 @@ SUM:                          1358          37869          89016         169661
   lintignore-c: 1
   lintignore-markdown: 1
   lintignore: 1
-  lua: 1
   sqlite: 1
   stl: 1
   stylelintcache: 1
