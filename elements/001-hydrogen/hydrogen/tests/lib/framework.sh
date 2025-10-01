@@ -304,57 +304,13 @@ setup_orchestration_environment() {
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking Build Directory"
     if [[ -d "build" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Nice Build directory you have there"
-        # 
-        # # Check if build is already a tmpfs mount
-        # if mountpoint -q build 2>/dev/null; then
-        #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Build directory already mounted as tmpfs, emptying non-cmake-build contents..."
-        #     if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
-        #         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory (tmpfs) emptied and ready for use"
-        #     else
-        #         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to empty tmpfs build directory"
-        #         EXIT_CODE=1
-        #     fi
-        # else
-            # # Empty the regular directory and mount as tmpfs
-            # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Emptying Build directory..."
-            # print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "rm -rf build/*"
-            # # if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
-            # if rm -rf build/coverage build/tests build/unity build/*marker* 2>/dev/null; then
-            # # if rm -rf build/* 2>/dev/null; then
-            #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully emptied build directory"
-                
-            # #     # # Mount as tmpfs
-            # #     # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Mounting 'build' as tmpfs with 1GB size..."
-            # #     # print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "sudo mount -t tmpfs -o size=1G tmpfs build"
-            # #     # if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
-            # #     #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
-            # #     #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
-            # #     # else
-            # #     #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
-            # #     #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Continuing with regular filesystem build directory"
-            # #     # fi
-            # else
-            #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to empty Build directory"
-            #     EXIT_CODE=1
-            # fi
-        # fi
+
     else
         # Create the build directory and mount as tmpfs
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Creating Build directory..."
         print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "mkdir build"
         if mkdir build 2>/dev/null; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully created Build directory"
-            
-            # # Mount as tmpfs
-            # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Mounting 'build' as tmpfs with 1GB size..."
-            # print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "sudo mount -t tmpfs -o size=1G tmpfs build"
-            # if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
-            #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory created and mounted as tmpfs (1GB) for faster I/O"
-            #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
-            # else
-            #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory created (tmpfs mount failed, using regular filesystem)"
-            #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Continuing with regular filesystem build directory"
-            # fi
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to create Build directory"
             EXIT_CODE=1
