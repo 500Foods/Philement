@@ -588,25 +588,25 @@ EOF
          "section": "ratios",
          "metric": "Code/Docs",
          "value": "${codedoc_ratio}",
-         "description": "Ratio of Code to Docs             ${codedoc_color}Target: 1.5-2.5{RESET}"
+         "description": "Ratio of Code to Docs           ${codedoc_color}Target: 1.5 - 2.5{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Docs/Code",
          "value": "${docscode_ratio}",
-         "description": "Ratio of Docs to Code             ${docscode_color}Target: 0.4-0.7{RESET}"
+         "description": "Ratio of Docs to Code           ${docscode_color}Target: 0.4 - 0.7{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Code/Comments",
          "value": "${codecomment_ratio}",
-         "description": "Ratio of Code to Comments         ${codecomment_color}Target: 3.0-5.0{RESET}"
+         "description": "Ratio of Code to Comments       ${codecomment_color}Target: 3.0 - 5.0{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Comments/Code",
          "value": "${commentscode_ratio}",
-         "description": "Ratio of Comments to Code         ${commentscode_color}Target: 0.2-0.3{RESET}"
+         "description": "Ratio of Comments to Code       ${commentscode_color}Target: 0.2 - 0.3{RESET}"
      },
      {
          "section": "coverage_lines",
@@ -636,25 +636,25 @@ EOF
          "section": "coverage_percentages",
          "metric": "Coverage Unity %",
          "value": "${coverage_unity_fmt} %",
-         "description": "Unity test coverage                   ${coverage_unity_color}Target: 60%{RESET}"
+         "description": "Unity test coverage                  ${coverage_unity_color}Target: 60 %{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Blackbox %",
          "value": "${coverage_black_fmt} %",
-         "description": "Blackbox test coverage                ${coverage_black_color}Target: 70%{RESET}"
+         "description": "Blackbox test coverage               ${coverage_black_color}Target: 70 %{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Combined %",
          "value": "${coverage_combined_fmt} %",
-         "description": "Combined test coverage                ${coverage_combined_color}Target: 80%{RESET}"
+         "description": "Combined test coverage               ${coverage_combined_color}Target: 80 %{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Unity Ratio",
          "value": "${unity_ratio}",
-         "description": "Test/Core C/Headers             ${unity_color}Target: 100%-200%{RESET}"
+         "description": "Test/Core C/Headers         ${unity_color}Target: 100 % - 200 %{RESET}"
      }
 ]
 EOF
