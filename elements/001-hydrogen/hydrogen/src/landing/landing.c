@@ -79,7 +79,7 @@ LandingFunction get_landing_function(const char* subsystem_name) {
     if (!subsystem_name) return NULL;
 
     // Registry is handled separately due to different signature
-    if (strcmp(subsystem_name, "Registry") == 0) return NULL;
+    if (strcmp(subsystem_name, SR_REGISTRY) == 0) return NULL;
 
     if (strcmp(subsystem_name, SR_PRINT         ) == 0) return land_print_subsystem;
     if (strcmp(subsystem_name, SR_MAIL_RELAY    ) == 0) return land_mail_relay_subsystem;
@@ -117,7 +117,7 @@ bool land_approved_subsystems(ReadinessResults* results) {
         bool is_ready = results->results[i].ready;
         
         // Skip Registry - it lands last
-        if (strcmp(subsystem, "Registry") == 0) continue;
+        if (strcmp(subsystem, SR_REGISTRY) == 0) continue;
         
         // Get subsystem ID
         int subsystem_id = get_subsystem_id_by_name(subsystem);

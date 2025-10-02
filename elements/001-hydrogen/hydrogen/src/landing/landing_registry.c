@@ -52,7 +52,7 @@ LaunchReadiness check_registry_landing_readiness(void) {
     if (!server_stopping) {
         readiness.ready = false;
         readiness.messages[1] = strdup("  No-Go:   System not in shutdown state");
-        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Registry");
+        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of " SR_REGISTRY);
         readiness.messages[3] = NULL;
         return readiness;
     }
@@ -79,13 +79,13 @@ LaunchReadiness check_registry_landing_readiness(void) {
     if (active_subsystems > 0) {
         readiness.ready = false;
         readiness.messages[2] = strdup("  No-Go:   Other subsystems still active");
-        readiness.messages[3] = strdup("  Decide:  No-Go For Landing of Registry");
+        readiness.messages[3] = strdup("  Decide:  No-Go For Landing of " SR_REGISTRY);
         readiness.messages[4] = NULL;
     } else {
         readiness.ready = true;
         readiness.messages[2] = strdup("  Go:      All other subsystems inactive");
         readiness.messages[3] = strdup("  Go:      Ready for final cleanup");
-        readiness.messages[4] = strdup("  Decide:  Go For Landing of Registry");
+        readiness.messages[4] = strdup("  Decide:  Go For Landing of " SR_REGISTRY);
         readiness.messages[5] = NULL;
     }
     

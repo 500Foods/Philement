@@ -69,7 +69,7 @@ bool initialize_config_defaults(AppConfig* config) {
     initialize_config_defaults_oidc(config);
     initialize_config_defaults_notify(config);
 
-    log_this(SR_CONFIG, "Successfully initialized configuration defaults", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_CONFIG, "― Successfully initialized configuration defaults", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -83,7 +83,7 @@ void initialize_config_defaults_server(AppConfig* config) {
         config->server.startup_delay = 5;
         config->server.payload_key = process_env_variable_string("${env.PAYLOAD_KEY}");
 
-        log_this(SR_CONFIG, "Applied config defaults for Server", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Server", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -107,7 +107,7 @@ void initialize_config_defaults_network(AppConfig* config) {
         config->network.available_interfaces[0].available = true;
         config->network.available_interfaces_count = 1;
         
-        log_this(SR_CONFIG, "Applied config defaults for Network", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Network", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -155,7 +155,7 @@ void initialize_config_defaults_database(AppConfig* config) {
             memset(&config->databases.connections[i], 0, sizeof(DatabaseConnection));
         }
 
-        log_this(SR_CONFIG, "Applied config defaults for Database (no default connections)", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Database (no default connections)", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -190,7 +190,7 @@ void initialize_config_defaults_logging(AppConfig* config) {
         config->logging.notify.subsystem_count = 0;
         config->logging.notify.subsystems = NULL;
         
-        log_this(SR_CONFIG, "Applied config defaults for Logging", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Logging", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -212,7 +212,7 @@ void initialize_config_defaults_webserver(AppConfig* config) {
         // NEW: Global CORS default for WebServer
         config->webserver.cors_origin = strdup("*");  // Allow all origins as default
 
-        log_this(SR_CONFIG, "Applied config defaults for Webserver", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Webserver", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -226,7 +226,7 @@ void initialize_config_defaults_api(AppConfig* config) {
         // NEW: CORS defaults for API
         config->api.cors_origin = strdup("*");  // Allow all origins as default
 
-        log_this(SR_CONFIG, "Applied config defaults for API", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for API", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -265,7 +265,7 @@ void initialize_config_defaults_swagger(AppConfig* config) {
         config->swagger.ui_options.doc_expansion = strdup("list");
         config->swagger.ui_options.syntax_highlight_theme = strdup("agate");
 
-        log_this(SR_CONFIG, "Applied config defaults for Swagger", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Swagger", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -288,7 +288,7 @@ void initialize_config_defaults_websocket(AppConfig* config) {
         config->websocket.protocol = strdup("hydrogen");
         config->websocket.key = strdup("${env.WEBSOCKET_KEY}");
         
-        log_this(SR_CONFIG, "Applied config defaults for Websockets", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Websockets", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -308,7 +308,7 @@ void initialize_config_defaults_terminal(AppConfig* config) {
         config->terminal.cors_origin = strdup("*");  // Allow all origins by default
         config->terminal.index_page = strdup("terminal.html");  // Configurable index page
 
-        log_this(SR_CONFIG, "Applied config defaults for Terminal", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Terminal", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -326,7 +326,7 @@ void initialize_config_defaults_mdns_server(AppConfig* config) {
         config->mdns_server.num_services = 0;
         config->mdns_server.retry_count = 1;
             
-        log_this(SR_CONFIG, "Applied config defaults for mDNS Server", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for mDNS Server", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -343,7 +343,7 @@ void initialize_config_defaults_mdns_client(AppConfig* config) {
         config->mdns_client.service_types = NULL;
         config->mdns_client.num_service_types = 0;
         
-        log_this(SR_CONFIG, "Applied config defaults for mDNS Client", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for mDNS Client", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -372,7 +372,7 @@ void initialize_config_defaults_mail_relay(AppConfig* config) {
             memset(&config->mail_relay.Servers[i], 0, sizeof(OutboundServer));
         }
         
-        log_this(SR_CONFIG, "Applied config defaults for Mail Relay", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Mail Relay", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -408,7 +408,7 @@ void initialize_config_defaults_print(AppConfig* config) {
         config->print.motion.jerk = 10.0;
         config->print.motion.smooth_moves = true;
         
-        log_this(SR_CONFIG, "Applied config defaults for Print", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Print", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -433,7 +433,7 @@ void initialize_config_defaults_resources(AppConfig* config) {
         config->resources.log_usage = false;
         config->resources.check_interval_ms = 60000; // 1 minute
         
-        log_this(SR_CONFIG, "Applied config defaults for Resources", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Resources", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -468,7 +468,7 @@ void initialize_config_defaults_oidc(AppConfig* config) {
         config->oidc.tokens.signing_alg = strdup("RS256");
         config->oidc.tokens.encryption_alg = NULL;
         
-        log_this(SR_CONFIG, "Applied config defaults for OIDC", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for OIDC", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -488,6 +488,6 @@ void initialize_config_defaults_notify(AppConfig* config) {
         config->notify.smtp.max_retries = 3;
         config->notify.smtp.from_address = strdup("hydrogen@localhost");
         
-        log_this(SR_CONFIG, "Applied config defaults for Notify", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "――― Applied config defaults for Notify", LOG_LEVEL_DEBUG, 0);
     }
 }
