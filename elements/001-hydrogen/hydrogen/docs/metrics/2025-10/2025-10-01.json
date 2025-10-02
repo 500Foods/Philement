@@ -1,7 +1,7 @@
 {
     "metadata": {
         "generated": "2025-10-01",
-        "timestamp": "2025-Oct-01 (Wed) 16:40:23 PDT",
+        "timestamp": "2025-Oct-01 (Wed) 17:34:15 PDT",
         "version": "1.0.0"
     },
     "test_results": {
@@ -14,7 +14,7 @@
         "tests": 20,
         "pass": 20,
         "fail": 0,
-        "elapsed": 0.335
+        "elapsed": 0.278
     },
     {
         "group": 0,
@@ -24,17 +24,17 @@
         "tests": 9,
         "pass": 9,
         "fail": 0,
-        "elapsed": 0.214
+        "elapsed": 0.159
     },
     {
         "group": 0,
         "test_id": "04-LNK",
-        "test_name": "Markdown Links {BLUE}(github-sitemap links: 1,274){RESET}",
+        "test_name": "Markdown Links {BLUE}(github-sitemap links: 1,287){RESET}",
         "test_version": "3.3.0",
         "tests": 3,
         "pass": 3,
         "fail": 0,
-        "elapsed": 1.948
+        "elapsed": 3.103
     },
     {
         "group": 1,
@@ -44,7 +44,7 @@
         "tests": 394,
         "pass": 394,
         "fail": 0,
-        "elapsed": 2.089
+        "elapsed": 2.257
     },
     {
         "group": 1,
@@ -54,7 +54,7 @@
         "tests": 4,
         "pass": 4,
         "fail": 0,
-        "elapsed": 0.403
+        "elapsed": 0.527
     },
     {
         "group": 1,
@@ -64,7 +64,7 @@
         "tests": 15,
         "pass": 15,
         "fail": 0,
-        "elapsed": 1.220
+        "elapsed": 1.238
     },
     {
         "group": 1,
@@ -74,7 +74,7 @@
         "tests": 37,
         "pass": 37,
         "fail": 0,
-        "elapsed": 1.289
+        "elapsed": 1.365
     },
     {
         "group": 1,
@@ -84,7 +84,7 @@
         "tests": 17,
         "pass": 17,
         "fail": 0,
-        "elapsed": 0.790
+        "elapsed": 0.815
     },
     {
         "group": 1,
@@ -94,7 +94,7 @@
         "tests": 4,
         "pass": 4,
         "fail": 0,
-        "elapsed": 0.206
+        "elapsed": 0.252
     },
     {
         "group": 1,
@@ -104,17 +104,17 @@
         "tests": 5,
         "pass": 5,
         "fail": 0,
-        "elapsed": 0.479
+        "elapsed": 0.535
     },
     {
         "group": 1,
         "test_id": "17-UPD",
-        "test_name": "Startup/Shutdown {BLUE}(cycle: 0.239s /  0.160s){RESET}",
+        "test_name": "Startup/Shutdown {BLUE}(cycle: 0.209s /  0.182s){RESET}",
         "test_version": "5.0.0",
         "tests": 9,
         "pass": 9,
         "fail": 0,
-        "elapsed": 0.887
+        "elapsed": 0.986
     },
     {
         "group": 1,
@@ -124,7 +124,7 @@
         "tests": 9,
         "pass": 9,
         "fail": 0,
-        "elapsed": 2.340
+        "elapsed": 2.943
     },
     {
         "group": 1,
@@ -134,7 +134,7 @@
         "tests": 8,
         "pass": 8,
         "fail": 0,
-        "elapsed": 0.921
+        "elapsed": 0.858
     },
     {
         "group": 2,
@@ -144,27 +144,27 @@
         "tests": 11,
         "pass": 11,
         "fail": 0,
-        "elapsed": 0.692
+        "elapsed": 0.658
     },
     {
         "group": 2,
         "test_id": "21-SYS",
-        "test_name": "Endpoints {BLUE}(avg: 45.307ms){RESET}",
+        "test_name": "Endpoints {BLUE}(avg: 44.712ms){RESET}",
         "test_version": "6.0.0",
         "tests": 11,
         "pass": 11,
         "fail": 0,
-        "elapsed": 1.136
+        "elapsed": 1.142
     },
     {
         "group": 2,
         "test_id": "22-SWG",
-        "test_name": "Swagger {BLUE}(avg: 0.917ms){RESET}",
+        "test_name": "Swagger {BLUE}(avg: 0.681ms){RESET}",
         "test_version": "7.3.0",
         "tests": 15,
         "pass": 15,
         "fail": 0,
-        "elapsed": 1.288
+        "elapsed": 1.248
     },
     {
         "group": 2,
@@ -174,7 +174,7 @@
         "tests": 13,
         "pass": 13,
         "fail": 0,
-        "elapsed": 1.393
+        "elapsed": 1.350
     },
     {
         "group": 2,
@@ -184,7 +184,7 @@
         "tests": 13,
         "pass": 13,
         "fail": 0,
-        "elapsed": 1.247
+        "elapsed": 1.159
     },
     {
         "group": 2,
@@ -194,7 +194,7 @@
         "tests": 9,
         "pass": 9,
         "fail": 0,
-        "elapsed": 3.673
+        "elapsed": 3.610
     },
     {
         "group": 2,
@@ -204,7 +204,7 @@
         "tests": 21,
         "pass": 21,
         "fail": 0,
-        "elapsed": 3.610
+        "elapsed": 3.484
     },
     {
         "group": 3,
@@ -214,7 +214,7 @@
         "tests": 23,
         "pass": 23,
         "fail": 0,
-        "elapsed": 3.743
+        "elapsed": 2.722
     },
     {
         "group": 3,
@@ -224,7 +224,7 @@
         "tests": 100,
         "pass": 100,
         "fail": 0,
-        "elapsed": 1.794
+        "elapsed": 1.737
     },
     {
         "group": 3,
@@ -234,7 +234,7 @@
         "tests": 4,
         "pass": 4,
         "fail": 0,
-        "elapsed": 0.979
+        "elapsed": 0.995
     },
     {
         "group": 3,
@@ -244,7 +244,7 @@
         "tests": 4,
         "pass": 4,
         "fail": 0,
-        "elapsed": 0.484
+        "elapsed": 0.478
     },
     {
         "group": 3,
@@ -254,7 +254,7 @@
         "tests": 4,
         "pass": 4,
         "fail": 0,
-        "elapsed": 0.498
+        "elapsed": 0.456
     },
     {
         "group": 3,
@@ -264,7 +264,7 @@
         "tests": 4,
         "pass": 4,
         "fail": 0,
-        "elapsed": 1.263
+        "elapsed": 1.233
     },
     {
         "group": 3,
@@ -274,17 +274,17 @@
         "tests": 17,
         "pass": 17,
         "fail": 0,
-        "elapsed": 2.633
+        "elapsed": 2.571
     },
     {
         "group": 9,
         "test_id": "90-MKD",
-        "test_name": "Markdown Lint {BLUE}(markdownlint: 310 files){RESET}",
+        "test_name": "Markdown Lint {BLUE}(markdownlint: 312 files){RESET}",
         "test_version": "3.1.0",
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 1.968
+        "elapsed": 1.807
     },
     {
         "group": 9,
@@ -294,7 +294,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 2.456
+        "elapsed": 2.323
     },
     {
         "group": 9,
@@ -304,7 +304,7 @@
         "tests": 2,
         "pass": 2,
         "fail": 0,
-        "elapsed": 2.566
+        "elapsed": 2.301
     },
     {
         "group": 9,
@@ -314,7 +314,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 0.539
+        "elapsed": 0.601
     },
     {
         "group": 9,
@@ -324,7 +324,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 1.950
+        "elapsed": 1.736
     },
     {
         "group": 9,
@@ -334,7 +334,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 0.687
+        "elapsed": 0.568
     },
     {
         "group": 9,
@@ -344,7 +344,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 0.359
+        "elapsed": 0.310
     },
     {
         "group": 9,
@@ -354,17 +354,17 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 0.379
+        "elapsed": 0.290
     },
     {
         "group": 9,
         "test_id": "98-SIZ",
-        "test_name": "Code Size Analysis {BLUE}(lines: 130,884){RESET}",
+        "test_name": "Code Size Analysis {BLUE}(lines: 131,417){RESET}",
         "test_version": "3.5.0",
         "tests": 4,
         "pass": 4,
         "fail": 0,
-        "elapsed": 3.782
+        "elapsed": 3.110
     },
     {
         "group": 9,
@@ -374,7 +374,7 @@
         "tests": 5,
         "pass": 5,
         "fail": 0,
-        "elapsed": 0.918
+        "elapsed": 0.935
     }]
     },
     "cloc": {
@@ -402,12 +402,12 @@
   {
     "section": "primary",
     "language": "Markdown",
-    "files": 305,
-    "blank": 8924,
+    "files": 307,
+    "blank": 9132,
     "comment": 57,
-    "code": 25696,
+    "code": 26229,
     "comment_code_percentage": "0.2 %",
-    "lines": 34677
+    "lines": 35418
   },
   {
     "section": "primary",
@@ -504,7 +504,7 @@
      {
          "section": "code_metrics",
          "metric": "Docs",
-         "value": "25650",
+         "value": "26183",
          "description": "Markdown documentation code"
      },
      {
@@ -522,7 +522,7 @@
      {
          "section": "code_metrics",
          "metric": "Combined",
-         "value": "95164",
+         "value": "95697",
          "description": "Total content lines (Docs + Code + Comments)"
      },
      {
