@@ -36,13 +36,13 @@ bool handle_launch_plan(const ReadinessResults* results) {
     if (!results) return false;
     
     // Begin LAUNCH PLAN logging section
-    log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_LAUNCH, "LAUNCH PLAN", LOG_LEVEL_STATE, 0);
+    log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_LAUNCH, "LAUNCH PLAN", LOG_LEVEL_DEBUG, 0);
     
     // Log overall readiness status
-    log_this(SR_LAUNCH, "Total Subsystems Checked: %3d", LOG_LEVEL_STATE, 1, results->total_checked);
-    log_this(SR_LAUNCH, "Ready Subsystems:         %3d", LOG_LEVEL_STATE, 1, results->total_ready);
-    log_this(SR_LAUNCH, "Not Ready Subsystems:     %3d", LOG_LEVEL_STATE, 1, results->total_not_ready);
+    log_this(SR_LAUNCH, "Total Subsystems Checked: %3d", LOG_LEVEL_DEBUG, 1, results->total_checked);
+    log_this(SR_LAUNCH, "Ready Subsystems:         %3d", LOG_LEVEL_DEBUG, 1, results->total_ready);
+    log_this(SR_LAUNCH, "Not Ready Subsystems:     %3d", LOG_LEVEL_DEBUG, 1, results->total_not_ready);
     
     // Check if any subsystems are ready
     if (!results->any_ready) {
@@ -56,11 +56,11 @@ bool handle_launch_plan(const ReadinessResults* results) {
         bool is_ready = results->results[i].ready;
         
         // Log subsystem status
-        log_this(SR_LAUNCH, "%s %s", LOG_LEVEL_STATE, 2, is_ready ? "  Go:    " : "  No-Go: ", subsystem);
+        log_this(SR_LAUNCH, "%s %s", LOG_LEVEL_DEBUG, 2, is_ready ? "  Go:    " : "  No-Go: ", subsystem);
         
     }
     
-    log_this(SR_LAUNCH, "LAUNCH PLAN: Go for launch", LOG_LEVEL_STATE, 0);
+    log_this(SR_LAUNCH, "LAUNCH PLAN: Go for launch", LOG_LEVEL_DEBUG, 0);
 
     return true;
 }
