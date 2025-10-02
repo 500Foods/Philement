@@ -398,28 +398,29 @@ ReadinessResults handle_readiness_checks(void) {
     size_t index = 0;
     
     // Begin LAUNCH READINESS logging section
-    log_group_begin();
-        log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
-        log_this(SR_LAUNCH, "LAUNCH READINESS", LOG_LEVEL_DEBUG, 0);
-        process_subsystem_readiness(&results, &index, SR_REGISTRY, check_registry_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_PAYLOAD, check_payload_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_THREADS, check_threads_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_NETWORK, check_network_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_DATABASE, check_database_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_LOGGING, check_logging_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_WEBSERVER, check_webserver_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_API, check_api_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_SWAGGER, check_swagger_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_WEBSOCKET, check_websocket_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_TERMINAL, check_terminal_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_MDNS_SERVER, check_mdns_server_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_MDNS_CLIENT, check_mdns_client_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_MAIL_RELAY, check_mail_relay_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_PRINT, check_print_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_RESOURCES, check_resources_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_OIDC, check_oidc_launch_readiness());
-        process_subsystem_readiness(&results, &index, SR_NOTIFY, check_notify_launch_readiness());
-    log_group_end();
+    log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_LAUNCH, "LAUNCH READINESS", LOG_LEVEL_DEBUG, 0);
+
+    process_subsystem_readiness(&results, &index, SR_REGISTRY, check_registry_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_PAYLOAD, check_payload_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_THREADS, check_threads_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_NETWORK, check_network_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_DATABASE, check_database_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_LOGGING, check_logging_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_WEBSERVER, check_webserver_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_API, check_api_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_SWAGGER, check_swagger_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_WEBSOCKET, check_websocket_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_TERMINAL, check_terminal_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_MDNS_SERVER, check_mdns_server_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_MDNS_CLIENT, check_mdns_client_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_MAIL_RELAY, check_mail_relay_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_PRINT, check_print_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_RESOURCES, check_resources_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_OIDC, check_oidc_launch_readiness());
+    process_subsystem_readiness(&results, &index, SR_NOTIFY, check_notify_launch_readiness());
     
+    log_this(SR_LAUNCH, "LAUNCH READINESS COMPLETE", LOG_LEVEL_DEBUG, 0);
+
     return results;
 }

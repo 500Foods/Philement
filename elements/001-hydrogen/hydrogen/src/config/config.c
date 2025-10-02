@@ -112,7 +112,7 @@ AppConfig* load_config(const char* cmdline_path) {
     if (env_path) {
         explicit_config = true;
         if (!is_file_readable(env_path)) {
-            log_this(SR_CONFIG, "― Env config file not found: %s", LOG_LEVEL_ERROR, 1, env_path);
+            log_this(SR_CONFIG, "  qEnv config file not found: %s", LOG_LEVEL_ERROR, 1, env_path);
             return NULL;
         }
         root = json_load_file(env_path, 0, &error);
@@ -173,17 +173,30 @@ AppConfig* load_config(const char* cmdline_path) {
 
     // If no config file was found, log the checked locations
     if (!root) {
-        log_this(SR_CONFIG, "― No configuration file found, using defaults", LOG_LEVEL_DEBUG, 0);
-        log_this(SR_CONFIG, "― Checked locations:", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "― Checking default locations", LOG_LEVEL_DEBUG, 0);
+
+        // Environment Variable
         if (env_path) {
             log_this(SR_CONFIG, "――― $HYDROGEN_CONFIG: %s", LOG_LEVEL_DEBUG, 1, env_path);
+        } else {
+            log_this(SR_CONFIG, "――― $HYDROGEN_CONFIG: Not set", LOG_LEVEL_DEBUG, 0);
         }
+   
+        // Parameter
         if (cmdline_path) {
-            log_this(SR_CONFIG, "――― Command line path: %s", LOG_LEVEL_DEBUG, 1, cmdline_path);
+            log_this(SR_CONFIG, "――― Command-line parameter: %s", LOG_LEVEL_DEBUG, 1, cmdline_path);
+        } else {
+            log_this(SR_CONFIG, "――― Command-line parameter: Not supplied", LOG_LEVEL_DEBUG, 0);
         }
+ 
+        // Default locations
         for (int i = 0; i < NUM_CONFIG_PATHS; i++) {
-            log_this(SR_CONFIG, "――― %s", LOG_LEVEL_DEBUG, 1, CONFIG_PATHS[i]);
+            log_this(SR_CONFIG, "――― %s: Not found", LOG_LEVEL_DEBUG, 1, CONFIG_PATHS[i]);
         }
+
+        log_this(SR_CONFIG, "― No configuration file found, using defaults", LOG_LEVEL_DEBUG, 0);
+
+        // Load defaults
         if (initialize_config_defaults(config)) {
           app_config = config;
           return config;

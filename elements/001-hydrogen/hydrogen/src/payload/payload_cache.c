@@ -27,7 +27,7 @@ PayloadCache global_payload_cache = {0};
 bool initialize_payload_cache(void) {
     memset(&global_payload_cache, 0, sizeof(PayloadCache));
     global_payload_cache.is_initialized = true;
-    log_this(SR_PAYLOAD, "Payload cache initialized", LOG_LEVEL_STATE, 0);
+    log_this(SR_PAYLOAD, SR_PAYLOAD " Cache initialization", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -36,14 +36,14 @@ bool initialize_payload_cache(void) {
  */
 bool load_payload_cache(const AppConfig *config, const char *marker) {
     if (!global_payload_cache.is_initialized) {
-        log_this(SR_PAYLOAD, "Payload cache not initialized", LOG_LEVEL_ERROR, 0);
+        log_this(SR_PAYLOAD, "― " SR_PAYLOAD " Cache not initialized", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Get executable path
     char *executable_path = get_executable_path();
     if (!executable_path) {
-        log_this(SR_PAYLOAD, "Failed to get executable path", LOG_LEVEL_ERROR, 0);
+        log_this(SR_PAYLOAD, "― Failed to get executable path", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -53,7 +53,7 @@ bool load_payload_cache(const AppConfig *config, const char *marker) {
     free(executable_path);
 
     if (!success) {
-        log_this(SR_PAYLOAD, "Failed to extract payload from executable", LOG_LEVEL_ERROR, 0);
+        log_this(SR_PAYLOAD, "― Failed to extract payload from executable", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -65,9 +65,9 @@ bool load_payload_cache(const AppConfig *config, const char *marker) {
 
     if (success) {
         global_payload_cache.is_available = true;
-        log_this(SR_PAYLOAD, "Payload loaded into cache successfully", LOG_LEVEL_STATE, 0);
+//        log_this(SR_PAYLOAD, "― " SR_PAYLOAD " Cache loaded", LOG_LEVEL_STATE, 0);
     } else {
-        log_this(SR_PAYLOAD, "Failed to process payload into cache", LOG_LEVEL_ERROR, 0);
+        log_this(SR_PAYLOAD, "Failed to process " SR_PAYLOAD " into Cache", LOG_LEVEL_ERROR, 0);
     }
 
     return success;
@@ -182,7 +182,7 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
 
     // Check if payload is compressed (assume Brotli compression)
     // For now, always assume compressed since that's the current implementation
-    log_this(SR_PAYLOAD, "Processing compressed payload: %zu bytes", LOG_LEVEL_STATE, 1, tar_size);
+    // log_this(SR_PAYLOAD, "― Processing compressed payload: %zu bytes", LOG_LEVEL_STATE, 1, tar_size);
 
     // Use Brotli streaming API for decompression
     BrotliDecoderState* decoder = BrotliDecoderCreateInstance(NULL, NULL, NULL);
@@ -242,7 +242,7 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
     // Clean up decoder
     BrotliDecoderDestroyInstance(decoder);
 
-    log_this(SR_PAYLOAD, "Payload decompressed: %zu bytes -> %zu bytes", LOG_LEVEL_STATE, 2, tar_size, total_out);
+    log_this(SR_PAYLOAD, "― Decompressed size:    %'zu bytes", LOG_LEVEL_DEBUG, 1, total_out);
 
     // Parse the decompressed tar data
     bool success = parse_tar_into_cache(decompressed_data, total_out);
@@ -263,6 +263,13 @@ void list_tar_contents(const uint8_t *tar_data, size_t tar_size) {
 /**
  * Parse tar data and store files in global cache
  */
+// Comparator function for sorting files by name
+static int compare_files(const void *a, const void *b) {
+    const PayloadFile *fa = (const PayloadFile *)a;
+    const PayloadFile *fb = (const PayloadFile *)b;
+    return strcmp(fa->name, fb->name);
+}
+
 bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
     if (!tar_data || tar_size < 512) {
         log_this(SR_PAYLOAD, "Invalid tar data or size too small", LOG_LEVEL_ERROR, 0);
@@ -294,7 +301,7 @@ bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
             }
         }
         if (is_empty) {
-            log_this(SR_PAYLOAD, "Found end of tar archive", LOG_LEVEL_STATE, 0);
+//             log_this(SR_PAYLOAD, "End of tar archive reached", LOG_LEVEL_DEBUG, 0);
             break;
         }
 
@@ -351,7 +358,6 @@ bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
 
             memcpy(temp_files[file_count].data, tar_data + data_offset, file_size);
 
-            log_this(SR_PAYLOAD, "Cached file: %s (%zu bytes)", LOG_LEVEL_STATE, 2, filename, file_size);
             total_processed += file_size;
             file_count++;
         }
@@ -367,12 +373,24 @@ bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
         }
     }
 
+    log_this(SR_PAYLOAD, "Caching %'zu files:", LOG_LEVEL_DEBUG, 1, file_count);
+
+    // Sort the collected files by filename
+    if (file_count > 0) {
+        qsort(temp_files, file_count, sizeof(PayloadFile), compare_files);
+    }
+
+    // Log the cached files in sorted order
+    for (size_t i = 0; i < file_count; i++) {
+        log_this(SR_PAYLOAD, "― %'8zu bytes: %s", LOG_LEVEL_DEBUG, 2, temp_files[i].size, temp_files[i].name);
+    }
+
     // Store results in global cache
     global_payload_cache.files = temp_files;
     global_payload_cache.num_files = file_count;
     global_payload_cache.capacity = initial_capacity;
 
-    log_this(SR_PAYLOAD, "Payload cache populated with %zu files (%zu bytes total)", LOG_LEVEL_STATE, 2, file_count, total_processed);
+    log_this(SR_PAYLOAD, SR_PAYLOAD " Cache populated with %'zu files (%'zu bytes)", LOG_LEVEL_DEBUG, 2, file_count, total_processed);
 
     return (file_count > 0);
 }
@@ -392,5 +410,5 @@ void cleanup_payload_cache(void) {
     free(global_payload_cache.tar_data);
 
     memset(&global_payload_cache, 0, sizeof(PayloadCache));
-    log_this(SR_PAYLOAD, "Payload cache cleaned up", LOG_LEVEL_STATE, 0);
+    log_this(SR_PAYLOAD, "Payload cache cleaned up", LOG_LEVEL_DEBUG, 0);
 }

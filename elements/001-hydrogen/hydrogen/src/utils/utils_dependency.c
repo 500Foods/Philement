@@ -202,7 +202,7 @@ static void save_cache(const char *db_name, const char *version) {
      int level = (status == LIB_STATUS_GOOD) ? LOG_LEVEL_DEBUG :
                  (status == LIB_STATUS_WARNING) ? LOG_LEVEL_DEBUG :
                  (status == LIB_STATUS_CRITICAL) ? LOG_LEVEL_FATAL : LOG_LEVEL_ERROR;
-     log_this(SR_DEPCHECK, "%s Expecting: %s Found: %s (%s) Status: %s", level, 5,
+     log_this(SR_DEPCHECK, "― %s. Expecting: %s Found: %s (%s) Status: %s", level, 5,
         name, 
         expected ? expected : "(default)", 
         found ? found : "None",
@@ -387,7 +387,7 @@ static void save_cache(const char *db_name, const char *version) {
      for (const char **path = config->paths; *path; path++) {
          void *handle = dlopen(*path, RTLD_LAZY);
          if (!handle) {
-             log_this(SR_DEPCHECK, "Failed to open %s at %s: %s", LOG_LEVEL_TRACE, 3, config->name, *path, dlerror());
+             log_this(SR_DEPCHECK, "― %s. Failed to open at %s: %s", LOG_LEVEL_TRACE, 3, config->name, *path, dlerror());
              continue;
          }
  
@@ -405,7 +405,7 @@ static void save_cache(const char *db_name, const char *version) {
                              buffer[len] = '\0';
                              version = buffer;
                              *method = "API";
-                             log_this(SR_DEPCHECK, "%s: Found version %s via direct call", LOG_LEVEL_TRACE, 2, config->name, version);
+                             log_this(SR_DEPCHECK, "― %s. Found: %s via direct call", LOG_LEVEL_TRACE, 2, config->name, version);
                              dlclose(handle);
                              return version;
                          }
@@ -417,29 +417,29 @@ static void save_cache(const char *db_name, const char *version) {
                  void *func_ptr = dlsym(handle, *func_name);
                  const char *err = dlerror();
                  if (err || !func_ptr) {
-                     log_this(SR_DEPCHECK, "%s: dlsym(%s) failed: %s", LOG_LEVEL_TRACE, 2, config->name, *func_name, err ? err : "NULL");
+                     log_this(SR_DEPCHECK, "― %s. dlsym(%s) failed: %s", LOG_LEVEL_TRACE, 2, config->name, *func_name, err ? err : "NULL");
                      continue;
                  }
  
                  if (strcmp(config->name, "libtar") == 0 && strcmp(*func_name, "libtar_version") == 0) {
                      const char *version_str = (const char *)func_ptr;
-                     log_this(SR_DEPCHECK, "%s: Raw version_str at %p", LOG_LEVEL_TRACE, 2, config->name, func_ptr);
+                     log_this(SR_DEPCHECK, "― %s.: Raw version_str at %p", LOG_LEVEL_TRACE, 2, config->name, func_ptr);
                      volatile char probe = *version_str; // Force read to catch segfault
                      if (probe != '\0') {
                          size_t len = strnlen(version_str, size - 1);
-                         log_this(SR_DEPCHECK, "%s: Version string length: %zu", LOG_LEVEL_TRACE, 2, config->name, len);
+                         log_this(SR_DEPCHECK, "― %s. Version string length: %zu", LOG_LEVEL_TRACE, 2, config->name, len);
                          if (len > 0 && len < size - 1) {
                              strncpy(buffer, version_str, len);
                              buffer[len] = '\0';
                              version = buffer;
                              *method = "SYM";
-                             log_this(SR_DEPCHECK, "%s: Found version %s via %s (data symbol)", LOG_LEVEL_TRACE, 3, config->name, version, *func_name);
+                             log_this(SR_DEPCHECK, "― %s. Found: %s via %s (data symbol)", LOG_LEVEL_TRACE, 3, config->name, version, *func_name);
                              dlclose(handle);
                              return version;
                          }
                      }
                      version = "NoVersionFound";
-                     log_this(SR_DEPCHECK, "%s: %s is empty or inaccessible", LOG_LEVEL_TRACE, 2, config->name, *func_name);
+                     log_this(SR_DEPCHECK, "― %s. Problem: %s is empty or inaccessible", LOG_LEVEL_TRACE, 2, config->name, *func_name);
                      dlclose(handle);
                      return version;
                  }
@@ -453,7 +453,7 @@ static void save_cache(const char *db_name, const char *version) {
                               ver >> 24, (ver >> 12) & 0xFFF, ver & 0xFFF);
                      version = buffer;
                      *method = "SYM";
-                     log_this(SR_DEPCHECK, "%s: Found version %s via %s", LOG_LEVEL_TRACE, 3, config->name, version, *func_name);
+                     log_this(SR_DEPCHECK, "― %s. Found: %s via %s", LOG_LEVEL_TRACE, 3, config->name, version, *func_name);
                      dlclose(handle);
                      return version;
                  }
@@ -474,7 +474,7 @@ static void save_cache(const char *db_name, const char *version) {
                      temp = func.void_func();
                  }
                  if (!temp) {
-                     log_this(SR_DEPCHECK, "%s: Version function %s returned NULL", LOG_LEVEL_TRACE, 2, config->name, *func_name);
+                     log_this(SR_DEPCHECK, "― %s. Problem: Function %s returned NULL", LOG_LEVEL_TRACE, 2, config->name, *func_name);
                      continue;
                  }
 
@@ -493,7 +493,7 @@ static void save_cache(const char *db_name, const char *version) {
                          buffer[len] = '\0';
                          version = buffer;
                          *method = "SYM";
-                         log_this(SR_DEPCHECK, "%s: Found version %s via %s", LOG_LEVEL_TRACE, 3, config->name, version, *func_name);
+                         log_this(SR_DEPCHECK, "― %s. Found: %s via %s", LOG_LEVEL_TRACE, 3, config->name, version, *func_name);
                          dlclose(handle);
                          return version;
                      }
@@ -505,7 +505,7 @@ static void save_cache(const char *db_name, const char *version) {
          return version;
      }
      if (strcmp(config->name, "libtar") == 0) {
-        log_this(SR_DEPCHECK, "libtar not found; installed at /usr/lib64/libtar.so.1? Run 'ldd ./hydrogen' and 'sudo ldconfig'", LOG_LEVEL_TRACE, 0);
+        log_this(SR_DEPCHECK, "― libtar not found; installed at /usr/lib64/libtar.so.1? Run 'ldd ./hydrogen' and 'sudo ldconfig'", LOG_LEVEL_TRACE, 0);
      }
      return "None";
  }
@@ -544,7 +544,7 @@ static void save_cache(const char *db_name, const char *version) {
 
 
      log_this(SR_DEPCHECK, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
-     log_this(SR_DEPCHECK, "DEPENDENCY CHECK", LOG_LEVEL_DEBUG, 0);
+     log_this(SR_DEPCHECK, "DEPENDENCY CHECKS", LOG_LEVEL_DEBUG, 0);
      int critical_count = 0;
  
      bool web = config ? (config->webserver.enable_ipv4 || config->webserver.enable_ipv6) : false;
@@ -609,8 +609,9 @@ static void save_cache(const char *db_name, const char *version) {
      gettimeofday(&depcheck_end, NULL);
      double total_time = (double)(depcheck_end.tv_sec - depcheck_start.tv_sec) + (double)(depcheck_end.tv_usec - depcheck_start.tv_usec) / 1000000.0;
 
-     log_this(SR_DEPCHECK, "Completed dependency check, critical issues: %d", LOG_LEVEL_DEBUG, 1, critical_count);
-     log_this(SR_DEPCHECK, "Timing: Database checks: %.3fs (%d/%d cached), Total: %.3fs", LOG_LEVEL_DEBUG, 4, db_time, cache_hits, db_count, total_time);
+     log_this(SR_DEPCHECK, "Timing Checks: %.3fs (%d/%d cached), Total: %.3fs", LOG_LEVEL_DEBUG, 4, db_time, cache_hits, db_count, total_time);
+     log_this(SR_DEPCHECK, "Critical Issues: %d", LOG_LEVEL_DEBUG, 1, critical_count);
+     log_this(SR_DEPCHECK, "DEPENDENCY CHECKS COMPLETE", LOG_LEVEL_DEBUG, 0);
      return critical_count;
  }
  

@@ -102,7 +102,7 @@ bool is_subsystem_launchable_by_name(const char* name) {
 
     // Special case: Registry is always considered launchable once registered
     // This handles the case where Registry readiness is checked before it's launched
-    if (strcmp(name, "Registry") == 0) {
+    if (strcmp(name, SR_REGISTRY) == 0) {
         return true;  // Registry is fundamental and always available once registered
     }
 
@@ -143,7 +143,7 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
         bool is_ready = results->results[i].ready;
         
         // Skip if not ready or if it's Registry (already launched)
-        if (!is_ready || strcmp(subsystem, "Registry") == 0) continue;
+        if (!is_ready || strcmp(subsystem, SR_REGISTRY) == 0) continue;
         
         char* upper_name = get_uppercase_name(subsystem);
         if (!upper_name) {
@@ -201,12 +201,13 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
 static void log_early_info(void) {
     log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_STARTUP, "HYDROGEN STARTUP", LOG_LEVEL_STATE, 0);
-    log_this(SR_STARTUP, "PID:     %d", LOG_LEVEL_STATE, 1, getpid());
-    log_this(SR_STARTUP, "Version: %s", LOG_LEVEL_STATE, 1, VERSION);
-    log_this(SR_STARTUP, "Release: %s", LOG_LEVEL_STATE, 1, RELEASE);
-    log_this(SR_STARTUP, "Build:   %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
-    log_this(SR_STARTUP, "Size:    %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
-    log_this(SR_STARTUP, "Logging: %s", LOG_LEVEL_STATE, 1, DEFAULT_PRIORITY_LEVELS[startup_log_level].label);
+    log_this(SR_STARTUP, "― Version: %s", LOG_LEVEL_STATE, 1, VERSION);
+    log_this(SR_STARTUP, "― Release: %s", LOG_LEVEL_STATE, 1, RELEASE);
+    log_this(SR_STARTUP, "― Build:   %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
+    log_this(SR_STARTUP, "― Size:    %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
+    log_this(SR_STARTUP, "― Logging: %s", LOG_LEVEL_STATE, 1, DEFAULT_PRIORITY_LEVELS[startup_log_level].label);
+    log_this(SR_STARTUP, "― PID:     %d", LOG_LEVEL_STATE, 1, getpid());
+    log_this(SR_STARTUP, "HYDROGEN RUNNING", LOG_LEVEL_STATE, 0);
 }
 
 // Check readiness of all subsystems and coordinate launch
@@ -326,13 +327,12 @@ int startup_hydrogen(const char* config_path) {
     
     app_config = load_config(config_path);
     if (!app_config) {
-        log_this(SR_STARTUP, "Failed to load configuration", LOG_LEVEL_ERROR, 0);
+        log_this(SR_CONFIG, "Failed to load configuration", LOG_LEVEL_ERROR, 0);
         return 0;
     }
     
     // Log successful configuration loading
-    log_this(SR_STARTUP, "Configuration loading complete", LOG_LEVEL_DEBUG, 0);
-    log_this(SR_STARTUP, "Starting launch sequence...", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_CONFIG, "CONFIGURATION COMPLETE", LOG_LEVEL_DEBUG, 0);
     
     // Initialize registry first as it's needed for subsystem tracking
     initialize_registry();
@@ -389,26 +389,37 @@ int startup_hydrogen(const char* config_path) {
     log_group_begin();
         log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
         log_this(SR_STARTUP, "STARTUP COMPLETE", LOG_LEVEL_STATE, 0);
-        log_this(SR_STARTUP, "- Version Information", LOG_LEVEL_STATE, 0);
-        log_this(SR_STARTUP, "    PID:      %d", LOG_LEVEL_STATE, 1, getpid());
-        log_this(SR_STARTUP, "    Version:  %s", LOG_LEVEL_STATE, 1, VERSION);
-        log_this(SR_STARTUP, "    Release:  %s", LOG_LEVEL_STATE, 1, RELEASE);
-        log_this(SR_STARTUP, "    Build:    %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
-        log_this(SR_STARTUP, "    Size:     %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
-        log_this(SR_STARTUP, "- Services Information", LOG_LEVEL_STATE, 0);
+        log_this(SR_STARTUP, "― Version Information", LOG_LEVEL_STATE, 0);
+        log_this(SR_STARTUP, "――― Version:  %s", LOG_LEVEL_STATE, 1, VERSION);
+        log_this(SR_STARTUP, "――― Release:  %s", LOG_LEVEL_STATE, 1, RELEASE);
+        log_this(SR_STARTUP, "――― Build:    %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
+        log_this(SR_STARTUP, "――― Size:     %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
+        log_this(SR_STARTUP, "――― PID:      %d", LOG_LEVEL_STATE, 1, getpid());
+        log_this(SR_STARTUP, "― Services Information", LOG_LEVEL_STATE, 0);
         
         // Log server URLs if subsystems are running
         if (is_subsystem_running_by_name(SR_WEBSERVER)) {
-            log_this(SR_STARTUP, "    Web Server running:  http://localhost:%d", LOG_LEVEL_STATE, 1, app_config->webserver.port);
+            log_this(SR_STARTUP, "――― Web Server running:  http://localhost:%d", LOG_LEVEL_STATE, 1, app_config->webserver.port);
+        } else {
+            log_this(SR_STARTUP, "――― Web Server not running", LOG_LEVEL_STATE, 0);
         }
         if (is_subsystem_running_by_name(SR_API)) {
-            log_this(SR_STARTUP, "    API Server running:  http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->api.prefix);
+            log_this(SR_STARTUP, "――― API Server running:  http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->api.prefix);
+        } else {
+            log_this(SR_STARTUP, "――― API Server not running", LOG_LEVEL_STATE, 0);
         }
         if (is_subsystem_running_by_name(SR_SWAGGER)) {
-            log_this(SR_STARTUP, "    Swagger running:     http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->swagger.prefix);
+            log_this(SR_STARTUP, "――― Swagger running:     http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->swagger.prefix);
+        } else {
+            log_this(SR_STARTUP, "――― Swagger not running", LOG_LEVEL_STATE, 0);
+        }
+        if (is_subsystem_running_by_name(SR_TERMINAL)) {
+            log_this(SR_STARTUP, "――― Terminal running:     http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->websocket.port, app_config->terminal.web_path);
+        } else {
+            log_this(SR_STARTUP, "――― Terminal not running", LOG_LEVEL_STATE, 0);
         }
         
-        log_this(SR_STARTUP, "- Performance Information", LOG_LEVEL_STATE, 0);
+        log_this(SR_STARTUP, "― Performance Information", LOG_LEVEL_STATE, 0);
         // Log times with consistent fixed-length text and hyphens for formatting
         // Get current time with microsecond precision
         gettimeofday(&tv, NULL);

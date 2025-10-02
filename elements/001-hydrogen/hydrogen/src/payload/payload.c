@@ -166,7 +166,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
                     const char *marker, PayloadData *payload) {
     // Validate parameters
     if (!executable_path || !config || !marker || !payload) {
-        log_this(SR_PAYLOAD, "Invalid parameters for payload extraction", LOG_LEVEL_ERROR, 0);
+        log_this(SR_PAYLOAD, "― Invalid parameters for payload extraction", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -174,13 +174,13 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
 
     // Prevent extraction during shutdown
     if (server_stopping || web_server_shutdown) {
-        log_this(SR_PAYLOAD, "Skipping payload extraction - system is shutting down", LOG_LEVEL_STATE, 0);
+        log_this(SR_PAYLOAD, "―Skipping payload extraction - system is shutting down", LOG_LEVEL_DEBUG, 0);
         return false;
     }
 
     // Only allow extraction during startup or normal operation
     if (!server_starting && !server_running) {
-        log_this(SR_PAYLOAD, "Skipping payload extraction - system not in proper state", LOG_LEVEL_STATE, 0);
+        log_this(SR_PAYLOAD, "Skipping payload extraction - system not in proper state", LOG_LEVEL_DEBUG, 0);
         return false;
     }
 
@@ -230,7 +230,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     
     if (!marker_pos) {
         munmap(file_data, (size_t)st.st_size);
-        log_this(SR_PAYLOAD, "No payload marker found in executable", LOG_LEVEL_STATE, 0);
+        log_this(SR_PAYLOAD, "No payload marker found in executable", LOG_LEVEL_DEBUG, 0);
         return false;
     }
 
@@ -250,7 +250,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
 
     // The encrypted payload is before the marker
     const uint8_t *encrypted_data = (uint8_t*)marker_pos - payload_size;
-    log_this(SR_PAYLOAD, "Found encrypted payload: %'d bytes", LOG_LEVEL_STATE, 1, payload_size);
+    log_this(SR_PAYLOAD, "― Found encrypted payload: %'d bytes", LOG_LEVEL_DEBUG, 1, payload_size);
 
     // Initialize OpenSSL
     init_openssl();
@@ -264,14 +264,13 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
 
     // Log the key snippet we're using (first 5 chars)
     if (strlen(config->server.payload_key) > 5) {
-        log_this(SR_PAYLOAD, "Using key from config: %.5s...", LOG_LEVEL_STATE, 1, config->server.payload_key);
+        log_this(SR_PAYLOAD, "― Using key: %.5s...", LOG_LEVEL_DEBUG, 1, config->server.payload_key);
     }
 
     // Decrypt the payload using config's key directly
     uint8_t *decrypted_data = NULL;
     size_t decrypted_size = 0;
-    bool success = decrypt_payload(encrypted_data, payload_size, config->server.payload_key,
-                                 &decrypted_data, &decrypted_size);
+    bool success = decrypt_payload(encrypted_data, payload_size, config->server.payload_key, &decrypted_data, &decrypted_size);
 
     // Unmap the executable
     munmap(file_data, (size_t)st.st_size);
@@ -312,7 +311,7 @@ bool process_payload_data(const PayloadData *payload) {
     }
 
     // Log payload information
-    log_this(SR_PAYLOAD, "Processing payload:   %'d bytes", LOG_LEVEL_STATE, 1, payload->size);
+    log_this(SR_PAYLOAD, "―  " SR_PAYLOAD ":   %'d bytes", LOG_LEVEL_DEBUG, 1, payload->size);
 
     // Check if payload is compressed
     if (payload->is_compressed) {
@@ -320,7 +319,7 @@ bool process_payload_data(const PayloadData *payload) {
         
         // Use Brotli streaming API for decompression
         BrotliDecoderState* decoder = BrotliDecoderCreateInstance(NULL, NULL, NULL);
-        if (!decoder) {
+        if (!decoder) { 
             log_this(SR_PAYLOAD, "Failed to create Brotli decoder", LOG_LEVEL_ERROR, 0);
             return false;
         }
@@ -376,7 +375,7 @@ bool process_payload_data(const PayloadData *payload) {
         // Clean up decoder
         BrotliDecoderDestroyInstance(decoder);
         
-        log_this(SR_PAYLOAD, "Payload decompressed: %'d bytes", LOG_LEVEL_STATE, 1, total_out);
+        // log_this(SR_PAYLOAD, "― Decompressed size: %'10d bytes", LOG_LEVEL_DEBUG, 1, total_out);
         
         // Parse the tar file to count files and total size
         if (total_out > 512) { // Minimum size for a valid tar file
@@ -428,7 +427,7 @@ bool process_payload_data(const PayloadData *payload) {
                 }
             }
             
-            log_this(SR_PAYLOAD, "Payload contains: %'d files, total size: %'d bytes", LOG_LEVEL_STATE, 2, file_count, total_file_size);
+            log_this(SR_PAYLOAD, "― " SR_PAYLOAD " contains: %'d files, total size: %'d bytes", LOG_LEVEL_DEBUG, 2, file_count, total_file_size);
         }
         
         // Free the decompressed data
@@ -451,7 +450,7 @@ bool process_payload_data(const PayloadData *payload) {
 bool launch_payload(const AppConfig *config, const char *marker) {
     // Validate parameters
     if (!config || !marker) {
-        log_this(SR_PAYLOAD, "Invalid parameters for payload launch", LOG_LEVEL_ERROR, 0);
+        log_this(SR_PAYLOAD, "Invalid parameters for " SR_PAYLOAD " launch", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -459,13 +458,13 @@ bool launch_payload(const AppConfig *config, const char *marker) {
 
     // Prevent launch during shutdown
     if (server_stopping || web_server_shutdown) {
-        log_this(SR_PAYLOAD, "Skipping payload launch - system is shutting down", LOG_LEVEL_STATE, 0);
+        log_this(SR_PAYLOAD, "Skipping " SR_PAYLOAD " launch - system is shutting down", LOG_LEVEL_DEBUG, 0);
         return false;
     }
 
     // Only allow launch during startup or normal operation
     if (!server_starting && !server_running) {
-        log_this(SR_PAYLOAD, "Skipping payload launch - system not in proper state", LOG_LEVEL_STATE, 0);
+        log_this(SR_PAYLOAD, "Skipping " SR_PAYLOAD " launch - system not in proper state", LOG_LEVEL_DEBUG, 0);
         return false;
     }
 
@@ -482,7 +481,7 @@ bool launch_payload(const AppConfig *config, const char *marker) {
     free(executable_path);
 
     if (!success) {
-        log_this(SR_PAYLOAD, "Failed to extract payload", LOG_LEVEL_ERROR, 0);
+        log_this(SR_PAYLOAD, "Failed to extract " SR_PAYLOAD, LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -493,7 +492,7 @@ bool launch_payload(const AppConfig *config, const char *marker) {
     free_payload(&payload);
     
     if (!success) {
-        log_this(SR_PAYLOAD, "Failed to process payload", LOG_LEVEL_ERROR, 0);
+        log_this(SR_PAYLOAD, "Failed to process " SR_PAYLOAD, LOG_LEVEL_ERROR, 0);
         return false;
     }
     
@@ -544,12 +543,12 @@ bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
     memcpy(iv, encrypted_data + 4 + key_size, 16);
 
     // Log payload structure details
-    log_this(SR_PAYLOAD, "Payload structure:", LOG_LEVEL_STATE, 0);
-    log_this(SR_PAYLOAD, "- File size:         %'8d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
-    log_this(SR_PAYLOAD, "- Payload size:      %'8d bytes", LOG_LEVEL_STATE, 1, encrypted_size);
-    log_this(SR_PAYLOAD, "- Key size:          %8u bytes", LOG_LEVEL_STATE, 1, key_size);
-    log_this(SR_PAYLOAD, "- Init Vector (IV):  %8d bytes", LOG_LEVEL_STATE, 1, 16);
-    log_this(SR_PAYLOAD, "- Encrypted size:    %'8d bytes", LOG_LEVEL_STATE, 1, encrypted_size - 4 - key_size - 16);
+    log_this(SR_PAYLOAD, SR_PAYLOAD " structure:", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_PAYLOAD, "― Executable size:   %'10d bytes", LOG_LEVEL_DEBUG, 1, server_executable_size);
+    log_this(SR_PAYLOAD, "― Payload size:      %'10d bytes", LOG_LEVEL_DEBUG, 1, encrypted_size);
+    log_this(SR_PAYLOAD, "― Key size:          %10u bytes", LOG_LEVEL_DEBUG, 1, key_size);
+    log_this(SR_PAYLOAD, "― Init Vector (IV):  %10d bytes", LOG_LEVEL_DEBUG, 1, 16);
+    log_this(SR_PAYLOAD, "― Encrypted size:    %'10d bytes", LOG_LEVEL_DEBUG, 1, encrypted_size - 4 - key_size - 16);
 
     // Decode private key from base64
     b64 = BIO_new(BIO_f_base64());
@@ -641,7 +640,7 @@ bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
     }
 
     *decrypted_size += (size_t)final_len;
-    log_this(SR_PAYLOAD, "Payload decrypted:   %'8d bytes", LOG_LEVEL_STATE, 1, *decrypted_size);
+    log_this(SR_PAYLOAD, "― Decrypted size:    %'10d bytes", LOG_LEVEL_DEBUG, 1, *decrypted_size);
     success = true;
 
 cleanup:

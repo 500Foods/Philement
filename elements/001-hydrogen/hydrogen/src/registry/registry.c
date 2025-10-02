@@ -78,6 +78,11 @@ static bool grow_registry(size_t new_capacity) {
  * Initialize the registry.
  */
 void init_registry(void) {
+
+    log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_REGISTRY, "REGISTRY INITIALIZATION", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_REGISTRY, "― Reinitializing Registry Mutex", LOG_LEVEL_DEBUG, 0);
+
     // For robust test isolation, destroy and reinitialize the mutex
     // This ensures clean state between test runs
     pthread_mutex_destroy(&subsystem_registry.mutex);
@@ -88,6 +93,8 @@ void init_registry(void) {
     if (lock_result == MUTEX_SUCCESS) {
         // Free any existing allocation
         if (subsystem_registry.subsystems) {
+            log_this(SR_REGISTRY, "― Cleaning Subsystems", LOG_LEVEL_DEBUG, 0);
+
             // Free any dynamically allocated strings in the subsystems
             for (int i = 0; i < subsystem_registry.count; i++) {
                 // Free the dynamically allocated name (created with strdup)
@@ -115,6 +122,8 @@ void init_registry(void) {
 
         mutex_unlock(&subsystem_registry.mutex);
     }
+
+    log_this(SR_REGISTRY, "REGISTRY INITIALIZATION COMPLETE", LOG_LEVEL_DEBUG, 0);
 }
 
 /*
@@ -640,13 +649,13 @@ LaunchReadiness check_registry_readiness(void) {
     
     // Add status message
     if (readiness.ready) {
-        readiness.messages[1] = strdup("  Go:      Registry initialized");
+        readiness.messages[1] = strdup("  Go:      " SR_REGISTRY " initialized");
     } else {
-        readiness.messages[1] = strdup("  No-Go:   Registry not initialized");
+        readiness.messages[1] = strdup("  No-Go:   " SR_REGISTRY " not initialized");
     }
     
     // Add decision message
-    readiness.messages[2] = strdup("  Decide:  Go For Launch of Registry");
+    readiness.messages[2] = strdup("  Decide:  Go For Launch of " SR_REGISTRY);
     readiness.messages[3] = NULL;  // NULL terminator
     
     return readiness;
