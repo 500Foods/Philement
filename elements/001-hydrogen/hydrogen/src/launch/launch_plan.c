@@ -60,7 +60,7 @@ bool handle_launch_plan(const ReadinessResults* results) {
         
     }
     
-    log_this(SR_LAUNCH, "LAUNCH PLAN: Go for launch", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_LAUNCH, "LAUNCH PLAN COMPLETE", LOG_LEVEL_DEBUG, 0);
 
     return true;
 }
