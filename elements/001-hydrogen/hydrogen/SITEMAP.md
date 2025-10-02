@@ -26,6 +26,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [coding_guidelines.md](docs/coding_guidelines.md)
 - [configuration.md](docs/configuration.md)
 - [data_structures.md](docs/data_structures.md)
+- [database.md](docs/database.md): Database subsystem overview and documentation index
 - [developer_onboarding.md](docs/developer_onboarding.md)
 - [mdns_server.md](docs/mdns_server.md)
 - [oidc_integration.md](docs/oidc_integration.md)
@@ -75,6 +76,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [data_structures.md](docs/reference/data_structures.md)
 - [database_architecture.md](docs/reference/database_architecture.md)
 - [database_configuration.md](docs/reference/database_configuration.md)
+- [lead_dqm.md](docs/reference/lead_dqm.md): Developer guide for Lead Database Queue Manager implementation and operation
 - [launch_system_architecture.md](docs/reference/launch_system_architecture.md)
 - [logging_configuration.md](docs/reference/logging_configuration.md)
 - [mdns_client_architecture.md](docs/reference/mdns_client_architecture.md)
