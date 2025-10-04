@@ -20,6 +20,9 @@ extern ServiceThreads print_threads;
 
 // External queue memory structures
 extern QueueMemoryMetrics log_queue_memory;
+extern QueueMemoryMetrics webserver_queue_memory;
+extern QueueMemoryMetrics websocket_queue_memory;
+extern QueueMemoryMetrics mdns_server_queue_memory;
 extern QueueMemoryMetrics print_queue_memory;
 
 // Forward declarations
@@ -322,12 +325,29 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     metrics->print.specific.print.completed_jobs = 0;
 
     // Update queue metrics
-    // Copy queue metrics
     metrics->log_queue.entry_count = (int)log_queue_memory.entry_count;
     metrics->log_queue.block_count = (int)log_queue_memory.block_count;
     metrics->log_queue.total_allocation = log_queue_memory.total_allocation;
     metrics->log_queue.virtual_bytes = log_queue_memory.metrics.virtual_bytes;
     metrics->log_queue.resident_bytes = log_queue_memory.metrics.resident_bytes;
+
+    metrics->webserver_queue.entry_count = (int)webserver_queue_memory.entry_count;
+    metrics->webserver_queue.block_count = (int)webserver_queue_memory.block_count;
+    metrics->webserver_queue.total_allocation = webserver_queue_memory.total_allocation;
+    metrics->webserver_queue.virtual_bytes = webserver_queue_memory.metrics.virtual_bytes;
+    metrics->webserver_queue.resident_bytes = webserver_queue_memory.metrics.resident_bytes;
+
+    metrics->websocket_queue.entry_count = (int)websocket_queue_memory.entry_count;
+    metrics->websocket_queue.block_count = (int)websocket_queue_memory.block_count;
+    metrics->websocket_queue.total_allocation = websocket_queue_memory.total_allocation;
+    metrics->websocket_queue.virtual_bytes = websocket_queue_memory.metrics.virtual_bytes;
+    metrics->websocket_queue.resident_bytes = websocket_queue_memory.metrics.resident_bytes;
+
+    metrics->mdns_server_queue.entry_count = (int)mdns_server_queue_memory.entry_count;
+    metrics->mdns_server_queue.block_count = (int)mdns_server_queue_memory.block_count;
+    metrics->mdns_server_queue.total_allocation = mdns_server_queue_memory.total_allocation;
+    metrics->mdns_server_queue.virtual_bytes = mdns_server_queue_memory.metrics.virtual_bytes;
+    metrics->mdns_server_queue.resident_bytes = mdns_server_queue_memory.metrics.resident_bytes;
 
     metrics->print_queue.entry_count = (int)print_queue_memory.entry_count;
     metrics->print_queue.block_count = (int)print_queue_memory.block_count;

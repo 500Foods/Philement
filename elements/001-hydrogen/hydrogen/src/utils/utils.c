@@ -16,14 +16,29 @@ static void __attribute__((constructor)) init_utils(void) {
     // Thread initialization moved to launch_threads_subsystem() to avoid early MUTEX logging
     // init_all_service_threads();
     init_queue_memory(&log_queue_memory, NULL);
+    init_queue_memory(&webserver_queue_memory, NULL);
+    init_queue_memory(&websocket_queue_memory, NULL);
+    init_queue_memory(&mdns_server_queue_memory, NULL);
     init_queue_memory(&print_queue_memory, NULL);
 }
 
 // Update queue limits after configuration is loaded
 void update_queue_limits_from_config(const AppConfig *config) {
     if (!config) return;
-    
+ 
+    log_this(SR_QUEUES, "― Configuring queue limits for " SR_LOGGING, LOG_LEVEL_DEBUG, 0);
     update_queue_limits(&log_queue_memory, config);
+
+    log_this(SR_QUEUES, "― Configuring queue limits for " SR_WEBSERVER, LOG_LEVEL_DEBUG, 0);
+    update_queue_limits(&log_queue_memory, config);
+
+    log_this(SR_QUEUES, "― Configuring queue limits for " SR_WEBSOCKET, LOG_LEVEL_DEBUG, 0);
+    update_queue_limits(&log_queue_memory, config);
+
+    log_this(SR_QUEUES, "― Configuring queue limits for " SR_MDNS_SERVER, LOG_LEVEL_DEBUG, 0);
+    update_queue_limits(&log_queue_memory, config);
+
+    log_this(SR_QUEUES, "― Configuring queue limits for " SR_PRINT, LOG_LEVEL_DEBUG, 0);
     update_queue_limits(&print_queue_memory, config);
 }
 

@@ -2,7 +2,7 @@
  * Launch System Coordinator
  *
  * Standard Processing Order (for consistency, not priority):
- * - 01. Registry (processes registrations)
+ * - 01. Registry
  * - 02. Payload
  * - 03. Threads
  * - 04. Network
@@ -20,7 +20,7 @@
  * - 16. Resources
  * - 17. OIDC
  * - 18. Notify
-  #*/
+ */
 
  // Global includes 
 #include "../hydrogen.h"
@@ -185,7 +185,6 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
         else if (strcmp(subsystem, SR_OIDC        ) == 0) { init_ok = (launch_oidc_subsystem()        == 1); }
         else if (strcmp(subsystem, SR_NOTIFY      ) == 0) { init_ok = (launch_notify_subsystem()      == 1); }
         
-        
         // Update registry state based on result
         update_subsystem_state(subsystem_id, init_ok ? SUBSYSTEM_RUNNING : SUBSYSTEM_ERROR);
         all_launched &= init_ok;
@@ -200,13 +199,13 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
 // Log early startup information (before any initialization)
 static void log_early_info(void) {
     log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_STARTUP, "HYDROGEN STARTUP", LOG_LEVEL_STATE, 0);
-    log_this(SR_STARTUP, "― Version: %s", LOG_LEVEL_STATE, 1, VERSION);
-    log_this(SR_STARTUP, "― Release: %s", LOG_LEVEL_STATE, 1, RELEASE);
-    log_this(SR_STARTUP, "― Build:   %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
-    log_this(SR_STARTUP, "― Size:    %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
-    log_this(SR_STARTUP, "― Logging: %s", LOG_LEVEL_STATE, 1, DEFAULT_PRIORITY_LEVELS[startup_log_level].label);
-    log_this(SR_STARTUP, "― PID:     %d", LOG_LEVEL_STATE, 1, getpid());
+    log_this(SR_STARTUP, "HYDROGEN STARTUP", LOG_LEVEL_ALERT, 0);
+    log_this(SR_STARTUP, "― Version:  %s", LOG_LEVEL_ALERT, 1, VERSION);
+    log_this(SR_STARTUP, "― Release:  %s", LOG_LEVEL_ALERT, 1, RELEASE);
+    log_this(SR_STARTUP, "― Build:    %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
+    log_this(SR_STARTUP, "― Size:     %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
+    log_this(SR_STARTUP, "― Logging:  %s", LOG_LEVEL_STATE, 1, DEFAULT_PRIORITY_LEVELS[startup_log_level].label);
+    log_this(SR_STARTUP, "― PID:       %d", LOG_LEVEL_STATE, 1, getpid());
     log_this(SR_STARTUP, "HYDROGEN RUNNING", LOG_LEVEL_STATE, 0);
 }
 
@@ -260,6 +259,7 @@ bool check_all_launch_readiness(void) {
  * Returns 1 on successful startup, 0 on critical failure
  */
 int startup_hydrogen(const char* config_path) {
+
     // Capture the start time as early as possible
     struct timeval start_tv;
     gettimeofday(&start_tv, NULL);
@@ -306,14 +306,14 @@ int startup_hydrogen(const char* config_path) {
     // Seed random number generator
     srand((unsigned int)time(NULL));
     
-    // 1. Check core library dependencies (before config)
+    // Check core library dependencies (before config)
     int critical_dependencies = check_library_dependencies(NULL);
     if (critical_dependencies > 0) {
         log_this(SR_STARTUP, "Missing core library dependencies", LOG_LEVEL_ERROR, 0);
         return 0;
     }
        
-    // 2. Load configuration
+    // Load configuration
     // Store config path for restart
     if (config_path) {
         char* new_path = strdup(config_path);
@@ -339,8 +339,7 @@ int startup_hydrogen(const char* config_path) {
 
     // Initialize queue system for inter-thread communication
     queue_system_init();
-    update_queue_limits_from_config(app_config);
-    
+        
     // 3. Perform launch readiness checks and planning
     ReadinessResults readiness_results = handle_readiness_checks();
     bool launch_plan_ok = handle_launch_plan(&readiness_results);
@@ -387,74 +386,89 @@ int startup_hydrogen(const char* config_path) {
     
     // Final Startup Message
     log_group_begin();
+
         log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-        log_this(SR_STARTUP, "STARTUP COMPLETE", LOG_LEVEL_STATE, 0);
-        log_this(SR_STARTUP, "― Version Information", LOG_LEVEL_STATE, 0);
-        log_this(SR_STARTUP, "――― Version:  %s", LOG_LEVEL_STATE, 1, VERSION);
-        log_this(SR_STARTUP, "――― Release:  %s", LOG_LEVEL_STATE, 1, RELEASE);
-        log_this(SR_STARTUP, "――― Build:    %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
-        log_this(SR_STARTUP, "――― Size:     %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
-        log_this(SR_STARTUP, "――― PID:      %d", LOG_LEVEL_STATE, 1, getpid());
-        log_this(SR_STARTUP, "― Services Information", LOG_LEVEL_STATE, 0);
-        
+        log_this(SR_STARTUP, "STARTUP COMPLETE", LOG_LEVEL_ALERT, 0);
+        log_this(SR_STARTUP, "― Version:  %s", LOG_LEVEL_STATE, 1, VERSION);
+        log_this(SR_STARTUP, "― Release:  %s", LOG_LEVEL_STATE, 1, RELEASE);
+        log_this(SR_STARTUP, "― Build:    %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
+        log_this(SR_STARTUP, "― Size:     %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
+        log_this(SR_STARTUP, "― PID:      %d", LOG_LEVEL_STATE, 1, getpid());
+
+
         // Log server URLs if subsystems are running
+        log_this(SR_STARTUP, "SERVICES", LOG_LEVEL_STATE, 0);
         if (is_subsystem_running_by_name(SR_WEBSERVER)) {
-            log_this(SR_STARTUP, "――― Web Server running:  http://localhost:%d", LOG_LEVEL_STATE, 1, app_config->webserver.port);
+            log_this(SR_STARTUP, "― Web Server running:    http://localhost:%d", LOG_LEVEL_STATE, 1, app_config->webserver.port);
         } else {
-            log_this(SR_STARTUP, "――― Web Server not running", LOG_LEVEL_STATE, 0);
+            log_this(SR_STARTUP, "― Web Server not running", LOG_LEVEL_STATE, 0);
         }
         if (is_subsystem_running_by_name(SR_API)) {
-            log_this(SR_STARTUP, "――― API Server running:  http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->api.prefix);
+            log_this(SR_STARTUP, "― API Server running:    http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->api.prefix);
         } else {
-            log_this(SR_STARTUP, "――― API Server not running", LOG_LEVEL_STATE, 0);
+            log_this(SR_STARTUP, "― API Server not running", LOG_LEVEL_STATE, 0);
         }
         if (is_subsystem_running_by_name(SR_SWAGGER)) {
-            log_this(SR_STARTUP, "――― Swagger running:     http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->swagger.prefix);
+            log_this(SR_STARTUP, "― Swagger running:       http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->swagger.prefix);
         } else {
-            log_this(SR_STARTUP, "――― Swagger not running", LOG_LEVEL_STATE, 0);
+            log_this(SR_STARTUP, "― Swagger not running", LOG_LEVEL_STATE, 0);
         }
         if (is_subsystem_running_by_name(SR_TERMINAL)) {
-            log_this(SR_STARTUP, "――― Terminal running:     http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->websocket.port, app_config->terminal.web_path);
+            log_this(SR_STARTUP, "― Terminal running:      http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->websocket.port, app_config->terminal.web_path);
         } else {
-            log_this(SR_STARTUP, "――― Terminal not running", LOG_LEVEL_STATE, 0);
+            log_this(SR_STARTUP, "― Terminal not running", LOG_LEVEL_STATE, 0);
         }
         
-        log_this(SR_STARTUP, "― Performance Information", LOG_LEVEL_STATE, 0);
+        log_this(SR_STARTUP, "RESOURCES", LOG_LEVEL_DEBUG, 0);
+        size_t vmsize = 0, vmrss = 0, vmswap = 0;
+        get_process_memory(&vmsize, &vmrss, &vmswap);
+        log_this(SR_STARTUP, "― Memory (RSS):  %'9.1f MB", LOG_LEVEL_DEBUG, 1, (double)vmrss / 1024.0);
+        log_this(SR_STARTUP, "― AppConfig:     %'9d Bytes", LOG_LEVEL_DEBUG, 1, sizeof(*app_config));
+        log_this(SR_STARTUP, "― Subsystems:    %'9d Registered", LOG_LEVEL_DEBUG, 1, registry_registered);
+        log_this(SR_STARTUP, "――― Active:      %'9d", LOG_LEVEL_DEBUG, 1, registry_running);
+        log_this(SR_STARTUP, "――― Failed:      %'9d", LOG_LEVEL_DEBUG, 1, registry_failed);
+        log_this(SR_STARTUP, "――― Unused:      %'9d", LOG_LEVEL_DEBUG, 1, registry_registered - (registry_running + registry_failed));
+        log_this(SR_STARTUP, "― Threads:       %'9d Total", LOG_LEVEL_DEBUG, 1,
+                logging_threads.thread_count + webserver_threads.thread_count +
+                websocket_threads.thread_count + mdns_server_threads.thread_count +
+                print_threads.thread_count);
+        log_this(SR_STARTUP, "――― Logging:     %'9d", LOG_LEVEL_DEBUG, 1, logging_threads.thread_count);
+        log_this(SR_STARTUP, "――― WebServer:   %'9d", LOG_LEVEL_DEBUG, 1, webserver_threads.thread_count);
+        log_this(SR_STARTUP, "――― WebSocket:   %'9d", LOG_LEVEL_DEBUG, 1, websocket_threads.thread_count);
+        log_this(SR_STARTUP, "――― mDNS:        %'9d", LOG_LEVEL_DEBUG, 1, mdns_server_threads.thread_count);
+        log_this(SR_STARTUP, "――― Print:       %'9d", LOG_LEVEL_DEBUG, 1, print_threads.thread_count);
+        log_this(SR_STARTUP, "― Queues:        %'9d", LOG_LEVEL_DEBUG, 1, 0,0);
+        log_this(SR_STARTUP, "― Databases:     %'9d", LOG_LEVEL_DEBUG, 1, 0,0);
+
+
+        log_this(SR_STARTUP, "TIMING", LOG_LEVEL_STATE, 0);
         // Log times with consistent fixed-length text and hyphens for formatting
         // Get current time with microsecond precision
         gettimeofday(&tv, NULL);
-        
         // Calculate startup time using the difference between current time and start time
         double startup_time = (double)(tv.tv_sec - start_tv.tv_sec) + (double)(tv.tv_usec - start_tv.tv_usec) / 1000000.0;
-        
         // Format current time with ISO 8601 format including milliseconds
         time_t current_time = tv.tv_sec;
         const struct tm* current_tm = gmtime(&current_time);
         char current_time_str[64];
         strftime(current_time_str, sizeof(current_time_str), "%Y-%m-%dT%H:%M:%S", current_tm);
-        
         // Add milliseconds to current time
         int current_ms = (int)(tv.tv_usec / 1000);
         char temp_str[64];
         snprintf(temp_str, sizeof(temp_str), ".%03dZ", current_ms);
         strcat(current_time_str, temp_str);
-        
         // Format start time from the captured start_tv
         time_t start_sec = start_tv.tv_sec;
         const struct tm* start_tm = gmtime(&start_sec);
         char start_time_str[64];
         strftime(start_time_str, sizeof(start_time_str), "%Y-%m-%dT%H:%M:%S", start_tm);
-        
         // Add milliseconds to start time
         int start_ms = (int)(start_tv.tv_usec / 1000);
         snprintf(temp_str, sizeof(temp_str), ".%03dZ", start_ms);
         strcat(start_time_str, temp_str);
-        
-        log_this(SR_STARTUP, "    System startup began:  %s", LOG_LEVEL_STATE, 1, start_time_str);
-        log_this(SR_STARTUP, "    Current system clock:  %s", LOG_LEVEL_STATE, 1, current_time_str);
-        log_this(SR_STARTUP, "    Startup elapsed time:  %.3fs", LOG_LEVEL_STATE, 1, startup_time);
-        
-        
+        log_this(SR_STARTUP, "― System startup began:  %s", LOG_LEVEL_ALERT, 1, start_time_str);
+        log_this(SR_STARTUP, "― Current system clock:  %s", LOG_LEVEL_ALERT, 1, current_time_str);
+        log_this(SR_STARTUP, "― Startup elapsed time:  %.3fs", LOG_LEVEL_ALERT, 1, startup_time);
         // Display restart count and timing if application has been restarted
         if (restart_count > 0) {
             static struct timeval original_start_tv = {0, 0};
@@ -462,7 +476,6 @@ int startup_hydrogen(const char* config_path) {
                 // Store first start time with microsecond precision
                 original_start_tv = start_tv;
             }
-            
             // Format original start time with microsecond precision
             const struct tm* orig_tm = gmtime(&original_start_tv.tv_sec);
             char orig_time_str[64];
@@ -470,40 +483,17 @@ int startup_hydrogen(const char* config_path) {
             int orig_ms = (int)(original_start_tv.tv_usec / 1000);
             snprintf(temp_str, sizeof(temp_str), ".%03dZ", orig_ms);
             strcat(orig_time_str, temp_str);
-            
             // Calculate and log total runtime since original start
             double total_runtime = calculate_total_runtime();
-            
-            log_this(SR_STARTUP, "    Original launch time:  %s", LOG_LEVEL_STATE, 1, orig_time_str);
-            log_this(SR_STARTUP, "    Overall running time:  %.3fs", LOG_LEVEL_STATE, 1, total_runtime);
-            log_this(SR_STARTUP, "    Application restarts:  %d", LOG_LEVEL_STATE, 1, restart_count);
-        }
+            log_this(SR_STARTUP, "― Original launch time:  %s", LOG_LEVEL_STATE, 1, orig_time_str);
+            log_this(SR_STARTUP, "― Overall running time:  %.3fs", LOG_LEVEL_STATE, 1, total_runtime);
+            log_this(SR_STARTUP, "― Application restarts:  %d", LOG_LEVEL_STATE, 1, restart_count);
+        }         
 
-        log_this(SR_STARTUP, "- Resources Information", LOG_LEVEL_DEBUG, 0);
-
-        size_t vmsize = 0, vmrss = 0, vmswap = 0;
-        get_process_memory(&vmsize, &vmrss, &vmswap);
-        log_this(SR_STARTUP, "    Memory (RSS): %.1f MB", LOG_LEVEL_DEBUG, 1, (double)vmrss / 1024.0);
-            
-        log_this(SR_STARTUP, "    AppConfig: %'7d bytes", LOG_LEVEL_DEBUG, 1, sizeof(*app_config));
-        log_this(SR_STARTUP, "    Subsystems:  %'5d Registered", LOG_LEVEL_DEBUG, 1, registry_registered);
-        log_this(SR_STARTUP, "    - Active:    %'5d", LOG_LEVEL_DEBUG, 1, registry_running);
-        log_this(SR_STARTUP, "    - Failed:    %'5d", LOG_LEVEL_DEBUG, 1, registry_failed);
-        log_this(SR_STARTUP, "    - Unused:    %'5d", LOG_LEVEL_DEBUG, 1, registry_registered - (registry_running + registry_failed));
-        log_this(SR_STARTUP, "    Threads:     %'5d Total", LOG_LEVEL_DEBUG, 1,
-                logging_threads.thread_count + webserver_threads.thread_count +
-                websocket_threads.thread_count + mdns_server_threads.thread_count +
-                print_threads.thread_count);
-        log_this(SR_STARTUP, "    - Logging:   %'5d", LOG_LEVEL_DEBUG, 1, logging_threads.thread_count);
-        log_this(SR_STARTUP, "    - WebServer: %'5d", LOG_LEVEL_DEBUG, 1, webserver_threads.thread_count);
-        log_this(SR_STARTUP, "    - WebSocket: %'5d", LOG_LEVEL_DEBUG, 1, websocket_threads.thread_count);
-        log_this(SR_STARTUP, "    - mDNS:      %'5d", LOG_LEVEL_DEBUG, 1, mdns_server_threads.thread_count);
-        log_this(SR_STARTUP, "    - Print:     %'5d", LOG_LEVEL_DEBUG, 1, print_threads.thread_count);
-        log_this(SR_STARTUP, "    Queues:      %'5d", LOG_LEVEL_DEBUG, 1, 0,0);
-        log_this(SR_STARTUP, "    Databases:   %'5d", LOG_LEVEL_DEBUG, 1, 0,0);
-        
-        log_this(SR_STARTUP, "Press Ctrl+C to exit (SIGINT)", LOG_LEVEL_DEBUG, 0);
         log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+        log_this(SR_STARTUP, "Press Ctrl+C to exit (SIGINT)", LOG_LEVEL_ALERT, 0);
+        log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+
     log_group_end();
  
     return 1;

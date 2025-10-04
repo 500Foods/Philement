@@ -9,6 +9,9 @@
 
 // Global queue memory tracking
 QueueMemoryMetrics log_queue_memory;
+QueueMemoryMetrics webserver_queue_memory;
+QueueMemoryMetrics websocket_queue_memory;
+QueueMemoryMetrics mdns_server_queue_memory;
 QueueMemoryMetrics print_queue_memory;
 
 // Initialize queue memory tracking with optional configuration
@@ -35,7 +38,6 @@ void init_queue_memory(QueueMemoryMetrics *queue, const AppConfig *config) {
 void update_queue_limits(QueueMemoryMetrics *queue, const AppConfig *config) {
     if (!config) return;
     
-    // If transitioning from early init, use console_log
     if (queue->limits.early_init) {
         queue->limits.max_blocks = config->resources.max_queue_blocks;
         queue->limits.block_limit = config->resources.max_queue_blocks;
@@ -54,6 +56,7 @@ void update_queue_limits(QueueMemoryMetrics *queue, const AppConfig *config) {
         }
     }
 }
+
 // Track memory allocation in a queue
 void track_queue_allocation(QueueMemoryMetrics *queue, size_t size) {
     if (queue->block_count < queue->limits.block_limit) {

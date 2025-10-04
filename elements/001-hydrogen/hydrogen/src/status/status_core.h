@@ -161,6 +161,9 @@ typedef struct {
     
     // Queue metrics
     QueueMetrics log_queue;
+    QueueMetrics webserver_queue;
+    QueueMetrics websocket_queue;
+    QueueMetrics mdns_server_queue;
     QueueMetrics print_queue;
     
     // Server status
