@@ -40,39 +40,28 @@ static unsigned int hash(const char* str) {
 
 /*
  * Initialize the queue system with clean state
- * 
- * Why this approach?
- * - memset ensures no stale data
- * - Single mutex minimizes overhead
- * - No dynamic allocation prevents failures
- * - Called once at system startup
  */
 void queue_system_init(void) {
+
+    log_this(SR_QUEUES, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_QUEUES, "QUEUE INITIALIZATION", LOG_LEVEL_DEBUG, 0);
+
     memset(&queue_system, 0, sizeof(QueueSystem));
     if (pthread_mutex_init(&queue_system.mutex, NULL) != 0) {
         // Mutex initialization failed - this is a critical error
-        // In a real system, we might want to log this or handle it differently
-        // For now, we'll set initialized to 0 to prevent further operations
         queue_system_initialized = 0;
+        log_this(SR_QUEUES, SR_QUEUES " initialization failed", LOG_LEVEL_FATAL, 0);
         return;
     }
     queue_system_initialized = 1;  // Mark as initialized
+
+    update_queue_limits_from_config(app_config);    
+    
+    log_this(SR_QUEUES, "QUEUE INITIALIZATION COMPLETE", LOG_LEVEL_DEBUG, 0);
 }
 
 /*
  * Clean shutdown of the entire queue system
- *
- * Why this sequence?
- * 1. Lock system first to prevent new queues
- * 2. Destroy queues in hash table order
- * 3. Release system lock last
- * 4. Clean up system mutex
- *
- * This ensures:
- * - No memory leaks
- * - No dangling references
- * - Thread-safe cleanup
- * - Complete resource release
  */
 void queue_system_destroy(void) {
     queue_system_initialized = 0;  // Mark as not initialized
