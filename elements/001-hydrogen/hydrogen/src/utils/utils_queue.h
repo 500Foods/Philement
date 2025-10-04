@@ -42,6 +42,9 @@ extern QueueMemoryMetrics webserver_queue_memory;
 extern QueueMemoryMetrics websocket_queue_memory;
 extern QueueMemoryMetrics mdns_server_queue_memory;
 extern QueueMemoryMetrics print_queue_memory;
+extern QueueMemoryMetrics database_queue_memory;
+extern QueueMemoryMetrics mail_relay_queue_memory;
+extern QueueMemoryMetrics notify_queue_memory;
 
 // Queue memory initialization and tracking
 void init_queue_memory(QueueMemoryMetrics *queue, const AppConfig *config);

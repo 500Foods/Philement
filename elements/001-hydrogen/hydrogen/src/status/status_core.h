@@ -165,6 +165,9 @@ typedef struct {
     QueueMetrics websocket_queue;
     QueueMetrics mdns_server_queue;
     QueueMetrics print_queue;
+    QueueMetrics database_queue;
+    QueueMetrics mail_relay_queue;
+    QueueMetrics notify_queue;
     
     // Server status
     bool server_running;

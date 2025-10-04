@@ -11,6 +11,7 @@
 // Local includes
 #include "database_queue.h"
 #include "database.h"
+#include "../utils/utils_queue.h"
 
 /*
  * Create a Lead queue for a database - this is the primary queue that manages other queues
@@ -91,6 +92,9 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
         free(db_queue);
         return NULL;
     }
+
+    // Track memory allocation for the Lead queue
+    track_queue_allocation(&database_queue_memory, sizeof(DatabaseQueue));
 
     // log_this(SR_DATABASE, "Lead queue created successfully", LOG_LEVEL_STATE, 0);
 
@@ -307,6 +311,9 @@ DatabaseQueue* database_queue_create_worker(const char* database_name, const cha
     db_queue->child_queues = NULL;
     db_queue->child_queue_count = 0;
     db_queue->max_child_queues = 0;
+
+    // Track memory allocation for the worker queue
+    track_queue_allocation(&database_queue_memory, sizeof(DatabaseQueue));
 
     log_this(SR_DATABASE, "%s worker queue created successfully", LOG_LEVEL_STATE, 1, queue_type);
     return db_queue;
