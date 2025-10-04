@@ -20,6 +20,9 @@ static void __attribute__((constructor)) init_utils(void) {
     init_queue_memory(&websocket_queue_memory, NULL);
     init_queue_memory(&mdns_server_queue_memory, NULL);
     init_queue_memory(&print_queue_memory, NULL);
+    init_queue_memory(&database_queue_memory, NULL);
+    init_queue_memory(&mail_relay_queue_memory, NULL);
+    init_queue_memory(&notify_queue_memory, NULL);
 }
 
 // Update queue limits after configuration is loaded
@@ -40,6 +43,15 @@ void update_queue_limits_from_config(const AppConfig *config) {
 
     log_this(SR_QUEUES, "― Configuring queue limits for " SR_PRINT, LOG_LEVEL_DEBUG, 0);
     update_queue_limits(&print_queue_memory, config);
+
+    log_this(SR_QUEUES, "― Configuring queue limits for " SR_DATABASE, LOG_LEVEL_DEBUG, 0);
+    update_queue_limits(&database_queue_memory, config);
+
+    log_this(SR_QUEUES, "― Configuring queue limits for " SR_MAIL_RELAY, LOG_LEVEL_DEBUG, 0);
+    update_queue_limits(&mail_relay_queue_memory, config);
+
+    log_this(SR_QUEUES, "― Configuring queue limits for " SR_NOTIFY, LOG_LEVEL_DEBUG, 0);
+    update_queue_limits(&notify_queue_memory, config);
 }
 
 // Initialize all service thread tracking
