@@ -240,9 +240,9 @@ bool init_web_server(WebServerConfig *web_config) {
             log_this(SR_WEBSERVER, error_buffer, LOG_LEVEL_DEBUG, 0);
             return false;
         }
-        log_this(SR_WEBSERVER, "Created upload directory", LOG_LEVEL_STATE, 0);
+        log_this(SR_WEBSERVER, "Created upload directory", LOG_LEVEL_DEBUG, 0);
     } else {
-        log_this(SR_WEBSERVER, "Upload directory already exists", LOG_LEVEL_ALERT, 0);
+        log_this(SR_WEBSERVER, "Upload directory already exists", LOG_LEVEL_DEBUG, 0);
     }
 
     return true;

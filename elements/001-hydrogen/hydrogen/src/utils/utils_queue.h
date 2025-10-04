@@ -38,6 +38,9 @@ typedef struct {
 
 // Global queue memory tracking
 extern QueueMemoryMetrics log_queue_memory;
+extern QueueMemoryMetrics webserver_queue_memory;
+extern QueueMemoryMetrics websocket_queue_memory;
+extern QueueMemoryMetrics mdns_server_queue_memory;
 extern QueueMemoryMetrics print_queue_memory;
 
 // Queue memory initialization and tracking
