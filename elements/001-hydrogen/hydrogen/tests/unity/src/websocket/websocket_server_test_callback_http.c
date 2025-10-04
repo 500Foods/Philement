@@ -29,6 +29,11 @@ void test_callback_http_failed_authentication_wrong_key(void);
 void test_callback_http_no_context(void);
 void test_callback_http_malformed_header_too_short(void);
 void test_callback_http_during_shutdown(void);
+void test_callback_http_query_param_with_ampersand(void);
+void test_callback_http_query_param_url_encoded(void);
+void test_callback_http_query_param_wrong_key(void);
+void test_callback_http_no_query_string(void);
+void test_callback_http_query_param_no_key_param(void);
 
 // External variables that need to be accessible for testing
 extern WebSocketServerContext *ws_context;
@@ -229,18 +234,120 @@ void test_callback_http_successful_authentication_query_param(void) {
     mock_lws_reset_all();
 
     // Mock header functions to simulate no Authorization header
-    mock_lws_set_hdr_total_length_result(0);  // No header present
-    mock_lws_set_hdr_copy_result(0);  // Header copy fails
-
-    // Mock URI functions to simulate query parameter
-    // Note: We'd need to add more mock functions for URI handling
-    // This is a placeholder for when we expand the mock library
+    // (auth header check happens first, so it should return 0)
+    mock_lws_set_hdr_data("");  // No auth header
+    
+    // Mock URI to simulate query parameter with valid key
+    const char *mock_uri = "/?key=test_key_123";
+    mock_lws_set_uri_data(mock_uri);
 
     struct lws *mock_wsi = (struct lws *)0x87654321;
 
     int result = callback_http(mock_wsi, LWS_CALLBACK_HTTP, NULL, NULL, 0);
 
-    // Should return -1 for failed authentication (no valid auth found)
+    // Should return 0 for successful authentication via query param
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
+
+void test_callback_http_query_param_with_ampersand(void) {
+    // Test query parameter extraction when there are multiple params
+    ws_context = &test_context;
+    mock_lws_reset_all();
+
+    // No auth header
+    mock_lws_set_hdr_data("");
+    
+    // URI with key as first param and other params
+    const char *mock_uri = "/?key=test_key_123&other=value";
+    mock_lws_set_uri_data(mock_uri);
+
+    struct lws *mock_wsi = (struct lws *)0x99999999;
+
+    int result = callback_http(mock_wsi, LWS_CALLBACK_HTTP, NULL, NULL, 0);
+
+    // Should return 0 for successful authentication
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
+
+void test_callback_http_query_param_url_encoded(void) {
+    // Test URL-encoded query parameter (e.g., key with special characters)
+    ws_context = &test_context;
+    // Set a key with special character for testing URL decoding
+    strncpy(test_context.auth_key, "test key 123", sizeof(test_context.auth_key) - 1);
+    mock_lws_reset_all();
+
+    // No auth header
+    mock_lws_set_hdr_data("");
+    
+    // URI with URL-encoded key (space = %20)
+    const char *mock_uri = "/?key=test%20key%20123";
+    mock_lws_set_uri_data(mock_uri);
+
+    struct lws *mock_wsi = (struct lws *)0xAAAAAAAA;
+
+    int result = callback_http(mock_wsi, LWS_CALLBACK_HTTP, NULL, NULL, 0);
+
+    // Should return 0 after decoding and matching
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
+
+void test_callback_http_query_param_wrong_key(void) {
+    // Test query parameter with wrong key
+    ws_context = &test_context;
+    mock_lws_reset_all();
+
+    // No auth header
+    mock_lws_set_hdr_data("");
+    
+    // URI with wrong key
+    const char *mock_uri = "/?key=wrong_key";
+    mock_lws_set_uri_data(mock_uri);
+
+    struct lws *mock_wsi = (struct lws *)0xBBBBBBBB;
+
+    int result = callback_http(mock_wsi, LWS_CALLBACK_HTTP, NULL, NULL, 0);
+
+    // Should return -1 for wrong key
+    TEST_ASSERT_EQUAL_INT(-1, result);
+}
+
+void test_callback_http_no_query_string(void) {
+    // Test URI without query string
+    ws_context = &test_context;
+    mock_lws_reset_all();
+
+    // No auth header
+    mock_lws_set_hdr_data("");
+    
+    // URI without query string
+    const char *mock_uri = "/";
+    mock_lws_set_uri_data(mock_uri);
+
+    struct lws *mock_wsi = (struct lws *)0xCCCCCCCC;
+
+    int result = callback_http(mock_wsi, LWS_CALLBACK_HTTP, NULL, NULL, 0);
+
+    // Should return -1 (missing authorization)
+    TEST_ASSERT_EQUAL_INT(-1, result);
+}
+
+void test_callback_http_query_param_no_key_param(void) {
+    // Test query string without 'key=' parameter
+    ws_context = &test_context;
+    mock_lws_reset_all();
+
+    // No auth header
+    mock_lws_set_hdr_data("");
+    
+    // URI with query but no key param
+    const char *mock_uri = "/?other=value&another=test";
+    mock_lws_set_uri_data(mock_uri);
+
+    struct lws *mock_wsi = (struct lws *)0xDDDDDDDD;
+
+    int result = callback_http(mock_wsi, LWS_CALLBACK_HTTP, NULL, NULL, 0);
+
+    // Should return -1 (missing authorization)
     TEST_ASSERT_EQUAL_INT(-1, result);
 }
 
@@ -314,7 +421,7 @@ void test_callback_http_during_shutdown(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    // callback_http tests
+    // callback_http tests - basic logic
     RUN_TEST(test_callback_http_unknown_reason);
     RUN_TEST(test_callback_http_confirm_upgrade);
     RUN_TEST(test_callback_http_with_mock_auth_header);
@@ -324,13 +431,20 @@ int main(void) {
     RUN_TEST(test_callback_http_malformed_auth_header);
     RUN_TEST(test_callback_http_empty_auth_header);
 
-    // New comprehensive tests using mock libwebsockets
+    // Authorization header authentication tests
     RUN_TEST(test_callback_http_successful_authentication_header);
-    RUN_TEST(test_callback_http_successful_authentication_query_param);
     RUN_TEST(test_callback_http_failed_authentication_wrong_key);
     RUN_TEST(test_callback_http_no_context);
     RUN_TEST(test_callback_http_malformed_header_too_short);
     RUN_TEST(test_callback_http_during_shutdown);
+    
+    // Query parameter authentication tests - new!
+    RUN_TEST(test_callback_http_successful_authentication_query_param);
+    RUN_TEST(test_callback_http_query_param_with_ampersand);
+    RUN_TEST(test_callback_http_query_param_url_encoded);
+    RUN_TEST(test_callback_http_query_param_wrong_key);
+    RUN_TEST(test_callback_http_no_query_string);
+    RUN_TEST(test_callback_http_query_param_no_key_param);
 
     return UNITY_END();
 }

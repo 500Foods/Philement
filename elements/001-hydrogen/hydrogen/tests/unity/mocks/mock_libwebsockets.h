@@ -53,6 +53,7 @@ const struct lws_protocols *mock_lws_get_protocol(struct lws *wsi);
 void mock_lws_set_hdr_copy_result(int result);
 void mock_lws_set_hdr_total_length_result(int result);
 void mock_lws_set_hdr_data(const char* data);
+void mock_lws_set_uri_data(const char* uri);
 void mock_lws_set_wsi_user_result(void* result);
 void mock_lws_set_get_context_result(struct lws_context* result);
 void mock_lws_set_context_user_result(void* result);
