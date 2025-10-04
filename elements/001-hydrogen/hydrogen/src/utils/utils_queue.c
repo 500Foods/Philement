@@ -13,6 +13,9 @@ QueueMemoryMetrics webserver_queue_memory;
 QueueMemoryMetrics websocket_queue_memory;
 QueueMemoryMetrics mdns_server_queue_memory;
 QueueMemoryMetrics print_queue_memory;
+QueueMemoryMetrics database_queue_memory;
+QueueMemoryMetrics mail_relay_queue_memory;
+QueueMemoryMetrics notify_queue_memory;
 
 // Initialize queue memory tracking with optional configuration
 void init_queue_memory(QueueMemoryMetrics *queue, const AppConfig *config) {

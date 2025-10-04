@@ -24,6 +24,9 @@ extern QueueMemoryMetrics webserver_queue_memory;
 extern QueueMemoryMetrics websocket_queue_memory;
 extern QueueMemoryMetrics mdns_server_queue_memory;
 extern QueueMemoryMetrics print_queue_memory;
+extern QueueMemoryMetrics database_queue_memory;
+extern QueueMemoryMetrics mail_relay_queue_memory;
+extern QueueMemoryMetrics notify_queue_memory;
 
 // Forward declarations
 static bool collect_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap);
@@ -354,6 +357,24 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     metrics->print_queue.total_allocation = print_queue_memory.total_allocation;
     metrics->print_queue.virtual_bytes = print_queue_memory.metrics.virtual_bytes;
     metrics->print_queue.resident_bytes = print_queue_memory.metrics.resident_bytes;
+
+    metrics->database_queue.entry_count = (int)database_queue_memory.entry_count;
+    metrics->database_queue.block_count = (int)database_queue_memory.block_count;
+    metrics->database_queue.total_allocation = database_queue_memory.total_allocation;
+    metrics->database_queue.virtual_bytes = database_queue_memory.metrics.virtual_bytes;
+    metrics->database_queue.resident_bytes = database_queue_memory.metrics.resident_bytes;
+
+    metrics->mail_relay_queue.entry_count = (int)mail_relay_queue_memory.entry_count;
+    metrics->mail_relay_queue.block_count = (int)mail_relay_queue_memory.block_count;
+    metrics->mail_relay_queue.total_allocation = mail_relay_queue_memory.total_allocation;
+    metrics->mail_relay_queue.virtual_bytes = mail_relay_queue_memory.metrics.virtual_bytes;
+    metrics->mail_relay_queue.resident_bytes = mail_relay_queue_memory.metrics.resident_bytes;
+
+    metrics->notify_queue.entry_count = (int)notify_queue_memory.entry_count;
+    metrics->notify_queue.block_count = (int)notify_queue_memory.block_count;
+    metrics->notify_queue.total_allocation = notify_queue_memory.total_allocation;
+    metrics->notify_queue.virtual_bytes = notify_queue_memory.metrics.virtual_bytes;
+    metrics->notify_queue.resident_bytes = notify_queue_memory.metrics.resident_bytes;
 
     return true;
 }

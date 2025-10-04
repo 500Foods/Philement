@@ -11,6 +11,7 @@
 // Local includes
 #include "database_queue.h"
 #include "database.h"
+#include "../utils/utils_queue.h"
 
 /*
  * Destroy database queue and all associated resources
@@ -58,6 +59,9 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
     free(db_queue->connection_string);
     free(db_queue->queue_type);
     free(db_queue->tags);
+
+    // Track memory deallocation for the database queue
+    track_queue_deallocation(&database_queue_memory, sizeof(DatabaseQueue));
 
     free(db_queue);
 }
