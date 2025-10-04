@@ -36,6 +36,12 @@ void test_dispatch_http_confirm_upgrade(void);
 void test_dispatch_filter_http_connection(void);
 void test_dispatch_protocol_bind_drop(void);
 void test_dispatch_unhandled_callbacks(void);
+void test_dispatch_filter_protocol_query_param_success(void);
+void test_dispatch_filter_protocol_query_param_wrong_key(void);
+void test_dispatch_filter_protocol_query_param_no_query(void);
+void test_dispatch_filter_protocol_query_param_url_encoded(void);
+void test_dispatch_filter_protocol_query_param_with_ampersand(void);
+void test_dispatch_filter_protocol_no_auth_header(void);
 
 // External references
 extern WebSocketServerContext *ws_context;
@@ -277,6 +283,119 @@ void test_dispatch_filter_protocol_connection_failure(void) {
     TEST_ASSERT_EQUAL_INT(-1, result); // Should fail
 }
 
+void test_dispatch_filter_protocol_query_param_success(void) {
+    // Test successful authentication via query parameter
+    ws_context = &test_context;
+    
+    // Mock no stored key in session
+    test_session.authenticated_key = NULL;
+    mock_lws_set_wsi_user_result(&test_session);
+    
+    // Mock URI with valid key
+    const char *uri = "/?key=test_key_123";
+    mock_lws_set_uri_data(uri);
+    
+    struct lws *mock_wsi = (struct lws *)0xAABBCCDD;
+    
+    int result = ws_callback_dispatch(mock_wsi, LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION, &test_session, NULL, 0);
+    TEST_ASSERT_EQUAL_INT(0, result); // Should succeed via query param
+}
+
+void test_dispatch_filter_protocol_query_param_wrong_key(void) {
+    // Test failed authentication via wrong query parameter
+    ws_context = &test_context;
+    
+    // Mock no stored key in session
+    test_session.authenticated_key = NULL;
+    mock_lws_set_wsi_user_result(&test_session);
+    
+    // Mock URI with wrong key
+    const char *uri = "/?key=wrong_key_999";
+    mock_lws_set_uri_data(uri);
+    
+    struct lws *mock_wsi = (struct lws *)0x11223344;
+    
+    int result = ws_callback_dispatch(mock_wsi, LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION, &test_session, NULL, 0);
+    TEST_ASSERT_EQUAL_INT(-1, result); // Should fail
+}
+
+void test_dispatch_filter_protocol_query_param_no_query(void) {
+    // Test with no query string in URI
+    ws_context = &test_context;
+    
+    // Mock no stored key in session
+    test_session.authenticated_key = NULL;
+    mock_lws_set_wsi_user_result(&test_session);
+    
+    // Mock URI without query string
+    const char *uri = "/";
+    mock_lws_set_uri_data(uri);
+    
+    struct lws *mock_wsi = (struct lws *)0x55667788;
+    
+    int result = ws_callback_dispatch(mock_wsi, LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION, &test_session, NULL, 0);
+    TEST_ASSERT_EQUAL_INT(-1, result); // Should fail (no query)
+}
+
+void test_dispatch_filter_protocol_query_param_url_encoded(void) {
+    // Test URL-encoded query parameter
+    ws_context = &test_context;
+    
+    // Set a key with space to test URL decoding
+    strncpy(test_context.auth_key, "test key 123", sizeof(test_context.auth_key) - 1);
+    
+    // Mock no stored key in session
+    test_session.authenticated_key = NULL;
+    mock_lws_set_wsi_user_result(&test_session);
+    
+    // Mock URI with URL-encoded key (space = %20)
+    const char *uri = "/?key=test%20key%20123";
+    mock_lws_set_uri_data(uri);
+    
+    struct lws *mock_wsi = (struct lws *)0x99AABBCC;
+    
+    int result = ws_callback_dispatch(mock_wsi, LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION, &test_session, NULL, 0);
+    TEST_ASSERT_EQUAL_INT(0, result); // Should succeed after decoding
+}
+
+void test_dispatch_filter_protocol_query_param_with_ampersand(void) {
+    // Test query parameter extraction with multiple params
+    ws_context = &test_context;
+    
+    // Mock no stored key in session
+    test_session.authenticated_key = NULL;
+    mock_lws_set_wsi_user_result(&test_session);
+    
+    // Mock URI with key and other params
+    const char *uri = "/?key=test_key_123&other=value";
+    mock_lws_set_uri_data(uri);
+    
+    struct lws *mock_wsi = (struct lws *)0xDDEEFF00;
+    
+    int result = ws_callback_dispatch(mock_wsi, LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION, &test_session, NULL, 0);
+    TEST_ASSERT_EQUAL_INT(0, result); // Should succeed
+}
+
+void test_dispatch_filter_protocol_no_auth_header(void) {
+    // Test with no Authorization header (goes to query param fallback)
+    ws_context = &test_context;
+    
+    // Mock no stored key
+    test_session.authenticated_key = NULL;
+    mock_lws_set_wsi_user_result(&test_session);
+    
+    // Mock no URI either
+    mock_lws_set_uri_data("");
+    
+    // Mock no Authorization header
+    mock_lws_set_hdr_data("");
+    
+    struct lws *mock_wsi = (struct lws *)0x00112233;
+    
+    int result = ws_callback_dispatch(mock_wsi, LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION, &test_session, NULL, 0);
+    TEST_ASSERT_EQUAL_INT(-1, result); // Should fail (no auth)
+}
+
 // Test other connection setup callbacks
 void test_dispatch_filter_network_connection(void) {
     // Test network connection filtering
@@ -378,6 +497,12 @@ int main(void) {
     // Authentication and filtering tests
     RUN_TEST(test_dispatch_filter_protocol_connection_success);
     RUN_TEST(test_dispatch_filter_protocol_connection_failure);
+    RUN_TEST(test_dispatch_filter_protocol_query_param_success);
+    RUN_TEST(test_dispatch_filter_protocol_query_param_wrong_key);
+    RUN_TEST(test_dispatch_filter_protocol_query_param_no_query);
+    RUN_TEST(test_dispatch_filter_protocol_query_param_url_encoded);
+    RUN_TEST(test_dispatch_filter_protocol_query_param_with_ampersand);
+    RUN_TEST(test_dispatch_filter_protocol_no_auth_header);
 
     // Connection setup tests
     RUN_TEST(test_dispatch_filter_network_connection);

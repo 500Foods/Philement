@@ -19,7 +19,7 @@ if [[ "${QUICK_MODE}" != "true" ]]; then
     echo "$(date +%H:%M:%S.%3N || true) - Cleaning Build Directory"
     rm -rf build/*
     rm -rf hydrogen_*
-    rm -rf ~/.cache/hydrogen/depdendency
+    rm -rf ~/.cache/hydrogen/depdendency/*
 
     echo "$(date +%H:%M:%S.%3N || true) - Configuring CMake"
     cd cmake && cmake -S . -B ../build --preset default >/dev/null 2>&1
