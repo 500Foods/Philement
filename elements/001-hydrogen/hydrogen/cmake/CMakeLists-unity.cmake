@@ -33,6 +33,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_network.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_threads.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_pthread.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libpq.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libmysqlclient.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libdb2.c
