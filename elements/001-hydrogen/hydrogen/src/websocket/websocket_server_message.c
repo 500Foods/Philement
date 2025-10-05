@@ -42,8 +42,8 @@ typedef struct PtyBridgeContext {
 // Forward declarations of message type handlers
 int handle_message_type(struct lws *wsi, const char *type);
 TerminalSession* find_or_create_terminal_session(struct lws *wsi);
-static void *pty_output_bridge_thread(void *arg);
-static void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session);
+void *pty_output_bridge_thread(void *arg);
+void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session);
 void stop_pty_bridge_thread(TerminalSession *session);
 
 int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len)
@@ -272,7 +272,7 @@ int ws_write_json_response(struct lws *wsi, json_t *json)
 }
 
 // PTY output bridge thread implementation
-static void *pty_output_bridge_thread(void *arg)
+void *pty_output_bridge_thread(void *arg)
 {
     PtyBridgeContext *bridge = (PtyBridgeContext *)arg;
     if (!bridge || !bridge->wsi || !bridge->session || !bridge->session->pty_shell) {
@@ -389,7 +389,7 @@ static void *pty_output_bridge_thread(void *arg)
     return NULL;
 }
 
-__attribute__((unused)) static void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session)
+__attribute__((unused)) void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session)
 {
     if (!wsi || !session || !session->pty_shell) {
         log_this(SR_TERMINAL, "Invalid parameters for PTY bridge thread", LOG_LEVEL_ERROR, 0);
