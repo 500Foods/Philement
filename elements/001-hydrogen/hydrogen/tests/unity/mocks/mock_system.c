@@ -18,6 +18,8 @@
 #include <pty.h>
 #include <stdarg.h>
 #include <sys/types.h>
+#include <errno.h>
+#include <pthread.h>
 
 // Define types if not already defined
 #ifndef _SIZE_T
