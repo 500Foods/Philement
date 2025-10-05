@@ -12,6 +12,23 @@
 #include <poll.h>
 #include <sys/socket.h>
 #include <dlfcn.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <sys/wait.h>
+#include <pty.h>
+#include <stdarg.h>
+#include <sys/types.h>
+
+// Define types if not already defined
+#ifndef _SIZE_T
+#define _SIZE_T
+typedef unsigned long size_t;
+#endif
+
+#ifndef _SSIZE_T
+#define _SSIZE_T
+typedef long ssize_t;
+#endif
 
 // Include the header but undefine the macros to access real functions
 #include "mock_system.h"
@@ -30,8 +47,17 @@
 #undef dlclose
 #undef dlerror
 #undef access
+#undef openpty
+#undef fcntl
+#undef fork
+#undef ioctl
+#undef read
+#undef write
+#undef waitpid
+#undef kill
+#undef close
 
-// Function prototypes
+// Function prototypes - these are defined in the header when USE_MOCK_SYSTEM is set
 void *mock_malloc(size_t size);
 void *mock_realloc(void *ptr, size_t size);
 void mock_free(void *ptr);
@@ -45,6 +71,15 @@ void *mock_dlopen(const char *filename, int flags);
 int mock_dlclose(void *handle);
 char *mock_dlerror(void);
 int mock_access(const char *pathname, int mode);
+int mock_openpty(int *amaster, int *aslave, char *name, const struct termios *termp, const struct winsize *winp);
+int mock_fcntl(int fd, int cmd, ...);
+pid_t mock_fork(void);
+int mock_ioctl(int fd, unsigned long request, ...);
+ssize_t mock_read(int fd, void *buf, size_t count);
+ssize_t mock_write(int fd, const void *buf, size_t count);
+pid_t mock_waitpid(pid_t pid, int *wstatus, int options);
+int mock_kill(pid_t pid, int sig);
+int mock_close(int fd);
 void mock_system_set_malloc_failure(int should_fail);
 void mock_system_set_realloc_failure(int should_fail);
 void mock_system_set_gethostname_failure(int should_fail);
@@ -57,6 +92,18 @@ void mock_system_set_dlopen_result(void *result);
 void mock_system_set_dlopen_failure(int should_fail);
 void mock_system_set_dlerror_result(const char *result);
 void mock_system_set_access_result(int result);
+void mock_system_set_openpty_failure(int should_fail);
+void mock_system_set_fcntl_failure(int should_fail);
+void mock_system_set_fork_result(pid_t result);
+void mock_system_set_ioctl_failure(int should_fail);
+void mock_system_set_read_result(ssize_t result);
+void mock_system_set_read_should_fail(int should_fail);
+void mock_system_set_write_result(ssize_t result);
+void mock_system_set_write_should_fail(int should_fail);
+void mock_system_set_waitpid_result(pid_t result);
+void mock_system_set_waitpid_status(int status);
+void mock_system_set_kill_failure(int should_fail);
+void mock_system_set_close_failure(int should_fail);
 void mock_system_reset_all(void);
 
 // Static variables to store mock state
@@ -72,6 +119,18 @@ static void *mock_dlopen_result = NULL;
 static int mock_dlopen_should_fail = 0;
 static const char *mock_dlerror_result = NULL;
 static int mock_access_result = 0;
+static int mock_openpty_should_fail = 0;
+static int mock_fcntl_should_fail = 0;
+static pid_t mock_fork_result = 0;
+static int mock_ioctl_should_fail = 0;
+static ssize_t mock_read_result = 0;
+static int mock_read_should_fail = 0;
+static ssize_t mock_write_result = 0;
+static int mock_write_should_fail = 0;
+static pid_t mock_waitpid_result = 0;
+static int mock_waitpid_status = 0;
+static int mock_kill_should_fail = 0;
+static int mock_close_should_fail = 0;
 
 // Mock implementation of malloc
 void *mock_malloc(size_t size) {
@@ -234,6 +293,54 @@ void mock_system_set_access_result(int result) {
     mock_access_result = result;
 }
 
+void mock_system_set_openpty_failure(int should_fail) {
+    mock_openpty_should_fail = should_fail;
+}
+
+void mock_system_set_fcntl_failure(int should_fail) {
+    mock_fcntl_should_fail = should_fail;
+}
+
+void mock_system_set_fork_result(pid_t result) {
+    mock_fork_result = result;
+}
+
+void mock_system_set_ioctl_failure(int should_fail) {
+    mock_ioctl_should_fail = should_fail;
+}
+
+void mock_system_set_read_result(ssize_t result) {
+    mock_read_result = result;
+}
+
+void mock_system_set_read_should_fail(int should_fail) {
+    mock_read_should_fail = should_fail;
+}
+
+void mock_system_set_write_result(ssize_t result) {
+    mock_write_result = result;
+}
+
+void mock_system_set_write_should_fail(int should_fail) {
+    mock_write_should_fail = should_fail;
+}
+
+void mock_system_set_waitpid_result(pid_t result) {
+    mock_waitpid_result = result;
+}
+
+void mock_system_set_waitpid_status(int status) {
+    mock_waitpid_status = status;
+}
+
+void mock_system_set_kill_failure(int should_fail) {
+    mock_kill_should_fail = should_fail;
+}
+
+void mock_system_set_close_failure(int should_fail) {
+    mock_close_should_fail = should_fail;
+}
+
 void mock_system_reset_all(void) {
     mock_malloc_should_fail = 0;
     mock_realloc_should_fail = 0;
@@ -247,6 +354,18 @@ void mock_system_reset_all(void) {
     mock_dlopen_should_fail = 0;
     mock_dlerror_result = NULL;
     mock_access_result = 0;
+    mock_openpty_should_fail = 0;
+    mock_fcntl_should_fail = 0;
+    mock_fork_result = 0;
+    mock_ioctl_should_fail = 0;
+    mock_read_result = 0;
+    mock_read_should_fail = 0;
+    mock_write_result = 0;
+    mock_write_should_fail = 0;
+    mock_waitpid_result = 0;
+    mock_waitpid_status = 0;
+    mock_kill_should_fail = 0;
+    mock_close_should_fail = 0;
 }
 
 // Mock implementation of dlopen
@@ -287,4 +406,111 @@ int mock_access(const char *pathname, int mode) {
     (void)mode;      // Suppress unused parameter
 
     return mock_access_result;
+}
+
+// Mock implementation of openpty
+int mock_openpty(int *amaster, int *aslave, char *name, const struct termios *termp, const struct winsize *winp) {
+    (void)termp;  // Suppress unused parameter
+    (void)winp;   // Suppress unused parameter
+
+    if (mock_openpty_should_fail) {
+        return -1;
+    }
+
+    // Set mock file descriptors
+    if (amaster) *amaster = 42;
+    if (aslave) *aslave = 43;
+    if (name) strcpy(name, "/dev/pts/5");
+
+    return 0;
+}
+
+// Mock implementation of fcntl
+int mock_fcntl(int fd, int cmd, ...) {
+    (void)fd;   // Suppress unused parameter
+    (void)cmd;  // Suppress unused parameter
+
+    if (mock_fcntl_should_fail) {
+        return -1;
+    }
+
+    return 0;
+}
+
+// Mock implementation of fork
+pid_t mock_fork(void) {
+    return mock_fork_result;
+}
+
+// Mock implementation of ioctl
+int mock_ioctl(int fd, unsigned long request, ...) {
+    (void)fd;      // Suppress unused parameter
+    (void)request; // Suppress unused parameter
+
+    if (mock_ioctl_should_fail) {
+        return -1;
+    }
+
+    return 0;
+}
+
+// Mock implementation of read
+ssize_t mock_read(int fd, void *buf, size_t count) {
+    (void)fd;   // Suppress unused parameter
+    (void)buf;  // Suppress unused parameter
+    (void)count; // Suppress unused parameter
+
+    if (mock_read_should_fail) {
+        return -1;
+    }
+
+    return mock_read_result;
+}
+
+// Mock implementation of write
+ssize_t mock_write(int fd, const void *buf, size_t count) {
+    (void)fd;   // Suppress unused parameter
+    (void)buf;  // Suppress unused parameter
+    (void)count; // Suppress unused parameter
+
+    if (mock_write_should_fail) {
+        return -1;
+    }
+
+    return mock_write_result;
+}
+
+// Mock implementation of waitpid
+pid_t mock_waitpid(pid_t pid, int *wstatus, int options) {
+    (void)pid;    // Suppress unused parameter
+    (void)options; // Suppress unused parameter
+
+    if (wstatus) {
+        *wstatus = mock_waitpid_status;
+    }
+
+    return mock_waitpid_result;
+}
+
+// Mock implementation of kill
+int mock_kill(pid_t pid, int sig) {
+    (void)pid; // Suppress unused parameter
+    (void)sig; // Suppress unused parameter
+
+    if (mock_kill_should_fail) {
+        return -1;
+    }
+
+    return 0;
+}
+
+// Mock implementation of close
+int mock_close(int fd) {
+    (void)fd; // Suppress unused parameter
+
+    if (mock_close_should_fail) {
+        return -1;
+    }
+
+    return 0;
 }

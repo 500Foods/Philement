@@ -53,8 +53,8 @@ CACHE_MISSES=0
 # Declare global associative array for cache data
 declare -gA CACHE_DATA
 
-# Create cache directory if it doesn't exist
-mkdir -p "${UNITY_CACHE_DIR}"
+# Delete this cache as one of the tests' coverages depends on it being empty
+rm -rf ~/.cache/hydrogen/depdendency/*
 
 # Function to load consolidated cache into associative array
 load_consolidated_cache() {
@@ -79,6 +79,8 @@ load_consolidated_cache() {
 save_consolidated_cache() {
     local cache_file="$1"
     local temp_cache="${cache_file}.tmp"
+    
+    mkdir -p "$(dirname "${temp_cache}")" && touch "${temp_cache}"
     
     # Write cache data to temp file
     for test_path in "${!CACHE_DATA[@]}"; do

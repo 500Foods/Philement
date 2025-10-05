@@ -4,6 +4,9 @@
 #include <libwebsockets.h>
 #include <jansson.h>
 
+// Include terminal session for function declarations
+#include "../terminal/terminal_session.h"
+
 // Include internal definitions for public API functions that use internal types
 #include "websocket_server_internal.h"
 
@@ -27,6 +30,11 @@ void handle_status_request(struct lws *wsi);
 
 // Helper function prototypes
 int ws_write_json_response(struct lws *wsi, json_t *json);
+
+// Message processing functions (made non-static for testing)
+int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len);
+int handle_message_type(struct lws *wsi, const char *type);
+TerminalSession* find_or_create_terminal_session(struct lws *wsi);
 
 // WebSocket server startup helper functions (for testing)
 int validate_websocket_params(int port, const char* protocol, const char* key);

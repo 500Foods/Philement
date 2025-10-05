@@ -14,6 +14,7 @@
 // Standard project header plus Unity Framework header
 #include "../../../../src/hydrogen.h"
 #include "unity.h"
+#include <stdlib.h>
 
 // Forward declarations for the functions being tested
 int check_library_dependencies(const AppConfig *config);
@@ -29,6 +30,8 @@ extern void tearDown(void);
 
 void setUp(void) {
     // Initialize test fixtures
+    // Disable cache for testing to ensure command execution paths are tested
+    setenv("HYDROGEN_DEP_CACHE", "1", 1);
 }
 
 void tearDown(void) {

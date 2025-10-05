@@ -20,6 +20,7 @@ extern const char *jansson_version_str(void);
 #include <sys/stat.h>
 #include <pwd.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 // Database dependency configuration
 typedef struct {
@@ -280,11 +281,15 @@ static void save_cache(const char *db_name, const char *version) {
  static const char *get_database_version(const DatabaseDependencyConfig *config, char *buffer, size_t size) {
      if (!config || !buffer || !size) return "None";
 
-     // Check cache first
-     const char *cached_result = load_cached_version(config->name, buffer, size);
-     if (cached_result) {
-         cache_hits++;
-         return cached_result;
+     // Check for environment variable to disable cache (for testing)
+     const char *disable_cache = getenv("HYDROGEN_DEP_CACHE");
+     if (!disable_cache || strcmp(disable_cache, "1") != 0) {
+         // Check cache first
+         const char *cached_result = load_cached_version(config->name, buffer, size);
+         if (cached_result) {
+             cache_hits++;
+             return cached_result;
+         }
      }
 
      buffer[0] = '\0';
