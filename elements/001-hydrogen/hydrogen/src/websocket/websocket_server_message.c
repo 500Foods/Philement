@@ -40,8 +40,8 @@ typedef struct PtyBridgeContext {
 } PtyBridgeContext;
 
 // Forward declarations of message type handlers
-static int handle_message_type(struct lws *wsi, const char *type);
-static TerminalSession* find_or_create_terminal_session(struct lws *wsi);
+int handle_message_type(struct lws *wsi, const char *type);
+TerminalSession* find_or_create_terminal_session(struct lws *wsi);
 static void *pty_output_bridge_thread(void *arg);
 static void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session);
 void stop_pty_bridge_thread(TerminalSession *session);
@@ -114,7 +114,7 @@ int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, cons
     return result;
 }
 
-static int handle_message_type(struct lws *wsi, const char *type)
+int handle_message_type(struct lws *wsi, const char *type)
 {
     if (strcmp(type, "status") == 0) {
         log_this(SR_WEBSOCKET, "Handling status request", LOG_LEVEL_STATE, 0);
@@ -195,7 +195,7 @@ static int handle_message_type(struct lws *wsi, const char *type)
 }
 
 // Create or retrieve terminal session for WebSocket link
-static TerminalSession* find_or_create_terminal_session(struct lws *wsi)
+TerminalSession* find_or_create_terminal_session(struct lws *wsi)
 {
     if (!wsi || !ws_context) {
         return NULL;

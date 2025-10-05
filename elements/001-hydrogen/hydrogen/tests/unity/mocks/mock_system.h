@@ -10,6 +10,10 @@
 
 #include <stddef.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <sys/wait.h>
+#include <pty.h>
 
 // Mock function declarations - these will override the real ones when USE_MOCK_SYSTEM is defined
 #ifdef USE_MOCK_SYSTEM
@@ -28,6 +32,15 @@
 #define dlclose mock_dlclose
 #define dlerror mock_dlerror
 #define access mock_access
+#define openpty mock_openpty
+#define fcntl mock_fcntl
+#define fork mock_fork
+#define ioctl mock_ioctl
+#define read mock_read
+#define write mock_write
+#define waitpid mock_waitpid
+#define kill mock_kill
+#define close mock_close
 
 // Always declare mock function prototypes for the .c file
 void *mock_malloc(size_t size);
@@ -43,8 +56,17 @@ void *mock_dlopen(const char *filename, int flags);
 int mock_dlclose(void *handle);
 char *mock_dlerror(void);
 int mock_access(const char *pathname, int mode);
+int mock_openpty(int *amaster, int *aslave, char *name, const struct termios *termp, const struct winsize *winp);
+int mock_fcntl(int fd, int cmd, ...);
+pid_t mock_fork(void);
+int mock_ioctl(int fd, unsigned long request, ...);
+ssize_t mock_read(int fd, void *buf, size_t count);
+ssize_t mock_write(int fd, const void *buf, size_t count);
+pid_t mock_waitpid(pid_t pid, int *wstatus, int options);
+int mock_kill(pid_t pid, int sig);
+int mock_close(int fd);
 
-// Mock control functions for tests
+// Mock control functions for tests - always available
 void mock_system_set_malloc_failure(int should_fail);
 void mock_system_set_realloc_failure(int should_fail);
 void mock_system_set_gethostname_failure(int should_fail);
@@ -57,6 +79,18 @@ void mock_system_set_dlopen_result(void *result);
 void mock_system_set_dlopen_failure(int should_fail);
 void mock_system_set_dlerror_result(const char *result);
 void mock_system_set_access_result(int result);
+void mock_system_set_openpty_failure(int should_fail);
+void mock_system_set_fcntl_failure(int should_fail);
+void mock_system_set_fork_result(pid_t result);
+void mock_system_set_ioctl_failure(int should_fail);
+void mock_system_set_read_result(ssize_t result);
+void mock_system_set_read_should_fail(int should_fail);
+void mock_system_set_write_result(ssize_t result);
+void mock_system_set_write_should_fail(int should_fail);
+void mock_system_set_waitpid_result(pid_t result);
+void mock_system_set_waitpid_status(int status);
+void mock_system_set_kill_failure(int should_fail);
+void mock_system_set_close_failure(int should_fail);
 void mock_system_reset_all(void);
 
 #endif // USE_MOCK_SYSTEM

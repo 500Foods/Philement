@@ -14,6 +14,7 @@
 // Include mocks for external dependencies
 #include "../../../../tests/unity/mocks/mock_libwebsockets.h"
 #include "../../../../tests/unity/mocks/mock_libmicrohttpd.h"
+#include "../../../../tests/unity/mocks/mock_system.h"
 
 // Test fixtures
 static PtyShell *test_shell = NULL;

@@ -21,14 +21,27 @@ typedef struct TerminalSession TerminalSession;
 
 // Mock function declarations
 const char* MHD_lookup_connection_value(struct MHD_Connection *connection,
-                                        enum MHD_ValueKind kind,
-                                        const char *key);
+                                         enum MHD_ValueKind kind,
+                                         const char *key);
+
+struct MHD_Response* MHD_create_response_from_buffer(size_t size, void *buffer,
+                                                    enum MHD_ResponseMemoryMode mode);
+struct MHD_Response* MHD_create_response_from_fd(size_t size, int fd);
+enum MHD_Result MHD_add_response_header(struct MHD_Response *response,
+                                       const char *header, const char *content);
+enum MHD_Result MHD_queue_response(struct MHD_Connection *connection,
+                                  unsigned int status_code,
+                                  struct MHD_Response *response);
+void MHD_destroy_response(struct MHD_Response *response);
 
 // Mock control functions
 void mock_mhd_reset_all(void);
 void mock_mhd_set_lookup_result(const char *result);
 const char* mock_mhd_get_lookup_result(void);
 void mock_mhd_set_connection_info(const union MHD_ConnectionInfo *info);
+void mock_mhd_set_create_response_should_fail(bool should_fail);
+void mock_mhd_set_add_header_should_fail(bool should_fail);
+void mock_mhd_set_queue_response_result(enum MHD_Result result);
 
 // Additional mock functions for session management
 bool session_manager_has_capacity(void);

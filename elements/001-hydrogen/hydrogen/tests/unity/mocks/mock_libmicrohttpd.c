@@ -10,6 +10,9 @@
 // Mock state variables
 static const char* mock_mhd_lookup_result = NULL;
 static const union MHD_ConnectionInfo* mock_mhd_connection_info = NULL;
+static bool mock_mhd_create_response_should_fail = false;
+static bool mock_mhd_add_header_should_fail = false;
+static enum MHD_Result mock_mhd_queue_response_result = MHD_YES;
 
 /*
  * Mock implementation of MHD_lookup_connection_value
@@ -43,6 +46,69 @@ const union MHD_ConnectionInfo* MHD_get_connection_info(struct MHD_Connection *c
 }
 
 /*
+ * Mock implementation of MHD_create_response_from_buffer
+ */
+__attribute__((weak))
+struct MHD_Response* MHD_create_response_from_buffer(size_t size, void *buffer,
+                                                    enum MHD_ResponseMemoryMode mode) {
+    (void)size; (void)buffer; (void)mode;
+
+    if (mock_mhd_create_response_should_fail) {
+        return NULL;
+    }
+
+    // Return a dummy non-NULL pointer to simulate success
+    return (struct MHD_Response*)0xDEADBEEF;
+}
+
+/*
+ * Mock implementation of MHD_create_response_from_fd
+ */
+__attribute__((weak))
+struct MHD_Response* MHD_create_response_from_fd(size_t size, int fd) {
+    (void)size; (void)fd;
+
+    if (mock_mhd_create_response_should_fail) {
+        return NULL;
+    }
+
+    // Return a dummy non-NULL pointer to simulate success
+    return (struct MHD_Response*)0xDEADBEEF;
+}
+
+/*
+ * Mock implementation of MHD_add_response_header
+ */
+__attribute__((weak))
+enum MHD_Result MHD_add_response_header(struct MHD_Response *response,
+                                       const char *header, const char *content) {
+    (void)response; (void)header; (void)content;
+
+    return mock_mhd_add_header_should_fail ? MHD_NO : MHD_YES;
+}
+
+/*
+ * Mock implementation of MHD_queue_response
+ */
+__attribute__((weak))
+enum MHD_Result MHD_queue_response(struct MHD_Connection *connection,
+                                  unsigned int status_code,
+                                  struct MHD_Response *response) {
+    (void)connection; (void)status_code; (void)response;
+
+    return mock_mhd_queue_response_result;
+}
+
+/*
+ * Mock implementation of MHD_destroy_response
+ */
+__attribute__((weak))
+void MHD_destroy_response(struct MHD_Response *response) {
+    (void)response;
+    // Mock cleanup - do nothing
+}
+
+/*
  * Reset all mock state
  */
 void mock_mhd_reset_all(void) {
@@ -51,6 +117,9 @@ void mock_mhd_reset_all(void) {
         mock_mhd_lookup_result = NULL;
     }
     mock_mhd_connection_info = NULL;
+    mock_mhd_create_response_should_fail = false;
+    mock_mhd_add_header_should_fail = false;
+    mock_mhd_queue_response_result = MHD_YES;
 }
 
 /*
@@ -214,4 +283,25 @@ void mock_session_set_resize_result(bool result) {
 void mock_session_set_stats(size_t connections, size_t max_connections) {
     mock_session_connections = connections;
     mock_session_max_connections = max_connections;
+}
+
+/*
+ * Set whether MHD_create_response_from_buffer should fail
+ */
+void mock_mhd_set_create_response_should_fail(bool should_fail) {
+    mock_mhd_create_response_should_fail = should_fail;
+}
+
+/*
+ * Set whether MHD_add_response_header should fail
+ */
+void mock_mhd_set_add_header_should_fail(bool should_fail) {
+    mock_mhd_add_header_should_fail = should_fail;
+}
+
+/*
+ * Set the result that MHD_queue_response should return
+ */
+void mock_mhd_set_queue_response_result(enum MHD_Result result) {
+    mock_mhd_queue_response_result = result;
 }
