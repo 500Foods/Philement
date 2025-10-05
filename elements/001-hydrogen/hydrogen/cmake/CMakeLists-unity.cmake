@@ -37,6 +37,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libmysqlclient.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libdb2.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libsqlite3.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_terminal_websocket.c
 )
 
 # Print-specific mock sources (only linked to print tests)
@@ -182,6 +183,8 @@ target_compile_options(unity_mocks PRIVATE
     -DBUILD_TYPE="Unity"
     -DUNITY_INCLUDE_DOUBLE
     -DUSE_MOCK_LIBWEBSOCKETS
+    -DUSE_MOCK_TERMINAL_WEBSOCKET
+    -DUSE_MOCK_SYSTEM
     -I${CMAKE_CURRENT_SOURCE_DIR}/../src
     -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
     -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks
@@ -241,10 +244,10 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     string(FIND "${TEST_SOURCE}" "print" IS_PRINT_TEST)
     if(IS_WEBSOCKET_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
-        set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS -DUSE_MOCK_STATUS")
+        set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS -DUSE_MOCK_STATUS -DUSE_MOCK_TERMINAL_WEBSOCKET")
     elseif(IS_TERMINAL_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
-        set(MOCK_DEFINES "-DUSE_MOCK_LIBMICROHTTPD")
+        set(MOCK_DEFINES "-DUSE_MOCK_LIBMICROHTTPD -DUSE_MOCK_SYSTEM")
     elseif(IS_MDNS_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_NETWORK -DUSE_MOCK_SYSTEM -DUSE_MOCK_THREADS")

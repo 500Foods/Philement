@@ -25,6 +25,9 @@ void test_cache_with_different_database_configs(void);
 void setUp(void) {
     // Reset all mocks before each test
     mock_system_reset_all();
+
+    // Disable cache for testing to ensure command execution paths are tested
+    setenv("HYDROGEN_DEP_CACHE", "1", 1);
 }
 
 void tearDown(void) {
