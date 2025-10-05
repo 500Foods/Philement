@@ -5,7 +5,8 @@
         "Enabled": true,
         "EnableIPv6": false,
         "Port": 5241,
-        "MaxUploadSize": 10485760
+        "MaxUploadSize": 10485760,
+        "UploadDir": "build/uploads"
     },
     "API": {
         "Enabled": true,
