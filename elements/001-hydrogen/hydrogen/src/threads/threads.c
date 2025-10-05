@@ -48,7 +48,7 @@ void init_service_threads(ServiceThreads *threads, const char* subsystem_name) {
             threads->subsystem[31] = '\0';
         }
 
-        mutex_unlock(&thread_mutex);
+        MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
     }
 }
 
@@ -72,7 +72,7 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
         } else {
             log_this(SR_THREADS_LIB, "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_ERROR, 0);
         }
-        mutex_unlock(&thread_mutex);
+        MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
     }
 }
 
@@ -117,7 +117,7 @@ void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
                 break;
             }
         }
-        mutex_unlock(&thread_mutex);
+        MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
     }
 }
 
@@ -175,7 +175,7 @@ void update_service_thread_metrics(ServiceThreads *threads) {
             threads->resident_memory += metrics->resident_bytes;
         }
 
-        mutex_unlock(&thread_mutex);
+        MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
     }
 }
 
@@ -198,7 +198,7 @@ ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t
             }
         }
 
-        mutex_unlock(&thread_mutex);
+        MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
     }
 
     return metrics;
@@ -238,7 +238,7 @@ void report_thread_status(void) {
 
         log_this(SR_THREADS, "Total Active Threads: %d", LOG_LEVEL_STATE, 1, total_threads);
 
-        mutex_unlock(&thread_mutex);
+        MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
     }
 }
 
@@ -267,6 +267,6 @@ void free_threads_resources(void) {
         // Clean up database threads
         init_service_threads(&database_threads, SR_DATABASE);
 
-        mutex_unlock(&thread_mutex);
+        MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
     }
 }
