@@ -67,14 +67,14 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-10-05 22:42:23 UTC
+Last updated at 2025-10-05 23:16:29 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              646          23982          24464          84809
+C                              646          23988          24464          84814
 JSON                            52             11              0          31428
 Markdown                       346           9588             59          28829
-Bourne Shell                    86           3905          60965          18038
+Bourne Shell                    86           3905          60967          18038
 SVG                             13             20            202          11004
 Lua                             31            297            342           6676
 C/C++ Header                   156           1695           4526           4710
@@ -90,7 +90,7 @@ Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 -------------------------------------------------------------------------------
-SUM:                          1394          40175          91266         192382
+SUM:                          1394          40181          91268         192387
 -------------------------------------------------------------------------------
 57 Files were skipped (duplicate, binary, or without source code):
   svg: 8
