@@ -23,6 +23,10 @@ static struct lws_context* mock_lws_create_context_result = NULL;
 static int mock_lws_is_final_fragment_result = 1; // Default to final fragment
 static int mock_lws_write_result = 0;
 static const char* mock_lws_protocol_name = "hydrogen"; // Default protocol name
+static int mock_lws_hdr_copy_should_fail = 0;
+static int mock_lws_hdr_total_length_should_fail = 0;
+static int mock_lws_get_peer_should_fail = 0;
+static char mock_peer_address[256] = "127.0.0.1";
 
 // Mock header data for lws_hdr_copy - support different tokens
 static char mock_auth_header_data[256] = "";
@@ -34,6 +38,11 @@ static int mock_uri_len = 0;
 int mock_lws_hdr_copy(struct lws *wsi, char *dest, int len, enum lws_token_indexes token)
 {
     (void)wsi;
+
+    // Check for failure condition
+    if (mock_lws_hdr_copy_should_fail) {
+        return -1;
+    }
 
     // Return different data based on token type
     if (token == WSI_TOKEN_HTTP_AUTHORIZATION) {
@@ -60,14 +69,19 @@ int mock_lws_hdr_copy(struct lws *wsi, char *dest, int len, enum lws_token_index
 int mock_lws_hdr_total_length(struct lws *wsi, enum lws_token_indexes token)
 {
     (void)wsi;
-    
+
+    // Check for failure condition
+    if (mock_lws_hdr_total_length_should_fail) {
+        return -1;
+    }
+
     // Return different lengths based on token type
     if (token == WSI_TOKEN_HTTP_AUTHORIZATION) {
         return mock_auth_header_len;
     } else if (token == WSI_TOKEN_GET_URI) {
         return mock_uri_len;
     }
-    
+
     return 0;
 }
 
@@ -123,12 +137,16 @@ int mock_lws_get_peer_simple(struct lws *wsi, char *name, int namelen)
 {
     (void)wsi;
 
+    // Check for failure condition
+    if (mock_lws_get_peer_should_fail) {
+        return -1;
+    }
+
     if (name && namelen > 0) {
-        // Return a mock IP address
-        const char *mock_ip = "127.0.0.1";
-        size_t copy_len = strlen(mock_ip);
+        // Return the configured peer address
+        size_t copy_len = strlen(mock_peer_address);
         if ((size_t)namelen > copy_len) {
-            strcpy(name, mock_ip);
+            strcpy(name, mock_peer_address);
             return (int)copy_len;
         } else {
             // Buffer too small
@@ -255,6 +273,31 @@ int mock_lws_get_is_final_fragment_result(void)
     return mock_lws_is_final_fragment_result;
 }
 
+void mock_lws_set_peer_address(const char* address)
+{
+    if (address) {
+        size_t addr_len = strlen(address);
+        if (addr_len < sizeof(mock_peer_address)) {
+            strcpy(mock_peer_address, address);
+        }
+    }
+}
+
+void mock_lws_set_hdr_copy_failure(int should_fail)
+{
+    mock_lws_hdr_copy_should_fail = should_fail;
+}
+
+void mock_lws_set_hdr_total_length_failure(int should_fail)
+{
+    mock_lws_hdr_total_length_should_fail = should_fail;
+}
+
+void mock_lws_set_get_peer_failure(int should_fail)
+{
+    mock_lws_get_peer_should_fail = should_fail;
+}
+
 void mock_lws_reset_all(void)
 {
     mock_lws_hdr_copy_result = 0;
@@ -267,6 +310,10 @@ void mock_lws_reset_all(void)
     mock_lws_is_final_fragment_result = 1; // Default to final fragment
     mock_lws_write_result = 0;
     mock_lws_protocol_name = "hydrogen"; // Reset to default
+    mock_lws_hdr_copy_should_fail = 0;
+    mock_lws_hdr_total_length_should_fail = 0;
+    mock_lws_get_peer_should_fail = 0;
+    strcpy(mock_peer_address, "127.0.0.1"); // Reset to default
     mock_auth_header_data[0] = '\0';
     mock_auth_header_len = 0;
     mock_uri_data[0] = '\0';

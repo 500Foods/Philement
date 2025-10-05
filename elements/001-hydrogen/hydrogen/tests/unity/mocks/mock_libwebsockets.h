@@ -62,6 +62,10 @@ void mock_lws_set_create_context_result(struct lws_context* result);
 void mock_lws_set_is_final_fragment_result(int result);
 void mock_lws_set_write_result(int result);
 void mock_lws_set_protocol_name(const char* name);
+void mock_lws_set_peer_address(const char* address);
+void mock_lws_set_hdr_copy_failure(int should_fail);
+void mock_lws_set_hdr_total_length_failure(int should_fail);
+void mock_lws_set_get_peer_failure(int should_fail);
 int mock_lws_get_is_final_fragment_result(void);
 void mock_lws_reset_all(void);
 

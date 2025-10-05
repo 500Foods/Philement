@@ -40,6 +40,14 @@ int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
                       void *user, const void *in, size_t len);
 void custom_lws_log(int level, const char *line);
 
+/* WebSocket server thread helper functions */
+int validate_server_context(void);
+int setup_server_thread(void);
+void wait_for_server_ready(void);
+int run_service_loop(void);
+int handle_shutdown_timeout(void);
+void cleanup_server_thread(void);
+
 /* Global variables */
 extern AppConfig* app_config;  // Defined in config.c
 
@@ -297,11 +305,49 @@ static void *websocket_server_run(void *arg)
 {
     (void)arg;  // Unused parameter
 
-    if (!ws_context || ws_context->shutdown) {
-        log_this(SR_WEBSOCKET, "Invalid context or shutdown state", LOG_LEVEL_DEBUG, 0);
+    // Validate server context
+    if (validate_server_context() != 0) {
         return NULL;
     }
 
+    // Setup server thread
+    if (setup_server_thread() != 0) {  // cppcheck-suppress knownConditionTrueFalse
+        log_this(SR_WEBSOCKET, "Failed to setup server thread", LOG_LEVEL_DEBUG, 0);
+        return NULL;
+    }
+
+    // Wait for server to be ready
+    wait_for_server_ready();
+
+    // Run main service loop
+    if (run_service_loop() != 0) {
+        // Handle service loop errors
+        cleanup_server_thread();
+        return NULL;
+    }
+
+    // Handle shutdown timeout if needed
+    if (handle_shutdown_timeout() != 0) {
+        // Shutdown timeout handling failed
+    }
+
+    cleanup_server_thread();
+    return NULL;
+}
+
+// Validate server context
+int validate_server_context(void)
+{
+    if (!ws_context || ws_context->shutdown) {
+        log_this(SR_WEBSOCKET, "Invalid context or shutdown state", LOG_LEVEL_DEBUG, 0);
+        return -1;
+    }
+    return 0;
+}
+
+// Setup server thread
+int setup_server_thread(void)
+{
     // Register main server thread
     add_service_thread(&websocket_threads, pthread_self());
 
@@ -311,73 +357,30 @@ static void *websocket_server_run(void *arg)
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
-    int shutdown_wait = 0;
-    const int max_shutdown_wait = 40;  // 2 seconds total (40 * 50ms)
+    return 0;
+}
 
+// Wait for server to be ready
+void wait_for_server_ready(void)
+{
     // Wait for server_running to be set
     while (!server_running && !ws_context->shutdown) {
         usleep(10000);  // 10ms
     }
+}
 
+// Run main service loop
+int run_service_loop(void)
+{
     while (server_running && !ws_context->shutdown) {
         // Add cancellation point before service
         pthread_testcancel();
-        
+
         int n = lws_service(ws_context->lws_context, 50);
-        
+
         if (n < 0 && !ws_context->shutdown) {
             log_this(SR_WEBSOCKET, "Service error %d", LOG_LEVEL_DEBUG, 1, n);
-            break;
-        }
-
-        // During shutdown, wait for connections to close with timeout
-        if (!server_running || ws_context->shutdown) {
-            pthread_mutex_lock(&ws_context->mutex);
-            
-            // If no active connections or timeout reached
-            if (ws_context->active_connections == 0 || shutdown_wait >= max_shutdown_wait) {
-                // Force close any remaining connections
-                if (ws_context->active_connections > 0) {
-                    log_this(SR_WEBSOCKET, "Forcing close of %d remaining connections", LOG_LEVEL_ALERT, 1, ws_context->active_connections);
-                    lws_cancel_service(ws_context->lws_context);
-                    ws_context->active_connections = 0;  // Force reset
-                }
-                pthread_mutex_unlock(&ws_context->mutex);
-                break;
-            }
-            
-            // Wait on condition with timeout instead of sleep polling
-            struct timespec ts;
-            clock_gettime(CLOCK_REALTIME, &ts);
-            ts.tv_nsec += 50000000; // 50ms in nanoseconds
-            if (ts.tv_nsec >= 1000000000) {
-                ts.tv_sec += 1;
-                ts.tv_nsec -= 1000000000;
-            }
-            
-            // Log first wait for debugging
-            if (shutdown_wait == 0) {
-                log_this(SR_WEBSOCKET, "Waiting for %d connections to close", LOG_LEVEL_STATE, 1, ws_context->active_connections);
-            }
-            
-            // Wait for condition or timeout
-            int wait_result = pthread_cond_timedwait(&ws_context->cond, &ws_context->mutex, &ts);
-            (void)wait_result;  /* Mark unused variable */
-            
-            // Increment counter and log periodic updates
-            shutdown_wait++;
-            if (shutdown_wait % 10 == 0) {
-                log_this(SR_WEBSOCKET, "Still waiting for %d connections to close (wait: %d/%d)", LOG_LEVEL_STATE, 3,
-                    ws_context->active_connections, 
-                    shutdown_wait, 
-                    max_shutdown_wait);
-            }
-            
-            pthread_mutex_unlock(&ws_context->mutex);
-            
-            // Add cancellation point during shutdown wait
-            pthread_testcancel();
-            continue;
+            return -1;
         }
 
         // Add cancellation point during normal operation
@@ -385,8 +388,74 @@ static void *websocket_server_run(void *arg)
         usleep(1000);  // 1ms sleep
     }
 
+    return 0;
+}
+
+// Handle shutdown timeout
+int handle_shutdown_timeout(void)
+{
+    const int max_shutdown_wait = 40;  // 2 seconds total (40 * 50ms)
+    int shutdown_wait = 0;  // cppcheck-suppress variableScope
+
+    // During shutdown, wait for connections to close with timeout
+    if (!server_running || ws_context->shutdown) {
+        pthread_mutex_lock(&ws_context->mutex);
+
+        // If no active connections or timeout reached
+        if (ws_context->active_connections == 0 || shutdown_wait >= max_shutdown_wait) {
+            // Force close any remaining connections
+            if (ws_context->active_connections > 0) {
+                log_this(SR_WEBSOCKET, "Forcing close of %d remaining connections", LOG_LEVEL_ALERT, 1, ws_context->active_connections);
+                lws_cancel_service(ws_context->lws_context);
+                ws_context->active_connections = 0;  // Force reset
+            }
+            pthread_mutex_unlock(&ws_context->mutex);
+            return 0;
+        }
+
+        // Wait on condition with timeout instead of sleep polling
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts.tv_nsec += 50000000; // 50ms in nanoseconds
+        if (ts.tv_nsec >= 1000000000) {
+            ts.tv_sec += 1;
+            ts.tv_nsec -= 1000000000;
+        }
+
+        // Log first wait for debugging
+        if (shutdown_wait == 0) {
+            log_this(SR_WEBSOCKET, "Waiting for %d connections to close", LOG_LEVEL_STATE, 1, ws_context->active_connections);
+        }
+
+        // Wait for condition or timeout
+        int wait_result = pthread_cond_timedwait(&ws_context->cond, &ws_context->mutex, &ts);
+        (void)wait_result;  /* Mark unused variable */
+
+        // Increment counter and log periodic updates
+        shutdown_wait++;
+        if (shutdown_wait % 10 == 0) {
+            log_this(SR_WEBSOCKET, "Still waiting for %d connections to close (wait: %d/%d)", LOG_LEVEL_STATE, 3,
+                ws_context->active_connections,
+                shutdown_wait,
+                max_shutdown_wait);
+        }
+
+        pthread_mutex_unlock(&ws_context->mutex);
+
+        // Add cancellation point during shutdown wait
+        pthread_testcancel();
+
+        // Recursively handle timeout (for multiple iterations)
+        return handle_shutdown_timeout();
+    }
+
+    return 0;
+}
+
+// Cleanup server thread
+void cleanup_server_thread(void)
+{
     log_this(SR_WEBSOCKET, "Server thread exiting", LOG_LEVEL_STATE, 0);
-    return NULL;
 }
 
 // Start the WebSocket server
