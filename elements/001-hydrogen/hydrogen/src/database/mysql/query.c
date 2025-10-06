@@ -32,9 +32,9 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     }
 
     const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(designator, "mysql_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_DEBUG, 3, (void*)connection, (void*)request, (void*)result);
+    log_this(designator, "mysql_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_TRACE, 3, (void*)connection, (void*)request, (void*)result);
 
-    log_this(designator, "mysql_execute_query: Parameters validated, proceeding", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "mysql_execute_query: Parameters validated, proceeding", LOG_LEVEL_TRACE, 0);
 
     MySQLConnection* mysql_conn = (MySQLConnection*)connection->connection_handle;
     if (!mysql_conn || !mysql_conn->connection) {
@@ -42,7 +42,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         return false;
     }
 
-    log_this(designator, "MySQL execute_query: Executing query: %s", LOG_LEVEL_DEBUG, 1, request->sql_template);
+    log_this(designator, "MySQL execute_query: Executing query: %s", LOG_LEVEL_TRACE, 1, request->sql_template);
 
     // Execute query
     if (mysql_query_ptr(mysql_conn->connection, request->sql_template) != 0) {
@@ -61,7 +61,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     if (mysql_store_result_ptr) {
         mysql_result = mysql_store_result_ptr(mysql_conn->connection);
         if (!mysql_result) {
-            log_this(designator, "MySQL execute_query: No result set returned", LOG_LEVEL_DEBUG, 0);
+            log_this(designator, "MySQL execute_query: No result set returned", LOG_LEVEL_TRACE, 0);
         }
     }
 
@@ -128,11 +128,11 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                     }
                     strcat(db_result->data_json, "]");
 
-                    log_this(designator, "MySQL execute_query: Generated result JSON", LOG_LEVEL_DEBUG, 0);
+                    log_this(designator, "MySQL execute_query: Generated result JSON", LOG_LEVEL_TRACE, 0);
                 }
             } else {
                 db_result->data_json = strdup("[]");
-                log_this(designator, "MySQL execute_query: Query returned no data", LOG_LEVEL_DEBUG, 0);
+                log_this(designator, "MySQL execute_query: Query returned no data", LOG_LEVEL_TRACE, 0);
             }
         }
 
@@ -151,7 +151,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
 
     *result = db_result;
 
-    log_this(designator, "MySQL execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "MySQL execute_query: Query completed successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }
 

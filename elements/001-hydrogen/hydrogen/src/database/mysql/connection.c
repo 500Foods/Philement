@@ -143,20 +143,20 @@ bool load_libmysql_functions(const char* designator __attribute__((unused))) {
 
     // Optional functions - log if not available
     if (!mysql_options_ptr) {
-        log_this(log_subsystem, "mysql_options function not available - connection options will be limited", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "mysql_options function not available - connection options will be limited", LOG_LEVEL_TRACE, 0);
     }
     if (!mysql_ping_ptr) {
-        log_this(log_subsystem, "mysql_ping function not available - health check will use query method only", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "mysql_ping function not available - health check will use query method only", LOG_LEVEL_TRACE, 0);
     }
     if (!mysql_autocommit_ptr || !mysql_commit_ptr || !mysql_rollback_ptr) {
         log_this(log_subsystem, "Transaction functions not available - transactions will be limited", LOG_LEVEL_DEBUG, 0);
     }
     if (!mysql_stmt_init_ptr || !mysql_stmt_prepare_ptr || !mysql_stmt_execute_ptr || !mysql_stmt_close_ptr) {
-        log_this(log_subsystem, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_TRACE, 0);
     }
 
     MUTEX_UNLOCK(&libmysql_mutex, log_subsystem);
-    // log_this(log_subsystem, "Successfully loaded libmysqlclient library", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "Successfully loaded libmysqlclient library", LOG_LEVEL_TRACE, 0);
     return true;
 #endif
 }
@@ -295,7 +295,7 @@ bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
 
     // Use designator for logging if provided, otherwise use generic Database subsystem
     const char* log_subsystem = designator ? designator : SR_DATABASE;
-    log_this(log_subsystem, "MySQL connection established successfully", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "MySQL connection established successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -317,7 +317,7 @@ bool mysql_disconnect(DatabaseHandle* connection) {
 
     // Use stored designator for logging if available
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(log_subsystem, "MySQL connection closed", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "MySQL connection closed", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -329,7 +329,7 @@ bool mysql_health_check(DatabaseHandle* connection) {
     }
 
     const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(designator, "MySQL health check: Starting validation", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "MySQL health check: Starting validation", LOG_LEVEL_TRACE, 0);
 
     if (connection->engine_type != DB_ENGINE_MYSQL) {
         log_this(designator, "MySQL health check: wrong engine type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);
@@ -353,27 +353,27 @@ bool mysql_health_check(DatabaseHandle* connection) {
         return false;
     }
 
-    log_this(designator, "MySQL health check: All validations passed, executing health check", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "MySQL health check: All validations passed, executing health check", LOG_LEVEL_TRACE, 0);
 
     // Try ping method first if available
     if (mysql_ping_ptr) {
-        log_this(designator, "MySQL health check: Trying mysql_ping method", LOG_LEVEL_DEBUG, 0);
+        log_this(designator, "MySQL health check: Trying mysql_ping method", LOG_LEVEL_TRACE, 0);
         int ping_result = mysql_ping_ptr(mysql_conn->connection);
-        log_this(designator, "MySQL health check: mysql_ping result: %d", LOG_LEVEL_DEBUG, 1, ping_result);
+        log_this(designator, "MySQL health check: mysql_ping result: %d", LOG_LEVEL_TRACE, 1, ping_result);
 
         if (ping_result == 0) {
-            log_this(designator, "MySQL health check passed via mysql_ping", LOG_LEVEL_STATE, 0);
+            log_this(designator, "MySQL health check passed via mysql_ping", LOG_LEVEL_TRACE, 0);
             connection->last_health_check = time(NULL);
             connection->consecutive_failures = 0;
             return true;
         } else {
-            log_this(designator, "MySQL health check: mysql_ping failed, trying query method", LOG_LEVEL_DEBUG, 0);
+            log_this(designator, "MySQL health check: mysql_ping failed, trying query method", LOG_LEVEL_TRACE, 0);
         }
     }
 
     // Fallback to query method
     if (mysql_query_ptr) {
-        log_this(designator, "MySQL health check: Executing 'SELECT 1'", LOG_LEVEL_DEBUG, 0);
+        log_this(designator, "MySQL health check: Executing 'SELECT 1'", LOG_LEVEL_TRACE, 0);
 
         if (mysql_query_ptr(mysql_conn->connection, "SELECT 1") != 0) {
             log_this(designator, "MySQL health check: Query failed", LOG_LEVEL_ERROR, 0);
@@ -395,7 +395,7 @@ bool mysql_health_check(DatabaseHandle* connection) {
             }
         }
 
-        log_this(designator, "MySQL health check passed via query", LOG_LEVEL_STATE, 0);
+        log_this(designator, "MySQL health check passed via query", LOG_LEVEL_TRACE, 0);
         connection->last_health_check = time(NULL);
         connection->consecutive_failures = 0;
         return true;
@@ -415,6 +415,6 @@ bool mysql_reset_connection(DatabaseHandle* connection) {
     connection->connected_since = time(NULL);
     connection->consecutive_failures = 0;
 
-    log_this(SR_DATABASE, "MySQL connection reset successfully", LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, "MySQL connection reset successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }

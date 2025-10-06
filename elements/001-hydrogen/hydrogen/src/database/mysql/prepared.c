@@ -92,7 +92,7 @@ bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const
 
     // Check if prepared statement functions are available
     if (!mysql_stmt_init_ptr || !mysql_stmt_prepare_ptr || !mysql_stmt_execute_ptr || !mysql_stmt_close_ptr) {
-        log_this(SR_DATABASE, "MySQL prepared statement functions not available", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_DATABASE, "MySQL prepared statement functions not available", LOG_LEVEL_TRACE, 0);
         return false;
     }
 
@@ -147,7 +147,7 @@ bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const
 
     *stmt = prepared_stmt;
 
-    log_this(SR_DATABASE, "MySQL prepared statement created", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "MySQL prepared statement created", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -163,7 +163,7 @@ bool mysql_unprepare_statement(DatabaseHandle* connection, PreparedStatement* st
 
     // Check if prepared statement functions are available
     if (!mysql_stmt_close_ptr) {
-        log_this(SR_DATABASE, "MySQL prepared statement functions not available for cleanup", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_DATABASE, "MySQL prepared statement functions not available for cleanup", LOG_LEVEL_TRACE, 0);
         // Still clean up our structures
         mysql_remove_prepared_statement(mysql_conn->prepared_statements, stmt->name);
         free(stmt->name);
@@ -184,6 +184,6 @@ bool mysql_unprepare_statement(DatabaseHandle* connection, PreparedStatement* st
     free(stmt->sql_template);
     free(stmt);
 
-    log_this(SR_DATABASE, "MySQL prepared statement removed", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "MySQL prepared statement removed", LOG_LEVEL_TRACE, 0);
     return true;
 }

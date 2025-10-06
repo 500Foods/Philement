@@ -44,7 +44,7 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
     add_service_thread(&database_threads, db_queue->worker_thread);
 
     char* dqm_label_success = database_queue_generate_label(db_queue);
-    // log_this(dqm_label_success, "Worker thread created and registered successfully", LOG_LEVEL_STATE, 0);
+    // log_this(dqm_label_success, "Worker thread created and registered successfully", LOG_LEVEL_TRACE, 0);
     free(dqm_label_success);
     return true;
 }
@@ -85,7 +85,7 @@ void* database_queue_worker_thread(void* arg) {
                 // Process next query from this queue
                 DatabaseQuery* query = database_queue_process_next(db_queue);
                 if (query) {
-                    // log_this(dqm_component, "%s queue processing query: %s", LOG_LEVEL_DEBUG, 2, db_queue->queue_type, query->query_id ? query->query_id : "unknown");
+                    // log_this(dqm_component, "%s queue processing query: %s", LOG_LEVEL_TRACE, 2, db_queue->queue_type, query->query_id ? query->query_id : "unknown");
 
                     // TODO: Actual database query execution will be implemented in Phase 2
                     // For now, just simulate processing time based on queue type
@@ -121,7 +121,7 @@ void* database_queue_worker_thread(void* arg) {
     remove_service_thread(&database_threads, pthread_self());
 
     char* dqm_label_exit = database_queue_generate_label(db_queue);
-    log_this(dqm_label_exit, "Worker thread exiting", LOG_LEVEL_STATE, 0);
+    log_this(dqm_label_exit, "Worker thread exiting", LOG_LEVEL_TRACE, 0);
     free(dqm_label_exit);
     return NULL;
 }

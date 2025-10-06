@@ -29,6 +29,7 @@
 #include "launch.h"
 #include "../status/status_process.h"
 #include "../utils/utils_dependency.h"
+#include "../database/database.h"
 
 // External declarations
 extern void close_file_logging(void);
@@ -154,8 +155,8 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
         // Get subsystem ID
         int subsystem_id = get_subsystem_id_by_name(subsystem);
         if (subsystem_id < 0) {
-            log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_ERROR, 0);
-            log_this(SR_LAUNCH, "LAUNCH: Failed to get subsystem ID for '%s'", LOG_LEVEL_ERROR, 1, subsystem);
+            log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+            log_this(SR_LAUNCH, "LAUNCH: Failed to get subsystem ID for '%s'", LOG_LEVEL_DEBUG, 1, subsystem);
             free(upper_name);
             continue;
         }
@@ -399,49 +400,82 @@ int startup_hydrogen(const char* config_path) {
         // Log server URLs if subsystems are running
         log_this(SR_STARTUP, "SERVICES", LOG_LEVEL_STATE, 0);
         if (is_subsystem_running_by_name(SR_WEBSERVER)) {
-            log_this(SR_STARTUP, "― Web Server running:    http://localhost:%d", LOG_LEVEL_STATE, 1, app_config->webserver.port);
+            log_this(SR_STARTUP, "― Web Server running:    http://localhost:%d", LOG_LEVEL_ALERT, 1, app_config->webserver.port);
         } else {
-            log_this(SR_STARTUP, "― Web Server not running", LOG_LEVEL_STATE, 0);
+            log_this(SR_STARTUP, "― Web Server not running", LOG_LEVEL_DEBUG, 0);
         }
         if (is_subsystem_running_by_name(SR_API)) {
-            log_this(SR_STARTUP, "― API Server running:    http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->api.prefix);
+            log_this(SR_STARTUP, "― API Server running:    http://localhost:%d%s", LOG_LEVEL_ALERT, 2, app_config->webserver.port, app_config->api.prefix);
         } else {
-            log_this(SR_STARTUP, "― API Server not running", LOG_LEVEL_STATE, 0);
+            log_this(SR_STARTUP, "― API Server not running", LOG_LEVEL_DEBUG, 0);
         }
         if (is_subsystem_running_by_name(SR_SWAGGER)) {
-            log_this(SR_STARTUP, "― Swagger running:       http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->webserver.port, app_config->swagger.prefix);
+            log_this(SR_STARTUP, "― Swagger running:       http://localhost:%d%s", LOG_LEVEL_ALERT, 2, app_config->webserver.port, app_config->swagger.prefix);
         } else {
-            log_this(SR_STARTUP, "― Swagger not running", LOG_LEVEL_STATE, 0);
+            log_this(SR_STARTUP, "― Swagger not running", LOG_LEVEL_DEBUG, 0);
         }
         if (is_subsystem_running_by_name(SR_TERMINAL)) {
-            log_this(SR_STARTUP, "― Terminal running:      http://localhost:%d%s", LOG_LEVEL_STATE, 2, app_config->websocket.port, app_config->terminal.web_path);
+            log_this(SR_STARTUP, "― Terminal running:      http://localhost:%d%s", LOG_LEVEL_ALERT, 2, app_config->websocket.port, app_config->terminal.web_path);
         } else {
-            log_this(SR_STARTUP, "― Terminal not running", LOG_LEVEL_STATE, 0);
+            log_this(SR_STARTUP, "― Terminal not running", LOG_LEVEL_DEBUG, 0);
         }
         
         log_this(SR_STARTUP, "RESOURCES", LOG_LEVEL_DEBUG, 0);
         size_t vmsize = 0, vmrss = 0, vmswap = 0;
         get_process_memory(&vmsize, &vmrss, &vmswap);
-        log_this(SR_STARTUP, "― Memory (RSS):  %'9.1f MB", LOG_LEVEL_DEBUG, 1, (double)vmrss / 1024.0);
-        log_this(SR_STARTUP, "― AppConfig:     %'9d Bytes", LOG_LEVEL_DEBUG, 1, sizeof(*app_config));
-        log_this(SR_STARTUP, "― Subsystems:    %'9d Registered", LOG_LEVEL_DEBUG, 1, registry_registered);
-        log_this(SR_STARTUP, "――― Active:      %'9d", LOG_LEVEL_DEBUG, 1, registry_running);
-        log_this(SR_STARTUP, "――― Failed:      %'9d", LOG_LEVEL_DEBUG, 1, registry_failed);
-        log_this(SR_STARTUP, "――― Unused:      %'9d", LOG_LEVEL_DEBUG, 1, registry_registered - (registry_running + registry_failed));
-        log_this(SR_STARTUP, "― Threads:       %'9d Total", LOG_LEVEL_DEBUG, 1,
+        log_this(SR_STARTUP, "― Memory (RSS):%'9.1f MB", LOG_LEVEL_DEBUG, 1, (double)vmrss / 1024.0);
+        log_this(SR_STARTUP, "― AppConfig:   %'9d Bytes", LOG_LEVEL_DEBUG, 1, sizeof(*app_config));
+
+        log_this(SR_STARTUP, "SUBSYSTEMS:    %'9d Registered", LOG_LEVEL_DEBUG, 1, registry_registered);
+        log_this(SR_STARTUP, "― Active:      %'9d", LOG_LEVEL_DEBUG, 1, registry_running);
+        log_this(SR_STARTUP, "― Failed:      %'9d", LOG_LEVEL_DEBUG, 1, registry_failed);
+        log_this(SR_STARTUP, "― Unused:      %'9d", LOG_LEVEL_DEBUG, 1, registry_registered - (registry_running + registry_failed));
+
+        log_this(SR_STARTUP, "THREADS:       %'9d Total", LOG_LEVEL_DEBUG, 1,
                 logging_threads.thread_count + webserver_threads.thread_count +
                 websocket_threads.thread_count + mdns_server_threads.thread_count +
-                print_threads.thread_count);
-        log_this(SR_STARTUP, "――― Logging:     %'9d", LOG_LEVEL_DEBUG, 1, logging_threads.thread_count);
-        log_this(SR_STARTUP, "――― WebServer:   %'9d", LOG_LEVEL_DEBUG, 1, webserver_threads.thread_count);
-        log_this(SR_STARTUP, "――― WebSocket:   %'9d", LOG_LEVEL_DEBUG, 1, websocket_threads.thread_count);
-        log_this(SR_STARTUP, "――― mDNS:        %'9d", LOG_LEVEL_DEBUG, 1, mdns_server_threads.thread_count);
-        log_this(SR_STARTUP, "――― Print:       %'9d", LOG_LEVEL_DEBUG, 1, print_threads.thread_count);
-        log_this(SR_STARTUP, "― Queues:        %'9d", LOG_LEVEL_DEBUG, 1, 0,0);
-        log_this(SR_STARTUP, "― Databases:     %'9d", LOG_LEVEL_DEBUG, 1, 0,0);
+                print_threads.thread_count + database_threads.thread_count);
+        log_this(SR_STARTUP, "― Logging:     %'9d", LOG_LEVEL_DEBUG, 1, logging_threads.thread_count);
+        log_this(SR_STARTUP, "― WebServer:   %'9d", LOG_LEVEL_DEBUG, 1, webserver_threads.thread_count);
+        log_this(SR_STARTUP, "― WebSocket:   %'9d", LOG_LEVEL_DEBUG, 1, websocket_threads.thread_count);
+        log_this(SR_STARTUP, "― mDNS:        %'9d", LOG_LEVEL_DEBUG, 1, mdns_server_threads.thread_count);
+        log_this(SR_STARTUP, "― Print:       %'9d", LOG_LEVEL_DEBUG, 1, print_threads.thread_count);
+        log_this(SR_STARTUP, "― Database:    %'9d", LOG_LEVEL_DEBUG, 1, database_threads.thread_count);
 
+        log_this(SR_STARTUP, "QUEUES:        %'9d Total", LOG_LEVEL_DEBUG, 1,
+                log_queue_memory.entry_count + webserver_queue_memory.entry_count +
+                websocket_queue_memory.entry_count + mdns_server_queue_memory.entry_count +
+                print_queue_memory.entry_count + database_queue_memory.entry_count +
+                mail_relay_queue_memory.entry_count + notify_queue_memory.entry_count);
+        log_this(SR_STARTUP, "― Logging:     %'9d", LOG_LEVEL_DEBUG, 1, log_queue_memory.entry_count);
+        log_this(SR_STARTUP, "― WebServer:   %'9d", LOG_LEVEL_DEBUG, 1, webserver_queue_memory.entry_count);
+        log_this(SR_STARTUP, "― WebSocket:   %'9d", LOG_LEVEL_DEBUG, 1, websocket_queue_memory.entry_count);
+        log_this(SR_STARTUP, "― mDNS:        %'9d", LOG_LEVEL_DEBUG, 1, mdns_server_queue_memory.entry_count);
+        log_this(SR_STARTUP, "― Print:       %'9d", LOG_LEVEL_DEBUG, 1, print_queue_memory.entry_count);
+        log_this(SR_STARTUP, "― Database:    %'9d", LOG_LEVEL_DEBUG, 1, database_queue_memory.entry_count);
+        log_this(SR_STARTUP, "― MailRelay:   %'9d", LOG_LEVEL_DEBUG, 1, mail_relay_queue_memory.entry_count);
+        log_this(SR_STARTUP, "― Notify:      %'9d", LOG_LEVEL_DEBUG, 1, notify_queue_memory.entry_count);
 
-        log_this(SR_STARTUP, "TIMING", LOG_LEVEL_STATE, 0);
+        int postgres_count, mysql_count, sqlite_count, db2_count;
+        database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count);
+        int total_databases = postgres_count + mysql_count + sqlite_count + db2_count;
+        log_this(SR_STARTUP, "DATABASES:     %'9d Total", LOG_LEVEL_DEBUG, 1, total_databases);
+        log_this(SR_STARTUP, "― PostgreSQL:  %'9d", LOG_LEVEL_DEBUG, 1, postgres_count);
+        log_this(SR_STARTUP, "― MySQL:       %'9d", LOG_LEVEL_DEBUG, 1, mysql_count);
+        log_this(SR_STARTUP, "― SQLite:      %'9d", LOG_LEVEL_DEBUG, 1, sqlite_count);
+        log_this(SR_STARTUP, "― DB2:         %'9d", LOG_LEVEL_DEBUG, 1, db2_count);
+
+        int lead_count, slow_count, medium_count, fast_count, cache_count;
+        database_get_queue_counts_by_type(&lead_count, &slow_count, &medium_count, &fast_count, &cache_count);
+        int total_queues = lead_count + slow_count + medium_count + fast_count + cache_count;
+        log_this(SR_STARTUP, "DB QUEUE MGRS: %'9d Total", LOG_LEVEL_DEBUG, 1, total_queues);
+        log_this(SR_STARTUP, "― Lead:        %'9d", LOG_LEVEL_DEBUG, 1, lead_count);
+        log_this(SR_STARTUP, "― Slow:        %'9d", LOG_LEVEL_DEBUG, 1, slow_count);
+        log_this(SR_STARTUP, "― Medium:      %'9d", LOG_LEVEL_DEBUG, 1, medium_count);
+        log_this(SR_STARTUP, "― Fast:        %'9d", LOG_LEVEL_DEBUG, 1, fast_count);
+        log_this(SR_STARTUP, "― Cache:       %'9d", LOG_LEVEL_DEBUG, 1, cache_count);
+
+        log_this(SR_STARTUP, "TIMING", LOG_LEVEL_ALERT, 0);
         // Log times with consistent fixed-length text and hyphens for formatting
         // Get current time with microsecond precision
         gettimeofday(&tv, NULL);
@@ -490,9 +524,9 @@ int startup_hydrogen(const char* config_path) {
             log_this(SR_STARTUP, "― Application restarts:  %d", LOG_LEVEL_STATE, 1, restart_count);
         }         
 
-        log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
-        log_this(SR_STARTUP, "Press Ctrl+C to exit (SIGINT)", LOG_LEVEL_ALERT, 0);
-        log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+        log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+        log_this(SR_STARTUP, "PRESS CTRL+C TO EXIT (SIGINT)", LOG_LEVEL_ALERT, 0);
+        log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
 
     log_group_end();
  

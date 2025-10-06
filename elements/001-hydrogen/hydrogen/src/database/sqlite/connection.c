@@ -134,14 +134,14 @@ bool load_libsqlite_functions(const char* designator __attribute__((unused))) {
 
     // Optional functions - log if not available
     if (!sqlite3_extended_result_codes_ptr) {
-        log_this(log_subsystem, "sqlite3_extended_result_codes function not available - extended error codes disabled", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "sqlite3_extended_result_codes function not available - extended error codes disabled", LOG_LEVEL_TRACE, 0);
     }
     if (!sqlite3_changes_ptr) {
-        log_this(log_subsystem, "sqlite3_changes function not available - affected rows may not be accurate", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "sqlite3_changes function not available - affected rows may not be accurate", LOG_LEVEL_TRACE, 0);
     }
 
     MUTEX_UNLOCK(&libsqlite_mutex, log_subsystem);
-    // log_this(log_subsystem, "Successfully loaded libsqlite3 library", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "Successfully loaded libsqlite3 library", LOG_LEVEL_TRACE, 0);
     return true;
 #endif
 }
@@ -193,10 +193,10 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
     const char* db_path = NULL;
     if (config->database && strlen(config->database) > 0) {
         db_path = config->database;
-        log_this(designator, "SQLite connection: Using database field: %s", LOG_LEVEL_DEBUG, 1, db_path);
+        log_this(designator, "SQLite connection: Using database field: %s", LOG_LEVEL_TRACE, 1, db_path);
     } else if (config->connection_string && strncmp(config->connection_string, "sqlite://", 9) == 0) {
         db_path = config->connection_string + 9; // Skip "sqlite://"
-        log_this(designator, "SQLite connection: Using connection string: %s", LOG_LEVEL_DEBUG, 1, db_path);
+        log_this(designator, "SQLite connection: Using connection string: %s", LOG_LEVEL_TRACE, 1, db_path);
     } else {
         db_path = ":memory:"; // Default to in-memory database
         log_this(designator, "SQLite connection: WARNING - Using in-memory database! config->database='%s', connection_string='%s'",
@@ -206,9 +206,9 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
     // Log current working directory and resolved path for debugging
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        log_this(designator, "SQLite connection: Current working directory: %s", LOG_LEVEL_DEBUG, 1, cwd);
+        log_this(designator, "SQLite connection: Current working directory: %s", LOG_LEVEL_TRACE, 1, cwd);
     }
-    log_this(designator, "SQLite connection: Attempting to open database: %s", LOG_LEVEL_DEBUG, 1, db_path);
+    log_this(designator, "SQLite connection: Attempting to open database: %s", LOG_LEVEL_TRACE, 1, db_path);
 
     // Open database
     void* sqlite_db = NULL;
@@ -279,7 +279,7 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
 
     // Use designator for logging if provided, otherwise use generic Database subsystem
     const char* log_subsystem = designator ? designator : SR_DATABASE;
-    log_this(log_subsystem, "SQLite connection established successfully", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "SQLite connection established successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -302,7 +302,7 @@ bool sqlite_disconnect(DatabaseHandle* connection) {
 
     // Use stored designator for logging if available
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(log_subsystem, "SQLite connection closed", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "SQLite connection closed", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -314,7 +314,7 @@ bool sqlite_health_check(DatabaseHandle* connection) {
     }
 
     const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(designator, "SQLite health check: Starting validation", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "SQLite health check: Starting validation", LOG_LEVEL_TRACE, 0);
 
     if (connection->engine_type != DB_ENGINE_SQLITE) {
         log_this(designator, "SQLite health check: wrong engine type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);
@@ -338,7 +338,7 @@ bool sqlite_health_check(DatabaseHandle* connection) {
         return false;
     }
 
-    log_this(designator, "SQLite health check: All validations passed, executing health check", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "SQLite health check: All validations passed, executing health check", LOG_LEVEL_TRACE, 0);
 
     // Execute a simple query to check connectivity
     char* error_msg = NULL;
@@ -363,7 +363,7 @@ bool sqlite_health_check(DatabaseHandle* connection) {
         free(error_msg);
     }
 
-    log_this(designator, "SQLite health check passed", LOG_LEVEL_STATE, 0);
+    log_this(designator, "SQLite health check passed", LOG_LEVEL_TRACE, 0);
     connection->last_health_check = time(NULL);
     connection->consecutive_failures = 0;
     return true;
@@ -380,6 +380,6 @@ bool sqlite_reset_connection(DatabaseHandle* connection) {
     connection->connected_since = time(NULL);
     connection->consecutive_failures = 0;
 
-    log_this(SR_DATABASE, "SQLite connection reset successfully", LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, "SQLite connection reset successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }

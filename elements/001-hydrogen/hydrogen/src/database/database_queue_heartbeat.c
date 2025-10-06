@@ -295,7 +295,7 @@ void database_queue_start_heartbeat(DatabaseQueue* db_queue) {
     bool is_connected = database_queue_check_connection(db_queue);
 
     if (is_connected) {
-        log_this(dqm_label, "Connection attempt: SUCCESS", LOG_LEVEL_STATE, 0);
+        log_this(dqm_label, "Connection attempt: SUCCESS", LOG_LEVEL_TRACE, 0);
     } else {
         log_this(dqm_label, "Connection attempt: FAILED", LOG_LEVEL_ERROR, 0);
 
@@ -466,17 +466,17 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
                     }
                 }
             }
-            log_this(dqm_label_conn, "Attempting database connection to: %s", LOG_LEVEL_DEBUG, 1, safe_conn_str);
+            log_this(dqm_label_conn, "Attempting database connection to: %s", LOG_LEVEL_TRACE, 1, safe_conn_str);
             free(safe_conn_str);
         }
     } else {
-        log_this(dqm_label_conn, "Attempting database connection to: %s", LOG_LEVEL_DEBUG, 1, config->database);
+        log_this(dqm_label_conn, "Attempting database connection to: %s", LOG_LEVEL_TRACE, 1, config->database);
     }
 
     bool connection_success = database_engine_connect_with_designator(engine_type, config, &db_handle, dqm_designator);
 
     if (connection_success && db_handle) {
-        log_this(dqm_label_conn, "Database connection established successfully", LOG_LEVEL_DEBUG, 0);
+        log_this(dqm_label_conn, "Database connection established successfully", LOG_LEVEL_TRACE, 0);
         // Connection successful - store the persistent connection
         MutexResult result = MUTEX_LOCK(&db_queue->connection_lock, dqm_designator);
         if (result == MUTEX_SUCCESS) {
@@ -516,14 +516,14 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
 
         // Perform health check on the newly established connection
         char* health_check_label = database_queue_generate_label(db_queue);
-        log_this(health_check_label, "About to perform health check on newly established connection", LOG_LEVEL_DEBUG, 0);
+        log_this(health_check_label, "About to perform health check on newly established connection", LOG_LEVEL_TRACE, 0);
         bool health_check_passed = database_engine_health_check(db_handle);
         log_this(health_check_label, "Health check completed, result: %s", LOG_LEVEL_DEBUG, 1, health_check_passed ? "PASSED" : "FAILED");
         if (!health_check_passed) {
             log_this(health_check_label, "Health check failed after connection establishment - connection may be unstable", LOG_LEVEL_ERROR, 0);
             // Add diagnostic information about the connection before cleanup
             log_this(health_check_label, "Connection diagnostics: engine_type=%d, status=%d, connected_since=%ld",
-                    LOG_LEVEL_DEBUG, 3, db_handle->engine_type, db_handle->status, (long)db_handle->connected_since);
+                    LOG_LEVEL_TRACE, 3, db_handle->engine_type, db_handle->status, (long)db_handle->connected_since);
             // Clean up the connection since health check failed
             database_engine_cleanup_connection(db_handle);
             db_queue->is_connected = false;
@@ -546,7 +546,7 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
             free_connection_config(config);
             return false;
         }
-        log_this(health_check_label, "Health check passed - connection is stable", LOG_LEVEL_STATE, 0);
+//        log_this(health_check_label, "Health check passed - connection is stable", LOG_LEVEL_TRACE, 0);
         free(health_check_label);
 
         // Execute bootstrap query if configured (only for Lead queues)
@@ -598,9 +598,9 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
     bool is_connected = false;
 
     // Use persistent connection for health check if available
-    // log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK: About to lock queue connection mutex", LOG_LEVEL_DEBUG, 0);
+    // log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK: About to lock queue connection mutex", LOG_LEVEL_TRACE, 0);
     MutexResult result = MUTEX_LOCK(&db_queue->connection_lock, dqm_label);
-    // log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK_RESULT: Lock result %s", LOG_LEVEL_DEBUG, 1, mutex_result_to_string(result));
+    // log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK_RESULT: Lock result %s", LOG_LEVEL_TRACE, 1, mutex_result_to_string(result));
 
     if (result == MUTEX_SUCCESS) {
         if (db_queue->persistent_connection) {
@@ -623,23 +623,23 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
             // No persistent connection, attempt to establish one
             is_connected = database_queue_check_connection(db_queue);
         }
-        // log_this(dqm_label, "MUTEX_HEARTBEAT_UNLOCK: About to unlock queue connection mutex", LOG_LEVEL_DEBUG, 0);
+        // log_this(dqm_label, "MUTEX_HEARTBEAT_UNLOCK: About to unlock queue connection mutex", LOG_LEVEL_TRACE, 0);
         mutex_unlock(&db_queue->connection_lock);
-        // log_this(dqm_label, "MUTEX_HEARTBEAT_UNLOCK: Unlock completed", LOG_LEVEL_DEBUG, 0);
+        // log_this(dqm_label, "MUTEX_HEARTBEAT_UNLOCK: Unlock completed", LOG_LEVEL_TRACE, 0);
     } else {
         is_connected = false;
         db_queue->is_connected = false;
     }
 
     // Always log heartbeat activity to show the DQM is alive
-    log_this(dqm_label, "Heartbeat: connection %s, queue depth: %zu", LOG_LEVEL_STATE, 2,
+    log_this(dqm_label, "Heartbeat: connection %s, queue depth: %zu", LOG_LEVEL_TRACE, 2,
         is_connected ? "OK" : "FAILED",
         database_queue_get_depth_with_designator(db_queue, dqm_label));
 
     // Log connection status changes
     if (was_connected != is_connected) {
         if (is_connected) {
-            log_this(dqm_label, "Database connection established", LOG_LEVEL_STATE, 0);
+            log_this(dqm_label, "Database connection established", LOG_LEVEL_TRACE, 0);
         } else {
             log_this(dqm_label, "Database connection lost - will retry", LOG_LEVEL_ALERT, 0);
         }
@@ -683,7 +683,7 @@ bool database_queue_wait_for_initial_connection(DatabaseQueue* db_queue, int tim
     clock_gettime(CLOCK_REALTIME, &timeout_time);
     timeout_time.tv_sec += timeout_seconds;
 
-    log_this(dqm_label, "Waiting for initial connection attempt to complete (timeout: %d seconds)", LOG_LEVEL_DEBUG, 1, timeout_seconds);
+    log_this(dqm_label, "Waiting for initial connection attempt to complete (timeout: %d seconds)", LOG_LEVEL_TRACE, 1, timeout_seconds);
 
     // Wait for the condition
     int wait_result = pthread_cond_timedwait(&db_queue->initial_connection_cond,
@@ -693,7 +693,7 @@ bool database_queue_wait_for_initial_connection(DatabaseQueue* db_queue, int tim
     bool completed = (wait_result == 0) || db_queue->initial_connection_attempted;
 
     if (completed) {
-        log_this(dqm_label, "Initial connection attempt completed", LOG_LEVEL_STATE, 0);
+        log_this(dqm_label, "Initial connection attempt completed", LOG_LEVEL_TRACE, 0);
     } else {
         log_this(dqm_label, "Timeout waiting for initial connection attempt", LOG_LEVEL_ERROR, 0);
     }
@@ -714,11 +714,11 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
     }
 
     char* dqm_label = database_queue_generate_label(db_queue);
-    // log_this(dqm_label, "Executing bootstrap query", LOG_LEVEL_STATE, 0);
+    // log_this(dqm_label, "Executing bootstrap query", LOG_LEVEL_TRACE, 0);
 
     // Use configured bootstrap query or fallback to safe default
     const char* bootstrap_query = db_queue->bootstrap_query ? db_queue->bootstrap_query : "SELECT 42 as test_value";
-    // log_this(dqm_label, "Bootstrap query SQL: %s", LOG_LEVEL_DEBUG, 1, bootstrap_query);
+    // log_this(dqm_label, "Bootstrap query SQL: %s", LOG_LEVEL_TRACE, 1, bootstrap_query);
 
     // Create query request
     QueryRequest* request = calloc(1, sizeof(QueryRequest));
@@ -735,7 +735,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
     request->isolation_level = DB_ISOLATION_READ_COMMITTED;
     request->use_prepared_statement = false;
 
-    // log_this(dqm_label, "Bootstrap query request created - timeout: %d seconds", LOG_LEVEL_DEBUG, 1, request->timeout_seconds);
+    // log_this(dqm_label, "Bootstrap query request created - timeout: %d seconds", LOG_LEVEL_TRACE, 1, request->timeout_seconds);
 
     // Execute query using persistent connection
     QueryResult* result = NULL;
@@ -746,24 +746,24 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
     clock_gettime(CLOCK_REALTIME, &timeout);
     timeout.tv_sec += 1; // 1 second timeout for the entire operation
 
-    log_this(dqm_label, "Bootstrap query submitted", LOG_LEVEL_STATE, 0);
+    log_this(dqm_label, "Bootstrap query submitted", LOG_LEVEL_TRACE, 0);
 
-    // log_this(dqm_label, "Attempting to acquire connection lock with 5 second timeout", LOG_LEVEL_DEBUG, 0);
+    // log_this(dqm_label, "Attempting to acquire connection lock with 5 second timeout", LOG_LEVEL_TRACE, 0);
 
-    // log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK: About to lock connection mutex for bootstrap", LOG_LEVEL_DEBUG, 0);
+    // log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK: About to lock connection mutex for bootstrap", LOG_LEVEL_TRACE, 0);
     MutexResult lock_result = MUTEX_LOCK(&db_queue->connection_lock, dqm_label);
     if (lock_result == MUTEX_SUCCESS) {
-        // log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK_SUCCESS: Connection lock acquired successfully", LOG_LEVEL_DEBUG, 0);
+        // log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK_SUCCESS: Connection lock acquired successfully", LOG_LEVEL_TRACE, 0);
 
         if (db_queue->persistent_connection) {
-            // og_this(dqm_label, "Persistent connection available, executing query", LOG_LEVEL_DEBUG, 0);
+            // og_this(dqm_label, "Persistent connection available, executing query", LOG_LEVEL_TRACE, 0);
 
             // Debug the connection handle before calling database_engine_execute
-            // log_this(dqm_label, "Connection handle: %p", LOG_LEVEL_DEBUG, 1, (void*)db_queue->persistent_connection);
+            // log_this(dqm_label, "Connection handle: %p", LOG_LEVEL_TRACE, 1, (void*)db_queue->persistent_connection);
             
             // CRITICAL: Validate connection integrity before use
             DatabaseEngine original_engine_type = db_queue->persistent_connection->engine_type;
-            // log_this(dqm_label, "Connection engine_type: %d", LOG_LEVEL_DEBUG, 1, (int)original_engine_type);
+            // log_this(dqm_label, "Connection engine_type: %d", LOG_LEVEL_TRACE, 1, (int)original_engine_type);
 
             // Add memory corruption detection - check for valid engine types
             if (original_engine_type >= DB_ENGINE_MAX || original_engine_type < 0) {
@@ -773,9 +773,9 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 goto cleanup;
             }
             
-            // log_this(dqm_label, "Request: %p, query: '%s'", LOG_LEVEL_DEBUG, 2, (void*)request, request->sql_template ? request->sql_template : "NULL");
+            // log_this(dqm_label, "Request: %p, query: '%s'", LOG_LEVEL_TRACE, 2, (void*)request, request->sql_template ? request->sql_template : "NULL");
 
-            // log_this(dqm_label, "About to call database_engine_execute - this is where it might hang", LOG_LEVEL_DEBUG, 0);
+            // log_this(dqm_label, "About to call database_engine_execute - this is where it might hang", LOG_LEVEL_TRACE, 0);
 
             struct timespec query_start_time;
             clock_gettime(CLOCK_MONOTONIC, &query_start_time);
@@ -827,7 +827,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 if (sqlite_handle) {
                     // We can't directly access the SQLiteConnection struct from here due to header dependencies
                     // Instead, log that we're using SQLite and the connection appears valid
-                    log_this(dqm_label, "SQLite bootstrap query: Connection handle is valid", LOG_LEVEL_DEBUG, 0);
+                    log_this(dqm_label, "SQLite bootstrap query: Connection handle is valid", LOG_LEVEL_TRACE, 0);
                 }
             }
 
@@ -842,21 +842,21 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             struct timespec query_end_time;
             clock_gettime(CLOCK_MONOTONIC, &query_end_time);
 
-            // log_this(dqm_label, "Query execution completed (direct method)", LOG_LEVEL_DEBUG, 0);
+            // log_this(dqm_label, "Query execution completed (direct method)", LOG_LEVEL_TRACE, 0);
 
             if (query_success && result && result->success) {
                 double execution_time = ((double)query_end_time.tv_sec - (double)query_start_time.tv_sec) +
                                        ((double)query_end_time.tv_nsec - (double)query_start_time.tv_nsec) / 1e9;
 
                 log_this(dqm_label, "Bootstrap query completed in %.3fs: returned %zu rows, %zu columns, affected %d rows",
-                         LOG_LEVEL_STATE, 4, execution_time, result->row_count, result->column_count, result->affected_rows);
+                         LOG_LEVEL_DEBUG, 4, execution_time, result->row_count, result->column_count, result->affected_rows);
 
                 // Log detailed result information
                 if (result->row_count > 0 && result->column_count > 0 && result->data_json) {
-                    // log_this(dqm_label, "Bootstrap query result data: %s", LOG_LEVEL_DEBUG, 1, result->data_json);
+                    // log_this(dqm_label, "Bootstrap query result data: %s", LOG_LEVEL_TRACE, 1, result->data_json);
                 }
 
-                // log_this(dqm_label, "Bootstrap query completed successfully - continuing with heartbeat", LOG_LEVEL_STATE, 0);
+                // log_this(dqm_label, "Bootstrap query completed successfully - continuing with heartbeat", LOG_LEVEL_TRACE, 0);
 
                 // Signal bootstrap completion for launch synchronization
                 MutexResult bootstrap_lock_result = MUTEX_LOCK(&db_queue->bootstrap_lock, dqm_label);
@@ -872,7 +872,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                         result && result->error_message ? result->error_message : "Unknown error");
 
                 if (result) {
-                    // log_this(dqm_label, "Result details: row_count=%zu, column_count=%zu, affected_rows=%d", LOG_LEVEL_DEBUG, 3,
+                    // log_this(dqm_label, "Result details: row_count=%zu, column_count=%zu, affected_rows=%d", LOG_LEVEL_TRACE, 3,
                     //         result->row_count,
                     //         result->column_count,
                     //         result->affected_rows);
@@ -888,8 +888,8 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             }
 
             // Log completion message for test synchronization
-            log_this(dqm_label, "Lead DQM initialization is complete for %s", LOG_LEVEL_STATE, 1, db_queue->database_name);
-            log_this(dqm_label, "Migration test completed in 3.134s", LOG_LEVEL_STATE, 0);
+            log_this(dqm_label, "Lead DQM initialization is complete for %s", LOG_LEVEL_TRACE, 1, db_queue->database_name);
+            log_this(dqm_label, "Migration test completed in 3.134s", LOG_LEVEL_TRACE, 0);
 
         } else {
             // log_this(dqm_label, "No persistent connection available for bootstrap query", LOG_LEVEL_ERROR, 0);
@@ -903,9 +903,9 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             }
         }
 
-        // log_this(dqm_label, "MUTEX_BOOTSTRAP_UNLOCK: About to unlock connection mutex", LOG_LEVEL_DEBUG, 0);
+        // log_this(dqm_label, "MUTEX_BOOTSTRAP_UNLOCK: About to unlock connection mutex", LOG_LEVEL_TRACE, 0);
         mutex_unlock(&db_queue->connection_lock);
-        // log_this(dqm_label, "MUTEX_BOOTSTRAP_UNLOCK_SUCCESS: Connection mutex unlocked", LOG_LEVEL_DEBUG, 0);
+        // log_this(dqm_label, "MUTEX_BOOTSTRAP_UNLOCK_SUCCESS: Connection mutex unlocked", LOG_LEVEL_TRACE, 0);
     } else {
         log_this(dqm_label, "Timeout waiting for connection lock in bootstrap query (1 seconds)", LOG_LEVEL_ERROR, 0);
         // log_this(dqm_label, "This indicates the connection lock is held by another thread", LOG_LEVEL_ERROR, 0);

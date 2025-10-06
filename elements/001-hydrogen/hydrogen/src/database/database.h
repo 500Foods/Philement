@@ -315,4 +315,9 @@ void database_engine_cleanup_connection(DatabaseHandle* connection);
 void database_engine_cleanup_result(QueryResult* result);
 void database_engine_cleanup_transaction(Transaction* transaction);
 
+// Statistics and counting functions
+int database_get_total_queue_count(void);
+void database_get_queue_counts_by_type(int* lead_count, int* slow_count, int* medium_count, int* fast_count, int* cache_count);
+void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count);
+
 #endif // DATABASE_H
