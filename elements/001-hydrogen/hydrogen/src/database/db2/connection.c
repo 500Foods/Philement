@@ -139,14 +139,14 @@ bool load_libdb2_functions(const char* designator __attribute__((unused))) {
 
     // Optional functions - log if not available
     if (!SQLEndTran_ptr) {
-        log_this(log_subsystem, "SQLEndTran function not available - transactions may be limited", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "SQLEndTran function not available - transactions may be limited", LOG_LEVEL_TRACE, 0);
     }
     if (!SQLPrepare_ptr || !SQLExecute_ptr || !SQLFreeStmt_ptr) {
-        log_this(log_subsystem, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_TRACE, 0);
     }
 
     MUTEX_UNLOCK(&libdb2_mutex, log_subsystem);
-    log_this(log_subsystem, "Successfully loaded libdb2 library", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "Successfully loaded libdb2 library", LOG_LEVEL_TRACE, 0);
     return true;
 #endif
 }
@@ -220,11 +220,11 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     char* conn_string = NULL;
     if (config->connection_string) {
         conn_string = strdup(config->connection_string);
-        log_this(log_subsystem, "DB2 connecting using provided connection string", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "DB2 connecting using provided connection string", LOG_LEVEL_TRACE, 0);
     } else {
         // Build full connection string from config
         conn_string = db2_get_connection_string(config);
-        log_this(log_subsystem, "DB2 connecting using built connection string", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "DB2 connecting using built connection string", LOG_LEVEL_TRACE, 0);
     }
 
     if (!conn_string) {
@@ -245,7 +245,7 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
         }
     }
 
-    log_this(log_subsystem, "DB2 connection attempt: %s", LOG_LEVEL_DEBUG, 1, safe_conn_str);
+    log_this(log_subsystem, "DB2 connection attempt: %s", LOG_LEVEL_TRACE, 1, safe_conn_str);
 
     // Use SQLDriverConnect for full connection string support
     char out_conn_string[1024] = {0};
@@ -269,13 +269,13 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
         log_this(log_subsystem, "DB2 connection details: %s", LOG_LEVEL_ERROR, 1, safe_conn_str);
 
         // Try to get detailed DB2 error information
-        log_this(log_subsystem, "DB2 diagnostic: Connection handle is %p", LOG_LEVEL_DEBUG, 1, (void*)conn_handle);
+        log_this(log_subsystem, "DB2 diagnostic: Connection handle is %p", LOG_LEVEL_TRACE, 1, (void*)conn_handle);
         if (conn_handle) {
-            log_this(log_subsystem, "DB2 attempting to retrieve diagnostic information", LOG_LEVEL_DEBUG, 0);
+            log_this(log_subsystem, "DB2 attempting to retrieve diagnostic information", LOG_LEVEL_TRACE, 0);
 
             // Check if SQLGetDiagRec is available
 #ifdef USE_MOCK_LIBDB2
-            log_this(log_subsystem, "DB2 diagnostic: SQLGetDiagRec is available (mocked)", LOG_LEVEL_DEBUG, 0);
+            log_this(log_subsystem, "DB2 diagnostic: SQLGetDiagRec is available (mocked)", LOG_LEVEL_TRACE, 0);
             // Always available in mock
             {
                 char sql_state[6] = {0};
@@ -294,7 +294,7 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
                 }
             }
 #else
-            log_this(log_subsystem, "DB2 diagnostic: SQLGetDiagRec_ptr is %s", LOG_LEVEL_DEBUG, 1, SQLGetDiagRec_ptr ? "available" : "NULL");
+            log_this(log_subsystem, "DB2 diagnostic: SQLGetDiagRec_ptr is %s", LOG_LEVEL_TRACE, 1, SQLGetDiagRec_ptr ? "available" : "NULL");
             if (!SQLGetDiagRec_ptr) {
                 log_this(log_subsystem, "DB2 diagnostic: SQLGetDiagRec function not available", LOG_LEVEL_ERROR, 0);
             } else {
@@ -363,7 +363,7 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     *connection = db_handle;
 
     // Use designator for logging if provided, otherwise use generic Database subsystem
-    log_this(log_subsystem, "DB2 connection established successfully", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "DB2 connection established successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -382,7 +382,7 @@ bool db2_disconnect(DatabaseHandle* connection) {
 
     // Use stored designator for logging if available
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(log_subsystem, "DB2 connection closed", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "DB2 connection closed", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -437,6 +437,6 @@ bool db2_reset_connection(DatabaseHandle* connection) {
     connection->consecutive_failures = 0;
 
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(log_subsystem, "DB2 connection reset successfully", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "DB2 connection reset successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }

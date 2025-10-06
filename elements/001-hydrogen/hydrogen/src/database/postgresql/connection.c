@@ -175,11 +175,11 @@ bool load_libpq_functions(const char* designator __attribute__((unused))) {
 
     // PQping is optional - log if not available
     if (!PQping_ptr) {
-        log_this(log_subsystem, "PQping function not available - health check will use query method only", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "PQping function not available - health check will use query method only", LOG_LEVEL_TRACE, 0);
     }
 
     MUTEX_UNLOCK(&libpq_mutex, log_subsystem);
-    // log_this(log_subsystem, "Successfully loaded libpq library", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "Successfully loaded libpq library", LOG_LEVEL_TRACE, 0);
     return true;
 #endif
 }
@@ -355,7 +355,7 @@ bool postgresql_connect(ConnectionConfig* config, DatabaseHandle** connection, c
 
     // Use designator for logging if provided, otherwise use generic Database subsystem
     const char* log_subsystem = designator ? designator : SR_DATABASE;
-    log_this(log_subsystem, "PostgreSQL connection established successfully", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "PostgreSQL connection established successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -377,7 +377,7 @@ bool postgresql_disconnect(DatabaseHandle* connection) {
 
     // Use stored designator for logging if available
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(log_subsystem, "PostgreSQL connection closed", LOG_LEVEL_STATE, 0);
+    log_this(log_subsystem, "PostgreSQL connection closed", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -391,12 +391,12 @@ bool postgresql_health_check(DatabaseHandle* connection) {
     const char* designator = connection->designator ? connection->designator : SR_DATABASE;
     // Early validation logging - add simple log to verify function is called
     log_this(designator, "PostgreSQL health check: FUNCTION ENTRY - connection=%p, designator=%s", LOG_LEVEL_ERROR, 2, (void*)connection, designator);
-    log_this(designator, "PostgreSQL health check: Starting validation", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "PostgreSQL health check: Starting validation", LOG_LEVEL_TRACE, 0);
 
     // Add immediate return check to isolate the failure point
-    log_this(designator, "PostgreSQL health check: About to check connection pointer", LOG_LEVEL_DEBUG, 0);
-    log_this(designator, "PostgreSQL health check: Connection pointer: %p", LOG_LEVEL_DEBUG, 1, (void*)connection);
-    log_this(designator, "PostgreSQL health check: Connection engine_type: %d", LOG_LEVEL_DEBUG, 1, connection->engine_type);
+    log_this(designator, "PostgreSQL health check: About to check connection pointer", LOG_LEVEL_TRACE, 0);
+    log_this(designator, "PostgreSQL health check: Connection pointer: %p", LOG_LEVEL_TRACE, 1, (void*)connection);
+    log_this(designator, "PostgreSQL health check: Connection engine_type: %d", LOG_LEVEL_TRACE, 1, connection->engine_type);
 
     if (connection->engine_type != DB_ENGINE_POSTGRESQL) {
         log_this(designator, "PostgreSQL health check: wrong engine type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);
@@ -404,7 +404,7 @@ bool postgresql_health_check(DatabaseHandle* connection) {
     }
 
     // Function pointer validation
-    log_this(designator, "PostgreSQL health check: Validating function pointers", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "PostgreSQL health check: Validating function pointers", LOG_LEVEL_TRACE, 0);
     if (!PQexec_ptr) {
         log_this(designator, "PostgreSQL health check: PQexec_ptr is NULL", LOG_LEVEL_ERROR, 0);
         return false;
@@ -421,22 +421,22 @@ bool postgresql_health_check(DatabaseHandle* connection) {
         log_this(designator, "PostgreSQL health check: PQerrorMessage_ptr is NULL", LOG_LEVEL_ERROR, 0);
         return false;
     }
-    log_this(designator, "PostgreSQL health check: All function pointers validated", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "PostgreSQL health check: All function pointers validated", LOG_LEVEL_TRACE, 0);
 
-    log_this(designator, "PostgreSQL health check: Validating connection wrapper", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "PostgreSQL health check: Validating connection wrapper", LOG_LEVEL_TRACE, 0);
     PostgresConnection* pg_conn = (PostgresConnection*)connection->connection_handle;
-    log_this(designator, "PostgreSQL health check: connection_handle: %p", LOG_LEVEL_DEBUG, 1, connection->connection_handle);
+    log_this(designator, "PostgreSQL health check: connection_handle: %p", LOG_LEVEL_TRACE, 1, connection->connection_handle);
     if (!pg_conn) {
         log_this(designator, "PostgreSQL health check: pg_conn is NULL", LOG_LEVEL_ERROR, 0);
         return false;
     }
-    log_this(designator, "PostgreSQL health check: pg_conn validated", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "PostgreSQL health check: pg_conn validated", LOG_LEVEL_TRACE, 0);
 
     if (!pg_conn->connection) {
         log_this(designator, "PostgreSQL health check: pg_conn->connection is NULL", LOG_LEVEL_ERROR, 0);
         return false;
     }
-    log_this(designator, "PostgreSQL health check: pg_conn->connection validated", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "PostgreSQL health check: pg_conn->connection validated", LOG_LEVEL_TRACE, 0);
 
     // Check connection status
     if (PQstatus_ptr && PQstatus_ptr(pg_conn->connection) != CONNECTION_OK) {
@@ -447,31 +447,31 @@ bool postgresql_health_check(DatabaseHandle* connection) {
 
     // Check transaction state
     if (pg_conn->in_transaction) {
-        log_this(designator, "PostgreSQL health check: connection is in transaction state", LOG_LEVEL_DEBUG, 0);
+        log_this(designator, "PostgreSQL health check: connection is in transaction state", LOG_LEVEL_TRACE, 0);
         // This might be okay, but let's log it for debugging
     }
 
-    log_this(designator, "PostgreSQL health check: All validations passed, executing query", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "PostgreSQL health check: All validations passed, executing query", LOG_LEVEL_TRACE, 0);
 
     // Try alternative health check method first - PQping if available
     if (PQping_ptr && connection->config && connection->config->connection_string) {
-        log_this(designator, "PostgreSQL health check: Trying PQping method", LOG_LEVEL_DEBUG, 0);
+        log_this(designator, "PostgreSQL health check: Trying PQping method", LOG_LEVEL_TRACE, 0);
         int ping_result = PQping_ptr(connection->config->connection_string);
-        log_this(designator, "PostgreSQL health check: PQping result: %d", LOG_LEVEL_DEBUG, 1, ping_result);
+        log_this(designator, "PostgreSQL health check: PQping result: %d", LOG_LEVEL_TRACE, 1, ping_result);
 
         // PING_OK = 0, PING_REJECT = 1, PING_NO_RESPONSE = 2, PING_NO_ATTEMPT = 3
         if (ping_result == 0) {
-            log_this(designator, "PostgreSQL health check passed via PQping", LOG_LEVEL_STATE, 0);
+            log_this(designator, "PostgreSQL health check passed via PQping", LOG_LEVEL_TRACE, 0);
             connection->last_health_check = time(NULL);
             connection->consecutive_failures = 0;
             return true;
         } else {
-            log_this(designator, "PostgreSQL health check: PQping failed, trying query method", LOG_LEVEL_DEBUG, 0);
+            log_this(designator, "PostgreSQL health check: PQping failed, trying query method", LOG_LEVEL_TRACE, 0);
         }
     }
 
     // Execute a simple query to check connectivity with timeout protection
-    log_this(designator, "PostgreSQL health check: Executing 'SELECT 1'", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "PostgreSQL health check: Executing 'SELECT 1'", LOG_LEVEL_TRACE, 0);
 
     // Set a short timeout for health check
     void* timeout_result = PQexec_ptr(pg_conn->connection, "SET statement_timeout = 5000"); // 5 seconds
@@ -496,18 +496,18 @@ bool postgresql_health_check(DatabaseHandle* connection) {
 
     // Debug: Log the actual result status
     int result_status = PQresultStatus_ptr(res);
-    log_this(designator, "PostgreSQL health check: Query executed, result status: %d", LOG_LEVEL_DEBUG, 1, result_status);
+    log_this(designator, "PostgreSQL health check: Query executed, result status: %d", LOG_LEVEL_TRACE, 1, result_status);
 
     // Log additional result information for debugging
     if (PQntuples_ptr && PQnfields_ptr) {
         int ntuples = PQntuples_ptr(res);
         int nfields = PQnfields_ptr(res);
-        log_this(designator, "PostgreSQL health check: Result has %d rows, %d columns", LOG_LEVEL_DEBUG, 2, ntuples, nfields);
+        log_this(designator, "PostgreSQL health check: Result has %d rows, %d columns", LOG_LEVEL_TRACE, 2, ntuples, nfields);
     }
 
     // Check for successful result statuses
     if (result_status == PGRES_TUPLES_OK || result_status == PGRES_COMMAND_OK) {
-        log_this(designator, "PostgreSQL health check: Query succeeded with status %d", LOG_LEVEL_DEBUG, 1, result_status);
+        log_this(designator, "PostgreSQL health check: Query succeeded with status %d", LOG_LEVEL_TRACE, 1, result_status);
     } else {
         // Handle different error conditions
         const char* status_desc = "unknown";
@@ -537,7 +537,7 @@ bool postgresql_health_check(DatabaseHandle* connection) {
     }
 
     // Success - log it
-    log_this(designator, "PostgreSQL health check passed", LOG_LEVEL_STATE, 0);
+    log_this(designator, "PostgreSQL health check passed", LOG_LEVEL_TRACE, 0);
 
     PQclear_ptr(res);
     connection->last_health_check = time(NULL);
@@ -566,6 +566,6 @@ bool postgresql_reset_connection(DatabaseHandle* connection) {
     connection->connected_since = time(NULL);
     connection->consecutive_failures = 0;
 
-    log_this(SR_DATABASE, "PostgreSQL connection reset successfully", LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, "PostgreSQL connection reset successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }
