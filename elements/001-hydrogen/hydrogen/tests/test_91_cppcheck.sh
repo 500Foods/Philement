@@ -91,13 +91,13 @@ run_cppcheck() {
         # Cache hits = total files - modified files
         local cache_hits=$(( ${#files[@]} - modified_count ))
 
-        # Run cppcheck with verbose to get issues
-        local verbose_output
-        verbose_output=$(cppcheck -j"${CORES}" --verbose --cppcheck-build-dir="${CACHE_DIR}" "${cppcheck_args[@]}" "${files[@]}" 2>&1 || true)
+        # Run cppcheck to get issues
+        local output
+        output=$(cppcheck -j"${CORES}" --cppcheck-build-dir="${CACHE_DIR}" "${cppcheck_args[@]}" "${files[@]}" 2>&1 || true)
 
-        # Extract only the issue lines (filter out verbose info messages)
+        # Extract only the issue lines (filter out info messages)
         local issues_output
-        issues_output=$(echo "${verbose_output}" | grep -v "^cppcheck: info: Checking " | grep -v "^cppcheck: info: " || true)
+        issues_output=$(echo "${output}" | grep -v "^cppcheck: info: Checking " | grep -v "^cppcheck: info: " || true)
 
         # Update last run timestamp
         touch "${CACHE_DIR}/last_run"
