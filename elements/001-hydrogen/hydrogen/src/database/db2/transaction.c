@@ -40,7 +40,7 @@ bool db2_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel le
     *transaction = tx;
     connection->current_transaction = tx;
 
-    log_this(SR_DATABASE, "DB2 transaction started", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "DB2 transaction started", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -66,7 +66,7 @@ bool db2_commit_transaction(DatabaseHandle* connection, Transaction* transaction
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    log_this(SR_DATABASE, "DB2 transaction committed", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "DB2 transaction committed", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -92,6 +92,6 @@ bool db2_rollback_transaction(DatabaseHandle* connection, Transaction* transacti
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    log_this(SR_DATABASE, "DB2 transaction rolled back", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "DB2 transaction rolled back", LOG_LEVEL_TRACE, 0);
     return true;
 }

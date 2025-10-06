@@ -109,7 +109,7 @@ bool postgresql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationL
     *transaction = tx;
     connection->current_transaction = tx;
 
-    // log_this(SR_DATABASE, "PostgreSQL transaction started", LOG_LEVEL_DEBUG, 0);
+    // log_this(SR_DATABASE, "PostgreSQL transaction started", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -150,7 +150,7 @@ bool postgresql_commit_transaction(DatabaseHandle* connection, Transaction* tran
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    // log_this(SR_DATABASE, "PostgreSQL transaction committed", LOG_LEVEL_DEBUG, 0);
+    // log_this(SR_DATABASE, "PostgreSQL transaction committed", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -191,6 +191,6 @@ bool postgresql_rollback_transaction(DatabaseHandle* connection, Transaction* tr
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    // log_this(SR_DATABASE, "PostgreSQL transaction rolled back", LOG_LEVEL_DEBUG, 0);
+    // log_this(SR_DATABASE, "PostgreSQL transaction rolled back", LOG_LEVEL_TRACE, 0);
     return true;
 }

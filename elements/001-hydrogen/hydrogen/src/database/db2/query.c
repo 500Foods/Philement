@@ -29,9 +29,9 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
     }
 
     const char* designator = connection->designator ? connection->designator : SR_DATABASE;
-    log_this(designator, "db2_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_DEBUG, 3, (void*)connection, (void*)request, (void*)result);
+    log_this(designator, "db2_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_TRACE, 3, (void*)connection, (void*)request, (void*)result);
 
-    log_this(designator, "db2_execute_query: Parameters validated, proceeding", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "db2_execute_query: Parameters validated, proceeding", LOG_LEVEL_TRACE, 0);
 
     const DB2Connection* db2_conn = (const DB2Connection*)connection->connection_handle;
     if (!db2_conn || !db2_conn->connection) {
@@ -39,7 +39,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
         return false;
     }
 
-    log_this(designator, "DB2 execute_query: Executing query: %s", LOG_LEVEL_DEBUG, 1, request->sql_template);
+    log_this(designator, "DB2 execute_query: Executing query: %s", LOG_LEVEL_TRACE, 1, request->sql_template);
 
     // Allocate statement handle
     void* stmt_handle = NULL;
@@ -320,7 +320,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
     db_result->execution_time_ms = (end_time.tv_sec - start_time.tv_sec) * 1000 +
                                     (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
 
-    log_this(designator, "DB2 execute_query: Query returned %zu columns, affected %d rows", LOG_LEVEL_DEBUG, 2,
+    log_this(designator, "DB2 execute_query: Query returned %zu columns, affected %d rows", LOG_LEVEL_TRACE, 2,
         db_result->column_count, db_result->affected_rows);
 
     // Clean up column names
@@ -336,7 +336,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
 
     *result = db_result;
 
-    log_this(designator, "DB2 execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "DB2 execute_query: Query completed successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -353,6 +353,6 @@ bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* s
     }
 
     // For now, execute as regular query (prepared statements can be implemented later)
-    log_this(designator, "DB2 prepared statement execution: Using regular query execution", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "DB2 prepared statement execution: Using regular query execution", LOG_LEVEL_TRACE, 0);
     return db2_execute_query(connection, request, result);
 }

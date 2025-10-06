@@ -15,6 +15,7 @@
 # calculate_blackbox_coverage()
 
 # CHANGELOG
+# 3.3.0 - 2025-10-06 - Added instructions for updating discrepancy counts
 # 3.2.0 - 2025-09-17 - Added DISCREPANCY to calculation
 # 3.1.0 - 2025-08-10 - Added caching to calculate_unity/blackbox_coverage()
 # 3.0.0 - 2025-08-04 - GCOV Optimization Adventure
@@ -32,12 +33,21 @@ export COVERAGE_GUARD="true"
 # between the Unity build and the Coverage build. These arise out of having #ifdef
 # sections that change the number of lines of instrumented code. Some effort has 
 # been made to limit these, but the nature of unit testing has made it difficult.
-DISCREPANCY_UNITY=217
+#
+# UPDATING THESE VALUES
+# - Run mkt && mkb
+# - Check the line count at the end of coverage_tables.sh
+# - Check the counts in mkx for Unity and Coverage, relative to that count
+# - Update these to reflect any discrepancies
+# - EG: if coverage shows 19977, and unity = 19973 and blackbox = 19975,
+#       then we'd need to add 4 to unity and 2 to coverage below to fix
+#
+DISCREPANCY_UNITY=219
 DISCREPANCY_COVERAGE=54
 
 # Library metadata
 COVERAGE_NAME="Coverage Library"
-COVERAGE_VERSION="3.1.0"
+COVERAGE_VERSION="3.3.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${COVERAGE_NAME} ${COVERAGE_VERSION}" "info" 2> /dev/null || true
 

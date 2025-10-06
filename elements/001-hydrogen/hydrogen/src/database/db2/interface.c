@@ -46,7 +46,7 @@ DatabaseEngineInterface* db2_get_interface(void) {
         return NULL;
     }
 
-    // log_this(SR_DATABASE, "DB2 engine interface validated: name=%s, execute_query=%p", LOG_LEVEL_DEBUG, 2,
+    // log_this(SR_DATABASE, "DB2 engine interface validated: name=%s, execute_query=%p", LOG_LEVEL_TRACE, 2,
     //     db2_engine_interface.name,
     //     (void*)(uintptr_t)db2_engine_interface.execute_query);
 

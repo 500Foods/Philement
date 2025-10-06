@@ -116,7 +116,7 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
 
     *stmt = prepared_stmt;
 
-    // log_this(SR_DATABASE, "PostgreSQL prepared statement created", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "PostgreSQL prepared statement created", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -165,6 +165,6 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
     free(stmt->sql_template);
     free(stmt);
 
-    // log_this(SR_DATABASE, "PostgreSQL prepared statement removed", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "PostgreSQL prepared statement removed", LOG_LEVEL_TRACE, 0);
     return true;
 }
