@@ -51,6 +51,9 @@ bool network_shutdown(void);  // Gracefully shuts down all network interfaces
 // Updates ping_ms and is_ipv6 fields in interface_t
 bool test_network_interfaces(network_info_t *info);
 
+// Test network interfaces with optional quiet mode
+bool test_network_interfaces_quiet(network_info_t *info, bool quiet);
+
 // Test-exposed functions (not part of public API)
 bool test_network_interfaces(network_info_t *info);
 bool is_interface_configured(const char* interface_name, bool* is_available);
@@ -58,5 +61,8 @@ bool is_interface_configured(const char* interface_name, bool* is_available);
 // Filter interfaces based on Network.Available configuration
 // Returns a new network_info_t with only enabled interfaces
 network_info_t *filter_enabled_interfaces(const network_info_t *net_info, const struct AppConfig *config);
+
+// Measure actual ping time for interface IP address (returns seconds)
+double interface_time(const char *ip_str);
 
 #endif // NETWORK_H

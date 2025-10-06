@@ -23,9 +23,6 @@ extern WebSocketServerContext *ws_context;
 // External reference to terminal session map
 extern TerminalSession *terminal_session_map[256];
 
-// External reference to PTY bridge thread control function
-extern void stop_pty_bridge_thread(struct TerminalSession *session);
-
 int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *session)
 {
     (void)wsi;  // Parameter reserved for future use

@@ -41,6 +41,7 @@
 #define waitpid mock_waitpid
 #define kill mock_kill
 #define close mock_close
+#define select mock_select
 
 // Always declare mock function prototypes for the .c file
 void *mock_malloc(size_t size);
@@ -65,6 +66,7 @@ ssize_t mock_write(int fd, const void *buf, size_t count);
 pid_t mock_waitpid(pid_t pid, int *wstatus, int options);
 int mock_kill(pid_t pid, int sig);
 int mock_close(int fd);
+int mock_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
 
 // Mock control functions for tests - always available
 void mock_system_set_malloc_failure(int should_fail);
@@ -91,6 +93,7 @@ void mock_system_set_waitpid_result(pid_t result);
 void mock_system_set_waitpid_status(int status);
 void mock_system_set_kill_failure(int should_fail);
 void mock_system_set_close_failure(int should_fail);
+void mock_system_set_select_result(int result);
 void mock_system_reset_all(void);
 
 #endif // USE_MOCK_SYSTEM
