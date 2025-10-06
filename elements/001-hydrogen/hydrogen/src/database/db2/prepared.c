@@ -86,7 +86,7 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
 
     // Check if prepared statement functions are available
     if (!SQLAllocHandle_ptr || !SQLPrepare_ptr || !SQLFreeHandle_ptr) {
-        log_this(SR_DATABASE, "DB2 prepared statement functions not available", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_DATABASE, "DB2 prepared statement functions not available", LOG_LEVEL_TRACE, 0);
         return false;
     }
 
@@ -128,7 +128,7 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
 
     *stmt = prepared_stmt;
 
-    log_this(SR_DATABASE, "DB2 prepared statement created", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "DB2 prepared statement created", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -144,7 +144,7 @@ bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt
 
     // Check if prepared statement functions are available
     if (!SQLFreeHandle_ptr) {
-        log_this(SR_DATABASE, "DB2 prepared statement functions not available for cleanup", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_DATABASE, "DB2 prepared statement functions not available for cleanup", LOG_LEVEL_TRACE, 0);
         // Still clean up our tracking structures
         db2_remove_prepared_statement(db2_conn->prepared_statements, stmt->name);
         free(stmt->name);
@@ -165,6 +165,6 @@ bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt
     free(stmt->sql_template);
     free(stmt);
 
-    log_this(SR_DATABASE, "DB2 prepared statement removed", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "DB2 prepared statement removed", LOG_LEVEL_TRACE, 0);
     return true;
 }
