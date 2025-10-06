@@ -286,6 +286,7 @@ bool database_engine_register(DatabaseEngineInterface* engine);
 
 // Get engine interface by type
 DatabaseEngineInterface* database_engine_get(DatabaseEngine engine_type);
+DatabaseEngineInterface* database_engine_get_with_designator(DatabaseEngine engine_type, const char* designator);
 
 // Get engine interface by name
 DatabaseEngineInterface* database_engine_get_by_name(const char* name);

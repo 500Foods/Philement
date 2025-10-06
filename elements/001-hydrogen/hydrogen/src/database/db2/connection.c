@@ -60,7 +60,7 @@ static pthread_mutex_t libdb2_mutex = PTHREAD_MUTEX_INITIALIZER;
  * Library Loading Functions
  */
 
-bool load_libdb2_functions(void) {
+bool load_libdb2_functions(const char* designator __attribute__((unused))) {
 #ifdef USE_MOCK_LIBDB2
     // For mocking, directly assign mock function pointers
     SQLAllocHandle_ptr = mock_SQLAllocHandle;
@@ -85,10 +85,11 @@ bool load_libdb2_functions(void) {
         return true; // Already loaded
     }
 
-    MUTEX_LOCK(&libdb2_mutex, SR_DATABASE);
+    const char* log_subsystem = designator ? designator : SR_DATABASE;
+    MUTEX_LOCK(&libdb2_mutex, log_subsystem);
 
     if (libdb2_handle) {
-        MUTEX_UNLOCK(&libdb2_mutex, SR_DATABASE);
+        MUTEX_UNLOCK(&libdb2_mutex, log_subsystem);
         return true; // Another thread loaded it
     }
 
@@ -98,9 +99,9 @@ bool load_libdb2_functions(void) {
         libdb2_handle = dlopen("libdb2.so.1", RTLD_LAZY);
     }
     if (!libdb2_handle) {
-        log_this(SR_DATABASE, "Failed to load libdb2 library", LOG_LEVEL_ERROR, 0);
-        log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, 0);
-        MUTEX_UNLOCK(&libdb2_mutex, SR_DATABASE);
+        log_this(log_subsystem, "Failed to load libdb2 library", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, dlerror(), LOG_LEVEL_ERROR, 0);
+        MUTEX_UNLOCK(&libdb2_mutex, log_subsystem);
         return false;
     }
 
@@ -129,23 +130,23 @@ bool load_libdb2_functions(void) {
     if (!SQLAllocHandle_ptr || !SQLConnect_ptr || !SQLDriverConnect_ptr || !SQLExecDirect_ptr ||
         !SQLFetch_ptr || !SQLGetData_ptr || !SQLNumResultCols_ptr ||
         !SQLFreeHandle_ptr || !SQLDisconnect_ptr) {
-        log_this(SR_DATABASE, "Failed to load all required libdb2 functions", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "Failed to load all required libdb2 functions", LOG_LEVEL_ERROR, 0);
         dlclose(libdb2_handle);
         libdb2_handle = NULL;
-        MUTEX_UNLOCK(&libdb2_mutex, SR_DATABASE);
+        MUTEX_UNLOCK(&libdb2_mutex, log_subsystem);
         return false;
     }
 
     // Optional functions - log if not available
     if (!SQLEndTran_ptr) {
-        log_this(SR_DATABASE, "SQLEndTran function not available - transactions may be limited", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "SQLEndTran function not available - transactions may be limited", LOG_LEVEL_DEBUG, 0);
     }
     if (!SQLPrepare_ptr || !SQLExecute_ptr || !SQLFreeStmt_ptr) {
-        log_this(SR_DATABASE, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_DEBUG, 0);
     }
 
-    MUTEX_UNLOCK(&libdb2_mutex, SR_DATABASE);
-    log_this(SR_DATABASE, "Successfully loaded libdb2 library", LOG_LEVEL_STATE, 0);
+    MUTEX_UNLOCK(&libdb2_mutex, log_subsystem);
+    log_this(log_subsystem, "Successfully loaded libdb2 library", LOG_LEVEL_STATE, 0);
     return true;
 #endif
 }
@@ -188,28 +189,30 @@ void db2_destroy_prepared_statement_cache(PreparedStatementCache* cache) {
  */
 
 bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator) {
+    const char* log_subsystem = designator ? designator : SR_DATABASE;
+
     if (!config || !connection) {
-        log_this(SR_DATABASE, "Invalid parameters for DB2 connection", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "Invalid parameters for DB2 connection", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Load libdb2 library if not already loaded
-    if (!load_libdb2_functions()) {
-        log_this(SR_DATABASE, "DB2 connection failed: DB2 library not available", LOG_LEVEL_ERROR, 0);
+    if (!load_libdb2_functions(designator)) {
+        log_this(log_subsystem, "DB2 connection failed: DB2 library not available", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Allocate environment handle
     void* env_handle = NULL;
     if (SQLAllocHandle_ptr(SQL_HANDLE_ENV, NULL, &env_handle) != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 connection failed: Environment handle allocation failed", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "DB2 connection failed: Environment handle allocation failed", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Allocate connection handle
     void* conn_handle = NULL;
     if (SQLAllocHandle_ptr(SQL_HANDLE_DBC, env_handle, &conn_handle) != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 connection failed: Connection handle allocation failed", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "DB2 connection failed: Connection handle allocation failed", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -217,15 +220,15 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     char* conn_string = NULL;
     if (config->connection_string) {
         conn_string = strdup(config->connection_string);
-        log_this(SR_DATABASE, "DB2 connecting using provided connection string", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "DB2 connecting using provided connection string", LOG_LEVEL_DEBUG, 0);
     } else {
         // Build full connection string from config
         conn_string = db2_get_connection_string(config);
-        log_this(SR_DATABASE, "DB2 connecting using built connection string", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "DB2 connecting using built connection string", LOG_LEVEL_DEBUG, 0);
     }
 
     if (!conn_string) {
-        log_this(SR_DATABASE, "DB2 connection failed: Unable to get connection string", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "DB2 connection failed: Unable to get connection string", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -242,7 +245,7 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
         }
     }
 
-    log_this(SR_DATABASE, "DB2 connection attempt: %s", LOG_LEVEL_DEBUG, 1, safe_conn_str);
+    log_this(log_subsystem, "DB2 connection attempt: %s", LOG_LEVEL_DEBUG, 1, safe_conn_str);
 
     // Use SQLDriverConnect for full connection string support
     char out_conn_string[1024] = {0};
@@ -262,17 +265,17 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     free(conn_string);
 
     if (result != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 connection failed: SQLDriverConnect returned %d", LOG_LEVEL_ERROR, 1, result);
-        log_this(SR_DATABASE, "DB2 connection details: %s", LOG_LEVEL_ERROR, 1, safe_conn_str);
+        log_this(log_subsystem, "DB2 connection failed: SQLDriverConnect returned %d", LOG_LEVEL_ERROR, 1, result);
+        log_this(log_subsystem, "DB2 connection details: %s", LOG_LEVEL_ERROR, 1, safe_conn_str);
 
         // Try to get detailed DB2 error information
-        log_this(SR_DATABASE, "DB2 diagnostic: Connection handle is %p", LOG_LEVEL_DEBUG, 1, (void*)conn_handle);
+        log_this(log_subsystem, "DB2 diagnostic: Connection handle is %p", LOG_LEVEL_DEBUG, 1, (void*)conn_handle);
         if (conn_handle) {
-            log_this(SR_DATABASE, "DB2 attempting to retrieve diagnostic information", LOG_LEVEL_DEBUG, 0);
+            log_this(log_subsystem, "DB2 attempting to retrieve diagnostic information", LOG_LEVEL_DEBUG, 0);
 
             // Check if SQLGetDiagRec is available
 #ifdef USE_MOCK_LIBDB2
-            log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec is available (mocked)", LOG_LEVEL_DEBUG, 0);
+            log_this(log_subsystem, "DB2 diagnostic: SQLGetDiagRec is available (mocked)", LOG_LEVEL_DEBUG, 0);
             // Always available in mock
             {
                 char sql_state[6] = {0};
@@ -284,16 +287,16 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
                                                    (SQLCHAR*)sql_state, &native_error,
                                                    (SQLCHAR*)error_msg, sizeof(error_msg), &msg_len);
                 if (diag_result == SQL_SUCCESS || diag_result == SQL_SUCCESS_WITH_INFO) {
-                    log_this(SR_DATABASE, "DB2 diagnostic: SQLSTATE='%s', Native Error=%d, Message='%s'",
+                    log_this(log_subsystem, "DB2 diagnostic: SQLSTATE='%s', Native Error=%d, Message='%s'",
                              LOG_LEVEL_ERROR, 3, sql_state, (int)native_error, error_msg);
                 } else {
-                    log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec returned %d (unable to retrieve error details)", LOG_LEVEL_ERROR, 1, (int)diag_result);
+                    log_this(log_subsystem, "DB2 diagnostic: SQLGetDiagRec returned %d (unable to retrieve error details)", LOG_LEVEL_ERROR, 1, (int)diag_result);
                 }
             }
 #else
-            log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec_ptr is %s", LOG_LEVEL_DEBUG, 1, SQLGetDiagRec_ptr ? "available" : "NULL");
+            log_this(log_subsystem, "DB2 diagnostic: SQLGetDiagRec_ptr is %s", LOG_LEVEL_DEBUG, 1, SQLGetDiagRec_ptr ? "available" : "NULL");
             if (!SQLGetDiagRec_ptr) {
-                log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec function not available", LOG_LEVEL_ERROR, 0);
+                log_this(log_subsystem, "DB2 diagnostic: SQLGetDiagRec function not available", LOG_LEVEL_ERROR, 0);
             } else {
                 char sql_state[6] = {0};
                 char error_msg[1024] = {0};
@@ -304,15 +307,15 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
                                                    (SQLCHAR*)sql_state, &native_error,
                                                    (SQLCHAR*)error_msg, sizeof(error_msg), &msg_len);
                 if (diag_result == SQL_SUCCESS || diag_result == SQL_SUCCESS_WITH_INFO) {
-                    log_this(SR_DATABASE, "DB2 diagnostic: SQLSTATE='%s', Native Error=%d, Message='%s'",
+                    log_this(log_subsystem, "DB2 diagnostic: SQLSTATE='%s', Native Error=%d, Message='%s'",
                              LOG_LEVEL_ERROR, 3, sql_state, (int)native_error, error_msg);
                 } else {
-                    log_this(SR_DATABASE, "DB2 diagnostic: SQLGetDiagRec returned %d (unable to retrieve error details)", LOG_LEVEL_ERROR, 1, (int)diag_result);
+                    log_this(log_subsystem, "DB2 diagnostic: SQLGetDiagRec returned %d (unable to retrieve error details)", LOG_LEVEL_ERROR, 1, (int)diag_result);
                 }
             }
 #endif
         } else {
-            log_this(SR_DATABASE, "DB2 diagnostic: No connection handle available for error retrieval", LOG_LEVEL_ERROR, 0);
+            log_this(log_subsystem, "DB2 diagnostic: No connection handle available for error retrieval", LOG_LEVEL_ERROR, 0);
         }
 
         return false;
@@ -360,7 +363,6 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     *connection = db_handle;
 
     // Use designator for logging if provided, otherwise use generic Database subsystem
-    const char* log_subsystem = designator ? designator : SR_DATABASE;
     log_this(log_subsystem, "DB2 connection established successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
@@ -418,7 +420,8 @@ bool db2_health_check(DatabaseHandle* connection) {
         return true;
     } else {
         connection->consecutive_failures++;
-        log_this(SR_DATABASE, "DB2 health check failed", LOG_LEVEL_ERROR, 0);
+        const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
+        log_this(log_subsystem, "DB2 health check failed", LOG_LEVEL_ERROR, 0);
         return false;
     }
 }
@@ -433,6 +436,7 @@ bool db2_reset_connection(DatabaseHandle* connection) {
     connection->connected_since = time(NULL);
     connection->consecutive_failures = 0;
 
-    log_this(SR_DATABASE, "DB2 connection reset successfully", LOG_LEVEL_STATE, 0);
+    const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(log_subsystem, "DB2 connection reset successfully", LOG_LEVEL_STATE, 0);
     return true;
 }

@@ -159,7 +159,8 @@ void database_queue_manage_child_queues(DatabaseQueue* lead_queue) {
     // free(dqm_label);
 
     // Implement scaling logic based on queue utilization
-    MutexResult lock_result = MUTEX_LOCK(&lead_queue->children_lock, SR_DATABASE);
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    MutexResult lock_result = MUTEX_LOCK(&lead_queue->children_lock, dqm_label);
     if (lock_result == MUTEX_SUCCESS) {
         // Check each child queue for scaling decisions
         for (int i = 0; i < lead_queue->child_queue_count; i++) {
@@ -207,5 +208,6 @@ void database_queue_manage_child_queues(DatabaseQueue* lead_queue) {
         }
 
         mutex_unlock(&lead_queue->children_lock);
+        free(dqm_label);
     }
 }

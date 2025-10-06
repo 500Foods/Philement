@@ -374,12 +374,14 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
 
         // Signal that initial connection attempt is complete (parsing failed)
         if (db_queue->is_lead_queue) {
-            MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+            char* dqm_label = database_queue_generate_label(db_queue);
+            MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, dqm_label);
             if (signal_result == MUTEX_SUCCESS) {
                 db_queue->initial_connection_attempted = true;
                 pthread_cond_broadcast(&db_queue->initial_connection_cond);
                 mutex_unlock(&db_queue->initial_connection_lock);
             }
+            free(dqm_label);
         }
 
         return false;
@@ -407,12 +409,14 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
 
         // Signal that initial connection attempt is complete (engine init failed)
         if (db_queue->is_lead_queue) {
-            MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+            char* dqm_label = database_queue_generate_label(db_queue);
+            MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, dqm_label);
             if (signal_result == MUTEX_SUCCESS) {
                 db_queue->initial_connection_attempted = true;
                 pthread_cond_broadcast(&db_queue->initial_connection_cond);
                 mutex_unlock(&db_queue->initial_connection_lock);
             }
+            free(dqm_label);
         }
 
         return false;
@@ -470,12 +474,11 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
     }
 
     bool connection_success = database_engine_connect_with_designator(engine_type, config, &db_handle, dqm_designator);
-    free(dqm_designator);
 
     if (connection_success && db_handle) {
         log_this(dqm_label_conn, "Database connection established successfully", LOG_LEVEL_DEBUG, 0);
         // Connection successful - store the persistent connection
-        MutexResult result = MUTEX_LOCK(&db_queue->connection_lock, SR_DATABASE);
+        MutexResult result = MUTEX_LOCK(&db_queue->connection_lock, dqm_designator);
         if (result == MUTEX_SUCCESS) {
             // Clean up any existing connection first
             if (db_queue->persistent_connection) {
@@ -493,12 +496,14 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
 
                 // Signal that initial connection attempt is complete (corrupted mutex)
                 if (db_queue->is_lead_queue) {
-                    MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+                    char* dqm_label = database_queue_generate_label(db_queue);
+                    MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, dqm_label);
                     if (signal_result == MUTEX_SUCCESS) {
                         db_queue->initial_connection_attempted = true;
                         pthread_cond_broadcast(&db_queue->initial_connection_cond);
                         mutex_unlock(&db_queue->initial_connection_lock);
                     }
+                    free(dqm_label);
                 }
 
                 return false;
@@ -528,12 +533,14 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
 
             // Signal that initial connection attempt is complete (even on failure)
             if (db_queue->is_lead_queue) {
-                MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+                char* dqm_label = database_queue_generate_label(db_queue);
+                MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, dqm_label);
                 if (signal_result == MUTEX_SUCCESS) {
                     db_queue->initial_connection_attempted = true;
                     pthread_cond_broadcast(&db_queue->initial_connection_cond);
                     mutex_unlock(&db_queue->initial_connection_lock);
                 }
+                free(dqm_label);
             }
 
             free_connection_config(config);
@@ -553,6 +560,7 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
     }
 
     free(dqm_label_conn);
+    free(dqm_designator);
 
     db_queue->last_connection_attempt = time(NULL);
 
@@ -561,12 +569,14 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
 
     // Signal that initial connection attempt is complete (for Lead queues)
     if (db_queue->is_lead_queue) {
-        MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+        char* dqm_label = database_queue_generate_label(db_queue);
+        MutexResult signal_result = MUTEX_LOCK(&db_queue->initial_connection_lock, dqm_label);
         if (signal_result == MUTEX_SUCCESS) {
             db_queue->initial_connection_attempted = true;
             pthread_cond_broadcast(&db_queue->initial_connection_cond);
             mutex_unlock(&db_queue->initial_connection_lock);
         }
+        free(dqm_label);
     }
 
     return db_queue->is_connected;
@@ -589,7 +599,7 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
 
     // Use persistent connection for health check if available
     // log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK: About to lock queue connection mutex", LOG_LEVEL_DEBUG, 0);
-    MutexResult result = MUTEX_LOCK(&db_queue->connection_lock, SR_DATABASE);
+    MutexResult result = MUTEX_LOCK(&db_queue->connection_lock, dqm_label);
     // log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK_RESULT: Lock result %s", LOG_LEVEL_DEBUG, 1, mutex_result_to_string(result));
 
     if (result == MUTEX_SUCCESS) {
@@ -622,9 +632,9 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
     }
 
     // Always log heartbeat activity to show the DQM is alive
-    log_this(dqm_label, "Heartbeat: connection %s, queue depth: %zu", LOG_LEVEL_STATE, 2, 
+    log_this(dqm_label, "Heartbeat: connection %s, queue depth: %zu", LOG_LEVEL_STATE, 2,
         is_connected ? "OK" : "FAILED",
-        database_queue_get_depth(db_queue));
+        database_queue_get_depth_with_designator(db_queue, dqm_label));
 
     // Log connection status changes
     if (was_connected != is_connected) {
@@ -654,7 +664,7 @@ bool database_queue_wait_for_initial_connection(DatabaseQueue* db_queue, int tim
 
     char* dqm_label = database_queue_generate_label(db_queue);
 
-    MutexResult lock_result = MUTEX_LOCK(&db_queue->initial_connection_lock, SR_DATABASE);
+    MutexResult lock_result = MUTEX_LOCK(&db_queue->initial_connection_lock, dqm_label);
     if (lock_result != MUTEX_SUCCESS) {
         log_this(dqm_label, "Failed to acquire initial connection lock for synchronization", LOG_LEVEL_ERROR, 0);
         free(dqm_label);
@@ -741,7 +751,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
     // log_this(dqm_label, "Attempting to acquire connection lock with 5 second timeout", LOG_LEVEL_DEBUG, 0);
 
     // log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK: About to lock connection mutex for bootstrap", LOG_LEVEL_DEBUG, 0);
-    MutexResult lock_result = MUTEX_LOCK(&db_queue->connection_lock, SR_DATABASE);
+    MutexResult lock_result = MUTEX_LOCK(&db_queue->connection_lock, dqm_label);
     if (lock_result == MUTEX_SUCCESS) {
         // log_this(dqm_label, "MUTEX_BOOTSTRAP_LOCK_SUCCESS: Connection lock acquired successfully", LOG_LEVEL_DEBUG, 0);
 
@@ -849,7 +859,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 // log_this(dqm_label, "Bootstrap query completed successfully - continuing with heartbeat", LOG_LEVEL_STATE, 0);
 
                 // Signal bootstrap completion for launch synchronization
-                MutexResult bootstrap_lock_result = MUTEX_LOCK(&db_queue->bootstrap_lock, SR_DATABASE);
+                MutexResult bootstrap_lock_result = MUTEX_LOCK(&db_queue->bootstrap_lock, dqm_label);
                 if (bootstrap_lock_result == MUTEX_SUCCESS) {
                     db_queue->bootstrap_completed = true;
                     pthread_cond_broadcast(&db_queue->bootstrap_cond);
@@ -869,7 +879,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 }
 
                 // Signal bootstrap completion even on failure to prevent launch hang
-                MutexResult bootstrap_lock_result2 = MUTEX_LOCK(&db_queue->bootstrap_lock, SR_DATABASE);
+                MutexResult bootstrap_lock_result2 = MUTEX_LOCK(&db_queue->bootstrap_lock, dqm_label);
                 if (bootstrap_lock_result2 == MUTEX_SUCCESS) {
                     db_queue->bootstrap_completed = true;
                     pthread_cond_broadcast(&db_queue->bootstrap_cond);
@@ -885,7 +895,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             // log_this(dqm_label, "No persistent connection available for bootstrap query", LOG_LEVEL_ERROR, 0);
 
             // Signal bootstrap completion even when no connection available
-            MutexResult bootstrap_lock_result3 = MUTEX_LOCK(&db_queue->bootstrap_lock, SR_DATABASE);
+            MutexResult bootstrap_lock_result3 = MUTEX_LOCK(&db_queue->bootstrap_lock, dqm_label);
             if (bootstrap_lock_result3 == MUTEX_SUCCESS) {
                 db_queue->bootstrap_completed = true;
                 pthread_cond_broadcast(&db_queue->bootstrap_cond);
@@ -901,7 +911,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
         // log_this(dqm_label, "This indicates the connection lock is held by another thread", LOG_LEVEL_ERROR, 0);
 
         // Signal bootstrap completion on timeout to prevent launch hang
-        MutexResult bootstrap_lock_result4 = MUTEX_LOCK(&db_queue->bootstrap_lock, SR_DATABASE);
+        MutexResult bootstrap_lock_result4 = MUTEX_LOCK(&db_queue->bootstrap_lock, dqm_label);
         if (bootstrap_lock_result4 == MUTEX_SUCCESS) {
             db_queue->bootstrap_completed = true;
             pthread_cond_broadcast(&db_queue->bootstrap_cond);

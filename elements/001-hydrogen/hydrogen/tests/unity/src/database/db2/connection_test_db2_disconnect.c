@@ -31,7 +31,7 @@ void setUp(void) {
     mock_system_reset_all();
 
     // Ensure libdb2 functions are loaded (mocked)
-    load_libdb2_functions();
+    load_libdb2_functions(NULL);
 }
 
 void tearDown(void) {

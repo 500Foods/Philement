@@ -207,8 +207,8 @@ bool load_network_config(json_t* root, AppConfig* config) {
             config->network.available_interfaces_count = 1;
 
             // Log the default interface
-            log_this(SR_CONFIG, "― Available *", LOG_LEVEL_STATE, 0);
-            log_this(SR_CONFIG, "――― all: enabled *", LOG_LEVEL_STATE, 0);
+            log_this(SR_CONFIG, "― Available *", LOG_LEVEL_DEBUG, 0);
+            log_this(SR_CONFIG, "――― all: enabled *", LOG_LEVEL_DEBUG, 0);
         }
 
     if (!success) {
@@ -282,7 +282,7 @@ void dump_network_config(const NetworkConfig* config) {
             DUMP_STRING2( "――――", config->available_interfaces[i].interface_name, status);
         }
     } else {
-        log_this(SR_CONFIG, "―――― None", LOG_LEVEL_STATE, 0);
+        log_this(SR_CONFIG, "―――― None", LOG_LEVEL_DEBUG, 0);
     }
 }
 

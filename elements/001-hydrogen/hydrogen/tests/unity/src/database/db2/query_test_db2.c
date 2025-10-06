@@ -21,7 +21,7 @@
   bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result);
  
  // Forward declaration for DB2 library loading function
- bool load_libdb2_functions(void);
+ bool load_libdb2_functions(const char* designator);
 
 // Function prototypes for test functions
  void test_db2_execute_query_null_connection(void);
@@ -48,7 +48,7 @@ void setUp(void) {
     mock_libdb2_reset_all();
 
     // Initialize DB2 function pointers with mock functions
-    load_libdb2_functions();
+    load_libdb2_functions(NULL);
 }
 
 void tearDown(void) {

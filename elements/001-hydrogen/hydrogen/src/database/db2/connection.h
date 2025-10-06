@@ -17,7 +17,7 @@ bool db2_health_check(DatabaseHandle* connection);
 bool db2_reset_connection(DatabaseHandle* connection);
 
 // Library loading
-bool load_libdb2_functions(void);
+bool load_libdb2_functions(const char* designator);
 
 // Utility functions for prepared statement cache
 PreparedStatementCache* db2_create_prepared_statement_cache(void);
