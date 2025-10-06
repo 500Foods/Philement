@@ -67,17 +67,17 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-10-05 23:16:29 UTC
+Last updated at 2025-10-06 05:01:37 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              646          23988          24464          84814
+C                              644          23815          24234          84642
 JSON                            52             11              0          31428
 Markdown                       346           9588             59          28829
-Bourne Shell                    86           3905          60967          18038
-SVG                             13             20            202          11004
+Bourne Shell                    86           3905          61009          18038
+SVG                             13             20            202          11002
 Lua                             31            297            342           6676
-C/C++ Header                   156           1695           4526           4710
+C/C++ Header                   156           1699           4530           4727
 Text                            10              9              0           2948
 CMake                           19            255            412           1609
 HTML                             8            138             23            882
@@ -90,7 +90,7 @@ Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 -------------------------------------------------------------------------------
-SUM:                          1394          40181          91268         192387
+SUM:                          1392          40012          91084         192230
 -------------------------------------------------------------------------------
 57 Files were skipped (duplicate, binary, or without source code):
   svg: 8
