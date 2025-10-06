@@ -85,10 +85,10 @@ bool load_libdb2_functions(void) {
         return true; // Already loaded
     }
 
-    pthread_mutex_lock(&libdb2_mutex);
+    MUTEX_LOCK(&libdb2_mutex, SR_DATABASE);
 
     if (libdb2_handle) {
-        pthread_mutex_unlock(&libdb2_mutex);
+        MUTEX_UNLOCK(&libdb2_mutex, SR_DATABASE);
         return true; // Another thread loaded it
     }
 
@@ -100,7 +100,7 @@ bool load_libdb2_functions(void) {
     if (!libdb2_handle) {
         log_this(SR_DATABASE, "Failed to load libdb2 library", LOG_LEVEL_ERROR, 0);
         log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, 0);
-        pthread_mutex_unlock(&libdb2_mutex);
+        MUTEX_UNLOCK(&libdb2_mutex, SR_DATABASE);
         return false;
     }
 
@@ -132,7 +132,7 @@ bool load_libdb2_functions(void) {
         log_this(SR_DATABASE, "Failed to load all required libdb2 functions", LOG_LEVEL_ERROR, 0);
         dlclose(libdb2_handle);
         libdb2_handle = NULL;
-        pthread_mutex_unlock(&libdb2_mutex);
+        MUTEX_UNLOCK(&libdb2_mutex, SR_DATABASE);
         return false;
     }
 
@@ -144,7 +144,7 @@ bool load_libdb2_functions(void) {
         log_this(SR_DATABASE, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_DEBUG, 0);
     }
 
-    pthread_mutex_unlock(&libdb2_mutex);
+    MUTEX_UNLOCK(&libdb2_mutex, SR_DATABASE);
     log_this(SR_DATABASE, "Successfully loaded libdb2 library", LOG_LEVEL_STATE, 0);
     return true;
 #endif
@@ -173,12 +173,12 @@ PreparedStatementCache* db2_create_prepared_statement_cache(void) {
 void db2_destroy_prepared_statement_cache(PreparedStatementCache* cache) {
     if (!cache) return;
 
-    pthread_mutex_lock(&cache->lock);
+    MUTEX_LOCK(&cache->lock, SR_DATABASE);
     for (size_t i = 0; i < cache->count; i++) {
         free(cache->names[i]);
     }
     free(cache->names);
-    pthread_mutex_unlock(&cache->lock);
+    MUTEX_UNLOCK(&cache->lock, SR_DATABASE);
     pthread_mutex_destroy(&cache->lock);
     free(cache);
 }

@@ -578,122 +578,85 @@ int launch_database_subsystem(void) {
 
     database_stopping = 0;
 
-    log_this(SR_DATABASE, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_DATABASE, "LAUNCH: " SR_DATABASE, LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "LAUNCH: " SR_DATABASE, LOG_LEVEL_DEBUG, 0);
 
     // Get database configuration for logging
     const DatabaseConfig* db_config = &app_config->databases;
-    log_this(SR_DATABASE, "Database connections configured: %d", LOG_LEVEL_STATE, 1, db_config->connection_count);
+    log_this(SR_DATABASE, SR_DATABASE " connections configured:", LOG_LEVEL_DEBUG, 0);
 
-    // Phase 1: Initialize database engine registry
-    log_this(SR_DATABASE, "Initializing database engine registry", LOG_LEVEL_STATE, 0);
+    // Log each configured database with name and engine type
+    for (int i = 0; i < db_config->connection_count; i++) {
+        const DatabaseConnection* conn = &db_config->connections[i];
+        if (conn->enabled) {
+            log_this(SR_DATABASE, "― %s (%s)", LOG_LEVEL_DEBUG, 2,
+                     conn->name ? conn->name : "Unknown",
+                     conn->type ? conn->type : "Unknown");
+        }
+    }
+
+    // Initialize database engine registry
+    log_this(SR_DATABASE, "Initializing " SR_DATABASE " engine registry", LOG_LEVEL_DEBUG, 0);
     if (!database_engine_init()) {
-        log_this(SR_DATABASE, "Failed to initialize database engine registry", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to initialize " SR_DATABASE " engine registry", LOG_LEVEL_ERROR, 0);
         return 0;
     }
 
-    // Phase 2: Initialize database subsystem
-    log_this(SR_DATABASE, "Initializing database subsystem", LOG_LEVEL_STATE, 0);
+    // Initialize database core
+    log_this(SR_DATABASE, "Initializing " SR_DATABASE " core", LOG_LEVEL_DEBUG, 0);
     if (!database_subsystem_init()) {
-        log_this(SR_DATABASE, "Failed to initialize database subsystem", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to initialize " SR_DATABASE " core", LOG_LEVEL_DEBUG, 0);
         return 0;
     }
 
-    // Phase 3: Initialize queue system FIRST (moved from Phase 4)
-    // log_this(SR_DATABASE, "Initializing queue system", LOG_LEVEL_STATE, 0);
-    // log_this(SR_DATABASE, "Phase 3.1: Starting queue manager initialization", LOG_LEVEL_STATE, 0);
-
+    // Initialize database queue system
+    log_this(SR_DATABASE, "Initializing " SR_DATABASE " queue system", LOG_LEVEL_DEBUG, 0);
     if (!database_queue_system_init()) {
-        log_this(SR_DATABASE, "Failed to initialize database queue system", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to initialize " SR_DATABASE " queue system", LOG_LEVEL_DEBUG, 0);
         return 0;
     }
 
-    // log_this(SR_DATABASE, "Phase 3.3: Queue manager initialization completed", LOG_LEVEL_STATE, 0);
-
-    // Phase 4: Connect to configured databases and start queues
-    // log_this(SR_DATABASE, "Connecting to configured databases and starting queues", LOG_LEVEL_STATE, 0);
+    // Connect to configured databases and start queues
     int connected_databases = 0;
     int total_queues_started = 0;
 
-    // log_this(SR_DATABASE, "Phase 4.1: Starting database connection processing loop", LOG_LEVEL_STATE, 0);
     for (int i = 0; i < db_config->connection_count; i++) {
         const DatabaseConnection* conn = &db_config->connections[i];
 
-        // log_this(SR_DATABASE, "Phase 4.2: Processing database connection %d of %d", LOG_LEVEL_STATE, 2, i+1, db_config->connection_count);
-        // log_this(SR_DATABASE, "Phase 4.3: Connection name: %s, enabled: %s", LOG_LEVEL_STATE, 2, conn->name, conn->enabled ? "true" : "false",0);
-
         if (conn->enabled) {
-            // log_this(SR_DATABASE, "Phase 4.4: Connecting to enabled database", LOG_LEVEL_STATE, 0);
-            // log_this(SR_DATABASE, "Phase 4.5: Database name: %s", LOG_LEVEL_STATE, 1, conn->name);
 
             // With Lead queue architecture, we only start 1 Lead queue per database initially
-            int queues_for_db = 1; // Always just the Lead queue initially
-
-            // log_this(SR_DATABASE, "Expected queues for database", LOG_LEVEL_DEBUG, 0);
+            int queues_for_db = 1; 
             char queue_count_msg[64];
             snprintf(queue_count_msg, sizeof(queue_count_msg), "%d Lead queue", queues_for_db);
-            // log_this(SR_DATABASE, queue_count_msg, LOG_LEVEL_DEBUG, 0);
 
-            // Add database to subsystem (this will create Lead queue)
-            // log_this(SR_DATABASE, "Phase 4.6: Starting database addition for: %s", LOG_LEVEL_STATE, 1, conn->name);
-            // log_this(SR_DATABASE, "Phase 4.6.1: About to call database_add_database", LOG_LEVEL_STATE, 0);
             if (database_add_database(conn->name, conn->type, NULL)) {
-                // log_this(SR_DATABASE, "Phase 4.7: Database added to subsystem successfully", LOG_LEVEL_STATE, 0);
                 connected_databases++;
                 total_queues_started += queues_for_db;
-
-                // Bootstrap query runs asynchronously - don't wait for it to speed up launch
-                // DatabaseQueue* db_queue = database_queue_manager_get_database(global_queue_manager, conn->name);
-                // Bootstrap will complete in background and signal when done
-
-                // Log Lead queue startup for this database
-                // log_this(SR_DATABASE, "Phase 4.8: Lead queue started for database", LOG_LEVEL_DEBUG, 0);
-                // log_this(SR_DATABASE, conn->name, LOG_LEVEL_DEBUG, 0);
             } else {
-                log_this(SR_DATABASE, "Failed to add database to subsystem", LOG_LEVEL_ERROR, 0);
+                log_this(SR_DATABASE, "Failed to add database", LOG_LEVEL_DEBUG, 0);
             }
         }
-        // log_this(SR_DATABASE, "Phase 4.10: Finished processing database connection %d", LOG_LEVEL_STATE, 1, i+1);
     }
-    // log_this(SR_DATABASE, "Phase 4.11: Database connection processing loop completed", LOG_LEVEL_STATE, 0);
 
-    // log_this(SR_DATABASE, "Phase 4.50.1: Just finished worker thread creation, checking connected_databases = %d", LOG_LEVEL_STATE, 1, connected_databases);
-    // log_this(SR_DATABASE, "Phase 4.50: Checking if any databases were connected", LOG_LEVEL_STATE, 0);
     if (connected_databases == 0) {
-        log_this(SR_DATABASE, "No databases were successfully connected", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "No databases were successfully connected", LOG_LEVEL_DEBUG, 0);
         return 0;
     }
 
-    // Phase 4.51: Proceeding without waiting for Lead DQMs to complete initial connection attempts
-    // log_this(SR_DATABASE, "Proceeding to next subsystem without waiting for Lead DQM connections", LOG_LEVEL_STATE, 0);
-
-    // log_this(SR_DATABASE, "Phase 4.52: Database connections established", LOG_LEVEL_STATE, 0);
-    // log_this(SR_DATABASE, "Phase 4.53: Preparing queue count message", LOG_LEVEL_STATE, 0);
     char total_queues_msg[128];
     snprintf(total_queues_msg, sizeof(total_queues_msg), "Total Lead queues started across all databases: %d", total_queues_started);
-    // log_this(SR_DATABASE, "Phase 4.54: Logging queue count message", LOG_LEVEL_STATE, 0);
-    log_this(SR_DATABASE, total_queues_msg, LOG_LEVEL_STATE, 0);
-
-    // Phase 5: Worker threads already started
-    // log_this(SR_DATABASE, "Phase 5: Lead queue worker threads", LOG_LEVEL_STATE, 0);
-    // log_this(SR_DATABASE, "Phase 5.1: Lead queue worker threads started as part of database addition", LOG_LEVEL_STATE, 0);
-
-    // Phase 6: Load query templates (for Phase 4)
-    // log_this(SR_DATABASE, "Phase 6: Loading query templates", LOG_LEVEL_STATE, 0);
-    // log_this(SR_DATABASE, "Phase 6.1: Query template loading will be implemented in Phase 4", LOG_LEVEL_STATE, 0);
-
-    // Phase 7: Register triggers (for Phase 4)
-    // log_this(SR_DATABASE, "Phase 7: Registering triggers", LOG_LEVEL_STATE, 0);
-    // log_this(SR_DATABASE, "Phase 7.1: Trigger registration will be implemented in Phase 4", LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, total_queues_msg, LOG_LEVEL_DEBUG, 0);
 
     // Get subsystem ID and update state
     int subsystem_id = get_subsystem_id_by_name(SR_DATABASE);
     if (subsystem_id >= 0) {
+        log_this(SR_DATABASE, "Updating " SR_DATABASE " in " SR_REGISTRY, LOG_LEVEL_DEBUG, 0);
         update_subsystem_state(subsystem_id, SUBSYSTEM_RUNNING);
-        log_this(SR_DATABASE, "Database subsystem fully operational", LOG_LEVEL_STATE, 0);
+        log_this(SR_DATABASE, "LAUNCH: " SR_DATABASE " COMPLETE", LOG_LEVEL_DEBUG, 0);
         return 1;
     }
 
-    log_this(SR_DATABASE, "Failed to complete database subsystem launch", LOG_LEVEL_ERROR, 0);
+    log_this(SR_DATABASE, "LAUNCH: " SR_DATABASE " FAILED", LOG_LEVEL_DEBUG, 0);
     return 0;
 }

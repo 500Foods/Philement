@@ -78,10 +78,10 @@ bool load_libmysql_functions(void) {
         return true; // Already loaded
     }
 
-    pthread_mutex_lock(&libmysql_mutex);
+    MUTEX_LOCK(&libmysql_mutex, SR_DATABASE);
 
     if (libmysql_handle) {
-        pthread_mutex_unlock(&libmysql_mutex);
+        MUTEX_UNLOCK(&libmysql_mutex, SR_DATABASE);
         return true; // Another thread loaded it
     }
 
@@ -99,7 +99,7 @@ bool load_libmysql_functions(void) {
     if (!libmysql_handle) {
         log_this(SR_DATABASE, "Failed to load libmysqlclient library", LOG_LEVEL_ERROR, 0);
         log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, 0);
-        pthread_mutex_unlock(&libmysql_mutex);
+        MUTEX_UNLOCK(&libmysql_mutex, SR_DATABASE);
         return false;
     }
 
@@ -136,7 +136,7 @@ bool load_libmysql_functions(void) {
         log_this(SR_DATABASE, "Failed to load all required libmysqlclient functions", LOG_LEVEL_ERROR, 0);
         dlclose(libmysql_handle);
         libmysql_handle = NULL;
-        pthread_mutex_unlock(&libmysql_mutex);
+        MUTEX_UNLOCK(&libmysql_mutex, SR_DATABASE);
         return false;
     }
 
@@ -154,7 +154,7 @@ bool load_libmysql_functions(void) {
         log_this(SR_DATABASE, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_DEBUG, 0);
     }
 
-    pthread_mutex_unlock(&libmysql_mutex);
+    MUTEX_UNLOCK(&libmysql_mutex, SR_DATABASE);
     log_this(SR_DATABASE, "Successfully loaded libmysqlclient library", LOG_LEVEL_STATE, 0);
     return true;
 #endif
@@ -182,12 +182,12 @@ PreparedStatementCache* mysql_create_prepared_statement_cache(void) {
 void mysql_destroy_prepared_statement_cache(PreparedStatementCache* cache) {
     if (!cache) return;
 
-    pthread_mutex_lock(&cache->lock);
+    MUTEX_LOCK(&cache->lock, SR_DATABASE);
     for (size_t i = 0; i < cache->count; i++) {
         free(cache->names[i]);
     }
     free(cache->names);
-    pthread_mutex_unlock(&cache->lock);
+    MUTEX_UNLOCK(&cache->lock, SR_DATABASE);
     pthread_mutex_destroy(&cache->lock);
     free(cache);
 }

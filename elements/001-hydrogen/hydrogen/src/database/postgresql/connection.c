@@ -121,10 +121,10 @@ bool load_libpq_functions(void) {
         return true; // Already loaded
     }
 
-    pthread_mutex_lock(&libpq_mutex);
+    MUTEX_LOCK(&libpq_mutex, SR_DATABASE);
 
     if (libpq_handle) {
-        pthread_mutex_unlock(&libpq_mutex);
+        MUTEX_UNLOCK(&libpq_mutex, SR_DATABASE);
         return true; // Another thread loaded it
     }
 
@@ -136,7 +136,7 @@ bool load_libpq_functions(void) {
     if (!libpq_handle) {
         log_this(SR_DATABASE, "Failed to load libpq library", LOG_LEVEL_ERROR, 0);
         log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, 0);
-        pthread_mutex_unlock(&libpq_mutex);
+        MUTEX_UNLOCK(&libpq_mutex, SR_DATABASE);
         return false;
     }
 
@@ -168,7 +168,7 @@ bool load_libpq_functions(void) {
         log_this(SR_DATABASE, "Failed to load all required libpq functions", LOG_LEVEL_ERROR, 0);
         dlclose(libpq_handle);
         libpq_handle = NULL;
-        pthread_mutex_unlock(&libpq_mutex);
+        MUTEX_UNLOCK(&libpq_mutex, SR_DATABASE);
         return false;
     }
 
@@ -177,7 +177,7 @@ bool load_libpq_functions(void) {
         log_this(SR_DATABASE, "PQping function not available - health check will use query method only", LOG_LEVEL_DEBUG, 0);
     }
 
-    pthread_mutex_unlock(&libpq_mutex);
+    MUTEX_UNLOCK(&libpq_mutex, SR_DATABASE);
     log_this(SR_DATABASE, "Successfully loaded libpq library", LOG_LEVEL_STATE, 0);
     return true;
 #endif
@@ -202,12 +202,12 @@ PreparedStatementCache* create_prepared_statement_cache(void) {
 void destroy_prepared_statement_cache(PreparedStatementCache* cache) {
     if (!cache) return;
 
-    pthread_mutex_lock(&cache->lock);
+    MUTEX_LOCK(&cache->lock, SR_DATABASE);
     for (size_t i = 0; i < cache->count; i++) {
         free(cache->names[i]);
     }
     free(cache->names);
-    pthread_mutex_unlock(&cache->lock);
+    MUTEX_UNLOCK(&cache->lock, SR_DATABASE);
     pthread_mutex_destroy(&cache->lock);
     free(cache);
 }
@@ -215,12 +215,12 @@ void destroy_prepared_statement_cache(PreparedStatementCache* cache) {
 bool add_prepared_statement(PreparedStatementCache* cache, const char* name) {
     if (!cache || !name) return false;
 
-    pthread_mutex_lock(&cache->lock);
+    MUTEX_LOCK(&cache->lock, SR_DATABASE);
 
     // Check if already exists
     for (size_t i = 0; i < cache->count; i++) {
         if (strcmp(cache->names[i], name) == 0) {
-            pthread_mutex_unlock(&cache->lock);
+            MUTEX_UNLOCK(&cache->lock, SR_DATABASE);
             return true; // Already exists
         }
     }
@@ -230,7 +230,7 @@ bool add_prepared_statement(PreparedStatementCache* cache, const char* name) {
         size_t new_capacity = cache->capacity * 2;
         char** new_names = realloc(cache->names, new_capacity * sizeof(char*));
         if (!new_names) {
-            pthread_mutex_unlock(&cache->lock);
+            MUTEX_UNLOCK(&cache->lock, SR_DATABASE);
             return false;
         }
         cache->names = new_names;
@@ -239,19 +239,19 @@ bool add_prepared_statement(PreparedStatementCache* cache, const char* name) {
 
     cache->names[cache->count] = strdup(name);
     if (!cache->names[cache->count]) {
-        pthread_mutex_unlock(&cache->lock);
+        MUTEX_UNLOCK(&cache->lock, SR_DATABASE);
         return false;
     }
 
     cache->count++;
-    pthread_mutex_unlock(&cache->lock);
+    MUTEX_UNLOCK(&cache->lock, SR_DATABASE);
     return true;
 }
 
 bool remove_prepared_statement(PreparedStatementCache* cache, const char* name) {
     if (!cache || !name) return false;
 
-    pthread_mutex_lock(&cache->lock);
+    MUTEX_LOCK(&cache->lock, SR_DATABASE);
 
     for (size_t i = 0; i < cache->count; i++) {
         if (strcmp(cache->names[i], name) == 0) {
@@ -261,12 +261,12 @@ bool remove_prepared_statement(PreparedStatementCache* cache, const char* name) 
                 cache->names[j] = cache->names[j + 1];
             }
             cache->count--;
-            pthread_mutex_unlock(&cache->lock);
+            MUTEX_UNLOCK(&cache->lock, SR_DATABASE);
             return true;
         }
     }
 
-    pthread_mutex_unlock(&cache->lock);
+    MUTEX_UNLOCK(&cache->lock, SR_DATABASE);
     return false;
 }
 
