@@ -75,10 +75,10 @@ bool load_libsqlite_functions(void) {
         return true; // Already loaded
     }
 
-    pthread_mutex_lock(&libsqlite_mutex);
+    MUTEX_LOCK(&libsqlite_mutex, SR_DATABASE);
 
     if (libsqlite_handle) {
-        pthread_mutex_unlock(&libsqlite_mutex);
+        MUTEX_UNLOCK(&libsqlite_mutex, SR_DATABASE);
         return true; // Another thread loaded it
     }
 
@@ -90,7 +90,7 @@ bool load_libsqlite_functions(void) {
     if (!libsqlite_handle) {
         log_this(SR_DATABASE, "Failed to load libsqlite3 library", LOG_LEVEL_ERROR, 0);
         log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, 0);
-        pthread_mutex_unlock(&libsqlite_mutex);
+        MUTEX_UNLOCK(&libsqlite_mutex, SR_DATABASE);
         return false;
     }
 
@@ -127,7 +127,7 @@ bool load_libsqlite_functions(void) {
         log_this(SR_DATABASE, "Failed to load all required libsqlite3 functions", LOG_LEVEL_ERROR, 0);
         dlclose(libsqlite_handle);
         libsqlite_handle = NULL;
-        pthread_mutex_unlock(&libsqlite_mutex);
+        MUTEX_UNLOCK(&libsqlite_mutex, SR_DATABASE);
         return false;
     }
 
@@ -139,7 +139,7 @@ bool load_libsqlite_functions(void) {
         log_this(SR_DATABASE, "sqlite3_changes function not available - affected rows may not be accurate", LOG_LEVEL_DEBUG, 0);
     }
 
-    pthread_mutex_unlock(&libsqlite_mutex);
+    MUTEX_UNLOCK(&libsqlite_mutex, SR_DATABASE);
     log_this(SR_DATABASE, "Successfully loaded libsqlite3 library", LOG_LEVEL_STATE, 0);
     return true;
 #endif
@@ -164,12 +164,12 @@ PreparedStatementCache* sqlite_create_prepared_statement_cache(void) {
 void sqlite_destroy_prepared_statement_cache(PreparedStatementCache* cache) {
     if (!cache) return;
 
-    pthread_mutex_lock(&cache->lock);
+    MUTEX_LOCK(&cache->lock, SR_DATABASE);
     for (size_t i = 0; i < cache->count; i++) {
         free(cache->names[i]);
     }
     free(cache->names);
-    pthread_mutex_unlock(&cache->lock);
+    MUTEX_UNLOCK(&cache->lock, SR_DATABASE);
     pthread_mutex_destroy(&cache->lock);
     free(cache);
 }

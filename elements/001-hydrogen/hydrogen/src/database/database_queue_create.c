@@ -17,10 +17,10 @@
  * Create a Lead queue for a database - this is the primary queue that manages other queues
  */
 DatabaseQueue* database_queue_create_lead(const char* database_name, const char* connection_string, const char* bootstrap_query) {
-    log_this(SR_DATABASE, "Creating Lead queue for database: %s", LOG_LEVEL_STATE, 1, database_name);
+    log_this(SR_DATABASE, "Creating Lead DQM for: %s", LOG_LEVEL_DEBUG, 1, database_name);
 
     if (!database_name || !connection_string || strlen(database_name) == 0) {
-        log_this(SR_DATABASE, "Invalid parameters for Lead queue creation", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Invalid parameters for Lead DQM creation", LOG_LEVEL_DEBUG, 0);
         return NULL;
     }
 
@@ -31,7 +31,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
 
     DatabaseQueue* db_queue = malloc(sizeof(DatabaseQueue));
     if (!db_queue) {
-        log_this(SR_DATABASE, "Failed to allocate Lead queue", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to allocate Lead DQM for: %s", LOG_LEVEL_DEBUG, 1, database_name);
         return NULL;
     }
 
@@ -85,7 +85,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     db_queue->queue = queue_create(lead_queue_name, &queue_attrs);
 
     if (!db_queue->queue) {
-        log_this(SR_DATABASE, "Failed to create Lead queue", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to create Lead queue for: %s", LOG_LEVEL_DEBUG, 1, database_name);
         free(db_queue->queue_type);
         free(db_queue->connection_string);
         free(db_queue->database_name);
@@ -96,17 +96,15 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     // Track memory allocation for the Lead queue
     track_queue_allocation(&database_queue_memory, sizeof(DatabaseQueue));
 
-    // log_this(SR_DATABASE, "Lead queue created successfully", LOG_LEVEL_STATE, 0);
-
     // Initialize synchronization primitives
     if (pthread_mutex_init(&db_queue->queue_access_lock, NULL) != 0) {
-        log_this(SR_DATABASE, "Failed to initialize queue access mutex", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to initialize queue access mutex for: %s", LOG_LEVEL_DEBUG, 1, database_name);
         database_queue_destroy(db_queue);
         return NULL;
     }
 
     if (sem_init(&db_queue->worker_semaphore, 0, 0) != 0) {
-        log_this(SR_DATABASE, "Failed to initialize worker semaphore", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to initialize worker semaphore for: %s", LOG_LEVEL_DEBUG, 1, database_name);
         pthread_mutex_destroy(&db_queue->queue_access_lock);
         database_queue_destroy(db_queue);
         return NULL;
@@ -114,7 +112,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
 
     // Initialize Lead queue management
     if (pthread_mutex_init(&db_queue->children_lock, NULL) != 0) {
-        log_this(SR_DATABASE, "Failed to initialize children mutex", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to initialize children mutex for: %s", LOG_LEVEL_DEBUG, 1, database_name);
         sem_destroy(&db_queue->worker_semaphore);
         pthread_mutex_destroy(&db_queue->queue_access_lock);
         database_queue_destroy(db_queue);
@@ -125,7 +123,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     db_queue->max_child_queues = 4;
     db_queue->child_queues = calloc((size_t)db_queue->max_child_queues, sizeof(DatabaseQueue*));
     if (!db_queue->child_queues) {
-        log_this(SR_DATABASE, "Failed to allocate child queue array", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to allocate child queue array for: %s", LOG_LEVEL_DEBUG, 1, database_name);
         pthread_mutex_destroy(&db_queue->children_lock);
         sem_destroy(&db_queue->worker_semaphore);
         pthread_mutex_destroy(&db_queue->queue_access_lock);
@@ -135,7 +133,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
 
     // Initialize connection lock for persistent connection management
     if (pthread_mutex_init(&db_queue->connection_lock, NULL) != 0) {
-        log_this(SR_DATABASE, "Failed to initialize connection mutex", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to initialize connection mutex for: %s", LOG_LEVEL_DEBUG, 1, database_name);
         pthread_mutex_destroy(&db_queue->children_lock);
         sem_destroy(&db_queue->worker_semaphore);
         pthread_mutex_destroy(&db_queue->queue_access_lock);
@@ -145,7 +143,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
 
     // Initialize bootstrap completion synchronization (Lead queues only)
     if (pthread_mutex_init(&db_queue->bootstrap_lock, NULL) != 0) {
-        log_this(SR_DATABASE, "Failed to initialize bootstrap mutex", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to initialize bootstrap mutex for: %s", LOG_LEVEL_DEBUG, 1, database_name);
         pthread_mutex_destroy(&db_queue->connection_lock);
         pthread_mutex_destroy(&db_queue->children_lock);
         sem_destroy(&db_queue->worker_semaphore);
@@ -155,7 +153,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     }
 
     if (pthread_cond_init(&db_queue->bootstrap_cond, NULL) != 0) {
-        log_this(SR_DATABASE, "Failed to initialize bootstrap condition variable", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to initialize bootstrap condition variable for: %s", LOG_LEVEL_DEBUG, 1, database_name);
         pthread_mutex_destroy(&db_queue->bootstrap_lock);
         pthread_mutex_destroy(&db_queue->connection_lock);
         pthread_mutex_destroy(&db_queue->children_lock);
@@ -167,7 +165,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
 
     // Initialize initial connection attempt synchronization (Lead queues only)
     if (pthread_mutex_init(&db_queue->initial_connection_lock, NULL) != 0) {
-        log_this(SR_DATABASE, "Failed to initialize initial connection mutex", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to initialize initial connection mutex for: %s", LOG_LEVEL_DEBUG, 1, database_name);
         pthread_cond_destroy(&db_queue->bootstrap_cond);
         pthread_mutex_destroy(&db_queue->bootstrap_lock);
         pthread_mutex_destroy(&db_queue->connection_lock);
@@ -179,7 +177,7 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     }
 
     if (pthread_cond_init(&db_queue->initial_connection_cond, NULL) != 0) {
-        log_this(SR_DATABASE, "Failed to initialize initial connection condition variable", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to initialize initial connection condition variable for: %s", LOG_LEVEL_DEBUG, 1, database_name);
         pthread_mutex_destroy(&db_queue->initial_connection_lock);
         pthread_cond_destroy(&db_queue->bootstrap_cond);
         pthread_mutex_destroy(&db_queue->bootstrap_lock);
@@ -202,7 +200,6 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
     db_queue->current_queue_depth = 0;
     db_queue->child_queue_count = 0;
 
-    // log_this(SR_DATABASE, "Lead queue creation completed successfully", LOG_LEVEL_STATE, 0);
     return db_queue;
 }
 
@@ -315,7 +312,7 @@ DatabaseQueue* database_queue_create_worker(const char* database_name, const cha
     // Track memory allocation for the worker queue
     track_queue_allocation(&database_queue_memory, sizeof(DatabaseQueue));
 
-    log_this(SR_DATABASE, "%s worker queue created successfully", LOG_LEVEL_STATE, 1, queue_type);
+    log_this(SR_DATABASE, "%s worker queue created successfully", LOG_LEVEL_DEBUG, 1, queue_type);
     return db_queue;
 }
 

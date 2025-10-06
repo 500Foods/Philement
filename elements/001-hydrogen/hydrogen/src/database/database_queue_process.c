@@ -26,7 +26,7 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
-    log_this(dqm_label, "Starting worker thread", LOG_LEVEL_STATE, 0);
+    log_this(dqm_label, "Starting worker thread", LOG_LEVEL_TRACE, 0);
     free(dqm_label);
 
     // Create the single worker thread
@@ -59,7 +59,7 @@ void* database_queue_worker_thread(void* arg) {
     char* dqm_label = database_queue_generate_label(db_queue);
 
     // NOTE: This is what Test 30 (Database) is looking for
-    log_this(dqm_label, "Worker thread started", LOG_LEVEL_STATE, 0);
+    log_this(dqm_label, "Worker thread started", LOG_LEVEL_TRACE, 0);
 
     // Start heartbeat monitoring immediately
     database_queue_start_heartbeat(db_queue);
