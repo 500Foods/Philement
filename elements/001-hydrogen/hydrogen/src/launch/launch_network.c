@@ -325,44 +325,50 @@ LaunchReadiness check_network_launch_readiness(void) {
         const sorted_interface_t* iface = &sorted_interfaces[i];
 
         // Show interface name and configuration status using separate messages
-        add_launch_message(&messages, &count, &capacity, strdup("  Info:    Interface listing:"));
-        add_launch_message(&messages, &count, &capacity, strdup("  Info:    ├─ Name: "));
+        // add_launch_message(&messages, &count, &capacity, strdup("  Info:    Interface listing:"));
+        // add_launch_message(&messages, &count, &capacity, strdup("  Info:    ├─ Name: "));
 
-        char name_msg[256];
-        snprintf(name_msg, sizeof(name_msg), "  Info:    │  └─ %.50s", iface->name);
-        add_launch_message(&messages, &count, &capacity, strdup(name_msg));
+        // char name_msg[256];
+        // snprintf(name_msg, sizeof(name_msg), "  Go:      %.50s", iface->name);
+        // add_launch_message(&messages, &count, &capacity, strdup(name_msg));
 
-        add_launch_message(&messages, &count, &capacity, strdup("  Info:    ├─ Configuration:"));
-        add_launch_message(&messages, &count, &capacity, strdup("  Info:    │  └─ Status: enabled"));
-        add_launch_message(&messages, &count, &capacity, strdup("  Info:    │  └─ Rationale: available for use"));
+        // add_launch_message(&messages, &count, &capacity, strdup("  Info:    ├─ Configuration:"));
+        // add_launch_message(&messages, &count, &capacity, strdup("  Info:    │  └─ Status: enabled"));
+        // add_launch_message(&messages, &count, &capacity, strdup("  Info:    │  └─ Rationale: available for use"));
 
         // List IPv4 addresses if any
-        if (iface->ipv4_count > 0) {
-            add_launch_message(&messages, &count, &capacity, strdup("  Info:    ├─ IPv4 addresses:"));
+        // if (iface->ipv4_count > 0) {
+        //     add_launch_message(&messages, &count, &capacity, strdup("  Info:    ├─ IPv4 addresses:"));
 
-            for (int j = 0; j < iface->ipv4_count; j++) {
-                char ipv4_addr_msg[256];
-                snprintf(ipv4_addr_msg, sizeof(ipv4_addr_msg), "  Info:    │  └─ %s", iface->ipv4_ips[j]);
-                add_launch_message(&messages, &count, &capacity, strdup(ipv4_addr_msg));
-            }
-        }
+        //     for (int j = 0; j < iface->ipv4_count; j++) {
+        //         char ipv4_addr_msg[256];
+        //         snprintf(ipv4_addr_msg, sizeof(ipv4_addr_msg), "  Info:    │  └─ %s", iface->ipv4_ips[j]);
+        //         add_launch_message(&messages, &count, &capacity, strdup(ipv4_addr_msg));
+        //     }
+        // }
 
         // List IPv6 addresses if any
-        if (iface->ipv6_count > 0) {
-            add_launch_message(&messages, &count, &capacity, strdup("  Info:    ├─ IPv6 addresses:"));
+        // if (iface->ipv6_count > 0) {
+        //     add_launch_message(&messages, &count, &capacity, strdup("  Info:    ├─ IPv6 addresses:"));
 
-            for (int j = 0; j < iface->ipv6_count; j++) {
-                char ipv6_addr_msg[256];
-                snprintf(ipv6_addr_msg, sizeof(ipv6_addr_msg), "  Info:    │  └─ %s", iface->ipv6_ips[j]);
-                add_launch_message(&messages, &count, &capacity, strdup(ipv6_addr_msg));
-            }
-        }
+        //     for (int j = 0; j < iface->ipv6_count; j++) {
+        //         char ipv6_addr_msg[256];
+        //         snprintf(ipv6_addr_msg, sizeof(ipv6_addr_msg), "  Info:    │  └─ %s", iface->ipv6_ips[j]);
+        //         add_launch_message(&messages, &count, &capacity, strdup(ipv6_addr_msg));
+        //     }
+        // }
 
         // Show availability status
         if (iface->is_available) {
-            add_launch_message(&messages, &count, &capacity, strdup("  Go:      └─ Available for use"));
-        } else {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   └─ Not available for use"));
+            char name_msg[256];
+            snprintf(name_msg, sizeof(name_msg), "  Go:      %.50s", iface->name);
+            add_launch_message(&messages, &count, &capacity, strdup(name_msg));
+        //      add_launch_message(&messages, &count, &capacity, strdup("  Go:      %Available for use"));
+         } else {
+            char name_msg[256];
+            snprintf(name_msg, sizeof(name_msg), "  No-Go:   %.50s", iface->name);
+            add_launch_message(&messages, &count, &capacity, strdup(name_msg));
+        //     add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   └─ Not available for use"));
         }
     }
 
@@ -581,22 +587,22 @@ int launch_network_subsystem(void) {
         log_this(SR_NETWORK, "― %.10s", LOG_LEVEL_DEBUG, 1, runtime->name);
 
         // IP address
-        log_this(SR_NETWORK, "――― %s:       %s", LOG_LEVEL_DEBUG, 2, ip_type, runtime->ip_address);
+        log_this(SR_NETWORK, "――― %s:  %s", LOG_LEVEL_DEBUG, 2, ip_type, runtime->ip_address);
 
         // State
         const char* status = runtime->is_up ? "up" : "down";
-        log_this(SR_NETWORK, "――― State:      %s", LOG_LEVEL_DEBUG, 1, status);
+        log_this(SR_NETWORK, "――― State: %s", LOG_LEVEL_DEBUG, 1, status);
 
         // MTU and Ping time (only for up interfaces)
         if (runtime->is_up) {
-            log_this(SR_NETWORK, "――― MTU:        %d", LOG_LEVEL_DEBUG, 1, runtime->mtu);
-            log_this(SR_NETWORK, "――― Ping:       %.6fms", LOG_LEVEL_DEBUG, 1, runtime->ping_ms);
+            log_this(SR_NETWORK, "――― MTU:   %d", LOG_LEVEL_DEBUG, 1, runtime->mtu);
+            log_this(SR_NETWORK, "――― Ping:  %.6fms", LOG_LEVEL_DEBUG, 1, runtime->ping_ms);
             up_count++;
         }
 
         // LinkLocal status (only for IPv6)
         if (runtime->is_ipv6) {
-            log_this(SR_NETWORK, "――― Link-Local: %s", LOG_LEVEL_DEBUG, 1,
+            log_this(SR_NETWORK, "――― Link:  %s", LOG_LEVEL_DEBUG, 1,
                      runtime->is_linklocal ? "true" : "false");
         }
     }
