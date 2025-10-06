@@ -31,7 +31,7 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
             lead_queue->child_queues[i]->queue_type &&
             strcmp(lead_queue->child_queues[i]->queue_type, queue_type) == 0) {
             mutex_unlock(&lead_queue->children_lock);
-            // log_this(SR_DATABASE, "Child queue %s already exists for database %s", LOG_LEVEL_DEBUG, 2 queue_type, lead_queue->database_name);
+            // log_this(SR_DATABASE, "Child queue %s already exists for database %s", LOG_LEVEL_TRACE, 2 queue_type, lead_queue->database_name);
             return true; // Already exists
         }
     }
@@ -102,7 +102,7 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
     mutex_unlock(&lead_queue->children_lock);
 
     char* dqm_label = database_queue_generate_label(lead_queue);
-    log_this(dqm_label, "Spawned child queue", LOG_LEVEL_STATE, 0);
+    log_this(dqm_label, "Spawned child queue", LOG_LEVEL_TRACE, 0);
     free(dqm_label);
     return true;
 }
@@ -133,7 +133,7 @@ bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* 
 
     if (target_index == -1) {
         mutex_unlock(&lead_queue->children_lock);
-        // log_this(SR_DATABASE, "Child queue %s not found for database %s", LOG_LEVEL_DEBUG, 2, queue_type, lead_queue->database_name);
+        // log_this(SR_DATABASE, "Child queue %s not found for database %s", LOG_LEVEL_TRACE, 2, queue_type, lead_queue->database_name);
         return false;
     }
 
@@ -150,6 +150,6 @@ bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* 
 
     mutex_unlock(&lead_queue->children_lock);
 
-    log_this(SR_DATABASE, "Shutdown %s child queue for database %s", LOG_LEVEL_STATE, 2, queue_type, lead_queue->database_name);
+    log_this(SR_DATABASE, "Shutdown %s child queue for database %s", LOG_LEVEL_TRACE, 2, queue_type, lead_queue->database_name);
     return true;
 }

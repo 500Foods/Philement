@@ -74,7 +74,7 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
             return database_queue_submit_query(target_child, query);
         } else {
             // No appropriate child queue exists, use Lead queue itself for now
-            // log_this(SR_DATABASE, "No %s child queue found, using Lead queue for query: %s", LOG_LEVEL_DEBUG, 2, target_queue_type, query->query_id);
+            // log_this(SR_DATABASE, "No %s child queue found, using Lead queue for query: %s", LOG_LEVEL_TRACE, 2, target_queue_type, query->query_id);
         }
     }
 
@@ -97,7 +97,7 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
         __sync_fetch_and_add(&db_queue->current_queue_depth, 1);
         query->submitted_at = time(NULL);
 
-        // log_this(SR_DATABASE, "Submitted query %s to %s queue %s", LOG_LEVEL_DEBUG, 3, query->query_id, db_queue->queue_type, db_queue->database_name);
+        // log_this(SR_DATABASE, "Submitted query %s to %s queue %s", LOG_LEVEL_TRACE, 3, query->query_id, db_queue->queue_type, db_queue->database_name);
     }
 
     return success;

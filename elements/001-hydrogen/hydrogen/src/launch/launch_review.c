@@ -1,29 +1,5 @@
 /*
  * Launch Review System
- * 
- * DESIGN PRINCIPLES:
- * - This file is a lightweight orchestrator only - no subsystem-specific code
- * - All subsystems are equal in importance - no hierarchy
- * - Each subsystem's status is independently reported
- * - Review order matches launch order for consistency only, not priority
- * 
- * ROLE:
- * This module coordinates (but does not judge) the final launch review by:
- * - Collecting and reporting launch status from each subsystem equally
- * - Aggregating launch statistics without bias
- * - Providing a factual launch summary
- * 
- * Key Points:
- * - No subsystem has special status in review
- * - Each subsystem's outcome is equally important
- * - Processing order is for consistency only
- * - The review process is about reporting, not judgment
- * 
- * Implementation:
- * - All subsystem-specific logic belongs in respective launch_*.c files
- * - State tracking lives in individual subsystem files
- * - Registry interface used for encapsulation
- * - Direct registry access minimized
  */
 
  // Global includes 
@@ -38,8 +14,8 @@ void handle_launch_review(const ReadinessResults* results) {
     
     // Begin LAUNCH REVIEW logging section
     log_group_begin();
-        log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-        log_this(SR_LAUNCH, "LAUNCH REVIEW", LOG_LEVEL_STATE, 0);
+        log_this(SR_LAUNCH, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+        log_this(SR_LAUNCH, "LAUNCH REVIEW", LOG_LEVEL_DEBUG, 0);
         
         // Track launch statistics
         size_t total_attempts = 0;
@@ -74,20 +50,19 @@ void handle_launch_review(const ReadinessResults* results) {
             }
             
             // Log subsystem status
-            log_this(SR_LAUNCH, "- %-15s %s", LOG_LEVEL_STATE, 2, subsystem, status);
+            log_this(SR_LAUNCH, "- %-15s %s", LOG_LEVEL_DEBUG, 2, subsystem, status);
         }
         
         // Log summary statistics
-        log_this(SR_LAUNCH, "Subsystems:      %3d", LOG_LEVEL_STATE, 1, results->total_checked);
-        log_this(SR_LAUNCH, "Launch Attempts: %3d", LOG_LEVEL_STATE, 1, total_attempts);
-        log_this(SR_LAUNCH, "Launch Successes:%3d", LOG_LEVEL_STATE, 1, total_running);
-        log_this(SR_LAUNCH, "Launch Failures: %3d", LOG_LEVEL_STATE, 1, total_attempts - total_running);
+        log_this(SR_LAUNCH, "Subsystems:      %3d", LOG_LEVEL_DEBUG, 1, results->total_checked);
+        log_this(SR_LAUNCH, "Launch Attempts: %3d", LOG_LEVEL_DEBUG, 1, total_attempts);
+        log_this(SR_LAUNCH, "Launch Successes:%3d", LOG_LEVEL_DEBUG, 1, total_running);
+        log_this(SR_LAUNCH, "Launch Failures: %3d", LOG_LEVEL_DEBUG, 1, total_attempts - total_running);
     log_group_end();
 
     registry_registered = results->total_checked;
     registry_running = total_running;
     registry_attempted = total_attempts;
     registry_failed = total_attempts - total_running;
-
     
 }

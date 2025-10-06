@@ -32,7 +32,7 @@ bool database_queue_system_init(void) {
     // Create global queue manager with capacity for up to 8 databases
     global_queue_manager = database_queue_manager_create(8);
     if (!global_queue_manager) {
-        log_this(SR_DATABASE, "Failed to create database queue manager", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_DATABASE, "Failed to create database queue manager", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -43,7 +43,7 @@ bool database_queue_system_init(void) {
  * Clean shutdown of database queue infrastructure
  */
 void database_queue_system_destroy(void) {
-    log_this(SR_DATABASE, "Destroying database queue system", LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, "Destroying database queue system", LOG_LEVEL_TRACE, 0);
 
     if (global_queue_manager) {
         database_queue_manager_destroy(global_queue_manager);
@@ -77,7 +77,7 @@ bool database_queue_manager_add_database(DatabaseQueueManager* manager, Database
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
-    // log_this(dqm_label, "Added to global queue manager", LOG_LEVEL_STATE, 0);
+    // log_this(dqm_label, "Added to global queue manager", LOG_LEVEL_TRACE, 0);
     free(dqm_label);
     return true;
 }

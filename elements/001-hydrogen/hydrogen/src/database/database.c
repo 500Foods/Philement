@@ -19,7 +19,7 @@ static pthread_mutex_t database_subsystem_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Initialize the database subsystem
 bool database_subsystem_init(void) {
-    // log_this(SR_DATABASE, "Starting database subsystem initialization", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Starting database subsystem initialization", LOG_LEVEL_DEBUG, 0);
 
     MutexResult result = MUTEX_LOCK(&database_subsystem_mutex, SR_DATABASE);
     if (result != MUTEX_SUCCESS) {
@@ -60,7 +60,7 @@ bool database_subsystem_init(void) {
     // Initialize database thread tracking
     init_service_threads(&database_threads, SR_DATABASE);
 
-    // log_this(SR_DATABASE, "Database subsystem initialization completed successfully", LOG_LEVEL_STATE, 0);
+    // log_this(SR_DATABASE, "Database subsystem initialization completed successfully", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -85,7 +85,7 @@ void database_subsystem_shutdown(void) {
 
     MUTEX_UNLOCK(&database_subsystem_mutex, SR_DATABASE);
 
-    log_this(SR_DATABASE, "Database subsystem shutdown complete", LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, "Database subsystem shutdown complete", LOG_LEVEL_DEBUG, 0);
 }
 
 // Add a database configuration
@@ -93,7 +93,7 @@ bool database_add_database(const char* name, const char* engine, const char* con
     log_this(SR_DATABASE, "Starting database: %s", LOG_LEVEL_DEBUG, 1, name);
 
     if (!database_subsystem || !name || !engine) {
-        log_this(SR_DATABASE, "Invalid parameters for database", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_DATABASE, "Invalid parameters for database", LOG_LEVEL_TRACE, 0);
         return false;
     }
 
@@ -129,7 +129,7 @@ bool database_add_database(const char* name, const char* engine, const char* con
     }
 
     if (!conn_config) {
-        log_this(SR_DATABASE, "Database configuration not found: %s", LOG_LEVEL_DEBUG, 1, name);
+        log_this(SR_DATABASE, "Database configuration not found: %s", LOG_LEVEL_ERROR, 1, name);
         return false;
     }
 
@@ -191,7 +191,7 @@ bool database_add_database(const char* name, const char* engine, const char* con
     }
 
     if (!conn_str) {
-        log_this(SR_DATABASE, "Failed to create connection string", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_DATABASE, "Failed to create connection string", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -200,26 +200,26 @@ bool database_add_database(const char* name, const char* engine, const char* con
     free(conn_str);
 
     if (!db_queue) {
-        log_this(SR_DATABASE, "Failed to create Lead database queue", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_DATABASE, "Failed to create Lead database queue", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Start the Lead queue worker thread
     if (!database_queue_start_worker(db_queue)) {
-        log_this(SR_DATABASE, "Failed to start Lead queue worker thread", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_DATABASE, "Failed to start Lead queue worker thread", LOG_LEVEL_ERROR, 0);
         database_queue_destroy(db_queue);
         return false;
     }
 
     // Add to global queue manager - launch responsibility ends here
     if (!global_queue_manager) {
-        log_this(SR_DATABASE, "Global queue manager not initialized", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_DATABASE, "Global queue manager not initialized", LOG_LEVEL_ERROR, 0);
         database_queue_destroy(db_queue);
         return false;
     }
 
     if (!database_queue_manager_add_database(global_queue_manager, db_queue)) {
-        log_this(SR_DATABASE, "Failed to add DQM to queue manager", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_DATABASE, "Failed to add DQM to queue manager", LOG_LEVEL_ERROR, 0);
         database_queue_destroy(db_queue);
         return false;
     }
@@ -228,7 +228,7 @@ bool database_add_database(const char* name, const char* engine, const char* con
     database_subsystem->queue_manager = global_queue_manager;
 
     // Launch complete - DQM is now independent and handles its own database work
-    log_this(SR_DATABASE, "DQM launched successfully for %s", LOG_LEVEL_DEBUG, 1, name);
+    log_this(SR_DATABASE, "DQM launched successfully for %s", LOG_LEVEL_TRACE, 1, name);
 
     return true;
 }
@@ -240,7 +240,7 @@ bool database_remove_database(const char* name) {
     }
 
     // TODO: Implement database removal logic
-    log_this(SR_DATABASE, "Database removal not yet implemented", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "Database removal not yet implemented", LOG_LEVEL_TRACE, 0);
     return false;
 }
 
@@ -288,7 +288,7 @@ bool database_submit_query(const char* database_name __attribute__((unused)),
     }
 
     // TODO: Implement query submission to queue system
-    log_this(SR_DATABASE, "Query submission not yet implemented", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "Query submission not yet implemented", LOG_LEVEL_TRACE, 0);
     return false;
 }
 
@@ -333,7 +333,7 @@ bool database_reload_config(void) {
     }
 
     // TODO: Implement configuration reload
-    log_this(SR_DATABASE, "Configuration reload not yet implemented", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "Configuration reload not yet implemented", LOG_LEVEL_TRACE, 0);
     return false;
 }
 
@@ -344,7 +344,7 @@ bool database_test_connection(const char* database_name) {
     }
 
     // TODO: Implement connection testing
-    log_this(SR_DATABASE, "Connection testing not yet implemented", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "Connection testing not yet implemented", LOG_LEVEL_TRACE, 0);
     return false;
 }
 
@@ -377,7 +377,7 @@ bool database_process_api_query(const char* database __attribute__((unused)), co
     }
 
     // TODO: Implement API query processing
-    log_this(SR_DATABASE, "API query processing not yet implemented", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "API query processing not yet implemented", LOG_LEVEL_TRACE, 0);
     return false;
 }
 
@@ -423,5 +423,119 @@ void database_cleanup_old_results(time_t max_age_seconds __attribute__((unused))
     }
 
     // TODO: Implement result cleanup
-    log_this(SR_DATABASE, "Result cleanup not yet implemented", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "Result cleanup not yet implemented", LOG_LEVEL_TRACE, 0);
+}
+
+// Get total number of database queues (lead + child queues)
+int database_get_total_queue_count(void) {
+    if (!global_queue_manager) {
+        return 0;
+    }
+
+    MutexResult lock_result = MUTEX_LOCK(&global_queue_manager->manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return 0;
+    }
+
+    int total_queues = 0;
+    for (size_t i = 0; i < global_queue_manager->database_count; i++) {
+        const DatabaseQueue* db_queue = global_queue_manager->databases[i];
+        if (db_queue) {
+            // Count the lead queue
+            total_queues++;
+            // Count child queues
+            total_queues += db_queue->child_queue_count;
+        }
+    }
+
+    mutex_unlock(&global_queue_manager->manager_lock);
+    return total_queues;
+}
+
+// Get queue counts by type
+void database_get_queue_counts_by_type(int* lead_count, int* slow_count, int* medium_count, int* fast_count, int* cache_count) {
+    if (!global_queue_manager) {
+        *lead_count = 0;
+        *slow_count = 0;
+        *medium_count = 0;
+        *fast_count = 0;
+        *cache_count = 0;
+        return;
+    }
+
+    MutexResult lock_result = MUTEX_LOCK(&global_queue_manager->manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        *lead_count = 0;
+        *slow_count = 0;
+        *medium_count = 0;
+        *fast_count = 0;
+        *cache_count = 0;
+        return;
+    }
+
+    *lead_count = 0;
+    *slow_count = 0;
+    *medium_count = 0;
+    *fast_count = 0;
+    *cache_count = 0;
+
+    for (size_t i = 0; i < global_queue_manager->database_count; i++) {
+        DatabaseQueue* db_queue = global_queue_manager->databases[i];
+        if (db_queue) {
+            if (db_queue->is_lead_queue) {
+                (*lead_count)++;
+            }
+
+            // Count child queues by type
+            for (int j = 0; j < db_queue->child_queue_count; j++) {
+                const DatabaseQueue* child_queue = db_queue->child_queues[j];
+                if (child_queue) {
+                    if (strcmp(child_queue->queue_type, "slow") == 0) {
+                        (*slow_count)++;
+                    } else if (strcmp(child_queue->queue_type, "medium") == 0) {
+                        (*medium_count)++;
+                    } else if (strcmp(child_queue->queue_type, "fast") == 0) {
+                        (*fast_count)++;
+                    } else if (strcmp(child_queue->queue_type, "cache") == 0) {
+                        (*cache_count)++;
+                    }
+                }
+            }
+        }
+    }
+
+    mutex_unlock(&global_queue_manager->manager_lock);
+}
+
+// Get database counts by type
+void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count) {
+    if (!app_config) {
+        *postgres_count = 0;
+        *mysql_count = 0;
+        *sqlite_count = 0;
+        *db2_count = 0;
+        return;
+    }
+
+    const DatabaseConfig* db_config = &app_config->databases;
+
+    *postgres_count = 0;
+    *mysql_count = 0;
+    *sqlite_count = 0;
+    *db2_count = 0;
+
+    for (int i = 0; i < db_config->connection_count; i++) {
+        const DatabaseConnection* conn = &db_config->connections[i];
+        if (conn->enabled && conn->type) {
+            if (strcmp(conn->type, "postgresql") == 0 || strcmp(conn->type, "postgres") == 0) {
+                (*postgres_count)++;
+            } else if (strcmp(conn->type, "mysql") == 0) {
+                (*mysql_count)++;
+            } else if (strcmp(conn->type, "sqlite") == 0) {
+                (*sqlite_count)++;
+            } else if (strcmp(conn->type, "db2") == 0) {
+                (*db2_count)++;
+            }
+        }
+    }
 }
