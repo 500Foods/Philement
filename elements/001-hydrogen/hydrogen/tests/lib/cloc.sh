@@ -335,16 +335,16 @@ EOF
             # Calculate ratios
             local codedoc_ratio codecomment_ratio docscode_ratio commentscode_ratio
             if [[ "${markdown_code}" -gt 0 ]]; then
-                codedoc_ratio=$(printf "%.1f" "$(bc -l <<< "scale=2; ${total_code_stats} / ${markdown_code}" || true)")
-                docscode_ratio=$(printf "%.1f" "$(bc -l <<< "scale=2; ${markdown_code} / ${total_code_stats}" || true)")
+                codedoc_ratio=$(printf "%.3f" "$(bc -l <<< "scale=3; ${total_code_stats} / ${markdown_code}" || true)")
+                docscode_ratio=$(printf "%.3f" "$(bc -l <<< "scale=3; ${markdown_code} / ${total_code_stats}" || true)")
             else
                 codedoc_ratio="N/A"
                 docscode_ratio="N/A"
             fi
 
             if [[ "${total_comment}" -gt 0 ]]; then
-                codecomment_ratio=$(printf "%.1f" "$(bc -l <<< "scale=2; ${total_code_stats} / ${total_comment}" || true)")
-                commentscode_ratio=$(printf "%.1f" "$(bc -l <<< "scale=2; ${total_comment} / ${total_code_stats}" || true)")
+                codecomment_ratio=$(printf "%.3f" "$(bc -l <<< "scale=3; ${total_code_stats} / ${total_comment}" || true)")
+                commentscode_ratio=$(printf "%.3f" "$(bc -l <<< "scale=3; ${total_comment} / ${total_code_stats}" || true)")
             else
                 codecomment_ratio="N/A"
                 commentscode_ratio="N/A"
@@ -471,7 +471,7 @@ EOF
             if [[ "${docscode_ratio}" != "N/A" ]]; then
                 local docscode_check1 docscode_check2
                 docscode_check1=$(echo "${docscode_ratio} >= 0.4" | bc -l 2>/dev/null || echo 0)
-                docscode_check2=$(echo "${docscode_ratio} <= 0.7" | bc -l 2>/dev/null || echo 0)
+                docscode_check2=$(echo "${docscode_ratio} <= 0.667" | bc -l 2>/dev/null || echo 0)
                 if (( docscode_check1 )) && (( docscode_check2 )); then
                     docscode_color="{GREEN}"
                 else
@@ -497,7 +497,7 @@ EOF
             if [[ "${commentscode_ratio}" != "N/A" ]]; then
                 local commentscode_check1 commentscode_check2
                 commentscode_check1=$(echo "${commentscode_ratio} >= 0.2" | bc -l 2>/dev/null || echo 0)
-                commentscode_check2=$(echo "${commentscode_ratio} <= 0.3" | bc -l 2>/dev/null || echo 0)
+                commentscode_check2=$(echo "${commentscode_ratio} <= 0.333" | bc -l 2>/dev/null || echo 0)
                 if (( commentscode_check1 )) && (( commentscode_check2 )); then
                     commentscode_color="{GREEN}"
                 else
@@ -588,25 +588,25 @@ EOF
          "section": "ratios",
          "metric": "Code/Docs",
          "value": "${codedoc_ratio}",
-         "description": "Ratio of Code to Docs           ${codedoc_color}Target: 1.5 - 2.5{RESET}"
+         "description": "Ratio of Code to Docs       ${codedoc_color}Target: 1.500 - 2.500{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Docs/Code",
          "value": "${docscode_ratio}",
-         "description": "Ratio of Docs to Code           ${docscode_color}Target: 0.4 - 0.7{RESET}"
+         "description": "Ratio of Docs to Code       ${docscode_color}Target: 0.400 - 0.6677{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Code/Comments",
          "value": "${codecomment_ratio}",
-         "description": "Ratio of Code to Comments       ${codecomment_color}Target: 3.0 - 5.0{RESET}"
+         "description": "Ratio of Code to Comments   ${codecomment_color}Target: 3.000 - 5.000{RESET}"
      },
      {
          "section": "ratios",
          "metric": "Comments/Code",
          "value": "${commentscode_ratio}",
-         "description": "Ratio of Comments to Code       ${commentscode_color}Target: 0.2 - 0.3{RESET}"
+         "description": "Ratio of Comments to Code   ${commentscode_color}Target: 0.200 - 0.333{RESET}"
      },
      {
          "section": "coverage_lines",
