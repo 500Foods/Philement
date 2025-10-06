@@ -69,7 +69,7 @@ static pthread_mutex_t libmysql_mutex = PTHREAD_MUTEX_INITIALIZER;
  * Library Loading Functions
  */
 
-bool load_libmysql_functions(void) {
+bool load_libmysql_functions(const char* designator __attribute__((unused))) {
 #ifdef USE_MOCK_LIBMYSQLCLIENT
     // For mocking, functions are already set
     return true;
@@ -78,10 +78,11 @@ bool load_libmysql_functions(void) {
         return true; // Already loaded
     }
 
-    MUTEX_LOCK(&libmysql_mutex, SR_DATABASE);
+    const char* log_subsystem = designator ? designator : SR_DATABASE;
+    MUTEX_LOCK(&libmysql_mutex, log_subsystem);
 
     if (libmysql_handle) {
-        MUTEX_UNLOCK(&libmysql_mutex, SR_DATABASE);
+        MUTEX_UNLOCK(&libmysql_mutex, log_subsystem);
         return true; // Another thread loaded it
     }
 
@@ -97,9 +98,9 @@ bool load_libmysql_functions(void) {
         libmysql_handle = dlopen("libmysqlclient.so", RTLD_LAZY);
     }
     if (!libmysql_handle) {
-        log_this(SR_DATABASE, "Failed to load libmysqlclient library", LOG_LEVEL_ERROR, 0);
-        log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, 0);
-        MUTEX_UNLOCK(&libmysql_mutex, SR_DATABASE);
+        log_this(log_subsystem, "Failed to load libmysqlclient library", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, dlerror(), LOG_LEVEL_ERROR, 0);
+        MUTEX_UNLOCK(&libmysql_mutex, log_subsystem);
         return false;
     }
 
@@ -133,29 +134,29 @@ bool load_libmysql_functions(void) {
         !mysql_store_result_ptr || !mysql_num_rows_ptr || !mysql_num_fields_ptr ||
         !mysql_fetch_row_ptr || !mysql_fetch_fields_ptr || !mysql_free_result_ptr ||
         !mysql_error_ptr || !mysql_close_ptr) {
-        log_this(SR_DATABASE, "Failed to load all required libmysqlclient functions", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "Failed to load all required libmysqlclient functions", LOG_LEVEL_ERROR, 0);
         dlclose(libmysql_handle);
         libmysql_handle = NULL;
-        MUTEX_UNLOCK(&libmysql_mutex, SR_DATABASE);
+        MUTEX_UNLOCK(&libmysql_mutex, log_subsystem);
         return false;
     }
 
     // Optional functions - log if not available
     if (!mysql_options_ptr) {
-        log_this(SR_DATABASE, "mysql_options function not available - connection options will be limited", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "mysql_options function not available - connection options will be limited", LOG_LEVEL_DEBUG, 0);
     }
     if (!mysql_ping_ptr) {
-        log_this(SR_DATABASE, "mysql_ping function not available - health check will use query method only", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "mysql_ping function not available - health check will use query method only", LOG_LEVEL_DEBUG, 0);
     }
     if (!mysql_autocommit_ptr || !mysql_commit_ptr || !mysql_rollback_ptr) {
-        log_this(SR_DATABASE, "Transaction functions not available - transactions will be limited", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "Transaction functions not available - transactions will be limited", LOG_LEVEL_DEBUG, 0);
     }
     if (!mysql_stmt_init_ptr || !mysql_stmt_prepare_ptr || !mysql_stmt_execute_ptr || !mysql_stmt_close_ptr) {
-        log_this(SR_DATABASE, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_DEBUG, 0);
     }
 
-    MUTEX_UNLOCK(&libmysql_mutex, SR_DATABASE);
-    log_this(SR_DATABASE, "Successfully loaded libmysqlclient library", LOG_LEVEL_STATE, 0);
+    MUTEX_UNLOCK(&libmysql_mutex, log_subsystem);
+    // log_this(log_subsystem, "Successfully loaded libmysqlclient library", LOG_LEVEL_STATE, 0);
     return true;
 #endif
 }
@@ -203,8 +204,9 @@ bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
     }
 
     // Load libmysqlclient library if not already loaded
-    if (!load_libmysql_functions()) {
-        log_this(SR_DATABASE, "MySQL library not available", LOG_LEVEL_ERROR, 0);
+    if (!load_libmysql_functions(designator)) {
+        const char* log_subsystem = designator ? designator : SR_DATABASE;
+        log_this(log_subsystem, "MySQL library not available", LOG_LEVEL_ERROR, 0);
         return false;
     }
 

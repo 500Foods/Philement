@@ -32,7 +32,7 @@ bool postgresql_health_check(DatabaseHandle* connection);
 bool postgresql_reset_connection(DatabaseHandle* connection);
 
 // Library loading function
-bool load_libpq_functions(void);
+bool load_libpq_functions(const char* designator);
 
 // Utility functions for prepared statement cache
 PreparedStatementCache* create_prepared_statement_cache(void);

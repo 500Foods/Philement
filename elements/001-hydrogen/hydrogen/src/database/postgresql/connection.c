@@ -96,7 +96,7 @@ bool check_timeout_expired(time_t start_time, int timeout_seconds) {
 }
 
 // Library Loading Functions
-bool load_libpq_functions(void) {
+bool load_libpq_functions(const char* designator __attribute__((unused))) {
 #ifdef USE_MOCK_LIBPQ
     // For mocking, assign all mock function pointers
     PQconnectdb_ptr = mock_PQconnectdb;
@@ -121,10 +121,11 @@ bool load_libpq_functions(void) {
         return true; // Already loaded
     }
 
-    MUTEX_LOCK(&libpq_mutex, SR_DATABASE);
+    const char* log_subsystem = designator ? designator : SR_DATABASE;
+    MUTEX_LOCK(&libpq_mutex, log_subsystem);
 
     if (libpq_handle) {
-        MUTEX_UNLOCK(&libpq_mutex, SR_DATABASE);
+        MUTEX_UNLOCK(&libpq_mutex, log_subsystem);
         return true; // Another thread loaded it
     }
 
@@ -134,9 +135,9 @@ bool load_libpq_functions(void) {
         libpq_handle = dlopen("libpq.so", RTLD_LAZY);
     }
     if (!libpq_handle) {
-        log_this(SR_DATABASE, "Failed to load libpq library", LOG_LEVEL_ERROR, 0);
-        log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, 0);
-        MUTEX_UNLOCK(&libpq_mutex, SR_DATABASE);
+        log_this(log_subsystem, "Failed to load libpq library", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, dlerror(), LOG_LEVEL_ERROR, 0);
+        MUTEX_UNLOCK(&libpq_mutex, log_subsystem);
         return false;
     }
 
@@ -165,20 +166,20 @@ bool load_libpq_functions(void) {
     if (!PQconnectdb_ptr || !PQstatus_ptr || !PQerrorMessage_ptr || !PQfinish_ptr ||
         !PQexec_ptr || !PQresultStatus_ptr || !PQclear_ptr || !PQntuples_ptr ||
         !PQnfields_ptr || !PQfname_ptr || !PQgetvalue_ptr || !PQcmdTuples_ptr) {
-        log_this(SR_DATABASE, "Failed to load all required libpq functions", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "Failed to load all required libpq functions", LOG_LEVEL_ERROR, 0);
         dlclose(libpq_handle);
         libpq_handle = NULL;
-        MUTEX_UNLOCK(&libpq_mutex, SR_DATABASE);
+        MUTEX_UNLOCK(&libpq_mutex, log_subsystem);
         return false;
     }
 
     // PQping is optional - log if not available
     if (!PQping_ptr) {
-        log_this(SR_DATABASE, "PQping function not available - health check will use query method only", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "PQping function not available - health check will use query method only", LOG_LEVEL_DEBUG, 0);
     }
 
-    MUTEX_UNLOCK(&libpq_mutex, SR_DATABASE);
-    log_this(SR_DATABASE, "Successfully loaded libpq library", LOG_LEVEL_STATE, 0);
+    MUTEX_UNLOCK(&libpq_mutex, log_subsystem);
+    // log_this(log_subsystem, "Successfully loaded libpq library", LOG_LEVEL_STATE, 0);
     return true;
 #endif
 }
@@ -278,8 +279,9 @@ bool postgresql_connect(ConnectionConfig* config, DatabaseHandle** connection, c
     }
 
     // Load libpq library if not already loaded
-    if (!load_libpq_functions()) {
-        log_this(SR_DATABASE, "PostgreSQL library not available", LOG_LEVEL_ERROR, 0);
+    if (!load_libpq_functions(designator)) {
+        const char* log_subsystem = designator ? designator : SR_DATABASE;
+        log_this(log_subsystem, "PostgreSQL library not available", LOG_LEVEL_ERROR, 0);
         return false;
     }
 

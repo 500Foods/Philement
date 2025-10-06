@@ -66,7 +66,7 @@ static pthread_mutex_t libsqlite_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 // Library Loading Functions
-bool load_libsqlite_functions(void) {
+bool load_libsqlite_functions(const char* designator __attribute__((unused))) {
 #ifdef USE_MOCK_LIBSQLITE3
     // For mocking, functions are already set
     return true;
@@ -75,10 +75,11 @@ bool load_libsqlite_functions(void) {
         return true; // Already loaded
     }
 
-    MUTEX_LOCK(&libsqlite_mutex, SR_DATABASE);
+    const char* log_subsystem = designator ? designator : SR_DATABASE;
+    MUTEX_LOCK(&libsqlite_mutex, log_subsystem);
 
     if (libsqlite_handle) {
-        MUTEX_UNLOCK(&libsqlite_mutex, SR_DATABASE);
+        MUTEX_UNLOCK(&libsqlite_mutex, log_subsystem);
         return true; // Another thread loaded it
     }
 
@@ -88,9 +89,9 @@ bool load_libsqlite_functions(void) {
         libsqlite_handle = dlopen("libsqlite3.so", RTLD_LAZY);
     }
     if (!libsqlite_handle) {
-        log_this(SR_DATABASE, "Failed to load libsqlite3 library", LOG_LEVEL_ERROR, 0);
-        log_this(SR_DATABASE, dlerror(), LOG_LEVEL_ERROR, 0);
-        MUTEX_UNLOCK(&libsqlite_mutex, SR_DATABASE);
+        log_this(log_subsystem, "Failed to load libsqlite3 library", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, dlerror(), LOG_LEVEL_ERROR, 0);
+        MUTEX_UNLOCK(&libsqlite_mutex, log_subsystem);
         return false;
     }
 
@@ -124,23 +125,23 @@ bool load_libsqlite_functions(void) {
         !sqlite3_prepare_v2_ptr || !sqlite3_step_ptr || !sqlite3_finalize_ptr ||
         !sqlite3_column_count_ptr || !sqlite3_column_name_ptr || !sqlite3_column_text_ptr ||
         !sqlite3_errmsg_ptr) {
-        log_this(SR_DATABASE, "Failed to load all required libsqlite3 functions", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "Failed to load all required libsqlite3 functions", LOG_LEVEL_ERROR, 0);
         dlclose(libsqlite_handle);
         libsqlite_handle = NULL;
-        MUTEX_UNLOCK(&libsqlite_mutex, SR_DATABASE);
+        MUTEX_UNLOCK(&libsqlite_mutex, log_subsystem);
         return false;
     }
 
     // Optional functions - log if not available
     if (!sqlite3_extended_result_codes_ptr) {
-        log_this(SR_DATABASE, "sqlite3_extended_result_codes function not available - extended error codes disabled", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "sqlite3_extended_result_codes function not available - extended error codes disabled", LOG_LEVEL_DEBUG, 0);
     }
     if (!sqlite3_changes_ptr) {
-        log_this(SR_DATABASE, "sqlite3_changes function not available - affected rows may not be accurate", LOG_LEVEL_DEBUG, 0);
+        log_this(log_subsystem, "sqlite3_changes function not available - affected rows may not be accurate", LOG_LEVEL_DEBUG, 0);
     }
 
-    MUTEX_UNLOCK(&libsqlite_mutex, SR_DATABASE);
-    log_this(SR_DATABASE, "Successfully loaded libsqlite3 library", LOG_LEVEL_STATE, 0);
+    MUTEX_UNLOCK(&libsqlite_mutex, log_subsystem);
+    // log_this(log_subsystem, "Successfully loaded libsqlite3 library", LOG_LEVEL_STATE, 0);
     return true;
 #endif
 }
@@ -182,8 +183,9 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
     }
 
     // Load libsqlite3 library if not already loaded
-    if (!load_libsqlite_functions()) {
-        log_this(SR_DATABASE, "SQLite library not available", LOG_LEVEL_ERROR, 0);
+    if (!load_libsqlite_functions(designator)) {
+        const char* log_subsystem = designator ? designator : SR_DATABASE;
+        log_this(log_subsystem, "SQLite library not available", LOG_LEVEL_ERROR, 0);
         return false;
     }
 

@@ -2,11 +2,12 @@
  * Hydrogen Server Logging System
  */
 
-// Global includes 
+// Global includes
 #include "../hydrogen.h"
 
 // Local includes
 #include "logging.h"
+#include "../registry/registry.h"
 #include <stdarg.h>
 #include <time.h>
 #include <sys/time.h>
@@ -445,10 +446,29 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
              "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"counter_high\":%lu,\"counter_low\":%lu,\"LogConsole\":true,\"LogFile\":true,\"LogDatabase\":true}",
              subsystem, details, priority, counter_high, counter_low);
 
-    // Check if we're in startup phase (server not yet running)
+    // Check if we're in startup phase (logging subsystem not yet running or server not running)
     // or if this is the final shutdown message
     // In these cases, filter by startup log level
-    if (server_running == 0 || (strcmp(details, "Shutdown complete") == 0)) {
+    bool use_startup_filtering = false;
+
+    // Check original condition (server not running)
+    if (server_running == 0) {
+        use_startup_filtering = true;
+    }
+    // Also check if registry exists and is initialized, then check if logging subsystem is running
+    else if (subsystem_registry.subsystems == NULL ||
+        subsystem_registry.count == 0 ||
+        !is_subsystem_running_by_name(SR_LOGGING)) {
+        use_startup_filtering = true;
+    }
+
+
+    // Also use startup filtering for final shutdown message (maintains original behavior)
+    if (strcmp(details, "Shutdown complete") == 0) {
+        use_startup_filtering = true;
+    }
+
+    if (use_startup_filtering) {
         if (priority >= startup_log_level) {
             console_log(subsystem, priority, details, current_count);
         }

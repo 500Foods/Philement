@@ -67,7 +67,7 @@ void setUp(void) {
     mock_libmysqlclient_reset_all();
 
     // Ensure libmysqlclient functions are loaded (mocked)
-    load_libmysql_functions();
+    load_libmysql_functions(NULL);
 }
 
 void tearDown(void) {

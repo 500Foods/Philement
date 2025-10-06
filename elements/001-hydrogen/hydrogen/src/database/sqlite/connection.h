@@ -16,7 +16,7 @@ bool sqlite_health_check(DatabaseHandle* connection);
 bool sqlite_reset_connection(DatabaseHandle* connection);
 
 // Library loading
-bool load_libsqlite_functions(void);
+bool load_libsqlite_functions(const char* designator);
 
 // Utility functions for prepared statement cache
 PreparedStatementCache* sqlite_create_prepared_statement_cache(void);

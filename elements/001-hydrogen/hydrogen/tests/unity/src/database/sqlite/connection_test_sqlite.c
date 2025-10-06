@@ -65,7 +65,7 @@ void setUp(void) {
     mock_libsqlite3_reset_all();
 
     // Ensure libsqlite3 functions are loaded (mocked)
-    load_libsqlite_functions();
+    load_libsqlite_functions(NULL);
 }
 
 void tearDown(void) {
