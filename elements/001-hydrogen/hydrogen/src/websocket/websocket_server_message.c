@@ -41,30 +41,26 @@ typedef struct PtyBridgeContext {
 
 // Forward declarations of message type handlers
 int handle_message_type(struct lws *wsi, const char *type);
+int handle_terminal_message(struct lws *wsi);
 TerminalSession* find_or_create_terminal_session(struct lws *wsi);
-void *pty_output_bridge_thread(void *arg);
-void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session);
+static int pty_bridge_iteration(PtyBridgeContext *bridge);
+static void *pty_output_bridge_thread(void *arg);
+static void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session);
 void stop_pty_bridge_thread(TerminalSession *session);
 
-int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len)
+int validate_session_and_context(const WebSocketSessionData *session)
 {
     if (!session || !ws_context) {
         log_this(SR_WEBSOCKET, "Invalid session or context", LOG_LEVEL_ERROR, 0);
         return -1;
     }
+    return 0;
+}
 
-    // Verify authentication
-    if (!ws_is_authenticated(session)) {
-        log_this(SR_WEBSOCKET, "Received data from unauthenticated connection", LOG_LEVEL_ALERT, 0);
-        return -1;
-    }
-
-    pthread_mutex_lock(&ws_context->mutex);
-    ws_context->total_requests++;
-    
+int buffer_message_data(struct lws *wsi, const void *in, size_t len)
+{
     // Check message size
     if (ws_context->message_length + len > ws_context->max_message_size) {
-        pthread_mutex_unlock(&ws_context->mutex);
         log_this(SR_WEBSOCKET, "Message too large (max size: %zu bytes)", LOG_LEVEL_ALERT, 1, ws_context->max_message_size);
         ws_context->message_length = 0; // Reset buffer
         return -1;
@@ -76,7 +72,6 @@ int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, cons
 
     // If not final fragment, wait for more
     if (!lws_is_final_fragment(wsi)) {
-        pthread_mutex_unlock(&ws_context->mutex);
         return 0;
     }
 
@@ -84,11 +79,11 @@ int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, cons
     ws_context->message_buffer[ws_context->message_length] = '\0';
     ws_context->message_length = 0; // Reset for next message
 
-    pthread_mutex_unlock(&ws_context->mutex);
+    return 1; // Final fragment
+}
 
-    // Comment out verbose message logging to reduce log size
-    // log_this(SR_WEBSOCKET, "Processing complete message: %s", LOG_LEVEL_STATE, 1, ws_context->message_buffer);
-
+int parse_and_handle_message(struct lws *wsi)
+{
     // Parse JSON message
     json_error_t error;
     json_t *root = json_loads((const char *)ws_context->message_buffer, 0, &error);
@@ -114,6 +109,38 @@ int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, cons
     return result;
 }
 
+int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len)
+{
+    if (validate_session_and_context(session) != 0) {
+        return -1;
+    }
+
+    // Verify authentication
+    if (!ws_is_authenticated(session)) {
+        log_this(SR_WEBSOCKET, "Received data from unauthenticated connection", LOG_LEVEL_ALERT, 0);
+        return -1;
+    }
+
+    pthread_mutex_lock(&ws_context->mutex);
+    ws_context->total_requests++;
+    
+    int buffer_result = buffer_message_data(wsi, in, len);
+    if (buffer_result == -1) {
+        pthread_mutex_unlock(&ws_context->mutex);
+        return -1;
+    } else if (buffer_result == 0) {
+        pthread_mutex_unlock(&ws_context->mutex);
+        return 0;
+    }
+
+    pthread_mutex_unlock(&ws_context->mutex);
+
+    // Comment out verbose message logging to reduce log size
+    // log_this(SR_WEBSOCKET, "Processing complete message: %s", LOG_LEVEL_STATE, 1, ws_context->message_buffer);
+
+    return parse_and_handle_message(wsi);
+}
+
 int handle_message_type(struct lws *wsi, const char *type)
 {
     if (strcmp(type, "status") == 0) {
@@ -125,73 +152,113 @@ int handle_message_type(struct lws *wsi, const char *type)
     // Route terminal messages to terminal handlers
     // Terminal protocol uses 'input', 'resize', 'ping' message types
     if (strcmp(type, "input") == 0 || strcmp(type, "resize") == 0 || strcmp(type, "ping") == 0) {
-        const struct lws_protocols *protocol = lws_get_protocol(wsi);
-        if (protocol && strcmp(protocol->name, "terminal") == 0) {
-            log_this(SR_WEBSOCKET, "Routing terminal message to terminal session handlers", LOG_LEVEL_STATE, 0);
-
-            // Get terminal session for this WebSocket connection
-            TerminalSession *session = find_or_create_terminal_session(wsi);
-            if (!session) {
-                log_this(SR_WEBSOCKET, "Failed to find/create terminal session", LOG_LEVEL_ERROR, 0);
-                return -1;
-            }
-
-            // Parse and process the message
-            json_error_t error;
-            json_t *json_msg = json_loads((const char *)ws_context->message_buffer, 0, &error);
-            if (!json_msg) {
-                log_this(SR_WEBSOCKET, "Error parsing JSON for terminal processing: %s", LOG_LEVEL_ERROR, 1, error.text);
-                return -1;
-            }
-
-            const char *msg_type = json_string_value(json_object_get(json_msg, "type"));
-            if (!msg_type) {
-                log_this(SR_WEBSOCKET, "Terminal message missing type field", LOG_LEVEL_ERROR, 0);
-                json_decref(json_msg);
-                return -1;
-            }
-
-            int result = 0;
-
-            // Create a TerminalWSConnection adapter to use terminal_websocket.c functions
-            TerminalWSConnection *ws_conn_adapter = calloc(1, sizeof(TerminalWSConnection));
-            if (!ws_conn_adapter) {
-                log_this(SR_WEBSOCKET, "Failed to allocate TerminalWSConnection adapter", LOG_LEVEL_ERROR, 0);
-                result = -1;
-            } else {
-                // Initialize the adapter
-                ws_conn_adapter->wsi = wsi;
-                ws_conn_adapter->session = session;
-                ws_conn_adapter->incoming_buffer = NULL;
-                ws_conn_adapter->incoming_size = 0;
-                ws_conn_adapter->incoming_capacity = 0;
-                ws_conn_adapter->active = true;
-                ws_conn_adapter->authenticated = true;
-                strncpy(ws_conn_adapter->session_id, session->session_id, sizeof(ws_conn_adapter->session_id) - 1);
-                ws_conn_adapter->session_id[sizeof(ws_conn_adapter->session_id) - 1] = '\0';
-
-                // Use terminal_websocket.c functions instead of direct calls
-                if (!process_terminal_websocket_message(ws_conn_adapter,
-                                                      (const char *)ws_context->message_buffer,
-                                                      ws_context->message_length)) {
-                    log_this(SR_WEBSOCKET, "Terminal WebSocket message processing failed", LOG_LEVEL_ERROR, 0);
-                    result = -1;
-                }
-
-                // Clean up the adapter
-                free(ws_conn_adapter);
-            }
-
-            json_decref(json_msg);
-            return result;
-        } else {
-            log_this(SR_WEBSOCKET, "Terminal message received but protocol is not 'terminal': %s", LOG_LEVEL_ALERT, 1, protocol ? protocol->name : "unknown");
-            return -1;
-        }
+        return handle_terminal_message(wsi);
     }
 
     log_this(SR_WEBSOCKET, "Unknown message type: %s", LOG_LEVEL_STATE, 1, type);
     return -1;
+}
+
+int validate_terminal_protocol(struct lws *wsi)
+{
+    const struct lws_protocols *protocol = lws_get_protocol(wsi);
+    if (protocol && strcmp(protocol->name, "terminal") == 0) {
+        log_this(SR_WEBSOCKET, "Routing terminal message to terminal session handlers", LOG_LEVEL_STATE, 0);
+        return 0;
+    } else {
+        log_this(SR_WEBSOCKET, "Terminal message received but protocol is not 'terminal': %s", LOG_LEVEL_ALERT, 1, protocol ? protocol->name : "unknown");
+        return -1;
+    }
+}
+
+json_t* parse_terminal_json_message(void)
+{
+    json_error_t error;
+    json_t *json_msg = json_loads((const char *)ws_context->message_buffer, 0, &error);
+    if (!json_msg) {
+        log_this(SR_WEBSOCKET, "Error parsing JSON for terminal processing: %s", LOG_LEVEL_ERROR, 1, error.text);
+        return NULL;
+    }
+    return json_msg;
+}
+
+int validate_terminal_message_type(json_t *json_msg)
+{
+    const char *msg_type = json_string_value(json_object_get(json_msg, "type"));
+    if (!msg_type) {
+        log_this(SR_WEBSOCKET, "Terminal message missing type field", LOG_LEVEL_ERROR, 0);
+        return -1;
+    }
+    return 0;
+}
+
+TerminalWSConnection* create_terminal_adapter(struct lws *wsi, TerminalSession *session)
+{
+    TerminalWSConnection *ws_conn_adapter = calloc(1, sizeof(TerminalWSConnection));
+    if (!ws_conn_adapter) {
+        log_this(SR_WEBSOCKET, "Failed to allocate TerminalWSConnection adapter", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
+    // Initialize the adapter
+    ws_conn_adapter->wsi = wsi;
+    ws_conn_adapter->session = session;
+    ws_conn_adapter->incoming_buffer = NULL;
+    ws_conn_adapter->incoming_size = 0;
+    ws_conn_adapter->incoming_capacity = 0;
+    ws_conn_adapter->active = true;
+    ws_conn_adapter->authenticated = true;
+    strncpy(ws_conn_adapter->session_id, session->session_id, sizeof(ws_conn_adapter->session_id) - 1);
+    ws_conn_adapter->session_id[sizeof(ws_conn_adapter->session_id) - 1] = '\0';
+
+    return ws_conn_adapter;
+}
+
+int process_terminal_message(TerminalWSConnection *ws_conn_adapter)
+{
+    if (!process_terminal_websocket_message(ws_conn_adapter,
+                                          (const char *)ws_context->message_buffer,
+                                          ws_context->message_length)) {
+        log_this(SR_WEBSOCKET, "Terminal WebSocket message processing failed", LOG_LEVEL_ERROR, 0);
+        return -1;
+    }
+    return 0;
+}
+
+int handle_terminal_message(struct lws *wsi)
+{
+    if (validate_terminal_protocol(wsi) != 0) {
+        return -1;
+    }
+
+    // Get terminal session for this WebSocket connection
+    TerminalSession *session = find_or_create_terminal_session(wsi);
+    if (!session) {
+        log_this(SR_WEBSOCKET, "Failed to find/create terminal session", LOG_LEVEL_ERROR, 0);
+        return -1;
+    }
+
+    json_t *json_msg = parse_terminal_json_message();
+    if (!json_msg) {
+        return -1;
+    }
+
+    if (validate_terminal_message_type(json_msg) != 0) {
+        json_decref(json_msg);
+        return -1;
+    }
+
+    int result = 0;
+    TerminalWSConnection *ws_conn_adapter = create_terminal_adapter(wsi, session);
+    if (!ws_conn_adapter) {
+        result = -1;
+    } else {
+        result = process_terminal_message(ws_conn_adapter);
+        free(ws_conn_adapter);
+    }
+
+    json_decref(json_msg);
+    return result;
 }
 
 // Create or retrieve terminal session for WebSocket link
@@ -272,6 +339,95 @@ int ws_write_json_response(struct lws *wsi, json_t *json)
 }
 
 // PTY output bridge thread implementation
+static int pty_bridge_iteration(PtyBridgeContext *bridge)
+{
+    fd_set readfds;
+    struct timeval timeout;
+
+    // Clear and set up file descriptor set
+    FD_ZERO(&readfds);
+    int master_fd = bridge->session->pty_shell->master_fd;
+    FD_SET(master_fd, &readfds);
+
+    // Set timeout for select
+    timeout.tv_sec = 1;  // 1 second
+    timeout.tv_usec = 0;
+
+    // Wait for data on master FD
+    int nfds = master_fd + 1;
+    int result = select(nfds, &readfds, NULL, NULL, &timeout);
+
+    if (result > 0 && FD_ISSET(master_fd, &readfds)) {
+        char buffer[4096];
+        // Read data from PTY
+        ssize_t bytes_read = read(master_fd, buffer, sizeof(buffer) - 1);
+        if (bytes_read > 0) {
+            // Null terminate for safety in case of binary data
+            buffer[bytes_read] = '\0';
+
+            // Create JSON response for WebSocket
+            json_t *json_response = json_object();
+            if (json_response) {
+                json_object_set_new(json_response, "type", json_string("output"));
+                // Cast bytes_read to size_t to avoid sign conversion warning
+                size_t data_size = (size_t)bytes_read;
+                if (data_size > sizeof(buffer) - 1) {
+                    data_size = sizeof(buffer) - 1; // Prevent overflow
+                }
+                json_object_set_new(json_response, "data", json_stringn(buffer, data_size));
+
+                char *response_str = json_dumps(json_response, JSON_COMPACT);
+                json_decref(json_response);
+
+                if (response_str) {
+                    // Send via WebSocket
+                    size_t len = strlen(response_str);
+                    unsigned char *ws_buf = malloc(LWS_PRE + len);
+                    if (ws_buf) {
+                        memcpy(ws_buf + LWS_PRE, response_str, len);
+
+                        // Use non-blocking write to avoid thread issues
+                        if (lws_write(bridge->wsi, ws_buf + LWS_PRE, len, LWS_WRITE_TEXT) < 0) {
+                            log_this(SR_WEBSOCKET, "Failed to send PTY output via WebSocket", LOG_LEVEL_ERROR, 0);
+                        } else {
+                            // log_this(SR_WEBSOCKET, "Sent PTY output: %.*s", LOG_LEVEL_DEBUG 2, (int,0)len, response_str);
+                        }
+
+                        free(ws_buf);
+                    } else {
+                        log_this(SR_TERMINAL, "Failed to allocate WebSocket buffer for PTY output", LOG_LEVEL_ERROR, 0);
+                    }
+
+                    free(response_str);
+                } else {
+                    log_this(SR_TERMINAL, "Failed to serialize JSON for PTY output", LOG_LEVEL_ERROR, 0);
+                }
+            } else {
+                log_this(SR_TERMINAL, "Failed to create JSON object for PTY output", LOG_LEVEL_ERROR, 0);
+            }
+            return 0;
+        } else if (bytes_read == 0) {
+            // PTY closed, exit thread
+            log_this(SR_TERMINAL, "PTY closed, exiting bridge thread", LOG_LEVEL_STATE, 0);
+            return 1; // Signal to exit
+        } else {
+            // Error reading PTY
+            log_this(SR_TERMINAL, "Error reading from PTY: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
+            return 1; // Signal to exit
+        }
+    } else if (result == 0) {
+        // Timeout - just continue loop to check if we should exit
+        return 0; // Continue
+    } else {
+        // Error in select
+        if (errno != EINTR) {
+            log_this(SR_TERMINAL, "Select error in PTY bridge: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
+            return 1; // Signal to exit
+        }
+        return 0; // Continue
+    }
+}
+
 void *pty_output_bridge_thread(void *arg)
 {
     PtyBridgeContext *bridge = (PtyBridgeContext *)arg;
@@ -282,108 +438,27 @@ void *pty_output_bridge_thread(void *arg)
 
     log_this(SR_TERMINAL, "PTY output bridge thread started for session: %s", LOG_LEVEL_STATE, 1, bridge->session->session_id);
 
-    char buffer[4096];
-    fd_set readfds;
-    struct timeval timeout;
+    // Debug: Log thread status periodically
+    static int log_counter = 0;
+    if (log_counter++ % 100 == 0) {  // Log every 100 iterations
+        log_this(SR_TERMINAL, "PTY bridge thread active for session %s: active=%d, connected=%d, pty_running=%d", LOG_LEVEL_DEBUG, 4,
+            bridge->session->session_id,
+            bridge->active,
+            bridge->session->connected,
+            pty_is_running(bridge->session->pty_shell));
+    }
 
     while (bridge->active && !bridge->connection_closed && bridge->session && bridge->session->active &&
-            bridge->session->connected && bridge->session->pty_shell && pty_is_running(bridge->session->pty_shell)) {
-
-        // Debug: Log thread status periodically
-        static int log_counter = 0;
-        if (log_counter++ % 100 == 0) {  // Log every 100 iterations
-            log_this(SR_TERMINAL, "PTY bridge thread active for session %s: active=%d, connected=%d, pty_running=%d", LOG_LEVEL_DEBUG, 4,
-                bridge->session->session_id, 
-                bridge->active, 
-                bridge->session->connected,
-                pty_is_running(bridge->session->pty_shell));
-        }
-
-        // Clear and set up file descriptor set
-        FD_ZERO(&readfds);
-        int master_fd = bridge->session->pty_shell->master_fd;
-        FD_SET(master_fd, &readfds);
-
-        // Set timeout for select
-        timeout.tv_sec = 1;  // 1 second
-        timeout.tv_usec = 0;
-
-        // Wait for data on master FD
-        int nfds = master_fd + 1;
-        int result = select(nfds, &readfds, NULL, NULL, &timeout);
-
-        if (result > 0 && FD_ISSET(master_fd, &readfds)) {
-            // Read data from PTY
-            ssize_t bytes_read = read(master_fd, buffer, sizeof(buffer) - 1);
-            if (bytes_read > 0) {
-                // Null terminate for safety in case of binary data
-                buffer[bytes_read] = '\0';
-
-                // Create JSON response for WebSocket
-                json_t *json_response = json_object();
-                if (json_response) {
-                    json_object_set_new(json_response, "type", json_string("output"));
-                    // Cast bytes_read to size_t to avoid sign conversion warning
-                    size_t data_size = (size_t)bytes_read;
-                    if (data_size > sizeof(buffer) - 1) {
-                        data_size = sizeof(buffer) - 1; // Prevent overflow
-                    }
-                    json_object_set_new(json_response, "data", json_stringn(buffer, data_size));
-
-                    char *response_str = json_dumps(json_response, JSON_COMPACT);
-                    json_decref(json_response);
-
-                    if (response_str) {
-                        // Send via WebSocket
-                        size_t len = strlen(response_str);
-                        unsigned char *ws_buf = malloc(LWS_PRE + len);
-                        if (ws_buf) {
-                            memcpy(ws_buf + LWS_PRE, response_str, len);
-
-                            // Use non-blocking write to avoid thread issues
-                            if (lws_write(bridge->wsi, ws_buf + LWS_PRE, len, LWS_WRITE_TEXT) < 0) {
-                                log_this(SR_WEBSOCKET, "Failed to send PTY output via WebSocket", LOG_LEVEL_ERROR, 0);
-                            } else {
-                                // log_this(SR_WEBSOCKET, "Sent PTY output: %.*s", LOG_LEVEL_DEBUG 2, (int,0)len, response_str);
-                            }
-
-                            free(ws_buf);
-                        } else {
-                            log_this(SR_TERMINAL, "Failed to allocate WebSocket buffer for PTY output", LOG_LEVEL_ERROR, 0);
-                        }
-
-                        free(response_str);
-                    } else {
-                        log_this(SR_TERMINAL, "Failed to serialize JSON for PTY output", LOG_LEVEL_ERROR, 0);
-                    }
-                } else {
-                    log_this(SR_TERMINAL, "Failed to create JSON object for PTY output", LOG_LEVEL_ERROR, 0);
-                }
-            } else if (bytes_read == 0) {
-                // PTY closed, exit thread
-                log_this(SR_TERMINAL, "PTY closed, exiting bridge thread", LOG_LEVEL_STATE, 0);
-                break;
-            } else {
-                // Error reading PTY
-                log_this(SR_TERMINAL, "Error reading from PTY: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
-                break;
-            }
-        } else if (result == 0) {
-            // Timeout - just continue loop to check if we should exit
-            continue;
-        } else {
-            // Error in select
-            if (errno != EINTR) {
-                log_this(SR_TERMINAL, "Select error in PTY bridge: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
-                break;
-            }
+           bridge->session->connected && bridge->session->pty_shell && pty_is_running(bridge->session->pty_shell)) {
+        if (pty_bridge_iteration(bridge) == 1) {
+            break;
         }
     }
 
     bridge->active = false;
     log_this(SR_TERMINAL, "PTY output bridge thread exiting for session: %s (active=%d, connection_closed=%d)", LOG_LEVEL_STATE, 3,
-        bridge->session->session_id, 
-        bridge->active, 
+        bridge->session->session_id,
+        bridge->active,
         bridge->connection_closed);
     free(bridge);
     return NULL;

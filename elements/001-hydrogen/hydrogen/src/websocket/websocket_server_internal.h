@@ -26,6 +26,8 @@
 
 // Project headers
 #include "../threads/threads.h"  // Thread management subsystem
+#include "../terminal/terminal_session.h"  // Terminal session definitions
+#include "../terminal/terminal_websocket.h"  // Terminal WebSocket definitions
 
 // WebSocket server context structure
 typedef struct {
@@ -82,6 +84,20 @@ int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session);
 
 // Message processing
 int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len);
+int validate_session_and_context(const WebSocketSessionData *session);
+int buffer_message_data(struct lws *wsi, const void *in, size_t len);
+int parse_and_handle_message(struct lws *wsi);
+
+// PTY bridge thread control
+void stop_pty_bridge_thread(TerminalSession *session);
+
+// Terminal message handling
+int handle_terminal_message(struct lws *wsi);
+int validate_terminal_protocol(struct lws *wsi);
+json_t* parse_terminal_json_message(void);
+int validate_terminal_message_type(json_t *json_msg);
+TerminalWSConnection* create_terminal_adapter(struct lws *wsi, TerminalSession *session);
+int process_terminal_message(TerminalWSConnection *ws_conn_adapter);
 
 // Main callback dispatcher
 int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
