@@ -163,7 +163,6 @@ bool process_direct_value(ConfigValue value, ConfigValueType type,
                         const char* path, const char* section,
                         const char* direct_value);
 
-
 /*
  * MACROS
  * 

@@ -275,17 +275,3 @@ bool database_queue_remove_tag(DatabaseQueue* db_queue, char tag) {
 
     return true;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

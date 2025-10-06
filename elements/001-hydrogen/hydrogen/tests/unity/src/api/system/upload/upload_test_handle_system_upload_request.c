@@ -152,8 +152,6 @@ void MHD_destroy_response(struct MHD_Response *response) {
     // Don't free in mock
 }
 
-
-
 void setUp(void) {
     // Initialize app_config for tests
     if (!app_config) {

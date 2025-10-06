@@ -111,7 +111,7 @@ bool mysql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel 
     *transaction = tx;
     connection->current_transaction = tx;
 
-    log_this(SR_DATABASE, "MySQL transaction started", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "MySQL transaction started", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -158,7 +158,7 @@ bool mysql_commit_transaction(DatabaseHandle* connection, Transaction* transacti
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    log_this(SR_DATABASE, "MySQL transaction committed", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "MySQL transaction committed", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -205,6 +205,6 @@ bool mysql_rollback_transaction(DatabaseHandle* connection, Transaction* transac
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    log_this(SR_DATABASE, "MySQL transaction rolled back", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "MySQL transaction rolled back", LOG_LEVEL_TRACE, 0);
     return true;
 }

@@ -33,17 +33,6 @@ bool should_log_to_notify(const char* subsystem, int priority, const LoggingConf
 void process_log_message(const char* message, int priority);
 
 // Thread cleanup handler with guaranteed file closure
-//
-// Design choices for cleanup handling:
-// 1. pthread_cleanup_push integration
-//    - Handles normal termination
-//    - Catches thread cancellation
-//    - Processes asynchronous signals
-//
-// 2. Resource management
-//    - Prevents file handle leaks
-//    - Ensures final flush
-//    - Maintains file system integrity
 void cleanup_log_queue_manager(void* arg) {
     (void)arg;  // Unused parameter
     
@@ -54,26 +43,6 @@ void cleanup_log_queue_manager(void* arg) {
 }
 
 // Process log messages with structured formatting and routing
-//
-// Message handling strategy:
-// 1. Data Integrity
-//    - JSON validation
-//    - UTF-8 encoding check
-//    - Timestamp precision
-//    - Buffer overflow prevention
-//
-// 2. Output Management
-//    - Configurable destinations
-//    - Immediate console feedback
-//    - Atomic file writes
-//    - Future database support
-//
-// 3. Error Handling
-//    - Malformed JSON recovery
-//    - File write retry
-//    - Memory allocation checks
-//    - Partial write detection
-// Check if a message should be logged to a specific destination
 bool should_log_to_console(const char* subsystem, int priority, const LoggingConfig* config) {
     if (!config->console.enabled) {
         return false;
@@ -231,25 +200,6 @@ void close_file_logging(void) {
 }
 
 // Log queue manager implementing producer-consumer pattern
-//
-// The architecture balances several concerns:
-// 1. Performance
-//    - Non-blocking message submission
-//    - Batched file operations
-//    - Minimal lock contention
-//    - Memory reuse where possible
-//
-// 2. Reliability
-//    - No message loss guarantee
-//    - Ordered message delivery
-//    - Graceful degradation
-//    - Recovery from errors
-//
-// 3. Shutdown Handling
-//    - Process remaining messages
-//    - Flush pending writes
-//    - Release resources
-//    - Verify completion
 void* log_queue_manager(void* arg) {
     Queue* log_queue = (Queue*)arg;
 

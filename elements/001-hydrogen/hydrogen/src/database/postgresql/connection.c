@@ -390,7 +390,7 @@ bool postgresql_health_check(DatabaseHandle* connection) {
 
     const char* designator = connection->designator ? connection->designator : SR_DATABASE;
     // Early validation logging - add simple log to verify function is called
-    log_this(designator, "PostgreSQL health check: FUNCTION ENTRY - connection=%p, designator=%s", LOG_LEVEL_ERROR, 2, (void*)connection, designator);
+    log_this(designator, "PostgreSQL health check: FUNCTION ENTRY - connection=%p, designator=%s", LOG_LEVEL_TRACE, 2, (void*)connection, designator);
     log_this(designator, "PostgreSQL health check: Starting validation", LOG_LEVEL_TRACE, 0);
 
     // Add immediate return check to isolate the failure point
