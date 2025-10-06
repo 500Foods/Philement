@@ -69,17 +69,34 @@
  * Get total queue depth across all queues
  */
 size_t database_queue_get_depth(DatabaseQueue* db_queue) {
+    return database_queue_get_depth_with_designator(db_queue, SR_DATABASE);
+}
+
+/*
+ * Get total queue depth across all queues with custom designator
+ */
+size_t database_queue_get_depth_with_designator(DatabaseQueue* db_queue, const char* designator) {
     if (!db_queue || !db_queue->queue) return 0;
 
-    size_t total_depth = queue_size(db_queue->queue);
+    // Get queue size directly with proper designator
+    size_t queue_depth = 0;
+    if (db_queue->queue) {
+        MutexResult lock_result = MUTEX_LOCK(&db_queue->queue->mutex, designator);
+        if (lock_result == MUTEX_SUCCESS) {
+            queue_depth = db_queue->queue->size;
+            mutex_unlock(&db_queue->queue->mutex);
+        }
+    }
+
+    size_t total_depth = queue_depth;
 
     // If this is a Lead queue, include child queue depths
     if (db_queue->is_lead_queue && db_queue->child_queues) {
-        MutexResult lock_result = MUTEX_LOCK(&db_queue->children_lock, SR_DATABASE);
+        MutexResult lock_result = MUTEX_LOCK(&db_queue->children_lock, designator);
         if (lock_result == MUTEX_SUCCESS) {
             for (int i = 0; i < db_queue->child_queue_count; i++) {
                 if (db_queue->child_queues[i]) {
-                    total_depth += database_queue_get_depth(db_queue->child_queues[i]);
+                    total_depth += database_queue_get_depth_with_designator(db_queue->child_queues[i], designator);
                 }
             }
             mutex_unlock(&db_queue->children_lock);

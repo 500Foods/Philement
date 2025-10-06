@@ -59,7 +59,7 @@ void setUp(void) {
     mock_libpq_reset_all();
 
     // Ensure libpq functions are loaded (mocked)
-    load_libpq_functions();
+    load_libpq_functions(NULL);
 }
 
 void tearDown(void) {

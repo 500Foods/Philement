@@ -148,27 +148,31 @@ bool database_engine_register(DatabaseEngineInterface* engine) {
 }
 
 DatabaseEngineInterface* database_engine_get(DatabaseEngine engine_type) {
+    return database_engine_get_with_designator(engine_type, SR_DATABASE);
+}
+
+DatabaseEngineInterface* database_engine_get_with_designator(DatabaseEngine engine_type, const char* designator) {
     // log_this(SR_DATABASE, "WE BE HERE NOW", LOG_LEVEL_DEBUG, 0);
     // log_this(SR_DATABASE, "database_engine_get called with engine_type=%d", LOG_LEVEL_DEBUG, 1, (int)engine_type);
 
     if (engine_type >= DB_ENGINE_MAX || !engine_system_initialized) {
-        log_this(SR_DATABASE, "database_engine_get: Invalid engine_type or system not initialized", LOG_LEVEL_DEBUG, 0);
+        log_this(designator, "database_engine_get: Invalid engine_type or system not initialized", LOG_LEVEL_DEBUG, 0);
         return NULL;
     }
 
-    // log_this(SR_DATABASE, "database_engine_get: About to lock engine_registry_lock", LOG_LEVEL_DEBUG, 0);
-    MutexResult result = MUTEX_LOCK(&engine_registry_lock, SR_DATABASE);
+    // log_this(designator, "database_engine_get: About to lock engine_registry_lock", LOG_LEVEL_DEBUG, 0);
+    MutexResult result = MUTEX_LOCK(&engine_registry_lock, designator);
     if (result != MUTEX_SUCCESS) {
-        log_this(SR_DATABASE, "database_engine_get: Failed to lock engine_registry_lock, result=%s", LOG_LEVEL_ERROR, 1, mutex_result_to_string(result));
+        log_this(designator, "database_engine_get: Failed to lock engine_registry_lock, result=%s", LOG_LEVEL_ERROR, 1, mutex_result_to_string(result));
         return NULL;
     }
 
-    // log_this(SR_DATABASE, "database_engine_get: Successfully locked, getting engine from registry", LOG_LEVEL_DEBUG, 0);
+    // log_this(designator, "database_engine_get: Successfully locked, getting engine from registry", LOG_LEVEL_DEBUG, 0);
     DatabaseEngineInterface* engine = engine_registry[engine_type];
-    // log_this(SR_DATABASE, "database_engine_get: Engine retrieved: %p", LOG_LEVEL_DEBUG, 1, (void*)engine);
+    // log_this(designator, "database_engine_get: Engine retrieved: %p", LOG_LEVEL_DEBUG, 1, (void*)engine);
 
-    // log_this(SR_DATABASE, "database_engine_get: About to unlock engine_registry_lock", LOG_LEVEL_DEBUG, 0);
-    MUTEX_UNLOCK(&engine_registry_lock, SR_DATABASE);
+    // log_this(designator, "database_engine_get: About to unlock engine_registry_lock", LOG_LEVEL_DEBUG, 0);
+    MUTEX_UNLOCK(&engine_registry_lock, designator);
     // log_this(SR_DATABASE, "database_engine_get: Successfully unlocked, returning", LOG_LEVEL_DEBUG, 0);
 
     return engine;
@@ -214,38 +218,39 @@ bool database_engine_connect_with_designator(DatabaseEngine engine_type, Connect
 }
 
 bool database_engine_health_check(DatabaseHandle* connection) {
-    log_this(SR_DATABASE, "database_engine_health_check: Function called with connection=%p", LOG_LEVEL_DEBUG, 1, (void*)connection);
+    const char* designator = connection && connection->designator ? connection->designator : SR_DATABASE;
+    log_this(designator, "database_engine_health_check: Function called with connection=%p", LOG_LEVEL_DEBUG, 1, (void*)connection);
 
     if (!connection) {
-        log_this(SR_DATABASE, "database_engine_health_check: connection is NULL", LOG_LEVEL_ERROR, 0);
+        log_this(designator, "database_engine_health_check: connection is NULL", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    log_this(SR_DATABASE, "database_engine_health_check: connection->engine_type = %d", LOG_LEVEL_DEBUG, 1, connection->engine_type);
-    log_this(SR_DATABASE, "database_engine_health_check: DB_ENGINE_MAX = %d", LOG_LEVEL_DEBUG, 1, DB_ENGINE_MAX);
+    log_this(designator, "database_engine_health_check: connection->engine_type = %d", LOG_LEVEL_DEBUG, 1, connection->engine_type);
+    log_this(designator, "database_engine_health_check: DB_ENGINE_MAX = %d", LOG_LEVEL_DEBUG, 1, DB_ENGINE_MAX);
 
     if (connection->engine_type >= DB_ENGINE_MAX) {
-        log_this(SR_DATABASE, "database_engine_health_check: Invalid engine_type %d (must be < %d)", LOG_LEVEL_ERROR, 2, connection->engine_type, DB_ENGINE_MAX);
+        log_this(designator, "database_engine_health_check: Invalid engine_type %d (must be < %d)", LOG_LEVEL_ERROR, 2, connection->engine_type, DB_ENGINE_MAX);
         return false;
     }
 
-    log_this(SR_DATABASE, "database_engine_health_check: Engine type validation passed", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "database_engine_health_check: Engine type validation passed", LOG_LEVEL_DEBUG, 0);
 
-    DatabaseEngineInterface* engine = database_engine_get(connection->engine_type);
-    log_this(SR_DATABASE, "database_engine_health_check: database_engine_get returned %p", LOG_LEVEL_DEBUG, 1, (void*)engine);
+    DatabaseEngineInterface* engine = database_engine_get_with_designator(connection->engine_type, designator);
+    log_this(designator, "database_engine_health_check: database_engine_get returned %p", LOG_LEVEL_DEBUG, 1, (void*)engine);
 
     if (!engine) {
-        log_this(SR_DATABASE, "database_engine_health_check: No engine found for type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);
+        log_this(designator, "database_engine_health_check: No engine found for type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);
         return false;
     }
 
-    log_this(SR_DATABASE, "database_engine_health_check: Engine found, checking health_check function", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "database_engine_health_check: Engine found, checking health_check function", LOG_LEVEL_DEBUG, 0);
     if (!engine->health_check) {
-        log_this(SR_DATABASE, "database_engine_health_check: Engine has no health_check function", LOG_LEVEL_ERROR, 0);
+        log_this(designator, "database_engine_health_check: Engine has no health_check function", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    log_this(SR_DATABASE, "database_engine_health_check: Calling engine health_check function", LOG_LEVEL_DEBUG, 0);
+    log_this(designator, "database_engine_health_check: Calling engine health_check function", LOG_LEVEL_DEBUG, 0);
     return engine->health_check(connection);
 }
 
@@ -309,7 +314,8 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     
     // Try to lock with timeout using the new mutex library
     // log_this(SR_DATABASE, "database_engine_execute: Attempting timed mutex lock", LOG_LEVEL_ERROR, 0);
-    MutexResult lock_result = MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+    const char* lock_designator = connection && connection->designator ? connection->designator : SR_DATABASE;
+    MutexResult lock_result = MUTEX_LOCK(&connection->connection_lock, lock_designator);
 
     if (lock_result != MUTEX_SUCCESS) {
         log_this(SR_DATABASE, "MUTEX LOCK FAILED with result %s - this explains the deadlock!", LOG_LEVEL_ERROR, 1, mutex_result_to_string(lock_result));
@@ -317,9 +323,9 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     }
 
     // log_this(SR_DATABASE, "database_engine_execute: Mutex locked successfully", LOG_LEVEL_ERROR, 0);
-    
-    // Use static designator to avoid accessing corrupted connection
-    const char* designator = SR_DATABASE;
+
+    // Use connection's designator for subsequent operations
+    const char* designator = connection && connection->designator ? connection->designator : SR_DATABASE;
    
     // log_this(designator, "database_engine_execute: Starting execution with connection lock held", LOG_LEVEL_DEBUG, 0);
 
@@ -385,7 +391,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     }
     
     // log_this(designator, "About to call database_engine_get with engine_type=%d", LOG_LEVEL_DEBUG, 1, connection->engine_type);
-    DatabaseEngineInterface* engine = database_engine_get(connection->engine_type);
+    DatabaseEngineInterface* engine = database_engine_get_with_designator(connection->engine_type, designator);
     // log_this(designator, "database_engine_get returned: %p", LOG_LEVEL_DEBUG, 1, (void*)engine);
 
     if (!engine) {

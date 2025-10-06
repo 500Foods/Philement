@@ -165,6 +165,7 @@ void database_queue_manage_child_queues(DatabaseQueue* lead_queue);
 
 // Statistics and monitoring
 size_t database_queue_get_depth(DatabaseQueue* db_queue);
+size_t database_queue_get_depth_with_designator(DatabaseQueue* db_queue, const char* designator);
 void database_queue_get_stats(DatabaseQueue* db_queue, char* buffer, size_t buffer_size);
 bool database_queue_health_check(DatabaseQueue* db_queue);
 
