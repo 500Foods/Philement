@@ -180,64 +180,26 @@ void tearDown(void) {
 
 // Test that the function has the correct signature
 void test_handle_system_upload_request_function_signature(void) {
-    // This test verifies the function signature is as expected
-    // The function should take appropriate parameters and return enum MHD_Result
-
-    // Since we can't actually call the function without system resources,
-    // we verify the function exists and has the right signature by checking
-    // that the header file includes the correct declaration
-
-    // This is a compilation test - if the function signature changes,
-    // this test will fail to compile, alerting us to the change
     TEST_ASSERT_TRUE(true);
 }
 
 // Test that the function compiles and links correctly
 void test_handle_system_upload_request_compilation_check(void) {
-    // This test ensures the function can be compiled and linked
-    // It's a basic smoke test to catch compilation errors
-
-    // The fact that this test file compiles means:
-    // 1. The header file exists and is accessible
-    // 2. The function declaration is correct
-    // 3. The function exists in the object file
-
     TEST_ASSERT_TRUE(true);
 }
 
 // Test that the upload info function has the correct signature
 void test_handle_system_upload_info_request_function_signature(void) {
-    // This test verifies the upload info function signature is as expected
-    // The function should take a struct MHD_Connection pointer and return enum MHD_Result
-
-    // Since we can't actually call the function without system resources,
-    // we verify the function exists and has the right signature by checking
-    // that the header file includes the correct declaration
-
-    // This is a compilation test - if the function signature changes,
-    // this test will fail to compile, alerting us to the change
     TEST_ASSERT_TRUE(true);
 }
 
 // Test that required header includes are present
 void test_upload_header_includes(void) {
-    // Verify that the header file includes necessary dependencies
-    // This test would fail if required includes are missing
-
-    // The header should include:
-    // - microhttpd.h for MHD_Connection and MHD_Result
-    // - Function declarations for the API
-    // - System service and API utilities
-    // - Web server upload functionality
-
     TEST_ASSERT_TRUE(true);
 }
 
 // Test function declarations in header
 void test_upload_function_declarations(void) {
-    // Verify that the function is properly declared in the header
-    // This ensures the API contract is maintained
-
     // The function should be declared with appropriate parameters:
     // enum MHD_Result handle_system_upload_request(struct MHD_Connection *connection,
     //                                            const char *method,
@@ -434,53 +396,16 @@ void test_upload_info_response_format(void) {
 
 // Test error handling structure expectations
 void test_upload_error_handling_structure(void) {
-    // Document the expected error handling behavior:
-    // 1. Function should handle NULL connection gracefully
-    // 2. Function should handle invalid HTTP methods
-    // 3. Function should handle logging system failures
-    // 4. Function should handle multipart form data processing failures
-    // 5. Function should handle MHD response creation failures
-    // 6. Function should handle validation failures with proper error responses
-    // 7. Function should return appropriate HTTP error codes
-
-    // Enhanced error handling for the new validation functions:
-    // - Content-Type validation errors
-    // - Content-Length validation errors
-    // - User-Agent validation errors
-    // - Directory creation/access errors
-
     TEST_ASSERT_TRUE(true);
 }
 
 // Test response format expectations
 void test_upload_response_format_expectations(void) {
-    // Document the expected response format:
-    // 1. Success should return HTTP 200 with JSON content
-    // 2. Content-Type should be "application/json"
-    // 3. Response should contain upload status and file information
-    // 4. Response should include CORS headers
-    // 5. Error responses should have proper error messages
-    // 6. Info endpoint should return comprehensive upload configuration
-
-    // Enhanced response formats:
-    // - Validation error responses with specific error details
-    // - Info endpoint responses with supported types and limits
-    // - Statistics responses with current upload metrics
-
     TEST_ASSERT_TRUE(true);
 }
 
 // Test HTTP method validation expectations
 void test_upload_method_validation(void) {
-    // Document the expected HTTP method validation:
-    // 1. Function should only accept POST method
-    // 2. Function should reject GET, PUT, DELETE, etc.
-    // 3. Function should return 405 Method Not Allowed for invalid methods
-    // 4. Function should include proper error message in response
-    // 5. Function should set appropriate Content-Type for error responses
-    // 6. Function should add CORS headers to error responses
-    // 7. Function should handle method validation before other processing
-
     TEST_ASSERT_TRUE(true);
 }
 
