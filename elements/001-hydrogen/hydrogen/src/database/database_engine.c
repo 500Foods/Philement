@@ -112,7 +112,7 @@ bool database_engine_init(void) {
     }
 
     engine_system_initialized = true;
-    mutex_unlock(&engine_registry_lock);
+    MUTEX_UNLOCK(&engine_registry_lock, SR_DATABASE);
 
     // log_this(SR_DATABASE, "Database engine registry initialization completed", LOG_LEVEL_STATE, 0);
     return true;
@@ -141,7 +141,7 @@ bool database_engine_register(DatabaseEngineInterface* engine) {
 
     engine_registry[engine->engine_type] = engine;
 
-    mutex_unlock(&engine_registry_lock);
+    MUTEX_UNLOCK(&engine_registry_lock, SR_DATABASE);
 
     // log_this(SR_DATABASE, "Database engine registered successfully", LOG_LEVEL_STATE, 0);
     return true;
@@ -168,7 +168,7 @@ DatabaseEngineInterface* database_engine_get(DatabaseEngine engine_type) {
     // log_this(SR_DATABASE, "database_engine_get: Engine retrieved: %p", LOG_LEVEL_DEBUG, 1, (void*)engine);
 
     // log_this(SR_DATABASE, "database_engine_get: About to unlock engine_registry_lock", LOG_LEVEL_DEBUG, 0);
-    mutex_unlock(&engine_registry_lock);
+    MUTEX_UNLOCK(&engine_registry_lock, SR_DATABASE);
     // log_this(SR_DATABASE, "database_engine_get: Successfully unlocked, returning", LOG_LEVEL_DEBUG, 0);
 
     return engine;
@@ -187,12 +187,12 @@ DatabaseEngineInterface* database_engine_get_by_name(const char* name) {
     for (int i = 0; i < DB_ENGINE_MAX; i++) {
         if (engine_registry[i] && strcmp(engine_registry[i]->name, name) == 0) {
             DatabaseEngineInterface* engine = engine_registry[i];
-            mutex_unlock(&engine_registry_lock);
+            MUTEX_UNLOCK(&engine_registry_lock, SR_DATABASE);
             return engine;
         }
     }
 
-    mutex_unlock(&engine_registry_lock);
+    MUTEX_UNLOCK(&engine_registry_lock, SR_DATABASE);
     return NULL;
 }
 
@@ -325,15 +325,17 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
     if (!connection || !request || !result) {
         log_this(designator, "database_engine_execute: Invalid parameters - connection=%p, request=%p, result=%p", LOG_LEVEL_ERROR, 3,
-            (void*)connection, 
-            (void*)request, 
+            (void*)connection,
+            (void*)request,
             (void*)result);
+        mutex_unlock(&connection->connection_lock);
         return false;
     }
 
     // Check if pointer is valid before dereferencing
     if ((uintptr_t)connection == 0x1) {
         log_this(designator, "CONNECTION IS THE CORRUPTED 0x1 VALUE - ABORTING", LOG_LEVEL_ERROR, 0);
+        mutex_unlock(&connection->connection_lock);
         return false;
     }
     
@@ -388,6 +390,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
     if (!engine) {
         log_this(designator, "database_engine_execute: No engine found for type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);
+        mutex_unlock(&connection->connection_lock);
         return false;
     }
 
@@ -408,6 +411,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
     if (!engine->execute_query) {
         log_this(designator, "CRITICAL ERROR: Engine execute_query function pointer is NULL!", LOG_LEVEL_ERROR, 0);
+        mutex_unlock(&connection->connection_lock);
         return false;
     }
 
@@ -432,6 +436,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
         if (stmt) {
             // log_this(designator, "database_engine_execute: Calling execute_prepared", LOG_LEVEL_DEBUG, 0);
+            mutex_unlock(&connection->connection_lock);
             return engine->execute_prepared(connection, stmt, request, result);
         }
     }
@@ -457,12 +462,12 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     // log_this(designator, "FUNCTION_CALL_DEBUG: engine->execute_query returned %d", LOG_LEVEL_ERROR, 1, result_success);
     
     // log_this(designator, "database_engine_execute: Engine execute_query returned %s", LOG_LEVEL_DEBUG, 1, result_success ? "SUCCESS" : "FAILURE");
-    
+
     // Release connection object mutex
     // log_this(SR_DATABASE, "MUTEX_UNLOCK_ATTEMPT: About to unlock connection mutex", LOG_LEVEL_DEBUG, 0);
-    // MutexResult unlock_result = mutex_unlock(&connection->connection_lock);
+    mutex_unlock(&connection->connection_lock);
     // log_this(SR_DATABASE, "MUTEX_UNLOCK_RESULT: Unlock completed with result %s", LOG_LEVEL_DEBUG, 1, mutex_result_to_string(unlock_result));
-    
+
     return result_success;
 }
 

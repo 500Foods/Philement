@@ -19,7 +19,6 @@ DatabaseQueueManager* global_queue_manager = NULL;
  * Initialize database queue infrastructure
  */
 bool database_queue_system_init(void) {
-    log_this(SR_DATABASE, "Initializing database queue system", LOG_LEVEL_STATE, 0);
 
     if (global_queue_manager != NULL) {
         return true;
@@ -33,11 +32,10 @@ bool database_queue_system_init(void) {
     // Create global queue manager with capacity for up to 8 databases
     global_queue_manager = database_queue_manager_create(8);
     if (!global_queue_manager) {
-        log_this(SR_DATABASE, "Failed to create database queue manager", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "Failed to create database queue manager", LOG_LEVEL_DEBUG, 0);
         return false;
     }
 
-    // log_this(SR_DATABASE, "Database queue system initialized successfully", LOG_LEVEL_STATE, 0);
     return true;
 }
 
