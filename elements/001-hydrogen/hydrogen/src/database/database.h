@@ -320,4 +320,25 @@ int database_get_total_queue_count(void);
 void database_get_queue_counts_by_type(int* lead_count, int* slow_count, int* medium_count, int* fast_count, int* cache_count);
 void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count);
 
+// Helper functions for database_add_database (for testing)
+DatabaseEngineInterface* database_get_engine_interface(const char* engine);
+const DatabaseConnection* database_find_connection_config(const char* name);
+char* database_build_connection_string(const char* engine, const DatabaseConnection* conn_config);
+DatabaseQueue* database_create_and_start_queue(const char* name, const char* conn_str, const char* bootstrap_query);
+bool database_register_queue(DatabaseQueue* db_queue);
+
+// Helper functions for database_queue_create_lead (for testing)
+DatabaseQueue* database_queue_allocate_basic(const char* database_name, const char* connection_string, const char* bootstrap_query);
+bool database_queue_init_lead_properties(DatabaseQueue* db_queue);
+bool database_queue_create_underlying_queue(DatabaseQueue* db_queue, const char* database_name);
+bool database_queue_init_lead_sync_primitives(DatabaseQueue* db_queue, const char* database_name);
+void database_queue_init_lead_final_flags(DatabaseQueue* db_queue);
+
+// Helper functions for database_queue_create_worker (for testing)
+DatabaseQueue* database_queue_allocate_worker_basic(const char* database_name, const char* connection_string, const char* queue_type);
+bool database_queue_init_worker_properties(DatabaseQueue* db_queue, const char* queue_type);
+bool database_queue_create_worker_underlying_queue(DatabaseQueue* db_queue, const char* database_name, const char* queue_type);
+bool database_queue_init_worker_sync_primitives(DatabaseQueue* db_queue, const char* queue_type);
+void database_queue_init_worker_final_flags(DatabaseQueue* db_queue);
+
 #endif // DATABASE_H

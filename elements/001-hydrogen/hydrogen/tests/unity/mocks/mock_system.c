@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 // Define types if not already defined
 #ifndef _SIZE_T
@@ -82,6 +83,7 @@ ssize_t mock_write(int fd, const void *buf, size_t count);
 pid_t mock_waitpid(pid_t pid, int *wstatus, int options);
 int mock_kill(pid_t pid, int sig);
 int mock_close(int fd);
+int mock_sem_init(sem_t *sem, int pshared, unsigned int value);
 void mock_system_set_malloc_failure(int should_fail);
 void mock_system_set_realloc_failure(int should_fail);
 void mock_system_set_gethostname_failure(int should_fail);
@@ -133,6 +135,7 @@ static pid_t mock_waitpid_result = 0;
 static int mock_waitpid_status = 0;
 static int mock_kill_should_fail = 0;
 static int mock_close_should_fail = 0;
+static int mock_sem_init_should_fail = 0;
 
 // Mock implementation of malloc
 void *mock_malloc(size_t size) {
@@ -343,6 +346,10 @@ void mock_system_set_close_failure(int should_fail) {
     mock_close_should_fail = should_fail;
 }
 
+void mock_system_set_sem_init_failure(int should_fail) {
+    mock_sem_init_should_fail = should_fail;
+}
+
 void mock_system_reset_all(void) {
     mock_malloc_should_fail = 0;
     mock_realloc_should_fail = 0;
@@ -368,6 +375,7 @@ void mock_system_reset_all(void) {
     mock_waitpid_status = 0;
     mock_kill_should_fail = 0;
     mock_close_should_fail = 0;
+    mock_sem_init_should_fail = 0;
 }
 
 // Mock implementation of dlopen
@@ -511,6 +519,19 @@ int mock_close(int fd) {
     (void)fd; // Suppress unused parameter
 
     if (mock_close_should_fail) {
+        return -1;
+    }
+
+    return 0;
+}
+
+// Mock implementation of sem_init
+int mock_sem_init(sem_t *sem, int pshared, unsigned int value) {
+    (void)sem;    // Suppress unused parameter
+    (void)pshared; // Suppress unused parameter
+    (void)value;   // Suppress unused parameter
+
+    if (mock_sem_init_should_fail) {
         return -1;
     }
 
