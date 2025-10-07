@@ -42,6 +42,7 @@
 #define kill mock_kill
 #define close mock_close
 #define select mock_select
+#define sem_init mock_sem_init
 
 // Always declare mock function prototypes for the .c file
 void *mock_malloc(size_t size);
@@ -67,6 +68,7 @@ pid_t mock_waitpid(pid_t pid, int *wstatus, int options);
 int mock_kill(pid_t pid, int sig);
 int mock_close(int fd);
 int mock_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+int mock_sem_init(sem_t *sem, int pshared, unsigned int value);
 
 // Mock control functions for tests - always available
 void mock_system_set_malloc_failure(int should_fail);
@@ -94,6 +96,7 @@ void mock_system_set_waitpid_status(int status);
 void mock_system_set_kill_failure(int should_fail);
 void mock_system_set_close_failure(int should_fail);
 void mock_system_set_select_result(int result);
+void mock_system_set_sem_init_failure(int should_fail);
 void mock_system_reset_all(void);
 
 #endif // USE_MOCK_SYSTEM
