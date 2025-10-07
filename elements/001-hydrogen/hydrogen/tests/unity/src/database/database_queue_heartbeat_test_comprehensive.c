@@ -221,7 +221,7 @@ void test_database_queue_wait_for_initial_connection_timeout(void) {
 void test_database_queue_wait_for_initial_connection_already_completed(void) {
     // Create a worker queue (non-lead)
     DatabaseQueue* worker_queue = database_queue_create_worker("testdb_worker",
-        "postgresql://user:pass@host:5432/db", QUEUE_TYPE_MEDIUM);
+        "postgresql://user:pass@host:5432/db", QUEUE_TYPE_MEDIUM, NULL);
     if (worker_queue) {
         // Non-lead queues should return true immediately
         bool result = database_queue_wait_for_initial_connection(worker_queue, 5);

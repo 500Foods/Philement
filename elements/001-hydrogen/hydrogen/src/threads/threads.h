@@ -26,6 +26,7 @@ typedef struct {
 // Service thread and memory information
 typedef struct {
     char subsystem[32];                         // Subsystem name (e.g., "Logging", "WebServer")
+    char thread_descriptions[MAX_SERVICE_THREADS][32]; // Optional thread descriptions (e.g., DQM names)
     pthread_t thread_ids[MAX_SERVICE_THREADS];  // Array of pthread IDs
     pid_t thread_tids[MAX_SERVICE_THREADS];     // Array of Linux thread IDs
     int thread_count;                           // Number of active threads
@@ -46,6 +47,8 @@ extern ServiceThreads database_threads;
 // Thread management functions
 void init_service_threads(ServiceThreads *threads, const char* subsystem_name);
 void add_service_thread(ServiceThreads *threads, pthread_t thread_id);
+void add_service_thread_with_description(ServiceThreads *threads, pthread_t thread_id, const char* description);
+void add_service_thread_with_subsystem(ServiceThreads *threads, pthread_t thread_id, const char* subsystem, const char* description);
 void remove_service_thread(ServiceThreads *threads, pthread_t thread_id);
 
 // Memory tracking functions

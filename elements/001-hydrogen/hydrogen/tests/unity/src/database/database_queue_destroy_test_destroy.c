@@ -42,7 +42,7 @@ void test_database_queue_destroy_lead_queue(void) {
 }
 
 void test_database_queue_destroy_worker_queue(void) {
-    DatabaseQueue* queue = database_queue_create_worker("testdb", "sqlite:///tmp/test.db", QUEUE_TYPE_MEDIUM);
+    DatabaseQueue* queue = database_queue_create_worker("testdb", "sqlite:///tmp/test.db", QUEUE_TYPE_MEDIUM, NULL);
     TEST_ASSERT_NOT_NULL(queue);
 
     // Destroy should not crash

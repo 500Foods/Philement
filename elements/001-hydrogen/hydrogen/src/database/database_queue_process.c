@@ -41,7 +41,9 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
     db_queue->worker_thread_started = true;
 
     // Register thread with thread tracking system
-    add_service_thread(&database_threads, db_queue->worker_thread);
+    char* thread_dqm_label = database_queue_generate_label(db_queue);
+    add_service_thread_with_subsystem(&database_threads, db_queue->worker_thread, thread_dqm_label, NULL);
+    free(thread_dqm_label);
 
     char* dqm_label_success = database_queue_generate_label(db_queue);
     // log_this(dqm_label_success, "Worker thread created and registered successfully", LOG_LEVEL_TRACE, 0);

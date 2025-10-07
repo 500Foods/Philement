@@ -7,7 +7,7 @@
  */
 
 // Global includes 
-#include "hydrogen.h"
+#include "../hydrogen.h"
 
 // Local includes
 #include "config_databases.h"
@@ -26,7 +26,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
 
     // Set default queue scaling configurations
     // Slow queue: conservative scaling
-    db_config->default_queues.slow.start = 1;
+    db_config->default_queues.slow.start = 0;
     db_config->default_queues.slow.min = 1;
     db_config->default_queues.slow.max = 4;
     db_config->default_queues.slow.up = 10;
@@ -34,7 +34,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
     db_config->default_queues.slow.inactivity = 300;
 
     // Medium queue: moderate scaling
-    db_config->default_queues.medium.start = 2;
+    db_config->default_queues.medium.start = 0;
     db_config->default_queues.medium.min = 1;
     db_config->default_queues.medium.max = 8;
     db_config->default_queues.medium.up = 15;
@@ -42,7 +42,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
     db_config->default_queues.medium.inactivity = 240;
 
     // Fast queue: aggressive scaling
-    db_config->default_queues.fast.start = 4;
+    db_config->default_queues.fast.start = 0;
     db_config->default_queues.fast.min = 2;
     db_config->default_queues.fast.max = 16;
     db_config->default_queues.fast.up = 20;
@@ -50,7 +50,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
     db_config->default_queues.fast.inactivity = 180;
 
     // Cache queue: minimal scaling
-    db_config->default_queues.cache.start = 1;
+    db_config->default_queues.cache.start = 0;
     db_config->default_queues.cache.min = 1;
     db_config->default_queues.cache.max = 4;
     db_config->default_queues.cache.up = 5;
