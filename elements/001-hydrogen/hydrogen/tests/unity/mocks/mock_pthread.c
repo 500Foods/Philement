@@ -26,12 +26,16 @@ void mock_pthread_testcancel(void);
 int mock_pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime);
 int mock_pthread_mutex_lock(pthread_mutex_t *mutex);
 int mock_pthread_mutex_unlock(pthread_mutex_t *mutex);
+int mock_pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
+int mock_pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr);
 void mock_pthread_set_create_failure(int should_fail);
 void mock_pthread_set_setcancelstate_failure(int should_fail);
 void mock_pthread_set_setcanceltype_failure(int should_fail);
 void mock_pthread_set_testcancel_should_exit(int should_exit);
 void mock_pthread_set_cond_timedwait_failure(int should_fail);
 void mock_pthread_set_mutex_lock_failure(int should_fail);
+void mock_pthread_set_mutex_init_failure(int should_fail);
+void mock_pthread_set_cond_init_failure(int should_fail);
 void mock_pthread_reset_all(void);
 
 // Static variables to store mock state
@@ -41,6 +45,10 @@ static int mock_pthread_setcanceltype_should_fail = 0;
 static int mock_pthread_testcancel_should_exit = 0;
 static int mock_pthread_cond_timedwait_should_fail = 0;
 static int mock_pthread_mutex_lock_should_fail = 0;
+static int mock_pthread_mutex_init_should_fail = 0;
+static int mock_pthread_cond_init_should_fail = 0;
+static int mock_pthread_mutex_init_call_count = 0;
+static int mock_pthread_cond_init_call_count = 0;
 
 // Mock implementation of pthread_create
 int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg) {
@@ -129,6 +137,34 @@ int mock_pthread_mutex_unlock(pthread_mutex_t *mutex) {
     return 0;
 }
 
+// Mock implementation of pthread_mutex_init
+int mock_pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr) {
+    (void)mutex;  // Suppress unused parameter
+    (void)attr;   // Suppress unused parameter
+
+    mock_pthread_mutex_init_call_count++;
+
+    if (mock_pthread_mutex_init_should_fail && mock_pthread_mutex_init_call_count == mock_pthread_mutex_init_should_fail) {
+        return -1;  // Return failure on specific call
+    }
+
+    return 0;
+}
+
+// Mock implementation of pthread_cond_init
+int mock_pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr) {
+    (void)cond;  // Suppress unused parameter
+    (void)attr;  // Suppress unused parameter
+
+    mock_pthread_cond_init_call_count++;
+
+    if (mock_pthread_cond_init_should_fail && mock_pthread_cond_init_call_count == mock_pthread_cond_init_should_fail) {
+        return -1;  // Return failure on specific call
+    }
+
+    return 0;
+}
+
 // Mock control functions
 void mock_pthread_set_create_failure(int should_fail) {
     mock_pthread_create_should_fail = should_fail;
@@ -154,6 +190,14 @@ void mock_pthread_set_mutex_lock_failure(int should_fail) {
     mock_pthread_mutex_lock_should_fail = should_fail;
 }
 
+void mock_pthread_set_mutex_init_failure(int should_fail) {
+    mock_pthread_mutex_init_should_fail = should_fail;
+}
+
+void mock_pthread_set_cond_init_failure(int should_fail) {
+    mock_pthread_cond_init_should_fail = should_fail;
+}
+
 void mock_pthread_reset_all(void) {
     mock_pthread_create_should_fail = 0;
     mock_pthread_setcancelstate_should_fail = 0;
@@ -161,4 +205,8 @@ void mock_pthread_reset_all(void) {
     mock_pthread_testcancel_should_exit = 0;
     mock_pthread_cond_timedwait_should_fail = 0;
     mock_pthread_mutex_lock_should_fail = 0;
+    mock_pthread_mutex_init_should_fail = 0;
+    mock_pthread_cond_init_should_fail = 0;
+    mock_pthread_mutex_init_call_count = 0;
+    mock_pthread_cond_init_call_count = 0;
 }
