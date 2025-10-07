@@ -77,9 +77,23 @@ void report_final_landing_summary(const ReadinessResults* results) {
             state = info->state;
         }
         
+        // Determine status based on actual state and landing outcome
+        const char* status_text;
+        if (state == SUBSYSTEM_ERROR) {
+            status_text = "Landing Failed";
+        } else if (state == SUBSYSTEM_INACTIVE) {
+            // If subsystem is inactive and was checked for landing readiness,
+            // it means landing completed successfully
+            status_text = "Landed";
+        } else if (is_ready) {
+            status_text = "Ready for Landing";
+        } else {
+            status_text = "Not Ready";
+        }
+
         // Log subsystem details
         log_this(SR_LANDING, "%s:", LOG_LEVEL_DEBUG, 1, subsystem);
-        log_this(SR_LANDING, "  Status: %s", LOG_LEVEL_DEBUG, 1, is_ready ? "Ready for Landing" : "Not Ready");
+        log_this(SR_LANDING, "  Status: %s", LOG_LEVEL_DEBUG, 1, status_text);
         log_this(SR_LANDING, "  State:  %s", LOG_LEVEL_DEBUG, 1, subsystem_state_to_string(state));
     }
 }

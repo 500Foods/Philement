@@ -97,9 +97,9 @@ void queue_system_destroy(void) {
  * - Early unlock after finding queue
  * - Queue's own mutex for operations
  */
-Queue* queue_find(const char* name) {
+Queue* queue_find_with_label(const char* name, const char* subsystem) {
     unsigned int index = hash(name);
-    MutexResult lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
+    MutexResult lock_result = MUTEX_LOCK(&queue_system.mutex, subsystem);
     if (lock_result == MUTEX_SUCCESS) {
         Queue* queue = queue_system.queues[index];
         while (queue) {
@@ -114,6 +114,10 @@ Queue* queue_find(const char* name) {
     return NULL;
 }
 
+Queue* queue_find(const char* name) {
+    return queue_find_with_label(name, SR_QUEUES);
+}
+
 // Create a new message queue with comprehensive safety guarantees
 //
 // The creation process uses a multi-phase approach to ensure reliability:
@@ -126,12 +130,12 @@ Queue* queue_find(const char* name) {
 // visible to other threads and ensures clean cleanup on any initialization failure.
 // The strdup of name creates a private copy, isolating the queue from external
 // string lifetime issues.
-Queue* queue_create(const char* name, const QueueAttributes* attrs) {
+Queue* queue_create_with_label(const char* name, const QueueAttributes* attrs, const char* subsystem) {
     if (name == NULL || attrs == NULL || strlen(name) == 0) {
         return NULL;
     }
 
-    Queue* existing_queue = queue_find(name);
+    Queue* existing_queue = queue_find_with_label(name, subsystem);
     if (existing_queue) {
         return existing_queue;
     }
@@ -178,7 +182,7 @@ Queue* queue_create(const char* name, const QueueAttributes* attrs) {
 
     // Add the queue to the hash table
     unsigned int index = hash(name);
-    MutexResult hash_lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
+    MutexResult hash_lock_result = MUTEX_LOCK(&queue_system.mutex, subsystem);
     if (hash_lock_result == MUTEX_SUCCESS) {
         queue->hash_next = queue_system.queues[index];
         queue_system.queues[index] = queue;
@@ -203,6 +207,10 @@ Queue* queue_create(const char* name, const QueueAttributes* attrs) {
     */
 
     return queue;
+}
+
+Queue* queue_create(const char* name, const QueueAttributes* attrs) {
+    return queue_create_with_label(name, attrs, SR_QUEUES);
 }
 
 void queue_destroy(Queue* queue) {

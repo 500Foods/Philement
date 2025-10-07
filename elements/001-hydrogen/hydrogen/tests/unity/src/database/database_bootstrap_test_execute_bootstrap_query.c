@@ -37,7 +37,7 @@ void test_database_queue_execute_bootstrap_query_null_queue(void) {
 void test_database_queue_execute_bootstrap_query_non_lead_queue(void) {
     // Create a worker queue (non-lead)
     DatabaseQueue* worker_queue = database_queue_create_worker("testdb1",
-        "postgresql://user:pass@host:5432/db", QUEUE_TYPE_MEDIUM);
+        "postgresql://user:pass@host:5432/db", QUEUE_TYPE_MEDIUM, NULL);
     if (worker_queue) {
         // Should not crash with non-lead queue
         database_queue_execute_bootstrap_query(worker_queue);

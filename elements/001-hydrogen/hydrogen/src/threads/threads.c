@@ -39,6 +39,7 @@ void init_service_threads(ServiceThreads *threads, const char* subsystem_name) {
         memset(threads->thread_ids, 0, sizeof(pthread_t) * MAX_SERVICE_THREADS);
         memset(threads->thread_metrics, 0, sizeof(ThreadMemoryMetrics) * MAX_SERVICE_THREADS);
         memset(threads->thread_tids, 0, sizeof(pid_t) * MAX_SERVICE_THREADS);
+        memset(threads->thread_descriptions, 0, sizeof(char) * MAX_SERVICE_THREADS * 32);
 
         if (subsystem_name) {
             strncpy(threads->subsystem, subsystem_name, 31); // Leave space for null terminator
@@ -52,28 +53,54 @@ void init_service_threads(ServiceThreads *threads, const char* subsystem_name) {
     }
 }
 
-// Add a thread to service tracking
-void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
-    MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
+// Add a thread to service tracking with custom subsystem and optional description
+void add_service_thread_with_subsystem(ServiceThreads *threads, pthread_t thread_id, const char* subsystem, const char* description) {
+    MutexResult lock_result = MUTEX_LOCK(&thread_mutex, subsystem ? subsystem : SR_THREADS_LIB);
     if (lock_result == MUTEX_SUCCESS) {
         if (threads->thread_count < MAX_SERVICE_THREADS) {
             pid_t tid = (pid_t)syscall(SYS_gettid);
             threads->thread_ids[threads->thread_count] = thread_id;
             threads->thread_tids[threads->thread_count] = tid;
+
+            // Store description if provided
+            if (description) {
+                strncpy(threads->thread_descriptions[threads->thread_count], description, 31);
+                threads->thread_descriptions[threads->thread_count][31] = '\0';
+            } else {
+                threads->thread_descriptions[threads->thread_count][0] = '\0';
+            }
+
             threads->thread_count++;
 
             // Only log if not in final shutdown mode
             if (!final_shutdown_mode) {
                 char msg[128];
-                snprintf(msg, sizeof(msg), "%s: Thread %lu (tid: %d) added, count: %d",
-                         threads->subsystem, (unsigned long)thread_id, tid, threads->thread_count);
-                log_this(SR_THREADS_LIB, msg, LOG_LEVEL_TRACE, 0);
+                const char* log_subsystem = subsystem ? subsystem : SR_THREADS_LIB;
+                if (description && strlen(description) > 0) {
+                    snprintf(msg, sizeof(msg), "%s (%s): Thread %lu (tid: %d) added, count: %d",
+                             threads->subsystem, description, (unsigned long)thread_id, tid, threads->thread_count);
+                } else {
+                    snprintf(msg, sizeof(msg), "%s: Thread %lu (tid: %d) added, count: %d",
+                             threads->subsystem, (unsigned long)thread_id, tid, threads->thread_count);
+                }
+                log_this(log_subsystem, msg, LOG_LEVEL_TRACE, 0);
             }
         } else {
-            log_this(SR_THREADS_LIB, "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_ERROR, 0);
+            const char* log_subsystem = subsystem ? subsystem : SR_THREADS_LIB;
+            log_this(log_subsystem, "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_ERROR, 0);
         }
-        MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
+        MUTEX_UNLOCK(&thread_mutex, subsystem ? subsystem : SR_THREADS_LIB);
     }
+}
+
+// Add a thread to service tracking with optional description
+void add_service_thread_with_description(ServiceThreads *threads, pthread_t thread_id, const char* description) {
+    add_service_thread_with_subsystem(threads, thread_id, SR_THREADS_LIB, description);
+}
+
+// Add a thread to service tracking
+void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
+    add_service_thread_with_description(threads, thread_id, NULL);
 }
 
 // Remove a thread from service tracking
@@ -86,6 +113,7 @@ static void remove_thread_internal(ServiceThreads *threads, int index, bool skip
         threads->thread_ids[index] = threads->thread_ids[threads->thread_count - 1];
         threads->thread_tids[index] = threads->thread_tids[threads->thread_count - 1];
         threads->thread_metrics[index] = threads->thread_metrics[threads->thread_count - 1];
+        strncpy(threads->thread_descriptions[index], threads->thread_descriptions[threads->thread_count - 1], 32);
     }
 
     // Always clear the last element (whether moved or not)
@@ -94,6 +122,7 @@ static void remove_thread_internal(ServiceThreads *threads, int index, bool skip
     threads->thread_tids[last_index] = 0;
     threads->thread_metrics[last_index].virtual_bytes = 0;
     threads->thread_metrics[last_index].resident_bytes = 0;
+    threads->thread_descriptions[last_index][0] = '\0';
 
     threads->thread_count--;
 

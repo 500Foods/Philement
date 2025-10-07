@@ -130,8 +130,8 @@ bool database_queue_init_lead_sync_primitives(DatabaseQueue* db_queue, const cha
         return false;
     }
 
-    // Allocate child queue array (max 4: slow, medium, fast, cache)
-    db_queue->max_child_queues = 4;
+    // Allocate child queue array (max 20: allow for scaling)
+    db_queue->max_child_queues = 20;
     db_queue->child_queues = calloc((size_t)db_queue->max_child_queues, sizeof(DatabaseQueue*));
     if (!db_queue->child_queues) {
         pthread_mutex_destroy(&db_queue->children_lock);
@@ -329,17 +329,20 @@ bool database_queue_init_worker_properties(DatabaseQueue* db_queue, const char* 
 }
 
 // Create the underlying queue structure for worker
-bool database_queue_create_worker_underlying_queue(DatabaseQueue* db_queue, const char* database_name, const char* queue_type) {
+bool database_queue_create_worker_underlying_queue(DatabaseQueue* db_queue, const char* database_name, const char* queue_type, const char* dqm_label) {
     if (!db_queue || !database_name || !queue_type) return false;
+
+    const char* log_subsystem = dqm_label ? dqm_label : SR_DATABASE;
 
     // Create the worker queue
     char worker_queue_name[256];
     snprintf(worker_queue_name, sizeof(worker_queue_name), "%s_%s", database_name, queue_type);
 
     QueueAttributes queue_attrs = {0};
-    db_queue->queue = queue_create(worker_queue_name, &queue_attrs);
+    db_queue->queue = queue_create_with_label(worker_queue_name, &queue_attrs, log_subsystem);
 
     if (!db_queue->queue) {
+        log_this(log_subsystem, "Failed to create underlying queue for %s worker", LOG_LEVEL_ERROR, 1, queue_type);
         return false;
     }
 
@@ -389,12 +392,14 @@ void database_queue_init_worker_final_flags(DatabaseQueue* db_queue) {
 
 /*
  * Create a worker queue for a specific queue type (slow, medium, fast, cache)
+ * dqm_label: Optional DQM label for logging (uses SR_DATABASE if NULL)
  */
-DatabaseQueue* database_queue_create_worker(const char* database_name, const char* connection_string, const char* queue_type) {
-    log_this(SR_DATABASE, "Creating %s worker queue for database: %s", LOG_LEVEL_TRACE, 2, queue_type, database_name);
+DatabaseQueue* database_queue_create_worker(const char* database_name, const char* connection_string, const char* queue_type, const char* dqm_label) {
+    const char* log_subsystem = dqm_label ? dqm_label : SR_DATABASE;
+    log_this(log_subsystem, "Creating %s worker queue for database: %s", LOG_LEVEL_TRACE, 2, queue_type, database_name);
 
     if (!database_name || !connection_string || !queue_type) {
-        log_this(SR_DATABASE, "Invalid parameters for worker queue creation", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "Invalid parameters for worker queue creation", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -411,15 +416,15 @@ DatabaseQueue* database_queue_create_worker(const char* database_name, const cha
     }
 
     // Create the underlying queue structure
-    if (!database_queue_create_worker_underlying_queue(db_queue, database_name, queue_type)) {
-        log_this(SR_DATABASE, "Failed to create %s worker queue", LOG_LEVEL_ERROR, 1, queue_type);
+    if (!database_queue_create_worker_underlying_queue(db_queue, database_name, queue_type, dqm_label)) {
+        log_this(log_subsystem, "Failed to create %s worker queue", LOG_LEVEL_ERROR, 1, queue_type);
         database_queue_destroy(db_queue);
         return NULL;
     }
 
     // Initialize synchronization primitives for worker queue
     if (!database_queue_init_worker_sync_primitives(db_queue, queue_type)) {
-        log_this(SR_DATABASE, "Failed to initialize synchronization for %s worker", LOG_LEVEL_ERROR, 1, queue_type);
+        log_this(log_subsystem, "Failed to initialize synchronization for %s worker", LOG_LEVEL_ERROR, 1, queue_type);
         database_queue_destroy(db_queue);
         return NULL;
     }
@@ -427,7 +432,7 @@ DatabaseQueue* database_queue_create_worker(const char* database_name, const cha
     // Initialize final flags and statistics
     database_queue_init_worker_final_flags(db_queue);
 
-    log_this(SR_DATABASE, "%s worker queue created successfully", LOG_LEVEL_TRACE, 1, queue_type);
+    log_this(log_subsystem, "%s worker queue created successfully", LOG_LEVEL_TRACE, 1, queue_type);
     return db_queue;
 }
 

@@ -119,7 +119,7 @@ void test_database_queue_wait_for_initial_connection_null_queue(void) {
 void test_database_queue_wait_for_initial_connection_non_lead_queue(void) {
     // Create a worker queue (non-lead)
     DatabaseQueue* worker_queue = database_queue_create_worker("testdb_worker",
-        "postgresql://user:pass@host:5432/db", QUEUE_TYPE_MEDIUM);
+        "postgresql://user:pass@host:5432/db", QUEUE_TYPE_MEDIUM, NULL);
     if (worker_queue) {
         // Non-lead queues should return true immediately
         bool result = database_queue_wait_for_initial_connection(worker_queue, 5);
@@ -200,7 +200,7 @@ void test_database_queue_signal_initial_connection_complete(void) {
 
     // Test with non-lead queue (should not crash)
     DatabaseQueue* worker_queue = database_queue_create_worker("testdb_worker_signal",
-        "postgresql://user:pass@host:5432/db", QUEUE_TYPE_MEDIUM);
+        "postgresql://user:pass@host:5432/db", QUEUE_TYPE_MEDIUM, NULL);
     if (worker_queue) {
         // Should not crash even though it's not a lead queue
         database_queue_signal_initial_connection_complete(worker_queue);

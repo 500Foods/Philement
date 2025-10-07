@@ -29,7 +29,7 @@ void tearDown(void) {
 }
 
 void test_database_queue_create_worker_valid_parameters(void) {
-    DatabaseQueue* queue = database_queue_create_worker("testdb", "sqlite:///tmp/test.db", QUEUE_TYPE_MEDIUM);
+    DatabaseQueue* queue = database_queue_create_worker("testdb", "sqlite:///tmp/test.db", QUEUE_TYPE_MEDIUM, NULL);
     TEST_ASSERT_NOT_NULL(queue);
     TEST_ASSERT_FALSE(queue->is_lead_queue);
     TEST_ASSERT_FALSE(queue->can_spawn_queues);
@@ -41,32 +41,32 @@ void test_database_queue_create_worker_valid_parameters(void) {
 }
 
 void test_database_queue_create_worker_null_database_name(void) {
-    DatabaseQueue* queue = database_queue_create_worker(NULL, "sqlite:///tmp/test.db", QUEUE_TYPE_MEDIUM);
+    DatabaseQueue* queue = database_queue_create_worker(NULL, "sqlite:///tmp/test.db", QUEUE_TYPE_MEDIUM, NULL);
     TEST_ASSERT_NULL(queue);
 }
 
 void test_database_queue_create_worker_null_connection_string(void) {
-    DatabaseQueue* queue = database_queue_create_worker("testdb", NULL, QUEUE_TYPE_MEDIUM);
+    DatabaseQueue* queue = database_queue_create_worker("testdb", NULL, QUEUE_TYPE_MEDIUM, NULL);
     TEST_ASSERT_NULL(queue);
 }
 
 void test_database_queue_create_worker_null_queue_type(void) {
-    DatabaseQueue* queue = database_queue_create_worker("testdb", "sqlite:///tmp/test.db", NULL);
+    DatabaseQueue* queue = database_queue_create_worker("testdb", "sqlite:///tmp/test.db", NULL, NULL);
     TEST_ASSERT_NULL(queue);
 }
 
 void test_database_queue_create_worker_different_queue_types(void) {
-    DatabaseQueue* slow_queue = database_queue_create_worker("testdb1", "sqlite:///tmp/test1.db", QUEUE_TYPE_SLOW);
+    DatabaseQueue* slow_queue = database_queue_create_worker("testdb1", "sqlite:///tmp/test1.db", QUEUE_TYPE_SLOW, NULL);
     TEST_ASSERT_NOT_NULL(slow_queue);
     TEST_ASSERT_EQUAL_STRING("S", slow_queue->tags);
     database_queue_destroy(slow_queue);
 
-    DatabaseQueue* fast_queue = database_queue_create_worker("testdb2", "sqlite:///tmp/test2.db", QUEUE_TYPE_FAST);
+    DatabaseQueue* fast_queue = database_queue_create_worker("testdb2", "sqlite:///tmp/test2.db", QUEUE_TYPE_FAST, NULL);
     TEST_ASSERT_NOT_NULL(fast_queue);
     TEST_ASSERT_EQUAL_STRING("F", fast_queue->tags);
     database_queue_destroy(fast_queue);
 
-    DatabaseQueue* cache_queue = database_queue_create_worker("testdb3", "sqlite:///tmp/test3.db", QUEUE_TYPE_CACHE);
+    DatabaseQueue* cache_queue = database_queue_create_worker("testdb3", "sqlite:///tmp/test3.db", QUEUE_TYPE_CACHE, NULL);
     TEST_ASSERT_NOT_NULL(cache_queue);
     TEST_ASSERT_EQUAL_STRING("C", cache_queue->tags);
     database_queue_destroy(cache_queue);

@@ -166,6 +166,153 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 
                 // log_this(dqm_label, "Bootstrap query completed successfully - continuing with heartbeat", LOG_LEVEL_TRACE, 0);
 
+                // Launch additional DQMs based on configuration
+                if (app_config) {
+                    const DatabaseConnection* conn_config = NULL;
+                    for (int i = 0; i < app_config->databases.connection_count; i++) {
+                        if (strcmp(app_config->databases.connections[i].name, db_queue->database_name) == 0) {
+                            conn_config = &app_config->databases.connections[i];
+                            break;
+                        }
+                    }
+
+                    if (conn_config) {
+                        // Generate Lead queue label before spawning (tags will be removed)
+                        char* lead_label_before = database_queue_generate_label(db_queue);
+
+                        // Launch queues based on start configuration
+                        if (conn_config->queues.slow.start > 0) {
+                            for (int i = 0; i < conn_config->queues.slow.start; i++) {
+                                database_queue_spawn_child_queue(db_queue, QUEUE_TYPE_SLOW);
+                            }
+                        }
+                        if (conn_config->queues.medium.start > 0) {
+                            for (int i = 0; i < conn_config->queues.medium.start; i++) {
+                                database_queue_spawn_child_queue(db_queue, QUEUE_TYPE_MEDIUM);
+                            }
+                        }
+                        if (conn_config->queues.fast.start > 0) {
+                            for (int i = 0; i < conn_config->queues.fast.start; i++) {
+                                database_queue_spawn_child_queue(db_queue, QUEUE_TYPE_FAST);
+                            }
+                        }
+                        if (conn_config->queues.cache.start > 0) {
+                            for (int i = 0; i < conn_config->queues.cache.start; i++) {
+                                database_queue_spawn_child_queue(db_queue, QUEUE_TYPE_CACHE);
+                            }
+                        }
+
+                        // Lead queue retains its original tags
+
+                        // Log queue summary after spawning
+                        int total_queues = 1; // Lead queue
+                        total_queues += conn_config->queues.slow.start;
+                        total_queues += conn_config->queues.medium.start;
+                        total_queues += conn_config->queues.fast.start;
+                        total_queues += conn_config->queues.cache.start;
+
+                        log_group_begin();
+                        log_this(dqm_label, "%s Queues: %d", LOG_LEVEL_TRACE, 2, db_queue->database_name, total_queues);
+
+                        // Lead queue (use the label from before spawning)
+                        log_this(dqm_label, "Lead: 1 (%s)", LOG_LEVEL_TRACE, 1, lead_label_before);
+                        free(lead_label_before);
+
+                        // Slow queues
+                        if (conn_config->queues.slow.start > 0) {
+                            char* slow_descriptors[10]; // Max 10 for logging
+                            int slow_count = 0;
+                            for (int i = 0; i < db_queue->child_queue_count && slow_count < conn_config->queues.slow.start; i++) {
+                                if (db_queue->child_queues[i] && strcmp(db_queue->child_queues[i]->queue_type, QUEUE_TYPE_SLOW) == 0) {
+                                    slow_descriptors[slow_count] = database_queue_generate_label(db_queue->child_queues[i]);
+                                    slow_count++;
+                                }
+                            }
+                            if (slow_count > 0) {
+                                char descriptors_str[512] = "";
+                                for (int i = 0; i < slow_count; i++) {
+                                    if (i > 0) strcat(descriptors_str, ", ");
+                                    strncat(descriptors_str, slow_descriptors[i], sizeof(descriptors_str) - strlen(descriptors_str) - 1);
+                                    free(slow_descriptors[i]);
+                                }
+                                log_this(dqm_label, "Slow: %d (%s)", LOG_LEVEL_TRACE, 2, slow_count, descriptors_str);
+                            }
+                        } else {
+                            log_this(dqm_label, "Slow: 0", LOG_LEVEL_TRACE, 0);
+                        }
+
+                        // Medium queues
+                        if (conn_config->queues.medium.start > 0) {
+                            char* medium_descriptors[10];
+                            int medium_count = 0;
+                            for (int i = 0; i < db_queue->child_queue_count && medium_count < conn_config->queues.medium.start; i++) {
+                                if (db_queue->child_queues[i] && strcmp(db_queue->child_queues[i]->queue_type, QUEUE_TYPE_MEDIUM) == 0) {
+                                    medium_descriptors[medium_count] = database_queue_generate_label(db_queue->child_queues[i]);
+                                    medium_count++;
+                                }
+                            }
+                            if (medium_count > 0) {
+                                char descriptors_str[512] = "";
+                                for (int i = 0; i < medium_count; i++) {
+                                    if (i > 0) strcat(descriptors_str, ", ");
+                                    strncat(descriptors_str, medium_descriptors[i], sizeof(descriptors_str) - strlen(descriptors_str) - 1);
+                                    free(medium_descriptors[i]);
+                                }
+                                log_this(dqm_label, "Medium: %d (%s)", LOG_LEVEL_TRACE, 2, medium_count, descriptors_str);
+                            }
+                        } else {
+                            log_this(dqm_label, "Medium: 0", LOG_LEVEL_TRACE, 0);
+                        }
+
+                        // Fast queues
+                        if (conn_config->queues.fast.start > 0) {
+                            char* fast_descriptors[10];
+                            int fast_count = 0;
+                            for (int i = 0; i < db_queue->child_queue_count && fast_count < conn_config->queues.fast.start; i++) {
+                                if (db_queue->child_queues[i] && strcmp(db_queue->child_queues[i]->queue_type, QUEUE_TYPE_FAST) == 0) {
+                                    fast_descriptors[fast_count] = database_queue_generate_label(db_queue->child_queues[i]);
+                                    fast_count++;
+                                }
+                            }
+                            if (fast_count > 0) {
+                                char descriptors_str[512] = "";
+                                for (int i = 0; i < fast_count; i++) {
+                                    if (i > 0) strcat(descriptors_str, ", ");
+                                    strncat(descriptors_str, fast_descriptors[i], sizeof(descriptors_str) - strlen(descriptors_str) - 1);
+                                    free(fast_descriptors[i]);
+                                }
+                                log_this(dqm_label, "Fast: %d (%s)", LOG_LEVEL_TRACE, 2, fast_count, descriptors_str);
+                            }
+                        } else {
+                            log_this(dqm_label, "Fast: 0", LOG_LEVEL_TRACE, 0);
+                        }
+
+                        // Cache queues
+                        if (conn_config->queues.cache.start > 0) {
+                            char* cache_descriptors[10];
+                            int cache_count = 0;
+                            for (int i = 0; i < db_queue->child_queue_count && cache_count < conn_config->queues.cache.start; i++) {
+                                if (db_queue->child_queues[i] && strcmp(db_queue->child_queues[i]->queue_type, QUEUE_TYPE_CACHE) == 0) {
+                                    cache_descriptors[cache_count] = database_queue_generate_label(db_queue->child_queues[i]);
+                                    cache_count++;
+                                }
+                            }
+                            if (cache_count > 0) {
+                                char descriptors_str[512] = "";
+                                for (int i = 0; i < cache_count; i++) {
+                                    if (i > 0) strcat(descriptors_str, ", ");
+                                    strncat(descriptors_str, cache_descriptors[i], sizeof(descriptors_str) - strlen(descriptors_str) - 1);
+                                    free(cache_descriptors[i]);
+                                }
+                                log_this(dqm_label, "Cache: %d (%s)", LOG_LEVEL_TRACE, 2, cache_count, descriptors_str);
+                            }
+                        } else {
+                            log_this(dqm_label, "Cache: 0", LOG_LEVEL_TRACE, 0);
+                        }
+                        log_group_end();
+                    }
+                }
+
                 // Signal bootstrap completion for launch synchronization
                 MutexResult bootstrap_lock_result = MUTEX_LOCK(&db_queue->bootstrap_lock, dqm_label);
                 if (bootstrap_lock_result == MUTEX_SUCCESS) {

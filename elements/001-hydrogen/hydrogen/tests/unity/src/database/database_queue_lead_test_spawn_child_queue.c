@@ -46,7 +46,7 @@ void test_database_queue_spawn_child_queue_null_queue_type(void) {
 }
 
 void test_database_queue_spawn_child_queue_worker_queue(void) {
-    DatabaseQueue* worker_queue = database_queue_create_worker("testdb2", "sqlite:///tmp/test2.db", QUEUE_TYPE_MEDIUM);
+    DatabaseQueue* worker_queue = database_queue_create_worker("testdb2", "sqlite:///tmp/test2.db", QUEUE_TYPE_MEDIUM, NULL);
     TEST_ASSERT_NOT_NULL(worker_queue);
     TEST_ASSERT_FALSE(worker_queue->is_lead_queue);
 

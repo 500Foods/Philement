@@ -61,7 +61,7 @@ void test_database_queue_submit_query_null_query(void) {
 }
 
 void test_database_queue_submit_query_worker_queue(void) {
-    DatabaseQueue* queue = database_queue_create_worker("testdb2", "sqlite:///tmp/test2.db", QUEUE_TYPE_MEDIUM);
+    DatabaseQueue* queue = database_queue_create_worker("testdb2", "sqlite:///tmp/test2.db", QUEUE_TYPE_MEDIUM, NULL);
     TEST_ASSERT_NOT_NULL(queue);
 
     DatabaseQuery query = {

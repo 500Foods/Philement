@@ -30,11 +30,14 @@ extern int queue_system_initialized;  // From queue.c
 // Internal state
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 static unsigned long log_counter = 0;  // Global log counter
+static bool log_group_active = false;  // Global log group flag
+static pthread_mutex_t log_group_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t log_group_cond = PTHREAD_COND_INITIALIZER;
 
 // TLS Keys (static/internal - no extern needed)
 static pthread_key_t logging_operation_key;
 static pthread_key_t log_group_key;
-static pthread_key_t mutex_operation_key;  // NEW: To detect mutex context
+static pthread_key_t mutex_operation_key;  // To detect mutex context
 static bool tls_keys_initialized = false;
 
 // Destructor for logging flag (frees malloc'd bool)
@@ -79,27 +82,6 @@ static void set_logging_operation_flag(bool val) {
     if (flag) *flag = val;
 }
 
-// Accessors for log_group
-static bool* get_log_group_flag(void) {
-    init_tls_keys();
-    bool *flag = pthread_getspecific(log_group_key);
-    if (!flag) {
-        flag = malloc(sizeof(bool));
-        if (flag) {
-            *flag = false;
-            pthread_setspecific(log_group_key, flag);
-        } else {
-            static bool fallback_flag = false;
-            return &fallback_flag;
-        }
-    }
-    return flag;
-}
-
-static void set_log_group_flag(bool val) {
-    bool *flag = get_log_group_flag();
-    if (flag) *flag = val;
-}
 
 // Accessors for mutex_operation
 static bool* get_mutex_operation_flag(void) {
@@ -120,6 +102,28 @@ static bool* get_mutex_operation_flag(void) {
 
 static void set_mutex_operation_flag(bool val) {
     bool *flag = get_mutex_operation_flag();
+    if (flag) *flag = val;
+}
+
+// Accessors for log_group
+static bool* get_log_group_flag(void) {
+    init_tls_keys();
+    bool *flag = pthread_getspecific(log_group_key);
+    if (!flag) {
+        flag = malloc(sizeof(bool));
+        if (flag) {
+            *flag = false;
+            pthread_setspecific(log_group_key, flag);
+        } else {
+            static bool fallback_flag = false;
+            return &fallback_flag;
+        }
+    }
+    return flag;
+}
+
+static void set_log_group_flag(bool val) {
+    bool *flag = get_log_group_flag();
     if (flag) *flag = val;
 }
 
@@ -381,21 +385,38 @@ size_t count_format_specifiers(const char* format) {
 
 // Log a message based on configuration settings
 void log_group_begin(void) {
-    MutexResult lock_result = MUTEX_LOCK(&log_mutex, SR_LOGGING);
+    // Acquire the global log group lock - this blocks all other threads from logging
+    MutexResult lock_result = MUTEX_LOCK(&log_group_mutex, SR_LOGGING);
     if (lock_result == MUTEX_SUCCESS) {
+        log_group_active = true;
+        // Also set thread-local flag for backward compatibility
         set_log_group_flag(true);
+        // Acquire the normal log mutex for this thread
+        MUTEX_LOCK(&log_mutex, SR_LOGGING);
     }
 }
 
 void log_group_end(void) {
+    // Clear flags
     set_log_group_flag(false);
-    // Use the macro instead of direct function call to get proper logging
+    log_group_active = false;
+
+    // Release the normal log mutex
     MUTEX_UNLOCK(&log_mutex, SR_LOGGING);
+
+    // Signal waiting threads and release the global log group lock
+    pthread_cond_broadcast(&log_group_cond);
+    MUTEX_UNLOCK(&log_group_mutex, SR_LOGGING);
 }
 
 void log_this(const char* subsystem, const char* format, int priority, int num_args, ...) {
-    
+
     // NEW: Skip logging if in mutex operation to break recursion
+    if (*get_mutex_operation_flag()) {
+        return;
+    }
+
+    // Skip logging if in mutex operation to break recursion
     if (*get_mutex_operation_flag()) {
         return;
     }
@@ -418,8 +439,22 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
         }
     }
 
-    // Only lock if we're not already in a group
-    bool is_in_group = get_log_group_flag();
+    // Check if we're in a log group
+    bool is_in_group = *get_log_group_flag();
+
+    // If a log group is active but we're not the group thread, wait for it to complete
+    if (log_group_active && !is_in_group) {
+        // Wait for the log group to complete
+        MutexResult wait_result = MUTEX_LOCK(&log_group_mutex, SR_LOGGING);
+        if (wait_result == MUTEX_SUCCESS) {
+            while (log_group_active) {
+                pthread_cond_wait(&log_group_cond, &log_group_mutex);
+            }
+            MUTEX_UNLOCK(&log_group_mutex, SR_LOGGING);
+        }
+    }
+
+    // Now proceed with normal logging logic
     if (!is_in_group) {
         MutexResult lock_result = MUTEX_LOCK(&log_mutex, SR_LOGGING);
         if (lock_result != MUTEX_SUCCESS) {

@@ -139,7 +139,7 @@ void database_queue_system_destroy(void);
 
 // Database queue management
 DatabaseQueue* database_queue_create_lead(const char* database_name, const char* connection_string, const char* bootstrap_query);
-DatabaseQueue* database_queue_create_worker(const char* database_name, const char* connection_string, const char* queue_type);
+DatabaseQueue* database_queue_create_worker(const char* database_name, const char* connection_string, const char* queue_type, const char* dqm_label);
 void database_queue_destroy(DatabaseQueue* db_queue);
 
 // Queue manager operations

@@ -76,6 +76,12 @@ Hydrogen serves as a database gateway supporting PostgreSQL, SQLite, MySQL, DB2 
   - Child DQMs get specific tags (e.g., Fast queue gets 'F')
   - If only one DQM exists, it handles all tags
 
+- **Bootstrap-Driven Queue Launching**:
+  - **Automatic Spawning**: Lead DQM launches additional worker queues after successful bootstrap query
+  - **Configuration-Based**: Number of queues per type determined by `start` configuration values
+  - **Default Behavior**: No additional queues launched by default (start=0) for conservative resource usage
+  - **Per-Database Control**: Each database connection can specify different queue counts
+
 - **Timer Loop Implementation**:
   - **Heartbeat Interval**: Default 30 seconds, configurable
   - **Immediate Check**: Connection validation starts immediately on DQM launch
@@ -90,10 +96,16 @@ Hydrogen serves as a database gateway supporting PostgreSQL, SQLite, MySQL, DB2 
 
 - **Dynamic Scaling Conditions**:
   - **Configuration**: Min/max counts specified per tag type
-  - **Initial Launch**: Lead launches DQMs to meet minimum requirements
+  - **Initial Launch**: Lead launches DQMs to meet minimum requirements after bootstrap
   - **Scale Up**: When all queues for a tag are non-empty and max not reached
   - **Scale Down**: When all queues for a tag become empty, reduce to minimum
   - **Notifications**: Lead DQM notified on query assignment/completion for scaling decisions
+
+- **Comprehensive Logging System**:
+  - **DQM Labels**: All operations use `DQM-<Database>-<QueueNumber>-<TagLetters>` format
+  - **Queue Operations**: Creation, destruction, and management operations clearly labeled
+  - **Thread Management**: Thread creation/deletion attributed to specific DQMs
+  - **Log Filtering**: Easy filtering by DQM for monitoring and debugging
 
 **Key Implementation (Completed):**
 
@@ -194,7 +206,8 @@ bool db2_execute_query(QueryRequest* req, QueryResult* result) {
 
 **DQM (Database Queue Manager) Architecture:**
 
-- ✅ Lead queue spawns child worker queues dynamically
+- ✅ Lead queue spawns child worker queues dynamically after successful bootstrap
+- ✅ Bootstrap-driven queue launching based on configuration (start/min/max per queue type)
 - ✅ Hierarchical queue management (Lead + children) with proper tag management
 - ✅ Thread-safe queue operations with mutex and semaphore synchronization
 - ✅ Statistics monitoring and health checks with comprehensive logging
@@ -203,6 +216,7 @@ bool db2_execute_query(QueryRequest* req, QueryResult* result) {
 - ✅ Graceful degradation when specific database libraries unavailable
 - ✅ Queue numbering system (00=Lead, 01+=child queues) with proper labeling
 - ✅ Tag inheritance and management (Lead starts with LSMFC, distributes to children)
+- ✅ Comprehensive DQM logging with labels for all operations (queue, thread, connection management)
 
 **Core Database Files Implemented:**
 
@@ -859,16 +873,17 @@ void* conn = PQconnectdb_ptr(conninfo);
 
 ### ✅ **FULLY COMPLETED & OPERATIONAL**
 
-**Phase 1: DQM Infrastructure** ✅ **COMPLETED 9/8/2025**
+**Phase 1: DQM Infrastructure** ✅ **COMPLETED 10/7/2025**
 
-- Lead DQM architecture with dynamic child queue spawning
+- Lead DQM architecture with dynamic child queue spawning after successful bootstrap
+- Bootstrap-driven queue launching based on configuration (start/min/max per queue type)
 - Hierarchical queue management (Lead + slow/medium/fast/cache children)
 - Thread-safe operations with proper mutex and semaphore synchronization
 - Dynamic library loading for all database engines (no static linking required)
 - Queue numbering system (00=Lead, 01+=child queues) with structured labeling
 - Tag inheritance and management (Lead starts with LSMFC, distributes to children)
 - Integration with existing queue infrastructure and launch/landing system
-- Comprehensive logging with DQM component labels (e.g., `DQM-Acuranzo-00-LSMFC`)
+- Comprehensive logging with DQM component labels for all operations (queue, thread, connection management)
 - Statistics monitoring and health checks with detailed performance metrics
 
 **Phase 2: Multi-Engine Interface Layer** ✅ **COMPLETED 9/5/2025**
@@ -941,12 +956,6 @@ void* conn = PQconnectdb_ptr(conninfo);
 - SQLite, MySQL/MariaDB, IBM DB2 engines
 - Engine-specific optimizations and testing
 
-**Phase 6: Production Hardening** (Estimated: 2 weeks)
-
-- Security hardening
-- Performance monitoring and optimization
-- Comprehensive error handling and recovery
-
 ### 📚 **DOCUMENTATION COMPLETED**
 
 - ✅ **[DATABASE_PLAN.md](DATABASE_PLAN.md)** - Updated with current implementation status
@@ -965,10 +974,11 @@ void* conn = PQconnectdb_ptr(conninfo);
 The database subsystem is **production-ready for all implemented engines** with:
 
 - **Multi-Engine Support**: PostgreSQL, SQLite, MySQL, and DB2 all fully implemented
-- **Robust Lead DQM architecture** with dynamic scaling across all engines
+- **Robust Lead DQM architecture** with bootstrap-driven queue launching
+- **Configuration-based scaling**: Automatic spawning of worker queues after successful bootstrap
 - **Comprehensive error handling and recovery** with engine-specific optimizations
 - **Thread-safe operations throughout** with proper synchronization
-- **Extensive monitoring and logging** with structured DQM labeling
+- **Extensive monitoring and logging** with structured DQM labeling for all operations
 - **Integration with existing Hydrogen infrastructure** and launch/landing system
 - **Dynamic library loading** for deployment flexibility and graceful degradation
 - **Bootstrap query execution** working across all database engines
@@ -981,4 +991,3 @@ The database subsystem is **production-ready for all implemented engines** with:
 - Testing framework: 100% ✅
 - Query caching: 0% (next priority)
 - API integration: 0% (pending)
-- Production hardening: 0% (final phase)

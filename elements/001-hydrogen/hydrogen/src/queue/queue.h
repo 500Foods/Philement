@@ -100,7 +100,9 @@ void queue_system_destroy(void); // Clean shutdown of all queues
 
 // Queue Management
 Queue* queue_find(const char* name);  // O(1) queue lookup
+Queue* queue_find_with_label(const char* name, const char* subsystem);  // O(1) queue lookup with custom subsystem
 Queue* queue_create(const char* name, const QueueAttributes* attrs);  // Create/get queue
+Queue* queue_create_with_label(const char* name, const QueueAttributes* attrs, const char* subsystem);  // Create/get queue with custom subsystem
 void queue_destroy(Queue* queue);  // Clean up queue resources
 
 // Message Operations
