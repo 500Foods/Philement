@@ -20,21 +20,15 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
         return false;
     }
 
-    MutexResult lock_result = MUTEX_LOCK(&lead_queue->children_lock, SR_DATABASE);
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    MutexResult lock_result = MUTEX_LOCK(&lead_queue->children_lock, dqm_label);
     if (lock_result != MUTEX_SUCCESS) {
+        free(dqm_label);
         return false;
     }
 
-    // Check if we already have a child queue of this type
-    for (int i = 0; i < lead_queue->child_queue_count; i++) {
-        if (lead_queue->child_queues[i] &&
-            lead_queue->child_queues[i]->queue_type &&
-            strcmp(lead_queue->child_queues[i]->queue_type, queue_type) == 0) {
-            mutex_unlock(&lead_queue->children_lock);
-            // log_this(SR_DATABASE, "Child queue %s already exists for database %s", LOG_LEVEL_TRACE, 2 queue_type, lead_queue->database_name);
-            return true; // Already exists
-        }
-    }
+    // Note: We allow multiple queues of the same type based on configuration
+    // The check for existing queues is removed to allow scaling
 
     // Check if we have space for more child queues
     if (lead_queue->child_queue_count >= lead_queue->max_child_queues) {
@@ -47,12 +41,12 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
     DatabaseQueue* child_queue = database_queue_create_worker(
         lead_queue->database_name,
         lead_queue->connection_string,
-        queue_type
+        queue_type,
+        dqm_label
     );
 
     if (!child_queue) {
         mutex_unlock(&lead_queue->children_lock);
-        char* dqm_label = database_queue_generate_label(lead_queue);
         log_this(dqm_label, "Failed to create child queue", LOG_LEVEL_ERROR, 0);
         free(dqm_label);
         return false;
@@ -78,7 +72,6 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
     if (!database_queue_start_worker(child_queue)) {
         mutex_unlock(&lead_queue->children_lock);
         database_queue_destroy(child_queue);
-        char* dqm_label = database_queue_generate_label(lead_queue);
         log_this(dqm_label, "Failed to start worker for child queue", LOG_LEVEL_ERROR, 0);
         free(dqm_label);
         return false;
@@ -88,20 +81,10 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
     lead_queue->child_queues[lead_queue->child_queue_count] = child_queue;
     lead_queue->child_queue_count++;
 
-    // Update Lead queue tags - remove the tag that was assigned to child
-    char tag_to_remove = '\0';
-    if (strcmp(queue_type, QUEUE_TYPE_SLOW) == 0) tag_to_remove = 'S';
-    else if (strcmp(queue_type, QUEUE_TYPE_MEDIUM) == 0) tag_to_remove = 'M';
-    else if (strcmp(queue_type, QUEUE_TYPE_FAST) == 0) tag_to_remove = 'F';
-    else if (strcmp(queue_type, QUEUE_TYPE_CACHE) == 0) tag_to_remove = 'C';
-
-    if (tag_to_remove != '\0') {
-        database_queue_remove_tag(lead_queue, tag_to_remove);
-    }
+    // Note: Lead queue retains all its original tags - no tag removal
 
     mutex_unlock(&lead_queue->children_lock);
 
-    char* dqm_label = database_queue_generate_label(lead_queue);
     log_this(dqm_label, "Spawned child queue", LOG_LEVEL_TRACE, 0);
     free(dqm_label);
     return true;
@@ -115,7 +98,8 @@ bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* 
         return false;
     }
 
-    MutexResult lock_result = MUTEX_LOCK(&lead_queue->children_lock, SR_DATABASE);
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    MutexResult lock_result = MUTEX_LOCK(&lead_queue->children_lock, dqm_label);
     if (lock_result != MUTEX_SUCCESS) {
         return false;
     }

@@ -337,7 +337,7 @@ void database_queue_init_lead_final_flags(DatabaseQueue* db_queue);
 // Helper functions for database_queue_create_worker (for testing)
 DatabaseQueue* database_queue_allocate_worker_basic(const char* database_name, const char* connection_string, const char* queue_type);
 bool database_queue_init_worker_properties(DatabaseQueue* db_queue, const char* queue_type);
-bool database_queue_create_worker_underlying_queue(DatabaseQueue* db_queue, const char* database_name, const char* queue_type);
+bool database_queue_create_worker_underlying_queue(DatabaseQueue* db_queue, const char* database_name, const char* queue_type, const char* dqm_label);
 bool database_queue_init_worker_sync_primitives(DatabaseQueue* db_queue, const char* queue_type);
 void database_queue_init_worker_final_flags(DatabaseQueue* db_queue);
 

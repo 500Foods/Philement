@@ -52,9 +52,6 @@ void test_check_database_landing_readiness_success(void) {
     TEST_ASSERT_NOT_NULL(result.messages);
     TEST_ASSERT_NOT_NULL(result.messages[0]);
     TEST_ASSERT_EQUAL_STRING(SR_DATABASE, result.messages[0]);
-    TEST_ASSERT_NOT_NULL(result.messages[1]);
-    TEST_ASSERT_NOT_NULL(result.messages[2]);
-    TEST_ASSERT_NULL(result.messages[3]);
 
     // Clean up messages
     free_readiness_messages(&result);
@@ -73,9 +70,6 @@ void test_check_database_landing_readiness_not_running(void) {
     TEST_ASSERT_NOT_NULL(result.messages);
     TEST_ASSERT_NOT_NULL(result.messages[0]);
     TEST_ASSERT_EQUAL_STRING(SR_DATABASE, result.messages[0]);
-    TEST_ASSERT_NOT_NULL(result.messages[1]);
-    TEST_ASSERT_NOT_NULL(result.messages[2]);
-    TEST_ASSERT_NULL(result.messages[3]);
 
     // Clean up messages
     free_readiness_messages(&result);

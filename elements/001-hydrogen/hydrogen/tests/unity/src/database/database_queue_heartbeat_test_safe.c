@@ -41,7 +41,7 @@ void test_database_queue_heartbeat_safe_functions(void) {
     // Should not crash with NULL queue
 
     // Test database_queue_execute_bootstrap_query with non-lead queue
-    DatabaseQueue* worker_queue = database_queue_create_worker("testdb", "sqlite:///tmp/test.db", QUEUE_TYPE_MEDIUM);
+    DatabaseQueue* worker_queue = database_queue_create_worker("testdb", "sqlite:///tmp/test.db", QUEUE_TYPE_MEDIUM, NULL);
     if (worker_queue) {
         database_queue_execute_bootstrap_query(worker_queue);
         // Should not crash with non-lead queue

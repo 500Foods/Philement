@@ -103,7 +103,7 @@ void test_database_queue_comprehensive_all_functions(void) {
     TEST_ASSERT_NULL(found_queue);
 
     // Test database_queue_create_worker
-    DatabaseQueue* worker_queue = database_queue_create_worker("testdb", "sqlite:///tmp/test.db", QUEUE_TYPE_MEDIUM);
+    DatabaseQueue* worker_queue = database_queue_create_worker("testdb", "sqlite:///tmp/test.db", QUEUE_TYPE_MEDIUM, NULL);
     TEST_ASSERT_NOT_NULL(worker_queue);
     TEST_ASSERT_FALSE(worker_queue->is_lead_queue);
     TEST_ASSERT_FALSE(worker_queue->can_spawn_queues);
