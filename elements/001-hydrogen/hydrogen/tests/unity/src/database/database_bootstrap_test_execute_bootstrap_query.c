@@ -1,12 +1,13 @@
 /*
- * Unity Test File: database_queue_heartbeat_test_execute_bootstrap
+ * Unity Test File: database_bootstrap_test_execute_bootstrap_query
  * This file contains unit tests for database_queue_execute_bootstrap_query function
- * from src/database/database_queue_heartbeat.c
+ * from src/database/database_bootstrap.c
  */
 
 #include "../../../../src/hydrogen.h"
 #include "unity.h"
 
+#include "../../../../src/database/database_bootstrap.h"
 #include "../../../../src/database/database_queue.h"
 
 // Function prototypes for test functions
