@@ -108,6 +108,15 @@ char* get_library_version(void* handle, const char* lib_name);
 // Version comparison utility function
 int version_matches(const char* loaded_version, const char* expected_version);
 
+// Database subsystem validation functions
+void validate_database_configuration(const DatabaseConfig* db_config, const char*** messages,
+                                    size_t* count, size_t* capacity, bool* overall_readiness,
+                                    int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count);
+void check_database_library_dependencies(const char*** messages, size_t* count, size_t* capacity, bool* overall_readiness,
+                                       int postgres_count, int mysql_count, int sqlite_count, int db2_count);
+bool validate_database_connections(const DatabaseConfig* db_config, const char*** messages,
+                                  size_t* count, size_t* capacity);
+
 // Forward declarations for validation helpers for launch_resources.c
 bool validate_memory_limits(const ResourceConfig* config, int* msg_count, const char** messages);
 bool validate_queue_settings(const ResourceConfig* config, int* msg_count, const char** messages);

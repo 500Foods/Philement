@@ -187,6 +187,11 @@ bool database_queue_check_connection(DatabaseQueue* db_queue);
 void database_queue_perform_heartbeat(DatabaseQueue* db_queue);
 void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue);
 
+// Heartbeat utility functions (for testing)
+DatabaseEngine database_queue_determine_engine_type(const char* connection_string);
+char* database_queue_mask_connection_string(const char* connection_string);
+void database_queue_signal_initial_connection_complete(DatabaseQueue* db_queue);
+
 // Launch synchronization functions
 bool database_queue_wait_for_initial_connection(DatabaseQueue* db_queue, int timeout_seconds);
 

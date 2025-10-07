@@ -1,0 +1,29 @@
+{
+    "ServerName": "hydrogen-test-invalid-db",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "WebServer": {
+        "Enabled": true,
+        "EnableIPv6": false,
+        "Port": 5301
+    },
+    "Databases": {
+        "Connections": [
+            {
+                "Enabled": true,
+                "Name": "INVALID",
+                "Engine": "postgresql",
+                "Host": "invalid.host.that.does.not.exist.example.com",
+                "Port": 5432,
+                "Database": "nonexistent_database",
+                "User": "invalid_user",
+                "Pass": "invalid_password",
+                "Bootstrap":"SELECT 42 as test_value;",
+                "Queues": {
+                    "Slow": {
+                        "start": 1
+                    }
+                }
+            }
+        ]
+    }
+}
