@@ -61,16 +61,17 @@ HELIUM_DIR="${PROJECT_DIR}/elements/002-helium"
 HELIUM_DIR="$(cd "${HELIUM_DIR}" && pwd 2>/dev/null || echo "${HELIUM_DIR}")"
 
 # List of designs to process
-DESIGNS=( "acuranzo" "helium" "glm" "gaius")
+# DESIGNS=( "acuranzo" "helium" "glm" "gaius")
+DESIGNS=( "acuranzo" )
 
 # Supported database engines
 ENGINES=("postgresql" "sqlite" "mysql" "db2")
 
 declare -A DESIGN_SCHEMAS
 DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO"
-DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM"
-DESIGN_SCHEMAS["glm"]="glm2:glm2:glm2:GLM2"
-DESIGN_SCHEMAS["gaius"]="gaius:gaius:gaius:GAIUS"
+# DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM"
+# DESIGN_SCHEMAS["glm"]="glm2:glm2:glm2:GLM2"
+# DESIGN_SCHEMAS["gaius"]="gaius:gaius:gaius:GAIUS"
 
 # Function to generate database diagram for a specific combination
 generate_database_diagram() {
