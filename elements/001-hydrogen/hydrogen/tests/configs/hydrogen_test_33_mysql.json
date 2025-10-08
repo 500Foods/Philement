@@ -20,6 +20,7 @@
                 "Bootstrap": "select * from canvas.queries;",
                 "AutoMigration": true,
                 "TestMigration": true,
+                "Migrations":"PAYLOAD:acuranzo",
                 "Queues": {
                     "Slow": {
                         "start": 2

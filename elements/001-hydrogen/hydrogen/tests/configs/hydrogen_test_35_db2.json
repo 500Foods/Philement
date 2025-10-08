@@ -20,6 +20,7 @@
                 "Bootstrap":"SELECT * FROM acuranzo.queries;",
                 "AutoMigration": true,
                 "TestMigration": true,
+                "Migrations":"PAYLOAD:acuranzo",
                 "Queues": {
                     "Slow": {
                         "start": 2

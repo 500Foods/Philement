@@ -41,6 +41,10 @@ typedef struct DatabaseConnection {
     char* user;            // Database user
     char* pass;            // Database password
     char* bootstrap_query; // Bootstrap query to run after connection (loads QTC)
+    char* schema;          // Database schema name (e.g., "app")
+    bool auto_migration;   // Whether to automatically run migrations
+    bool test_migration;   // Whether to run migrations in test mode
+    char* migrations;      // Migration source (PAYLOAD:name or path)
     DatabaseQueues queues; // Queue configuration for this connection
 } DatabaseConnection;
 
