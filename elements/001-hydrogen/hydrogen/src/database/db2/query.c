@@ -19,6 +19,7 @@ extern SQLRowCount_t SQLRowCount_ptr;
 extern SQLFreeHandle_t SQLFreeHandle_ptr;
 extern SQLFreeStmt_t SQLFreeStmt_ptr;
 extern SQLDescribeCol_t SQLDescribeCol_ptr;
+extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
 
 // Query Execution Functions
 bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result) {
@@ -39,7 +40,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
         return false;
     }
 
-    log_this(designator, "DB2 execute_query: Executing query: %s", LOG_LEVEL_TRACE, 1, request->sql_template);
+    // log_this(designator, "DB2 execute_query:\n%s", LOG_LEVEL_TRACE, 1, request->sql_template);
 
     // Allocate statement handle
     void* stmt_handle = NULL;
@@ -54,8 +55,26 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
 
     // Execute the query
     int exec_result = SQLExecDirect_ptr(stmt_handle, (char*)request->sql_template, SQL_NTS);
-    if (exec_result != SQL_SUCCESS) {
-        log_this(designator, "DB2 query execution failed - result: %d", LOG_LEVEL_ERROR, 1, exec_result);
+    if (exec_result != SQL_SUCCESS && exec_result != SQL_SUCCESS_WITH_INFO) {
+        // Get detailed error information
+        unsigned char sql_state[6] = {0};
+        long int native_error = 0;
+        unsigned char error_msg[1024] = {0};
+        short msg_len = 0;
+
+        // Get the first error diagnostic
+        int diag_result = SQLGetDiagRec_ptr ? SQLGetDiagRec_ptr(SQL_HANDLE_STMT, stmt_handle, 1,
+            sql_state, &native_error, error_msg, (short)sizeof(error_msg), &msg_len) : -1;
+
+        if (diag_result == SQL_SUCCESS || diag_result == SQL_SUCCESS_WITH_INFO) {
+            log_this(designator, "DB2 query execution failed - MESSAGE: %s", LOG_LEVEL_ERROR, 1, (char*)error_msg);
+            log_this(designator, "DB2 query execution failed - SQLSTATE: %s, Native Error: %ld", LOG_LEVEL_ERROR, 2, (char*)sql_state, (long int)native_error);
+            log_this(designator, "DB2 query execution failed - STATEMENT:\n%s", LOG_LEVEL_TRACE, 1, request->sql_template);
+
+        } else {
+            log_this(designator, "DB2 query execution failed - result: %d (could not get error details)", LOG_LEVEL_ERROR, 1, exec_result);
+        }
+
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         return false;
     }

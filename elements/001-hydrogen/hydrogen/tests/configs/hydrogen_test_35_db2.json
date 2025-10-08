@@ -21,6 +21,7 @@
                 "AutoMigration": true,
                 "TestMigration": true,
                 "Migrations":"PAYLOAD:acuranzo",
+                "Schema": "test",
                 "Queues": {
                     "Slow": {
                         "start": 2

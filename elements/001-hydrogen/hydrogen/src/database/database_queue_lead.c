@@ -99,8 +99,24 @@ bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* 
     }
 
     char* dqm_label = database_queue_generate_label(lead_queue);
+    // First, signal all child queues to stop their worker threads
     MutexResult lock_result = MUTEX_LOCK(&lead_queue->children_lock, dqm_label);
+    if (lock_result == MUTEX_SUCCESS) {
+        for (int i = 0; i < lead_queue->child_queue_count; i++) {
+            if (lead_queue->child_queues[i]) {
+                database_queue_stop_worker(lead_queue->child_queues[i]);
+            }
+        }
+        mutex_unlock(&lead_queue->children_lock);
+    }
+
+    // Now wait a bit for threads to stop before acquiring lock again
+    usleep(50000); // 50ms wait for threads to stop
+
+    // Now acquire lock for destruction
+    lock_result = MUTEX_LOCK(&lead_queue->children_lock, dqm_label);
     if (lock_result != MUTEX_SUCCESS) {
+        log_this(dqm_label, "Failed to acquire children_lock for shutdown after thread stop", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
