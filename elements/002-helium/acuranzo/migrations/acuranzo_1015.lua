@@ -107,108 +107,111 @@ return {
                             ]=],
                             'JSON Table Definition in collection',      -- query_code,
                             %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%                       -- DIAGRAM_START
+                                                                        -- DIAGRAM_START  
+                            %%JSON_INGEST_START%%                      
                             [=[
-                                [
-                                    {
-                                        "object_type": "table",
-                                        "object_id": "table.reports",
-                                        "object_ref": "1015",
-                                        "table": [
-                                            {
-                                                "name": "report_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": true,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "rev_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": true,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "name",
-                                                "datatype": "%%VARCHAR_100%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "summary",
-                                                "datatype": "%%BIGTEXT%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "thumbnail",
-                                                "datatype": "%%BIGTEXT%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "collection",
-                                                "datatype": "%%JSONB%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "valid_after",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "valid_until",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "created_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "created_at",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "updated_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "updated_at",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            }
-                                        ]
-                                    }
-                                ]
+                                {
+                                    "diagram": [
+                                        {
+                                            "object_type": "table",
+                                            "object_id": "table.reports",
+                                            "object_ref": "1015",
+                                            "table": [
+                                                {
+                                                    "name": "report_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": true,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "rev_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": true,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "name",
+                                                    "datatype": "%%VARCHAR_100%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "summary",
+                                                    "datatype": "%%BIGTEXT%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "thumbnail",
+                                                    "datatype": "%%BIGTEXT%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "collection",
+                                                    "datatype": "%%JSONB%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "valid_after",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "valid_until",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "created_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "created_at",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "updated_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "updated_at",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
                             ]=]
                             %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,

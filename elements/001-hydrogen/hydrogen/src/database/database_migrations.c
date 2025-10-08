@@ -566,7 +566,7 @@ bool database_migrations_execute_auto(DatabaseQueue* db_queue, DatabaseHandle* c
             continue;
         }
 
-        log_this(dqm_label, "Found database.lua in payload: %s (%zu bytes)", LOG_LEVEL_DEBUG, 2, db_filename, db_file->size);
+        log_this(dqm_label, "Found database.lua in payload: %s (%zu bytes)", LOG_LEVEL_TRACE, 2, db_filename, db_file->size);
 
         // Load and execute database.lua and make it available as a module
         if (luaL_loadbuffer(L, (const char*)db_file->data, db_file->size, "database.lua") != LUA_OK) {
@@ -886,10 +886,10 @@ bool database_migrations_execute_auto(DatabaseQueue* db_queue, DatabaseHandle* c
                     if (stmt_success && stmt_result && stmt_result->success) {
                         log_this(dqm_label, "Statement %zu executed successfully: affected %d rows", LOG_LEVEL_TRACE, 2, j + 1, stmt_result->affected_rows);
                     } else {
-                        const char* error_msg = "Unknown error";
-                        if (stmt_result && stmt_result->error_message) {
-                            error_msg = stmt_result->error_message;
-                        }
+                        // const char* error_msg = "Unknown error";
+                        // if (stmt_result && stmt_result->error_message) {
+                        //     error_msg = stmt_result->error_message;
+                        // }
                         // log_this(dqm_label, "Statement %zu execution failed: %s", LOG_LEVEL_TRACE, 2, j + 1, error_msg);
                         db2_transaction_success = false;
                     }
@@ -936,7 +936,7 @@ bool database_migrations_execute_auto(DatabaseQueue* db_queue, DatabaseHandle* c
                     break; // Stop processing further migrations
                 }
 
-                log_this(dqm_label, "Migration %s completed successfully", LOG_LEVEL_TRACE, 1, migration_files[i]);
+                log_this(dqm_label, "Migration %s imported successfully", LOG_LEVEL_STATE, 1, migration_files[i]);
             }
 
         } else {

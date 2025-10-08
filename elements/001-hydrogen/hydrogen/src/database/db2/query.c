@@ -67,9 +67,16 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
             sql_state, &native_error, error_msg, (short)sizeof(error_msg), &msg_len) : -1;
 
         if (diag_result == SQL_SUCCESS || diag_result == SQL_SUCCESS_WITH_INFO) {
+            char *msg = (char*)error_msg;
+            while (*msg) {
+                if (*msg == '\n') {
+                    *msg = ' ';  
+                }
+            msg++;
+}
             log_this(designator, "DB2 query execution failed - MESSAGE: %s", LOG_LEVEL_ERROR, 1, (char*)error_msg);
             log_this(designator, "DB2 query execution failed - SQLSTATE: %s, Native Error: %ld", LOG_LEVEL_ERROR, 2, (char*)sql_state, (long int)native_error);
-            log_this(designator, "DB2 query execution failed - STATEMENT:\n%s", LOG_LEVEL_TRACE, 1, request->sql_template);
+            log_this(designator, "DB2 query execution failed - STATEMENT:\n%s", LOG_LEVEL_ERROR, 1, request->sql_template);
 
         } else {
             log_this(designator, "DB2 query execution failed - result: %d (could not get error details)", LOG_LEVEL_ERROR, 1, exec_result);
