@@ -23,4 +23,7 @@ bool load_libdb2_functions(const char* designator);
 PreparedStatementCache* db2_create_prepared_statement_cache(void);
 void db2_destroy_prepared_statement_cache(PreparedStatementCache* cache);
 
+// Transaction control function
+extern SQLSetConnectAttr_t SQLSetConnectAttr_ptr;
+
 #endif // DATABASE_ENGINE_DB2_CONNECTION_H

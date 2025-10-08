@@ -9,6 +9,8 @@
 #include <limits.h>
 #include <dirent.h>
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
@@ -17,6 +19,11 @@
 #include "database_queue.h"
 #include "database.h"
 #include "database_migrations.h"
+
+// DB2 includes for transaction control
+#include "db2/types.h"
+#include "db2/connection.h"
+#include "db2/transaction.h"
 
 // Lua debug hook for tracing execution
 // static void lua_trace_hook(lua_State *L, lua_Debug *ar) {
@@ -543,10 +550,11 @@ bool database_migrations_execute_auto(DatabaseQueue* db_queue, DatabaseHandle* c
         if (!db_file) {
             log_this(dqm_label, "database.lua not found in payload for migration: %s", LOG_LEVEL_ERROR, 1, migration_files[i]);
             // Debug: List all available payload files
-            log_this(dqm_label, "Available payload files:", LOG_LEVEL_DEBUG, 0);
+            log_this(dqm_label, "Available payload files for prefix '%s':", LOG_LEVEL_DEBUG, 1, migration_name);
             for (size_t j = 0; j < payload_count; j++) {
                 log_this(dqm_label, "  %s (%zu bytes)", LOG_LEVEL_DEBUG, 2, payload_files[j].name, payload_files[j].size);
             }
+            log_this(dqm_label, "Looking for: %s", LOG_LEVEL_DEBUG, 1, db_filename);
             // Free payload files
             for (size_t j = 0; j < payload_count; j++) {
                 free(payload_files[j].name);
@@ -558,7 +566,7 @@ bool database_migrations_execute_auto(DatabaseQueue* db_queue, DatabaseHandle* c
             continue;
         }
 
-        // log_this(dqm_label, "Found database.lua in payload: %s (%zu bytes)", LOG_LEVEL_DEBUG, 2, db_filename, db_file->size);
+        log_this(dqm_label, "Found database.lua in payload: %s (%zu bytes)", LOG_LEVEL_DEBUG, 2, db_filename, db_file->size);
 
         // Load and execute database.lua and make it available as a module
         if (luaL_loadbuffer(L, (const char*)db_file->data, db_file->size, "database.lua") != LUA_OK) {
@@ -736,50 +744,203 @@ bool database_migrations_execute_auto(DatabaseQueue* db_queue, DatabaseHandle* c
                 query_count
             );
 
-        // Execute the generated SQL against the database
+        // Execute the generated SQL against the database as a transaction
         if (sql_result && sql_length > 0) {
-            // Create a query request for the migration SQL
-            QueryRequest* migration_request = calloc(1, sizeof(QueryRequest));
-            if (!migration_request) {
-                log_this(dqm_label, "Failed to allocate query request for migration SQL", LOG_LEVEL_ERROR, 0);
-                lua_close(L);
-                all_success = false;
-                continue;
+            log_this(dqm_label, "Executing migration %s as transaction", LOG_LEVEL_TRACE, 1, migration_files[i]);
+
+            // For DB2, we need to handle transactions differently using ODBC auto-commit control
+
+            if (connection->engine_type == DB_ENGINE_DB2) {
+                // For DB2: Parse multi-statement SQL and execute each statement individually
+                // within a transaction controlled by auto-commit settings
+
+                // Parse the SQL into individual statements using the -- QUERY DELIMITER
+                char* sql_copy = strdup(sql_result);
+                if (!sql_copy) {
+                    log_this(dqm_label, "Failed to allocate memory for SQL parsing", LOG_LEVEL_ERROR, 0);
+                    lua_close(L);
+                    all_success = false;
+                    continue;
+                }
+
+                // Split on "-- QUERY DELIMITER\n" manually (strtok doesn't work well with multi-char delimiters)
+                const char* delimiter = "-- QUERY DELIMITER\n";
+                size_t delimiter_len = strlen(delimiter);
+                char* sql_ptr = sql_copy;
+                bool db2_transaction_success = true;
+
+                // Collect all statements first
+                char** statements = NULL;
+                size_t statement_count = 0;
+                size_t statements_capacity = 0;
+
+                while (*sql_ptr != '\0') {
+                    // Find the next delimiter
+                    char* delimiter_pos = strstr(sql_ptr, delimiter);
+
+                    // If delimiter found, temporarily null-terminate it
+                    if (delimiter_pos) {
+                        *delimiter_pos = '\0';
+                    }
+
+                    // Process the current statement
+                    char* stmt = sql_ptr;
+
+                    // Trim whitespace
+                    while (*stmt && isspace((unsigned char)*stmt)) stmt++;
+                    char* end = stmt + strlen(stmt) - 1;
+                    while (end > stmt && isspace((unsigned char)*end)) {
+                        *end = '\0';
+                        end--;
+                    }
+
+                    // Skip empty statements
+                    if (strlen(stmt) > 0) {
+                        // Add to statements array
+                        if (statement_count >= statements_capacity) {
+                            statements_capacity = statements_capacity == 0 ? 10 : statements_capacity * 2;
+                            char** new_statements = realloc(statements, statements_capacity * sizeof(char*));
+                            if (!new_statements) {
+                                log_this(dqm_label, "Failed to allocate memory for statements array", LOG_LEVEL_ERROR, 0);
+                                db2_transaction_success = false;
+                                break;
+                            }
+                            statements = new_statements;
+                        }
+                        statements[statement_count] = strdup(stmt);
+                        statement_count++;
+                    }
+
+                    // Move to next statement
+                    if (delimiter_pos) {
+                        // Restore the delimiter and move past it
+                        *delimiter_pos = '-';  // Restore first char of delimiter
+                        sql_ptr = delimiter_pos + delimiter_len;
+                    } else {
+                        // No more delimiters, we're done
+                        break;
+                    }
+                }
+
+                free(sql_copy);
+
+                if (!db2_transaction_success) {
+                    // Cleanup statements
+                    for (size_t j = 0; j < statement_count; j++) {
+                        free(statements[j]);
+                    }
+                    free(statements);
+                    log_this(dqm_label, "Migration %s failed - memory allocation error", LOG_LEVEL_ERROR, 1, migration_files[i]);
+                    lua_close(L);
+                    all_success = false;
+                    break;
+                }
+
+                // Now execute all statements within a transaction using proper DB2 transaction functions
+                Transaction* db2_transaction = NULL;
+                if (!db2_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &db2_transaction)) {
+                    log_this(dqm_label, "Failed to begin DB2 transaction for migration %s", LOG_LEVEL_ERROR, 1, migration_files[i]);
+                    // Cleanup statements
+                    for (size_t j = 0; j < statement_count; j++) {
+                        free(statements[j]);
+                    }
+                    free(statements);
+                    lua_close(L);
+                    all_success = false;
+                    continue;
+                }
+
+                log_this(dqm_label, "Started DB2 transaction for migration %s (%zu statements)", LOG_LEVEL_TRACE, 2, migration_files[i], statement_count);
+
+                // Execute all statements
+                for (size_t j = 0; j < statement_count && db2_transaction_success; j++) {
+                    // log_this(dqm_label, "Executing DB2 statement %zu/%zu: %.100s%s", LOG_LEVEL_TRACE, 4,
+                    //         j + 1, 
+                    //         statement_count, 
+                    //         statements[j], 
+                    //         strlen(statements[j]) > 100 ? "..." : "");
+
+                    QueryRequest* stmt_request = calloc(1, sizeof(QueryRequest));
+                    if (!stmt_request) {
+                        log_this(dqm_label, "Failed to allocate statement request", LOG_LEVEL_ERROR, 0);
+                        db2_transaction_success = false;
+                        break;
+                    }
+
+                    stmt_request->query_id = strdup("migration_statement");
+                    stmt_request->sql_template = strdup(statements[j]);
+                    stmt_request->parameters_json = strdup("{}");
+                    stmt_request->timeout_seconds = 30;
+                    stmt_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
+                    stmt_request->use_prepared_statement = false;
+
+                    QueryResult* stmt_result = NULL;
+                    bool stmt_success = database_engine_execute(connection, stmt_request, &stmt_result);
+
+                    // Clean up request
+                    if (stmt_request->query_id) free(stmt_request->query_id);
+                    if (stmt_request->sql_template) free(stmt_request->sql_template);
+                    if (stmt_request->parameters_json) free(stmt_request->parameters_json);
+                    free(stmt_request);
+
+                    if (stmt_success && stmt_result && stmt_result->success) {
+                        log_this(dqm_label, "Statement %zu executed successfully: affected %d rows", LOG_LEVEL_TRACE, 2, j + 1, stmt_result->affected_rows);
+                    } else {
+                        const char* error_msg = "Unknown error";
+                        if (stmt_result && stmt_result->error_message) {
+                            error_msg = stmt_result->error_message;
+                        }
+                        // log_this(dqm_label, "Statement %zu execution failed: %s", LOG_LEVEL_TRACE, 2, j + 1, error_msg);
+                        db2_transaction_success = false;
+                    }
+
+                    if (stmt_result) {
+                        database_engine_cleanup_result(stmt_result);
+                    }
+                }
+
+                // Commit or rollback based on success
+                if (db2_transaction_success) {
+                    // Commit the transaction
+                    if (!db2_commit_transaction(connection, db2_transaction)) {
+                        log_this(dqm_label, "Failed to commit migration %s", LOG_LEVEL_ERROR, 1, migration_files[i]);
+                        db2_transaction_success = false;
+                    } else {
+                        log_this(dqm_label, "Migration %s committed successfully", LOG_LEVEL_TRACE, 1, migration_files[i]);
+                    }
+                } else {
+                    // Rollback the transaction
+                    if (!db2_rollback_transaction(connection, db2_transaction)) {
+                        log_this(dqm_label, "Failed to rollback migration %s", LOG_LEVEL_ERROR, 1, migration_files[i]);
+                    } else {
+                        log_this(dqm_label, "Migration %s rolled back due to errors", LOG_LEVEL_TRACE, 1, migration_files[i]);
+                    }
+                }
+
+                // Clean up transaction structure
+                if (db2_transaction) {
+                    if (db2_transaction->transaction_id) free(db2_transaction->transaction_id);
+                    free(db2_transaction);
+                }
+
+                // Cleanup statements
+                for (size_t j = 0; j < statement_count; j++) {
+                    free(statements[j]);
+                }
+                free(statements);
+
+                if (!db2_transaction_success) {
+                    log_this(dqm_label, "Migration %s failed - transaction rolled back", LOG_LEVEL_TRACE, 1, migration_files[i]);
+                    lua_close(L);
+                    all_success = false;
+                    break; // Stop processing further migrations
+                }
+
+                log_this(dqm_label, "Migration %s completed successfully", LOG_LEVEL_TRACE, 1, migration_files[i]);
             }
 
-            migration_request->query_id = strdup("migration_sql");
-            migration_request->sql_template = strdup(sql_result);
-            migration_request->parameters_json = strdup("{}");
-            migration_request->timeout_seconds = 30; // Longer timeout for migrations
-            migration_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
-            migration_request->use_prepared_statement = false;
-
-            // Execute the migration SQL using the provided connection (already locked)
-            QueryResult* migration_result = NULL;
-            bool migration_query_success = database_engine_execute(connection, migration_request, &migration_result);
-
-            if (migration_query_success && migration_result && migration_result->success) {
-                log_this(dqm_label, "Migration SQL executed successfully: affected %d rows",
-                        LOG_LEVEL_TRACE, 1, migration_result->affected_rows);
-            } else {
-                log_this(dqm_label, "Migration SQL execution failed: %s",
-                        LOG_LEVEL_ERROR, 1,
-                        migration_result && migration_result->error_message ?
-                        migration_result->error_message : "Unknown error");
-                all_success = false;
-            }
-
-            // Clean up migration request and result
-            if (migration_request->query_id) free(migration_request->query_id);
-            if (migration_request->sql_template) free(migration_request->sql_template);
-            if (migration_request->parameters_json) free(migration_request->parameters_json);
-            free(migration_request);
-
-            if (migration_result) {
-                database_engine_cleanup_result(migration_result);
-            }
         } else {
-            log_this(dqm_label, "No SQL generated for migration: %s", LOG_LEVEL_ERROR, 1, migration_files[i]);
+            log_this(dqm_label, "No SQL generated for migration: %s", LOG_LEVEL_TRACE, 1, migration_files[i]);
             all_success = false;
         }
 

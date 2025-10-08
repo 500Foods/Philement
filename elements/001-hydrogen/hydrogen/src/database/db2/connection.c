@@ -47,6 +47,8 @@ SQLPrepare_t SQLPrepare_ptr = NULL;
 SQLExecute_t SQLExecute_ptr = NULL;
 SQLFreeStmt_t SQLFreeStmt_ptr = NULL;
 SQLDescribeCol_t SQLDescribeCol_ptr = NULL;
+// Transaction control function
+SQLSetConnectAttr_t SQLSetConnectAttr_ptr = NULL;
 SQLDriverConnect_t SQLDriverConnect_ptr = NULL;
 SQLGetDiagRec_t SQLGetDiagRec_ptr = NULL;
 
@@ -124,6 +126,7 @@ bool load_libdb2_functions(const char* designator __attribute__((unused))) {
     SQLFreeStmt_ptr = (SQLFreeStmt_t)dlsym(libdb2_handle, "SQLFreeStmt");
     SQLDescribeCol_ptr = (SQLDescribeCol_t)dlsym(libdb2_handle, "SQLDescribeCol");
     SQLGetDiagRec_ptr = (SQLGetDiagRec_t)dlsym(libdb2_handle, "SQLGetDiagRec");
+    SQLSetConnectAttr_ptr = (SQLSetConnectAttr_t)dlsym(libdb2_handle, "SQLSetConnectAttr");
 #pragma GCC diagnostic pop
 
     // Check if all required functions were loaded
@@ -220,11 +223,11 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     char* conn_string = NULL;
     if (config->connection_string) {
         conn_string = strdup(config->connection_string);
-        log_this(log_subsystem, "DB2 connecting using provided connection string", LOG_LEVEL_TRACE, 0);
+        // log_this(log_subsystem, "DB2 connecting using provided connection string", LOG_LEVEL_TRACE, 0);
     } else {
         // Build full connection string from config
         conn_string = db2_get_connection_string(config);
-        log_this(log_subsystem, "DB2 connecting using built connection string", LOG_LEVEL_TRACE, 0);
+        // log_this(log_subsystem, "DB2 connecting using built connection string", LOG_LEVEL_TRACE, 0);
     }
 
     if (!conn_string) {
@@ -245,7 +248,7 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
         }
     }
 
-    log_this(log_subsystem, "DB2 connection attempt: %s", LOG_LEVEL_TRACE, 1, safe_conn_str);
+    log_this(log_subsystem, "%s", LOG_LEVEL_TRACE, 1, safe_conn_str);
 
     // Use SQLDriverConnect for full connection string support
     char out_conn_string[1024] = {0};
@@ -363,7 +366,7 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     *connection = db_handle;
 
     // Use designator for logging if provided, otherwise use generic Database subsystem
-    log_this(log_subsystem, "DB2 connection established successfully", LOG_LEVEL_TRACE, 0);
+    // log_this(log_subsystem, "DB2 connection established successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
