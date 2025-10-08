@@ -168,7 +168,7 @@ bool database_migrations_validate(DatabaseQueue* db_queue) {
             return false;
         }
 
-        char* base_name = basename(path_copy);
+        const char* base_name = basename(path_copy);
         if (!base_name || strlen(base_name) == 0) {
             log_this(dqm_label, "Invalid migration path", LOG_LEVEL_ERROR, 0);
             free(path_copy);
@@ -406,7 +406,7 @@ bool database_migrations_execute_auto(DatabaseQueue* db_queue, DatabaseHandle* c
             return false;
         }
 
-        char* base_name = basename(path_copy);
+        const char* base_name = basename(path_copy);
         char* dir_path = dirname(strdup(conn_config->migrations)); // dirname modifies string, so use a copy
 
         DIR* dir = opendir(dir_path);
