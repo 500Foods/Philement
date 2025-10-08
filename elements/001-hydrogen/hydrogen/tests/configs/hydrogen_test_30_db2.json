@@ -19,6 +19,7 @@
                 "User": "${env.HYDROTST_DB_USER}",
                 "Pass": "${env.HYDROTST_DB_PASS}",
                 "Bootstrap":"SELECT * FROM acuranzo.queries;",
+                "Migrations":"PAYLOAD:acuranzo",
                 "Queues": {
                     "Slow": {
                         "start": 1,

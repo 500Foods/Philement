@@ -573,16 +573,41 @@ local database = {
 
     run_migration = function(self, queries, engine, design_name, schema_name)
         local processed_queries = {}
-        
+
+        -- Debug: Check queries parameter
+        if not queries then
+            return "ERROR: queries parameter is nil\n"
+        end
+
+        if type(queries) ~= "table" then
+            return "ERROR: queries parameter is not a table, type: " .. type(queries) .. "\n"
+        end
+
+        print("DEBUG: run_migration called with " .. #queries .. " queries, engine=" .. tostring(engine) .. ", design_name=" .. tostring(design_name) .. ", schema_name=" .. tostring(schema_name))
+
         for i, q in ipairs(queries) do
-            if q and q.sql then
-                local formatted = string.format(q.sql, engine)
-                local sql = self:replace_query(formatted, engine, design_name, schema_name)
-                local indented_sql = self:indent_sql(sql)
-                table.insert(processed_queries, indented_sql)
+            print("DEBUG: Processing query " .. i)
+            if q then
+                print("DEBUG: Query " .. i .. " exists")
+                if q.sql then
+                    print("DEBUG: Query " .. i .. " has sql field, length: " .. #q.sql)
+                    local sql = self:replace_query(q.sql, engine, design_name, schema_name)
+                    print("DEBUG: After replace_query, sql length: " .. #sql)
+                    local indented_sql = self:indent_sql(sql)
+                    print("DEBUG: After indent_sql, sql length: " .. #indented_sql)
+                    table.insert(processed_queries, indented_sql)
+                    print("DEBUG: Added to processed_queries, now have " .. #processed_queries .. " processed queries")
+                else
+                    print("DEBUG: Query " .. i .. " missing sql field")
+                end
+            else
+                print("DEBUG: Query " .. i .. " is nil")
             end
         end
-        return table.concat(processed_queries, "\n") .. "\n"
+
+        local result = table.concat(processed_queries, "\n") .. "\n"
+        print("DEBUG: Final result length: " .. #result)
+        return result
     end
 
 }
