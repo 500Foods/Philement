@@ -399,7 +399,7 @@ void validate_migration_config(const DatabaseConnection* conn, const char*** mes
         // AutoMigration is true but no Migrations specified
         char* msg = malloc(256);
         if (msg) {
-            snprintf(msg, 256, "  No-Go:   AutoMigration enabled but no Migrations specified for %s",
+            snprintf(msg, 256, "  No-Go:   Autoatic Migration enabled but no Migrations specified for %s",
                     conn->connection_name ? conn->connection_name : "Unknown");
             add_launch_message(messages, count, capacity, msg);
         }

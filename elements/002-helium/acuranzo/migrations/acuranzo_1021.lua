@@ -103,75 +103,78 @@ return {
                             ]=],
                             'JSON Table Definition in collection',      -- query_code,
                             %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%                       -- DIAGRAM_START
+                                                                        -- DIAGRAM_START  
+                            %%JSON_INGEST_START%%                      
                             [=[
-                                [
-                                    {
-                                        "object_type": "table",
-                                        "object_id": "table.tokens",
-                                        "object_ref": "1021",
-                                        "table": [
-                                            {
-                                                "name": "token_hash",
-                                                "datatype": "CHAR(128)",
-                                                "nullable": false,
-                                                "primary_key": true,
-                                                "unique": true
-                                            },
-                                            {
-                                                "name": "account_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "system_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "application_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "application_version",
-                                                "datatype": "%%VARCHAR_20%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "ip_address",
-                                                "datatype": "%%VARCHAR_50%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "valid_after",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "valid_until",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            }
-                                        ]
-                                    }
-                                ]
+                                {
+                                    "diagram": [
+                                        {
+                                            "object_type": "table",
+                                            "object_id": "table.tokens",
+                                            "object_ref": "1021",
+                                            "table": [
+                                                {
+                                                    "name": "token_hash",
+                                                    "datatype": "CHAR(128)",
+                                                    "nullable": false,
+                                                    "primary_key": true,
+                                                    "unique": true
+                                                },
+                                                {
+                                                    "name": "account_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "system_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "application_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "application_version",
+                                                    "datatype": "%%VARCHAR_20%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "ip_address",
+                                                    "datatype": "%%VARCHAR_50%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "valid_after",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "valid_until",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
                             ]=]
                             %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,

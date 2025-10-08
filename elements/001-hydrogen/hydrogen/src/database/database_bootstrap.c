@@ -179,7 +179,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 }
 
                 if (migration_conn_config && migration_conn_config->auto_migration) {
-                    log_this(dqm_label, "AutoMigration enabled - processing migrations", LOG_LEVEL_DEBUG, 0);
+                    log_this(dqm_label, "Automatic Migration enabled - Importing Migrations", LOG_LEVEL_DEBUG, 0);
                     bool migrations_valid = database_migrations_validate(db_queue);
 
                     if (migrations_valid) {
@@ -188,8 +188,6 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                     } else {
                         log_this(dqm_label, "Migration validation failed - continuing without migrations", LOG_LEVEL_ALERT, 0);
                     }
-                } else {
-                    log_this(dqm_label, "AutoMigration not enabled - skipping migration processing", LOG_LEVEL_TRACE, 0);
                 }
 
                 // Launch additional DQMs based on configuration

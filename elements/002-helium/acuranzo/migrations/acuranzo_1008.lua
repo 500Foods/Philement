@@ -48,7 +48,6 @@ return {
                             ]=],
                             %%STATUS_ACTIVE%%,                  -- query_status_lua_27
                             NULL,                               -- collection
-                            NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
@@ -111,129 +110,132 @@ return {
                             ]=],
                             'JSON Table Definition in collection',      -- query_code,
                             %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%                       -- DIAGRAM_START
+                                                                        -- DIAGRAM_START  
+                            %%JSON_INGEST_START%%                      
                             [=[
-                                [
-                                    {
-                                        "object_type": "table",
-                                        "object_id": "table.convos",
-                                        "object_ref": "1008",
-                                        "table": [
-                                            {
-                                                "name": "convos_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": true,
-                                                "unique": true
-                                            },
-                                            {
-                                                "name": "convos_ref",
-                                                "datatype": "%%VARCHAR_50%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": true
-                                            },
-                                            {
-                                                "name": "convos_keywords",
-                                                "datatype": "%%VARCHAR_100%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "convos_icon",
-                                                "datatype": "%%VARCHAR_500%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "prompt",
-                                                "datatype": "%%BIGTEXT%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "response",
-                                                "datatype": "%%BIGTEXT%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "context",
-                                                "datatype": "%%BIGTEXT%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "history",
-                                                "datatype": "%%BIGTEXT%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "collection",
-                                                "datatype": "%%JSONB%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "valid_after",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "valid_until",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": true,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "created_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "created_at",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "updated_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "updated_at",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            }
-                                        ]
-                                    }
-                                ]
+                                {
+                                    "diagram": [
+                                        {
+                                            "object_type": "table",
+                                            "object_id": "table.convos",
+                                            "object_ref": "1008",
+                                            "table": [
+                                                {
+                                                    "name": "convos_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": true,
+                                                    "unique": true
+                                                },
+                                                {
+                                                    "name": "convos_ref",
+                                                    "datatype": "%%VARCHAR_50%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": true
+                                                },
+                                                {
+                                                    "name": "convos_keywords",
+                                                    "datatype": "%%VARCHAR_100%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "convos_icon",
+                                                    "datatype": "%%VARCHAR_500%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "prompt",
+                                                    "datatype": "%%BIGTEXT%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "response",
+                                                    "datatype": "%%BIGTEXT%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "context",
+                                                    "datatype": "%%BIGTEXT%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "history",
+                                                    "datatype": "%%BIGTEXT%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "collection",
+                                                    "datatype": "%%JSONB%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "valid_after",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "valid_until",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "created_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "created_at",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "updated_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "updated_at",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
                             ]=]
                             %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
