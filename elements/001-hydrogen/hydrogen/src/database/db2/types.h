@@ -28,6 +28,8 @@ typedef int (*SQLDescribeCol_t)(void*, int, unsigned char*, int, short*, int*, i
 // Additional function pointers for connection and error handling
 typedef int (*SQLDriverConnect_t)(void*, void*, unsigned char*, short, unsigned char*, short, short*, unsigned short);
 typedef int (*SQLGetDiagRec_t)(short, void*, short, unsigned char*, long*, unsigned char*, short, short*);
+// Transaction control function
+typedef int (*SQLSetConnectAttr_t)(void*, int, long, int);
 
 // DB2 function pointers (loaded dynamically or mocked)
 extern SQLAllocHandle_t SQLAllocHandle_ptr;
@@ -47,6 +49,8 @@ extern SQLDescribeCol_t SQLDescribeCol_ptr;
 // Additional function pointers for connection and error handling
 extern SQLDriverConnect_t SQLDriverConnect_ptr;
 extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
+// Transaction control function
+extern SQLSetConnectAttr_t SQLSetConnectAttr_ptr;
 
 // Library handle (declared in connection.c)
 
@@ -62,6 +66,10 @@ extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
 #define SQL_NTS -3
 #define SQL_NULL_DATA -1
 #define SQL_C_CHAR 1
+// Auto-commit control
+#define SQL_ATTR_AUTOCOMMIT 102
+#define SQL_AUTOCOMMIT_OFF 0
+#define SQL_AUTOCOMMIT_ON 1
 
 // Prepared statement cache structure
 typedef struct PreparedStatementCache {

@@ -247,27 +247,30 @@ local database = {
             VARCHAR_500 = "VARCHAR(500)",
             TEXT = "VARCHAR(250)", -- DB2 TEXT equivalent
             BIGTEXT = "CLOB(10M)",
-            JSONB = "VARCHAR(4000)", -- DB2 JSON stored as VARCHAR
+            JSONB = "CLOB(1M)",
             TIMESTAMP_TZ = "TIMESTAMP",
             NOW = "CURRENT TIMESTAMP",
             CHECK_CONSTRAINT = "CHECK(status IN ('Pending', 'Applied', 'Utility'))",
             JSON_INGEST_START = "%%SCHEMA%%json_ingest(",
             JSON_INGEST_END = ")",
             JSON_INGEST_FUNCTION = [[
-                CREATE OR REPLACE FUNCTION %%SCHEMA%%json_ingest(s CLOB)
+                -- json.ingest for db2 v3
+                CREATE OR REPLACE FUNCTION TEST.json_ingest(s CLOB)
                 RETURNS CLOB
                 LANGUAGE SQL
                 DETERMINISTIC
                 BEGIN
                   DECLARE i INTEGER DEFAULT 1;
-                  DECLARE L INTEGER DEFAULT LENGTH(s);
+                  DECLARE L INTEGER;
                   DECLARE ch CHAR(1);
                   DECLARE out CLOB(10M) DEFAULT '';
                   DECLARE in_str SMALLINT DEFAULT 0;
-                  DECLARE esc    SMALLINT DEFAULT 0;
+                  DECLARE esc SMALLINT DEFAULT 0;
 
-                  -- fast path
-                  IF s IS JSON THEN
+                  SET L = LENGTH(s);
+
+                  -- fast path: Validate input JSON
+                  IF SYSTOOLS.JSON2BSON(s) IS NOT NULL THEN
                     RETURN s;
                   END IF;
 
@@ -286,13 +289,13 @@ local database = {
                       SET out = out || ch;
                       SET in_str = 1 - in_str;
 
-                    ELSEIF in_str = 1 AND ch = X'0A' THEN     -- \n
+                    ELSEIF in_str = 1 AND ch = X'0A' THEN -- \n
                       SET out = out || '\n';
 
-                    ELSEIF in_str = 1 AND ch = X'0D' THEN     -- \r
+                    ELSEIF in_str = 1 AND ch = X'0D' THEN -- \r
                       SET out = out || '\r';
 
-                    ELSEIF in_str = 1 AND ch = X'09' THEN     -- \t
+                    ELSEIF in_str = 1 AND ch = X'09' THEN -- \t
                       SET out = out || '\t';
 
                     ELSE
@@ -303,13 +306,11 @@ local database = {
                   END WHILE;
 
                   -- ensure result is JSON
-                  IF out IS JSON THEN
-                    RETURN out;
-                  ELSE
+                  IF SYSTOOLS.JSON2BSON(out) IS NULL THEN
                     SIGNAL SQLSTATE '22032' SET MESSAGE_TEXT = 'Invalid JSON after normalization';
                   END IF;
+                  RETURN out;
                 END
-                @            
             ]]
         }
     },
@@ -573,41 +574,15 @@ local database = {
 
     run_migration = function(self, queries, engine, design_name, schema_name)
         local processed_queries = {}
-
-        -- Debug: Check queries parameter
-        if not queries then
-            return "ERROR: queries parameter is nil\n"
-        end
-
-        if type(queries) ~= "table" then
-            return "ERROR: queries parameter is not a table, type: " .. type(queries) .. "\n"
-        end
-
-        print("DEBUG: run_migration called with " .. #queries .. " queries, engine=" .. tostring(engine) .. ", design_name=" .. tostring(design_name) .. ", schema_name=" .. tostring(schema_name))
-
         for i, q in ipairs(queries) do
-            print("DEBUG: Processing query " .. i)
-            if q then
-                print("DEBUG: Query " .. i .. " exists")
-                if q.sql then
-                    print("DEBUG: Query " .. i .. " has sql field, length: " .. #q.sql)
-                    local sql = self:replace_query(q.sql, engine, design_name, schema_name)
-                    print("DEBUG: After replace_query, sql length: " .. #sql)
-                    local indented_sql = self:indent_sql(sql)
-                    print("DEBUG: After indent_sql, sql length: " .. #indented_sql)
-                    table.insert(processed_queries, indented_sql)
-                    print("DEBUG: Added to processed_queries, now have " .. #processed_queries .. " processed queries")
-                else
-                    print("DEBUG: Query " .. i .. " missing sql field")
-                end
-            else
-                print("DEBUG: Query " .. i .. " is nil")
+            if q and q.sql then
+                local formatted = string.format(q.sql, engine)
+                local sql = self:replace_query(formatted, engine, design_name, schema_name)
+                local indented_sql = self:indent_sql(sql)
+                table.insert(processed_queries, indented_sql)
             end
         end
-
-        local result = table.concat(processed_queries, "\n") .. "\n"
-        print("DEBUG: Final result length: " .. #result)
-        return result
+        return table.concat(processed_queries, "\n-- QUERY DELIMITER\n") .. "\n"
     end
 
 }

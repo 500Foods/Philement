@@ -15,6 +15,8 @@
 #include "database_bootstrap.h"
 #include "sqlite/types.h"
 
+// External references
+extern volatile sig_atomic_t database_stopping;
 
 /*
  * Determine database engine type from connection string
@@ -296,6 +298,11 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
  */
 void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
     if (!db_queue) return;
+
+    // Exit quickly if shutdown is in progress
+    if (db_queue->shutdown_requested || database_stopping) {
+        return;
+    }
 
     time_t current_time = time(NULL);
     db_queue->last_heartbeat = current_time;
