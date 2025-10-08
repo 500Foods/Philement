@@ -106,98 +106,101 @@ return {
                             ]=],
                             'JSON Table Definition in collection',      -- query_code,
                             %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%                       -- DIAGRAM_START
+                                                                        -- DIAGRAM_START  
+                            %%JSON_INGEST_START%%                      
                             [=[
-                                [
-                                    {
-                                        "object_type": "table",
-                                        "object_id": "table.sessions",
-                                        "object_ref": "1018",
-                                        "table": [
-                                            {
-                                                "name": "session_id",
-                                                "datatype": "%%TEXT%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "account_id",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "session",
-                                                "datatype": "%%BIGTEXT%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "session_length",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "session_issues",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "session_changes",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "session_secs",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false
-                                            },
-                                            {
-                                                "name": "status_lua_25",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "lookup": true
-                                            },
-                                            {
-                                                "name": "flag_lua_26",
-                                                "datatype": "%%INTEGER%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "lookup": true
-                                            },
-                                            {
-                                                "name": "created_at",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            },
-                                            {
-                                                "name": "updated_at",
-                                                "datatype": "%%TIMESTAMP_TZ%%",
-                                                "nullable": false,
-                                                "primary_key": false,
-                                                "unique": false,
-                                                "standard": true
-                                            }
-                                        ]
-                                    }
-                                ]
+                                {
+                                    "diagram": [
+                                        {
+                                            "object_type": "table",
+                                            "object_id": "table.sessions",
+                                            "object_ref": "1018",
+                                            "table": [
+                                                {
+                                                    "name": "session_id",
+                                                    "datatype": "%%TEXT%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "account_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "session",
+                                                    "datatype": "%%BIGTEXT%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "session_length",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "session_issues",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "session_changes",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "session_secs",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "status_lua_25",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "lookup": true
+                                                },
+                                                {
+                                                    "name": "flag_lua_26",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "lookup": true
+                                                },
+                                                {
+                                                    "name": "created_at",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "updated_at",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
                             ]=]
                             %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,

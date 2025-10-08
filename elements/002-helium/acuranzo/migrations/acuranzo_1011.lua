@@ -94,11 +94,11 @@ return {
                             %%QUERY_INSERT_COLUMNS%%
                         )           
                         VALUES (
-                            36,                                 -- query_id
-                            1011,                               -- query_ref
-                            %%TYPE_DIAGRAM_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%languages',    -- name, summary
+                            36,                                         -- query_id
+                            1011,                                       -- query_ref
+                            %%TYPE_DIAGRAM_MIGRATIO%%,                  -- query_type_lua_28    
+                            %%DIALECT%%,                                -- query_dialect_lua_30    
+                            'Diagram Tables: %%SCHEMA%%languages',      -- name, summary
                             [=[
                                 # Diagram Migration 1011
 
@@ -106,120 +106,123 @@ return {
 
                                 This is the first JSON Diagram code for the languages table.
                             ]=],
-                            'JSON Table Definition in collection',     -- query_code,
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27, collection
-                            %%JSON_INGEST_START%%               -- DIAGRAM_START
+                            'JSON Table Definition in collection',      -- query_code,
+                            %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
+                                                                        -- DIAGRAM_START  
+                            %%JSON_INGEST_START%%                      
                             [=[
-                                [
-                                    {
-                                    "object_type": "table",
-                                    "object_id": "table.languages",
-                                    "object_ref": "1011",
-                                    "table": [
+                                {
+                                    "diagram": [
                                         {
-                                            "name": "language_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": true,
-                                            "unique": true
-                                        },
-                                        {
-                                            "name": "name",
-                                            "datatype": "%%VARCHAR_100%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "summary",
-                                            "datatype": "%%VARCHAR_500%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "iso639",
-                                            "datatype": "CHAR(2)",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false
-                                        },
-                                        {
-                                            "name": "status_lua_2",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false,
-                                            "lookup": true
-                                        },
-                                        {
-                                            "name": "collection",
-                                            "datatype": "%%JSONB%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false,
-                                            "standard": true
-                                        },
-                                        {
-                                            "name": "valid_after",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false,
-                                            "standard": true
-                                        },
-                                        {
-                                            "name": "valid_until",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": true,
-                                            "primary_key": false,
-                                            "unique": false,
-                                            "standard": true
-                                        },
-                                        {
-                                            "name": "created_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false,
-                                            "standard": true
-                                        },
-                                        {
-                                            "name": "created_at",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false,
-                                            "standard": true
-                                        },
-                                        {
-                                            "name": "updated_id",
-                                            "datatype": "%%INTEGER%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false,
-                                            "standard": true
-                                        },
-                                        {
-                                            "name": "updated_at",
-                                            "datatype": "%%TIMESTAMP_TZ%%",
-                                            "nullable": false,
-                                            "primary_key": false,
-                                            "unique": false,
-                                            "standard": true
+                                            "object_type": "table",
+                                            "object_id": "table.languages",
+                                            "object_ref": "1011",
+                                            "table": [
+                                                {
+                                                    "name": "language_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": true,
+                                                    "unique": true
+                                                },
+                                                {
+                                                    "name": "name",
+                                                    "datatype": "%%VARCHAR_100%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "summary",
+                                                    "datatype": "%%VARCHAR_500%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "iso639",
+                                                    "datatype": "CHAR(2)",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false
+                                                },
+                                                {
+                                                    "name": "status_lua_2",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "lookup": true
+                                                },
+                                                {
+                                                    "name": "collection",
+                                                    "datatype": "%%JSONB%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "valid_after",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "valid_until",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": true,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "created_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "created_at",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "updated_id",
+                                                    "datatype": "%%INTEGER%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                },
+                                                {
+                                                    "name": "updated_at",
+                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "nullable": false,
+                                                    "primary_key": false,
+                                                    "unique": false,
+                                                    "standard": true
+                                                }
+                                            ]
                                         }
                                     ]
                                 }
-                            ]
-                        ]=]
+                            ]=]
                             %%JSON_INGEST_END%%                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                      -- created_at
+                            %%NOW%%,                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                       -- updated_at
+                            %%NOW%%                             -- updated_at
                         );
                     ]]
         }
