@@ -134,7 +134,7 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
     popd >/dev/null
 
     # Extract JSON from the diagram migration using DIAGRAM_START and DIAGRAM_END markers
-    RAW_BLOCK=$(echo "${SQL_OUTPUT}" | sed -n '/-- DIAGRAM_START/,/-- DIAGRAM_END/p' | sed '1d;$d')
+    RAW_BLOCK=$(echo "${SQL_OUTPUT}" | sed -n '/-- DIAGRAM_START/,/-- DIAGRAM_END/p' | sed '1,2d;$d')
 
     if [[ ${#RAW_BLOCK} -eq 0 ]]; then
         echo "Warning: No diagram data found in ${DESIGN}_${migration_num}.lua, skipping..." >&2
@@ -208,7 +208,7 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
     fi
 
     # Combine this migration's JSON with the accumulated JSON using jq
-    jq -s '.[0] + .[1]' "${TEMP_JSON}" <(echo "${JSON_DATA}") > "${TEMP_JSON}.tmp" && mv "${TEMP_JSON}.tmp" "${TEMP_JSON}"
+    jq -s '.[0] + .[1].diagram' "${TEMP_JSON}" <(echo "${JSON_DATA}") > "${TEMP_JSON}.tmp" && mv "${TEMP_JSON}.tmp" "${TEMP_JSON}"
 done
 
 # Check if we have any data

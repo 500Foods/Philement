@@ -76,8 +76,8 @@ local database = {
             TIMESTAMP_TZ = "TEXT", -- SQLite stores as TEXT in ISO format
             NOW = "CURRENT_TIMESTAMP",
             CHECK_CONSTRAINT = "CHECK(status IN ('Pending', 'Applied', 'Utility'))",
-            JSON_INGEST_START = "",
-            JSON_INGEST_END = "",
+            JSON_INGEST_START = "(",
+            JSON_INGEST_END = ")",
             JSON_INGEST_FUNCTION = "";
         },
 
