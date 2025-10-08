@@ -91,7 +91,7 @@
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="yellow" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="98.52527005649719" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
     <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">TEXT</text>
@@ -119,10 +119,10 @@
     <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -130,7 +130,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="411.48333301049234" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="418.26570589184826" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="430.6677591606134" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -138,7 +138,7 @@
     <rect x="0.6459402744148507" y="440.5506453591606" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="447.33301824051654" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="468.97201743341407" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.lookups at (363.27, 371.80) -->
@@ -163,7 +163,7 @@
     <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="navy" font-weight="bold">INTEGER</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">value_txt</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">value_int</text>
     <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">INTEGER</text>
@@ -187,10 +187,10 @@
     <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -198,7 +198,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="411.48333301049234" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="418.26570589184826" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="430.6677591606134" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -206,7 +206,7 @@
     <rect x="0.6459402744148507" y="440.5506453591606" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="447.33301824051654" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="468.97201743341407" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.account_access at (667.03, 328.20) -->
@@ -249,10 +249,10 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="272.92914414850685" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -260,7 +260,7 @@
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -268,7 +268,7 @@
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="381.7700803874092" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.account_contacts at (970.78, 357.26) -->
@@ -299,10 +299,10 @@
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">contact</text>
-    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="149.87752187247781" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#lookup-icon-maroon" x="10.335044390637611" y="185.72720710250204" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <use href="#not-null-icon-maroon" x="250.1403712671509" y="185.72720710250204" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
@@ -323,10 +323,10 @@
     <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -334,7 +334,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="411.48333301049234" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="418.26570589184826" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="430.6677591606134" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -342,7 +342,7 @@
     <rect x="0.6459402744148507" y="440.5506453591606" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="447.33301824051654" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="468.97201743341407" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.account_roles at (1274.53, 357.26) -->
@@ -372,10 +372,10 @@
     <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="navy" font-weight="bold">INTEGER</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="149.87752187247781" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#lookup-icon-maroon" x="10.335044390637611" y="185.72720710250204" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <use href="#not-null-icon-maroon" x="250.1403712671509" y="185.72720710250204" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
@@ -386,10 +386,10 @@
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -397,7 +397,7 @@
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -405,7 +405,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="410.8373927360775" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.accounts at (1578.29, 400.86) -->
@@ -427,25 +427,25 @@
     <use href="#unique-icon-gray" x="10.335044390637611" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">first_name</text>
-    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(50)</text>
+    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(50)%</text>
     <rect x="0.6459402744148507" y="149.87752187247781" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">middle_name</text>
-    <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(50)</text>
+    <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(50)%</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="185.72720710250204" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">last_name</text>
-    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(50)</text>
+    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(50)%</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="214.79451945117032" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">password_hash</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(128)</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(128)%</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#lookup-icon-maroon" x="10.335044390637611" y="243.8618317998386" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <use href="#not-null-icon-maroon" x="250.1403712671509" y="243.8618317998386" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
@@ -461,10 +461,10 @@
     <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -472,7 +472,7 @@
     <rect x="0.6459402744148507" y="411.48333301049234" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="418.26570589184826" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="430.6677591606134" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="430.6677591606134" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="430.6677591606134" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="440.5506453591606" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="447.33301824051654" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -480,7 +480,7 @@
     <rect x="0.6459402744148507" y="469.6179577078289" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="476.4003305891848" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="488.80238385794996" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="488.80238385794996" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="488.80238385794996" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="498.03932978208235" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.actions at (1882.04, 371.80) -->
@@ -506,20 +506,20 @@
     <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">INTEGER</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">application_version</text>
-    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(50)</text>
+    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(50)%</text>
     <rect x="0.6459402744148507" y="149.87752187247781" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">account_id</text>
     <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">INTEGER</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">action</text>
-    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="214.79451945117032" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">action_msecs</text>
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">INTEGER</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">ip_address</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(50)</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(50)%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#lookup-icon-maroon" x="10.335044390637611" y="272.92914414850685" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <use href="#not-null-icon-maroon" x="250.1403712671509" y="272.92914414850685" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
@@ -537,7 +537,7 @@
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="381.7700803874092" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.connections at (2185.79, 371.80) -->
@@ -558,10 +558,10 @@
     <rect x="0.6459402744148507" y="62.675584826472964" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#lookup-icon-maroon" x="10.335044390637611" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <use href="#not-null-icon-maroon" x="250.1403712671509" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
@@ -582,10 +582,10 @@
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -593,7 +593,7 @@
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -601,7 +601,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="410.8373927360775" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.convos at (59.52, 784.58) -->
@@ -623,13 +623,13 @@
     <use href="#unique-icon-gray" x="10.335044390637611" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">convos_ref</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(50)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(50)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">convos_keywords</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">convos_icon</text>
-    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="149.87752187247781" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">prompt</text>
     <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">TEXT</text>
@@ -647,10 +647,10 @@
     <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -658,7 +658,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="411.48333301049234" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="418.26570589184826" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="430.6677591606134" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -666,7 +666,7 @@
     <rect x="0.6459402744148507" y="440.5506453591606" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="447.33301824051654" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="468.97201743341407" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.dictionaries at (363.27, 857.25) -->
@@ -692,10 +692,10 @@
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="98.52527005649719" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="149.87752187247781" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#lookup-icon-maroon" x="10.335044390637611" y="156.65989475383375" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <use href="#not-null-icon-maroon" x="250.1403712671509" y="156.65989475383375" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
@@ -706,10 +706,10 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="272.92914414850685" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -717,7 +717,7 @@
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -725,7 +725,7 @@
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="381.7700803874092" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.documents at (667.03, 726.45) -->
@@ -751,7 +751,7 @@
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="98.52527005649719" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
     <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">TEXT</text>
@@ -786,10 +786,10 @@
     <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="411.48333301049234" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="430.6677591606134" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="430.6677591606134" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="430.6677591606134" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="440.5506453591606" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="447.33301824051654" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="459.7350715092817" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -797,7 +797,7 @@
     <rect x="0.6459402744148507" y="469.6179577078289" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="476.4003305891848" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="488.80238385794996" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="488.80238385794996" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="488.80238385794996" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="498.6852700564972" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="505.4676429378531" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="517.8696962066183" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -805,7 +805,7 @@
     <rect x="0.6459402744148507" y="527.7525824051654" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="534.5349552865214" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="546.9370085552865" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="546.9370085552865" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="546.9370085552865" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="556.1739544794189" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.languages at (970.78, 842.72) -->
@@ -826,10 +826,10 @@
     <rect x="0.6459402744148507" y="62.675584826472964" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">iso639</text>
@@ -844,10 +844,10 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="272.92914414850685" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -855,7 +855,7 @@
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -863,7 +863,7 @@
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="381.7700803874092" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.licenses at (1274.53, 784.58) -->
@@ -884,13 +884,13 @@
     <rect x="0.6459402744148507" y="62.675584826472964" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">application_key</text>
-    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="149.87752187247781" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="156.65989475383375" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">system_id</text>
@@ -905,10 +905,10 @@
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -916,7 +916,7 @@
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -924,7 +924,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="410.8373927360775" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.lists at (1578.29, 915.38) -->
@@ -944,10 +944,10 @@
     <text x="240.45126715092815" y="52.792698627925745" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="navy" font-weight="bold">INTEGER</text>
     <rect x="0.6459402744148507" y="62.675584826472964" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">list_value</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">list_note</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">list_type_lua_31</text>
@@ -962,10 +962,10 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="272.92914414850685" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -973,7 +973,7 @@
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -981,7 +981,7 @@
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="381.7700803874092" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.notes at (1882.04, 770.05) -->
@@ -1002,10 +1002,10 @@
     <rect x="0.6459402744148507" y="62.675584826472964" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">entity_id</text>
@@ -1025,10 +1025,10 @@
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -1036,7 +1036,7 @@
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -1044,7 +1044,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="410.8373927360775" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.reports at (2185.79, 799.11) -->
@@ -1070,7 +1070,7 @@
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="98.52527005649719" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
     <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">TEXT</text>
@@ -1082,10 +1082,10 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="272.92914414850685" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -1093,7 +1093,7 @@
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -1101,7 +1101,7 @@
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="381.7700803874092" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.roles at (59.52, 1270.03) -->
@@ -1122,10 +1122,10 @@
     <rect x="0.6459402744148507" y="62.675584826472964" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#lookup-icon-maroon" x="10.335044390637611" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <use href="#not-null-icon-maroon" x="250.1403712671509" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
@@ -1146,10 +1146,10 @@
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -1157,7 +1157,7 @@
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -1165,7 +1165,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="410.8373927360775" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.rules at (363.27, 1255.50) -->
@@ -1186,10 +1186,10 @@
     <rect x="0.6459402744148507" y="62.675584826472964" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#lookup-icon-maroon" x="10.335044390637611" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <use href="#not-null-icon-maroon" x="250.1403712671509" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
@@ -1200,10 +1200,10 @@
     <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="243.8618317998386" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -1211,7 +1211,7 @@
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="272.92914414850685" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -1219,7 +1219,7 @@
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="352.70276803874094" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.sessions at (667.03, 1299.10) -->
@@ -1273,11 +1273,11 @@
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="352.70276803874094" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.systems at (970.78, 1240.97) -->
@@ -1298,10 +1298,10 @@
     <rect x="0.6459402744148507" y="62.675584826472964" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#lookup-icon-maroon" x="10.335044390637611" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <use href="#not-null-icon-maroon" x="250.1403712671509" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
@@ -1317,10 +1317,10 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="272.92914414850685" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -1328,7 +1328,7 @@
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -1336,7 +1336,7 @@
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="381.7700803874092" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.templates at (1274.53, 1211.90) -->
@@ -1357,10 +1357,10 @@
     <rect x="0.6459402744148507" y="62.675584826472964" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">entity_id</text>
@@ -1380,10 +1380,10 @@
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -1391,7 +1391,7 @@
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -1399,7 +1399,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="410.8373927360775" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.tokens at (1578.29, 1313.64) -->
@@ -1432,19 +1432,19 @@
     <rect x="0.6459402744148507" y="149.87752187247781" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="156.65989475383375" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">application_version</text>
-    <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(20)</text>
+    <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(20)%</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="185.72720710250204" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">ip_address</text>
-    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(50)</text>
+    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(50)%</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="214.79451945117032" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="243.8618317998386" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="265.5008309927361" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.workflow_steps at (1882.04, 1197.37) -->
@@ -1470,10 +1470,10 @@
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="98.52527005649719" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="149.87752187247781" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="156.65989475383375" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">sort_seq</text>
@@ -1488,10 +1488,10 @@
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -1499,7 +1499,7 @@
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -1507,7 +1507,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="410.8373927360775" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
     <!-- table.workflows at (2185.79, 1197.37) -->
@@ -1528,10 +1528,10 @@
     <rect x="0.6459402744148507" y="62.675584826472964" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="69.4579577078289" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">name</text>
-    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
+    <text x="240.45126715092815" y="81.86001097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(100)%</text>
     <rect x="0.6459402744148507" y="91.74289717514125" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">summary</text>
-    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">VARCHAR(500)</text>
+    <text x="240.45126715092815" y="110.92732332526232" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">%VARCHAR(500)%</text>
     <rect x="0.6459402744148507" y="120.81020952380953" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-black" x="250.1403712671509" y="127.59258240516547" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="black" font-weight="normal">entity_id</text>
@@ -1551,10 +1551,10 @@
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSONB</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="301.99645649717513" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_id</text>
@@ -1562,7 +1562,7 @@
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="331.0637688458434" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="360.1310811945117" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_id</text>
@@ -1570,7 +1570,7 @@
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="transparent" stroke-width="0.484455205811138"/>
     <use href="#not-null-icon-darkgreen" x="250.1403712671509" y="389.19839354318" width="15.502566585956416" height="15.502566585956416" rx="3.1005133171912833" ry="3.1005133171912833"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMPTZ</text>
+    <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">%TIMESTAMPTZ%</text>
     <rect x="0.6459402744148507" y="0.6459402744148507" width="274.68610169491524" height="410.8373927360775" fill="transparent" stroke="silver" stroke-width="0.968910411622276" rx="8.720193704600485" ry="8.720193704600485"/>
 </g>
 </g>
