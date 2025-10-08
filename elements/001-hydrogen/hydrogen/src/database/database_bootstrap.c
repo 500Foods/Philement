@@ -11,6 +11,7 @@
 #include "database_queue.h"
 #include "database.h"
 #include "database_bootstrap.h"
+#include "database_migrations.h"
 
 /*
  * Execute bootstrap query after successful Lead DQM connection
@@ -165,6 +166,31 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 }
 
                 // log_this(dqm_label, "Bootstrap query completed successfully - continuing with heartbeat", LOG_LEVEL_TRACE, 0);
+
+                // Perform migration processing if AutoMigration is enabled
+                const DatabaseConnection* migration_conn_config = NULL;
+                if (app_config) {
+                    for (int i = 0; i < app_config->databases.connection_count; i++) {
+                        if (strcmp(app_config->databases.connections[i].name, db_queue->database_name) == 0) {
+                            migration_conn_config = &app_config->databases.connections[i];
+                            break;
+                        }
+                    }
+                }
+
+                if (migration_conn_config && migration_conn_config->auto_migration) {
+                    log_this(dqm_label, "AutoMigration enabled - processing migrations", LOG_LEVEL_DEBUG, 0);
+                    bool migrations_valid = database_migrations_validate(db_queue);
+
+                    if (migrations_valid) {
+                        // Execute auto migrations (populate Queries table)
+                        database_migrations_execute_auto(db_queue, connection_to_use);
+                    } else {
+                        log_this(dqm_label, "Migration validation failed - continuing without migrations", LOG_LEVEL_ALERT, 0);
+                    }
+                } else {
+                    log_this(dqm_label, "AutoMigration not enabled - skipping migration processing", LOG_LEVEL_TRACE, 0);
+                }
 
                 // Launch additional DQMs based on configuration
                 if (app_config) {

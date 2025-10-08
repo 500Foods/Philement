@@ -13,12 +13,16 @@
 
 volatile sig_atomic_t database_stopping = 0;
 
+// Forward declarations
+void validate_migration_config(const DatabaseConnection* conn, const char*** messages,
+                              size_t* count, size_t* capacity, bool* migrations_go);
+
 // Validate database configuration and count databases by type
 void validate_database_configuration(const DatabaseConfig* db_config, const char*** messages,
                                     size_t* count, size_t* capacity, bool* overall_readiness,
                                     int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count) {
     // Queue configuration is validated during JSON parsing
-    add_launch_message(messages, count, capacity, strdup("  Go:      Queue configuration validated during JSON parsing"));
+    add_launch_message(messages, count, capacity, strdup("  Go:      Queue configuration validated"));
 
     // Initialize counters
     *postgres_count = 0;
@@ -381,9 +385,62 @@ void check_database_library_dependencies(const char*** messages, size_t* count, 
     }
 }
 
+// Validate migration configuration for a database connection
+void validate_migration_config(const DatabaseConnection* conn, const char*** messages,
+                              size_t* count, size_t* capacity, bool* migrations_go) {
+    *migrations_go = false;
+
+    if (!conn->auto_migration) {
+        // AutoMigration is false, no migration validation needed
+        return;
+    }
+
+    if (!conn->migrations) {
+        // AutoMigration is true but no Migrations specified
+        char* msg = malloc(256);
+        if (msg) {
+            snprintf(msg, 256, "  No-Go:   AutoMigration enabled but no Migrations specified for %s",
+                    conn->connection_name ? conn->connection_name : "Unknown");
+            add_launch_message(messages, count, capacity, msg);
+        }
+        return;
+    }
+
+    // Check if migrations starts with PAYLOAD:
+    if (strncmp(conn->migrations, "PAYLOAD:", 8) == 0) {
+        // Extract migration name after PAYLOAD:
+        const char* migration_name = conn->migrations + 8;
+        if (strlen(migration_name) == 0) {
+            char* msg = malloc(256);
+            if (msg) {
+                snprintf(msg, 256, "  No-Go:   Invalid PAYLOAD migration format for %s",
+                        conn->connection_name ? conn->connection_name : "Unknown");
+                add_launch_message(messages, count, capacity, msg);
+            }
+            return;
+        }
+
+        // Just note that we're using PAYLOAD migrations - actual validation happens at launch
+        char* msg = malloc(512);
+        if (msg) {
+            snprintf(msg, 512, "  Go:      Using PAYLOAD:%s Migrations for %s", migration_name, conn->connection_name);
+            add_launch_message(messages, count, capacity, msg);
+        }
+        *migrations_go = true;
+    } else {
+        // Path-based migration - just note the path, validation happens at launch
+        char* msg = malloc(512);
+        if (msg) {
+            snprintf(msg, 512, "  Go:      Using %s Migrations for %s", conn->migrations, conn->connection_name);
+            add_launch_message(messages, count, capacity, msg);
+        }
+        *migrations_go = true;
+    }
+}
+
 // Validate individual database connections
 bool validate_database_connections(const DatabaseConfig* db_config, const char*** messages,
-                                  size_t* count, size_t* capacity) {
+                                   size_t* count, size_t* capacity) {
     bool connections_valid = true;
     for (int i = 0; i < db_config->connection_count; i++) {
         const DatabaseConnection* conn = &db_config->connections[i];
@@ -583,6 +640,43 @@ LaunchReadiness check_database_launch_readiness(void) {
 
     // Validate individual database connections
     bool connections_valid = validate_database_connections(&app_config->databases, &messages, &count, &capacity);
+
+    // Validate migration configurations
+    bool migrations_overall_go = true;
+    for (int i = 0; i < app_config->databases.connection_count; i++) {
+        const DatabaseConnection* conn = &app_config->databases.connections[i];
+        if (conn->enabled) {
+            bool migrations_go = false;
+            validate_migration_config(conn, &messages, &count, &capacity, &migrations_go);
+            if (conn->auto_migration && !migrations_go) {
+                migrations_overall_go = false;
+            }
+        }
+    }
+
+    // Check AutoMigration and TestMigration readiness
+    if (migrations_overall_go) {
+        for (int i = 0; i < app_config->databases.connection_count; i++) {
+            const DatabaseConnection* conn = &app_config->databases.connections[i];
+            if (conn->enabled && conn->auto_migration) {
+                char* auto_msg = malloc(256);
+                if (auto_msg) {
+                    snprintf(auto_msg, 256, "  Go:      Automatic Migration enabled for %s",
+                            conn->connection_name ? conn->connection_name : "Unknown");
+                    add_launch_message(&messages, &count, &capacity, auto_msg);
+                }
+
+                if (conn->test_migration) {
+                    char* test_msg = malloc(256);
+                    if (test_msg) {
+                        snprintf(test_msg, 256, "  Go:      Test Migration enabled for %s",
+                                conn->connection_name ? conn->connection_name : "Unknown");
+                        add_launch_message(&messages, &count, &capacity, test_msg);
+                    }
+                }
+            }
+        }
+    }
 
     // Final decision
     if (overall_readiness && connections_valid && total_databases > 0) {

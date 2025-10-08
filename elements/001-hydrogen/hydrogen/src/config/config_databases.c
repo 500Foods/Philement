@@ -136,8 +136,13 @@ bool load_database_config(json_t* root, AppConfig* config) {
             // Extract connection details (SQLite doesn't need host/port/user/pass)
             json_t* database_obj = json_object_get(conn_obj, "Database");
             if (database_obj && json_is_string(database_obj)) {
-                conn->database = strdup(json_string_value(database_obj));
-                log_this(SR_CONFIG_CURRENT, "Database config: Loaded database field: %s", LOG_LEVEL_DEBUG, 1, conn->database);
+                const char* database_str = json_string_value(database_obj);
+                char* resolved_database = process_env_variable_string(database_str);
+                if (resolved_database) {
+                    conn->database = resolved_database;
+                } else {
+                    conn->database = strdup(database_str);
+                }
             } else {
                 log_this(SR_CONFIG_CURRENT, "Database config: WARNING - Database field not found or not a string", LOG_LEVEL_ERROR, 0);
                 if (database_obj) {
@@ -151,6 +156,33 @@ bool load_database_config(json_t* root, AppConfig* config) {
             json_t* bootstrap_obj = json_object_get(conn_obj, "Bootstrap");
             if (bootstrap_obj && json_is_string(bootstrap_obj)) {
                 conn->bootstrap_query = strdup(json_string_value(bootstrap_obj));
+            }
+
+            // Extract Schema
+            json_t* schema_obj = json_object_get(conn_obj, "Schema");
+            if (schema_obj && json_is_string(schema_obj)) {
+                conn->schema = strdup(json_string_value(schema_obj));
+            }
+
+            // Extract migration settings
+            json_t* auto_migration_obj = json_object_get(conn_obj, "AutoMigration");
+            conn->auto_migration = (auto_migration_obj && json_is_boolean(auto_migration_obj)) ?
+                                   json_boolean_value(auto_migration_obj) : false;
+
+            json_t* test_migration_obj = json_object_get(conn_obj, "TestMigration");
+            conn->test_migration = (test_migration_obj && json_is_boolean(test_migration_obj)) ?
+                                   json_boolean_value(test_migration_obj) : false;
+
+            json_t* migrations_obj = json_object_get(conn_obj, "Migrations");
+            if (migrations_obj && json_is_string(migrations_obj)) {
+                const char* migrations_str = json_string_value(migrations_obj);
+                char* resolved_migrations = process_env_variable_string(migrations_str);
+                if (resolved_migrations) {
+                    conn->migrations = resolved_migrations;
+                } else {
+                    conn->migrations = strdup(migrations_str);
+                }
+                // log_this(SR_CONFIG_CURRENT, "Database config: Loaded migrations: %s", LOG_LEVEL_DEBUG, 1, conn->migrations);
             }
 
             // Only extract network fields for non-SQLite databases
@@ -336,6 +368,22 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 snprintf(kpath, sizeof(kpath), "%s.Bootstrap", cpath);
                 PROCESS_STRING(NULL, conn, bootstrap_query, kpath, "Databases");
 
+                // Schema
+                snprintf(kpath, sizeof(kpath), "%s.Schema", cpath);
+                PROCESS_STRING(NULL, conn, schema, kpath, "Databases");
+
+                // AutoMigration
+                snprintf(kpath, sizeof(kpath), "%s.AutoMigration", cpath);
+                PROCESS_BOOL(root, conn, auto_migration, kpath, "Databases");
+
+                // TestMigration
+                snprintf(kpath, sizeof(kpath), "%s.TestMigration", cpath);
+                PROCESS_BOOL(root, conn, test_migration, kpath, "Databases");
+
+                // Migrations
+                snprintf(kpath, sizeof(kpath), "%s.Migrations", cpath);
+                PROCESS_STRING(NULL, conn, migrations, kpath, "Databases");
+
             } while (0);
 
             valid_connections++;
@@ -393,6 +441,17 @@ bool load_database_config(json_t* root, AppConfig* config) {
 
                 snprintf(path, sizeof(path), "Databases.Connections.%s.Pass", key);
                 success = success && PROCESS_SENSITIVE(root, conn, pass, path, "Databases");
+
+                // Process migration settings
+                char auto_migration_path[256], test_migration_path[256], migrations_path[256];
+                snprintf(auto_migration_path, sizeof(auto_migration_path), "Databases.Connections.%s.AutoMigration", key);
+                success = success && PROCESS_BOOL(root, conn, auto_migration, auto_migration_path, "Databases");
+
+                snprintf(test_migration_path, sizeof(test_migration_path), "Databases.Connections.%s.TestMigration", key);
+                success = success && PROCESS_BOOL(root, conn, test_migration, test_migration_path, "Databases");
+
+                snprintf(migrations_path, sizeof(migrations_path), "Databases.Connections.%s.Migrations", key);
+                success = success && PROCESS_STRING(root, conn, migrations, migrations_path, "Databases");
             }
 
             db_index++;
@@ -422,6 +481,8 @@ void cleanup_database_connection(DatabaseConnection* conn) {
     free(conn->user);
     free(conn->pass);
     free(conn->bootstrap_query);
+    free(conn->schema);
+    free(conn->migrations);
 
     // Zero out the structure
     memset(conn, 0, sizeof(DatabaseConnection));
@@ -532,6 +593,9 @@ void dump_database_config(const DatabaseConfig* config) {
             log_this(SR_CONFIG_CURRENT, "――― User: %s", LOG_LEVEL_STATE, 1, conn->user ? conn->user : "(not set)");
             log_this(SR_CONFIG_CURRENT, "――― Pass: %s", LOG_LEVEL_STATE, 1, conn->pass ? "****" : "(not set)");
             log_this(SR_CONFIG_CURRENT, "――― Bootstrap: %s", LOG_LEVEL_STATE,1, conn->bootstrap_query ? conn->bootstrap_query : "(not set)");
+            log_this(SR_CONFIG_CURRENT, "――― AutoMigration: %s", LOG_LEVEL_STATE, 1, conn->auto_migration ? "true" : "false");
+            log_this(SR_CONFIG_CURRENT, "――― TestMigration: %s", LOG_LEVEL_STATE, 1, conn->test_migration ? "true" : "false");
+            log_this(SR_CONFIG_CURRENT, "――― Migrations: %s", LOG_LEVEL_STATE, 1, conn->migrations ? conn->migrations : "(not set)");
 
             // Dump queue configurations
             log_this(SR_CONFIG_CURRENT, "――― Queues", LOG_LEVEL_STATE, 0);
