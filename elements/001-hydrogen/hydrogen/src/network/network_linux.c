@@ -428,21 +428,29 @@ static char *find_iface_for_ip(const char *ip_str) {
 
 // Measure ping time for IP: local (binds to iface, 10ms timeout) or remote (default source, 500ms timeout)
 double interface_time(const char *ip_str) {
+    // Convert "localhost" to "127.0.0.1" for reliable resolution
+    const char *resolved_ip_str = ip_str;
+    char localhost_resolved[INET_ADDRSTRLEN];
+    if (strcmp(ip_str, "localhost") == 0) {
+        strcpy(localhost_resolved, "127.0.0.1");
+        resolved_ip_str = localhost_resolved;
+    }
+
     // Auto-detect iface for link-local scoping
     const char *iface = NULL;
     char *iface_copy = NULL;  // For freeing the strdup result
     char dest_str[INET6_ADDRSTRLEN + 10];
-    strncpy(dest_str, ip_str, sizeof(dest_str) - 1);
+    strncpy(dest_str, resolved_ip_str, sizeof(dest_str) - 1);
     dest_str[sizeof(dest_str) - 1] = '\0';
 
     struct addrinfo hints = {0}, *res = NULL, *local = NULL;
 
-    bool is_linklocal = (strstr(ip_str, "fe80::") != NULL);
+    bool is_linklocal = (strstr(resolved_ip_str, "fe80::") != NULL);
     if (is_linklocal) {
-        iface_copy = find_iface_for_ip(ip_str);
+        iface_copy = find_iface_for_ip(resolved_ip_str);
         if (iface_copy) {
             iface = iface_copy;
-            size_t len = strlen(ip_str);
+            size_t len = strlen(resolved_ip_str);
             snprintf(dest_str + len, sizeof(dest_str) - len, "%%%s", iface);
         } else {
             return 0.000000;  // Unreachable link-local (setup fail)
@@ -458,7 +466,7 @@ double interface_time(const char *ip_str) {
     const char *target_addr = dest_str;
     if (getaddrinfo(target_addr, "65000", &hints, &res) != 0) {
         if (is_linklocal) return 0.000000;
-        if (getaddrinfo(ip_str, "65000", &hints, &res) != 0) return 0.000000;
+        if (getaddrinfo(resolved_ip_str, "65000", &hints, &res) != 0) return 0.000000;
     }
 
     int sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -469,11 +477,11 @@ double interface_time(const char *ip_str) {
     }
 
     // Detect if local: try to find/bind source addr
-    char *temp_iface = find_iface_for_ip(ip_str);
+    char *temp_iface = find_iface_for_ip(resolved_ip_str);
     bool is_local = (temp_iface != NULL);
     if (temp_iface) free(temp_iface);
     if (is_local) {
-        const char *local_addr = is_linklocal ? dest_str : ip_str;
+        const char *local_addr = is_linklocal ? dest_str : resolved_ip_str;
         if (getaddrinfo(local_addr, NULL, &hints, &local) == 0) {
             if (bind(sock, local->ai_addr, local->ai_addrlen) < 0) {
                 // Bind fail even for local? Skip and treat as remote
