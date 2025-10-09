@@ -56,6 +56,7 @@ void test_database_migrations_extract_migration_name_null(void);
 void test_database_migrations_execute_migration_files_null_files(void);
 void test_database_migrations_execute_migration_files_zero_count(void);
 void test_database_migrations_execute_single_migration_with_mocks(void);
+void test_database_migrations_free_payload_files(void);
 void test_database_migrations_execute_migration_files_with_mocks(void);
 
 // Helper function prototypes
@@ -477,6 +478,31 @@ void test_database_migrations_execute_single_migration_with_mocks(void) {
     mock_database_migrations_reset_all();
 }
 
+void test_database_migrations_free_payload_files(void) {
+    // Test with NULL payload_files
+    database_migrations_free_payload_files(NULL, 0);
+    // Should not crash
+
+    // Test with empty array
+    PayloadFile* empty_files = calloc(1, sizeof(PayloadFile));
+    if (empty_files) {
+        database_migrations_free_payload_files(empty_files, 0);
+        // Should not crash
+    }
+
+    // Test with allocated files (simulate)
+    PayloadFile* test_files = calloc(2, sizeof(PayloadFile));
+    if (test_files) {
+        test_files[0].name = strdup("test1");
+        test_files[0].data = malloc(10);
+        test_files[1].name = strdup("test2");
+        test_files[1].data = malloc(10);
+
+        database_migrations_free_payload_files(test_files, 2);
+        // Should free everything without crashing
+    }
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -525,6 +551,7 @@ int main(void) {
     RUN_TEST(test_database_migrations_execute_migration_files_null_files);
     RUN_TEST(test_database_migrations_execute_migration_files_zero_count);
     RUN_TEST(test_database_migrations_execute_single_migration_with_mocks);
+    RUN_TEST(test_database_migrations_free_payload_files);
 
     return UNITY_END();
 }
