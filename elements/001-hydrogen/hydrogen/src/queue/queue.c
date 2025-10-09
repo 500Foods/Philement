@@ -103,7 +103,8 @@ Queue* queue_find_with_label(const char* name, const char* subsystem) {
     if (lock_result == MUTEX_SUCCESS) {
         Queue* queue = queue_system.queues[index];
         while (queue) {
-            if (strcmp(queue->name, name) == 0) {
+            // Safety check: ensure queue->name is valid before comparison
+            if (queue->name && strcmp(queue->name, name) == 0) {
                 mutex_unlock(&queue_system.mutex);
                 return queue;
             }
@@ -216,6 +217,23 @@ Queue* queue_create(const char* name, const QueueAttributes* attrs) {
 void queue_destroy(Queue* queue) {
     if (queue == NULL) {
         return;
+    }
+
+    // Remove from hash table first to prevent race conditions
+    if (queue->name) {
+        unsigned int index = hash(queue->name);
+        MutexResult hash_lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
+        if (hash_lock_result == MUTEX_SUCCESS) {
+            Queue** current = &queue_system.queues[index];
+            while (*current) {
+                if (*current == queue) {
+                    *current = queue->hash_next;  // Remove from linked list
+                    break;
+                }
+                current = &(*current)->hash_next;
+            }
+            mutex_unlock(&queue_system.mutex);
+        }
     }
 
     MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
