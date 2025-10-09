@@ -40,10 +40,36 @@ bool database_migrations_discover_files(const struct DatabaseConnection* conn_co
                                       size_t* migration_count, const char* dqm_label);
 void database_migrations_cleanup_files(char** migration_files, size_t migration_count);
 
+// Internal file discovery functions (exposed for unit testing)
+void sort_migration_files(char** migration_files, size_t migration_count);
+bool discover_payload_migration_files(const char* migration_name, char*** migration_files,
+                                     size_t* migration_count, size_t* files_capacity,
+                                     const char* dqm_label);
+bool discover_path_migration_files(const struct DatabaseConnection* conn_config, char*** migration_files,
+                                  size_t* migration_count, size_t* files_capacity,
+                                  const char* dqm_label);
+
+// Internal validation functions (exposed for unit testing)
+bool validate_payload_migrations(const struct DatabaseConnection* conn_config, const char* dqm_label);
+bool validate_path_migrations(const struct DatabaseConnection* conn_config, const char* dqm_label);
+
 // Transaction handling functions
 bool database_migrations_execute_transaction(DatabaseHandle* connection, const char* sql_result,
                                           size_t sql_length, const char* migration_file,
                                           DatabaseEngine engine_type, const char* dqm_label);
+
+// Internal transaction functions (exposed for unit testing)
+bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** statements,
+                         size_t* statement_count, size_t* statements_capacity,
+                         const char* dqm_label);
+bool execute_db2_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+                          const char* migration_file, const char* dqm_label);
+bool execute_postgresql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+                                 const char* migration_file, const char* dqm_label);
+bool execute_mysql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+                            const char* migration_file, const char* dqm_label);
+bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+                             const char* migration_file, const char* dqm_label);
 
 // Lua integration functions
 lua_State* database_migrations_lua_setup(const char* dqm_label);
