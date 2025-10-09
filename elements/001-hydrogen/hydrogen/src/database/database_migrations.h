@@ -22,6 +22,17 @@ bool database_migrations_validate(struct DatabaseQueue* db_queue);
 bool database_migrations_execute_auto(struct DatabaseQueue* db_queue, DatabaseHandle* connection);
 bool database_migrations_execute_test(struct DatabaseQueue* db_queue);
 
+// Utility functions for migration execution
+const char* database_migrations_normalize_engine_name(const char* engine_name);
+const char* database_migrations_extract_migration_name(const char* migrations_config, char** path_copy_out);
+bool database_migrations_execute_single_migration(DatabaseHandle* connection, const char* migration_file,
+                                                const char* engine_name, const char* migration_name,
+                                                const char* schema_name, const char* dqm_label);
+bool database_migrations_execute_migration_files(DatabaseHandle* connection, char** migration_files,
+                                               size_t migration_count, const char* engine_name,
+                                               const char* migration_name, const char* schema_name,
+                                               const char* dqm_label);
+
 // File discovery functions
 bool database_migrations_discover_files(const struct DatabaseConnection* conn_config, char*** migration_files,
                                       size_t* migration_count, const char* dqm_label);

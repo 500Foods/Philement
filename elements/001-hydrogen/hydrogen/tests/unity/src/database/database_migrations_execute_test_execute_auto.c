@@ -12,8 +12,16 @@
 #include "../../../../src/database/database_queue.h"
 #include "../../../../src/config/config.h"
 
+#include "../../../../tests/unity/mocks/mock_database_migrations.h"
+
 // Forward declarations for functions being tested
 bool database_migrations_execute_auto(DatabaseQueue* db_queue, DatabaseHandle* connection);
+const char* database_migrations_normalize_engine_name(const char* engine_name);
+const char* database_migrations_extract_migration_name(const char* migrations_config, char** path_copy_out);
+bool database_migrations_execute_migration_files(DatabaseHandle* connection, char** migration_files,
+                                               size_t migration_count, const char* engine_name,
+                                               const char* migration_name, const char* schema_name,
+                                               const char* dqm_label);
 
 // Forward declarations for test functions
 void test_database_migrations_execute_auto_null_queue(void);
@@ -30,7 +38,25 @@ void test_database_migrations_execute_auto_path_invalid_basename(void);
 void test_database_migrations_execute_auto_engine_postgres(void);
 void test_database_migrations_execute_auto_engine_mysql(void);
 void test_database_migrations_execute_auto_engine_db2(void);
+void test_database_migrations_execute_auto_engine_sqlite(void);
 void test_database_migrations_execute_auto_success_disabled(void);
+
+// New function tests
+void test_database_migrations_normalize_engine_name_postgresql(void);
+void test_database_migrations_normalize_engine_name_mysql(void);
+void test_database_migrations_normalize_engine_name_sqlite(void);
+void test_database_migrations_normalize_engine_name_db2(void);
+void test_database_migrations_normalize_engine_name_unsupported(void);
+void test_database_migrations_normalize_engine_name_null(void);
+void test_database_migrations_extract_migration_name_payload(void);
+void test_database_migrations_extract_migration_name_path(void);
+void test_database_migrations_extract_migration_name_null(void);
+
+// New function tests
+void test_database_migrations_execute_migration_files_null_files(void);
+void test_database_migrations_execute_migration_files_zero_count(void);
+void test_database_migrations_execute_single_migration_with_mocks(void);
+void test_database_migrations_execute_migration_files_with_mocks(void);
 
 // Helper function prototypes
 DatabaseQueue* create_mock_db_queue(const char* db_name, bool is_lead);
@@ -325,6 +351,26 @@ void test_database_migrations_execute_auto_engine_db2(void) {
     destroy_mock_db_queue(db_queue);
 }
 
+void test_database_migrations_execute_auto_engine_sqlite(void) {
+    // Create lead queue
+    DatabaseQueue* db_queue = create_mock_db_queue("testdb", true);
+    TEST_ASSERT_NOT_NULL(db_queue);
+
+    // Configure database connection with sqlite engine
+    app_config->databases.connection_count = 1;
+    app_config->databases.connections[0].name = strdup("testdb");
+    app_config->databases.connections[0].enabled = true;
+    app_config->databases.connections[0].test_migration = true;
+    app_config->databases.connections[0].migrations = strdup("PAYLOAD:test");
+    app_config->databases.connections[0].type = strdup("sqlite");
+
+    DatabaseHandle* dummy_connection = NULL;
+    bool result = database_migrations_execute_auto(db_queue, dummy_connection);
+    TEST_ASSERT_FALSE(result);  // Should fail due to no payload files, but engine normalization should work
+
+    destroy_mock_db_queue(db_queue);
+}
+
 // ===== SUCCESS CASES =====
 
 void test_database_migrations_execute_auto_success_disabled(void) {
@@ -344,6 +390,91 @@ void test_database_migrations_execute_auto_success_disabled(void) {
     TEST_ASSERT_TRUE(result);  // Should succeed (disabled is not an error)
 
     destroy_mock_db_queue(db_queue);
+}
+
+// ===== ENGINE NAME NORMALIZATION TESTS =====
+
+void test_database_migrations_normalize_engine_name_postgresql(void) {
+    const char* result = database_migrations_normalize_engine_name("postgresql");
+    TEST_ASSERT_EQUAL_STRING("postgresql", result);
+
+    result = database_migrations_normalize_engine_name("postgres");
+    TEST_ASSERT_EQUAL_STRING("postgresql", result);
+}
+
+void test_database_migrations_normalize_engine_name_mysql(void) {
+    const char* result = database_migrations_normalize_engine_name("mysql");
+    TEST_ASSERT_EQUAL_STRING("mysql", result);
+}
+
+void test_database_migrations_normalize_engine_name_sqlite(void) {
+    const char* result = database_migrations_normalize_engine_name("sqlite");
+    TEST_ASSERT_EQUAL_STRING("sqlite", result);
+}
+
+void test_database_migrations_normalize_engine_name_db2(void) {
+    const char* result = database_migrations_normalize_engine_name("db2");
+    TEST_ASSERT_EQUAL_STRING("db2", result);
+}
+
+void test_database_migrations_normalize_engine_name_unsupported(void) {
+    const char* result = database_migrations_normalize_engine_name("oracle");
+    TEST_ASSERT_NULL(result);
+}
+
+void test_database_migrations_normalize_engine_name_null(void) {
+    const char* result = database_migrations_normalize_engine_name(NULL);
+    TEST_ASSERT_NULL(result);
+}
+
+// ===== MIGRATION NAME EXTRACTION TESTS =====
+
+void test_database_migrations_extract_migration_name_payload(void) {
+    char* path_copy = NULL;
+    const char* result = database_migrations_extract_migration_name("PAYLOAD:test_migration", &path_copy);
+    TEST_ASSERT_EQUAL_STRING("test_migration", result);
+    TEST_ASSERT_NULL(path_copy);
+}
+
+void test_database_migrations_extract_migration_name_path(void) {
+    char* path_copy = NULL;
+    const char* result = database_migrations_extract_migration_name("/path/to/migrations", &path_copy);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_NOT_NULL(path_copy);
+    TEST_ASSERT_EQUAL_STRING("migrations", result);
+    free(path_copy);
+}
+
+void test_database_migrations_extract_migration_name_null(void) {
+    char* path_copy = NULL;
+    const char* result = database_migrations_extract_migration_name(NULL, &path_copy);
+    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NULL(path_copy);
+}
+
+// ===== MIGRATION FILES EXECUTION TESTS =====
+
+void test_database_migrations_execute_migration_files_null_files(void) {
+    DatabaseHandle* dummy_connection = NULL;
+    bool result = database_migrations_execute_migration_files(dummy_connection, NULL, 1, "sqlite", "test", NULL, "test-label");
+    TEST_ASSERT_FALSE(result);  // Should handle NULL files gracefully
+}
+
+void test_database_migrations_execute_migration_files_zero_count(void) {
+    DatabaseHandle* dummy_connection = NULL;
+    bool result = database_migrations_execute_migration_files(dummy_connection, NULL, 0, "sqlite", "test", NULL, "test-label");
+    TEST_ASSERT_TRUE(result);  // Zero count should succeed (no work to do)
+}
+
+void test_database_migrations_execute_single_migration_with_mocks(void) {
+    // Set up mocks for successful execution
+    mock_database_migrations_reset_all();
+
+    DatabaseHandle* dummy_connection = NULL;
+    bool result = database_migrations_execute_single_migration(dummy_connection, "test.sql", "sqlite", "test", NULL, "test-label");
+    TEST_ASSERT_TRUE(result);  // Should succeed with mocks
+
+    mock_database_migrations_reset_all();
 }
 
 int main(void) {
@@ -374,9 +505,26 @@ int main(void) {
     RUN_TEST(test_database_migrations_execute_auto_engine_postgres);
     RUN_TEST(test_database_migrations_execute_auto_engine_mysql);
     RUN_TEST(test_database_migrations_execute_auto_engine_db2);
+    RUN_TEST(test_database_migrations_execute_auto_engine_sqlite);
 
     // Success cases
     RUN_TEST(test_database_migrations_execute_auto_success_disabled);
+
+    // New function tests
+    RUN_TEST(test_database_migrations_normalize_engine_name_postgresql);
+    RUN_TEST(test_database_migrations_normalize_engine_name_mysql);
+    RUN_TEST(test_database_migrations_normalize_engine_name_sqlite);
+    RUN_TEST(test_database_migrations_normalize_engine_name_db2);
+    RUN_TEST(test_database_migrations_normalize_engine_name_unsupported);
+    RUN_TEST(test_database_migrations_normalize_engine_name_null);
+    RUN_TEST(test_database_migrations_extract_migration_name_payload);
+    RUN_TEST(test_database_migrations_extract_migration_name_path);
+    RUN_TEST(test_database_migrations_extract_migration_name_null);
+
+    // New function tests
+    RUN_TEST(test_database_migrations_execute_migration_files_null_files);
+    RUN_TEST(test_database_migrations_execute_migration_files_zero_count);
+    RUN_TEST(test_database_migrations_execute_single_migration_with_mocks);
 
     return UNITY_END();
 }
