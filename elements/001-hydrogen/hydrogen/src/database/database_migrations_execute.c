@@ -62,6 +62,19 @@ const char* database_migrations_extract_migration_name(const char* migrations_co
 }
 
 /*
+ * Free payload files array
+ */
+void database_migrations_free_payload_files(PayloadFile* payload_files, size_t payload_count) {
+    if (payload_files) {
+        for (size_t j = 0; j < payload_count; j++) {
+            free(payload_files[j].name);
+            free(payload_files[j].data);
+        }
+        free(payload_files);
+    }
+}
+
+/*
  * Execute a single migration file
  * Returns true if the migration executed successfully
  */
@@ -94,11 +107,7 @@ bool database_migrations_execute_single_migration(DatabaseHandle* connection, co
     // Load database.lua module
     if (!database_migrations_lua_load_database_module(L, migration_name, payload_files, payload_count, dqm_label)) {
         // Free payload files
-        for (size_t j = 0; j < payload_count; j++) {
-            free(payload_files[j].name);
-            free(payload_files[j].data);
-        }
-        free(payload_files);
+        database_migrations_free_payload_files(payload_files, payload_count);
         lua_close(L);
         return false;
     }
@@ -109,11 +118,7 @@ bool database_migrations_execute_single_migration(DatabaseHandle* connection, co
     if (!mig_file) {
         log_this(dqm_label, "Migration file not found in payload: %s", LOG_LEVEL_ERROR, 1, migration_file);
         // Free payload files
-        for (size_t j = 0; j < payload_count; j++) {
-            free(payload_files[j].name);
-            free(payload_files[j].data);
-        }
-        free(payload_files);
+        database_migrations_free_payload_files(payload_files, payload_count);
         lua_close(L);
         return false;
     }
@@ -121,11 +126,7 @@ bool database_migrations_execute_single_migration(DatabaseHandle* connection, co
     // Load and execute the migration file
     if (!database_migrations_lua_load_migration_file(L, mig_file, migration_file, dqm_label)) {
         // Free payload files
-        for (size_t j = 0; j < payload_count; j++) {
-            free(payload_files[j].name);
-            free(payload_files[j].data);
-        }
-        free(payload_files);
+        database_migrations_free_payload_files(payload_files, payload_count);
         lua_close(L);
         return false;
     }
@@ -134,11 +135,7 @@ bool database_migrations_execute_single_migration(DatabaseHandle* connection, co
     int query_count = 0;
     if (!database_migrations_lua_extract_queries_table(L, &query_count, dqm_label)) {
         // Free payload files
-        for (size_t j = 0; j < payload_count; j++) {
-            free(payload_files[j].name);
-            free(payload_files[j].data);
-        }
-        free(payload_files);
+        database_migrations_free_payload_files(payload_files, payload_count);
         lua_close(L);
         return false;
     }
@@ -149,11 +146,7 @@ bool database_migrations_execute_single_migration(DatabaseHandle* connection, co
     if (!database_migrations_lua_execute_run_migration(L, engine_name, migration_name, schema_name,
                                                     &sql_length, &sql_result, dqm_label)) {
         // Free payload files
-        for (size_t j = 0; j < payload_count; j++) {
-            free(payload_files[j].name);
-            free(payload_files[j].data);
-        }
-        free(payload_files);
+        database_migrations_free_payload_files(payload_files, payload_count);
         lua_close(L);
         return false;
     }
@@ -180,11 +173,7 @@ bool database_migrations_execute_single_migration(DatabaseHandle* connection, co
     }
 
     // Free payload files
-    for (size_t j = 0; j < payload_count; j++) {
-        free(payload_files[j].name);
-        free(payload_files[j].data);
-    }
-    free(payload_files);
+    database_migrations_free_payload_files(payload_files, payload_count);
 
     // Clean up Lua state
     database_migrations_lua_cleanup(L);

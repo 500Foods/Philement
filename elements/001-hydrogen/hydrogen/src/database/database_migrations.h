@@ -33,6 +33,8 @@ bool database_migrations_execute_migration_files(DatabaseHandle* connection, cha
                                                const char* migration_name, const char* schema_name,
                                                const char* dqm_label);
 
+void database_migrations_free_payload_files(PayloadFile* payload_files, size_t payload_count);
+
 // File discovery functions
 bool database_migrations_discover_files(const struct DatabaseConnection* conn_config, char*** migration_files,
                                       size_t* migration_count, const char* dqm_label);
