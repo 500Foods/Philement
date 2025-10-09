@@ -1,8 +1,8 @@
 /*
- * Database Queue Manager Functions
+ * Database Queue Manager Creation Functions
  *
- * Implements queue manager operations for the Hydrogen database subsystem.
- * Split from database_queue.c for better maintainability.
+ * Implements creation functions for Database Queue Managers in the Hydrogen database subsystem.
+ * Split from database_queue_create.c for better maintainability.
  */
 
 #include "../hydrogen.h"
@@ -11,40 +11,68 @@
 // Local includes
 #include "database_queue.h"
 #include "database.h"
+#include "../utils/utils_queue.h"
 
 // Global queue manager instance
 DatabaseQueueManager* global_queue_manager = NULL;
 
 /*
- * Initialize database queue infrastructure
+ * Create queue manager to coordinate multiple databases
  */
-bool database_queue_system_init(void) {
-
-    if (global_queue_manager != NULL) {
-        return true;
+DatabaseQueueManager* database_queue_manager_create(size_t max_databases) {
+    DatabaseQueueManager* manager = malloc(sizeof(DatabaseQueueManager));
+    if (!manager) {
+        log_this(SR_DATABASE, "Failed to malloc queue manager", LOG_LEVEL_ERROR, 0);
+        return NULL;
     }
 
-    // Ensure the global queue system is initialized first
-    if (!queue_system_initialized) {
-        queue_system_init();
+    memset(manager, 0, sizeof(DatabaseQueueManager));
+
+    manager->databases = calloc(max_databases, sizeof(DatabaseQueue*));
+    if (!manager->databases) {
+        log_this(SR_DATABASE, "Failed to calloc database array", LOG_LEVEL_ERROR, 0);
+        free(manager);
+        return NULL;
     }
 
-    // Create global queue manager with capacity for up to 8 databases
-    global_queue_manager = database_queue_manager_create(8);
-    if (!global_queue_manager) {
-        log_this(SR_DATABASE, "Failed to create database queue manager", LOG_LEVEL_ERROR, 0);
-        return false;
+    manager->database_count = 0;
+    manager->max_databases = max_databases;
+    manager->next_database_index = 0;
+
+    // Initialize statistics
+    manager->total_queries = 0;
+    manager->successful_queries = 0;
+    manager->failed_queries = 0;
+
+    if (pthread_mutex_init(&manager->manager_lock, NULL) != 0) {
+        log_this(SR_DATABASE, "Failed to initialize manager mutex", LOG_LEVEL_ERROR, 0);
+        free(manager->databases);
+        free(manager);
+        return NULL;
     }
 
-    return true;
+    manager->initialized = true;
+    // log_this(SR_DATABASE, "Queue manager creation completed successfully", LOG_LEVEL_TRACE, 0);
+    return manager;
 }
 
 /*
- * Clean shutdown of database queue infrastructure
+ * Initialize the global database queue system
+ */
+bool database_queue_system_init(void) {
+    if (global_queue_manager) {
+        // Already initialized
+        return true;
+    }
+
+    global_queue_manager = database_queue_manager_create(10);  // Default max 10 databases
+    return global_queue_manager != NULL;
+}
+
+/*
+ * Destroy the global database queue system
  */
 void database_queue_system_destroy(void) {
-    log_this(SR_DATABASE, "Destroying database queue system", LOG_LEVEL_TRACE, 0);
-
     if (global_queue_manager) {
         database_queue_manager_destroy(global_queue_manager);
         global_queue_manager = NULL;
@@ -56,52 +84,50 @@ void database_queue_system_destroy(void) {
  */
 bool database_queue_manager_add_database(DatabaseQueueManager* manager, DatabaseQueue* db_queue) {
     if (!manager || !db_queue) {
-        log_this(SR_DATABASE, "Invalid parameters for add database", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     MutexResult lock_result = MUTEX_LOCK(&manager->manager_lock, SR_DATABASE);
     if (lock_result != MUTEX_SUCCESS) {
-        log_this(SR_DATABASE, "Failed to lock manager mutex", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    if (manager->database_count >= manager->max_databases) {
-        mutex_unlock(&manager->manager_lock);
-        log_this(SR_DATABASE, "Cannot add database: maximum capacity reached", LOG_LEVEL_ALERT, 0);
-        return false;
+    // Find an available slot
+    for (size_t i = 0; i < manager->max_databases; i++) {
+        if (!manager->databases[i]) {
+            manager->databases[i] = db_queue;
+            manager->database_count++;
+            mutex_unlock(&manager->manager_lock);
+            return true;
+        }
     }
 
-    manager->databases[manager->database_count++] = db_queue;
     mutex_unlock(&manager->manager_lock);
-
-    // Create DQM component name with full label for logging
-    char* dqm_label = database_queue_generate_label(db_queue);
-    // log_this(dqm_label, "Added to global queue manager", LOG_LEVEL_TRACE, 0);
-    free(dqm_label);
-    return true;
+    return false;  // No available slots
 }
 
 /*
- * Get database queue by name from manager
+ * Get a database queue from the manager by name
  */
 DatabaseQueue* database_queue_manager_get_database(DatabaseQueueManager* manager, const char* name) {
-    if (!manager || !name) return NULL;
-
-    MutexResult lock_result = MUTEX_LOCK(&manager->manager_lock, SR_DATABASE);
-    if (lock_result != MUTEX_SUCCESS) {
-        log_this(SR_DATABASE, "Failed to lock manager mutex for database lookup", LOG_LEVEL_ERROR, 0);
+    if (!manager || !name) {
         return NULL;
     }
 
+    MutexResult lock_result = MUTEX_LOCK(&manager->manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return NULL;
+    }
+
+    // Find database by name
     for (size_t i = 0; i < manager->database_count; i++) {
-        if (strcmp(manager->databases[i]->database_name, name) == 0) {
-            DatabaseQueue* result = manager->databases[i];
+        DatabaseQueue* db_queue = manager->databases[i];
+        if (db_queue && strcmp(db_queue->database_name, name) == 0) {
             mutex_unlock(&manager->manager_lock);
-            return result;
+            return db_queue;
         }
     }
-    mutex_unlock(&manager->manager_lock);
 
-    return NULL;
+    mutex_unlock(&manager->manager_lock);
+    return NULL;  // Not found
 }

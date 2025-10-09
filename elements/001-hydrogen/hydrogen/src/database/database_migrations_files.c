@@ -18,7 +18,7 @@
 /*
  * Sort migration files by number (ascending)
  */
-static void sort_migration_files(char** migration_files, size_t migration_count) {
+void sort_migration_files(char** migration_files, size_t migration_count) {
     if (migration_count <= 1) {
         return;
     }
@@ -54,9 +54,9 @@ static void sort_migration_files(char** migration_files, size_t migration_count)
 /*
  * Discover PAYLOAD-based migration files
  */
-static bool discover_payload_migration_files(const char* migration_name, char*** migration_files,
-                                           size_t* migration_count, size_t* files_capacity,
-                                           const char* dqm_label) {
+bool discover_payload_migration_files(const char* migration_name, char*** migration_files,
+                                    size_t* migration_count, size_t* files_capacity,
+                                    const char* dqm_label) {
     // Get files from payload cache
     PayloadFile* payload_files = NULL;
     size_t payload_count = 0;
@@ -117,9 +117,9 @@ static bool discover_payload_migration_files(const char* migration_name, char***
 /*
  * Discover path-based migration files
  */
-static bool discover_path_migration_files(const DatabaseConnection* conn_config, char*** migration_files,
-                                        size_t* migration_count, size_t* files_capacity,
-                                        const char* dqm_label) {
+bool discover_path_migration_files(const DatabaseConnection* conn_config, char*** migration_files,
+                                 size_t* migration_count, size_t* files_capacity,
+                                 const char* dqm_label) {
     // Path-based migration - scan directory
     char* path_copy = strdup(conn_config->migrations);
     if (!path_copy) {

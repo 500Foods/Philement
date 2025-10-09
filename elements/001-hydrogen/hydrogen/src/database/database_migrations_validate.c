@@ -19,7 +19,12 @@
 /*
  * Validate PAYLOAD-based migration files
  */
-static bool validate_payload_migrations(const DatabaseConnection* conn_config, const char* dqm_label) {
+bool validate_payload_migrations(const DatabaseConnection* conn_config, const char* dqm_label) {
+    if (!conn_config || !conn_config->migrations) {
+        log_this(dqm_label, "Invalid database connection configuration", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
     // Extract migration name after PAYLOAD:
     const char* migration_name = conn_config->migrations + 8;
     if (strlen(migration_name) == 0) {
@@ -92,7 +97,12 @@ static bool validate_payload_migrations(const DatabaseConnection* conn_config, c
 /*
  * Validate path-based migration files
  */
-static bool validate_path_migrations(const DatabaseConnection* conn_config, const char* dqm_label) {
+bool validate_path_migrations(const DatabaseConnection* conn_config, const char* dqm_label) {
+    if (!conn_config || !conn_config->migrations) {
+        log_this(dqm_label, "Invalid database connection configuration", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
     // Path-based migration - find the first file matching <path>/<basename>_*.lua
     char* path_copy = strdup(conn_config->migrations);
     if (!path_copy) {
