@@ -78,6 +78,12 @@ bool database_migrations_lua_load_database_module(lua_State* L, const char* migr
         return false;
     }
 
+    // Check that database.lua returned a table
+    if (!lua_istable(L, -1)) {
+        log_this(dqm_label, "database.lua did not return a table", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
     // Set the database module in package.loaded so require('database') works
     lua_getglobal(L, "package");
     lua_getfield(L, -1, "loaded");

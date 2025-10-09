@@ -20,10 +20,16 @@
 /*
  * Parse multi-statement SQL into individual statements
  */
-static bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** statements,
-                               size_t* statement_count, size_t* statements_capacity,
-                               const char* dqm_label) {
+bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** statements,
+                         size_t* statement_count, size_t* statements_capacity,
+                         const char* dqm_label) {
     (void)sql_length; // Suppress unused parameter warning
+
+    if (!sql_result || sql_length == 0) {
+        log_this(dqm_label, "SQL result is NULL or empty", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
     // Parse the SQL into individual statements using the -- QUERY DELIMITER
     char* sql_copy = strdup(sql_result);
     if (!sql_copy) {
@@ -92,8 +98,8 @@ static bool parse_sql_statements(const char* sql_result, size_t sql_length, char
 /*
  * Execute migration statements for DB2 with explicit transaction control
  */
-static bool execute_db2_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
-                                const char* migration_file, const char* dqm_label) {
+bool execute_db2_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+                          const char* migration_file, const char* dqm_label) {
     // Execute all statements within a transaction using proper DB2 transaction functions
     Transaction* db2_transaction = NULL;
     if (!db2_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &db2_transaction)) {
@@ -171,8 +177,8 @@ static bool execute_db2_migration(DatabaseHandle* connection, char** statements,
 /*
  * Execute migration statements for PostgreSQL with explicit transaction control
  */
-static bool execute_postgresql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
-                                       const char* migration_file, const char* dqm_label) {
+bool execute_postgresql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+                                 const char* migration_file, const char* dqm_label) {
     // For PostgreSQL, we can use SAVEPOINT for nested transaction-like behavior
     // Execute BEGIN, then statements, then COMMIT or ROLLBACK
 
@@ -291,8 +297,8 @@ static bool execute_postgresql_migration(DatabaseHandle* connection, char** stat
 /*
  * Execute migration statements for MySQL with explicit transaction control
  */
-static bool execute_mysql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
-                                  const char* migration_file, const char* dqm_label) {
+bool execute_mysql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+                            const char* migration_file, const char* dqm_label) {
     // MySQL supports standard BEGIN/COMMIT/ROLLBACK
     return execute_postgresql_migration(connection, statements, statement_count, migration_file, dqm_label);
 }
@@ -300,8 +306,8 @@ static bool execute_mysql_migration(DatabaseHandle* connection, char** statement
 /*
  * Execute migration statements for SQLite with explicit transaction control
  */
-static bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
-                                   const char* migration_file, const char* dqm_label) {
+bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+                             const char* migration_file, const char* dqm_label) {
     // SQLite supports standard BEGIN/COMMIT/ROLLBACK
     return execute_postgresql_migration(connection, statements, statement_count, migration_file, dqm_label);
 }

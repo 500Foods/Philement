@@ -1,0 +1,420 @@
+/*
+ * Unity Test File: database_migrations_lua_load_database_module Function Tests
+ * This file contains unit tests for the database_migrations_lua_load_database_module() function
+ * and related Lua integration functions from src/database/database_migrations_lua.c
+ */
+
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
+#include "unity.h"
+
+// Include necessary headers
+#include "../../../../src/database/database.h"
+#include "../../../../src/database/database_migrations.h"
+#include "../../../../src/payload/payload.h"
+
+// Test fixtures
+static PayloadFile* test_payload_files = NULL;
+static size_t test_payload_count = 0;
+
+// Function prototypes
+void test_database_migrations_lua_setup_success(void);
+void test_database_migrations_lua_load_database_module_success(void);
+void test_database_migrations_lua_load_database_module_no_database_lua(void);
+void test_database_migrations_lua_load_database_module_invalid_lua(void);
+void test_database_migrations_lua_load_database_module_no_table_return(void);
+void test_database_migrations_lua_find_migration_file_found(void);
+void test_database_migrations_lua_find_migration_file_not_found(void);
+void test_database_migrations_lua_load_migration_file_success(void);
+void test_database_migrations_lua_load_migration_file_invalid_lua(void);
+void test_database_migrations_lua_extract_queries_table_success(void);
+void test_database_migrations_lua_extract_queries_table_no_queries(void);
+void test_database_migrations_lua_execute_run_migration_success(void);
+void test_database_migrations_lua_execute_run_migration_no_database_table(void);
+void test_database_migrations_lua_execute_run_migration_no_run_migration_function(void);
+void test_database_migrations_lua_execute_run_migration_returns_non_string(void);
+void test_database_migrations_lua_log_execution_summary(void);
+void test_database_migrations_lua_cleanup_null(void);
+
+// Helper function to create test payload files
+static void create_test_payload_files(size_t count) {
+    test_payload_files = calloc(count, sizeof(PayloadFile));
+    if (!test_payload_files) {
+        // Handle allocation failure - though in test context this is unlikely
+        test_payload_count = 0;
+        return;
+    }
+    test_payload_count = count;
+    for (size_t i = 0; i < count; i++) {
+        test_payload_files[i].name = NULL;
+        test_payload_files[i].data = NULL;
+        test_payload_files[i].size = 0;
+        test_payload_files[i].is_compressed = false;
+    }
+}
+
+// Helper function to add a payload file
+static void add_payload_file(size_t index, const char* name, const char* content) {
+    if (index >= test_payload_count || !test_payload_files) return;
+    test_payload_files[index].name = strdup(name);
+    test_payload_files[index].data = (uint8_t*)strdup(content);
+    test_payload_files[index].size = strlen(content);
+}
+
+// Helper function to cleanup test payload files
+static void cleanup_test_payload_files(void) {
+    if (test_payload_files) {
+        for (size_t i = 0; i < test_payload_count; i++) {
+            free(test_payload_files[i].name);
+            free(test_payload_files[i].data);
+        }
+        free(test_payload_files);
+        test_payload_files = NULL;
+        test_payload_count = 0;
+    }
+}
+
+void setUp(void) {
+    // Create basic test payload with valid database.lua
+    create_test_payload_files(3);
+    add_payload_file(0, "test/database.lua", "return { run_migration = function(queries, engine, design_name, schema_name) return 'SELECT 1;' end }");
+    add_payload_file(1, "test/migration_001.lua", "return { queries = { 'CREATE TABLE test (id INT);' } }");
+    add_payload_file(2, "other/file.txt", "some content");
+}
+
+void tearDown(void) {
+    cleanup_test_payload_files();
+}
+
+// Test database_migrations_lua_setup function
+void test_database_migrations_lua_setup_success(void) {
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+    database_migrations_lua_cleanup(L);
+}
+
+// Test database_migrations_lua_load_database_module function
+void test_database_migrations_lua_load_database_module_success(void) {
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    bool result = database_migrations_lua_load_database_module(L, "test", test_payload_files, test_payload_count, "test");
+    TEST_ASSERT_TRUE(result);
+
+    database_migrations_lua_cleanup(L);
+}
+
+void test_database_migrations_lua_load_database_module_no_database_lua(void) {
+    // Create payload without database.lua
+    cleanup_test_payload_files();
+    create_test_payload_files(2);
+    add_payload_file(0, "test/migration_001.lua", "return { queries = {} }");
+    add_payload_file(1, "other/file.txt", "content");
+
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    bool result = database_migrations_lua_load_database_module(L, "test", test_payload_files, test_payload_count, "test");
+    TEST_ASSERT_FALSE(result);  // Should fail because database.lua not found
+
+    database_migrations_lua_cleanup(L);
+}
+
+void test_database_migrations_lua_load_database_module_invalid_lua(void) {
+    // Create payload with invalid database.lua
+    cleanup_test_payload_files();
+    create_test_payload_files(2);
+    add_payload_file(0, "test/database.lua", "return 1 +");  // Invalid Lua syntax
+    add_payload_file(1, "test/migration_001.lua", "return { queries = {} }");
+
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    bool result = database_migrations_lua_load_database_module(L, "test", test_payload_files, test_payload_count, "test");
+    TEST_ASSERT_FALSE(result);  // Should fail because database.lua has invalid syntax
+
+    database_migrations_lua_cleanup(L);
+}
+
+void test_database_migrations_lua_load_database_module_no_table_return(void) {
+    // Create payload with database.lua that doesn't return a table
+    cleanup_test_payload_files();
+    create_test_payload_files(2);
+    add_payload_file(0, "test/database.lua", "return 'not a table'");
+    add_payload_file(1, "test/migration_001.lua", "return { queries = {} }");
+
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    bool result = database_migrations_lua_load_database_module(L, "test", test_payload_files, test_payload_count, "test");
+    TEST_ASSERT_FALSE(result);  // Should fail because database.lua doesn't return a table
+
+    database_migrations_lua_cleanup(L);
+}
+
+// Test database_migrations_lua_find_migration_file function
+void test_database_migrations_lua_find_migration_file_found(void) {
+    PayloadFile* result = database_migrations_lua_find_migration_file("test/migration_001.lua", test_payload_files, test_payload_count);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("test/migration_001.lua", result->name);
+}
+
+void test_database_migrations_lua_find_migration_file_not_found(void) {
+    PayloadFile* result = database_migrations_lua_find_migration_file("nonexistent.lua", test_payload_files, test_payload_count);
+    TEST_ASSERT_NULL(result);
+}
+
+// Test database_migrations_lua_load_migration_file function
+void test_database_migrations_lua_load_migration_file_success(void) {
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    PayloadFile* mig_file = database_migrations_lua_find_migration_file("test/migration_001.lua", test_payload_files, test_payload_count);
+    TEST_ASSERT_NOT_NULL(mig_file);
+
+    bool result = database_migrations_lua_load_migration_file(L, mig_file, "test/migration_001.lua", "test");
+    TEST_ASSERT_TRUE(result);
+
+    database_migrations_lua_cleanup(L);
+}
+
+void test_database_migrations_lua_load_migration_file_invalid_lua(void) {
+    // Create payload with invalid migration file
+    cleanup_test_payload_files();
+    create_test_payload_files(2);
+    add_payload_file(0, "test/database.lua", "return { run_migration = function() return 'SELECT 1;' end }");
+    add_payload_file(1, "test/migration_001.lua", "invalid lua syntax {{{");  // Invalid Lua
+
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    PayloadFile* mig_file = database_migrations_lua_find_migration_file("test/migration_001.lua", test_payload_files, test_payload_count);
+    TEST_ASSERT_NOT_NULL(mig_file);
+
+    bool result = database_migrations_lua_load_migration_file(L, mig_file, "test/migration_001.lua", "test");
+    TEST_ASSERT_FALSE(result);  // Should fail due to invalid Lua
+
+    database_migrations_lua_cleanup(L);
+}
+
+// Test database_migrations_lua_extract_queries_table function
+void test_database_migrations_lua_extract_queries_table_success(void) {
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    // Load a valid migration file
+    PayloadFile* mig_file = database_migrations_lua_find_migration_file("test/migration_001.lua", test_payload_files, test_payload_count);
+    TEST_ASSERT_NOT_NULL(mig_file);
+
+    bool load_result = database_migrations_lua_load_migration_file(L, mig_file, "test/migration_001.lua", "test");
+    TEST_ASSERT_TRUE(load_result);
+
+    int query_count = 0;
+    bool result = database_migrations_lua_extract_queries_table(L, &query_count, "test");
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL(1, query_count);  // Should have 1 query
+
+    database_migrations_lua_cleanup(L);
+}
+
+void test_database_migrations_lua_extract_queries_table_no_queries(void) {
+    // Create payload with migration file that doesn't return queries table
+    cleanup_test_payload_files();
+    create_test_payload_files(2);
+    add_payload_file(0, "test/database.lua", "return { run_migration = function() return 'SELECT 1;' end }");
+    add_payload_file(1, "test/migration_001.lua", "return {}");  // No queries table
+
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    PayloadFile* mig_file = database_migrations_lua_find_migration_file("test/migration_001.lua", test_payload_files, test_payload_count);
+    TEST_ASSERT_NOT_NULL(mig_file);
+
+    bool load_result = database_migrations_lua_load_migration_file(L, mig_file, "test/migration_001.lua", "test");
+    TEST_ASSERT_TRUE(load_result);
+
+    int query_count = 0;
+    bool result = database_migrations_lua_extract_queries_table(L, &query_count, "test");
+    TEST_ASSERT_FALSE(result);  // Should fail because no queries table
+
+    database_migrations_lua_cleanup(L);
+}
+
+// Test database_migrations_lua_execute_run_migration function
+void test_database_migrations_lua_execute_run_migration_success(void) {
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    // Load database module
+    bool db_result = database_migrations_lua_load_database_module(L, "test", test_payload_files, test_payload_count, "test");
+    TEST_ASSERT_TRUE(db_result);
+
+    // Load migration file
+    PayloadFile* mig_file = database_migrations_lua_find_migration_file("test/migration_001.lua", test_payload_files, test_payload_count);
+    TEST_ASSERT_NOT_NULL(mig_file);
+
+    bool load_result = database_migrations_lua_load_migration_file(L, mig_file, "test/migration_001.lua", "test");
+    TEST_ASSERT_TRUE(load_result);
+
+    // Extract queries
+    int query_count = 0;
+    bool extract_result = database_migrations_lua_extract_queries_table(L, &query_count, "test");
+    TEST_ASSERT_TRUE(extract_result);
+
+    // Execute run_migration
+    size_t sql_length = 0;
+    const char* sql_result = NULL;
+    bool exec_result = database_migrations_lua_execute_run_migration(L, "sqlite", "test", "public", &sql_length, &sql_result, "test");
+    TEST_ASSERT_TRUE(exec_result);
+    TEST_ASSERT_NOT_NULL(sql_result);
+    TEST_ASSERT_GREATER_THAN(0, sql_length);
+
+    database_migrations_lua_cleanup(L);
+}
+
+void test_database_migrations_lua_execute_run_migration_no_database_table(void) {
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    // Don't load database module, so database table won't exist
+    // Load migration file directly
+    PayloadFile* mig_file = database_migrations_lua_find_migration_file("test/migration_001.lua", test_payload_files, test_payload_count);
+    TEST_ASSERT_NOT_NULL(mig_file);
+
+    bool load_result = database_migrations_lua_load_migration_file(L, mig_file, "test/migration_001.lua", "test");
+    TEST_ASSERT_TRUE(load_result);
+
+    // Extract queries
+    int query_count = 0;
+    bool extract_result = database_migrations_lua_extract_queries_table(L, &query_count, "test");
+    TEST_ASSERT_TRUE(extract_result);
+
+    // Execute run_migration - should fail because no database table
+    size_t sql_length = 0;
+    const char* sql_result = NULL;
+    bool exec_result = database_migrations_lua_execute_run_migration(L, "sqlite", "test", "public", &sql_length, &sql_result, "test");
+    TEST_ASSERT_FALSE(exec_result);  // Should fail because database table not found
+
+    database_migrations_lua_cleanup(L);
+}
+
+void test_database_migrations_lua_execute_run_migration_no_run_migration_function(void) {
+    // Create payload with database.lua that doesn't have run_migration
+    cleanup_test_payload_files();
+    create_test_payload_files(2);
+    add_payload_file(0, "test/database.lua", "return {}");  // No run_migration function
+    add_payload_file(1, "test/migration_001.lua", "return { queries = { 'SELECT 1;' } }");
+
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    // Load database module
+    bool db_result = database_migrations_lua_load_database_module(L, "test", test_payload_files, test_payload_count, "test");
+    TEST_ASSERT_TRUE(db_result);
+
+    // Load migration file
+    PayloadFile* mig_file = database_migrations_lua_find_migration_file("test/migration_001.lua", test_payload_files, test_payload_count);
+    TEST_ASSERT_NOT_NULL(mig_file);
+
+    bool load_result = database_migrations_lua_load_migration_file(L, mig_file, "test/migration_001.lua", "test");
+    TEST_ASSERT_TRUE(load_result);
+
+    // Extract queries
+    int query_count = 0;
+    bool extract_result = database_migrations_lua_extract_queries_table(L, &query_count, "test");
+    TEST_ASSERT_TRUE(extract_result);
+
+    // Execute run_migration - should fail because no run_migration function
+    size_t sql_length = 0;
+    const char* sql_result = NULL;
+    bool exec_result = database_migrations_lua_execute_run_migration(L, "sqlite", "test", "public", &sql_length, &sql_result, "test");
+    TEST_ASSERT_FALSE(exec_result);  // Should fail because run_migration function not found
+
+    database_migrations_lua_cleanup(L);
+}
+
+void test_database_migrations_lua_execute_run_migration_returns_non_string(void) {
+    // Create payload with database.lua where run_migration returns non-string
+    cleanup_test_payload_files();
+    create_test_payload_files(2);
+    add_payload_file(0, "test/database.lua", "return { run_migration = function(queries, engine, design_name, schema_name) return nil end }");  // Returns nil, not string
+    add_payload_file(1, "test/migration_001.lua", "return { queries = { 'SELECT 1;' } }");
+
+    lua_State* L = database_migrations_lua_setup("test");
+    TEST_ASSERT_NOT_NULL(L);
+
+    // Load database module
+    bool db_result = database_migrations_lua_load_database_module(L, "test", test_payload_files, test_payload_count, "test");
+    TEST_ASSERT_TRUE(db_result);
+
+    // Load migration file
+    PayloadFile* mig_file = database_migrations_lua_find_migration_file("test/migration_001.lua", test_payload_files, test_payload_count);
+    TEST_ASSERT_NOT_NULL(mig_file);
+
+    bool load_result = database_migrations_lua_load_migration_file(L, mig_file, "test/migration_001.lua", "test");
+    TEST_ASSERT_TRUE(load_result);
+
+    // Extract queries
+    int query_count = 0;
+    bool extract_result = database_migrations_lua_extract_queries_table(L, &query_count, "test");
+    TEST_ASSERT_TRUE(extract_result);
+
+    // Execute run_migration - should fail because it returns non-string
+    size_t sql_length = 0;
+    const char* sql_result = NULL;
+    bool exec_result = database_migrations_lua_execute_run_migration(L, "sqlite", "test", "public", &sql_length, &sql_result, "test");
+    TEST_ASSERT_FALSE(exec_result);  // Should fail because run_migration returns non-string
+
+    database_migrations_lua_cleanup(L);
+}
+
+// Test database_migrations_lua_log_execution_summary function
+void test_database_migrations_lua_log_execution_summary(void) {
+    // This function just logs, so we just call it to ensure it doesn't crash
+    database_migrations_lua_log_execution_summary("test/migration_001.lua", 100, 5, 3, "test");
+    TEST_PASS();  // If we get here without crashing, test passes
+}
+
+// Test database_migrations_lua_cleanup function
+void test_database_migrations_lua_cleanup_null(void) {
+    // Should handle NULL gracefully
+    database_migrations_lua_cleanup(NULL);
+    TEST_PASS();
+}
+
+int main(void) {
+    UNITY_BEGIN();
+
+    // Test setup function
+    RUN_TEST(test_database_migrations_lua_setup_success);
+
+    // Test load_database_module function
+    RUN_TEST(test_database_migrations_lua_load_database_module_success);
+    RUN_TEST(test_database_migrations_lua_load_database_module_no_database_lua);
+    RUN_TEST(test_database_migrations_lua_load_database_module_invalid_lua);
+    RUN_TEST(test_database_migrations_lua_load_database_module_no_table_return);
+
+    // Test find_migration_file function
+    RUN_TEST(test_database_migrations_lua_find_migration_file_found);
+    RUN_TEST(test_database_migrations_lua_find_migration_file_not_found);
+
+    // Test load_migration_file function
+    RUN_TEST(test_database_migrations_lua_load_migration_file_success);
+    RUN_TEST(test_database_migrations_lua_load_migration_file_invalid_lua);
+
+    // Test extract_queries_table function
+    RUN_TEST(test_database_migrations_lua_extract_queries_table_success);
+    RUN_TEST(test_database_migrations_lua_extract_queries_table_no_queries);
+
+    // Test execute_run_migration function
+    RUN_TEST(test_database_migrations_lua_execute_run_migration_success);
+    RUN_TEST(test_database_migrations_lua_execute_run_migration_no_database_table);
+    RUN_TEST(test_database_migrations_lua_execute_run_migration_no_run_migration_function);
+    RUN_TEST(test_database_migrations_lua_execute_run_migration_returns_non_string);
+
+    // Test utility functions
+    RUN_TEST(test_database_migrations_lua_log_execution_summary);
+    RUN_TEST(test_database_migrations_lua_cleanup_null);
+
+    return UNITY_END();
+}
