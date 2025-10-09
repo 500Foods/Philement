@@ -8,6 +8,16 @@
 #include "../hydrogen.h"
 #include "database.h"
 #include "database_queue.h"
+#include "database_connstring.h"
+
+// Network includes for ping functionality
+#include "../network/network.h"
+
+// Engine description function declarations
+const char* postgresql_engine_get_description(void);
+const char* sqlite_engine_get_description(void);
+const char* mysql_engine_get_description(void);
+const char* db2_engine_get_description(void);
 
 // Global database subsystem instance
 DatabaseSubsystem* database_subsystem = NULL;
@@ -261,6 +271,73 @@ bool database_add_database(const char* name, const char* engine, const char* con
     if (!conn_str) {
         log_this(SR_DATABASE, "Failed to create connection string", LOG_LEVEL_ERROR, 0);
         return false;
+    }
+
+    // Output engine description and ping host if applicable
+    DatabaseEngine engine_type = DB_ENGINE_SQLITE; // Default
+    if (strcmp(engine, "postgresql") == 0 || strcmp(engine, "postgres") == 0) {
+        engine_type = DB_ENGINE_POSTGRESQL;
+    } else if (strcmp(engine, "mysql") == 0) {
+        engine_type = DB_ENGINE_MYSQL;
+    } else if (strcmp(engine, "db2") == 0) {
+        engine_type = DB_ENGINE_DB2;
+    } else if (strcmp(engine, "sqlite") == 0) {
+        engine_type = DB_ENGINE_SQLITE;
+    }
+
+    const char* description = NULL;
+    switch (engine_type) {
+        case DB_ENGINE_POSTGRESQL:
+            description = postgresql_engine_get_description();
+            break;
+        case DB_ENGINE_SQLITE:
+            description = sqlite_engine_get_description();
+            break;
+        case DB_ENGINE_MYSQL:
+            description = mysql_engine_get_description();
+            break;
+        case DB_ENGINE_DB2:
+            description = db2_engine_get_description();
+            break;
+        case DB_ENGINE_AI:
+        case DB_ENGINE_MAX:
+        default:
+            description = "Unknown database engine";
+            break;
+    }
+    if (description) {
+        log_this(SR_DATABASE, "Engine description: %s", LOG_LEVEL_DEBUG, 1, description);
+    }
+
+    // Ping host if connection string involves an IP and host
+    ConnectionConfig* parsed_config = parse_connection_string(conn_str);
+    if (parsed_config && parsed_config->host) {
+        // log_this(SR_DATABASE, "Parsed host: %s", LOG_LEVEL_DEBUG, 1, parsed_config->host);
+        // Check if host is not localhost or 127.0.0.1
+        bool should_ping = true;
+        if (engine_type == DB_ENGINE_SQLITE) {
+            should_ping = false;
+        }
+        // if (strcmp(parsed_config->host, "localhost") == 0 ||
+        //     strcmp(parsed_config->host, "127.0.0.1") == 0 ||
+        //     strcmp(parsed_config->host, "::1") == 0) {
+        //     should_ping = false;
+        //     log_this(SR_DATABASE, "Skipping ping for localhost", LOG_LEVEL_DEBUG, 0);
+        // }
+
+        if (should_ping) {
+            double ping_time = interface_time(parsed_config->host);
+            if (ping_time > 0) {
+                log_this(SR_DATABASE, "Host (%s) ping time: %.6fms", LOG_LEVEL_DEBUG, 2, parsed_config->host, ping_time);
+            } else {
+                log_this(SR_DATABASE, "Host (%s) ping not measurable", LOG_LEVEL_DEBUG, 1, parsed_config->host);
+            }
+        }
+    } else {
+        log_this(SR_DATABASE, "No host found in connection string", LOG_LEVEL_DEBUG, 0);
+    }
+    if (parsed_config) {
+        free_connection_config(parsed_config);
     }
 
     // Create and start database queue
