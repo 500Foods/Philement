@@ -142,6 +142,18 @@ DatabaseQueue* database_queue_create_lead(const char* database_name, const char*
 DatabaseQueue* database_queue_create_worker(const char* database_name, const char* connection_string, const char* queue_type, const char* dqm_label);
 void database_queue_destroy(DatabaseQueue* db_queue);
 
+// Internal helper functions for Lead queue creation (exposed for testing)
+bool database_queue_validate_lead_params(const char* database_name, const char* connection_string);
+bool database_queue_ensure_system_initialized(void);
+DatabaseQueue* database_queue_create_lead_complete(const char* database_name, const char* connection_string, const char* bootstrap_query);
+
+// Synchronization primitive initialization helpers (exposed for testing)
+bool database_queue_init_basic_sync_primitives(DatabaseQueue* db_queue);
+bool database_queue_init_children_management(DatabaseQueue* db_queue);
+bool database_queue_init_connection_sync(DatabaseQueue* db_queue);
+bool database_queue_init_bootstrap_sync(DatabaseQueue* db_queue);
+bool database_queue_init_initial_connection_sync(DatabaseQueue* db_queue);
+
 // Queue manager operations
 DatabaseQueueManager* database_queue_manager_create(size_t max_databases);
 void database_queue_manager_destroy(DatabaseQueueManager* manager);
