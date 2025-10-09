@@ -39,6 +39,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libdb2.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libsqlite3.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_terminal_websocket.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_migrations.c
 )
 
 # Print-specific mock sources (only linked to print tests)
@@ -234,7 +235,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(TEST_OUTPUT_DIR "${CMAKE_BINARY_DIR}/unity/src")
     endif()
 
-    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, or print test to include mock headers
+    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, database, or print test to include mock headers
     string(FIND "${TEST_SOURCE}" "websocket" IS_WEBSOCKET_TEST)
     string(FIND "${TEST_SOURCE}" "terminal" IS_TERMINAL_TEST)
     string(FIND "${TEST_SOURCE}" "mdns" IS_MDNS_TEST)
@@ -242,6 +243,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     string(FIND "${TEST_SOURCE}" "mysql" IS_MYSQL_TEST)
     string(FIND "${TEST_SOURCE}" "db2" IS_DB2_TEST)
     string(FIND "${TEST_SOURCE}" "sqlite" IS_SQLITE_TEST)
+    string(FIND "${TEST_SOURCE}" "database" IS_DATABASE_TEST)
     string(FIND "${TEST_SOURCE}" "print" IS_PRINT_TEST)
     if(IS_WEBSOCKET_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
@@ -264,6 +266,9 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     elseif(IS_SQLITE_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LIBSQLITE3")
+    elseif(IS_DATABASE_TEST GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_DATABASE_MIGRATIONS")
     elseif(IS_PRINT_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LOGGING -Dlog_this=mock_log_this")

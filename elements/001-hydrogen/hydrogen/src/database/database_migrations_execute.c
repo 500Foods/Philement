@@ -15,6 +15,210 @@
 #include "database_migrations.h"
 
 /*
+ * Normalize database engine name to match Lua expectations
+ * Returns the normalized engine name or NULL if unsupported
+ */
+const char* database_migrations_normalize_engine_name(const char* engine_name) {
+    if (!engine_name) {
+        return NULL;
+    }
+
+    if (strcmp(engine_name, "postgresql") == 0 || strcmp(engine_name, "postgres") == 0) {
+        return "postgresql";
+    } else if (strcmp(engine_name, "mysql") == 0) {
+        return "mysql";
+    } else if (strcmp(engine_name, "sqlite") == 0) {
+        return "sqlite";
+    } else if (strcmp(engine_name, "db2") == 0) {
+        return "db2";
+    }
+
+    return NULL; // Unsupported engine
+}
+
+/*
+ * Extract migration name from configuration
+ * For PAYLOAD: prefix, returns the part after prefix
+ * For path-based, returns basename of the path
+ * Returns NULL on error
+ */
+const char* database_migrations_extract_migration_name(const char* migrations_config, char** path_copy_out) {
+    if (!migrations_config) {
+        return NULL;
+    }
+
+    if (strncmp(migrations_config, "PAYLOAD:", 8) == 0) {
+        *path_copy_out = NULL;
+        return migrations_config + 8;
+    } else {
+        // For path-based migrations, extract the basename
+        *path_copy_out = strdup(migrations_config);
+        if (*path_copy_out) {
+            const char* migration_name = basename(*path_copy_out);
+            return migration_name;
+        }
+        return NULL;
+    }
+}
+
+/*
+ * Execute a single migration file
+ * Returns true if the migration executed successfully
+ */
+bool database_migrations_execute_single_migration(DatabaseHandle* connection, const char* migration_file,
+                                                 const char* engine_name, const char* migration_name,
+                                                 const char* schema_name, const char* dqm_label) {
+    log_this(dqm_label, "Executing migration: %s (engine=%s, design_name=%s, schema_name=%s)", LOG_LEVEL_TRACE, 4,
+             migration_file,
+             engine_name,
+             migration_name,
+             schema_name ? schema_name : "(none)");
+
+    // Set up Lua state
+    lua_State* L = database_migrations_lua_setup(dqm_label);
+    if (!L) {
+        return false;
+    }
+
+    // Get all migration files from payload cache
+    PayloadFile* payload_files = NULL;
+    size_t payload_count = 0;
+    size_t payload_capacity = 0;
+
+    if (!get_payload_files_by_prefix(migration_name, &payload_files, &payload_count, &payload_capacity)) {
+        log_this(dqm_label, "Failed to get payload files for migration: %s", LOG_LEVEL_ERROR, 1, migration_file);
+        lua_close(L);
+        return false;
+    }
+
+    // Load database.lua module
+    if (!database_migrations_lua_load_database_module(L, migration_name, payload_files, payload_count, dqm_label)) {
+        // Free payload files
+        for (size_t j = 0; j < payload_count; j++) {
+            free(payload_files[j].name);
+            free(payload_files[j].data);
+        }
+        free(payload_files);
+        lua_close(L);
+        return false;
+    }
+
+    // Find the specific migration file
+    PayloadFile* mig_file = database_migrations_lua_find_migration_file(migration_file, payload_files, payload_count);
+
+    if (!mig_file) {
+        log_this(dqm_label, "Migration file not found in payload: %s", LOG_LEVEL_ERROR, 1, migration_file);
+        // Free payload files
+        for (size_t j = 0; j < payload_count; j++) {
+            free(payload_files[j].name);
+            free(payload_files[j].data);
+        }
+        free(payload_files);
+        lua_close(L);
+        return false;
+    }
+
+    // Load and execute the migration file
+    if (!database_migrations_lua_load_migration_file(L, mig_file, migration_file, dqm_label)) {
+        // Free payload files
+        for (size_t j = 0; j < payload_count; j++) {
+            free(payload_files[j].name);
+            free(payload_files[j].data);
+        }
+        free(payload_files);
+        lua_close(L);
+        return false;
+    }
+
+    // Extract queries table
+    int query_count = 0;
+    if (!database_migrations_lua_extract_queries_table(L, &query_count, dqm_label)) {
+        // Free payload files
+        for (size_t j = 0; j < payload_count; j++) {
+            free(payload_files[j].name);
+            free(payload_files[j].data);
+        }
+        free(payload_files);
+        lua_close(L);
+        return false;
+    }
+
+    // Execute run_migration function
+    size_t sql_length = 0;
+    const char* sql_result = NULL;
+    if (!database_migrations_lua_execute_run_migration(L, engine_name, migration_name, schema_name,
+                                                    &sql_length, &sql_result, dqm_label)) {
+        // Free payload files
+        for (size_t j = 0; j < payload_count; j++) {
+            free(payload_files[j].name);
+            free(payload_files[j].data);
+        }
+        free(payload_files);
+        lua_close(L);
+        return false;
+    }
+
+    // Count lines in SQL (approximate by counting newlines)
+    int line_count = 1; // At least 1 line if there's content
+    if (sql_result) {
+        for (size_t j = 0; j < sql_length; j++) {
+            if (sql_result[j] == '\n') line_count++;
+        }
+    }
+
+    // Log execution summary
+    database_migrations_lua_log_execution_summary(migration_file, sql_length, line_count, query_count, dqm_label);
+
+    // Execute the generated SQL against the database as a transaction
+    bool success = true;
+    if (sql_result && sql_length > 0) {
+        success = database_migrations_execute_transaction(connection, sql_result, sql_length,
+                                                       migration_file, connection->engine_type, dqm_label);
+    } else {
+        log_this(dqm_label, "No SQL generated for migration: %s", LOG_LEVEL_TRACE, 1, migration_file);
+        success = false;
+    }
+
+    // Free payload files
+    for (size_t j = 0; j < payload_count; j++) {
+        free(payload_files[j].name);
+        free(payload_files[j].data);
+    }
+    free(payload_files);
+
+    // Clean up Lua state
+    database_migrations_lua_cleanup(L);
+
+    return success;
+}
+
+/*
+ * Execute a list of migration files
+ * Returns true if all migrations executed successfully
+ */
+bool database_migrations_execute_migration_files(DatabaseHandle* connection, char** migration_files,
+                                               size_t migration_count, const char* engine_name,
+                                               const char* migration_name, const char* schema_name,
+                                               const char* dqm_label) {
+    if (!migration_files && migration_count > 0) {
+        return false;  // Invalid parameters
+    }
+
+    bool all_success = true;
+
+    for (size_t i = 0; i < migration_count; i++) {
+        bool migration_success = database_migrations_execute_single_migration(connection, migration_files[i],
+                                                                             engine_name, migration_name, schema_name, dqm_label);
+        if (!migration_success) {
+            all_success = false;
+            break;  // Stop processing further migrations on failure
+        }
+    }
+
+    return all_success;
+}
+
+/*
  * Execute auto migrations for the given database connection
  * This generates and executes SQL to populate the Queries table with migration information
  */
@@ -59,40 +263,19 @@ bool database_migrations_execute_auto(DatabaseQueue* db_queue, DatabaseHandle* c
     }
 
     // Determine database engine type
-    const char* engine_name = conn_config->type;
+    const char* engine_name = database_migrations_normalize_engine_name(conn_config->type);
     if (!engine_name) {
         log_this(dqm_label, "No database engine type specified", LOG_LEVEL_ERROR, 0);
         free(dqm_label);
         return false;
     }
 
-    // Normalize engine names to match Lua expectations
-    if (strcmp(engine_name, "postgresql") == 0 || strcmp(engine_name, "postgres") == 0) {
-        engine_name = "postgresql";
-    } else if (strcmp(engine_name, "mysql") == 0) {
-        engine_name = "mysql";
-    } else if (strcmp(engine_name, "sqlite") == 0) {
-        engine_name = "sqlite";
-    } else if (strcmp(engine_name, "db2") == 0) {
-        engine_name = "db2";
-    }
-
     // Get schema name (default to empty string if not specified)
     const char* schema_name = conn_config->schema ? conn_config->schema : "";
 
     // Extract migration name from PAYLOAD: prefix or path
-    const char* migration_name = NULL;
-    char* path_copy = NULL;  // Keep track of allocated path copy for cleanup
-
-    if (strncmp(conn_config->migrations, "PAYLOAD:", 8) == 0) {
-        migration_name = conn_config->migrations + 8;
-    } else {
-        // For path-based migrations, extract the basename
-        path_copy = strdup(conn_config->migrations);
-        if (path_copy) {
-            migration_name = basename(path_copy);
-        }
-    }
+    char* path_copy = NULL;
+    const char* migration_name = database_migrations_extract_migration_name(conn_config->migrations, &path_copy);
 
     if (!migration_name) {
         log_this(dqm_label, "Invalid migration configuration", LOG_LEVEL_ERROR, 0);
@@ -113,148 +296,9 @@ bool database_migrations_execute_auto(DatabaseQueue* db_queue, DatabaseHandle* c
 
     log_this(dqm_label, "Found %'zu migration files to execute", LOG_LEVEL_TRACE, 1, migration_count);
 
-    // Execute each migration file using Lua C API
-    bool all_success = true;
-    for (size_t i = 0; i < migration_count; i++) {
-        log_this(dqm_label, "Executing migration: %s (engine=%s, design_name=%s, schema_name=%s)", LOG_LEVEL_TRACE, 4,
-                 migration_files[i],
-                 engine_name,
-                 migration_name,
-                 schema_name ? schema_name : "(none)");
-
-        // Set up Lua state
-        lua_State* L = database_migrations_lua_setup(dqm_label);
-        if (!L) {
-            all_success = false;
-            continue;
-        }
-
-        // Get all migration files from payload cache
-        PayloadFile* payload_files = NULL;
-        size_t payload_count = 0;
-        size_t payload_capacity = 0;
-
-        if (!get_payload_files_by_prefix(migration_name, &payload_files, &payload_count, &payload_capacity)) {
-            log_this(dqm_label, "Failed to get payload files for migration: %s", LOG_LEVEL_ERROR, 1, migration_files[i]);
-            lua_close(L);
-            all_success = false;
-            continue;
-        }
-
-        // Load database.lua module
-        if (!database_migrations_lua_load_database_module(L, migration_name, payload_files, payload_count, dqm_label)) {
-            // Free payload files
-            for (size_t j = 0; j < payload_count; j++) {
-                free(payload_files[j].name);
-                free(payload_files[j].data);
-            }
-            free(payload_files);
-            lua_close(L);
-            all_success = false;
-            continue;
-        }
-
-        // Find the specific migration file
-        PayloadFile* mig_file = database_migrations_lua_find_migration_file(migration_files[i], payload_files, payload_count);
-
-        if (!mig_file) {
-            log_this(dqm_label, "Migration file not found in payload: %s", LOG_LEVEL_ERROR, 1, migration_files[i]);
-            // Free payload files
-            for (size_t j = 0; j < payload_count; j++) {
-                free(payload_files[j].name);
-                free(payload_files[j].data);
-            }
-            free(payload_files);
-            lua_close(L);
-            all_success = false;
-            continue;
-        }
-
-        // Load and execute the migration file
-        if (!database_migrations_lua_load_migration_file(L, mig_file, migration_files[i], dqm_label)) {
-            // Free payload files
-            for (size_t j = 0; j < payload_count; j++) {
-                free(payload_files[j].name);
-                free(payload_files[j].data);
-            }
-            free(payload_files);
-            lua_close(L);
-            all_success = false;
-            continue;
-        }
-
-        // Extract queries table
-        int query_count = 0;
-        if (!database_migrations_lua_extract_queries_table(L, &query_count, dqm_label)) {
-            // Free payload files
-            for (size_t j = 0; j < payload_count; j++) {
-                free(payload_files[j].name);
-                free(payload_files[j].data);
-            }
-            free(payload_files);
-            lua_close(L);
-            all_success = false;
-            continue;
-        }
-
-        // Execute run_migration function
-        size_t sql_length = 0;
-        const char* sql_result = NULL;
-        if (!database_migrations_lua_execute_run_migration(L, engine_name, migration_name, schema_name,
-                                                        &sql_length, &sql_result, dqm_label)) {
-            // Free payload files
-            for (size_t j = 0; j < payload_count; j++) {
-                free(payload_files[j].name);
-                free(payload_files[j].data);
-            }
-            free(payload_files);
-            lua_close(L);
-            all_success = false;
-            continue;
-        }
-
-        // Count lines in SQL (approximate by counting newlines)
-        int line_count = 1; // At least 1 line if there's content
-        if (sql_result) {
-            for (size_t j = 0; j < sql_length; j++) {
-                if (sql_result[j] == '\n') line_count++;
-            }
-        }
-
-        // Log execution summary
-        database_migrations_lua_log_execution_summary(migration_files[i], sql_length, line_count, query_count, dqm_label);
-
-        // Execute the generated SQL against the database as a transaction
-        if (sql_result && sql_length > 0) {
-            bool migration_success = database_migrations_execute_transaction(connection, sql_result, sql_length,
-                                                                           migration_files[i], connection->engine_type, dqm_label);
-            if (!migration_success) {
-                all_success = false;
-                // Stop processing further migrations on failure
-                // Free payload files
-                for (size_t j = 0; j < payload_count; j++) {
-                    free(payload_files[j].name);
-                    free(payload_files[j].data);
-                }
-                free(payload_files);
-                lua_close(L);
-                break;
-            }
-        } else {
-            log_this(dqm_label, "No SQL generated for migration: %s", LOG_LEVEL_TRACE, 1, migration_files[i]);
-            all_success = false;
-        }
-
-        // Free payload files
-        for (size_t j = 0; j < payload_count; j++) {
-            free(payload_files[j].name);
-            free(payload_files[j].data);
-        }
-        free(payload_files);
-
-        // Clean up Lua state
-        database_migrations_lua_cleanup(L);
-    }
+    // Execute each migration file
+    bool all_success = database_migrations_execute_migration_files(connection, migration_files, migration_count,
+                                                                  engine_name, migration_name, schema_name, dqm_label);
 
     // Cleanup migration files list
     database_migrations_cleanup_files(migration_files, migration_count);
