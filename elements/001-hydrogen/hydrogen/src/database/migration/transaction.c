@@ -5,20 +5,19 @@
  * Supports PostgreSQL, MySQL, SQLite, and DB2 with explicit transaction control.
  */
 
-#include "../../hydrogen.h"
-#include <string.h>
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/dbqueue/dbqueue.h>
+#include <src/utils/utils_hash.h>
 
-#include "../queue/database_queue.h"
-#include "../database.h"
+// Local includes
 #include "migration.h"
 
 // DB2 includes for transaction control
 #include "../db2/types.h"
 #include "../db2/connection.h"
 #include "../db2/transaction.h"
-
-// Hash utilities for prepared statement caching
-#include "../../utils/utils_hash.h"
 
 /*
  * Parse multi-statement SQL into individual statements

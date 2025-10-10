@@ -203,6 +203,7 @@ target_compile_options(unity_mocks PRIVATE
     ${BROTLI_CFLAGS}
     ${UUID_CFLAGS}
     ${LUA_CFLAGS}
+    ${PROJECT_INCLUDE_FLAGS}
 )
 
 add_library(unity_print_mocks OBJECT ${UNITY_PRINT_MOCK_SOURCES})
@@ -222,6 +223,7 @@ target_compile_options(unity_print_mocks PRIVATE
     ${BROTLI_CFLAGS}
     ${UUID_CFLAGS}
     ${LUA_CFLAGS}
+    ${PROJECT_INCLUDE_FLAGS}
 )
 
 # Create Unity test executables for each test file

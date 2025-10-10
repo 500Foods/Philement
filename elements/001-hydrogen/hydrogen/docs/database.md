@@ -178,7 +178,6 @@ Each database gets exactly one **Lead DQM** that:
 
 - **[Database Types](../src/database/database_types.h)** - Type definitions and structures
 - **[Database Engine Interface](../src/database/database_engine.c)** - Multi-engine abstraction layer
-- **[Queue Management](../src/database/database_queue.c)** - Queue implementation and worker threads
 
 ## Development Guidelines
 

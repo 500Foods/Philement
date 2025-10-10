@@ -1,15 +1,14 @@
 // Database Subsystem Launch Implementation
 // Comprehensive readiness checks and launch functionality
 
-// Global includes
-#include "../hydrogen.h"
-#include <unistd.h>
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/dbqueue/dbqueue.h>
+#include <src/queue/queue.h>
 
 // Local includes
 #include "launch.h"
-#include "../database/database.h"
-#include "../database/queue/database_queue.h"
-#include "../queue/queue.h"
 
 volatile sig_atomic_t database_stopping = 0;
 

@@ -6,7 +6,7 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
-#include <src/database/queue/database_queue.h>
+#include <src/database/dbqueue/dbqueue.h>
 
 // Forward declarations for functions being tested
 DatabaseQueueType database_queue_select_type(const char* queue_path_hint);

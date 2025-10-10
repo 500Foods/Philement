@@ -5,15 +5,12 @@
  * Supports both PAYLOAD: and path-based migration sources.
  */
 
-#include "../../hydrogen.h"
-#include <limits.h>
-#include <dirent.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/dbqueue/dbqueue.h>
 
-#include "../queue/database_queue.h"
-#include "../database.h"
+// Local includes
 #include "migration.h"
 
 /*

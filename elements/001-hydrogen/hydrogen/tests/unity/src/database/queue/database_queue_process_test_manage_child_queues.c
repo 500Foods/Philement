@@ -7,7 +7,7 @@
 #include <unity.h>
 
 // Local includes
-#include <src/database/queue/database_queue.h>
+#include <src/database/dbqueue/dbqueue.h>
 #include <src/database/database.h>
 
 // Test function prototypes

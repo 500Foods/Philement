@@ -6,7 +6,7 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
-#include <src/database/queue/database_queue.h>
+#include <src/database/dbqueue/dbqueue.h>
 
 // Function prototypes for test functions
 void test_database_queue_heartbeat_safe_functions(void);

@@ -8,7 +8,7 @@
 #include "unity.h"
 
 #include <src/database/database_bootstrap.h>
-#include <src/database/queue/database_queue.h>
+#include <src/database/dbqueue/dbqueue.h>
 
 // Function prototypes for test functions
 void test_database_queue_execute_bootstrap_query_null_queue(void);

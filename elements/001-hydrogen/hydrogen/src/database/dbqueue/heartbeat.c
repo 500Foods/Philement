@@ -5,15 +5,15 @@
  * Split from database_queue.c for better maintainability.
  */
 
-#include "../../hydrogen.h"
-#include <assert.h>
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/database_connstring.h>
+#include <src/database/database_bootstrap.h>
+#include <src/database/sqlite/types.h>
 
 // Local includes
-#include "database_queue.h"
-#include "../database.h"
-#include "../database_connstring.h"
-#include "../database_bootstrap.h"
-#include "../sqlite/types.h"
+#include "dbqueue.h"
 
 // External references
 extern volatile sig_atomic_t database_stopping;

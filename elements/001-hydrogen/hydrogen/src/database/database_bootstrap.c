@@ -5,10 +5,10 @@
  * for Lead queues to initialize the Query Table Cache (QTC).
  */
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
-#include "queue/database_queue.h"
+#include "dbqueue/dbqueue.h"
 #include "database.h"
 #include "database_bootstrap.h"
 #include "migration/migration.h"

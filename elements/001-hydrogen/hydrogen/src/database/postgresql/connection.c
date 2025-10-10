@@ -3,13 +3,17 @@
  *
  * Implements PostgreSQL connection management functions.
  */
-#include "../../hydrogen.h"
-#include "../database.h"
-#include "../queue/database_queue.h"
+
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/dbqueue/dbqueue.h>
+
+// Local includes
 #include "connection.h"
 
 #ifdef USE_MOCK_LIBPQ
-#include "../../../tests/unity/mocks/mock_libpq.h"
+#include <unity/mocks/mock_libpq.h>
 #endif
 
 // Function pointer types for libpq functions

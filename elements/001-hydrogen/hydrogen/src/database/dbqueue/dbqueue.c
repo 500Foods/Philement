@@ -15,11 +15,12 @@
  * Utility functions are kept in this main file for coverage and testing purposes.
  */
 
-#include "../../hydrogen.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
 
 // Local includes
-#include "database_queue.h"
-#include "../database.h"
+#include "dbqueue.h"
 
 /*
  * Debug function to dump connection details - shared across files

@@ -3,9 +3,13 @@
   *
   * Implements DB2 prepared statement management functions.
   */
-#include "../../hydrogen.h"
-#include "../database.h"
-#include "../queue/database_queue.h"
+
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/dbqueue/dbqueue.h>
+
+// Local includes
 #include "types.h"
 #include "prepared.h"
 

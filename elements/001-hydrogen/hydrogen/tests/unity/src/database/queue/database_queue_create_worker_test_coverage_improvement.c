@@ -9,10 +9,10 @@
 
 // Enable mocks for testing failure scenarios
 #define USE_MOCK_SYSTEM
-#include <tests/unity/mocks/mock_system.h>
+#include <unity/mocks/mock_system.h>
 
 // Include source headers after mocks
-#include <src/database/queue/database_queue.h>
+#include <src/database/dbqueue/dbqueue.h>
 #include <src/database/database.h>
 
 // Test function prototypes

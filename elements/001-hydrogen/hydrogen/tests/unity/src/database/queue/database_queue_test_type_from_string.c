@@ -6,7 +6,7 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
-#include <src/database/queue/database_queue.h>
+#include <src/database/dbqueue/dbqueue.h>
 
 // Forward declarations for functions being tested
 int database_queue_type_from_string(const char* type_str);
