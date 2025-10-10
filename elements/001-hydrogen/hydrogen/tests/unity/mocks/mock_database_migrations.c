@@ -2,10 +2,10 @@
  * Mock implementations for database migration functions
  */
 
-#include "../../../src/hydrogen.h"
-#include "../../../src/database/database.h"
-#include "../../../src/payload/payload.h"
-#include "mock_database_migrations.h"
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/payload/payload.h>
+#include <unity/mocks/mock_database_migrations.h>
 
 // Static variables for mock state
 static bool mock_single_migration_result = true;

@@ -5,13 +5,14 @@
  * subsystem initialization, database management, and API functions.
  */
 
-#include "../hydrogen.h"
-#include "database.h"
-#include "queue/database_queue.h"
-#include "database_connstring.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <src/network/network.h> // Ping
 
-// Network includes for ping functionality
-#include "../network/network.h"
+// Local incluses
+#include "database.h"
+#include "dbqueue/dbqueue.h"
+#include "database_connstring.h"
 
 // Engine description function declarations
 const char* postgresql_engine_get_description(void);

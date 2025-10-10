@@ -8,14 +8,14 @@
  * - Managing database configuration cleanup and queue shutdown
  */
 
-// Global includes
-#include "../hydrogen.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/dbqueue/dbqueue.h>
+#include <src/threads/threads.h>
 
 // Local includes
 #include "landing.h"
-#include "../database/database.h"
-#include "../database/queue/database_queue.h"
-#include "../threads/threads.h"
 
 // External references
 extern DatabaseQueueManager* global_queue_manager;

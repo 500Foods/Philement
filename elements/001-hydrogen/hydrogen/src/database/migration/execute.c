@@ -5,13 +5,17 @@
  * Orchestrates the complete migration process from file discovery to execution.
  */
 
-#include "../../hydrogen.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/dbqueue/dbqueue.h>
+
+// Third-Party includes
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
 
-#include "../queue/database_queue.h"
-#include "../database.h"
+// Local includes
 #include "migration.h"
 
 /*

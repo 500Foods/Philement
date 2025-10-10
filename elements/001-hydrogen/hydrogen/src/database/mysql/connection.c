@@ -3,14 +3,18 @@
  *
  * Implements MySQL connection management functions.
  */
-#include "../../hydrogen.h"
-#include "../database.h"
-#include "../queue/database_queue.h"
+
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/dbqueue/dbqueue.h>
+
+// Local includes
 #include "types.h"
 #include "connection.h"
 
 #ifdef USE_MOCK_LIBMYSQLCLIENT
-#include "../../../tests/unity/mocks/mock_libmysqlclient.h"
+#include <unity/mocks/mock_libmysqlclient.h>
 #endif
 
 // MySQL function pointers (loaded dynamically)
