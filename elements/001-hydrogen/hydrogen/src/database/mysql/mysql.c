@@ -46,7 +46,7 @@ bool mysql_engine_is_available(void) {
 }
 
 const char* mysql_engine_get_description(void) {
-    return "MySQL database engine with dynamic loading support";
+    return "MySQL / MariaDB Supported";
 }
 
 // Use the functions to avoid unused warnings (for testing/coverage purposes)

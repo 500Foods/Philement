@@ -124,7 +124,7 @@ bool postgresql_engine_is_available(void) {
 }
 
 const char* postgresql_engine_get_description(void) {
-    return "PostgreSQL database engine with dynamic loading support";
+    return "PostgreSQL v17+ Supported";
 }
 
 // Use the functions to avoid unused warnings (for testing/coverage purposes)

@@ -79,7 +79,9 @@ bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, cons
         return false;
     }
 
-    SQLiteConnection* sqlite_conn = (SQLiteConnection*)connection->connection_handle;
+    // cppcheck-suppress constVariablePointer
+    // Justification: SQLite API requires non-const sqlite3* database handle
+    const SQLiteConnection* sqlite_conn = (const SQLiteConnection*)connection->connection_handle;
     if (!sqlite_conn || !sqlite_conn->db) {
         return false;
     }
@@ -117,19 +119,31 @@ bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, cons
     prepared_stmt->sql_template = strdup(sql);
     prepared_stmt->created_at = time(NULL);
     prepared_stmt->usage_count = 0;
+    prepared_stmt->engine_specific_handle = sqlite_stmt;  // Store SQLite statement handle
 
-    // Add to cache
-    if (!sqlite_add_prepared_statement(sqlite_conn->prepared_statements, name)) {
+    // Add to connection's prepared statement array
+    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+
+    // Expand array if needed (simple approach - just add one more)
+    PreparedStatement** new_array = realloc(connection->prepared_statements,
+                                           (connection->prepared_statement_count + 1) * sizeof(PreparedStatement*));
+    if (!new_array) {
+        MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
         free(prepared_stmt->name);
         free(prepared_stmt->sql_template);
         free(prepared_stmt);
         sqlite3_finalize_ptr(sqlite_stmt);
         return false;
     }
+    connection->prepared_statements = new_array;
+    connection->prepared_statements[connection->prepared_statement_count] = prepared_stmt;
+    connection->prepared_statement_count++;
+
+    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
 
     *stmt = prepared_stmt;
 
-    log_this(SR_DATABASE, "SQLite prepared statement created", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "SQLite prepared statement created and added to connection", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -138,6 +152,8 @@ bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* s
         return false;
     }
 
+    // cppcheck-suppress constVariablePointer
+    // Justification: SQLite API requires non-const sqlite3* database handle
     SQLiteConnection* sqlite_conn = (SQLiteConnection*)connection->connection_handle;
     if (!sqlite_conn || !sqlite_conn->db) {
         return false;
@@ -146,20 +162,44 @@ bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* s
     // Check if prepared statement functions are available
     if (!sqlite3_finalize_ptr) {
         log_this(SR_DATABASE, "SQLite prepared statement functions not available for cleanup", LOG_LEVEL_DEBUG, 0);
-        // Still clean up our tracking structures
-        sqlite_remove_prepared_statement(sqlite_conn->prepared_statements, stmt->name);
+        // Still clean up our structures
+        MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+        // Find and remove from connection's array
+        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+            if (connection->prepared_statements[i] == stmt) {
+                // Shift remaining elements
+                for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
+                    connection->prepared_statements[j] = connection->prepared_statements[j + 1];
+                }
+                connection->prepared_statement_count--;
+                break;
+            }
+        }
+        MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
         free(stmt->name);
         free(stmt->sql_template);
         free(stmt);
         return true;
     }
 
-    // For now, we don't have a way to get the SQLite statement handle back
-    // In a full implementation, we'd store the handle in the PreparedStatement structure
-    // For this basic implementation, we'll just clean up our tracking structures
+    // Finalize the SQLite statement handle if it exists
+    if (stmt->engine_specific_handle) {
+        sqlite3_finalize_ptr(stmt->engine_specific_handle);
+    }
 
-    // Remove from cache
-    sqlite_remove_prepared_statement(sqlite_conn->prepared_statements, stmt->name);
+    // Remove from connection's prepared statement array
+    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+        if (connection->prepared_statements[i] == stmt) {
+            // Shift remaining elements
+            for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
+                connection->prepared_statements[j] = connection->prepared_statements[j + 1];
+            }
+            connection->prepared_statement_count--;
+            break;
+        }
+    }
+    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
 
     // Free statement structure
     free(stmt->name);

@@ -85,7 +85,7 @@ bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const
         return false;
     }
 
-    MySQLConnection* mysql_conn = (MySQLConnection*)connection->connection_handle;
+    const MySQLConnection* mysql_conn = (const MySQLConnection*)connection->connection_handle;
     if (!mysql_conn || !mysql_conn->connection) {
         return false;
     }
@@ -133,21 +133,31 @@ bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const
     prepared_stmt->sql_template = strdup(sql);
     prepared_stmt->created_at = time(NULL);
     prepared_stmt->usage_count = 0;
-    // Store MySQL statement handle in a way that can be retrieved later
-    // For now, we'll use the name as identifier
+    prepared_stmt->engine_specific_handle = mysql_stmt;  // Store MySQL statement handle
 
-    // Add to cache
-    if (!mysql_add_prepared_statement(mysql_conn->prepared_statements, name)) {
+    // Add to connection's prepared statement array
+    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+
+    // Expand array if needed (simple approach - just add one more)
+    PreparedStatement** new_array = realloc(connection->prepared_statements,
+                                           (connection->prepared_statement_count + 1) * sizeof(PreparedStatement*));
+    if (!new_array) {
+        MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
         free(prepared_stmt->name);
         free(prepared_stmt->sql_template);
         free(prepared_stmt);
         mysql_stmt_close_ptr(mysql_stmt);
         return false;
     }
+    connection->prepared_statements = new_array;
+    connection->prepared_statements[connection->prepared_statement_count] = prepared_stmt;
+    connection->prepared_statement_count++;
+
+    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
 
     *stmt = prepared_stmt;
 
-    log_this(SR_DATABASE, "MySQL prepared statement created", LOG_LEVEL_TRACE, 0);
+    log_this(SR_DATABASE, "MySQL prepared statement created and added to connection", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -156,6 +166,10 @@ bool mysql_unprepare_statement(DatabaseHandle* connection, PreparedStatement* st
         return false;
     }
 
+    // cppcheck-suppress constVariablePointer
+    // Justification: MySQL API requires non-const MYSQL* connection handle
+    // cppcheck-suppress constVariablePointer
+    // Justification: MySQL API requires non-const MYSQL* connection handle
     MySQLConnection* mysql_conn = (MySQLConnection*)connection->connection_handle;
     if (!mysql_conn || !mysql_conn->connection) {
         return false;
@@ -165,19 +179,43 @@ bool mysql_unprepare_statement(DatabaseHandle* connection, PreparedStatement* st
     if (!mysql_stmt_close_ptr) {
         log_this(SR_DATABASE, "MySQL prepared statement functions not available for cleanup", LOG_LEVEL_TRACE, 0);
         // Still clean up our structures
-        mysql_remove_prepared_statement(mysql_conn->prepared_statements, stmt->name);
+        MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+        // Find and remove from connection's array
+        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+            if (connection->prepared_statements[i] == stmt) {
+                // Shift remaining elements
+                for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
+                    connection->prepared_statements[j] = connection->prepared_statements[j + 1];
+                }
+                connection->prepared_statement_count--;
+                break;
+            }
+        }
+        MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
         free(stmt->name);
         free(stmt->sql_template);
         free(stmt);
         return true;
     }
 
-    // For now, we don't have a way to get the MySQL statement handle back
-    // In a full implementation, we'd store the handle in the PreparedStatement structure
-    // For this basic implementation, we'll just clean up our tracking structures
+    // Close the MySQL statement handle if it exists
+    if (stmt->engine_specific_handle) {
+        mysql_stmt_close_ptr(stmt->engine_specific_handle);
+    }
 
-    // Remove from cache
-    mysql_remove_prepared_statement(mysql_conn->prepared_statements, stmt->name);
+    // Remove from connection's prepared statement array
+    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+        if (connection->prepared_statements[i] == stmt) {
+            // Shift remaining elements
+            for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
+                connection->prepared_statements[j] = connection->prepared_statements[j + 1];
+            }
+            connection->prepared_statement_count--;
+            break;
+        }
+    }
+    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
 
     // Free statement structure
     free(stmt->name);

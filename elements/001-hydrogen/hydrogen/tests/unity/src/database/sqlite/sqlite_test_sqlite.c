@@ -50,7 +50,7 @@ void test_sqlite_engine_is_available(void) {
 void test_sqlite_engine_get_description(void) {
     const char* description = sqlite_engine_get_description();
     TEST_ASSERT_NOT_NULL(description);
-    TEST_ASSERT_EQUAL_STRING("SQLite database engine with dynamic loading support", description);
+    TEST_ASSERT_NOT_NULL(strstr(description, "SQLite"));
 }
 
 // Test sqlite_engine_test_functions

@@ -55,37 +55,10 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
     }
     PQclear_ptr(res);
 
-    // Add to cache
-    if (!add_prepared_statement(pg_conn->prepared_statements, name)) {
-        // Deallocate the prepared statement with timeout protection
-        char dealloc_query[256];
-        snprintf(dealloc_query, sizeof(dealloc_query), "DEALLOCATE %s", name);
-
-        {
-            // Set timeout for deallocate operation
-            void* dealloc_timeout_result = PQexec_ptr(pg_conn->connection, "SET statement_timeout = 5000"); // 5 seconds
-            if (dealloc_timeout_result) {
-                PQclear_ptr(dealloc_timeout_result);
-            }
-
-            time_t dealloc_start = time(NULL);
-            void* dealloc_res = PQexec_ptr(pg_conn->connection, dealloc_query);
-
-            // Check if dealloc took too long
-            if (check_timeout_expired(dealloc_start, 5)) {
-                log_this(SR_DATABASE, "PostgreSQL DEALLOCATE on failure execution time exceeded 5 seconds", LOG_LEVEL_ERROR, 0);
-            }
-
-            if (dealloc_res) PQclear_ptr(dealloc_res);
-        }
-        return false;
-    }
-
     // Create prepared statement structure
     PreparedStatement* prepared_stmt = calloc(1, sizeof(PreparedStatement));
     if (!prepared_stmt) {
         // Cleanup with timeout protection
-        remove_prepared_statement(pg_conn->prepared_statements, name);
         char dealloc_query[256];
         snprintf(dealloc_query, sizeof(dealloc_query), "DEALLOCATE %s", name);
 
@@ -114,9 +87,33 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
     prepared_stmt->created_at = time(NULL);
     prepared_stmt->usage_count = 0;
 
+    // Add to connection's prepared statement array
+    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+
+    // Expand array if needed (simple approach - just add one more)
+    PreparedStatement** new_array = realloc(connection->prepared_statements,
+                                           (connection->prepared_statement_count + 1) * sizeof(PreparedStatement*));
+    if (!new_array) {
+        MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
+        free(prepared_stmt->name);
+        free(prepared_stmt->sql_template);
+        free(prepared_stmt);
+        // Cleanup with timeout protection
+        char dealloc_query[256];
+        snprintf(dealloc_query, sizeof(dealloc_query), "DEALLOCATE %s", name);
+        void* dealloc_res = PQexec_ptr(pg_conn->connection, dealloc_query);
+        if (dealloc_res) PQclear_ptr(dealloc_res);
+        return false;
+    }
+    connection->prepared_statements = new_array;
+    connection->prepared_statements[connection->prepared_statement_count] = prepared_stmt;
+    connection->prepared_statement_count++;
+
+    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
+
     *stmt = prepared_stmt;
 
-    log_this(SR_DATABASE, "PostgreSQL prepared statement created", LOG_LEVEL_TRACE, 0);
+    log_this(SR_DATABASE, "PostgreSQL prepared statement created and added to connection", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -157,8 +154,19 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
     }
     PQclear_ptr(res);
 
-    // Remove from cache
-    remove_prepared_statement(pg_conn->prepared_statements, stmt->name);
+    // Remove from connection's prepared statement array
+    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+        if (connection->prepared_statements[i] == stmt) {
+            // Shift remaining elements
+            for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
+                connection->prepared_statements[j] = connection->prepared_statements[j + 1];
+            }
+            connection->prepared_statement_count--;
+            break;
+        }
+    }
+    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
 
     // Free statement structure
     free(stmt->name);

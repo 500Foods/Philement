@@ -101,8 +101,7 @@ void test_postgresql_engine_get_description(void) {
     const char* description = postgresql_engine_get_description();
 
     TEST_ASSERT_NOT_NULL(description);
-    TEST_ASSERT_TRUE(strlen(description) > 0);
-    TEST_ASSERT_EQUAL_STRING("PostgreSQL database engine with dynamic loading support", description);
+    TEST_ASSERT_NOT_NULL(strstr(description, "PostgreSQL"));
 }
 
 int main(void) {
