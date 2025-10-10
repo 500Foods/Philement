@@ -206,15 +206,146 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
 
 bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
     if (!connection || !stmt || !request || !result || connection->engine_type != DB_ENGINE_POSTGRESQL) {
+        const char* designator = connection ? (connection->designator ? connection->designator : SR_DATABASE) : SR_DATABASE;
+        log_this(designator, "PostgreSQL execute_prepared: Invalid parameters", LOG_LEVEL_ERROR, 0);
         return false;
     }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(designator, "postgresql_execute_prepared: ENTER - connection=%p, stmt=%p, request=%p, result=%p", LOG_LEVEL_TRACE, 4, (void*)connection, (void*)stmt, (void*)request, (void*)result);
 
     const PostgresConnection* pg_conn = (const PostgresConnection*)connection->connection_handle;
     if (!pg_conn || !pg_conn->connection) {
+        log_this(designator, "PostgreSQL execute_prepared: Invalid connection handle", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    // For simplicity, execute as regular query for now
-    // TODO: Implement proper prepared statement execution with parameters
-    return postgresql_execute_query(connection, request, result);
+    log_this(designator, "PostgreSQL execute_prepared: Executing prepared statement: %s", LOG_LEVEL_TRACE, 1, stmt->name);
+
+    // Set PostgreSQL statement timeout before executing prepared statement
+    int query_timeout = request->timeout_seconds > 0 ? request->timeout_seconds : 30;
+    char timeout_sql[256];
+    snprintf(timeout_sql, sizeof(timeout_sql), "SET statement_timeout = %d", query_timeout * 1000); // Convert to milliseconds
+
+    log_this(designator, "PostgreSQL execute_prepared: Setting statement timeout to %d seconds", LOG_LEVEL_TRACE, 1, query_timeout);
+
+    // Set the timeout
+    void* timeout_result = PQexec_ptr(pg_conn->connection, timeout_sql);
+    if (timeout_result) {
+        PQclear_ptr(timeout_result);
+    } else {
+        log_this(designator, "PostgreSQL execute_prepared: Failed to set statement timeout", LOG_LEVEL_ERROR, 0);
+    }
+
+    time_t start_time = time(NULL);
+
+    // Execute the prepared statement (PostgreSQL prepared statements don't take parameters in this simple implementation)
+    void* pg_result = PQexec_ptr(pg_conn->connection, stmt->name);
+    time_t end_time = time(NULL);
+
+    // Check if query took too long (approximate check)
+    if (check_timeout_expired(start_time, query_timeout)) {
+        time_t execution_time = end_time - start_time;
+        log_this(designator, "PostgreSQL execute_prepared: Query execution time exceeded %d seconds (actual: %ld)", LOG_LEVEL_ERROR, 2, query_timeout, execution_time);
+        if (pg_result) {
+            log_this(designator, "PostgreSQL execute_prepared: Cleaning up failed query result", LOG_LEVEL_TRACE, 0);
+            PQclear_ptr(pg_result);
+        }
+        return false;
+    }
+
+    if (!pg_result) {
+        log_this(designator, "PostgreSQL execute_prepared: PQexec returned NULL", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    int result_status = PQresultStatus_ptr(pg_result);
+    if (result_status != PGRES_TUPLES_OK && result_status != PGRES_COMMAND_OK) {
+        log_this(designator, "PostgreSQL prepared statement execution failed - status: %d", LOG_LEVEL_ERROR, 1, result_status);
+        char* error_msg = PQerrorMessage_ptr(pg_conn->connection);
+        if (error_msg && strlen(error_msg) > 0) {
+            log_this(designator, "PostgreSQL prepared statement error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+        }
+        PQclear_ptr(pg_result);
+        return false;
+    }
+
+    // Create result structure
+    QueryResult* db_result = calloc(1, sizeof(QueryResult));
+    if (!db_result) {
+        PQclear_ptr(pg_result);
+        return false;
+    }
+
+    db_result->success = true;
+    db_result->row_count = (size_t)PQntuples_ptr(pg_result);
+    db_result->column_count = (size_t)PQnfields_ptr(pg_result);
+    db_result->execution_time_ms = 0; // TODO: Implement timing
+    db_result->affected_rows = atoi(PQcmdTuples_ptr(pg_result));
+
+    // Extract column names
+    if (db_result->column_count > 0) {
+        db_result->column_names = calloc(db_result->column_count, sizeof(char*));
+        if (!db_result->column_names) {
+            PQclear_ptr(pg_result);
+            free(db_result);
+            return false;
+        }
+
+        for (size_t i = 0; i < db_result->column_count; i++) {
+            db_result->column_names[i] = strdup(PQfname_ptr(pg_result, (int)i));
+            if (!db_result->column_names[i]) {
+                // Cleanup on failure
+                for (size_t j = 0; j < i; j++) {
+                    free(db_result->column_names[j]);
+                }
+                free(db_result->column_names);
+                PQclear_ptr(pg_result);
+                free(db_result);
+                return false;
+            }
+        }
+    }
+
+    // Convert result to JSON
+    if (db_result->row_count > 0 && db_result->column_count > 0) {
+        // Simple JSON array of objects
+        size_t json_size = 1024 * db_result->row_count; // Estimate size
+        db_result->data_json = calloc(1, json_size);
+        if (!db_result->data_json) {
+            // Cleanup
+            for (size_t i = 0; i < db_result->column_count; i++) {
+                free(db_result->column_names[i]);
+            }
+            free(db_result->column_names);
+            PQclear_ptr(pg_result);
+            free(db_result);
+            return false;
+        }
+
+        strcpy(db_result->data_json, "[");
+        for (size_t row = 0; row < db_result->row_count; row++) {
+            if (row > 0) strcat(db_result->data_json, ",");
+            strcat(db_result->data_json, "{");
+
+            for (size_t col = 0; col < db_result->column_count; col++) {
+                if (col > 0) strcat(db_result->data_json, ",");
+                const char* value = PQgetvalue_ptr(pg_result, (int)row, (int)col);
+                char buffer[256];
+                snprintf(buffer, sizeof(buffer), "\"%s\":\"%s\"",
+                        db_result->column_names[col], value ? value : "");
+                strcat(db_result->data_json, buffer);
+            }
+            strcat(db_result->data_json, "}");
+        }
+        strcat(db_result->data_json, "]");
+    } else {
+        log_this(designator, "PostgreSQL execute_prepared: Query returned no data (0 rows or 0 columns)", LOG_LEVEL_TRACE, 0);
+    }
+
+    PQclear_ptr(pg_result);
+    *result = db_result;
+
+    log_this(designator, "PostgreSQL execute_prepared: Prepared statement executed successfully", LOG_LEVEL_TRACE, 0);
+    return true;
 }

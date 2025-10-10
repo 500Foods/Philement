@@ -40,7 +40,7 @@ bool sqlite_engine_is_available(void) {
 }
 
 const char* sqlite_engine_get_description(void) {
-    return "SQLite database engine with dynamic loading support";
+    return "SQLite Supported";
 }
 
 // Use the functions to avoid unused warnings (for testing/coverage purposes)
