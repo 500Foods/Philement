@@ -150,9 +150,16 @@ void initialize_config_defaults_database(AppConfig* config) {
         config->databases.default_queues.cache.down = 1;
         config->databases.default_queues.cache.inactivity = 600;
 
+        // Set default prepared statement cache size for all connections
+        for (int i = 0; i < 5; i++) {
+            config->databases.connections[i].prepared_statement_cache_size = 1000;
+        }
+
         // Clear all database connection slots
         for (int i = 0; i < 5; i++) {
             memset(&config->databases.connections[i], 0, sizeof(DatabaseConnection));
+            // Restore the cache size after memset
+            config->databases.connections[i].prepared_statement_cache_size = 1000;
         }
 
         log_this(SR_CONFIG, "――― Applied config defaults for Database (no default connections)", LOG_LEVEL_DEBUG, 0);

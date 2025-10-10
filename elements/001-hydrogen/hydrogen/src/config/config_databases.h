@@ -45,6 +45,7 @@ typedef struct DatabaseConnection {
     bool auto_migration;   // Whether to automatically run migrations
     bool test_migration;   // Whether to run migrations in test mode
     char* migrations;      // Migration source (PAYLOAD:name or path)
+    int prepared_statement_cache_size; // Size of prepared statement cache (default: 1000)
     DatabaseQueues queues; // Queue configuration for this connection
 } DatabaseConnection;
 

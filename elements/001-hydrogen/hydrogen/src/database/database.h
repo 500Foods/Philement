@@ -72,6 +72,7 @@ struct ConnectionConfig {
     char* ssl_cert_path;
     char* ssl_key_path;
     char* ssl_ca_path;
+    int prepared_statement_cache_size; // Size of prepared statement cache (default: 1000)
 };
 
 // Query request structure
@@ -126,6 +127,7 @@ struct DatabaseHandle {
     Transaction* current_transaction;
     PreparedStatement** prepared_statements;  // Array of prepared statements
     size_t prepared_statement_count;
+    uint64_t* prepared_statement_lru_counter; // LRU tracking for prepared statements
     pthread_mutex_t connection_lock;      // Thread safety for connection operations
     volatile bool in_use;                 // Connection pool management
     time_t last_health_check;
