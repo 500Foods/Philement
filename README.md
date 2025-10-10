@@ -67,17 +67,17 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-10-10 15:51:07 UTC
+Last updated at 2025-10-10 19:07:58 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              671          25392          25491          90872
+C                              671          25398          25504          90909
 JSON                            58             17              0          49419
 Markdown                       346           9588             59          28838
-Bourne Shell                    86           3905          61939          18035
-SVG                             17             18            258          15370
+Bourne Shell                    86           3905          61944          18036
+SVG                             17             18            258          15372
 Lua                             32            387            434           7156
-C/C++ Header                   161           1743           4604           4914
+C/C++ Header                   161           1743           4604           4917
 Text                            15             14              0           4582
 CMake                           17            171            315           1019
 HTML                             8            138             23            882
@@ -90,7 +90,7 @@ Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 -------------------------------------------------------------------------------
-SUM:                          1438          41648          93396         222536
+SUM:                          1438          41654          93414         222579
 -------------------------------------------------------------------------------
 71 Files were skipped (duplicate, binary, or without source code):
   metadata: 15
