@@ -9,7 +9,7 @@
 
 #include <src/database/database.h>
 #include <src/database/migration/migration.h>
-#include <src/database/queue/database_queue.h>
+#include <src/database/dbqueue/dbqueue.h>
 #include <src/config/config.h>
 
 // Forward declarations for functions being tested

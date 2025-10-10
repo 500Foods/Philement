@@ -5,13 +5,13 @@
  * Split from database_queue_create.c for better maintainability.
  */
 
-#include "../../hydrogen.h"
-#include <assert.h>
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/utils/utils_queue.h>
 
 // Local includes
-#include "database_queue.h"
-#include "../database.h"
-#include "../../utils/utils_queue.h"
+#include "dbqueue.h"
 
 // Global queue manager instance
 DatabaseQueueManager* global_queue_manager = NULL;

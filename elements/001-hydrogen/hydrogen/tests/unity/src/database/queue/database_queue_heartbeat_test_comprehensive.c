@@ -13,7 +13,7 @@
 
 // Include source headers after mocks
 #include <src/database/database.h>
-#include <src/database/queue/database_queue.h>
+#include <src/database/dbqueue/dbqueue.h>
 #include <src/database/database_connstring.h>
 
 // Function prototypes for test functions

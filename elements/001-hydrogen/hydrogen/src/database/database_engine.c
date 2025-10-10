@@ -5,9 +5,9 @@
  * Provides unified interface for PostgreSQL, SQLite, MySQL, DB2, and future engines.
  */
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 #include "database.h"
-#include "queue/database_queue.h"
+#include "dbqueue/dbqueue.h"
 
 // Forward declarations for database engines
 DatabaseEngineInterface* postgresql_get_interface(void);

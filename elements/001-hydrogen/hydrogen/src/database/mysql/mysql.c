@@ -5,12 +5,13 @@
  * Uses dynamic loading (dlopen/dlsym) for libmysqlclient to avoid static linking dependencies.
  */
 
-#include "../../hydrogen.h"
-#include "../database.h"
-#include "../queue/database_queue.h"
-#include "types.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/dbqueue/dbqueue.h>
 
-// Include the interface header
+// Local includes
+#include "types.h"
 #include "interface.h"
 
 // Function prototypes

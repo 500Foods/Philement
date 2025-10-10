@@ -14,9 +14,11 @@
 #define DATABASE_H
 
 // Project includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
+
+// Local includes
 #include "database_types.h"
-#include "queue/database_queue.h"
+#include "dbqueue/dbqueue.h"
 
 // Subsystem name for logging (defined in globals.h)
 
