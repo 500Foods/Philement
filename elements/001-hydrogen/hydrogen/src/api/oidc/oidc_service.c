@@ -10,8 +10,8 @@
 
 // Local includes
 #include "oidc_service.h"
-#include "../../oidc/oidc_service.h"
-#include "../../webserver/web_server_core.h"
+#include <src/oidc/oidc_service.h>
+#include <src/webserver/web_server_core.h>
 
 // Global OIDC context pointer
 static OIDCContext *g_oidc_context = NULL;

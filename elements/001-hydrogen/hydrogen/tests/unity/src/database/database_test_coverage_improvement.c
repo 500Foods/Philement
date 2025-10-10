@@ -4,15 +4,15 @@
  * focusing on error paths and edge cases to improve code coverage.
  */
 
-#include "../../../../src/hydrogen.h"
+#include "../../../../../src/hydrogen.h"
 #include "unity.h"
 
 // Enable mocks for testing failure scenarios
 #define USE_MOCK_SYSTEM
-#include "../../../../tests/unity/mocks/mock_system.h"
+#include "../../../../../tests/unity/mocks/mock_system.h"
 
 // Include source headers after mocks
-#include "../../../../src/database/database.h"
+#include "../../../../../src/database/database.h"
 
 // Function prototypes for test functions
 void test_database_subsystem_init_null_checks(void);

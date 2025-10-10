@@ -14,7 +14,7 @@
 // Local includes
 #include "landing.h"
 #include "../database/database.h"
-#include "../database/database_queue.h"
+#include "../database/queue/database_queue.h"
 #include "../threads/threads.h"
 
 // External references

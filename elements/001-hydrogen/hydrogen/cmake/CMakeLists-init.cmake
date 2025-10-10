@@ -69,7 +69,10 @@ set(HYDROGEN_BASE_LIBS
 
 # Include directories
 set(HYDROGEN_INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${JANSSON_INCLUDE_DIRS}
     ${MICROHTTPD_INCLUDE_DIRS}
     ${WEBSOCKETS_INCLUDE_DIRS}
@@ -114,6 +117,15 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
             set(extra_cflags_list "")
         endif()
 
+        # Generate project-specific include flags (prefix plain dirs with -I; systems already have it)
+        set(PROJECT_INCLUDE_FLAGS
+            "-I${CMAKE_CURRENT_SOURCE_DIR}/.."              # Root: enables <src/...>
+            "-I${CMAKE_CURRENT_SOURCE_DIR}/../src"          # Explicit src if needed
+            "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests"        # Enables <unity/...>
+            "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity"  # Enables <unity/...>
+            "-I${CMAKE_CURRENT_SOURCE_DIR}"                 # Current dir
+        )
+
         # Create custom command to compile source file to object file
         add_custom_command(
             OUTPUT ${OUTPUT_OBJ}
@@ -124,13 +136,13 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
                 -DVERSION='"${HYDROGEN_VERSION}"'
                 -DRELEASE='"${HYDROGEN_RELEASE}"'
                 -DBUILD_TYPE='"${build_type}"'
-                -I${CMAKE_CURRENT_SOURCE_DIR}/../src
                 ${JANSSON_CFLAGS}
                 ${MICROHTTPD_CFLAGS}
                 ${WEBSOCKETS_CFLAGS}
                 ${BROTLI_CFLAGS}
                 ${UUID_CFLAGS}
                 ${LUA_CFLAGS}
+                ${PROJECT_INCLUDE_FLAGS}
                 -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
             DEPENDS ${SOURCE_FILE}
             COMMENT "Compiling ${REL_PATH} to ${target_name} object file"
@@ -147,8 +159,8 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
     add_dependencies(${target_name} ${target_name}_objects)
 
     # Set include directories
-    target_include_directories(${target_name} PRIVATE ${HYDROGEN_INCLUDE_DIRS})
-
+    target_include_directories(${target_name} PUBLIC ${HYDROGEN_INCLUDE_DIRS})
+    
     # Add extra compile flags if provided
     if(extra_cflags)
         separate_arguments(extra_cflags_list UNIX_COMMAND "${extra_cflags}")
@@ -197,4 +209,11 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
         COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Object files located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/${target_name}/src/${NORMAL}"
         VERBATIM
     )
+
+    if(target_name)
+        message(STATUS "Debug for ${target_name}: HYDROGEN_INCLUDE_DIRS = ${HYDROGEN_INCLUDE_DIRS}")
+        get_target_property(INCLUDES ${target_name} INCLUDE_DIRECTORIES)
+        message(STATUS "Debug for ${target_name}: Actual target includes after = ${INCLUDES}")
+    endif()
+
 endfunction()

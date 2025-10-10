@@ -105,6 +105,15 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         set(MOCK_DEFINES "")
     endif()
 
+    # Generate project-specific include flags for Unity (same as main build)
+    set(PROJECT_INCLUDE_FLAGS
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/.."              # Root: enables <src/...>
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/../src"          # Explicit src if needed
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests"        # Enables <unity/...>
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity"  # Enables <unity/...>
+        "-I${CMAKE_CURRENT_SOURCE_DIR}"                 # Current dir
+    )
+
     # Create custom command to compile source file to object file with Unity-specific flags
     add_custom_command(
         OUTPUT ${OUTPUT_OBJ}
@@ -121,8 +130,6 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             -DUSE_MOCK_LOGGING
             -Dlog_this=mock_log_this
             ${MOCK_DEFINES}
-            -I${CMAKE_CURRENT_SOURCE_DIR}/../src
-            -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
             -I${UNITY_FRAMEWORK_DIR}/src
             ${MOCK_INCLUDES}
             ${JANSSON_CFLAGS}
@@ -131,6 +138,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             ${BROTLI_CFLAGS}
             ${UUID_CFLAGS}
             ${LUA_CFLAGS}
+            ${PROJECT_INCLUDE_FLAGS}
             -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
         DEPENDS ${SOURCE_FILE}
         COMMENT "Compiling ${REL_PATH} to Unity object file"
@@ -150,7 +158,7 @@ add_dependencies(hydrogen_unity unity_objects)
 set_target_properties(hydrogen_unity PROPERTIES LINKER_LANGUAGE C)
 
 # Set include directories for the Unity library
-target_include_directories(hydrogen_unity PRIVATE ${HYDROGEN_INCLUDE_DIRS})
+target_include_directories(hydrogen_unity PUBLIC ${HYDROGEN_INCLUDE_DIRS})
 
 # Add precompiled headers for hydrogen.h (included in nearly every file)
 target_precompile_headers(hydrogen_unity PRIVATE
@@ -187,8 +195,6 @@ target_compile_options(unity_mocks PRIVATE
     -DUSE_MOCK_LIBWEBSOCKETS
     -DUSE_MOCK_TERMINAL_WEBSOCKET
     -DUSE_MOCK_SYSTEM
-    -I${CMAKE_CURRENT_SOURCE_DIR}/../src
-    -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
     -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks
     -I${UNITY_FRAMEWORK_DIR}/src
     ${JANSSON_CFLAGS}
@@ -208,8 +214,6 @@ target_compile_options(unity_print_mocks PRIVATE
     -DBUILD_TYPE="Unity"
     -DUNITY_INCLUDE_DOUBLE
     -DUSE_MOCK_LOGGING
-    -I${CMAKE_CURRENT_SOURCE_DIR}/../src
-    -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
     -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks
     -I${UNITY_FRAMEWORK_DIR}/src
     ${JANSSON_CFLAGS}
@@ -285,6 +289,15 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(TEST_OUTPUT_OBJ "${CMAKE_BINARY_DIR}/unity/src/${TEST_BASENAME}.o")
     endif()
 
+    # Generate project-specific include flags for Unity (same as main build)
+    set(PROJECT_INCLUDE_FLAGS
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/.."              # Root: enables <src/...>
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/../src"          # Explicit src if needed
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests"        # Enables <unity/...>
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity"  # Enables <unity/...>
+        "-I${CMAKE_CURRENT_SOURCE_DIR}"                 # Current dir
+    )
+
     # Create custom command to compile test source file to object file
     add_custom_command(
         OUTPUT ${TEST_OUTPUT_OBJ}
@@ -298,14 +311,13 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
             -DBUILD_TYPE='"Coverage"'
             -DUNITY_INCLUDE_DOUBLE
             ${MOCK_DEFINES}
-            -I${CMAKE_CURRENT_SOURCE_DIR}/../src
-            -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
             -I${UNITY_FRAMEWORK_DIR}/src
             ${MOCK_INCLUDES}
             ${JANSSON_CFLAGS}
             ${MICROHTTPD_CFLAGS}
             ${WEBSOCKETS_CFLAGS}
             ${BROTLI_CFLAGS}
+            ${PROJECT_INCLUDE_FLAGS}
             -c ${TEST_SOURCE} -o ${TEST_OUTPUT_OBJ}
         DEPENDS ${TEST_SOURCE}
         COMMENT "Compiling ${TEST_BASENAME} test to object file"

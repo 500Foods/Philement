@@ -1,6 +1,6 @@
 // Should be a short list
 
-#include "hydrogen.h"
+#include <src/hydrogen.h>
 
 // Global configuration instance
 AppConfig *app_config = NULL;

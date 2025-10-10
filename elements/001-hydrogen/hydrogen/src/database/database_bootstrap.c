@@ -8,10 +8,10 @@
 #include "../hydrogen.h"
 
 // Local includes
-#include "database_queue.h"
+#include "queue/database_queue.h"
 #include "database.h"
 #include "database_bootstrap.h"
-#include "database_migrations.h"
+#include "migration/migration.h"
 
 /*
  * Execute bootstrap query after successful Lead DQM connection
@@ -180,11 +180,11 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 
                 if (migration_conn_config && migration_conn_config->auto_migration) {
                     log_this(dqm_label, "Automatic Migration enabled - Importing Migrations", LOG_LEVEL_DEBUG, 0);
-                    bool migrations_valid = database_migrations_validate(db_queue);
+                    bool migrations_valid = validate(db_queue);
 
                     if (migrations_valid) {
                         // Execute auto migrations (populate Queries table)
-                        database_migrations_execute_auto(db_queue, connection_to_use);
+                        execute_auto(db_queue, connection_to_use);
                     } else {
                         log_this(dqm_label, "Migration validation failed - continuing without migrations", LOG_LEVEL_ALERT, 0);
                     }
