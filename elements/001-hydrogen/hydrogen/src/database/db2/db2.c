@@ -34,7 +34,7 @@ bool db2_engine_is_available(void) {
 }
 
 const char* db2_engine_get_description(void) {
-    return "DB2 database engine with dynamic loading support";
+    return "IBM DB2 LUW Universal Database v10.5+ Supported";
 }
 
 // Use the functions to avoid unused warnings (for testing/coverage purposes)

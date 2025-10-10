@@ -79,7 +79,7 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
         return false;
     }
 
-    DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
+    const DB2Connection* db2_conn = (const DB2Connection*)connection->connection_handle;
     if (!db2_conn || !db2_conn->connection) {
         return false;
     }
@@ -116,19 +116,31 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
     prepared_stmt->sql_template = strdup(sql);
     prepared_stmt->created_at = time(NULL);
     prepared_stmt->usage_count = 0;
+    prepared_stmt->engine_specific_handle = stmt_handle;  // Store the DB2 statement handle
 
-    // Add to cache
-    if (!db2_add_prepared_statement(db2_conn->prepared_statements, name)) {
+    // Add to connection's prepared statement array
+    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+
+    // Expand array if needed (simple approach - just add one more)
+    PreparedStatement** new_array = realloc(connection->prepared_statements,
+                                           (connection->prepared_statement_count + 1) * sizeof(PreparedStatement*));
+    if (!new_array) {
+        MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
         free(prepared_stmt->name);
         free(prepared_stmt->sql_template);
         free(prepared_stmt);
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         return false;
     }
+    connection->prepared_statements = new_array;
+    connection->prepared_statements[connection->prepared_statement_count] = prepared_stmt;
+    connection->prepared_statement_count++;
+
+    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
 
     *stmt = prepared_stmt;
 
-    log_this(SR_DATABASE, "DB2 prepared statement created", LOG_LEVEL_TRACE, 0);
+    log_this(SR_DATABASE, "DB2 prepared statement created and added to connection", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -137,6 +149,8 @@ bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt
         return false;
     }
 
+    // cppcheck-suppress constVariablePointer
+    // Justification: DB2 API requires non-const SQLHDBC connection handle
     DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
     if (!db2_conn || !db2_conn->connection) {
         return false;
@@ -146,19 +160,43 @@ bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt
     if (!SQLFreeHandle_ptr) {
         log_this(SR_DATABASE, "DB2 prepared statement functions not available for cleanup", LOG_LEVEL_TRACE, 0);
         // Still clean up our tracking structures
-        db2_remove_prepared_statement(db2_conn->prepared_statements, stmt->name);
+        MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+        // Find and remove from connection's array
+        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+            if (connection->prepared_statements[i] == stmt) {
+                // Shift remaining elements
+                for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
+                    connection->prepared_statements[j] = connection->prepared_statements[j + 1];
+                }
+                connection->prepared_statement_count--;
+                break;
+            }
+        }
+        MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
         free(stmt->name);
         free(stmt->sql_template);
         free(stmt);
         return true;
     }
 
-    // For now, we don't have a way to get the DB2 statement handle back
-    // In a full implementation, we'd store the handle in the PreparedStatement structure
-    // For this basic implementation, we'll just clean up our tracking structures
+    // Free the DB2 statement handle if it exists
+    if (stmt->engine_specific_handle) {
+        SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt->engine_specific_handle);
+    }
 
-    // Remove from cache
-    db2_remove_prepared_statement(db2_conn->prepared_statements, stmt->name);
+    // Remove from connection's prepared statement array
+    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+        if (connection->prepared_statements[i] == stmt) {
+            // Shift remaining elements
+            for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
+                connection->prepared_statements[j] = connection->prepared_statements[j + 1];
+            }
+            connection->prepared_statement_count--;
+            break;
+        }
+    }
+    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
 
     // Free statement structure
     free(stmt->name);

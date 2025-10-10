@@ -254,6 +254,61 @@ bool database_engine_health_check(DatabaseHandle* connection) {
 }
 
 /*
+ * Prepared Statement Management Helpers
+ */
+
+// Find a prepared statement by name in the connection
+static PreparedStatement* find_prepared_statement(DatabaseHandle* connection, const char* name) {
+    if (!connection || !name || !connection->prepared_statements) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+        if (connection->prepared_statements[i] &&
+            strcmp(connection->prepared_statements[i]->name, name) == 0) {
+            return connection->prepared_statements[i];
+        }
+    }
+
+    return NULL;
+}
+
+// Store a prepared statement in the connection's array
+static bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stmt) {
+    if (!connection || !stmt) {
+        return false;
+    }
+
+    // Initialize array if needed
+    if (!connection->prepared_statements) {
+        connection->prepared_statements = calloc(16, sizeof(PreparedStatement*));
+        if (!connection->prepared_statements) {
+            return false;
+        }
+        connection->prepared_statement_count = 0;
+    }
+
+    // Check if we need to expand the array
+    if (connection->prepared_statement_count >= 16) { // Simple fixed-size for now
+        // For now, just don't store if we exceed capacity
+        // TODO: Implement dynamic resizing
+        log_this(connection->designator ? connection->designator : SR_DATABASE,
+                 "Prepared statement cache full, not storing: %s", LOG_LEVEL_ALERT, 1, stmt->name);
+        return false;
+    }
+
+    // Store the statement
+    connection->prepared_statements[connection->prepared_statement_count] = stmt;
+    connection->prepared_statement_count++;
+
+    log_this(connection->designator ? connection->designator : SR_DATABASE,
+             "Stored prepared statement: %s (total: %zu)", LOG_LEVEL_TRACE, 2,
+             stmt->name, connection->prepared_statement_count);
+
+    return true;
+}
+
+/*
  * Query Execution
  */
 
@@ -428,21 +483,43 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     // Use prepared statement if requested and available
     if (request->use_prepared_statement && request->prepared_statement_name && engine->execute_prepared) {
         log_this(designator, "database_engine_execute: Using prepared statement path", LOG_LEVEL_TRACE, 0);
-        
-        // Find prepared statement
-        PreparedStatement* stmt = NULL;
-        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
-            if (connection->prepared_statements[i] &&
-                strcmp(connection->prepared_statements[i]->name, request->prepared_statement_name) == 0) {
-                stmt = connection->prepared_statements[i];
-                break;
+
+        // Find existing prepared statement
+        PreparedStatement* stmt = find_prepared_statement(connection, request->prepared_statement_name);
+
+        if (!stmt && engine->prepare_statement) {
+            // Create new prepared statement if it doesn't exist
+            log_this(designator, "database_engine_execute: Creating new prepared statement: %s", LOG_LEVEL_TRACE, 1,
+                     request->prepared_statement_name);
+
+            bool prepared = engine->prepare_statement(connection, request->prepared_statement_name,
+                                                    request->sql_template, &stmt);
+            if (prepared && stmt) {
+                // Store the prepared statement for future use
+                if (!store_prepared_statement(connection, stmt)) {
+                    log_this(designator, "database_engine_execute: Failed to store prepared statement, cleaning up", LOG_LEVEL_ERROR, 0);
+                    // Clean up the prepared statement if we couldn't store it
+                    if (engine->unprepare_statement) {
+                        engine->unprepare_statement(connection, stmt);
+                    }
+                    free(stmt);
+                    stmt = NULL;
+                }
+            } else {
+                log_this(designator, "database_engine_execute: Failed to prepare statement: %s", LOG_LEVEL_ERROR, 1,
+                         request->prepared_statement_name);
+                stmt = NULL;
             }
         }
 
         if (stmt) {
+            log_this(designator, "database_engine_execute: Executing prepared statement: %s", LOG_LEVEL_TRACE, 1,
+                     request->prepared_statement_name);
             // log_this(designator, "database_engine_execute: Calling execute_prepared", LOG_LEVEL_TRACE, 0);
             mutex_unlock(&connection->connection_lock);
             return engine->execute_prepared(connection, stmt, request, result);
+        } else {
+            log_this(designator, "database_engine_execute: Prepared statement not available, falling back to direct execution", LOG_LEVEL_TRACE, 0);
         }
     }
 

@@ -54,7 +54,6 @@ void test_db2_engine_get_description(void) {
     const char* description = db2_engine_get_description();
     TEST_ASSERT_NOT_NULL(description);
     TEST_ASSERT_NOT_NULL(strstr(description, "DB2"));
-    TEST_ASSERT_NOT_NULL(strstr(description, "database engine"));
 }
 
 // Test db2_engine_test_functions
