@@ -9,13 +9,13 @@
  * - JSON response formatting
  */
 
- // Global includes 
-#include "../hydrogen.h"
+// Project includes 
+#include <src/hydrogen.h>
+#include <src/oidc/oidc_tokens.h>
+#include <src/webserver/web_server_compression.h>
 
 // Local includes
 #include "api_utils.h"
-#include "../oidc/oidc_tokens.h"
-#include "../webserver/web_server_compression.h"
 
 /**
  * URL decode a string

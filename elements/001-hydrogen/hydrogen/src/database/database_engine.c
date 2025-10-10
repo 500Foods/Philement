@@ -7,7 +7,7 @@
 
 #include "../hydrogen.h"
 #include "database.h"
-#include "database_queue.h"
+#include "queue/database_queue.h"
 
 // Forward declarations for database engines
 DatabaseEngineInterface* postgresql_get_interface(void);

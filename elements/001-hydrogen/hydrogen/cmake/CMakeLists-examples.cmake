@@ -24,7 +24,7 @@ function(hydrogen_add_example_target target_name source_file build_type extra_cf
     add_executable(${target_name} "${CMAKE_CURRENT_SOURCE_DIR}/../examples/C/${source_file}")
 
     # Set include directories
-    target_include_directories(${target_name} PRIVATE ${HYDROGEN_INCLUDE_DIRS})
+    target_include_directories(${target_name} PUBLIC ${HYDROGEN_INCLUDE_DIRS})
 
     # Set base compile options
     target_compile_options(${target_name} PRIVATE ${HYDROGEN_BASE_CFLAGS})

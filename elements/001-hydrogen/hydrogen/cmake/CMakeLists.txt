@@ -36,6 +36,7 @@
 # cmake --build . --target ccache_stats      : Show ccache statistics and performance metrics
 
 # CHANGELOG
+# 2025-10-10: Updated target_include_directories so we can use <src/...> and <unity...> instead of things like "../../../../src/hydrogen.h"
 # 2025-09-22: Major refactor: split into more than a dozen separate .cmake files
 # 2025-09-21: Added mock libraries to unity build profile, including mock_system, mock_threads, and mock_network, joining mock_info, mock_launch, mock_landing, mock_libmicrohttpd, mock_libwebsockets and mock_status
 # 2025-09-18: Added hydrogen_unity static library with precompiled headers for src/hydrogen.h to improve Unity test build performance and ccache effectiveness. Unity tests now link to static library instead of individual object files. Added ccache optimization targets (configure_ccache, ccache_stats) with optimal settings for coverage builds.

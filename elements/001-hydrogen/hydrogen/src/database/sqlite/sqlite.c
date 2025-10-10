@@ -8,7 +8,7 @@
 
 #include "../../hydrogen.h"
 #include "../database.h"
-#include "../database_queue.h"
+#include "../queue/database_queue.h"
 
 // Include the interface header
 #include "interface.h"

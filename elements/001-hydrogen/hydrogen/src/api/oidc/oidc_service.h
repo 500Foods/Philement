@@ -19,8 +19,9 @@
 #include <microhttpd.h>
 
 // Project Libraries
-#include "../../oidc/oidc_service.h"
-#include "../../webserver/web_server_core.h"
+#include <src/hydrogen.h>
+#include <src/webserver/web_server_core.h>
+#include <src/oidc/oidc_service.h>
 
 // Include all OIDC endpoint headers
 #include "discovery/discovery.h"

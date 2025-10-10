@@ -3,10 +3,10 @@
  * This file contains unit tests for database_validate_query functionality
  */
 
-#include "../../../../src/hydrogen.h"
+#include "../../../../../src/hydrogen.h"
 #include "unity.h"
 
-#include "../../../../src/database/database.h"
+#include "../../../../../src/database/database.h"
 
 // Forward declarations for functions being tested
 bool database_validate_query(const char* query_template);

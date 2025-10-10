@@ -26,6 +26,15 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
         set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     endif()
 
+    # Generate project-specific include flags for Unity (same as main build)
+    set(PROJECT_INCLUDE_FLAGS
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/.."              # Root: enables <src/...>
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/../src"          # Explicit src if needed
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests"        # Enables <unity/...>
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity"  # Enables <unity/...>
+        "-I${CMAKE_CURRENT_SOURCE_DIR}"                 # Current dir
+    )
+
     # Create custom command to compile source file to object file
     add_custom_command(
         OUTPUT ${OUTPUT_OBJ}
@@ -44,6 +53,7 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
             ${BROTLI_CFLAGS}
             ${UUID_CFLAGS}
             ${LUA_CFLAGS}
+            ${PROJECT_INCLUDE_FLAGS}
             -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
         DEPENDS ${SOURCE_FILE}
         COMMENT "Compiling ${REL_PATH} to coverage object file"

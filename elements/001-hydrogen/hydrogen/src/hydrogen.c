@@ -4,12 +4,12 @@
  */
 
 // Global includes
-#include "hydrogen.h"
+#include <src/hydrogen.h>
 
 // Internal Headers
-#include "handlers/handlers.h"
-#include "launch/launch.h"
-#include "landing/landing.h"
+#include <src/handlers/handlers.h>
+#include <src/launch/launch.h>
+#include <src/landing/landing.h>
 
 /* Global Variables and External Declarations */
 extern void signal_handler(int sig);

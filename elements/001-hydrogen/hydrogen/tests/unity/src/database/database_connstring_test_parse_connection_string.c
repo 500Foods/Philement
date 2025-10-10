@@ -4,10 +4,10 @@
  * from src/database/database_connstring.c
  */
 
-#include "../../../../src/hydrogen.h"
+#include "../../../../../src/hydrogen.h"
 #include "unity.h"
 
-#include "../../../../src/database/database.h"
+#include "../../../../../src/database/database.h"
 #include "../../../../src/database/database_connstring.h"
 
 // Function prototypes for test functions

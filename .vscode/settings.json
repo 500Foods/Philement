@@ -25,7 +25,19 @@
   "registry_integration.h": "c",
   "landing.h": "c",
   "cstdlib": "c",
-  "terminal_session.h": "c"
+  "terminal_session.h": "c",
+  "database_bootstrap.h": "c",
+  "mock_system.h": "c"
 },
-"C_Cpp.default.compilerPath": "/usr/lib64/ccache/gcc"
+"C_Cpp.default.compilerPath": "/usr/lib64/ccache/gcc",
+"C_Cpp.default.includePath": [
+  "elements/001-hydrogen/hydrogen",
+  "elements/001-hydrogen/hydrogen/src",
+  "elements/001-hydrogenhydrogen/tests/unity"
+],
+"C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
+"C_Cpp.default.compileCommands": [
+
+  ""
+]
 }
