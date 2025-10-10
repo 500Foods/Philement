@@ -5,7 +5,7 @@
   */
 #include "../../hydrogen.h"
 #include "../database.h"
-#include "../database_queue.h"
+#include "../queue/database_queue.h"
 #include "types.h"
 #include "prepared.h"
 

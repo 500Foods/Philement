@@ -8,7 +8,7 @@
 // Local includes
 #include "launch.h"
 #include "../database/database.h"
-#include "../database/database_queue.h"
+#include "../database/queue/database_queue.h"
 #include "../queue/queue.h"
 
 volatile sig_atomic_t database_stopping = 0;

@@ -7,7 +7,7 @@
 
 #include "../hydrogen.h"
 #include "database.h"
-#include "database_queue.h"
+#include "queue/database_queue.h"
 #include "database_connstring.h"
 
 // Network includes for ping functionality

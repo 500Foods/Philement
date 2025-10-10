@@ -16,7 +16,7 @@
 // Project includes
 #include "../hydrogen.h"
 #include "database_types.h"
-#include "database_queue.h"
+#include "queue/database_queue.h"
 
 // Subsystem name for logging (defined in globals.h)
 

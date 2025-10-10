@@ -24,7 +24,7 @@
 #include <microhttpd.h>
 
 // Project Libraries
-#include "../config/config.h"
+#include <src/config/config.h>
 
 /*
  * Initialize API endpoints
