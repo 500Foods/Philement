@@ -185,6 +185,16 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 // log_this(SR_CONFIG_CURRENT, "Database config: Loaded migrations: %s", LOG_LEVEL_DEBUG, 1, conn->migrations);
             }
 
+            // Extract prepared statement cache size
+            json_t* stmt_cache_obj = json_object_get(conn_obj, "StmtCache");
+            if (stmt_cache_obj && json_is_integer(stmt_cache_obj)) {
+                conn->prepared_statement_cache_size = (int)json_integer_value(stmt_cache_obj);
+                log_this(SR_CONFIG_CURRENT, "Database config: Loaded StmtCache: %d", LOG_LEVEL_DEBUG, 1, conn->prepared_statement_cache_size);
+            } else {
+                // Use default value (1000) - already set in memset
+                conn->prepared_statement_cache_size = 1000;
+            }
+
             // Only extract network fields for non-SQLite databases
             if (conn->type && strcmp(conn->type, "sqlite") != 0) {
                 json_t* host_obj = json_object_get(conn_obj, "Host");

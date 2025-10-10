@@ -13,9 +13,9 @@
 #include <time.h>
 
 // Default timeout values (in milliseconds)
-#define MUTEX_DEFAULT_TIMEOUT_MS 1000
-#define MUTEX_HEARTBEAT_TIMEOUT_MS 5000
-#define MUTEX_INIT_TIMEOUT_MS 10000
+#define MUTEX_DEFAULT_TIMEOUT_MS 500
+#define MUTEX_HEARTBEAT_TIMEOUT_MS 500
+#define MUTEX_INIT_TIMEOUT_MS 500
 
 // Mutex operation results
 typedef enum {
