@@ -227,7 +227,8 @@ done
 # Display uncovered files (sorting removed for performance)
 if [[ ${#uncovered_files[@]} -gt 0 ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Uncovered source files:"
-    for file in "${uncovered_files[@]}"; do
+    sorted_files=($(printf '%s\n' "${uncovered_files[@]}" | sort))
+    for file in "${sorted_files[@]}"; do
         print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${file}"
     done
 fi
