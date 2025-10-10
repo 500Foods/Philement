@@ -4,6 +4,7 @@
 # Collects and analyzes coverage data from Unity and blackbox tests
 
 # CHANGELOG
+# 4.1.0 - 2025-10-10 - Sorted list of uncovered files
 # 4.0.0 - 2025-00-14 - Overhaul #2 - all about the test count stuff at the end
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
@@ -16,7 +17,7 @@ TEST_NAME="Test Suite Coverage {BLUE}(coverage_table){RESET}"
 TEST_ABBR="COV"
 TEST_NUMBER="99"
 TEST_COUNTER=0
-TEST_VERSION="4.0.0"
+TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -227,7 +228,7 @@ done
 # Display uncovered files (sorting removed for performance)
 if [[ ${#uncovered_files[@]} -gt 0 ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Uncovered source files:"
-    sorted_files=($(printf '%s\n' "${uncovered_files[@]}" | sort))
+    mapfile -t sorted_files < <(printf '%s\n' "${uncovered_files[@]}" | sort || true)
     for file in "${sorted_files[@]}"; do
         print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${file}"
     done
