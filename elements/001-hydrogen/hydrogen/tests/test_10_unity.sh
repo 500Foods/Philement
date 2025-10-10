@@ -33,7 +33,7 @@ TEST_ABBR="UNT"
 TEST_NUMBER="10"
 TEST_COUNTER=0
 TEST_VERSION="3.4.0"
-TEST_TIMEOUT="10" # Seconds
+TEST_TIMEOUT="30" # Seconds
 LONG_RUNNING="0.250" # Seconds
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly

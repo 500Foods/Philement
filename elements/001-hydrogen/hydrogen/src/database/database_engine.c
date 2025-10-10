@@ -279,17 +279,27 @@ static bool store_prepared_statement(DatabaseHandle* connection, PreparedStateme
         return false;
     }
 
+    // Get cache size from connection config (default to 1000 if not set)
+    size_t cache_size = 1000; // Default value
+    if (connection->config && connection->config->prepared_statement_cache_size > 0) {
+        cache_size = (size_t)connection->config->prepared_statement_cache_size;
+    }
+
     // Initialize array if needed
     if (!connection->prepared_statements) {
-        connection->prepared_statements = calloc(16, sizeof(PreparedStatement*));
+        connection->prepared_statements = calloc(cache_size, sizeof(PreparedStatement*));
         if (!connection->prepared_statements) {
             return false;
         }
         connection->prepared_statement_count = 0;
+        // Initialize LRU counter
+        if (!connection->prepared_statement_lru_counter) {
+            connection->prepared_statement_lru_counter = calloc(cache_size, sizeof(uint64_t));
+        }
     }
 
     // Check if we need to expand the array
-    if (connection->prepared_statement_count >= 16) { // Simple fixed-size for now
+    if (connection->prepared_statement_count >= cache_size) {
         // For now, just don't store if we exceed capacity
         // TODO: Implement dynamic resizing
         log_this(connection->designator ? connection->designator : SR_DATABASE,
@@ -366,15 +376,8 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
         return false;
     }
     
-    // Try to lock with timeout using the new mutex library
-    // log_this(SR_DATABASE, "database_engine_execute: Attempting timed mutex lock", LOG_LEVEL_ERROR, 0);
-    const char* lock_designator = connection && connection->designator ? connection->designator : SR_DATABASE;
-    MutexResult lock_result = MUTEX_LOCK(&connection->connection_lock, lock_designator);
-
-    if (lock_result != MUTEX_SUCCESS) {
-        log_this(SR_DATABASE, "MUTEX LOCK FAILED with result %s - this explains the deadlock!", LOG_LEVEL_ERROR, 1, mutex_result_to_string(lock_result));
-        return false;
-    }
+    // Skip connection lock - each thread owns its connection exclusively
+    // No other thread accesses this connection's state
 
     // log_this(SR_DATABASE, "database_engine_execute: Mutex locked successfully", LOG_LEVEL_ERROR, 0);
 
@@ -388,7 +391,6 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
             (void*)connection,
             (void*)request,
             (void*)result);
-        mutex_unlock(&connection->connection_lock);
         return false;
     }
 
@@ -450,7 +452,6 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
     if (!engine) {
         log_this(designator, "database_engine_execute: No engine found for type %d", LOG_LEVEL_ERROR, 1, connection->engine_type);
-        mutex_unlock(&connection->connection_lock);
         return false;
     }
 
@@ -497,13 +498,9 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
             if (prepared && stmt) {
                 // Store the prepared statement for future use
                 if (!store_prepared_statement(connection, stmt)) {
-                    log_this(designator, "database_engine_execute: Failed to store prepared statement, cleaning up", LOG_LEVEL_ERROR, 0);
-                    // Clean up the prepared statement if we couldn't store it
-                    if (engine->unprepare_statement) {
-                        engine->unprepare_statement(connection, stmt);
-                    }
-                    free(stmt);
-                    stmt = NULL;
+                    log_this(designator, "database_engine_execute: Failed to store prepared statement, but prepared statement is still usable", LOG_LEVEL_TRACE, 0);
+                    // Note: The prepared statement is still valid for execution
+                    // We just couldn't cache it due to capacity limits
                 }
             } else {
                 log_this(designator, "database_engine_execute: Failed to prepare statement: %s", LOG_LEVEL_ERROR, 1,
@@ -527,7 +524,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
     // Fall back to regular query execution
     // log_this(designator, "database_engine_execute: Using regular query execution path", LOG_LEVEL_TRACE, 0);
-    
+
     if (!engine->execute_query) {
         log_this(designator, "database_engine_execute: Engine has no execute_query function", LOG_LEVEL_ERROR, 0);
         return false;
@@ -535,20 +532,10 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
     // log_this(designator, "database_engine_execute: Calling engine->execute_query", LOG_LEVEL_TRACE, 0);
 
-    // log_this(designator, "FUNCTION_CALL_DEBUG: About to call engine->execute_query", LOG_LEVEL_ERROR, 0);
-    // log_this(designator, "FUNCTION_CALL_DEBUG: engine=%p, execute_query=%p", LOG_LEVEL_ERROR, 2, (void*)engine, (void*)(uintptr_t)engine->execute_query);
-    // log_this(designator, "FUNCTION_CALL_DEBUG: connection=%p, request=%p, result=%p", LOG_LEVEL_ERROR, 3, (void*)connection, (void*)request, (void*)result);
-
+    // Execute query - no connection lock needed since thread owns connection exclusively
     bool result_success = engine->execute_query(connection, request, result);
 
-    // log_this(designator, "FUNCTION_CALL_DEBUG: engine->execute_query returned %d", LOG_LEVEL_ERROR, 1, result_success);
-    
     // log_this(designator, "database_engine_execute: Engine execute_query returned %s", LOG_LEVEL_TRACE, 1, result_success ? "SUCCESS" : "FAILURE");
-
-    // Release connection object mutex
-    // log_this(SR_DATABASE, "MUTEX_UNLOCK_ATTEMPT: About to unlock connection mutex", LOG_LEVEL_TRACE, 0);
-    mutex_unlock(&connection->connection_lock);
-    // log_this(SR_DATABASE, "MUTEX_UNLOCK_RESULT: Unlock completed with result %s", LOG_LEVEL_TRACE, 1, mutex_result_to_string(unlock_result));
 
     return result_success;
 }

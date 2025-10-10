@@ -274,6 +274,7 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
     db_handle->current_transaction = NULL;
     db_handle->prepared_statements = NULL; // Will be managed by engine-specific code
     db_handle->prepared_statement_count = 0;
+    db_handle->prepared_statement_lru_counter = NULL; // LRU tracking for prepared statements
     pthread_mutex_init(&db_handle->connection_lock, NULL);
     db_handle->in_use = false;
     db_handle->last_health_check = time(NULL);
