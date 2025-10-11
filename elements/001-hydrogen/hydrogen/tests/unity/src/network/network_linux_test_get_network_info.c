@@ -4,11 +4,11 @@
  * This function is large and covers significant portions of network functionality
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/network/network.h"
+#include <src/network/network.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

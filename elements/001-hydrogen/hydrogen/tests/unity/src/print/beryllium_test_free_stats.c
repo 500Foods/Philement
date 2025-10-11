@@ -11,11 +11,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the beryllium module
-#include "../../../../src/print/beryllium.h"
+#include <src/print/beryllium.h>
 
 // Forward declaration for the function being tested
 void beryllium_free_stats(BerylliumStats *stats);

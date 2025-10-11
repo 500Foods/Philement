@@ -2,8 +2,8 @@
 // Unity tests for register_subsystem_from_launch function
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Test globals
 extern SubsystemRegistry subsystem_registry;

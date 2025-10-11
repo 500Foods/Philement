@@ -5,11 +5,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
-#include "../../../../../src/database/postgresql/connection.h"
+#include <src/database/postgresql/connection.h>
 
 // Forward declaration for the function being tested
 bool check_timeout_expired(time_t start_time, int timeout_seconds);

@@ -4,14 +4,14 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../../src/api/system/config/config.h"
-#include "../../../../../../src/config/config.h"
-#include "../../../../../../src/config/config_defaults.h"
-#include "../../../../../../src/logging/logging.h"
+#include <src/api/system/config/config.h>
+#include <src/config/config.h>
+#include <src/config/config_defaults.h>
+#include <src/logging/logging.h>
 
 // Forward declaration for the function being tested
 enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,

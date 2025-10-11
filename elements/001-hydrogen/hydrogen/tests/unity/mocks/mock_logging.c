@@ -10,10 +10,10 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
-#include "unity.h"
+#include <unity.h>
 
 // Include the real logging header but undefine the function to access real implementation if needed
-#include "../../../src/logging/logging.h"
+#include <src/logging/logging.h>
 
 // Undefine the macro in this file so we can call the real function if needed
 #undef log_this

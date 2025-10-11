@@ -4,18 +4,18 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the websocket PTY module
-#include "../../../../src/websocket/websocket_server.h"
-#include "../../../../src/websocket/websocket_server_internal.h"
-#include "../../../../src/websocket/websocket_server_pty.h"
+#include <src/websocket/websocket_server.h>
+#include <src/websocket/websocket_server_internal.h>
+#include <src/websocket/websocket_server_pty.h>
 
 // Include mock headers for comprehensive testing
 #define USE_MOCK_SYSTEM
-#include "../../../../tests/unity/mocks/mock_libwebsockets.h"
-#include "../../../../tests/unity/mocks/mock_system.h"
+#include <unity/mocks/mock_libwebsockets.h>
+#include <unity/mocks/mock_system.h>
 
 // Forward declarations for functions being tested
 json_t* create_pty_output_json(const char *buffer, size_t data_size);

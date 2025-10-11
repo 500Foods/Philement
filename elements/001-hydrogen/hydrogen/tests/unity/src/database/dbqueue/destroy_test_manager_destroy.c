@@ -4,7 +4,7 @@
  */
 
 #include <src/hydrogen.h>
-#include "unity.h"
+#include <unity.h>
 
 // Local includes
 #include <src/database/dbqueue/dbqueue.h>

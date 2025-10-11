@@ -6,11 +6,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include state header for web_server_shutdown
-#include "../../../../src/state/state.h"
+#include <src/state/state.h>
 
 // Forward declaration for the function being tested
 bool extract_payload(const char *executable_path, const AppConfig *config,

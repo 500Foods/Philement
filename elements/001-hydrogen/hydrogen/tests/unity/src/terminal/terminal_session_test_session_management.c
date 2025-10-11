@@ -4,11 +4,11 @@
  * Focuses on functions that don't require PTY operations
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the terminal session module
-#include "../../../../src/terminal/terminal_session.h"
+#include <src/terminal/terminal_session.h>
 
 // Function prototypes for test functions
 void test_init_session_manager_success(void);

@@ -5,15 +5,15 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/launch/launch.h"
+#include <src/launch/launch.h>
 
 // Enable mocks for testing system dependencies
 #define USE_MOCK_LAUNCH
-#include "../../../../tests/unity/mocks/mock_launch.h"
+#include <unity/mocks/mock_launch.h>
 
 // Forward declarations for functions being tested
 LaunchReadiness check_swagger_launch_readiness(void);

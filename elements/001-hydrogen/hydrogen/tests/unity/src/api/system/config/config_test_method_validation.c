@@ -5,8 +5,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Mock functions to test the method validation logic that exists in config.c
 // These functions demonstrate how the logic could be extracted for testing

@@ -3,11 +3,11 @@
  * Tests the mdns_keys.c functions for secret key generation
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_keys.h"
+#include <src/mdns/mdns_keys.h>
 
 // Test function prototypes
 void test_generate_secret_mdns_key_basic_functionality(void);

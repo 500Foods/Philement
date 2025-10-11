@@ -5,12 +5,12 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/launch/launch.h"
-#include "../../../../src/config/config.h"
+#include <src/launch/launch.h>
+#include <src/config/config.h>
 
 // Forward declarations for functions being tested
 LaunchReadiness check_print_launch_readiness(void);

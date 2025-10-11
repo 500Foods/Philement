@@ -16,13 +16,13 @@
 // Note: handle_upload_request is not mocked - we test the validation logic instead
 
 // Standard project header plus Unity Framework header
-#include "../../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../../src/api/system/upload/upload.h"
-#include "../../../../../../src/websocket/websocket_server_internal.h"
-#include "../../../../../../src/config/config.h"
+#include <src/api/system/upload/upload.h>
+#include <src/websocket/websocket_server_internal.h>
+#include <src/config/config.h>
 
 // Include system headers for mock functions
 #include <sys/stat.h>

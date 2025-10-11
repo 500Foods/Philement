@@ -4,8 +4,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // External volatile variable that some functions depend on
 extern volatile sig_atomic_t server_starting;

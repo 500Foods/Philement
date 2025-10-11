@@ -3,11 +3,11 @@
  * Tests the find_available_port function for port discovery
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/network/network.h"
+#include <src/network/network.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

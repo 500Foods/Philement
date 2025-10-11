@@ -3,17 +3,17 @@
  * Tests mdns_server_setup_hostname function
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include mock headers for testing error conditions BEFORE source headers
 #ifndef USE_MOCK_SYSTEM
 #define USE_MOCK_SYSTEM
 #endif
-#include "../../../../../tests/unity/mocks/mock_system.h"
+#include <unity/mocks/mock_system.h>
 
 // Include necessary headers for the module being tested (AFTER mocks to ensure overrides work)
-#include "../../../../src/mdns/mdns_server.h"
+#include <src/mdns/mdns_server.h>
 
 // Forward declarations for helper functions being tested
 int mdns_server_setup_hostname(mdns_server_t *server);

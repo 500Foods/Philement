@@ -8,13 +8,13 @@
 #define UNITY_TEST_MODE
 
 // Standard project header plus Unity Framework header
-#include "../../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../../src/api/system/recent/recent.h"
-#include "../../../../../../src/websocket/websocket_server_internal.h"
-#include "../../../../../../src/config/config.h"
+#include <src/api/system/recent/recent.h>
+#include <src/websocket/websocket_server_internal.h>
+#include <src/config/config.h>
 
 // Mock functions to test the log processing logic that exists in recent.c
 // These functions demonstrate how the logic could be extracted for testing

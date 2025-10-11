@@ -7,12 +7,12 @@
 // cppcheck-suppress knownConditionTrueFalse // Intentionally testing with fixed values
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the websocket startup module
-#include "../../../../src/websocket/websocket_server_internal.h"
-#include "../../../../src/websocket/websocket_server.h"
+#include <src/websocket/websocket_server_internal.h>
+#include <src/websocket/websocket_server.h>
 
 // Forward declarations for functions being tested
 int init_websocket_server(int port, const char* protocol, const char* key);

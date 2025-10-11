@@ -3,14 +3,14 @@
  * This file contains unit tests for SQLite prepared statement functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/sqlite/types.h"
-#include "../../../../../src/database/sqlite/connection.h"
-#include "../../../../../src/database/sqlite/prepared.h"
+#include <src/database/database.h>
+#include <src/database/sqlite/types.h>
+#include <src/database/sqlite/connection.h>
+#include <src/database/sqlite/prepared.h>
 
 // Forward declarations for functions being tested
 bool sqlite_add_prepared_statement(PreparedStatementCache* cache, const char* name);

@@ -5,11 +5,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/webserver/web_server_compression.h"
+#include <src/webserver/web_server_compression.h>
 
 // Forward declaration for function being tested
 bool brotli_file_exists(const char *file_path, char *br_file_path, size_t buffer_size);

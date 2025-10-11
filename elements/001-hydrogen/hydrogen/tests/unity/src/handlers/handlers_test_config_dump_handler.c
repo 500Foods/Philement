@@ -5,13 +5,13 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
-#include "../../../../src/handlers/handlers.h"
-#include "../../../../src/config/config.h"
-#include "../../../../src/config/config_defaults.h"
+#include <src/handlers/handlers.h>
+#include <src/config/config.h>
+#include <src/config/config_defaults.h>
 
 // Forward declaration for the function being tested
 void config_dump_handler(int sig);

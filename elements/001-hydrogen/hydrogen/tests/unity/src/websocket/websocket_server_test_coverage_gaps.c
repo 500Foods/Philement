@@ -4,19 +4,19 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the websocket module
-#include "../../../../src/websocket/websocket_server.h"
-#include "../../../../src/websocket/websocket_server_internal.h"
+#include <src/websocket/websocket_server.h>
+#include <src/websocket/websocket_server_internal.h>
 
 // Enable mocks for comprehensive testing
 #define USE_MOCK_SYSTEM
 #define USE_MOCK_PTHREAD
-#include "../../../../tests/unity/mocks/mock_pthread.h"
-#include "../../../../tests/unity/mocks/mock_libwebsockets.h"
-#include "../../../../tests/unity/mocks/mock_system.h"
+#include <unity/mocks/mock_pthread.h>
+#include <unity/mocks/mock_libwebsockets.h>
+#include <unity/mocks/mock_system.h>
 
 // Forward declarations for functions being tested
 int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);

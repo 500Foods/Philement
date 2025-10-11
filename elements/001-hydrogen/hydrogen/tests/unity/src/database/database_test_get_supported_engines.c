@@ -3,10 +3,10 @@
  * This file contains unit tests for database_get_supported_engines functionality
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
-#include "../../../../../src/database/database.h"
+#include <src/database/database.h>
 
 // Forward declarations for functions being tested
 void database_get_supported_engines(char* buffer, size_t buffer_size);

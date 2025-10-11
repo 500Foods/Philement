@@ -4,11 +4,11 @@
  * Focuses on session management, lifecycle, and error handling
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the terminal session module
-#include "../../../../src/terminal/terminal_session.h"
+#include <src/terminal/terminal_session.h>
 
 // Include test control functions
 void terminal_session_set_test_cleanup_interval(int seconds);
@@ -16,11 +16,11 @@ void terminal_session_disable_cleanup_thread(void);
 void terminal_session_enable_cleanup_thread(void);
 
 // Include mocks for external dependencies
-#include "../../../../tests/unity/mocks/mock_libwebsockets.h"
-#include "../../../../tests/unity/mocks/mock_libmicrohttpd.h"
+#include <unity/mocks/mock_libwebsockets.h>
+#include <unity/mocks/mock_libmicrohttpd.h>
 
 // Include the actual header to get the real struct definitions
-#include "../../../../src/terminal/terminal_session.h"
+#include <src/terminal/terminal_session.h>
 
 // Functions are declared in the header file, no need for forward declarations
 

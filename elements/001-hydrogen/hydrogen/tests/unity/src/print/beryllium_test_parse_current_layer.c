@@ -12,11 +12,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the beryllium module
-#include "../../../../src/print/beryllium.h"
+#include <src/print/beryllium.h>
 
 void setUp(void) {
     // No setup needed for layer parsing tests

@@ -4,15 +4,15 @@
  * This file contains unit tests for MySQL connection functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Enable mocks
-#include "../../../../../tests/unity/mocks/mock_libmysqlclient.h"
+#include <unity/mocks/mock_libmysqlclient.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/mysql/connection.h"
+#include <src/database/database.h>
+#include <src/database/mysql/connection.h>
 
 // Forward declarations for functions being tested
 bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);

@@ -4,12 +4,12 @@
  * This test specifically targets the massive coverage gap in the cleanup function
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_server.h"
-#include "../../../../src/network/network.h"
+#include <src/mdns/mdns_server.h>
+#include <src/network/network.h>
 
 // Forward declarations for helper functions being tested
 void mdns_server_cleanup(mdns_server_t *server, network_info_t *net_info_instance);

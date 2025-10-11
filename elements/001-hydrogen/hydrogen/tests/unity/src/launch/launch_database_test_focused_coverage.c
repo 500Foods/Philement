@@ -3,12 +3,12 @@
  * This file targets specific high-coverage areas identified from blackbox test analysis
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/launch/launch.h"
-#include "../../../../src/launch/launch_database.c"
+#include <src/launch/launch.h>
+#include <src/launch/launch_database.c>
 
 // Standard library includes
 #include <string.h>
@@ -23,12 +23,12 @@
 #define USE_MOCK_SYSTEM
 #define USE_MOCK_LAUNCH
 
-#include "../../../../tests/unity/mocks/mock_libpq.h"
-#include "../../../../tests/unity/mocks/mock_libmysqlclient.h"
-#include "../../../../tests/unity/mocks/mock_libsqlite3.h"
-#include "../../../../tests/unity/mocks/mock_libdb2.h"
-#include "../../../../tests/unity/mocks/mock_system.h"
-#include "../../../../tests/unity/mocks/mock_launch.h"
+#include <unity/mocks/mock_libpq.h>
+#include <unity/mocks/mock_libmysqlclient.h>
+#include <unity/mocks/mock_libsqlite3.h>
+#include <unity/mocks/mock_libdb2.h>
+#include <unity/mocks/mock_system.h>
+#include <unity/mocks/mock_launch.h>
 
 // Forward declarations for functions being tested
 LaunchReadiness check_database_launch_readiness(void);
