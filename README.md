@@ -67,11 +67,11 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-10-11 08:41:40 UTC
+Last updated at 2025-10-11 08:54:56 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              675          25548          25662          91287
+C                              675          25548          25662          91285
 JSON                            59             18              0          53129
 Markdown                       346           9588             59          28838
 Bourne Shell                    87           3937          62148          18126
@@ -90,12 +90,21 @@ Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 -------------------------------------------------------------------------------
-SUM:                          1448          41852          93787         227176
+SUM:                          1448          41852          93787         227174
 -------------------------------------------------------------------------------
-71 Files were skipped (duplicate, binary, or without source code):
+515 Files were skipped (duplicate, binary, or without source code):
+  20251011_014552: 77
+  20251011_014548: 75
+  20251011_014550: 75
+  20251011_014551: 75
+  20251011_014549: 74
+  20251011_014547: 49
   metadata: 15
+  20251011_014553: 12
   svg: 8
   gitignore: 4
+  20251011_014653: 3
+  20251011_014700: 3
   jpg: 3
   png: 3
   sqruff_db2: 3
@@ -106,6 +115,7 @@ SUM:                          1448          41852          93787         227176
   json: 2
   lua: 2
   payload_generated: 2
+  20251011_014411: 1
   3mf: 1
   detailed: 1
   disabled: 1
