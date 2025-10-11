@@ -391,14 +391,14 @@ void test_ws_write_json_response_success(void) {
     json_object_set_new(test_json, "type", json_string("test"));
     json_object_set_new(test_json, "data", json_string("test_data"));
 
-    // Mock lws_write to return success
-    mock_lws_set_write_result(10); // Successful write
+    // Mock lws_write to return actual expected length
+    mock_lws_set_write_result(34); // Actual length of JSON: {"type":"test","data":"test_data"}
 
     // Test successful JSON response
     int result = ws_write_json_response((void*)0x12345678, test_json);
 
     // Should return result from lws_write
-    TEST_ASSERT_EQUAL_INT(10, result);
+    TEST_ASSERT_EQUAL_INT(34, result);
 
     // Clean up
     json_decref(test_json);

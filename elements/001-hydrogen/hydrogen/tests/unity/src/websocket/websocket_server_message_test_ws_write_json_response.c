@@ -81,13 +81,13 @@ void test_ws_write_json_response_successful_write(void) {
     json_object_set_new(json, "type", json_string("status"));
     json_object_set_new(json, "status", json_string("success"));
 
-    // Mock successful lws_write
-    mock_lws_set_write_result(50);
+    // Mock successful lws_write - use actual expected length
+    mock_lws_set_write_result(36); // Actual length of JSON: {"type":"status","status":"success"}
 
     int result = ws_write_json_response(test_wsi, json);
 
     // Should return success (bytes written)
-    TEST_ASSERT_EQUAL_INT(50, result);
+    TEST_ASSERT_EQUAL_INT(36, result);
 
     json_decref(json);
 }
@@ -122,13 +122,13 @@ void test_ws_write_json_response_complex_json_data(void) {
     json_array_append_new(data_array, json_string("line2"));
     json_object_set_new(json, "data", data_array);
 
-    // Mock successful lws_write with expected length
-    mock_lws_set_write_result(100);
+    // Mock successful lws_write with actual expected length
+    mock_lws_set_write_result(74); // Actual length of complex JSON
 
     int result = ws_write_json_response(test_wsi, json);
 
     // Should return success
-    TEST_ASSERT_EQUAL_INT(100, result);
+    TEST_ASSERT_EQUAL_INT(74, result);
 
     json_decref(json);
 }
