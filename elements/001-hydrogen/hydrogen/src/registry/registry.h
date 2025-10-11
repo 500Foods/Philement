@@ -22,8 +22,8 @@
 #include <pthread.h>
 
 // Project includes
-#include "../threads/threads.h"
-#include "../state/state_types.h"  // For shared types
+#include <src/threads/threads.h>
+#include <src/state/state_types.h>  // For shared types
 #include "registry_integration.h"  // For subsystem registration and integration
 
 // Subsystem metadata structure

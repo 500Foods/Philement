@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include "../config/config_logging.h"
+#include <src/config/config_logging.h>
 
 void* log_queue_manager(void* arg);
 void init_file_logging(const char* log_file_path);

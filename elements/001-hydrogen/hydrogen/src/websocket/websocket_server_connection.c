@@ -9,13 +9,13 @@
  */
 
 // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "websocket_server_internal.h"
 
 // Terminal includes for session management
-#include "../terminal/terminal_session.h"
+#include <src/terminal/terminal_session.h>
 
 // External reference to the server context
 extern WebSocketServerContext *ws_context;

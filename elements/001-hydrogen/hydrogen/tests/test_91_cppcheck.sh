@@ -61,6 +61,7 @@ run_cppcheck() {
             "template") cppcheck_args+=("--template=${value}") ;;
             "option") cppcheck_args+=("${value}") ;;
             "suppress") cppcheck_args+=("--suppress=${value}") ;;
+            "define") cppcheck_args+=("-D${value}") ;;
             *) ;;
         esac
     done < <("${GREP}" -v '^#' ".lintignore-c" | "${GREP}" '=' || true)

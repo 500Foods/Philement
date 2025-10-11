@@ -5,7 +5,7 @@
  * Split from mdns_server.c to improve modularity and testability.
  */
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>

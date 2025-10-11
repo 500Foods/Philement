@@ -1,5 +1,5 @@
 // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "utils.h"

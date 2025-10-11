@@ -8,7 +8,7 @@
 #ifndef DATABASE_CONNSTRING_H
 #define DATABASE_CONNSTRING_H
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Forward declaration from database.h
 typedef struct ConnectionConfig ConnectionConfig;

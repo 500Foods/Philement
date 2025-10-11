@@ -17,7 +17,7 @@
 #include <pthread.h>
 
 // Project Libraries
-#include "../network/network.h"
+#include <src/network/network.h>
 
 // DNS header structure (moved from mdns_server_announce.c for test access)
 typedef struct {

@@ -17,6 +17,8 @@ enable=style,warning,performance,portability
 # Include paths (adjust these to your system)
 include=/usr/include
 include=/usr/local/include
+include=.
+include=cmake/
 
 # Check level
 check-level=exhaustive
@@ -26,6 +28,11 @@ template={file}:{line}:{column}: {severity}: {message} ({id})
 
 # Suppress specific warnings
 suppress=unusedStructMember
+
+# Define platform macros for cppcheck
+define=__linux__=1
+define=PLATFORM_LINUX=1
+define=_GNU_SOURCE=1
 
 # Additional options
 option=--inline-suppr

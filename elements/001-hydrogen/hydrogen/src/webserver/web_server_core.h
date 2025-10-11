@@ -19,8 +19,8 @@
 #include <microhttpd.h>
 
 // Project Libraries
-#include "../config/config.h"
-#include "../config/config_webserver.h"  // For WebServerConfig
+#include <src/config/config.h>
+#include <src/config/config_webserver.h>  // For WebServerConfig
 
 // Connection info structure shared across modules
 struct ConnectionInfo {

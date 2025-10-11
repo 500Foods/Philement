@@ -12,10 +12,10 @@
  */
 
 // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
-#include "../landing/landing.h"
+#include <src/landing/landing.h>
 
 // External declarations
 extern volatile sig_atomic_t mail_relay_system_shutdown;

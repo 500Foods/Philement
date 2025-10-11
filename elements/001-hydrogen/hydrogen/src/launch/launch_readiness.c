@@ -30,7 +30,7 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 #include <dlfcn.h>
 #include <link.h>
 #include <limits.h>

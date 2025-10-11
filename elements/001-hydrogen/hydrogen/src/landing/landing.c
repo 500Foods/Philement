@@ -47,11 +47,11 @@
  */
 
 // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "landing.h"
-#include "../launch/launch.h"
+#include <src/launch/launch.h>
 
 // External declarations for landing orchestration
 extern ReadinessResults handle_landing_readiness(void);

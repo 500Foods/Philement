@@ -15,7 +15,7 @@
 #include <stdbool.h>
 #include <jansson.h>
 #include "config_forward.h"
-#include "../mdns/mdns_server.h"  // For mdns_server_service_t
+#include <src/mdns/mdns_server.h>  // For mdns_server_service_t
 
 // mDNS server configuration structure
 typedef struct MDNSServerConfig {

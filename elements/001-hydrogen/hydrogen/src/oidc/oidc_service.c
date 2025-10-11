@@ -8,14 +8,14 @@
  */
 
 // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "oidc_service.h"
 #include "oidc_keys.h"
 #include "oidc_tokens.h"
 #include "oidc_users.h"
-#include "../api/oidc/oidc_service.h"
+#include <src/api/oidc/oidc_service.h>
 
 // Global OIDC context
 static OIDCContext *oidc_context = NULL;

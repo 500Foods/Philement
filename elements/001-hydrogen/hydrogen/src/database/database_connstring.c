@@ -5,7 +5,7 @@
  * for different database engines (PostgreSQL, MySQL, SQLite, DB2).
  */
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 #include <assert.h>
 
 // Local includes

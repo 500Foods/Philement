@@ -5,7 +5,7 @@
  * implementation. This includes the announce and responder thread loops.
  */
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -18,7 +18,7 @@
 
 // Include mock headers for Unity testing
 #ifdef USE_MOCK_THREADS
-#include "../../tests/unity/mocks/mock_threads.h"
+#include <unity/mocks/mock_threads.h>
 #endif
 
 extern volatile sig_atomic_t server_running;

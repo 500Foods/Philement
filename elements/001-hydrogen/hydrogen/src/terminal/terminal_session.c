@@ -6,10 +6,10 @@
  * shared state.
  */
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 #include "../globals.h"
-#include "../logging/logging.h"
-#include "../utils/utils.h"
+#include <src/logging/logging.h>
+#include <src/utils/utils.h>
 #include "terminal_session.h"
 #include "terminal_shell.h"
 

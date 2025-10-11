@@ -11,14 +11,14 @@
  */
 
 // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "launch.h"
 #include <sys/socket.h>
 #include <netdb.h>
 #include <ifaddrs.h>
-#include "../websocket/websocket_server.h"
+#include <src/websocket/websocket_server.h>
 
 // External declarations
 extern ServiceThreads websocket_threads;

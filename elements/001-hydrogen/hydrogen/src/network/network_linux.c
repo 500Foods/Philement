@@ -4,7 +4,7 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 #include <time.h>
 
 // Local includes

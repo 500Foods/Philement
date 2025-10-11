@@ -3,11 +3,11 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "landing.h"
-#include "../oidc/oidc_service.h"
+#include <src/oidc/oidc_service.h>
 
 // External declarations
 extern AppConfig* app_config;

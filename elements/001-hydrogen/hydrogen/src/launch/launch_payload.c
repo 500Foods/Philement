@@ -11,11 +11,11 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "launch.h"
-#include "../payload/payload_cache.h"
+#include <src/payload/payload_cache.h>
  
  /**
   * Check if the payload subsystem is ready to launch

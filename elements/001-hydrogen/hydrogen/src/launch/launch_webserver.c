@@ -10,7 +10,7 @@
  * Note: Shutdown functionality has been moved to landing/landing_webserver.c
  */
  // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "launch.h"
@@ -18,7 +18,7 @@
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <sched.h>  // For sched_yield()
-#include "../webserver/web_server.h"
+#include <src/webserver/web_server.h>
 
 // External declarations
 extern ServiceThreads webserver_threads;

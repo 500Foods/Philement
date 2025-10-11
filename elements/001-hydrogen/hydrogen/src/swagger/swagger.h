@@ -18,9 +18,9 @@
 #include <microhttpd.h>
 
 // Project headers
-#include "../config/config.h"
-#include "../config/config_webserver.h"  // For WebServerConfig
-#include "../config/config_swagger.h"    // For SwaggerConfig
+#include <src/config/config.h>
+#include <src/config/config_webserver.h>  // For WebServerConfig
+#include <src/config/config_swagger.h>    // For SwaggerConfig
 
 /**
  * Initialize Swagger support

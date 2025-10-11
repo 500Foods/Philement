@@ -1,15 +1,15 @@
 // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "web_server_request.h"
 #include "web_server_core.h"
 #include "web_server_upload.h"
 #include "web_server_compression.h"
-#include "../swagger/swagger.h"
-#include "../api/api_service.h"
-#include "../api/system/config/config.h"
-#include "../api/system/prometheus/prometheus.h"
+#include <src/swagger/swagger.h>
+#include <src/api/api_service.h>
+#include <src/api/system/config/config.h>
+#include <src/api/system/prometheus/prometheus.h>
 
 enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
     // Check if client accepts Brotli compression

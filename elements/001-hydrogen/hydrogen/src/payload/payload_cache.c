@@ -2,9 +2,10 @@
  * Payload Cache Implementation
  */
 
-#include "../hydrogen.h"
-#include "../payload/payload.h"
-#include "../payload/payload_cache.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <src/payload/payload.h>
+#include <src/payload/payload_cache.h>
 
 // Forward declarations for internal functions
 // parse_tar_into_cache is now public for unit testing

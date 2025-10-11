@@ -46,9 +46,9 @@
 #include <pthread.h>
 
 // Project includes
-#include "../config/config.h"
-#include "../threads/threads.h"
-#include "../state/state_types.h"  // For SubsystemState and LaunchReadiness
+#include <src/config/config.h>
+#include <src/threads/threads.h>
+#include <src/state/state_types.h>  // For SubsystemState and LaunchReadiness
 
 // Core launch functions
 ReadinessResults handle_readiness_checks(void);

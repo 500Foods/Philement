@@ -3,11 +3,11 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "logging.h"
-#include "../registry/registry.h"
+#include <src/registry/registry.h>
 #include <stdarg.h>
 #include <time.h>
 #include <sys/time.h>

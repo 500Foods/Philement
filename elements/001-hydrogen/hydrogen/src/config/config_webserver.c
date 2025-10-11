@@ -4,7 +4,7 @@
  * Implements the configuration handlers for the web server subsystem.
  */
 // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "config_webserver.h"

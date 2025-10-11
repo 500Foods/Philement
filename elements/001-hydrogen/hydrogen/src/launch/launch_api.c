@@ -9,11 +9,11 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "launch.h"
-#include "../api/api_service.h" // For API service initialization
+#include <src/api/api_service.h> // For API service initialization
 
 // Registry ID and cached readiness state
 int api_subsystem_id = -1;

@@ -7,10 +7,10 @@
  */
 
 #include "terminal_shell.h"
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 #include "../globals.h"
-#include "../logging/logging.h"
-#include "../utils/utils.h"
+#include <src/logging/logging.h>
+#include <src/utils/utils.h>
 #include "terminal.h"
 #include "terminal_session.h"
 

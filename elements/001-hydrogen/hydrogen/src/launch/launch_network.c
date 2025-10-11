@@ -6,7 +6,7 @@
  */
 
  // Global includes
- #include "../hydrogen.h"
+ #include <src/hydrogen.h>
  #include <string.h>
  #include <arpa/inet.h>
  #include <sys/ioctl.h>
@@ -18,7 +18,7 @@
  
  // Local includes
  #include "launch.h"
- #include "../network/network.h"
+ #include <src/network/network.h>
 
 // Network subsystem shutdown flag
 volatile sig_atomic_t network_system_shutdown = 0;

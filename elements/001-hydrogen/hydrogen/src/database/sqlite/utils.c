@@ -3,7 +3,7 @@
   *
   * Implements SQLite utility functions.
   */
-#include "../../hydrogen.h"
+#include <src/hydrogen.h>
 #include "../database.h"
 #include "types.h"
 #include "utils.h"

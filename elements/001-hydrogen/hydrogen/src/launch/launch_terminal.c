@@ -10,14 +10,14 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "launch.h"
-#include "../config/config_terminal.h"       // For TerminalConfig
-#include "../terminal/terminal.h"            // For terminal functions
-#include "../webserver/web_server_core.h"   // For WebServerEndpoint and register_web_endpoint
-#include "../payload/payload_cache.h"        // For payload cache functions
+#include <src/config/config_terminal.h>       // For TerminalConfig
+#include <src/terminal/terminal.h>            // For terminal functions
+#include <src/webserver/web_server_core.h>   // For WebServerEndpoint and register_web_endpoint
+#include <src/payload/payload_cache.h>        // For payload cache functions
 
 // Registry ID for the Terminal subsystem
 int terminal_subsystem_id = -1;

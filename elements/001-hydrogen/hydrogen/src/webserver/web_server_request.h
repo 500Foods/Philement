@@ -21,7 +21,7 @@
  * This allows each subsystem to manage its own URL space while the webserver
  * acts as a router, delegating requests based on their prefixes.
  */
-#include "../api/api_service.h"
+#include <src/api/api_service.h>
 
 /*
  * System API Endpoint Handlers
