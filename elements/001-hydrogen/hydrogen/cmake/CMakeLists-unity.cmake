@@ -40,6 +40,8 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libsqlite3.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_terminal_websocket.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_migrations.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_db2_transaction.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_engine.c
 )
 
 # Print-specific mock sources (only linked to print tests)
@@ -71,7 +73,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     endif()
 
-    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, or sqlite source file to include mock headers
+    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, or migration source file to include mock headers
     string(FIND "${SOURCE_FILE}" "websocket" IS_WEBSOCKET_SOURCE)
     string(FIND "${SOURCE_FILE}" "terminal" IS_TERMINAL_SOURCE)
     string(FIND "${SOURCE_FILE}" "mdns" IS_MDNS_SOURCE)
@@ -79,6 +81,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     string(FIND "${SOURCE_FILE}" "mysql" IS_MYSQL_SOURCE)
     string(FIND "${SOURCE_FILE}" "db2" IS_DB2_SOURCE)
     string(FIND "${SOURCE_FILE}" "sqlite" IS_SQLITE_SOURCE)
+    string(FIND "${SOURCE_FILE}" "migration" IS_MIGRATION_SOURCE)
     if(IS_WEBSOCKET_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS")
@@ -100,6 +103,9 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     elseif(IS_SQLITE_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LIBSQLITE3")
+    elseif(IS_MIGRATION_SOURCE GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_DATABASE_ENGINE -DUSE_MOCK_DB2_TRANSACTION -DUSE_MOCK_SYSTEM -include ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.h -include ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_engine.h -include ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_db2_transaction.h")
     else()
         set(MOCK_INCLUDES "")
         set(MOCK_DEFINES "")
@@ -274,7 +280,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(MOCK_DEFINES "-DUSE_MOCK_LIBSQLITE3")
     elseif(IS_DATABASE_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
-        set(MOCK_DEFINES "-DUSE_MOCK_DATABASE_MIGRATIONS")
+        set(MOCK_DEFINES "-DUSE_MOCK_DATABASE_MIGRATIONS -DUSE_MOCK_DATABASE_ENGINE -DUSE_MOCK_DB2_TRANSACTION -DUSE_MOCK_SYSTEM")
     elseif(IS_PRINT_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LOGGING -Dlog_this=mock_log_this")

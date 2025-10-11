@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 // Include the header but undefine the macros to access real functions if needed
 #include "mock_libdb2.h"
@@ -68,6 +69,23 @@ static int mock_SQLAllocHandle_result = 0; // 0 = SQL_SUCCESS
 static void* mock_SQLAllocHandle_output_handle = (void*)0x12345678; // Mock handle
 static int mock_SQLDriverConnect_result = 0; // 0 = SQL_SUCCESS
 static int mock_SQLExecDirect_result = 0; // 0 = SQL_SUCCESS
+static int mock_SQLExecute_result = 0; // 0 = SQL_SUCCESS
+static int mock_SQLFetch_result = 0; // 0 = SQL_SUCCESS
+static int mock_fetch_row_count = 0; // Number of rows to return before SQL_NO_DATA
+static int mock_fetch_current_row = 0; // Current row counter
+static int mock_SQLNumResultCols_result = 0; // 0 = SQL_SUCCESS
+static int mock_SQLNumResultCols_column_count = 1;
+static int mock_SQLRowCount_result = 0; // 0 = SQL_SUCCESS
+static int mock_SQLRowCount_row_count = 1;
+static int mock_SQLDescribeCol_result = 0; // 0 = SQL_SUCCESS
+static char mock_SQLDescribeCol_column_name[256] = "test_column";
+static int mock_SQLGetData_result = 0; // 0 = SQL_SUCCESS
+static char mock_SQLGetData_data[256] = "test_data";
+static int mock_SQLGetData_data_len = 9; // strlen("test_data")
+static int mock_SQLGetDiagRec_result = 0; // 0 = SQL_SUCCESS
+static char mock_SQLGetDiagRec_sqlstate[6] = "42000";
+static long mock_SQLGetDiagRec_native_error = 12345;
+static char mock_SQLGetDiagRec_message[1024] = "Mock error message";
 static int mock_SQLFreeHandle_result = 0; // 0 = SQL_SUCCESS
 static int mock_SQLEndTran_result = 0; // 0 = SQL_SUCCESS
 
@@ -111,12 +129,21 @@ int mock_SQLExecDirect(void* statementHandle, char* statementText, int textLengt
     (void)statementHandle;
     (void)statementText;
     (void)textLength;
+    // Reset fetch counter on new query
+    mock_fetch_current_row = 0;
     return mock_SQLExecDirect_result;
 }
 
 int mock_SQLFetch(void* statementHandle) {
     (void)statementHandle;
-    return 0; // Always success
+    
+    // Return rows up to the configured count, then SQL_NO_DATA (100)
+    if (mock_fetch_row_count == 0 || mock_fetch_current_row >= mock_fetch_row_count) {
+        return 100; // SQL_NO_DATA
+    }
+    
+    mock_fetch_current_row++;
+    return mock_SQLFetch_result;
 }
 
 int mock_SQLGetData(void* statementHandle, int columnNumber, int targetType,
@@ -124,22 +151,39 @@ int mock_SQLGetData(void* statementHandle, int columnNumber, int targetType,
     (void)statementHandle;
     (void)columnNumber;
     (void)targetType;
-    (void)targetValue;
-    (void)bufferLength;
-    (void)strLenOrIndPtr;
-    return 0; // Always success
+    
+    if (mock_SQLGetData_result != 0) {
+        return mock_SQLGetData_result;
+    }
+    
+    if (targetValue && bufferLength > 0) {
+        size_t data_len = strlen(mock_SQLGetData_data);
+        size_t copy_len = (data_len < (size_t)bufferLength - 1) ? data_len : (size_t)bufferLength - 1;
+        memcpy(targetValue, mock_SQLGetData_data, copy_len);
+        ((char*)targetValue)[copy_len] = '\0';
+    }
+    
+    if (strLenOrIndPtr) {
+        *strLenOrIndPtr = mock_SQLGetData_data_len;
+    }
+    
+    return 0; // SQL_SUCCESS
 }
 
 int mock_SQLNumResultCols(void* statementHandle, int* columnCount) {
     (void)statementHandle;
-    if (columnCount) *columnCount = 1;
-    return 0; // Always success
+    if (columnCount) {
+        *columnCount = mock_SQLNumResultCols_column_count;
+    }
+    return mock_SQLNumResultCols_result;
 }
 
 int mock_SQLRowCount(void* statementHandle, int* rowCount) {
     (void)statementHandle;
-    if (rowCount) *rowCount = 1;
-    return 0; // Always success
+    if (rowCount) {
+        *rowCount = mock_SQLRowCount_row_count;
+    }
+    return mock_SQLRowCount_result;
 }
 
 int mock_SQLFreeHandle(int handleType, void* handle) {
@@ -169,7 +213,9 @@ int mock_SQLPrepare(void* statementHandle, char* statementText, int textLength) 
 
 int mock_SQLExecute(void* statementHandle) {
     (void)statementHandle;
-    return 0; // Always success
+    // Reset fetch counter on new execution
+    mock_fetch_current_row = 0;
+    return mock_SQLExecute_result;
 }
 
 int mock_SQLFreeStmt(void* statementHandle, int option) {
@@ -183,14 +229,26 @@ int mock_SQLDescribeCol(void* statementHandle, int columnNumber, unsigned char* 
                        short* decimalDigits, short* nullable) {
     (void)statementHandle;
     (void)columnNumber;
-    (void)columnName;
-    (void)bufferLength;
-    (void)nameLength;
     (void)dataType;
     (void)columnSize;
     (void)decimalDigits;
     (void)nullable;
-    return 0; // Always success
+    
+    if (mock_SQLDescribeCol_result != 0) {
+        return mock_SQLDescribeCol_result;
+    }
+    
+    if (columnName && bufferLength > 0) {
+        size_t len = (size_t)(bufferLength - 1);
+        strncpy((char*)columnName, mock_SQLDescribeCol_column_name, len);
+        ((char*)columnName)[len] = '\0';
+    }
+    
+    if (nameLength) {
+        *nameLength = (short)strlen(mock_SQLDescribeCol_column_name);
+    }
+    
+    return 0; // SQL_SUCCESS
 }
 
 int mock_SQLGetDiagRec(short handleType, void* handle, short recNumber, unsigned char* sqlState,
@@ -198,12 +256,31 @@ int mock_SQLGetDiagRec(short handleType, void* handle, short recNumber, unsigned
     (void)handleType;
     (void)handle;
     (void)recNumber;
-    (void)sqlState;
-    (void)nativeError;
-    (void)messageText;
-    (void)bufferLength;
-    (void)textLength;
-    return 0; // Always success
+    
+    if (mock_SQLGetDiagRec_result != 0) {
+        return mock_SQLGetDiagRec_result;
+    }
+    
+    if (sqlState) {
+        strncpy((char*)sqlState, mock_SQLGetDiagRec_sqlstate, 5);
+        ((char*)sqlState)[5] = '\0';
+    }
+    
+    if (nativeError) {
+        *nativeError = mock_SQLGetDiagRec_native_error;
+    }
+    
+    if (messageText && bufferLength > 0) {
+        size_t len = (size_t)(bufferLength - 1);
+        strncpy((char*)messageText, mock_SQLGetDiagRec_message, len);
+        ((char*)messageText)[len] = '\0';
+    }
+    
+    if (textLength) {
+        *textLength = (short)strlen(mock_SQLGetDiagRec_message);
+    }
+    
+    return 0; // SQL_SUCCESS
 }
 
 // Mock control functions
@@ -227,6 +304,68 @@ void mock_libdb2_set_SQLFreeHandle_result(int result) {
     mock_SQLFreeHandle_result = result;
 }
 
+void mock_libdb2_set_SQLExecute_result(int result) {
+    mock_SQLExecute_result = result;
+}
+
+void mock_libdb2_set_SQLFetch_result(int result) {
+    mock_SQLFetch_result = result;
+}
+
+void mock_libdb2_set_fetch_row_count(int count) {
+    mock_fetch_row_count = count;
+    mock_fetch_current_row = 0;
+}
+
+void mock_libdb2_set_SQLNumResultCols_result(int result, int column_count) {
+    mock_SQLNumResultCols_result = result;
+    mock_SQLNumResultCols_column_count = column_count;
+}
+
+void mock_libdb2_set_SQLRowCount_result(int result, int row_count) {
+    mock_SQLRowCount_result = result;
+    mock_SQLRowCount_row_count = row_count;
+}
+
+void mock_libdb2_set_SQLDescribeCol_result(int result) {
+    mock_SQLDescribeCol_result = result;
+}
+
+void mock_libdb2_set_SQLDescribeCol_column_name(const char* name) {
+    if (name) {
+        strncpy(mock_SQLDescribeCol_column_name, name, sizeof(mock_SQLDescribeCol_column_name) - 1);
+        mock_SQLDescribeCol_column_name[sizeof(mock_SQLDescribeCol_column_name) - 1] = '\0';
+    }
+}
+
+void mock_libdb2_set_SQLGetData_result(int result) {
+    mock_SQLGetData_result = result;
+}
+
+void mock_libdb2_set_SQLGetData_data(const char* data, int data_len) {
+    if (data) {
+        strncpy(mock_SQLGetData_data, data, sizeof(mock_SQLGetData_data) - 1);
+        mock_SQLGetData_data[sizeof(mock_SQLGetData_data) - 1] = '\0';
+        mock_SQLGetData_data_len = data_len;
+    }
+}
+
+void mock_libdb2_set_SQLGetDiagRec_result(int result) {
+    mock_SQLGetDiagRec_result = result;
+}
+
+void mock_libdb2_set_SQLGetDiagRec_error(const char* sqlstate, long native_error, const char* message) {
+    if (sqlstate) {
+        strncpy(mock_SQLGetDiagRec_sqlstate, sqlstate, 5);
+        mock_SQLGetDiagRec_sqlstate[5] = '\0';
+    }
+    mock_SQLGetDiagRec_native_error = native_error;
+    if (message) {
+        strncpy(mock_SQLGetDiagRec_message, message, sizeof(mock_SQLGetDiagRec_message) - 1);
+        mock_SQLGetDiagRec_message[sizeof(mock_SQLGetDiagRec_message) - 1] = '\0';
+    }
+}
+
 void mock_libdb2_set_SQLEndTran_result(int result) {
     mock_SQLEndTran_result = result;
 }
@@ -236,6 +375,23 @@ void mock_libdb2_reset_all(void) {
     mock_SQLAllocHandle_output_handle = (void*)0x12345678;
     mock_SQLDriverConnect_result = 0;
     mock_SQLExecDirect_result = 0;
+    mock_SQLExecute_result = 0;
+    mock_SQLFetch_result = 0;
+    mock_fetch_row_count = 0;
+    mock_fetch_current_row = 0;
+    mock_SQLNumResultCols_result = 0;
+    mock_SQLNumResultCols_column_count = 1;
+    mock_SQLRowCount_result = 0;
+    mock_SQLRowCount_row_count = 1;
+    mock_SQLDescribeCol_result = 0;
+    strncpy(mock_SQLDescribeCol_column_name, "test_column", sizeof(mock_SQLDescribeCol_column_name) - 1);
+    mock_SQLGetData_result = 0;
+    strncpy(mock_SQLGetData_data, "test_data", sizeof(mock_SQLGetData_data) - 1);
+    mock_SQLGetData_data_len = 9;
+    mock_SQLGetDiagRec_result = 0;
+    memcpy(mock_SQLGetDiagRec_sqlstate, "42000\0", 6);
+    mock_SQLGetDiagRec_native_error = 12345;
+    strncpy(mock_SQLGetDiagRec_message, "Mock error message", sizeof(mock_SQLGetDiagRec_message) - 1);
     mock_SQLFreeHandle_result = 0;
     mock_SQLEndTran_result = 0;
 }
