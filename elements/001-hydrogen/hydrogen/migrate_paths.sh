@@ -57,54 +57,55 @@ migrate_file() {
     local file="$1"
 
     # Skip if file doesn't exist
-    if [[ ! -f "$file" ]]; then
-        log_warn "File not found: $file"
+    if [[ ! -f "${file}" ]]; then
+        log_warn "File not found: ${file}"
         return 1
     fi
 
     # Skip if not a C/C++ file
-    if [[ ! "$file" =~ \.(c|h|cpp|hpp)$ ]]; then
-        log_warn "Skipping non-C/C++ file: $file"
+    if [[ ! "${file}" =~ \.(c|h|cpp|hpp)$ ]]; then
+        log_warn "Skipping non-C/C++ file: ${file}"
         return 0
     fi
 
-    log_info "Processing: $file"
+    log_info "Processing: ${file}"
 
     # Check if file has any includes that need migration
-    if ! grep -q '#include.*["<]' "$file"; then
-        log_info "No includes found in: $file"
+    if ! grep -q '#include.*["<]' "${file}"; then
+        log_info "No includes found in: ${file}"
         return 0
     fi
 
     # Create backup
-    local backup="$file.backup.$(date +%Y%m%d_%H%M%S)"
-    cp "$file" "$backup"
-    log_info "Created backup: $backup"
+    local backup
+    backup="${file}.backup.$(date +%Y%m%d_%H%M%S)"
+    cp "${file}" "${backup}"
+    log_info "Created backup: ${backup}"
 
     # Apply migrations using sed - simple, focused patterns
 
     # 1. Special case: #include "unity.h" -> #include <unity.h>
-    sed -i 's|#include "unity\.h"|#include <unity.h>|g' "$file"
+    sed -i 's|#include "unity\.h"|#include <unity.h>|g' "${file}"
 
     # 2. Migrate relative hydrogen.h includes
-    sed -i 's|#include "\([^"]*hydrogen\.h\)"|#include <src/hydrogen.h>|g' "$file"
+    sed -i 's|#include "\([^"]*hydrogen\.h\)"|#include <src/hydrogen.h>|g' "${file}"
 
     # 3. Migrate relative src/ includes
-    sed -i 's|#include "\([^"]*src/\([^"]*\)\)"|#include <src/\2>|g' "$file"
+    sed -i 's|#include "\([^"]*src/\([^"]*\)\)"|#include <src/\2>|g' "${file}"
 
     # 4. Migrate relative tests/unity/ includes
-    sed -i 's|#include "\([^"]*tests/unity/\([^"]*\)\)"|#include <unity/\2>|g' "$file"
+    sed -i 's|#include "\([^"]*tests/unity/\([^"]*\)\)"|#include <unity/\2>|g' "${file}"
 
     # 5. Migrate relative project includes (no ../ prefix)
-    sed -i 's|#include "\([a-zA-Z_][a-zA-Z0-9_]*\)/\([a-zA-Z_][a-zA-Z0-9_]*\.h\)"|#include <src/\1/\2>|g' "$file"
+    sed -i 's|#include "\([a-zA-Z_][a-zA-Z0-9_]*\)/\([a-zA-Z_][a-zA-Z0-9_]*\.h\)"|#include <src/\1/\2>|g' "${file}"
 
     # 5. Fix cmake-style includes missing src/ prefix (terminal)
-    sed -i 's|#include <terminal/|#include <src/terminal/|g' "$file"
+    sed -i 's|#include <terminal/|#include <src/terminal/|g' "${file}"
 
     # 6. Fix relative includes (general pattern)
-    sed -i 's|#include "\.\./\([a-zA-Z_][a-zA-Z0-9_]*\)/\([^"]*\)"|#include <src/\1/\2>|g' "$file"
+    sed -i 's|#include "\.\./\([a-zA-Z_][a-zA-Z0-9_]*\)/\([^"]*\)"|#include <src/\1/\2>|g' "${file}"
 
-    log_info "Successfully migrated includes in: $file"
+    log_info "Successfully migrated includes in: ${file}"
     return 0
 }
 
@@ -115,24 +116,24 @@ process_directory() {
     local error_count=0
 
     # Skip if directory doesn't exist
-    if [[ ! -d "$dir" ]]; then
-        log_error "Directory not found: $dir"
+    if [[ ! -d "${dir}" ]]; then
+        log_error "Directory not found: ${dir}"
         return 1
     fi
 
-    log_info "Processing directory: $dir"
+    log_info "Processing directory: ${dir}"
 
     # Find all C/C++ files and process them
     while IFS= read -r -d '' file; do
-        if migrate_file "$file"; then
-            ((processed_count++))
+        if migrate_file "${file}"; then
+            processed_count=$(( processed_count + 1 ))
         else
-            ((error_count++))
+            error_count=$(( error_count + 1 ))
         fi
-    done < <(find "$dir" -type f \( -name "*.c" -o -name "*.h" -o -name "*.cpp" -o -name "*.hpp" \) -print0 2>/dev/null)
+    done < <(find "${dir}" -type f \( -name "*.c" -o -name "*.h" -o -name "*.cpp" -o -name "*.hpp" \) -print0 2>/dev/null || true)
 
-    log_info "Directory processing complete. Processed: $processed_count files, Errors: $error_count"
-    return $error_count
+    log_info "Directory processing complete. Processed: ${processed_count} files, Errors: ${error_count}"
+    return "${error_count}"
 }
 
 # Main script logic
@@ -145,12 +146,12 @@ main() {
     local target="$1"
 
     # Check if it's a file or directory
-    if [[ -f "$target" ]]; then
-        migrate_file "$target"
-    elif [[ -d "$target" ]]; then
-        process_directory "$target"
+    if [[ -f "${target}" ]]; then
+        migrate_file "${target}"
+    elif [[ -d "${target}" ]]; then
+        process_directory "${target}"
     else
-        log_error "Target does not exist: $target"
+        log_error "Target does not exist: ${target}"
         print_usage
     fi
 }

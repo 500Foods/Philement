@@ -37,3 +37,4 @@ define=_GNU_SOURCE=1
 # Additional options
 option=--inline-suppr
 option=--quiet
+option=-I.
