@@ -5,8 +5,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Test function prototypes
 void test_get_executable_size_valid_executable(void);

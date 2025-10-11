@@ -11,11 +11,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the swagger module
-#include "../../../../src/swagger/swagger.h"
+#include <src/swagger/swagger.h>
 
 // Forward declaration for the function being tested
 bool is_swagger_request(const char *url, const SwaggerConfig *config);

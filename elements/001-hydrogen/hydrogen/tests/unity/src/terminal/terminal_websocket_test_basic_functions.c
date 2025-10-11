@@ -4,12 +4,12 @@
  * Focuses on functions that can be called with minimal setup dependencies
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the terminal module being tested
-#include "../../../../src/config/config_terminal.h"
-#include "../../../../src/terminal/terminal_websocket.h"
+#include <src/config/config_terminal.h>
+#include <src/terminal/terminal_websocket.h>
 
 // Include basic dependencies
 #include <string.h>

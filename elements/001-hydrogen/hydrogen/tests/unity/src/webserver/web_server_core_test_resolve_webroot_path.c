@@ -4,14 +4,14 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Enable mocks BEFORE including source headers
-#include "../../../../tests/unity/mocks/mock_logging.h"
+#include <unity/mocks/mock_logging.h>
 
 // Include source headers (functions will be mocked)
-#include "../../../../src/webserver/web_server_core.h"
+#include <src/webserver/web_server_core.h>
 
 // Note: Global state variables are defined in the source file
 

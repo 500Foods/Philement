@@ -5,11 +5,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
-#include "../../../../../../src/api/system/version/version.h"
+#include <src/api/system/version/version.h>
 
 // Forward declaration for the function being tested
 enum MHD_Result handle_version_request(struct MHD_Connection *connection);

@@ -4,8 +4,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Forward declaration of the function we want to test
 bool handle_launch_plan(const ReadinessResults* results);

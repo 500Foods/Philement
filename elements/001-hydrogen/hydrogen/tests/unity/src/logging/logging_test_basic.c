@@ -5,11 +5,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
-#include "../../../../src/logging/logging.h"
+#include <src/logging/logging.h>
 
 // Forward declarations for functions being tested
 char* log_get_messages(const char* subsystem);

@@ -5,8 +5,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 void test_payload_data_structure_initialization(void);
 void test_payload_data_structure_assignment(void);

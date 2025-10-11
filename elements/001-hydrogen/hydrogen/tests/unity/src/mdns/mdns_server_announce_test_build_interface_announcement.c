@@ -6,12 +6,12 @@
  * <source>_test_<function>.c where source is mdns_server_announce and function is build_interface_announcement
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_keys.h"
-#include "../../../../src/mdns/mdns_server.h"
+#include <src/mdns/mdns_keys.h>
+#include <src/mdns/mdns_server.h>
 
 // Test function prototypes
 void test_mdns_server_build_interface_announcement_null_interface(void);

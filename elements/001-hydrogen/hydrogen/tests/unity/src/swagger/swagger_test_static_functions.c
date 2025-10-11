@@ -5,11 +5,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
-#include "../../../../src/swagger/swagger.h"
+#include <src/swagger/swagger.h>
 
 // Forward declarations for functions being tested
 bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size);

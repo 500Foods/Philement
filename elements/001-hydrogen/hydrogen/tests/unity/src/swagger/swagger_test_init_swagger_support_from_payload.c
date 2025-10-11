@@ -5,12 +5,12 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
-#include "../../../../src/swagger/swagger.h"
-#include "../../../../src/payload/payload.h"
+#include <src/swagger/swagger.h>
+#include <src/payload/payload.h>
 
 // Structure to hold in-memory Swagger files (copied from swagger.c)
 typedef struct {

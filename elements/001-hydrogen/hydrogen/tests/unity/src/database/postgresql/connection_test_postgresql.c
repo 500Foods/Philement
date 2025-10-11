@@ -3,15 +3,15 @@
  * This file contains unit tests for PostgreSQL connection functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Enable mocks
-#include "../../../../../tests/unity/mocks/mock_libpq.h"
+#include <unity/mocks/mock_libpq.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/postgresql/connection.h"
+#include <src/database/database.h>
+#include <src/database/postgresql/connection.h>
 
 // Forward declarations for functions being tested
 bool postgresql_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);

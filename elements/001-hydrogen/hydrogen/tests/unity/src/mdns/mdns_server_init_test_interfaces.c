@@ -3,12 +3,12 @@
  * Tests mdns_server_allocate_interfaces and mdns_server_init_interfaces functions
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_server.h"
-#include "../../../../src/network/network.h"
+#include <src/mdns/mdns_server.h>
+#include <src/network/network.h>
 
 // Forward declarations for helper functions being tested
 int mdns_server_allocate_interfaces(mdns_server_t *server, const network_info_t *net_info_instance);

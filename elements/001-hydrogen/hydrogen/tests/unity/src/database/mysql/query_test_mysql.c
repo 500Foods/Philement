@@ -3,12 +3,12 @@
  * This file contains unit tests for MySQL query functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/mysql/query.h"
+#include <src/database/database.h>
+#include <src/database/mysql/query.h>
 
 // Forward declarations for functions being tested
 bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result);

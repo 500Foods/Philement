@@ -5,15 +5,15 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the websocket message module
-#include "../../../../src/websocket/websocket_server_internal.h"
-#include "../../../../src/websocket/websocket_server.h"
+#include <src/websocket/websocket_server_internal.h>
+#include <src/websocket/websocket_server.h>
 
 // Mock libwebsockets for testing
-#include "../../../../tests/unity/mocks/mock_libwebsockets.h"
+#include <unity/mocks/mock_libwebsockets.h>
 
 // External reference to WebSocket context
 extern WebSocketServerContext *ws_context;

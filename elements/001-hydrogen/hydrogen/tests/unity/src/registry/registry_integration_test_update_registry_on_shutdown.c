@@ -5,12 +5,12 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/registry/registry_integration.h"
-#include "../../../../src/threads/threads.h"
+#include <src/registry/registry_integration.h>
+#include <src/threads/threads.h>
 
 // Forward declarations for functions being tested
 void update_registry_on_shutdown(void);

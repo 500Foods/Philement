@@ -4,16 +4,16 @@
  * Focuses on improving coverage for pty_is_running and pty_terminate_shell
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the terminal shell module
-#include "../../../../src/terminal/terminal_shell.h"
-#include "../../../../src/terminal/terminal_session.h"
+#include <src/terminal/terminal_shell.h>
+#include <src/terminal/terminal_session.h>
 
 // Include mocks for external dependencies
-#include "../../../../tests/unity/mocks/mock_libwebsockets.h"
-#include "../../../../tests/unity/mocks/mock_libmicrohttpd.h"
+#include <unity/mocks/mock_libwebsockets.h>
+#include <unity/mocks/mock_libmicrohttpd.h>
 
 // Test fixtures
 static PtyShell *test_shell = NULL;

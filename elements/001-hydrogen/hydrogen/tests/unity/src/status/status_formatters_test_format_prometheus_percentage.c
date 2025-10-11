@@ -6,13 +6,13 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 #include <string.h>
 
 // Include status_formatters header for the function declaration
-#include "../../../../src/status/status_formatters.h"
+#include <src/status/status_formatters.h>
 
 // Function prototypes for test functions
 void test_format_prometheus_percentage_basic_functionality(void);

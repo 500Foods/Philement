@@ -4,11 +4,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/api/system/upload/upload.h"
+#include <src/api/system/upload/upload.h>
 
 void setUp(void) {
     // No setup needed for this pure function

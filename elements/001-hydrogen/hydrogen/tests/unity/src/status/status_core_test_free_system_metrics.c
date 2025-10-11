@@ -6,11 +6,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include the status_core header for SystemMetrics structure
-#include "../../../../src/status/status_core.h"
+#include <src/status/status_core.h>
 
 // Function prototypes for test functions
 void test_free_system_metrics_null_pointer(void);

@@ -3,11 +3,11 @@
  * Tests interface configuration functions
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/network/network.h"
+#include <src/network/network.h>
 
 // Test function prototypes
 void test_is_interface_configured_null_interface(void);

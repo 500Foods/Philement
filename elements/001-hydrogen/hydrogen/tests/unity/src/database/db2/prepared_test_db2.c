@@ -3,14 +3,14 @@
  * This file contains unit tests for DB2 prepared statement functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/db2/prepared.h"
-#include "../../../../../src/database/db2/connection.h"
-#include "../../../../../src/database/db2/types.h"
+#include <src/database/database.h>
+#include <src/database/db2/prepared.h>
+#include <src/database/db2/connection.h>
+#include <src/database/db2/types.h>
 
 // Forward declarations for functions being tested
 bool db2_add_prepared_statement(PreparedStatementCache* cache, const char* name);

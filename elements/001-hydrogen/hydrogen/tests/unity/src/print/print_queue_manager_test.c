@@ -18,14 +18,14 @@
 #include "../../mocks/mock_logging.h"
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 #include <stdlib.h>
 #include <string.h>
 #include <jansson.h>  // For JSON validation
 
 // Include necessary headers for the print queue manager module
-#include "../../../../src/print/print_queue_manager.h"
+#include <src/print/print_queue_manager.h>
 
 void setUp(void) {
     // Reset mock logging state before each test

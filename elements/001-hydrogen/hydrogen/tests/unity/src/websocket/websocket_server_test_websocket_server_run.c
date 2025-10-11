@@ -4,13 +4,13 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 #include <jansson.h>
 
 // Include necessary headers for the websocket module
-#include "../../../../src/websocket/websocket_server.h"
-#include "../../../../src/websocket/websocket_server_internal.h"
+#include <src/websocket/websocket_server.h>
+#include <src/websocket/websocket_server_internal.h>
 
 // External variables that need to be accessible for testing
 extern WebSocketServerContext *ws_context;

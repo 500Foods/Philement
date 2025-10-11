@@ -6,11 +6,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include state_types.h for LaunchReadiness structure
-#include "../../../../src/state/state_types.h"
+#include <src/state/state_types.h>
 
 // Function prototypes for test functions
 void test_launch_readiness_structure_initialization(void);

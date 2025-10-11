@@ -4,12 +4,12 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/api/api_utils.h"
-#include "../../../../tests/unity/mocks/mock_libmicrohttpd.h"
+#include <src/api/api_utils.h>
+#include <unity/mocks/mock_libmicrohttpd.h>
 
 // Include system headers for sockaddr structures
 #include <netinet/in.h>

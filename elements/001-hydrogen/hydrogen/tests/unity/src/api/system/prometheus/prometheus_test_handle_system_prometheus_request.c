@@ -9,15 +9,15 @@
 #define UNITY_TEST_MODE
 
 // Include mock headers FIRST to override functions before they are declared
-#include "../../../../../../tests/unity/mocks/mock_info.h"
+#include <unity/mocks/mock_info.h>
 
 // Standard project header plus Unity Framework header
-#include "../../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../../src/api/system/prometheus/prometheus.h"
-#include "../../../../../../src/config/config.h"
+#include <src/api/system/prometheus/prometheus.h>
+#include <src/config/config.h>
 
 // Mock function: Validate Prometheus format output
 static int validate_prometheus_format(const char *output) {

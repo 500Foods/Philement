@@ -10,8 +10,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Forward declarations for the functions being tested
 void init_service_threads(ServiceThreads *threads, const char* subsystem_name);

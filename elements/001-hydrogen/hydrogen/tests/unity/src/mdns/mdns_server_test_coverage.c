@@ -8,12 +8,12 @@
  * - close_mdns_server_interfaces: improve from 60% to 100%
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_keys.h"
-#include "../../../../src/mdns/mdns_server.h"
+#include <src/mdns/mdns_keys.h>
+#include <src/mdns/mdns_server.h>
 
 // Test function prototypes
 void test_create_multicast_socket_invalid_interface(void);

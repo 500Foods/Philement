@@ -3,16 +3,16 @@
  * This file contains unit tests for MySQL transaction functions
  */
 
-#include "../../../../../tests/unity/mocks/mock_libmysqlclient.h"
+#include <unity/mocks/mock_libmysqlclient.h>
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/mysql/transaction.h"
-#include "../../../../../src/database/mysql/types.h"
-#include "../../../../../src/database/mysql/connection.h"
+#include <src/database/database.h>
+#include <src/database/mysql/transaction.h>
+#include <src/database/mysql/types.h>
+#include <src/database/mysql/connection.h>
 
 // Forward declarations for functions being tested
 bool mysql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel level, Transaction** transaction);

@@ -11,7 +11,7 @@
 #include <jansson.h>
 
 // Include the header that defines WebSocketMetrics
-#include "../../../src/status/status_core.h"
+#include <src/status/status_core.h>
 
 // Mock function declarations - always declare for test files
 // These will override the real ones when USE_MOCK_STATUS is defined

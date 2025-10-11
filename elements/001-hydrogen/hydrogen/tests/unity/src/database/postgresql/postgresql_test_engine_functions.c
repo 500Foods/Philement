@@ -8,11 +8,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the PostgreSQL engine
-#include "../../../../../src/database/postgresql/interface.h"
+#include <src/database/postgresql/interface.h>
 
 // Forward declarations for engine functions
 const char* postgresql_engine_get_version(void);

@@ -5,7 +5,7 @@
  */
 
 #include <src/hydrogen.h>
-#include "unity.h"
+#include <unity.h>
 
 #include <src/database/database_bootstrap.h>
 #include <src/database/dbqueue/dbqueue.h>

@@ -7,8 +7,8 @@
  */
 
 #include "mock_network.h"
-#include "../../../src/network/network.h"
-#include "../../../src/mdns/mdns_keys.h"
+#include <src/network/network.h>
+#include <src/mdns/mdns_keys.h>
 #include <stdlib.h>
 #include <string.h>
 

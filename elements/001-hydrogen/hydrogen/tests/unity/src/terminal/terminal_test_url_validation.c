@@ -4,11 +4,11 @@
  * Focuses on functions that don't require complex subsystem initialization
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the terminal module
-#include "../../../../src/terminal/terminal.h"
+#include <src/terminal/terminal.h>
 
 // Test fixtures
 static TerminalConfig test_config;
