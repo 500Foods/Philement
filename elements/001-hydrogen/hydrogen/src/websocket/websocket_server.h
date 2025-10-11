@@ -5,7 +5,7 @@
 #include <jansson.h>
 
 // Include terminal session for function declarations
-#include "../terminal/terminal_session.h"
+#include <src/terminal/terminal_session.h>
 
 // Include internal definitions for public API functions that use internal types
 #include "websocket_server_internal.h"

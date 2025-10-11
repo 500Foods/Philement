@@ -12,7 +12,7 @@
 #include <stdbool.h>
 
 // Project includes
-#include "../config/config.h"
+#include <src/config/config.h>
 #include "registry.h"
 
 /**

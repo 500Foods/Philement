@@ -10,7 +10,7 @@
 #define PAYLOAD_H
 
 #include "../globals.h"
-#include "../config/config.h"
+#include <src/config/config.h>
 
 #include <stdbool.h>
 #include <stdint.h>

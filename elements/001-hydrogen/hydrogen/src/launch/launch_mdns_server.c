@@ -11,12 +11,12 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "launch.h"
-#include "../state/state_types.h"
-#include "../mdns/mdns_server.h"
+#include <src/state/state_types.h>
+#include <src/mdns/mdns_server.h>
 
 // External declarations
 extern ServiceThreads mdns_server_threads;

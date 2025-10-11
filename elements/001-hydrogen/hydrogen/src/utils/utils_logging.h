@@ -17,7 +17,7 @@
 #include <stddef.h>
 
 // Include configuration for label widths
-#include "../config/config.h"
+#include <src/config/config.h>
 
 // ID generation function
 void generate_id(char *buf, size_t len);

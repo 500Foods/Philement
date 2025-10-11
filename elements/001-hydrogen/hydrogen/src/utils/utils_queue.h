@@ -13,7 +13,7 @@
 
 #include <stddef.h>
 #include "../globals.h"
-#include "../config/config.h"  // For AppConfig and queue constants
+#include <src/config/config.h>  // For AppConfig and queue constants
 
 // Memory metrics structure
 typedef struct {

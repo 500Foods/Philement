@@ -6,11 +6,11 @@
  */
 
  // Global includes
- #include "../hydrogen.h"
+ #include <src/hydrogen.h>
  
  // Local includes
  #include "launch.h"
- #include "../oidc/oidc_service.h"
+ #include <src/oidc/oidc_service.h>
 
 // Registry ID and cached readiness state
 static int oidc_subsystem_id = -1;

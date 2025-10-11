@@ -3,7 +3,7 @@
  */
 
  // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "config_mail_relay.h"

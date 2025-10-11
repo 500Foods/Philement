@@ -283,7 +283,7 @@ void test_registry_growth(void) {
     }
 
     // Capacity should have grown
-    TEST_ASSERT_TRUE(subsystem_registry.capacity > initial_capacity);
+    TEST_ASSERT_TRUE(subsystem_registry.capacity > initial_capacity); // cppcheck-suppress knownConditionTrueFalse
     TEST_ASSERT_EQUAL(10, subsystem_registry.count);
     TEST_ASSERT_NOT_NULL(subsystem_registry.subsystems);
 }

@@ -8,7 +8,7 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 #include "handlers.h"
 
 // System headers - must come first after feature test macros

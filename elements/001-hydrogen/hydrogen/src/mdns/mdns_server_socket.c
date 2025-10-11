@@ -5,7 +5,7 @@
  * mDNS server implementation. This includes multicast socket setup for IPv4/IPv6.
  */
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>

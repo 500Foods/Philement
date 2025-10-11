@@ -13,7 +13,7 @@
 
 #include "status_core.h"
 #include <sys/types.h>
-#include "../threads/threads.h"
+#include <src/threads/threads.h>
 
 // Helper functions
 char* safe_truncate(char* dest, size_t dest_size, const char* src);

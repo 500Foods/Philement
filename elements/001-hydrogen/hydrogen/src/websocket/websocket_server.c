@@ -3,7 +3,7 @@
  * 
  */
 
- #include "../hydrogen.h"
+ #include <src/hydrogen.h>
  
 /* System headers */
 #include <time.h>
@@ -28,10 +28,10 @@
 // Project headers
 #include "websocket_server.h"
 #include "websocket_server_internal.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
-#include "../utils/utils.h"
-#include "../threads/threads.h"
+#include <src/logging/logging.h>
+#include <src/config/config.h>
+#include <src/utils/utils.h>
+#include <src/threads/threads.h>
 
 /* Function prototypes */
 int callback_http(struct lws *wsi, enum lws_callback_reasons reason,

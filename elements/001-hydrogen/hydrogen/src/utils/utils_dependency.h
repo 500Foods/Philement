@@ -14,8 +14,8 @@
 
 #include <stdbool.h>
 #include <dlfcn.h>
-#include "../config/config_forward.h"  // For AppConfig type
-#include "../config/config.h"          // For config functions
+#include <src/config/config_forward.h>  // For AppConfig type
+#include <src/config/config.h>          // For config functions
 
 // Status values for library dependencies
 typedef enum {

@@ -5,7 +5,7 @@
  * implementation. This includes server setup and resource allocation.
  */
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>

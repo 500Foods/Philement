@@ -10,14 +10,14 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "launch.h"
-#include "../config/config_swagger.h"
-#include "../swagger/swagger.h"
-#include "../webserver/web_server_core.h"  // For WebServerEndpoint
-#include "../payload/payload_cache.h"      // For payload cache functions
+#include <src/config/config_swagger.h>
+#include <src/swagger/swagger.h>
+#include <src/webserver/web_server_core.h>  // For WebServerEndpoint
+#include <src/payload/payload_cache.h>      // For payload cache functions
 
 // Registry ID for the Swagger subsystem
 int swagger_subsystem_id = -1;

@@ -9,7 +9,7 @@
 #define DATABASE_QUEUE_H
 
 // Project includes
-#include "../../hydrogen.h"
+#include <src/hydrogen.h>
 #include "../../queue/queue.h"
 #include "../database_types.h"
 

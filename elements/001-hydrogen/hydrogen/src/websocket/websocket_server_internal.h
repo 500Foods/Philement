@@ -25,9 +25,9 @@
 #endif
 
 // Project headers
-#include "../threads/threads.h"  // Thread management subsystem
-#include "../terminal/terminal_session.h"  // Terminal session definitions
-#include "../terminal/terminal_websocket.h"  // Terminal WebSocket definitions
+#include <src/threads/threads.h>  // Thread management subsystem
+#include <src/terminal/terminal_session.h>  // Terminal session definitions
+#include <src/terminal/terminal_websocket.h>  // Terminal WebSocket definitions
 
 // WebSocket server context structure
 typedef struct {

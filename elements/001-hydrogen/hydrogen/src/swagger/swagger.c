@@ -1,10 +1,10 @@
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "swagger.h"
-#include "../webserver/web_server_core.h"
-#include "../webserver/web_server_compression.h"
+#include <src/webserver/web_server_core.h>
+#include <src/webserver/web_server_compression.h>
 
 // Structure to hold in-memory Swagger files
 typedef struct {

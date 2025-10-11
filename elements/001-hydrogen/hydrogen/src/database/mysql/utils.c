@@ -3,7 +3,7 @@
  *
  * Implements MySQL utility functions.
  */
-#include "../../hydrogen.h"
+#include <src/hydrogen.h>
 #include "../database.h"
 #include "types.h"
 #include "connection.h"

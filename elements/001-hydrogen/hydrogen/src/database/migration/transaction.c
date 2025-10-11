@@ -15,9 +15,9 @@
 #include "migration.h"
 
 // DB2 includes for transaction control
-#include "../db2/types.h"
-#include "../db2/connection.h"
-#include "../db2/transaction.h"
+#include <src/database/db2/types.h>
+#include <src/database/db2/connection.h>
+#include <src/database/db2/transaction.h>
 
 /*
  * Parse multi-statement SQL into individual statements

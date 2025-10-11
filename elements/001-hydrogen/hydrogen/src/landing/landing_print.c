@@ -12,17 +12,17 @@
  */
 
 // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "landing.h"
 
-#include "../landing/landing.h"
-#include "../utils/utils_logging.h"
-#include "../threads/threads.h"
-#include "../config/config.h"
-#include "../registry/registry_integration.h"
-#include "../state/state_types.h"
+#include <src/landing/landing.h>
+#include <src/utils/utils_logging.h>
+#include <src/threads/threads.h>
+#include <src/config/config.h>
+#include <src/registry/registry_integration.h>
+#include <src/state/state_types.h>
 
 // External declarations
 extern ServiceThreads print_threads;

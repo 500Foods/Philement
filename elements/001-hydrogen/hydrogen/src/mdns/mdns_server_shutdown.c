@@ -5,7 +5,7 @@
  * implementation. This includes cleanup and goodbye packet sending.
  */
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
