@@ -7,6 +7,20 @@
 
 // Project includes
 #include <src/hydrogen.h>
+
+// Unity test mode - enable mocks BEFORE including real headers
+#ifdef UNITY_TEST_MODE
+#ifdef USE_MOCK_SYSTEM
+#include <unity/mocks/mock_system.h>
+#endif
+#ifdef USE_MOCK_DATABASE_ENGINE
+#include <unity/mocks/mock_database_engine.h>
+#endif
+#ifdef USE_MOCK_DB2_TRANSACTION
+#include <unity/mocks/mock_db2_transaction.h>
+#endif
+#endif
+
 #include <src/database/database.h>
 #include <src/database/dbqueue/dbqueue.h>
 #include <src/utils/utils_hash.h>
@@ -99,12 +113,13 @@ bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** sta
 
 /*
  * Execute migration statements for DB2 with explicit transaction control
+ * Updated to use database_engine functions for consistency with other engines
  */
 bool execute_db2_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
                           const char* migration_file, const char* dqm_label) {
-    // Execute all statements within a transaction using proper DB2 transaction functions
+    // Execute all statements within a transaction using database_engine functions
     Transaction* db2_transaction = NULL;
-    if (!db2_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &db2_transaction)) {
+    if (!database_engine_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &db2_transaction)) {
         log_this(dqm_label, "Failed to begin DB2 transaction for migration %s", LOG_LEVEL_ERROR, 1, migration_file);
         return false;
     }
@@ -148,7 +163,7 @@ bool execute_db2_migration(DatabaseHandle* connection, char** statements, size_t
         free(stmt_request);
 
         if (stmt_success && stmt_result && stmt_result->success) {
-            log_this(dqm_label, "Statement %zu executed successfully (hash: %s): affected %d rows", LOG_LEVEL_TRACE, 3, j + 1, stmt_hash, stmt_result->affected_rows);
+            log_this(dqm_label, "Statement %zu executed successfully (hash: %s): affected %lld rows", LOG_LEVEL_TRACE, 3, j + 1, stmt_hash, stmt_result->affected_rows);
         } else {
             log_this(dqm_label, "Statement %zu failed (hash: %s)", LOG_LEVEL_ERROR, 2, j + 1, stmt_hash);
             transaction_success = false;
@@ -162,7 +177,7 @@ bool execute_db2_migration(DatabaseHandle* connection, char** statements, size_t
     // Commit or rollback based on success
     if (transaction_success) {
         // Commit the transaction
-        if (!db2_commit_transaction(connection, db2_transaction)) {
+        if (!database_engine_commit_transaction(connection, db2_transaction)) {
             log_this(dqm_label, "Failed to commit migration %s", LOG_LEVEL_ERROR, 1, migration_file);
             transaction_success = false;
         } else {
@@ -170,7 +185,7 @@ bool execute_db2_migration(DatabaseHandle* connection, char** statements, size_t
         }
     } else {
         // Rollback the transaction
-        if (!db2_rollback_transaction(connection, db2_transaction)) {
+        if (!database_engine_rollback_transaction(connection, db2_transaction)) {
             log_this(dqm_label, "Failed to rollback migration %s", LOG_LEVEL_ERROR, 1, migration_file);
         } else {
             log_this(dqm_label, "Migration %s rolled back due to errors", LOG_LEVEL_TRACE, 1, migration_file);
@@ -178,10 +193,7 @@ bool execute_db2_migration(DatabaseHandle* connection, char** statements, size_t
     }
 
     // Clean up transaction structure
-    if (db2_transaction) {
-        if (db2_transaction->transaction_id) free(db2_transaction->transaction_id);
-        free(db2_transaction);
-    }
+    database_engine_cleanup_transaction(db2_transaction);
 
     return transaction_success;
 }
