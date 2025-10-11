@@ -7,9 +7,10 @@
 #include "../../../../src/hydrogen.h"
 #include "unity.h"
 
-// Include necessary headers for the websocket message module
+// Include necessary headers for the websocket terminal module
 #include "../../../../src/websocket/websocket_server_internal.h"
 #include "../../../../src/websocket/websocket_server.h"
+#include "../../../../src/websocket/websocket_server_terminal.h"
 #include "../../../../src/terminal/terminal_session.h"
 
 // External references
