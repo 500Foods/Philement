@@ -191,7 +191,6 @@ void test_process_payload_data_compressed_realloc_failure(void) {
     // Load default configuration which should have the payload key
     AppConfig config;
     if (!initialize_config_defaults(&config)) {
-        free(executable_path);
         TEST_IGNORE_MESSAGE("Cannot initialize default configuration for payload testing");
     }
 
@@ -201,7 +200,6 @@ void test_process_payload_data_compressed_realloc_failure(void) {
         if (payload_key) {
             config.server.payload_key = strdup(payload_key);
         } else {
-            free(executable_path);
             TEST_IGNORE_MESSAGE("PAYLOAD_KEY environment variable not set");
         }
     }
