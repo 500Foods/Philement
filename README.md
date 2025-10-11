@@ -67,15 +67,15 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-10-11 15:15:42 UTC
+Last updated at 2025-10-11 15:54:40 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              682          25987          25907          92811
+C                              686          26197          26065          93614
 JSON                            59             18              0          53145
-Markdown                       346           9588             59          28848
+Markdown                       346           9588             59          28846
 Bourne Shell                    87           3937          62141          18126
-SVG                              9             12            150          10698
+SVG                              9             12            150          10696
 Lua                             32            387            434           7156
 C/C++ Header                   167           1776           4665           5035
 Text                            16             15              0           4919
@@ -90,7 +90,7 @@ Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 -------------------------------------------------------------------------------
-SUM:                          1450          42304          93967         224094
+SUM:                          1454          42514          94125         224893
 -------------------------------------------------------------------------------
 492 Files were skipped (duplicate, binary, or without source code):
   20251011_014552: 77
