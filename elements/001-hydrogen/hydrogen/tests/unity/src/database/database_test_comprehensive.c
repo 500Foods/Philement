@@ -3,10 +3,10 @@
  * This file contains comprehensive unit tests for all database functions to maximize coverage
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
-#include "../../../../../src/database/database.h"
+#include <src/database/database.h>
 
 // Function prototypes for test functions
 void test_database_comprehensive_all_functions(void);

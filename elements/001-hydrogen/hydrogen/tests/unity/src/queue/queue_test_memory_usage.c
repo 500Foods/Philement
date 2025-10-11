@@ -6,8 +6,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Function prototypes for test functions
 void test_queue_memory_usage_null_queue(void);

@@ -6,8 +6,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Function prototypes for test functions
 void test_get_system_status_prometheus_basic_functionality(void);

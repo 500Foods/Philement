@@ -4,11 +4,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/api/api_service.h"
+#include <src/api/api_service.h>
 
 // Function declarations
 void test_is_exact_api_version_endpoint_null_url(void);

@@ -6,12 +6,12 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Enable mocks for testing error conditions
 #define USE_MOCK_SYSTEM
-#include "../../../../tests/unity/mocks/mock_system.h"
+#include <unity/mocks/mock_system.h>
 
 // Function prototypes for test functions
 void test_queue_create_malloc_failure(void);

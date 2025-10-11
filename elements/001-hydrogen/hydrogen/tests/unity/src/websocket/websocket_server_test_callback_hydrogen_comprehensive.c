@@ -4,15 +4,15 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the websocket module
-#include "../../../../src/websocket/websocket_server.h"
-#include "../../../../src/websocket/websocket_server_internal.h"
+#include <src/websocket/websocket_server.h>
+#include <src/websocket/websocket_server_internal.h>
 
 // Include mock headers (USE_MOCK_LIBWEBSOCKETS is already defined by CMake for websocket tests)
-#include "../../../../tests/unity/mocks/mock_libwebsockets.h"
+#include <unity/mocks/mock_libwebsockets.h>
 
 // External variables that need to be accessible for testing
 extern WebSocketServerContext *ws_context;

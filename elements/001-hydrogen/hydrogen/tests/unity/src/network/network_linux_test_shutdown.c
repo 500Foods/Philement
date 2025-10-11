@@ -3,11 +3,11 @@
  * Tests the network_shutdown function for final coverage
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/network/network.h"
+#include <src/network/network.h>
 
 // Test function prototypes
 void test_network_shutdown_basic_functionality(void);

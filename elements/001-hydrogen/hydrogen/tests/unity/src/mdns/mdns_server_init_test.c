@@ -4,8 +4,8 @@
  * This function is large and covers significant portions of the codebase
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include mock headers for testing error conditions BEFORE source headers
 #ifndef USE_MOCK_NETWORK
@@ -14,13 +14,13 @@
 #ifndef USE_MOCK_SYSTEM
 #define USE_MOCK_SYSTEM
 #endif
-#include "../../../../../tests/unity/mocks/mock_network.h"
-#include "../../../../../tests/unity/mocks/mock_system.h"
+#include <unity/mocks/mock_network.h>
+#include <unity/mocks/mock_system.h>
 
 // Include necessary headers for the module being tested (AFTER mocks to ensure overrides work)
-#include "../../../../src/mdns/mdns_keys.h"
-#include "../../../../src/mdns/mdns_server.h"
-#include "../../../../src/network/network.h"
+#include <src/mdns/mdns_keys.h>
+#include <src/mdns/mdns_server.h>
+#include <src/network/network.h>
 
 // Forward declarations for helper functions being tested
 mdns_server_t *mdns_server_allocate(void);

@@ -3,14 +3,14 @@
  * This file contains unit tests for MySQL prepared statement functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/mysql/types.h"
-#include "../../../../../src/database/mysql/connection.h"
-#include "../../../../../src/database/mysql/prepared.h"
+#include <src/database/database.h>
+#include <src/database/mysql/types.h>
+#include <src/database/mysql/connection.h>
+#include <src/database/mysql/prepared.h>
 
 // Forward declarations for functions being tested
 bool mysql_add_prepared_statement(PreparedStatementCache* cache, const char* name);

@@ -4,12 +4,12 @@
  * This function handles socket creation and multicast setup
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_keys.h"
-#include "../../../../src/mdns/mdns_server.h"
+#include <src/mdns/mdns_keys.h>
+#include <src/mdns/mdns_server.h>
 
 // Test function prototypes
 void test_create_multicast_socket_ipv4_success(void);

@@ -3,10 +3,10 @@
  * This file contains unit tests for database_escape_parameter functionality
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
-#include "../../../../../src/database/database.h"
+#include <src/database/database.h>
 
 // Forward declarations for functions being tested
 char* database_escape_parameter(const char* parameter);

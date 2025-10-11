@@ -3,11 +3,11 @@
  * This file contains unit tests for unregister_web_endpoint() function
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/webserver/web_server_core.h"
+#include <src/webserver/web_server_core.h>
 
 // Standard library includes
 #include <string.h>

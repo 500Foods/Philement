@@ -3,12 +3,12 @@
  * This file contains unit tests for SQLite query functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/sqlite/query.h"
+#include <src/database/database.h>
+#include <src/database/sqlite/query.h>
 
 // Forward declarations for functions being tested
 bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result);

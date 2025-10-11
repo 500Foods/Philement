@@ -5,14 +5,14 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
-#include "../../../../../src/database/postgresql/prepared.h"
-#include "../../../../../src/database/postgresql/types.h"
-#include "../../../../../src/database/postgresql/connection.h"
-#include "../../../../../src/database/database.h"
+#include <src/database/postgresql/prepared.h>
+#include <src/database/postgresql/types.h>
+#include <src/database/postgresql/connection.h>
+#include <src/database/database.h>
 
 // Forward declaration for the function being tested
 bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);

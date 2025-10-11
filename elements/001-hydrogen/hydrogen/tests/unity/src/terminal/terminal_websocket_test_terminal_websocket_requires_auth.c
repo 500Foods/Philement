@@ -4,12 +4,12 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/terminal/terminal_websocket.h"
-#include "../../../../src/config/config_terminal.h"
+#include <src/terminal/terminal_websocket.h>
+#include <src/config/config_terminal.h>
 
 // Forward declarations for functions being tested
 bool terminal_websocket_requires_auth(const struct TerminalConfig *config);

@@ -6,8 +6,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Mock functions to test the string processing logic that exists in appconfig.c
 // These functions demonstrate how the logic could be extracted for testing

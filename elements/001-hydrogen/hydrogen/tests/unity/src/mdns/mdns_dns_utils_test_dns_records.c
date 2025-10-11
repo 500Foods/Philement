@@ -4,11 +4,11 @@
  * This will cover multiple record types for maximum coverage impact
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_keys.h"
+#include <src/mdns/mdns_keys.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

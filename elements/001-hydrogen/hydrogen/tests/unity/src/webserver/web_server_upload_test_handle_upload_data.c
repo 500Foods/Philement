@@ -3,12 +3,12 @@
  * This file contains unit tests for handle_upload_data() function
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/webserver/web_server_upload.h"
-#include "../../../../src/webserver/web_server_core.h"
+#include <src/webserver/web_server_upload.h>
+#include <src/webserver/web_server_core.h>
 
 // Standard library includes
 #include <string.h>
@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 // Enable mocks for testing
-#include "../../../../tests/unity/mocks/mock_logging.h"
+#include <unity/mocks/mock_logging.h>
 
 // Mock server config for testing
 static WebServerConfig test_web_config = {0};

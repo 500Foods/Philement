@@ -5,7 +5,7 @@
  */
 
 #include <src/hydrogen.h>
-#include "unity.h"
+#include <unity.h>
 
 // Enable mocks for testing failure scenarios
 #define USE_MOCK_SYSTEM

@@ -3,13 +3,13 @@
  * Basic tests for mDNS server functions to ensure build works after landing fix
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_keys.h"
-#include "../../../../src/mdns/mdns_server.h"
-#include "../../../../src/network/network.h"
+#include <src/mdns/mdns_keys.h>
+#include <src/mdns/mdns_server.h>
+#include <src/network/network.h>
 
 // Basic test functions that build properly
 void test_read_dns_name_simple_case(void);

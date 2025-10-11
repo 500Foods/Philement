@@ -6,7 +6,7 @@
 
 // Standard project header plus Unity Framework header
 #include <src/hydrogen.h>
-#include "unity.h"
+#include <unity.h>
 
 // Include necessary headers
 #include <src/database/database.h>

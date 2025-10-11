@@ -4,13 +4,13 @@
  * This function handles sending announcements on all interfaces
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_keys.h"
-#include "../../../../src/mdns/mdns_server.h"
-#include "../../../../src/network/network.h"
+#include <src/mdns/mdns_keys.h>
+#include <src/mdns/mdns_server.h>
+#include <src/network/network.h>
 
 // Test function prototypes
 void test_mdns_server_send_announcement_no_interfaces(void);

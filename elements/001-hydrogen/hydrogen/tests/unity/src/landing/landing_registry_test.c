@@ -4,11 +4,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/landing/landing.h"
+#include <src/landing/landing.h>
 
 // Include mock header
 #include "../../../mocks/mock_landing.h"

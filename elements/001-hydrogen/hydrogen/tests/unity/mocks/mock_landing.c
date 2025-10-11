@@ -9,10 +9,10 @@
 #include <stdbool.h>
 
 // Project includes for constants
-#include "../../../src/globals.h"
-#include "../../../src/state/state_types.h"
-#include "../../../src/threads/threads.h"
-#include "../../../src/registry/registry.h"
+#include <src/globals.h>
+#include <src/state/state_types.h>
+#include <src/threads/threads.h>
+#include <src/registry/registry.h>
 #include <pthread.h>
 #include <signal.h>
 

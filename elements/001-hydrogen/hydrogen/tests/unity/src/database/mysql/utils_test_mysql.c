@@ -3,12 +3,12 @@
  * This file contains unit tests for MySQL utility functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/mysql/utils.h"
+#include <src/database/database.h>
+#include <src/database/mysql/utils.h>
 
 // Forward declarations for functions being tested
 char* mysql_get_connection_string(const ConnectionConfig* config);

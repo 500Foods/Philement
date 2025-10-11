@@ -4,11 +4,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include the header for the function being tested
-#include "../../../../src/utils/utils_hash.h"
+#include <src/utils/utils_hash.h>
 
 // Forward declarations for functions being tested
 void get_stmt_hash(const char* prefix, const char* statement, size_t length, char* output_buf);

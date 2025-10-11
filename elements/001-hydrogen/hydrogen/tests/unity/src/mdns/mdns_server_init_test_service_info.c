@@ -3,11 +3,11 @@
  * Tests mdns_server_init_service_info function
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_server.h"
+#include <src/mdns/mdns_server.h>
 
 // Forward declarations for helper functions being tested
 int mdns_server_init_service_info(mdns_server_t *server, const char *app_name, const char *id,

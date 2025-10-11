@@ -11,8 +11,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Forward declaration for the function being tested
 char* format_number_with_commas(size_t n, char* formatted, size_t size);

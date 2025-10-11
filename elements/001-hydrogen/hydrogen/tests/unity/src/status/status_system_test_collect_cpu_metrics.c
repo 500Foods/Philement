@@ -7,14 +7,14 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include status_core header for CpuMetrics structure
-#include "../../../../src/status/status_core.h"
+#include <src/status/status_core.h>
 
 // Include status_system header for the function declaration
-#include "../../../../src/status/status_system.h"
+#include <src/status/status_system.h>
 
 #include <string.h>
 

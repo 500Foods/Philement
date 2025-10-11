@@ -3,12 +3,12 @@
  * This file contains unit tests for DB2 engine functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/db2/interface.h"
+#include <src/database/database.h>
+#include <src/database/db2/interface.h>
 
 // Forward declarations for functions being tested
 const char* db2_engine_get_version(void);

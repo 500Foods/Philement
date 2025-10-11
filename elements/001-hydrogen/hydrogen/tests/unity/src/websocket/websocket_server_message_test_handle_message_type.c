@@ -4,13 +4,13 @@
  * Focuses on terminal message processing paths that were not covered
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the websocket message module
-#include "../../../../src/websocket/websocket_server_internal.h"
-#include "../../../../src/websocket/websocket_server.h"
-#include "../../../../src/terminal/terminal_session.h"
+#include <src/websocket/websocket_server_internal.h>
+#include <src/websocket/websocket_server.h>
+#include <src/terminal/terminal_session.h>
 
 // External references
 extern WebSocketServerContext *ws_context;
@@ -22,10 +22,10 @@ extern TerminalSession *terminal_session_map[256];
 #define USE_MOCK_TERMINAL_WEBSOCKET
 
 // Include mocks for external dependencies
-#include "../../../../tests/unity/mocks/mock_libwebsockets.h"
-#include "../../../../tests/unity/mocks/mock_libmicrohttpd.h"
-#include "../../../../tests/unity/mocks/mock_status.h"
-#include "../../../../tests/unity/mocks/mock_terminal_websocket.h"
+#include <unity/mocks/mock_libwebsockets.h>
+#include <unity/mocks/mock_libmicrohttpd.h>
+#include <unity/mocks/mock_status.h>
+#include <unity/mocks/mock_terminal_websocket.h>
 
 // Function prototypes for test functions
 void test_handle_message_type_status_request(void);

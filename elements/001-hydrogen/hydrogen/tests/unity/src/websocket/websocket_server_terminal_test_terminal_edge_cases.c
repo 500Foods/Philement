@@ -5,16 +5,16 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the websocket terminal module
-#include "../../../../src/websocket/websocket_server_internal.h"
-#include "../../../../src/websocket/websocket_server.h"
-#include "../../../../src/websocket/websocket_server_terminal.h"
+#include <src/websocket/websocket_server_internal.h>
+#include <src/websocket/websocket_server.h>
+#include <src/websocket/websocket_server_terminal.h>
 
 // Mock libwebsockets for testing
-#include "../../../../tests/unity/mocks/mock_libwebsockets.h"
+#include <unity/mocks/mock_libwebsockets.h>
 
 // Forward declarations for functions being tested
 int handle_message_type(struct lws *wsi, const char *type);

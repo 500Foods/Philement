@@ -5,13 +5,13 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
-#include "../../../../src/logging/log_queue_manager.h"
-#include "../../../../src/config/config_logging.h"
-#include "../../../../src/config/config_defaults.h"
+#include <src/logging/log_queue_manager.h>
+#include <src/config/config_logging.h>
+#include <src/config/config_defaults.h>
 
 // Test fixtures
 static LoggingConfig test_config;

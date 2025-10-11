@@ -3,11 +3,11 @@
  * This file contains unit tests for generate_uuid() function
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/webserver/web_server_upload.h"
+#include <src/webserver/web_server_upload.h>
 
 // Standard library includes
 #include <string.h>

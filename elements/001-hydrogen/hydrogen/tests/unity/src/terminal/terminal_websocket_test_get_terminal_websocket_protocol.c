@@ -4,11 +4,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/terminal/terminal_websocket.h"
+#include <src/terminal/terminal_websocket.h>
 
 // Forward declarations for functions being tested
 const char *get_terminal_websocket_protocol(void);

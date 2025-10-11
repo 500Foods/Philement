@@ -6,11 +6,11 @@
  * <source>_test_<function>.c where source is mdns_linux and function is dns_name
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_keys.h"
+#include <src/mdns/mdns_keys.h>
 
 // Test function prototypes
 void test_write_dns_name_simple(void);

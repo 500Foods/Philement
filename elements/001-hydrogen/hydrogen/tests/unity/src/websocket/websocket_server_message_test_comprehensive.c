@@ -4,15 +4,15 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the websocket module
-#include "../../../../src/websocket/websocket_server.h"
-#include "../../../../src/websocket/websocket_server_internal.h"
+#include <src/websocket/websocket_server.h>
+#include <src/websocket/websocket_server_internal.h>
 
 // Include mock headers (USE_MOCK_LIBWEBSOCKETS is already defined by CMake for websocket tests)
-#include "../../../../tests/unity/mocks/mock_libwebsockets.h"
+#include <unity/mocks/mock_libwebsockets.h>
 
 // Forward declarations for functions being tested
 int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len);

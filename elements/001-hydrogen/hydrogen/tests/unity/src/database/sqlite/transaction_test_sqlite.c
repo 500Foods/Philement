@@ -3,16 +3,16 @@
  * This file contains unit tests for SQLite transaction functions
  */
 
-#include "../../../../../tests/unity/mocks/mock_libsqlite3.h"
+#include <unity/mocks/mock_libsqlite3.h>
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/sqlite/transaction.h"
-#include "../../../../../src/database/sqlite/types.h"
-#include "../../../../../src/database/sqlite/connection.h"
+#include <src/database/database.h>
+#include <src/database/sqlite/transaction.h>
+#include <src/database/sqlite/types.h>
+#include <src/database/sqlite/connection.h>
 
 // Forward declarations for functions being tested
 bool sqlite_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel level, Transaction** transaction);

@@ -3,16 +3,16 @@
  * This file contains unit tests for DB2 connection cache functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Enable system mocking for memory allocation tests
 #define USE_MOCK_SYSTEM
-#include "../../../../../tests/unity/mocks/mock_system.h"
+#include <unity/mocks/mock_system.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/db2/types.h"
+#include <src/database/database.h>
+#include <src/database/db2/types.h>
 
 // Forward declarations for functions being tested
 PreparedStatementCache* db2_create_prepared_statement_cache(void);

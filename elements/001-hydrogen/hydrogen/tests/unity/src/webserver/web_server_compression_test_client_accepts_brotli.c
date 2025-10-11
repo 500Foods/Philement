@@ -3,11 +3,11 @@
  * This file contains unit tests for client_accepts_brotli() function
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/webserver/web_server_compression.h"
+#include <src/webserver/web_server_compression.h>
 
 // Mock MHD connection structure
 struct MockMHDConnection {

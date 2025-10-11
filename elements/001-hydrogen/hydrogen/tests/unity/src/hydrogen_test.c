@@ -4,8 +4,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Forward declarations of functions we want to test from hydrogen.c
 // For now, we'll provide a stub implementation since linking the full hydrogen.c

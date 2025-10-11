@@ -9,8 +9,8 @@
 #define MOCK_INFO_H
 
 // Include headers that define WebSocketMetrics
-#include "../../../src/status/status_core.h"
-#include "../../../src/api/system/info/info.h"
+#include <src/status/status_core.h>
+#include <src/api/system/info/info.h>
 
 // Mock function declarations - always declare for test files
 // These will override the real ones when USE_MOCK_INFO is defined

@@ -4,18 +4,18 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Enable mocks BEFORE including source headers
 #define USE_MOCK_LIBMICROHTTPD
 #define USE_MOCK_SYSTEM
-#include "../../../../tests/unity/mocks/mock_libmicrohttpd.h"
-#include "../../../../tests/unity/mocks/mock_logging.h"
-#include "../../../../tests/unity/mocks/mock_system.h"
+#include <unity/mocks/mock_libmicrohttpd.h>
+#include <unity/mocks/mock_logging.h>
+#include <unity/mocks/mock_system.h>
 
 // Include source headers (functions will be mocked)
-#include "../../../../src/webserver/web_server_core.h"
+#include <src/webserver/web_server_core.h>
 
 // Note: Global state variables are defined in the source file
 

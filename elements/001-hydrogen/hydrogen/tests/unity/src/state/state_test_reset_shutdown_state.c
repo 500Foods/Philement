@@ -6,8 +6,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // External function declarations for testing real signal handler behavior
 extern volatile sig_atomic_t restart_requested;

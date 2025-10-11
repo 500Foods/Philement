@@ -5,11 +5,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
-#include "../../../../src/mutex/mutex.h"
+#include <src/mutex/mutex.h>
 
 // Forward declaration for the function being tested
 MutexResult mutex_try_lock(pthread_mutex_t* mutex, MutexId* id);

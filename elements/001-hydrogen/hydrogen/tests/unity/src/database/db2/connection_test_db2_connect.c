@@ -3,19 +3,19 @@
  * This file contains unit tests for db2_connect functionality
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Enable mocks
 #define USE_MOCK_SYSTEM
-#include "../../../../../tests/unity/mocks/mock_libdb2.h"
-#include "../../../../../tests/unity/mocks/mock_system.h"
+#include <unity/mocks/mock_libdb2.h>
+#include <unity/mocks/mock_system.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/db2/types.h"
-#include "../../../../../src/database/db2/connection.h"
-#include "../../../../../src/database/db2/utils.h"
+#include <src/database/database.h>
+#include <src/database/db2/types.h>
+#include <src/database/db2/connection.h>
+#include <src/database/db2/utils.h>
 
 // Forward declarations for functions being tested
 bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);

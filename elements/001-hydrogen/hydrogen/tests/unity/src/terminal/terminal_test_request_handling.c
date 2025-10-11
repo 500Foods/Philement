@@ -4,16 +4,16 @@
  * Focuses on handle_terminal_request and init_terminal_support functions
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the terminal module
-#include "../../../../src/terminal/terminal.h"
-#include "../../../../src/terminal/terminal_session.h"
+#include <src/terminal/terminal.h>
+#include <src/terminal/terminal_session.h>
 
 // Include mocks for external dependencies
-#include "../../../../tests/unity/mocks/mock_libwebsockets.h"
-#include "../../../../tests/unity/mocks/mock_libmicrohttpd.h"
+#include <unity/mocks/mock_libwebsockets.h>
+#include <unity/mocks/mock_libmicrohttpd.h>
 
 // Test fixtures
 static TerminalConfig test_config;

@@ -6,12 +6,12 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Enable mocks for testing system functions
 #define USE_MOCK_SYSTEM
-#include "../../../../tests/unity/mocks/mock_system.h"
+#include <unity/mocks/mock_system.h>
 
 // Function prototypes for test functions
 void test_ensure_cache_dir_success(void);

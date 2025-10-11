@@ -7,17 +7,17 @@
 #define USE_MOCK_LAUNCH
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/launch/launch.h"
+#include <src/launch/launch.h>
 
 // Mock includes
-#include "../../../../tests/unity/mocks/mock_launch.h"
+#include <unity/mocks/mock_launch.h>
 
 // Include config headers for structure definitions
-#include "../../../../src/config/config_logging.h"
+#include <src/config/config_logging.h>
 
 // Direct declarations to avoid implicit function declarations
 void mock_launch_set_get_subsystem_id_result(int result);

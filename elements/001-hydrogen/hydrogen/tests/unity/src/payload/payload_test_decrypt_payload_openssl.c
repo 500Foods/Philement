@@ -6,12 +6,12 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Enable system mocks for testing memory allocation failures
 #define USE_MOCK_SYSTEM
-#include "../../../../tests/unity/mocks/mock_system.h"
+#include <unity/mocks/mock_system.h>
 
 // Forward declaration for the function being tested
 bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,

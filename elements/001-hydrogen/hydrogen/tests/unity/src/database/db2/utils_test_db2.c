@@ -3,12 +3,12 @@
  * This file contains unit tests for DB2 utility functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/db2/utils.h"
+#include <src/database/database.h>
+#include <src/database/db2/utils.h>
 
 // Forward declarations for functions being tested
 char* db2_get_connection_string(const ConnectionConfig* config);

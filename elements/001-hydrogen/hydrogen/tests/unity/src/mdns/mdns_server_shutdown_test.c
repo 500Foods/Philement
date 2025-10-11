@@ -6,12 +6,12 @@
  * <source>_test_<function>.c where source is mdns_linux and function is shutdown
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/mdns/mdns_keys.h"
-#include "../../../../src/mdns/mdns_server.h"
+#include <src/mdns/mdns_keys.h>
+#include <src/mdns/mdns_server.h>
 
 // Test function prototypes
 void test_mdns_server_shutdown_null_server(void);

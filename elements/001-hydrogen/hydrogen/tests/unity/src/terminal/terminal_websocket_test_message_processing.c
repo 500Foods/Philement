@@ -4,13 +4,13 @@
  * Focuses on process_terminal_websocket_message and related data flow
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the terminal module being tested
-#include "../../../../src/config/config_terminal.h"
-#include "../../../../src/terminal/terminal_websocket.h"
-#include "../../../../src/terminal/terminal_session.h"
+#include <src/config/config_terminal.h>
+#include <src/terminal/terminal_websocket.h>
+#include <src/terminal/terminal_session.h>
 
 // Include basic dependencies
 #include <string.h>

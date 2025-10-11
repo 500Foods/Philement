@@ -4,8 +4,8 @@
  * Focuses on testing paths not covered by Blackbox tests
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include mock headers for testing error conditions BEFORE source headers
 #ifndef USE_MOCK_SYSTEM
@@ -14,12 +14,12 @@
 #ifndef USE_MOCK_THREADS
 #define USE_MOCK_THREADS
 #endif
-#include "../../../../../tests/unity/mocks/mock_system.h"
-#include "../../../../../tests/unity/mocks/mock_threads.h"
+#include <unity/mocks/mock_system.h>
+#include <unity/mocks/mock_threads.h>
 
 // Include necessary headers for the module being tested (AFTER mocks to ensure overrides work)
-#include "../../../../src/mdns/mdns_keys.h"
-#include "../../../../src/mdns/mdns_server.h"
+#include <src/mdns/mdns_keys.h>
+#include <src/mdns/mdns_server.h>
 
 // Forward declarations for functions being tested
 void *mdns_server_responder_loop(void *arg);

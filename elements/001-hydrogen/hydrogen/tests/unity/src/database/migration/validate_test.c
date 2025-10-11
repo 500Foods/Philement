@@ -5,7 +5,7 @@
  */
 
 #include <src/hydrogen.h>
-#include "unity.h"
+#include <unity.h>
 
 #include <src/database/database.h>
 #include <src/database/migration/migration.h>

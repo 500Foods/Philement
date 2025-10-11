@@ -11,8 +11,8 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Forward declaration for the function being tested
 void generate_id(char *buf, size_t len);

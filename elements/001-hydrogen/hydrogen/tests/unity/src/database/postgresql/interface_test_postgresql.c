@@ -3,12 +3,12 @@
  * This file contains unit tests for PostgreSQL interface functions
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/postgresql/interface.h"
+#include <src/database/database.h>
+#include <src/database/postgresql/interface.h>
 
 // Forward declarations for functions being tested
 DatabaseEngineInterface* postgresql_get_interface(void);

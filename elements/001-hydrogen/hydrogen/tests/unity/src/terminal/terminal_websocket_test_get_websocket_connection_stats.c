@@ -4,14 +4,14 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/terminal/terminal_websocket.h"
+#include <src/terminal/terminal_websocket.h>
 
 // Include mocks for session management
-#include "../../../../tests/unity/mocks/mock_libmicrohttpd.h"
+#include <unity/mocks/mock_libmicrohttpd.h>
 
 // Forward declarations for functions being tested
 bool get_websocket_connection_stats(size_t *connections, size_t *max_connections);

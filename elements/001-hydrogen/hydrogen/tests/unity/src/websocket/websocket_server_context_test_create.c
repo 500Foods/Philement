@@ -5,11 +5,11 @@
  */
 
 // Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
-#include "../../../../src/websocket/websocket_server_internal.h"
+#include <src/websocket/websocket_server_internal.h>
 
 // Forward declaration for function being tested
 WebSocketServerContext* ws_context_create(int port, const char* protocol, const char* key);
