@@ -12,7 +12,7 @@
  * This modular approach improves maintainability, testability, and code organization.
  */
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>

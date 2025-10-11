@@ -12,12 +12,12 @@
  */
 
 // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "landing.h"
-#include "../launch/launch.h"
-#include "../api/api_service.h"
+#include <src/launch/launch.h>
+#include <src/api/api_service.h>
 
 // Check if the API subsystem is ready to land
 LaunchReadiness check_api_landing_readiness(void) {

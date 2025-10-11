@@ -10,7 +10,7 @@
 
 #include <stdbool.h>
 #include <jansson.h>
-#include "../logging/logging.h"
+#include <src/logging/logging.h>
 #include "config_files.h"
 
 // Forward declaration of AppConfig for debugging function

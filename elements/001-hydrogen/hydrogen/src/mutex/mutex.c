@@ -4,9 +4,9 @@
  * Provides consistent, timeout-aware mutex operations with deadlock detection
  * and comprehensive logging for the entire Hydrogen codebase.
  */
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 #include "mutex.h"
-#include "../logging/logging.h"  // Relative include for src/mutex/ to src/logging/
+#include <src/logging/logging.h>  // Relative include for src/mutex/ to src/logging/
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>

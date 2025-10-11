@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include "../config/config.h"  // For buffer and configuration constants
+#include <src/config/config.h>  // For buffer and configuration constants
 
 // What we're sending in
 typedef struct {

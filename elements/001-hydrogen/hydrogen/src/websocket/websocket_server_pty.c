@@ -8,7 +8,7 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "websocket_server.h"
@@ -16,10 +16,10 @@
 #include "websocket_server_message.h"
 
 // Terminal WebSocket includes
-#include "../terminal/terminal_websocket.h"
-#include "../terminal/terminal_session.h"
-#include "../terminal/terminal_shell.h"
-#include "../terminal/terminal.h"
+#include <src/terminal/terminal_websocket.h>
+#include <src/terminal/terminal_session.h>
+#include <src/terminal/terminal_shell.h>
+#include <src/terminal/terminal.h>
 
 // Libwebsockets header for struct lws
 #include <libwebsockets.h>

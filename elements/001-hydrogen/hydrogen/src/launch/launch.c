@@ -23,13 +23,13 @@
  */
 
  // Global includes 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "launch.h"
-#include "../status/status_process.h"
-#include "../utils/utils_dependency.h"
-#include "../database/database.h"
+#include <src/status/status_process.h>
+#include <src/utils/utils_dependency.h>
+#include <src/database/database.h>
 
 // External declarations
 extern void close_file_logging(void);

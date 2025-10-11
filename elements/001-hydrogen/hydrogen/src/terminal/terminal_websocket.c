@@ -6,13 +6,13 @@
  * web clients and PTY shell processes.
  */
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 #include "../globals.h"
-#include "../logging/logging.h"
-#include "../utils/utils.h"
-#include "../webserver/web_server_core.h"
-#include "../websocket/websocket_server.h"
-#include "../config/config_terminal.h"
+#include <src/logging/logging.h>
+#include <src/utils/utils.h>
+#include <src/webserver/web_server_core.h>
+#include <src/websocket/websocket_server.h>
+#include <src/config/config_terminal.h>
 #include "terminal.h"
 #include "terminal_shell.h"
 #include "terminal_session.h"

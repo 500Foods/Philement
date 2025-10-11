@@ -4,7 +4,7 @@
  * Implements DB2 engine interface registration.
  */
 
-#include "../../hydrogen.h"
+#include <src/hydrogen.h>
 #include "../database.h"
 #include "types.h"
 #include "connection.h"

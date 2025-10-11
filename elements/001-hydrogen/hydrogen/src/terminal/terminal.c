@@ -1,15 +1,15 @@
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "terminal.h"
 #include "terminal_session.h"
-#include "../payload/payload.h"
-#include "../payload/payload_cache.h"
+#include <src/payload/payload.h>
+#include <src/payload/payload_cache.h>
 
 // Web server headers for compression and CORS support
-#include "../webserver/web_server_core.h"
-#include "../webserver/web_server_compression.h"
+#include <src/webserver/web_server_core.h>
+#include <src/webserver/web_server_compression.h>
 
 // Include std headers for filesystem operations
 #include <sys/stat.h>

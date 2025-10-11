@@ -10,7 +10,7 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Configuration includes
 #include "config.h"

@@ -102,20 +102,20 @@
 #include <brotli/encode.h>  // For Brotli - Compressing content
 
 // Project constants
-#include "globals.h"
+#include <src/globals.h>
 
 // Project includes
-#include "config/config.h"
-#include "logging/logging.h"
-#include "mutex/mutex.h"
-#include "network/network.h"
-#include "payload/payload.h"
-#include "queue/queue.h"
-#include "registry/registry.h"
-#include "state/state.h"
-#include "status/status.h"
-#include "threads/threads.h"
-#include "utils/utils.h"
+#include <src/config/config.h>
+#include <src/logging/logging.h>
+#include <src/mutex/mutex.h>
+#include <src/network/network.h>
+#include <src/payload/payload.h>
+#include <src/queue/queue.h>
+#include <src/registry/registry.h>
+#include <src/state/state.h>
+#include <src/status/status.h>
+#include <src/threads/threads.h>
+#include <src/utils/utils.h>
 
 // Main application configuration structure
 // NOTE: Network-Notify are all primary subsystems that are also

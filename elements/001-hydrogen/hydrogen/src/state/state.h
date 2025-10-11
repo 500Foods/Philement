@@ -11,13 +11,13 @@
 #include <pthread.h>
 
 // Project headers
-#include "../config/config_forward.h"  // For AppConfig type
-#include "../config/config.h"          // For config functions
-#include "../mdns/mdns_server.h"
-#include "../network/network.h"
-#include "../threads/threads.h"        // Thread management subsystem
-#include "../registry/registry.h"      // Registry subsystem
-#include "../landing/landing.h"        // For check_all_landing_readiness
+#include <src/config/config_forward.h>  // For AppConfig type
+#include <src/config/config.h>          // For config functions
+#include <src/mdns/mdns_server.h>
+#include <src/network/network.h>
+#include <src/threads/threads.h>        // Thread management subsystem
+#include <src/registry/registry.h>      // Registry subsystem
+#include <src/landing/landing.h>        // For check_all_landing_readiness
 
 
 // Application state flags

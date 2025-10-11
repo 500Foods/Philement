@@ -7,7 +7,7 @@
 #define PRINT_QUEUE_MANAGER_H
 
 #include <stdio.h>
-#include "../queue/queue.h"
+#include <src/queue/queue.h>
 
 extern Queue* print_queue;
 

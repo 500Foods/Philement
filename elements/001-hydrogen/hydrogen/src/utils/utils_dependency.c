@@ -2,7 +2,7 @@
  * Simplified library dependency checking utilities
  */
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "utils_dependency.h"

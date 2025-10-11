@@ -1,11 +1,11 @@
 // Global includes
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Local includes
 #include "web_server_upload.h"
 #include "web_server_core.h"
-#include "../print/beryllium.h"
-#include "../utils/utils.h"
+#include <src/print/beryllium.h>
+#include <src/utils/utils.h>
 
 // Global configuration
 extern AppConfig* app_config;

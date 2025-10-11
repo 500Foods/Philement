@@ -10,7 +10,7 @@
 
 #include <stdbool.h>
 #include <microhttpd.h>
-#include "../config/config_terminal.h"
+#include <src/config/config_terminal.h>
 
 // Terminal subsystem initialization and cleanup
 bool init_terminal_support(TerminalConfig *config);

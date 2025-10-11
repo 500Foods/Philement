@@ -8,7 +8,7 @@
 #ifndef DATABASE_BOOTSTRAP_H
 #define DATABASE_BOOTSTRAP_H
 
-#include "../hydrogen.h"
+#include <src/hydrogen.h>
 
 // Forward declaration from database_queue.h
 typedef struct DatabaseQueue DatabaseQueue;
