@@ -107,12 +107,13 @@ tests/          Test framework
 
 - cppcheck configured with all directives enabled
 - src/hydrogen.h is included first in all .c source files
-- Function Prototypes declared for every function
+- Function Prototypes absolutely must be declared for every function
 - Grouped/commented include files at the top of every .c/.h file
 - src/config/config_defaults.c contains many useful subsystem defaults
 - Use `log_this` when outputing anything to the log
 - cmake/CMakeLists.txt is used for all project builds including Unity
 - Run tests/test_91_cppcheck.sh whenever C code is changed
+- Unit test filenames must be unique - search beforee creating new files
 
 ## BASH CODING REQUIREMENTS
 
