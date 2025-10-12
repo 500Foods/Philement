@@ -31,6 +31,7 @@ typedef char* (*PQgetvalue_t)(void* res, int row_number, int column_number);
 typedef char* (*PQcmdTuples_t)(void* res);
 typedef void (*PQreset_t)(void* conn);
 typedef void* (*PQprepare_t)(void* conn, const char* stmtName, const char* query, int nParams, const char* const* paramTypes);
+typedef void* (*PQexecPrepared_t)(void* conn, const char* stmtName, int nParams, const char* const* paramValues, const int* paramLengths, const int* paramFormats, int resultFormat);
 typedef size_t (*PQescapeStringConn_t)(void* conn, char* to, const char* from, size_t length, int* error);
 typedef int (*PQping_t)(const char* conninfo);
 
@@ -51,6 +52,7 @@ PQgetvalue_t PQgetvalue_ptr = mock_PQgetvalue;
 PQcmdTuples_t PQcmdTuples_ptr = mock_PQcmdTuples;
 PQreset_t PQreset_ptr = mock_PQreset;
 PQprepare_t PQprepare_ptr = mock_PQprepare;
+PQexecPrepared_t PQexecPrepared_ptr = NULL;  // No mock for PQexecPrepared yet
 PQescapeStringConn_t PQescapeStringConn_ptr = mock_PQescapeStringConn;
 PQping_t PQping_ptr = mock_PQping;
 #else
@@ -68,6 +70,7 @@ PQgetvalue_t PQgetvalue_ptr = NULL;
 PQcmdTuples_t PQcmdTuples_ptr = NULL;
 PQreset_t PQreset_ptr = NULL;
 PQprepare_t PQprepare_ptr = NULL;
+PQexecPrepared_t PQexecPrepared_ptr = NULL;
 PQescapeStringConn_t PQescapeStringConn_ptr = NULL;
 PQping_t PQping_ptr = NULL;
 #endif
@@ -117,6 +120,7 @@ bool load_libpq_functions(const char* designator __attribute__((unused))) {
     PQcmdTuples_ptr = mock_PQcmdTuples;
     PQreset_ptr = mock_PQreset;
     PQprepare_ptr = mock_PQprepare;
+    PQexecPrepared_ptr = NULL;  // No mock for PQexecPrepared yet
     PQescapeStringConn_ptr = mock_PQescapeStringConn;
     PQping_ptr = mock_PQping;
     return true;
@@ -162,6 +166,7 @@ bool load_libpq_functions(const char* designator __attribute__((unused))) {
     PQcmdTuples_ptr = (PQcmdTuples_t)dlsym(libpq_handle, "PQcmdTuples");
     PQreset_ptr = (PQreset_t)dlsym(libpq_handle, "PQreset");
     PQprepare_ptr = (PQprepare_t)dlsym(libpq_handle, "PQprepare");
+    PQexecPrepared_ptr = (PQexecPrepared_t)dlsym(libpq_handle, "PQexecPrepared");
     PQescapeStringConn_ptr = (PQescapeStringConn_t)dlsym(libpq_handle, "PQescapeStringConn");
     PQping_ptr = (PQping_t)dlsym(libpq_handle, "PQping");
 #pragma GCC diagnostic pop

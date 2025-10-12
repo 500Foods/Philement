@@ -162,6 +162,10 @@ bool load_libdb2_functions(const char* designator __attribute__((unused))) {
  * Utility Functions
  */
 
+// Simple timeout mechanism without signals
+bool db2_check_timeout_expired(time_t start_time, int timeout_seconds) {
+    return (time(NULL) - start_time) >= timeout_seconds;
+}
 
 PreparedStatementCache* db2_create_prepared_statement_cache(void) {
     PreparedStatementCache* cache = calloc(1, sizeof(PreparedStatementCache));

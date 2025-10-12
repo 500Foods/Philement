@@ -150,6 +150,11 @@ bool load_libsqlite_functions(const char* designator __attribute__((unused))) {
 #endif
 }
 
+// Simple timeout mechanism without signals
+bool sqlite_check_timeout_expired(time_t start_time, int timeout_seconds) {
+    return (time(NULL) - start_time) >= timeout_seconds;
+}
+
 // Utility Functions for Prepared Statement Cache
 PreparedStatementCache* sqlite_create_prepared_statement_cache(void) {
     PreparedStatementCache* cache = calloc(1, sizeof(PreparedStatementCache));

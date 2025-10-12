@@ -36,10 +36,19 @@ mysql_ping_t mysql_ping_ptr = mock_mysql_ping;
 mysql_autocommit_t mysql_autocommit_ptr = mock_mysql_autocommit;
 mysql_commit_t mysql_commit_ptr = mock_mysql_commit;
 mysql_rollback_t mysql_rollback_ptr = mock_mysql_rollback;
+mysql_affected_rows_t mysql_affected_rows_ptr = NULL;
 mysql_stmt_init_t mysql_stmt_init_ptr = NULL;
 mysql_stmt_prepare_t mysql_stmt_prepare_ptr = NULL;
 mysql_stmt_execute_t mysql_stmt_execute_ptr = NULL;
 mysql_stmt_close_t mysql_stmt_close_ptr = NULL;
+mysql_stmt_result_metadata_t mysql_stmt_result_metadata_ptr = NULL;
+mysql_stmt_fetch_t mysql_stmt_fetch_ptr = NULL;
+mysql_stmt_bind_result_t mysql_stmt_bind_result_ptr = NULL;
+mysql_stmt_error_t mysql_stmt_error_ptr = NULL;
+mysql_stmt_affected_rows_t mysql_stmt_affected_rows_ptr = NULL;
+mysql_stmt_store_result_t mysql_stmt_store_result_ptr = NULL;
+mysql_stmt_free_result_t mysql_stmt_free_result_ptr = NULL;
+mysql_stmt_field_count_t mysql_stmt_field_count_ptr = NULL;
 #else
 mysql_init_t mysql_init_ptr = NULL;
 mysql_real_connect_t mysql_real_connect_ptr = NULL;
@@ -57,10 +66,19 @@ mysql_ping_t mysql_ping_ptr = NULL;
 mysql_autocommit_t mysql_autocommit_ptr = NULL;
 mysql_commit_t mysql_commit_ptr = NULL;
 mysql_rollback_t mysql_rollback_ptr = NULL;
+mysql_affected_rows_t mysql_affected_rows_ptr = NULL;
 mysql_stmt_init_t mysql_stmt_init_ptr = NULL;
 mysql_stmt_prepare_t mysql_stmt_prepare_ptr = NULL;
 mysql_stmt_execute_t mysql_stmt_execute_ptr = NULL;
 mysql_stmt_close_t mysql_stmt_close_ptr = NULL;
+mysql_stmt_result_metadata_t mysql_stmt_result_metadata_ptr = NULL;
+mysql_stmt_fetch_t mysql_stmt_fetch_ptr = NULL;
+mysql_stmt_bind_result_t mysql_stmt_bind_result_ptr = NULL;
+mysql_stmt_error_t mysql_stmt_error_ptr = NULL;
+mysql_stmt_affected_rows_t mysql_stmt_affected_rows_ptr = NULL;
+mysql_stmt_store_result_t mysql_stmt_store_result_ptr = NULL;
+mysql_stmt_free_result_t mysql_stmt_free_result_ptr = NULL;
+mysql_stmt_field_count_t mysql_stmt_field_count_ptr = NULL;
 #endif
 
 // Library handle
@@ -127,10 +145,19 @@ bool load_libmysql_functions(const char* designator __attribute__((unused))) {
     mysql_autocommit_ptr = (mysql_autocommit_t)dlsym(libmysql_handle, "mysql_autocommit");
     mysql_commit_ptr = (mysql_commit_t)dlsym(libmysql_handle, "mysql_commit");
     mysql_rollback_ptr = (mysql_rollback_t)dlsym(libmysql_handle, "mysql_rollback");
+    mysql_affected_rows_ptr = (mysql_affected_rows_t)dlsym(libmysql_handle, "mysql_affected_rows");
     mysql_stmt_init_ptr = (mysql_stmt_init_t)dlsym(libmysql_handle, "mysql_stmt_init");
     mysql_stmt_prepare_ptr = (mysql_stmt_prepare_t)dlsym(libmysql_handle, "mysql_stmt_prepare");
     mysql_stmt_execute_ptr = (mysql_stmt_execute_t)dlsym(libmysql_handle, "mysql_stmt_execute");
     mysql_stmt_close_ptr = (mysql_stmt_close_t)dlsym(libmysql_handle, "mysql_stmt_close");
+    mysql_stmt_result_metadata_ptr = (mysql_stmt_result_metadata_t)dlsym(libmysql_handle, "mysql_stmt_result_metadata");
+    mysql_stmt_fetch_ptr = (mysql_stmt_fetch_t)dlsym(libmysql_handle, "mysql_stmt_fetch");
+    mysql_stmt_bind_result_ptr = (mysql_stmt_bind_result_t)dlsym(libmysql_handle, "mysql_stmt_bind_result");
+    mysql_stmt_error_ptr = (mysql_stmt_error_t)dlsym(libmysql_handle, "mysql_stmt_error");
+    mysql_stmt_affected_rows_ptr = (mysql_stmt_affected_rows_t)dlsym(libmysql_handle, "mysql_stmt_affected_rows");
+    mysql_stmt_store_result_ptr = (mysql_stmt_store_result_t)dlsym(libmysql_handle, "mysql_stmt_store_result");
+    mysql_stmt_free_result_ptr = (mysql_stmt_free_result_t)dlsym(libmysql_handle, "mysql_stmt_free_result");
+    mysql_stmt_field_count_ptr = (mysql_stmt_field_count_t)dlsym(libmysql_handle, "mysql_stmt_field_count");
 #pragma GCC diagnostic pop
 
     // Check if all required functions were loaded
@@ -168,6 +195,11 @@ bool load_libmysql_functions(const char* designator __attribute__((unused))) {
 /*
  * Utility Functions
  */
+
+// Simple timeout mechanism without signals
+bool mysql_check_timeout_expired(time_t start_time, int timeout_seconds) {
+    return (time(NULL) - start_time) >= timeout_seconds;
+}
 
 PreparedStatementCache* mysql_create_prepared_statement_cache(void) {
     PreparedStatementCache* cache = calloc(1, sizeof(PreparedStatementCache));

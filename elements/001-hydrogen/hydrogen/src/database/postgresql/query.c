@@ -24,6 +24,7 @@ extern PQfname_t PQfname_ptr;
 extern PQgetvalue_t PQgetvalue_ptr;
 extern PQcmdTuples_t PQcmdTuples_ptr;
 extern PQerrorMessage_t PQerrorMessage_ptr;
+extern PQexecPrepared_t PQexecPrepared_ptr;
 
 // External declarations for constants (defined in connection.c)
 extern bool check_timeout_expired(time_t start_time, int timeout_seconds);
@@ -242,8 +243,20 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
 
     time_t start_time = time(NULL);
 
-    // Execute the prepared statement (PostgreSQL prepared statements don't take parameters in this simple implementation)
-    void* pg_result = PQexec_ptr(pg_conn->connection, stmt->name);
+    // Execute the prepared statement using PQexecPrepared API
+    void* pg_result = NULL;
+    
+    if (PQexecPrepared_ptr) {
+        // Use true prepared statement execution with PQexecPrepared
+        // For migration queries with no parameters, use nParams=0 and NULL parameter arrays
+        log_this(designator, "PostgreSQL execute_prepared: Using PQexecPrepared API", LOG_LEVEL_TRACE, 0);
+        pg_result = PQexecPrepared_ptr(pg_conn->connection, stmt->name, 0, NULL, NULL, NULL, 0);
+    } else {
+        // Fallback to simple execution if PQexecPrepared is not available
+        log_this(designator, "PostgreSQL execute_prepared: Falling back to PQexec (PQexecPrepared not available)", LOG_LEVEL_TRACE, 0);
+        pg_result = PQexec_ptr(pg_conn->connection, stmt->name);
+    }
+    
     time_t end_time = time(NULL);
 
     // Check if query took too long (approximate check)

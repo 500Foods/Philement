@@ -24,6 +24,7 @@ typedef char* (*PQgetvalue_t)(void* res, int row_number, int column_number);
 typedef char* (*PQcmdTuples_t)(void* res);
 typedef void (*PQreset_t)(void* conn);
 typedef void* (*PQprepare_t)(void* conn, const char* stmtName, const char* query, int nParams, const char* const* paramTypes);
+typedef void* (*PQexecPrepared_t)(void* conn, const char* stmtName, int nParams, const char* const* paramValues, const int* paramLengths, const int* paramFormats, int resultFormat);
 typedef size_t (*PQescapeStringConn_t)(void* conn, char* to, const char* from, size_t length, int* error);
 typedef int (*PQping_t)(const char* conninfo);
 
