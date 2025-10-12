@@ -102,14 +102,33 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
 
             // Extract column names
             if (db_result->column_count > 0 && mysql_fetch_fields_ptr) {
-                // MYSQL_FIELD structure has: name, org_name, table, etc.
-                // We cast to a structure pointer to access fields
+                // Complete MYSQL_FIELD structure definition to match libmysqlclient
+                // This ensures correct memory alignment and array indexing
                 typedef struct {
-                    char *name;
-                    // ... other fields we don't need to access
-                } MYSQL_FIELD_WRAPPER;
+                    char *name;                  /* Name of column */
+                    char *org_name;              /* Original column name, if an alias */
+                    char *table;                 /* Table of column if column was a field */
+                    char *org_table;             /* Org table name, if table was an alias */
+                    char *db;                    /* Database for table */
+                    char *catalog;               /* Catalog for table */
+                    char *def;                   /* Default value (set by mysql_list_fields) */
+                    unsigned long length;        /* Width of column (create length) */
+                    unsigned long max_length;    /* Max width for selected set */
+                    unsigned int name_length;
+                    unsigned int org_name_length;
+                    unsigned int table_length;
+                    unsigned int org_table_length;
+                    unsigned int db_length;
+                    unsigned int catalog_length;
+                    unsigned int def_length;
+                    unsigned int flags;          /* Div flags */
+                    unsigned int decimals;       /* Number of decimals in field */
+                    unsigned int charsetnr;      /* Character set */
+                    unsigned int type;           /* Type of field */
+                    void *extension;
+                } MYSQL_FIELD_COMPLETE;
                 
-                const MYSQL_FIELD_WRAPPER* fields = (const MYSQL_FIELD_WRAPPER*)mysql_fetch_fields_ptr(mysql_result);
+                const MYSQL_FIELD_COMPLETE* fields = (const MYSQL_FIELD_COMPLETE*)mysql_fetch_fields_ptr(mysql_result);
                 if (fields) {
                     db_result->column_names = calloc(db_result->column_count, sizeof(char*));
                     if (db_result->column_names) {
@@ -223,8 +242,24 @@ bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
     // Get the prepared statement handle
     void* stmt_handle = stmt->engine_specific_handle;
     if (!stmt_handle) {
-        log_this(designator, "MySQL execute_prepared: No statement handle available", LOG_LEVEL_ERROR, 0);
-        return false;
+        // Statement had no executable SQL (e.g., only comments after macro processing)
+        // Return successful empty result instead of error
+        log_this(designator, "MySQL prepared statement: No executable SQL (statement was not actionable)", LOG_LEVEL_DEBUG, 0);
+        
+        QueryResult* db_result = calloc(1, sizeof(QueryResult));
+        if (!db_result) {
+            return false;
+        }
+        
+        db_result->success = true;
+        db_result->row_count = 0;
+        db_result->column_count = 0;
+        db_result->affected_rows = 0;
+        db_result->execution_time_ms = 0;
+        db_result->data_json = strdup("[]");
+        
+        *result = db_result;
+        return true;
     }
 
     // Check if required functions are available
@@ -279,12 +314,33 @@ bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
 
         // Extract column names
         if (column_count > 0 && mysql_fetch_fields_ptr) {
+            // Complete MYSQL_FIELD structure definition to match libmysqlclient
+            // This ensures correct memory alignment and array indexing
             typedef struct {
-                char *name;
-                // ... other fields we don't need to access
-            } MYSQL_FIELD_WRAPPER;
+                char *name;                  /* Name of column */
+                char *org_name;              /* Original column name, if an alias */
+                char *table;                 /* Table of column if column was a field */
+                char *org_table;             /* Org table name, if table was an alias */
+                char *db;                    /* Database for table */
+                char *catalog;               /* Catalog for table */
+                char *def;                   /* Default value (set by mysql_list_fields) */
+                unsigned long length;        /* Width of column (create length) */
+                unsigned long max_length;    /* Max width for selected set */
+                unsigned int name_length;
+                unsigned int org_name_length;
+                unsigned int table_length;
+                unsigned int org_table_length;
+                unsigned int db_length;
+                unsigned int catalog_length;
+                unsigned int def_length;
+                unsigned int flags;          /* Div flags */
+                unsigned int decimals;       /* Number of decimals in field */
+                unsigned int charsetnr;      /* Character set */
+                unsigned int type;           /* Type of field */
+                void *extension;
+            } MYSQL_FIELD_COMPLETE;
             
-            const MYSQL_FIELD_WRAPPER* fields = (const MYSQL_FIELD_WRAPPER*)mysql_fetch_fields_ptr(mysql_result);
+            const MYSQL_FIELD_COMPLETE* fields = (const MYSQL_FIELD_COMPLETE*)mysql_fetch_fields_ptr(mysql_result);
             if (fields) {
                 db_result->column_names = calloc(db_result->column_count, sizeof(char*));
                 if (db_result->column_names) {

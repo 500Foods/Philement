@@ -16,7 +16,8 @@
                 "Bootstrap": "select * from queries;",
                 "AutoMigration": true,
                 "TestMigration": true,
-                "Migrations":"PAYLOAD:acuranzzo",
+                "Migrations":"PAYLOAD:acuranzo",
+                "Schema": "",
                 "Queues": {
                     "Slow": {
                         "start": 2
