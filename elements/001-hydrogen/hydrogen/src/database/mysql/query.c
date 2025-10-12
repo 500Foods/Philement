@@ -13,6 +13,7 @@
 #include "types.h"
 #include "connection.h"
 #include "query.h"
+#include "utils.h"
 
 // External declarations for libmysqlclient function pointers (defined in connection.c)
 extern mysql_store_result_t mysql_store_result_ptr;
@@ -23,6 +24,15 @@ extern mysql_fetch_fields_t mysql_fetch_fields_ptr;
 extern mysql_free_result_t mysql_free_result_ptr;
 extern mysql_error_t mysql_error_ptr;
 extern mysql_query_t mysql_query_ptr;
+extern mysql_affected_rows_t mysql_affected_rows_ptr;
+extern mysql_stmt_execute_t mysql_stmt_execute_ptr;
+extern mysql_stmt_result_metadata_t mysql_stmt_result_metadata_ptr;
+extern mysql_stmt_fetch_t mysql_stmt_fetch_ptr;
+extern mysql_stmt_error_t mysql_stmt_error_ptr;
+extern mysql_stmt_affected_rows_t mysql_stmt_affected_rows_ptr;
+extern mysql_stmt_store_result_t mysql_stmt_store_result_ptr;
+extern mysql_stmt_free_result_t mysql_stmt_free_result_ptr;
+extern mysql_stmt_field_count_t mysql_stmt_field_count_ptr;
 
 /*
  * Query Execution
@@ -92,17 +102,27 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
 
             // Extract column names
             if (db_result->column_count > 0 && mysql_fetch_fields_ptr) {
-                const void* fields = mysql_fetch_fields_ptr(mysql_result);
+                // MYSQL_FIELD structure has: name, org_name, table, etc.
+                // We cast to a structure pointer to access fields
+                typedef struct {
+                    char *name;
+                    // ... other fields we don't need to access
+                } MYSQL_FIELD_WRAPPER;
+                
+                const MYSQL_FIELD_WRAPPER* fields = (const MYSQL_FIELD_WRAPPER*)mysql_fetch_fields_ptr(mysql_result);
                 if (fields) {
                     db_result->column_names = calloc(db_result->column_count, sizeof(char*));
                     if (db_result->column_names) {
-                        // MySQL field structure: we need to access field names
-                        // This is a simplified approach - in practice we'd need proper field structure handling
                         for (size_t i = 0; i < db_result->column_count; i++) {
-                            // Placeholder - need proper field name extraction
-                            char col_name[32];
-                            snprintf(col_name, sizeof(col_name), "col_%zu", i);
-                            db_result->column_names[i] = strdup(col_name);
+                            // Extract actual field name from MYSQL_FIELD structure
+                            if (fields[i].name) {
+                                db_result->column_names[i] = strdup(fields[i].name);
+                            } else {
+                                // Fallback for NULL field names
+                                char col_name[32];
+                                snprintf(col_name, sizeof(col_name), "col_%zu", i);
+                                db_result->column_names[i] = strdup(col_name);
+                            }
                         }
                     }
                 }
@@ -117,17 +137,28 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                     for (size_t row = 0; row < db_result->row_count; row++) {
                         if (row > 0) strcat(db_result->data_json, ",");
 
-                        const void* row_data = mysql_fetch_row_ptr(mysql_result);
+                        // MYSQL_ROW is char** (array of strings)
+                        char** row_data = (char**)mysql_fetch_row_ptr(mysql_result);
                         if (row_data) {
                             strcat(db_result->data_json, "{");
-                            // Simplified - in practice need to handle row data properly
                             for (size_t col = 0; col < db_result->column_count; col++) {
                                 if (col > 0) strcat(db_result->data_json, ",");
-                                char buffer[256];
-                                // Placeholder - need proper row data extraction
-                                snprintf(buffer, sizeof(buffer), "\"%s\":\"value_%zu_%zu\"",
-                                    db_result->column_names ? db_result->column_names[col] : "unknown", row, col);
-                                strcat(db_result->data_json, buffer);
+                                
+                                // Build column JSON
+                                char col_json[1024];
+                                const char* col_name = db_result->column_names ? db_result->column_names[col] : "unknown";
+                                
+                                // Check for NULL value
+                                if (row_data[col] == NULL) {
+                                    snprintf(col_json, sizeof(col_json), "\"%s\":null", col_name);
+                                } else {
+                                    // Escape the data for JSON
+                                    char escaped_data[512] = {0};
+                                    mysql_json_escape_string(row_data[col], escaped_data, sizeof(escaped_data));
+                                    snprintf(col_json, sizeof(col_json), "\"%s\":\"%s\"", col_name, escaped_data);
+                                }
+                                
+                                strcat(db_result->data_json, col_json);
                             }
                             strcat(db_result->data_json, "}");
                         }
@@ -151,8 +182,18 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         db_result->row_count = 0;
         db_result->column_count = 0;
         db_result->data_json = strdup("[]");
-        // TODO: Get affected rows from mysql_affected_rows if available
-        db_result->affected_rows = 0;
+        // Get affected rows from mysql_affected_rows
+        if (mysql_affected_rows_ptr) {
+            // mysql_affected_rows returns unsigned long long, cast to size_t safely
+            unsigned long long affected = mysql_affected_rows_ptr(mysql_conn->connection);
+            // Suppress conversion warning - we're explicitly handling the potential truncation
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wconversion"
+            db_result->affected_rows = (size_t)affected;
+            #pragma GCC diagnostic pop
+        } else {
+            db_result->affected_rows = 0;
+        }
     }
 
     *result = db_result;
@@ -179,15 +220,253 @@ bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
         return false;
     }
 
-    // For now, execute the SQL directly since MySQL prepared statement infrastructure is not fully loaded
-    // TODO: Implement proper MySQL prepared statement execution when mysql_stmt_* functions are available
-    log_this(designator, "MySQL execute_prepared: Executing SQL directly (prepared statements not fully implemented)", LOG_LEVEL_TRACE, 0);
+    // Get the prepared statement handle
+    void* stmt_handle = stmt->engine_specific_handle;
+    if (!stmt_handle) {
+        log_this(designator, "MySQL execute_prepared: No statement handle available", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
 
-    // Create a temporary QueryRequest with the prepared statement's SQL
-    QueryRequest temp_request = *request;
-    temp_request.sql_template = stmt->sql_template;
-    temp_request.use_prepared_statement = false;
-    temp_request.prepared_statement_name = NULL;
+    // Check if required functions are available
+    if (!mysql_stmt_execute_ptr) {
+        log_this(designator, "MySQL execute_prepared: mysql_stmt_execute function not available", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
 
-    return mysql_execute_query(connection, &temp_request, result);
+    log_this(designator, "MySQL execute_prepared: Executing prepared statement", LOG_LEVEL_TRACE, 0);
+
+    // Execute the prepared statement
+    if (mysql_stmt_execute_ptr(stmt_handle) != 0) {
+        log_this(designator, "MySQL prepared statement execution failed", LOG_LEVEL_ERROR, 0);
+        if (mysql_stmt_error_ptr) {
+            const char* error_msg = mysql_stmt_error_ptr(stmt_handle);
+            if (error_msg && strlen(error_msg) > 0) {
+                log_this(designator, "MySQL prepared statement error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+            }
+        }
+        return false;
+    }
+
+    // Create result structure
+    QueryResult* db_result = calloc(1, sizeof(QueryResult));
+    if (!db_result) {
+        return false;
+    }
+
+    db_result->success = true;
+    db_result->execution_time_ms = 0; // TODO: Implement timing
+
+    // Get result metadata
+    void* mysql_result = NULL;
+    if (mysql_stmt_result_metadata_ptr) {
+        mysql_result = mysql_stmt_result_metadata_ptr(stmt_handle);
+    }
+
+    if (mysql_result) {
+        // This is a SELECT query with results
+        if (mysql_stmt_store_result_ptr) {
+            mysql_stmt_store_result_ptr(stmt_handle);
+        }
+
+        // Get column count
+        unsigned int column_count = 0;
+        if (mysql_stmt_field_count_ptr) {
+            column_count = mysql_stmt_field_count_ptr(stmt_handle);
+        } else if (mysql_num_fields_ptr) {
+            column_count = mysql_num_fields_ptr(mysql_result);
+        }
+        db_result->column_count = (size_t)column_count;
+
+        // Extract column names
+        if (column_count > 0 && mysql_fetch_fields_ptr) {
+            typedef struct {
+                char *name;
+                // ... other fields we don't need to access
+            } MYSQL_FIELD_WRAPPER;
+            
+            const MYSQL_FIELD_WRAPPER* fields = (const MYSQL_FIELD_WRAPPER*)mysql_fetch_fields_ptr(mysql_result);
+            if (fields) {
+                db_result->column_names = calloc(db_result->column_count, sizeof(char*));
+                if (db_result->column_names) {
+                    for (size_t i = 0; i < db_result->column_count; i++) {
+                        if (fields[i].name) {
+                            db_result->column_names[i] = strdup(fields[i].name);
+                        } else {
+                            char col_name[32];
+                            snprintf(col_name, sizeof(col_name), "col_%zu", i);
+                            db_result->column_names[i] = strdup(col_name);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Allocate buffer for fetching rows - using simple string buffers
+        #define MAX_COL_SIZE 4096
+        char** col_buffers = calloc(column_count, sizeof(char*));
+        long* col_lengths = calloc(column_count, sizeof(long));
+        char* col_is_null = calloc(column_count, sizeof(char));
+        
+        if (!col_buffers || !col_lengths || !col_is_null) {
+            free(col_buffers);
+            free(col_lengths);
+            free(col_is_null);
+            if (mysql_result && mysql_free_result_ptr) {
+                mysql_free_result_ptr(mysql_result);
+            }
+            free(db_result->column_names);
+            free(db_result);
+            return false;
+        }
+
+        // Allocate column buffers
+        for (size_t i = 0; i < column_count; i++) {
+            col_buffers[i] = calloc(1, MAX_COL_SIZE);
+            if (!col_buffers[i]) {
+                for (size_t j = 0; j < i; j++) {
+                    free(col_buffers[j]);
+                }
+                free(col_buffers);
+                free(col_lengths);
+                free(col_is_null);
+                if (mysql_result && mysql_free_result_ptr) {
+                    mysql_free_result_ptr(mysql_result);
+                }
+                free(db_result->column_names);
+                free(db_result);
+                return false;
+            }
+        }
+
+        // Create MYSQL_BIND structures for result binding
+        typedef struct {
+            unsigned long length;
+            char is_null;
+            char error;
+            void* buffer;
+            unsigned long buffer_length;
+            unsigned int buffer_type;  // enum_field_types
+        } MYSQL_BIND_WRAPPER;
+
+        MYSQL_BIND_WRAPPER* bind = calloc(column_count, sizeof(MYSQL_BIND_WRAPPER));
+        if (!bind) {
+            for (size_t i = 0; i < column_count; i++) {
+                free(col_buffers[i]);
+            }
+            free(col_buffers);
+            free(col_lengths);
+            free(col_is_null);
+            if (mysql_result && mysql_free_result_ptr) {
+                mysql_free_result_ptr(mysql_result);
+            }
+            free(db_result->column_names);
+            free(db_result);
+            return false;
+        }
+
+        // Bind result columns
+        for (size_t i = 0; i < column_count; i++) {
+            bind[i].buffer_type = 253; // MYSQL_TYPE_STRING
+            bind[i].buffer = col_buffers[i];
+            bind[i].buffer_length = MAX_COL_SIZE;
+            bind[i].length = (unsigned long)col_lengths[i];
+            bind[i].is_null = col_is_null[i];
+        }
+
+        if (mysql_stmt_bind_result_ptr && mysql_stmt_bind_result_ptr(stmt_handle, bind) != 0) {
+            log_this(designator, "MySQL prepared statement bind result failed", LOG_LEVEL_ERROR, 0);
+            free(bind);
+            for (size_t i = 0; i < column_count; i++) {
+                free(col_buffers[i]);
+            }
+            free(col_buffers);
+            free(col_lengths);
+            free(col_is_null);
+            if (mysql_result && mysql_free_result_ptr) {
+                mysql_free_result_ptr(mysql_result);
+            }
+            free(db_result->column_names);
+            free(db_result);
+            return false;
+        }
+
+        // Fetch all rows into JSON
+        size_t json_size = 8192;
+        db_result->data_json = calloc(1, json_size);
+        if (db_result->data_json) {
+            strcpy(db_result->data_json, "[");
+            size_t row_count = 0;
+
+            while (mysql_stmt_fetch_ptr && mysql_stmt_fetch_ptr(stmt_handle) == 0) {
+                if (row_count > 0) strcat(db_result->data_json, ",");
+
+                // Expand JSON buffer if needed
+                if (strlen(db_result->data_json) + 4096 > json_size) {
+                    json_size *= 2;
+                    char* new_json = realloc(db_result->data_json, json_size);
+                    if (!new_json) break;
+                    db_result->data_json = new_json;
+                }
+
+                strcat(db_result->data_json, "{");
+                for (size_t col = 0; col < column_count; col++) {
+                    if (col > 0) strcat(db_result->data_json, ",");
+                    
+                    char col_json[MAX_COL_SIZE + 256];
+                    const char* col_name = db_result->column_names ? db_result->column_names[col] : "unknown";
+                    
+                    if (col_is_null[col]) {
+                        snprintf(col_json, sizeof(col_json), "\"%s\":null", col_name);
+                    } else {
+                        char escaped_data[MAX_COL_SIZE];
+                        mysql_json_escape_string(col_buffers[col], escaped_data, sizeof(escaped_data));
+                        snprintf(col_json, sizeof(col_json), "\"%s\":\"%s\"", col_name, escaped_data);
+                    }
+                    
+                    strcat(db_result->data_json, col_json);
+                }
+                strcat(db_result->data_json, "}");
+                row_count++;
+            }
+            strcat(db_result->data_json, "]");
+            db_result->row_count = row_count;
+        }
+
+        // Cleanup
+        free(bind);
+        for (size_t i = 0; i < column_count; i++) {
+            free(col_buffers[i]);
+        }
+        free(col_buffers);
+        free(col_lengths);
+        free(col_is_null);
+
+        if (mysql_stmt_free_result_ptr) {
+            mysql_stmt_free_result_ptr(stmt_handle);
+        }
+        if (mysql_result && mysql_free_result_ptr) {
+            mysql_free_result_ptr(mysql_result);
+        }
+    } else {
+        // No result set (e.g., INSERT, UPDATE, DELETE)
+        db_result->row_count = 0;
+        db_result->column_count = 0;
+        db_result->data_json = strdup("[]");
+        
+        // Get affected rows
+        if (mysql_stmt_affected_rows_ptr) {
+            unsigned long long affected = mysql_stmt_affected_rows_ptr(stmt_handle);
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wconversion"
+            db_result->affected_rows = (size_t)affected;
+            #pragma GCC diagnostic pop
+        } else {
+            db_result->affected_rows = 0;
+        }
+    }
+
+    *result = db_result;
+
+    log_this(designator, "MySQL execute_prepared: Query completed successfully", LOG_LEVEL_TRACE, 0);
+    return true;
 }

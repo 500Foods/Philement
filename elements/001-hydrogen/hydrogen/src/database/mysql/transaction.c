@@ -14,6 +14,9 @@
 #include "connection.h"
 #include "transaction.h"
 
+// External declarations for timeout checking (defined in connection.c)
+extern bool mysql_check_timeout_expired(time_t start_time, int timeout_seconds);
+
 // External declarations for libmysqlclient function pointers (defined in connection.c)
 extern mysql_query_t mysql_query_ptr;
 extern mysql_autocommit_t mysql_autocommit_ptr;
@@ -54,11 +57,21 @@ bool mysql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel 
             isolation_str = "REPEATABLE READ"; // MySQL default
     }
 
-    // Set isolation level
+    // Set isolation level with timeout protection
     if (mysql_query_ptr) {
         char query[256];
         snprintf(query, sizeof(query), "SET SESSION TRANSACTION ISOLATION LEVEL %s", isolation_str);
-        if (mysql_query_ptr(mysql_conn->connection, query) != 0) {
+        
+        time_t start_time = time(NULL);
+        int result = mysql_query_ptr(mysql_conn->connection, query);
+        
+        // Check if operation took too long
+        if (mysql_check_timeout_expired(start_time, 10)) {
+            log_this(SR_DATABASE, "MySQL SET ISOLATION LEVEL execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
+            return false;
+        }
+        
+        if (result != 0) {
             log_this(SR_DATABASE, "MySQL SET ISOLATION LEVEL failed", LOG_LEVEL_ERROR, 0);
             if (mysql_error_ptr) {
                 const char* error_msg = mysql_error_ptr(mysql_conn->connection);
@@ -70,7 +83,8 @@ bool mysql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel 
         }
     }
 
-    // Begin transaction
+    // Begin transaction with timeout protection
+    time_t begin_time = time(NULL);
     if (mysql_autocommit_ptr) {
         if (mysql_autocommit_ptr(mysql_conn->connection, 0) != 0) {
             log_this(SR_DATABASE, "MySQL BEGIN TRANSACTION failed", LOG_LEVEL_ERROR, 0);
@@ -93,6 +107,16 @@ bool mysql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel 
             }
             return false;
         }
+    }
+    
+    // Check if begin transaction took too long
+    if (mysql_check_timeout_expired(begin_time, 10)) {
+        log_this(SR_DATABASE, "MySQL BEGIN TRANSACTION execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
+        // Try to restore autocommit
+        if (mysql_autocommit_ptr) {
+            mysql_autocommit_ptr(mysql_conn->connection, 1);
+        }
+        return false;
     }
 
     // Create transaction structure
@@ -129,7 +153,8 @@ bool mysql_commit_transaction(DatabaseHandle* connection, Transaction* transacti
         return false;
     }
 
-    // Commit transaction
+    // Commit transaction with timeout protection
+    time_t start_time = time(NULL);
     if (mysql_commit_ptr) {
         if (mysql_commit_ptr(mysql_conn->connection) != 0) {
             log_this(SR_DATABASE, "MySQL COMMIT failed", LOG_LEVEL_ERROR, 0);
@@ -152,6 +177,12 @@ bool mysql_commit_transaction(DatabaseHandle* connection, Transaction* transacti
             }
             return false;
         }
+    }
+    
+    // Check if commit took too long
+    if (mysql_check_timeout_expired(start_time, 10)) {
+        log_this(SR_DATABASE, "MySQL COMMIT execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
+        return false;
     }
 
     // Re-enable autocommit
@@ -176,7 +207,8 @@ bool mysql_rollback_transaction(DatabaseHandle* connection, Transaction* transac
         return false;
     }
 
-    // Rollback transaction
+    // Rollback transaction with timeout protection
+    time_t start_time = time(NULL);
     if (mysql_rollback_ptr) {
         if (mysql_rollback_ptr(mysql_conn->connection) != 0) {
             log_this(SR_DATABASE, "MySQL ROLLBACK failed", LOG_LEVEL_ERROR, 0);
@@ -199,6 +231,12 @@ bool mysql_rollback_transaction(DatabaseHandle* connection, Transaction* transac
             }
             return false;
         }
+    }
+    
+    // Check if rollback took too long
+    if (mysql_check_timeout_expired(start_time, 10)) {
+        log_this(SR_DATABASE, "MySQL ROLLBACK execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
+        return false;
     }
 
     // Re-enable autocommit

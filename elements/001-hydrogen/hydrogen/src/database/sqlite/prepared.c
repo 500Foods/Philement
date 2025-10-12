@@ -12,6 +12,10 @@
 // Local includes
 #include "types.h"
 #include "prepared.h"
+#include "connection.h"
+
+// External declarations for timeout checking (defined in connection.c)
+extern bool sqlite_check_timeout_expired(time_t start_time, int timeout_seconds);
 
 // External declarations for libsqlite3 function pointers (defined in connection.c)
 extern sqlite3_prepare_v2_t sqlite3_prepare_v2_ptr;
@@ -96,10 +100,21 @@ bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, cons
         return false;
     }
 
-    // Prepare the statement
+    // Prepare the statement with timeout protection
     void* sqlite_stmt = NULL;
     const char* tail = NULL;
+    
+    time_t start_time = time(NULL);
     int result = sqlite3_prepare_v2_ptr(sqlite_conn->db, sql, -1, &sqlite_stmt, &tail);
+    
+    // Check if prepare took too long
+    if (sqlite_check_timeout_expired(start_time, 15)) {
+        log_this(SR_DATABASE, "SQLite PREPARE execution time exceeded 15 seconds", LOG_LEVEL_ERROR, 0);
+        if (sqlite_stmt) {
+            sqlite3_finalize_ptr(sqlite_stmt);
+        }
+        return false;
+    }
 
     if (result != SQLITE_OK) {
         log_this(SR_DATABASE, "SQLite sqlite3_prepare_v2 failed", LOG_LEVEL_ERROR, 0);
@@ -125,25 +140,75 @@ bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, cons
     prepared_stmt->usage_count = 0;
     prepared_stmt->engine_specific_handle = sqlite_stmt;  // Store SQLite statement handle
 
-    // Add to connection's prepared statement array
-    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+    // Add to connection's prepared statement array with LRU tracking
+    // Since each thread owns its connection exclusively, no mutex needed
 
-    // Expand array if needed (simple approach - just add one more)
-    PreparedStatement** new_array = realloc(connection->prepared_statements,
-                                           (connection->prepared_statement_count + 1) * sizeof(PreparedStatement*));
-    if (!new_array) {
-        MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
-        free(prepared_stmt->name);
-        free(prepared_stmt->sql_template);
-        free(prepared_stmt);
-        sqlite3_finalize_ptr(sqlite_stmt);
-        return false;
+    // Get cache size from database configuration (default to 1000 if not set)
+    size_t cache_size = 1000; // Default value
+    if (connection->config && connection->config->prepared_statement_cache_size > 0) {
+        cache_size = (size_t)connection->config->prepared_statement_cache_size;
     }
-    connection->prepared_statements = new_array;
-    connection->prepared_statements[connection->prepared_statement_count] = prepared_stmt;
-    connection->prepared_statement_count++;
 
-    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
+    // Initialize array if this is the first prepared statement
+    if (!connection->prepared_statements) {
+        connection->prepared_statements = calloc(cache_size, sizeof(PreparedStatement*));
+        if (!connection->prepared_statements) {
+            free(prepared_stmt->name);
+            free(prepared_stmt->sql_template);
+            free(prepared_stmt);
+            sqlite3_finalize_ptr(sqlite_stmt);
+            return false;
+        }
+        connection->prepared_statement_count = 0;
+        // Initialize LRU counter
+        if (!connection->prepared_statement_lru_counter) {
+            connection->prepared_statement_lru_counter = calloc(cache_size, sizeof(uint64_t));
+        }
+    }
+
+    // Check if cache is full - implement LRU eviction
+    if (connection->prepared_statement_count >= cache_size) {
+        // Find least recently used prepared statement (lowest LRU counter)
+        size_t lru_index = 0;
+        uint64_t min_lru_value = UINT64_MAX;
+
+        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+            if (connection->prepared_statement_lru_counter[i] < min_lru_value) {
+                min_lru_value = connection->prepared_statement_lru_counter[i];
+                lru_index = i;
+            }
+        }
+
+        // Evict the LRU prepared statement
+        PreparedStatement* evicted_stmt = connection->prepared_statements[lru_index];
+        if (evicted_stmt) {
+            // Clean up the evicted statement
+            if (sqlite3_finalize_ptr && evicted_stmt->engine_specific_handle) {
+                sqlite3_finalize_ptr(evicted_stmt->engine_specific_handle);
+            }
+            free(evicted_stmt->name);
+            free(evicted_stmt->sql_template);
+            free(evicted_stmt);
+        }
+
+        // Shift remaining elements to fill the gap
+        for (size_t i = lru_index; i < connection->prepared_statement_count - 1; i++) {
+            connection->prepared_statements[i] = connection->prepared_statements[i + 1];
+            connection->prepared_statement_lru_counter[i] = connection->prepared_statement_lru_counter[i + 1];
+        }
+
+        connection->prepared_statement_count--;
+        log_this(SR_DATABASE, "Evicted LRU prepared statement to make room for: %s", LOG_LEVEL_DEBUG, 1, name);
+    }
+
+    // Store the new prepared statement at the end
+    size_t new_index = connection->prepared_statement_count;
+    connection->prepared_statements[new_index] = prepared_stmt;
+
+    // Update LRU counter for this statement (global counter for recency tracking)
+    static uint64_t global_lru_counter = 0;
+    connection->prepared_statement_lru_counter[new_index] = ++global_lru_counter;
+    connection->prepared_statement_count++;
 
     *stmt = prepared_stmt;
 
@@ -167,7 +232,7 @@ bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* s
     if (!sqlite3_finalize_ptr) {
         log_this(SR_DATABASE, "SQLite prepared statement functions not available for cleanup", LOG_LEVEL_DEBUG, 0);
         // Still clean up our structures
-        MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+        // Since each thread owns its connection exclusively, no mutex needed
         // Find and remove from connection's array
         for (size_t i = 0; i < connection->prepared_statement_count; i++) {
             if (connection->prepared_statements[i] == stmt) {
@@ -179,7 +244,6 @@ bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* s
                 break;
             }
         }
-        MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
         free(stmt->name);
         free(stmt->sql_template);
         free(stmt);
@@ -192,7 +256,7 @@ bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* s
     }
 
     // Remove from connection's prepared statement array
-    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+    // Since each thread owns its connection exclusively, no mutex needed
     for (size_t i = 0; i < connection->prepared_statement_count; i++) {
         if (connection->prepared_statements[i] == stmt) {
             // Shift remaining elements
@@ -203,7 +267,6 @@ bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* s
             break;
         }
     }
-    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
 
     // Free statement structure
     free(stmt->name);

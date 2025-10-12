@@ -89,29 +89,81 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
     prepared_stmt->created_at = time(NULL);
     prepared_stmt->usage_count = 0;
 
-    // Add to connection's prepared statement array
-    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+    // Add to connection's prepared statement array with LRU tracking
+    // Since each thread owns its connection exclusively, no mutex needed
 
-    // Expand array if needed (simple approach - just add one more)
-    PreparedStatement** new_array = realloc(connection->prepared_statements,
-                                           (connection->prepared_statement_count + 1) * sizeof(PreparedStatement*));
-    if (!new_array) {
-        MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
-        free(prepared_stmt->name);
-        free(prepared_stmt->sql_template);
-        free(prepared_stmt);
-        // Cleanup with timeout protection
-        char dealloc_query[256];
-        snprintf(dealloc_query, sizeof(dealloc_query), "DEALLOCATE %s", name);
-        void* dealloc_res = PQexec_ptr(pg_conn->connection, dealloc_query);
-        if (dealloc_res) PQclear_ptr(dealloc_res);
-        return false;
+    // Get cache size from database configuration (default to 1000 if not set)
+    size_t cache_size = 1000; // Default value
+    if (connection->config && connection->config->prepared_statement_cache_size > 0) {
+        cache_size = (size_t)connection->config->prepared_statement_cache_size;
     }
-    connection->prepared_statements = new_array;
-    connection->prepared_statements[connection->prepared_statement_count] = prepared_stmt;
-    connection->prepared_statement_count++;
 
-    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
+    // Initialize array if this is the first prepared statement
+    if (!connection->prepared_statements) {
+        connection->prepared_statements = calloc(cache_size, sizeof(PreparedStatement*));
+        if (!connection->prepared_statements) {
+            free(prepared_stmt->name);
+            free(prepared_stmt->sql_template);
+            free(prepared_stmt);
+            // Cleanup with timeout protection
+            char dealloc_query[256];
+            snprintf(dealloc_query, sizeof(dealloc_query), "DEALLOCATE %s", name);
+            void* dealloc_res = PQexec_ptr(pg_conn->connection, dealloc_query);
+            if (dealloc_res) PQclear_ptr(dealloc_res);
+            return false;
+        }
+        connection->prepared_statement_count = 0;
+        // Initialize LRU counter
+        if (!connection->prepared_statement_lru_counter) {
+            connection->prepared_statement_lru_counter = calloc(cache_size, sizeof(uint64_t));
+        }
+    }
+
+    // Check if cache is full - implement LRU eviction
+    if (connection->prepared_statement_count >= cache_size) {
+        // Find least recently used prepared statement (lowest LRU counter)
+        size_t lru_index = 0;
+        uint64_t min_lru_value = UINT64_MAX;
+
+        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+            if (connection->prepared_statement_lru_counter[i] < min_lru_value) {
+                min_lru_value = connection->prepared_statement_lru_counter[i];
+                lru_index = i;
+            }
+        }
+
+        // Evict the LRU prepared statement
+        PreparedStatement* evicted_stmt = connection->prepared_statements[lru_index];
+        if (evicted_stmt) {
+            // Clean up the evicted statement - deallocate from database
+            char dealloc_query[256];
+            snprintf(dealloc_query, sizeof(dealloc_query), "DEALLOCATE %s", evicted_stmt->name);
+            void* dealloc_res = PQexec_ptr(pg_conn->connection, dealloc_query);
+            if (dealloc_res) PQclear_ptr(dealloc_res);
+
+            free(evicted_stmt->name);
+            free(evicted_stmt->sql_template);
+            free(evicted_stmt);
+        }
+
+        // Shift remaining elements to fill the gap
+        for (size_t i = lru_index; i < connection->prepared_statement_count - 1; i++) {
+            connection->prepared_statements[i] = connection->prepared_statements[i + 1];
+            connection->prepared_statement_lru_counter[i] = connection->prepared_statement_lru_counter[i + 1];
+        }
+
+        connection->prepared_statement_count--;
+        log_this(SR_DATABASE, "Evicted LRU prepared statement to make room for: %s", LOG_LEVEL_TRACE, 1, name);
+    }
+
+    // Store the new prepared statement at the end
+    size_t new_index = connection->prepared_statement_count;
+    connection->prepared_statements[new_index] = prepared_stmt;
+
+    // Update LRU counter for this statement (global counter for recency tracking)
+    static uint64_t global_lru_counter = 0;
+    connection->prepared_statement_lru_counter[new_index] = ++global_lru_counter;
+    connection->prepared_statement_count++;
 
     *stmt = prepared_stmt;
 
@@ -157,7 +209,7 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
     PQclear_ptr(res);
 
     // Remove from connection's prepared statement array
-    MUTEX_LOCK(&connection->connection_lock, SR_DATABASE);
+    // Since each thread owns its connection exclusively, no mutex needed
     for (size_t i = 0; i < connection->prepared_statement_count; i++) {
         if (connection->prepared_statements[i] == stmt) {
             // Shift remaining elements
@@ -168,7 +220,6 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
             break;
         }
     }
-    MUTEX_UNLOCK(&connection->connection_lock, SR_DATABASE);
 
     // Free statement structure
     free(stmt->name);

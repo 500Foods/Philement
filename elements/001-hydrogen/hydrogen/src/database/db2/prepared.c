@@ -12,6 +12,10 @@
 // Local includes
 #include "types.h"
 #include "prepared.h"
+#include "connection.h"
+
+// External declarations for timeout checking (defined in connection.c)
+extern bool db2_check_timeout_expired(time_t start_time, int timeout_seconds);
 
 // External declarations for libdb2 function pointers (defined in connection.c)
 extern SQLAllocHandle_t SQLAllocHandle_ptr;
@@ -101,8 +105,17 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
         return false;
     }
 
-    // Prepare the statement
+    // Prepare the statement with timeout protection
+    time_t start_time = time(NULL);
     int result = SQLPrepare_ptr(stmt_handle, (char*)sql, SQL_NTS);
+    
+    // Check if prepare took too long
+    if (db2_check_timeout_expired(start_time, 15)) {
+        log_this(SR_DATABASE, "DB2 PREPARE execution time exceeded 15 seconds", LOG_LEVEL_ERROR, 0);
+        SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+        return false;
+    }
+    
     if (result != SQL_SUCCESS) {
         log_this(SR_DATABASE, "DB2 SQLPrepare failed", LOG_LEVEL_ERROR, 0);
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);

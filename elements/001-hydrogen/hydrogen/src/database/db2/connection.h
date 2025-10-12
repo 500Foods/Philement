@@ -10,6 +10,9 @@
 #include "../database.h"
 #include "types.h"
 
+// Utility functions
+bool db2_check_timeout_expired(time_t start_time, int timeout_seconds);
+
 // Connection management
 bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);
 bool db2_disconnect(DatabaseHandle* connection);

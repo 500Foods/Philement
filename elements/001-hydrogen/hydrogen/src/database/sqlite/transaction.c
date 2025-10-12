@@ -12,6 +12,10 @@
 // Local includes
 #include "types.h"
 #include "transaction.h"
+#include "connection.h"
+
+// External declarations for timeout checking (defined in connection.c)
+extern bool sqlite_check_timeout_expired(time_t start_time, int timeout_seconds);
 
 // External declarations for libsqlite3 function pointers (defined in connection.c)
 extern sqlite3_exec_t sqlite3_exec_ptr;
@@ -47,12 +51,22 @@ bool sqlite_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel
             isolation_str = ""; // SQLite default
     }
 
-    // Begin transaction
+    // Begin transaction with timeout protection
     char query[256];
     snprintf(query, sizeof(query), "BEGIN%s;", isolation_str);
 
+    time_t start_time = time(NULL);
     char* error_msg = NULL;
     int result = sqlite3_exec_ptr(sqlite_conn->db, query, NULL, NULL, &error_msg);
+    
+    // Check if operation took too long
+    if (sqlite_check_timeout_expired(start_time, 10)) {
+        log_this(SR_DATABASE, "SQLite BEGIN TRANSACTION execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
+        if (error_msg) {
+            free(error_msg);
+        }
+        return false;
+    }
 
     if (result != SQLITE_OK) {
         log_this(SR_DATABASE, "SQLite BEGIN TRANSACTION failed", LOG_LEVEL_ERROR, 0);
@@ -99,9 +113,19 @@ bool sqlite_commit_transaction(DatabaseHandle* connection, Transaction* transact
         return false;
     }
 
-    // Commit transaction
+    // Commit transaction with timeout protection
+    time_t start_time = time(NULL);
     char* error_msg = NULL;
     int result = sqlite3_exec_ptr(sqlite_conn->db, "COMMIT;", NULL, NULL, &error_msg);
+    
+    // Check if commit took too long
+    if (sqlite_check_timeout_expired(start_time, 10)) {
+        log_this(SR_DATABASE, "SQLite COMMIT execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
+        if (error_msg) {
+            free(error_msg);
+        }
+        return false;
+    }
 
     if (result != SQLITE_OK) {
         log_this(SR_DATABASE, "SQLite COMMIT failed", LOG_LEVEL_ERROR, 0);
@@ -135,9 +159,19 @@ bool sqlite_rollback_transaction(DatabaseHandle* connection, Transaction* transa
         return false;
     }
 
-    // Rollback transaction
+    // Rollback transaction with timeout protection
+    time_t start_time = time(NULL);
     char* error_msg = NULL;
     int result = sqlite3_exec_ptr(sqlite_conn->db, "ROLLBACK;", NULL, NULL, &error_msg);
+    
+    // Check if rollback took too long
+    if (sqlite_check_timeout_expired(start_time, 10)) {
+        log_this(SR_DATABASE, "SQLite ROLLBACK execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
+        if (error_msg) {
+            free(error_msg);
+        }
+        return false;
+    }
 
     if (result != SQLITE_OK) {
         log_this(SR_DATABASE, "SQLite ROLLBACK failed", LOG_LEVEL_ERROR, 0);

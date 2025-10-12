@@ -9,6 +9,9 @@
 
 #include "../database.h"
 
+// Utility functions
+bool sqlite_check_timeout_expired(time_t start_time, int timeout_seconds);
+
 // Connection management
 bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);
 bool sqlite_disconnect(DatabaseHandle* connection);
