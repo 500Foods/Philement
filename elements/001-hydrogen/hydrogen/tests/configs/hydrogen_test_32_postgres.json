@@ -20,7 +20,7 @@
                 "Bootstrap":"SELECT * FROM app.queries;",
                 "AutoMigration": true,
                 "TestMigration": true,
-                "Schema": "app",
+                "Schema": "test",
                 "Migrations":"PAYLOAD:acuranzo",
                 "Queues": {
                     "Slow": {

@@ -98,8 +98,6 @@ local database = {
             JSON_INGEST_START = "%%SCHEMA%%json_ingest (",
             JSON_INGEST_END = ")",
             JSON_INGEST_FUNCTION = [[
-                CREATE SCHEMA IF NOT EXISTS app;
-
                 CREATE OR REPLACE FUNCTION %%SCHEMA%%json_ingest(s TEXT)
                 RETURNS JSONB
                 LANGUAGE plpgsql
@@ -171,69 +169,55 @@ local database = {
             VARCHAR_500 = "VARCHAR(500)",
             TEXT = "TEXT",
             BIGTEXT = "TEXT",
-            JSONB = "JSON",
+            JSONB = "LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin", -- because JSON_VALID doesn't pass our JSON properly
             TIMESTAMP_TZ = "TIMESTAMP",
             NOW = "CURRENT_TIMESTAMP",
             CHECK_CONSTRAINT = "ENUM('Pending', 'Applied', 'Utility')",
             JSON_INGEST_START = "%%SCHEMA%%json_ingest(",
             JSON_INGEST_END = ")",
             JSON_INGEST_FUNCTION = [[
-                DELIMITER $$
-
-                DROP FUNCTION IF EXISTS json_ingest $$
-                CREATE FUNCTION json_ingest(s LONGTEXT)
-                RETURNS JSON
+                CREATE OR REPLACE FUNCTION json_ingest(s LONGTEXT)
+                RETURNS LONGTEXT
                 DETERMINISTIC
                 BEGIN
-                  DECLARE ok BOOL DEFAULT TRUE;
                   DECLARE fixed LONGTEXT DEFAULT '';
                   DECLARE i INT DEFAULT 1;
                   DECLARE L INT DEFAULT CHAR_LENGTH(s);
                   DECLARE ch CHAR(1);
                   DECLARE in_str BOOL DEFAULT FALSE;
-                  DECLARE esc    BOOL DEFAULT FALSE;
-
-                  -- fast path
-                  BEGIN
-                    RETURN CAST(s AS JSON);
-                  EXCEPTION
-                    WHEN SQLEXCEPTION THEN SET ok = FALSE;
-                  END;
-
+                  DECLARE esc BOOL DEFAULT FALSE;
+                  -- fast path: check validity without exception
+                  IF JSON_VALID(s) THEN
+                    RETURN s;
+                  END IF;
+                  -- fallback: escape control chars in strings
                   WHILE i <= L DO
                     SET ch = SUBSTRING(s, i, 1);
-
                     IF esc THEN
                       SET fixed = CONCAT(fixed, ch);
                       SET esc = FALSE;
-
                     ELSEIF ch = '\\' THEN
                       SET fixed = CONCAT(fixed, ch);
                       SET esc = TRUE;
-
-                    ELSEIF ch = '"' THEN
+                    ELSEIF ch = '''' THEN
                       SET fixed = CONCAT(fixed, ch);
                       SET in_str = NOT in_str;
-
                     ELSEIF in_str AND ch = '\n' THEN
                       SET fixed = CONCAT(fixed, '\\n');
-
                     ELSEIF in_str AND ch = '\r' THEN
                       SET fixed = CONCAT(fixed, '\\r');
-
                     ELSEIF in_str AND ch = '\t' THEN
                       SET fixed = CONCAT(fixed, '\\t');
-
+                    ELSEIF in_str AND ORD(ch) < 32 THEN
+                      -- General escape for other control chars (U+0000-U+001F) as \u00xx
+                      SET fixed = CONCAT(fixed, CONCAT('\\u00', LPAD(HEX(ORD(ch)), 2, '0')));
                     ELSE
                       SET fixed = CONCAT(fixed, ch);
                     END IF;
-
                     SET i = i + 1;
                   END WHILE;
-
-                  RETURN CAST(fixed AS JSON);
-                END $$
-                DELIMITER ;
+                  RETURN fixed;
+                END;
             ]]
         },
 
@@ -254,8 +238,8 @@ local database = {
             JSON_INGEST_START = "%%SCHEMA%%json_ingest(",
             JSON_INGEST_END = ")",
             JSON_INGEST_FUNCTION = [[
-                -- json.ingest for db2 v3
-                CREATE OR REPLACE FUNCTION TEST.json_ingest(s CLOB)
+                -- json.ingest for db2 attempt 3
+                CREATE OR REPLACE FUNCTION %%SCHEMA%%json_ingest(s CLOB)
                 RETURNS CLOB
                 LANGUAGE SQL
                 DETERMINISTIC
@@ -324,21 +308,11 @@ local database = {
         local cfg = self.defaults[engine]
 
         -- Generate schema prefix based on design name and database conventions
-        local schema_prefix
-        if schema_name then
-            if engine == "postgresql" then
-                schema_prefix = schema_name .. "."
-            elseif engine == "mysql" then
-                schema_prefix = schema_name .. "."
-            elseif engine == "sqlite" then
-                schema_prefix = schema_name .. "."
-            elseif engine == "db2" then
-                schema_prefix = schema_name:upper() .. "."
-            else
-                schema_prefix = schema_name .. "."
-            end
-        else
-            schema_prefix = ''
+        -- Perfectly acceptable for schema to be empty (typical for SQLite)
+        local schema_prefix = ''
+        if schema_name and schema_name ~= '' and schema_name ~= '.' then
+          local prefixed_name = (engine == 'db2') and schema_name:upper() or schema_name
+          schema_prefix = prefixed_name .. '.'
         end
 
         -- Add additional placeholders to cfg for unified processing

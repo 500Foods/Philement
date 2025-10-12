@@ -1,16 +1,5 @@
 {
   "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "~/Projects"
-      ],
-      "alwaysAllow": [
-        "search_files"
-      ]
-    },
     "time": {
       "command": "uvx",
       "args": [

@@ -318,8 +318,24 @@ bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* s
     // Get the prepared statement handle
     void* stmt_handle = stmt->engine_specific_handle;
     if (!stmt_handle) {
-        log_this(designator, "DB2 prepared statement execution: No statement handle available", LOG_LEVEL_ERROR, 0);
-        return false;
+        // Statement had no executable SQL (e.g., only comments after macro processing)
+        // Return successful empty result instead of error
+        log_this(designator, "DB2 prepared statement: No executable SQL (statement was not actionable)", LOG_LEVEL_DEBUG, 0);
+        
+        QueryResult* db_result = calloc(1, sizeof(QueryResult));
+        if (!db_result) {
+            return false;
+        }
+        
+        db_result->success = true;
+        db_result->row_count = 0;
+        db_result->column_count = 0;
+        db_result->affected_rows = 0;
+        db_result->execution_time_ms = 0;
+        db_result->data_json = strdup("[]");
+        
+        *result = db_result;
+        return true;
     }
 
     // Check if SQLExecute is available

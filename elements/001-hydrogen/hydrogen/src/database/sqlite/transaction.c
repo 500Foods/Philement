@@ -32,28 +32,35 @@ bool sqlite_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel
         return false;
     }
 
-    // Determine isolation level string (SQLite has limited isolation level support)
-    const char* isolation_str = "";
+    // SQLite uses different transaction types instead of SQL-92 isolation levels:
+    // - DEFERRED (default): lock acquired when first read/write
+    // - IMMEDIATE: lock acquired immediately
+    // - EXCLUSIVE: exclusive lock
+    const char* transaction_type = "";
     switch (level) {
         case DB_ISOLATION_READ_UNCOMMITTED:
-            isolation_str = " READ UNCOMMITTED";
+            // SQLite's closest match: DEFERRED with read_uncommitted pragma
+            transaction_type = " DEFERRED";
             break;
         case DB_ISOLATION_READ_COMMITTED:
-            isolation_str = " READ COMMITTED";
+            // Use DEFERRED transaction (SQLite's default locking behavior)
+            transaction_type = " DEFERRED";
             break;
         case DB_ISOLATION_REPEATABLE_READ:
-            isolation_str = " REPEATABLE READ";
+            // Use IMMEDIATE to lock earlier
+            transaction_type = " IMMEDIATE";
             break;
         case DB_ISOLATION_SERIALIZABLE:
-            isolation_str = " SERIALIZABLE";
+            // Use EXCLUSIVE for strongest isolation
+            transaction_type = " EXCLUSIVE";
             break;
         default:
-            isolation_str = ""; // SQLite default
+            transaction_type = " DEFERRED"; // SQLite default
     }
 
     // Begin transaction with timeout protection
     char query[256];
-    snprintf(query, sizeof(query), "BEGIN%s;", isolation_str);
+    snprintf(query, sizeof(query), "BEGIN%s;", transaction_type);
 
     time_t start_time = time(NULL);
     char* error_msg = NULL;

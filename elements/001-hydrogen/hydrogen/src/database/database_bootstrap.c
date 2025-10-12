@@ -153,6 +153,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 
             // log_this(dqm_label, "Query execution completed (direct method)", LOG_LEVEL_TRACE, 0);
 
+            // Log bootstrap query result (success or failure)
             if (query_success && result && result->success) {
                 double execution_time = ((double)query_end_time.tv_sec - (double)query_start_time.tv_sec) +
                                        ((double)query_end_time.tv_nsec - (double)query_start_time.tv_nsec) / 1e9;
@@ -164,31 +165,40 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 if (result->row_count > 0 && result->column_count > 0 && result->data_json) {
                     // log_this(dqm_label, "Bootstrap query result data: %s", LOG_LEVEL_TRACE, 1, result->data_json);
                 }
+            } else {
+                log_this(dqm_label, "Bootstrap query failed: success=%d, result=%p, error=%s", LOG_LEVEL_ALERT, 3,
+                        query_success,
+                        (void*)result,
+                        result && result->error_message ? result->error_message : "Unknown error");
+                log_this(dqm_label, "Bootstrap failure is acceptable - migrations will still run if enabled", LOG_LEVEL_ALERT, 0);
+            }
 
-                // log_this(dqm_label, "Bootstrap query completed successfully - continuing with heartbeat", LOG_LEVEL_TRACE, 0);
-
-                // Perform migration processing if AutoMigration is enabled
-                const DatabaseConnection* migration_conn_config = NULL;
-                if (app_config) {
-                    for (int i = 0; i < app_config->databases.connection_count; i++) {
-                        if (strcmp(app_config->databases.connections[i].name, db_queue->database_name) == 0) {
-                            migration_conn_config = &app_config->databases.connections[i];
-                            break;
-                        }
+            // Perform migration processing if AutoMigration is enabled
+            // NOTE: Migrations run REGARDLESS of bootstrap success to allow table creation
+            const DatabaseConnection* migration_conn_config = NULL;
+            if (app_config) {
+                for (int i = 0; i < app_config->databases.connection_count; i++) {
+                    if (strcmp(app_config->databases.connections[i].name, db_queue->database_name) == 0) {
+                        migration_conn_config = &app_config->databases.connections[i];
+                        break;
                     }
                 }
+            }
 
-                if (migration_conn_config && migration_conn_config->auto_migration) {
-                    log_this(dqm_label, "Automatic Migration enabled - Importing Migrations", LOG_LEVEL_DEBUG, 0);
-                    bool migrations_valid = validate(db_queue);
+            if (migration_conn_config && migration_conn_config->auto_migration) {
+                log_this(dqm_label, "Automatic Migration enabled - Importing Migrations", LOG_LEVEL_DEBUG, 0);
+                bool migrations_valid = validate(db_queue);
 
-                    if (migrations_valid) {
-                        // Execute auto migrations (populate Queries table)
-                        execute_auto(db_queue, connection_to_use);
-                    } else {
-                        log_this(dqm_label, "Migration validation failed - continuing without migrations", LOG_LEVEL_ALERT, 0);
-                    }
+                if (migrations_valid) {
+                    // Execute auto migrations (populate Queries table)
+                    execute_auto(db_queue, connection_to_use);
+                } else {
+                    log_this(dqm_label, "Migration validation failed - continuing without migrations", LOG_LEVEL_ALERT, 0);
                 }
+            }
+
+            // Launch additional DQMs based on configuration regardless of bootstrap/migration results
+            if (query_success && result && result->success) {
 
                 // Launch additional DQMs based on configuration
                 if (app_config) {
@@ -336,34 +346,14 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                         log_group_end();
                     }
                 }
+            }
 
-                // Signal bootstrap completion for launch synchronization
-                MutexResult bootstrap_lock_result = MUTEX_LOCK(&db_queue->bootstrap_lock, dqm_label);
-                if (bootstrap_lock_result == MUTEX_SUCCESS) {
-                    db_queue->bootstrap_completed = true;
-                    pthread_cond_broadcast(&db_queue->bootstrap_cond);
-                    mutex_unlock(&db_queue->bootstrap_lock);
-                }
-            } else {
-                log_this(dqm_label, "Bootstrap query failed: success=%d, result=%p, error=%s", LOG_LEVEL_ERROR, 3,
-                        query_success,
-                        (void*)result,
-                        result && result->error_message ? result->error_message : "Unknown error");
-
-                if (result) {
-                    // log_this(dqm_label, "Result details: row_count=%zu, column_count=%zu, affected_rows=%d", LOG_LEVEL_TRACE, 3,
-                    //         result->row_count,
-                    //         result->column_count,
-                    //         result->affected_rows);
-                }
-
-                // Signal bootstrap completion even on failure to prevent launch hang
-                MutexResult bootstrap_lock_result2 = MUTEX_LOCK(&db_queue->bootstrap_lock, dqm_label);
-                if (bootstrap_lock_result2 == MUTEX_SUCCESS) {
-                    db_queue->bootstrap_completed = true;
-                    pthread_cond_broadcast(&db_queue->bootstrap_cond);
-                    mutex_unlock(&db_queue->bootstrap_lock);
-                }
+            // Signal bootstrap completion for launch synchronization
+            MutexResult bootstrap_lock_result = MUTEX_LOCK(&db_queue->bootstrap_lock, dqm_label);
+            if (bootstrap_lock_result == MUTEX_SUCCESS) {
+                db_queue->bootstrap_completed = true;
+                pthread_cond_broadcast(&db_queue->bootstrap_cond);
+                mutex_unlock(&db_queue->bootstrap_lock);
             }
 
             // Log completion message for test synchronization

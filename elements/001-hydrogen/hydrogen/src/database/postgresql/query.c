@@ -224,6 +224,28 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
         return false;
     }
 
+    // Check if statement name is valid
+    if (!stmt->name || strlen(stmt->name) == 0) {
+        // Statement had no executable SQL (e.g., only comments after macro processing)
+        // Return successful empty result instead of error
+        log_this(designator, "PostgreSQL prepared statement: No executable SQL (statement was not actionable)", LOG_LEVEL_DEBUG, 0);
+        
+        QueryResult* db_result = calloc(1, sizeof(QueryResult));
+        if (!db_result) {
+            return false;
+        }
+        
+        db_result->success = true;
+        db_result->row_count = 0;
+        db_result->column_count = 0;
+        db_result->affected_rows = 0;
+        db_result->execution_time_ms = 0;
+        db_result->data_json = strdup("[]");
+        
+        *result = db_result;
+        return true;
+    }
+
     log_this(designator, "PostgreSQL execute_prepared: Executing prepared statement: %s", LOG_LEVEL_TRACE, 1, stmt->name);
 
     // Set PostgreSQL statement timeout before executing prepared statement
