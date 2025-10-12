@@ -64,3 +64,52 @@ char* mysql_escape_string(const DatabaseHandle* connection, const char* input) {
 
     return escaped;
 }
+
+int mysql_json_escape_string(const char* input, char* output, size_t output_size) {
+    if (!input || !output || output_size < 2) {
+        return -1;
+    }
+
+    const char* src = input;
+    char* dst = output;
+    size_t available = output_size - 1; // Reserve space for null terminator
+
+    while (*src && available > 0) {
+        if (*src == '"' || *src == '\\') {
+            if (available < 2) break;
+            *dst++ = '\\';
+            *dst++ = (*src == '"') ? '"' : '\\';
+            available -= 2;
+        } else if (*src == '\n') {
+            if (available < 2) break;
+            *dst++ = '\\';
+            *dst++ = 'n';
+            available -= 2;
+        } else if (*src == '\r') {
+            if (available < 2) break;
+            *dst++ = '\\';
+            *dst++ = 'r';
+            available -= 2;
+        } else if (*src == '\t') {
+            if (available < 2) break;
+            *dst++ = '\\';
+            *dst++ = 't';
+            available -= 2;
+        } else {
+            *dst++ = *src;
+            available--;
+        }
+        src++;
+    }
+
+    *dst = '\0';
+
+    // Return -1 if we couldn't fit everything
+    if (*src != '\0') {
+        return -1;
+    }
+
+    // Cast pointer difference to int safely
+    ptrdiff_t diff = dst - output;
+    return (int)diff;
+}

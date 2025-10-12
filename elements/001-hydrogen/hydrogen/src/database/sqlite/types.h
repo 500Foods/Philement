@@ -18,7 +18,7 @@ typedef int (*sqlite3_step_t)(void*);
 typedef int (*sqlite3_finalize_t)(void*);
 typedef int (*sqlite3_column_count_t)(void*);
 typedef const char* (*sqlite3_column_name_t)(void*, int);
-typedef const char* (*sqlite3_column_text_t)(void*, int);
+typedef const unsigned char* (*sqlite3_column_text_t)(void*, int);
 typedef int (*sqlite3_column_type_t)(void*, int);
 typedef int (*sqlite3_changes_t)(void*);
 typedef int (*sqlite3_reset_t)(void*);
@@ -58,6 +58,7 @@ extern sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr;
 #define SQLITE_OK 0
 #define SQLITE_ROW 100
 #define SQLITE_DONE 101
+#define SQLITE_NULL 5
 
 // Prepared statement cache structure
 typedef struct PreparedStatementCache {
