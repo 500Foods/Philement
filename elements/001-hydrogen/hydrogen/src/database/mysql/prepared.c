@@ -24,6 +24,117 @@ extern mysql_stmt_execute_t mysql_stmt_execute_ptr;
 extern mysql_stmt_close_t mysql_stmt_close_ptr;
 extern mysql_error_t mysql_error_ptr;
 
+// Helper functions for better testability
+bool mysql_validate_prepared_statement_functions(void) {
+    return mysql_stmt_init_ptr && mysql_stmt_prepare_ptr &&
+           mysql_stmt_execute_ptr && mysql_stmt_close_ptr;
+}
+
+void* mysql_create_statement_handle(void* mysql_connection) {
+    if (!mysql_stmt_init_ptr) return NULL;
+    return mysql_stmt_init_ptr(mysql_connection);
+}
+
+bool mysql_prepare_statement_handle(void* stmt_handle, const char* sql) {
+    if (!mysql_stmt_prepare_ptr) return false;
+    return mysql_stmt_prepare_ptr(stmt_handle, sql, strlen(sql)) == 0;
+}
+
+bool mysql_initialize_prepared_statement_cache(DatabaseHandle* connection, size_t cache_size) {
+    if (connection->prepared_statements) return true; // Already initialized
+
+    connection->prepared_statements = calloc(cache_size, sizeof(PreparedStatement*));
+    if (!connection->prepared_statements) return false;
+
+    connection->prepared_statement_count = 0;
+
+    if (!connection->prepared_statement_lru_counter) {
+        connection->prepared_statement_lru_counter = calloc(cache_size, sizeof(uint64_t));
+    }
+
+    return connection->prepared_statements && connection->prepared_statement_lru_counter;
+}
+
+size_t mysql_find_lru_statement_index(DatabaseHandle* connection) {
+    size_t lru_index = 0;
+    uint64_t min_lru_value = UINT64_MAX;
+
+    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+        if (connection->prepared_statement_lru_counter[i] < min_lru_value) {
+            min_lru_value = connection->prepared_statement_lru_counter[i];
+            lru_index = i;
+        }
+    }
+
+    return lru_index;
+}
+
+void mysql_evict_lru_statement(DatabaseHandle* connection, size_t lru_index) {
+    PreparedStatement* evicted_stmt = connection->prepared_statements[lru_index];
+    if (evicted_stmt) {
+        if (mysql_stmt_close_ptr && evicted_stmt->engine_specific_handle) {
+            mysql_stmt_close_ptr(evicted_stmt->engine_specific_handle);
+        }
+        free(evicted_stmt->name);
+        free(evicted_stmt->sql_template);
+        free(evicted_stmt);
+    }
+
+    // Shift remaining elements to fill the gap
+    for (size_t i = lru_index; i < connection->prepared_statement_count - 1; i++) {
+        connection->prepared_statements[i] = connection->prepared_statements[i + 1];
+        connection->prepared_statement_lru_counter[i] = connection->prepared_statement_lru_counter[i + 1];
+    }
+
+    connection->prepared_statement_count--;
+}
+
+bool mysql_add_statement_to_cache(DatabaseHandle* connection, PreparedStatement* stmt, size_t cache_size) {
+    if (!mysql_initialize_prepared_statement_cache(connection, cache_size)) {
+        return false;
+    }
+
+    // Check if cache is full - implement LRU eviction
+    if (connection->prepared_statement_count >= cache_size) {
+        size_t lru_index = mysql_find_lru_statement_index(connection);
+        mysql_evict_lru_statement(connection, lru_index);
+        log_this(SR_DATABASE, "Evicted LRU prepared statement to make room for: %s", LOG_LEVEL_TRACE, 1, stmt->name);
+    }
+
+    // Store the new prepared statement at the end
+    size_t new_index = connection->prepared_statement_count;
+    connection->prepared_statements[new_index] = stmt;
+
+    // Update LRU counter for this statement (global counter for recency tracking)
+    static uint64_t global_lru_counter = 0;
+    connection->prepared_statement_lru_counter[new_index] = ++global_lru_counter;
+    connection->prepared_statement_count++;
+
+    return true;
+}
+
+bool mysql_remove_statement_from_cache(DatabaseHandle* connection, const PreparedStatement* stmt) {
+    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+        if (connection->prepared_statements[i] == stmt) {
+            // Shift remaining elements
+            for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
+                connection->prepared_statements[j] = connection->prepared_statements[j + 1];
+            }
+            connection->prepared_statement_count--;
+            return true;
+        }
+    }
+    return false;
+}
+
+void mysql_cleanup_prepared_statement(PreparedStatement* stmt) {
+    if (stmt) {
+        free(stmt->name);
+        free(stmt->sql_template);
+        free(stmt);
+    }
+}
+
 // Utility functions for prepared statement cache
 bool mysql_add_prepared_statement(PreparedStatementCache* cache, const char* name) {
     if (!cache || !name) return false;
@@ -98,13 +209,13 @@ bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const
     }
 
     // Check if prepared statement functions are available
-    if (!mysql_stmt_init_ptr || !mysql_stmt_prepare_ptr || !mysql_stmt_execute_ptr || !mysql_stmt_close_ptr) {
+    if (!mysql_validate_prepared_statement_functions()) {
         log_this(SR_DATABASE, "MySQL prepared statement functions not available", LOG_LEVEL_TRACE, 0);
         return false;
     }
 
     // Initialize prepared statement
-    void* mysql_stmt = mysql_stmt_init_ptr(mysql_conn->connection);
+    void* mysql_stmt = mysql_create_statement_handle(mysql_conn->connection);
     if (!mysql_stmt) {
         log_this(SR_DATABASE, "MySQL mysql_stmt_init failed", LOG_LEVEL_ERROR, 0);
         if (mysql_error_ptr) {
@@ -118,16 +229,14 @@ bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const
 
     // Prepare the statement with timeout protection
     time_t start_time = time(NULL);
-    int prepare_result = mysql_stmt_prepare_ptr(mysql_stmt, sql, strlen(sql));
-    
-    // Check if prepare took too long
-    if (mysql_check_timeout_expired(start_time, 15)) {
-        log_this(SR_DATABASE, "MySQL PREPARE execution time exceeded 15 seconds", LOG_LEVEL_ERROR, 0);
-        mysql_stmt_close_ptr(mysql_stmt);
-        return false;
-    }
-    
-    if (prepare_result != 0) {
+    if (!mysql_prepare_statement_handle(mysql_stmt, sql)) {
+        // Check if prepare took too long
+        if (mysql_check_timeout_expired(start_time, 15)) {
+            log_this(SR_DATABASE, "MySQL PREPARE execution time exceeded 15 seconds", LOG_LEVEL_ERROR, 0);
+            mysql_stmt_close_ptr(mysql_stmt);
+            return false;
+        }
+
         log_this(SR_DATABASE, "MySQL mysql_stmt_prepare failed", LOG_LEVEL_ERROR, 0);
         if (mysql_error_ptr) {
             const char* error_msg = mysql_error_ptr(mysql_conn->connection);
@@ -152,75 +261,20 @@ bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const
     prepared_stmt->usage_count = 0;
     prepared_stmt->engine_specific_handle = mysql_stmt;  // Store MySQL statement handle
 
-    // Add to connection's prepared statement array with LRU tracking
-    // Since each thread owns its connection exclusively, no mutex needed
-
     // Get cache size from database configuration (default to 1000 if not set)
     size_t cache_size = 1000; // Default value
     if (connection->config && connection->config->prepared_statement_cache_size > 0) {
         cache_size = (size_t)connection->config->prepared_statement_cache_size;
     }
 
-    // Initialize array if this is the first prepared statement
-    if (!connection->prepared_statements) {
-        connection->prepared_statements = calloc(cache_size, sizeof(PreparedStatement*));
-        if (!connection->prepared_statements) {
-            free(prepared_stmt->name);
-            free(prepared_stmt->sql_template);
-            free(prepared_stmt);
-            mysql_stmt_close_ptr(mysql_stmt);
-            return false;
-        }
-        connection->prepared_statement_count = 0;
-        // Initialize LRU counter
-        if (!connection->prepared_statement_lru_counter) {
-            connection->prepared_statement_lru_counter = calloc(cache_size, sizeof(uint64_t));
-        }
+    // Add to cache using helper function
+    if (!mysql_add_statement_to_cache(connection, prepared_stmt, cache_size)) {
+        free(prepared_stmt->name);
+        free(prepared_stmt->sql_template);
+        free(prepared_stmt);
+        mysql_stmt_close_ptr(mysql_stmt);
+        return false;
     }
-
-    // Check if cache is full - implement LRU eviction
-    if (connection->prepared_statement_count >= cache_size) {
-        // Find least recently used prepared statement (lowest LRU counter)
-        size_t lru_index = 0;
-        uint64_t min_lru_value = UINT64_MAX;
-
-        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
-            if (connection->prepared_statement_lru_counter[i] < min_lru_value) {
-                min_lru_value = connection->prepared_statement_lru_counter[i];
-                lru_index = i;
-            }
-        }
-
-        // Evict the LRU prepared statement
-        PreparedStatement* evicted_stmt = connection->prepared_statements[lru_index];
-        if (evicted_stmt) {
-            // Clean up the evicted statement
-            if (mysql_stmt_close_ptr && evicted_stmt->engine_specific_handle) {
-                mysql_stmt_close_ptr(evicted_stmt->engine_specific_handle);
-            }
-            free(evicted_stmt->name);
-            free(evicted_stmt->sql_template);
-            free(evicted_stmt);
-        }
-
-        // Shift remaining elements to fill the gap
-        for (size_t i = lru_index; i < connection->prepared_statement_count - 1; i++) {
-            connection->prepared_statements[i] = connection->prepared_statements[i + 1];
-            connection->prepared_statement_lru_counter[i] = connection->prepared_statement_lru_counter[i + 1];
-        }
-
-        connection->prepared_statement_count--;
-        log_this(SR_DATABASE, "Evicted LRU prepared statement to make room for: %s", LOG_LEVEL_TRACE, 1, name);
-    }
-
-    // Store the new prepared statement at the end
-    size_t new_index = connection->prepared_statement_count;
-    connection->prepared_statements[new_index] = prepared_stmt;
-
-    // Update LRU counter for this statement (global counter for recency tracking)
-    static uint64_t global_lru_counter = 0;
-    connection->prepared_statement_lru_counter[new_index] = ++global_lru_counter;
-    connection->prepared_statement_count++;
 
     *stmt = prepared_stmt;
 
@@ -245,22 +299,9 @@ bool mysql_unprepare_statement(DatabaseHandle* connection, PreparedStatement* st
     // Check if prepared statement functions are available
     if (!mysql_stmt_close_ptr) {
         log_this(SR_DATABASE, "MySQL prepared statement functions not available for cleanup", LOG_LEVEL_TRACE, 0);
-        // Still clean up our structures
-        // Since each thread owns its connection exclusively, no mutex needed
-        // Find and remove from connection's array
-        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
-            if (connection->prepared_statements[i] == stmt) {
-                // Shift remaining elements
-                for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
-                    connection->prepared_statements[j] = connection->prepared_statements[j + 1];
-                }
-                connection->prepared_statement_count--;
-                break;
-            }
-        }
-        free(stmt->name);
-        free(stmt->sql_template);
-        free(stmt);
+        // Still clean up our structures using helper function
+        mysql_remove_statement_from_cache(connection, stmt);
+        mysql_cleanup_prepared_statement(stmt);
         return true;
     }
 
@@ -269,23 +310,11 @@ bool mysql_unprepare_statement(DatabaseHandle* connection, PreparedStatement* st
         mysql_stmt_close_ptr(stmt->engine_specific_handle);
     }
 
-    // Remove from connection's prepared statement array
-    // Since each thread owns its connection exclusively, no mutex needed
-    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
-        if (connection->prepared_statements[i] == stmt) {
-            // Shift remaining elements
-            for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
-                connection->prepared_statements[j] = connection->prepared_statements[j + 1];
-            }
-            connection->prepared_statement_count--;
-            break;
-        }
-    }
+    // Remove from connection's prepared statement array using helper function
+    mysql_remove_statement_from_cache(connection, stmt);
 
-    // Free statement structure
-    free(stmt->name);
-    free(stmt->sql_template);
-    free(stmt);
+    // Free statement structure using helper function
+    mysql_cleanup_prepared_statement(stmt);
 
     log_this(SR_DATABASE, "MySQL prepared statement removed", LOG_LEVEL_TRACE, 0);
     return true;
