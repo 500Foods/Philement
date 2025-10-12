@@ -21,6 +21,7 @@
                 "AutoMigration": true,
                 "TestMigration": true,
                 "Migrations":"PAYLOAD:acuranzo",
+                "Schema": "canvas",
                 "Queues": {
                     "Slow": {
                         "start": 2

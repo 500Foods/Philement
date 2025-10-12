@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg"
+<svg   xmlns="http://www.w3.org/2000/svg"
             xmlns:xlink="http://www.w3.org/1999/xlink"
             width="2520"
             height="1980"
@@ -116,7 +116,7 @@
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -184,7 +184,7 @@
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -246,7 +246,7 @@
     <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -320,7 +320,7 @@
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -383,7 +383,7 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -458,7 +458,7 @@
     <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="324.2813959644875" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -579,7 +579,7 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -644,7 +644,7 @@
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">TEXT</text>
     <rect x="0.6459402744148507" y="266.14677126715094" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="285.331197417272" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="295.2140836158192" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="314.3985097659403" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -703,7 +703,7 @@
     <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -783,7 +783,7 @@
     <text x="240.45126715092815" y="343.46582211460856" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="353.3487083131558" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="372.53313446327684" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="382.41602066182406" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="401.6004468119451" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -841,7 +841,7 @@
     <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -902,7 +902,7 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -959,7 +959,7 @@
     <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -1022,7 +1022,7 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -1079,7 +1079,7 @@
     <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="black" font-weight="normal">TEXT</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -1143,7 +1143,7 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -1197,7 +1197,7 @@
     <text x="240.45126715092815" y="139.9946356739306" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="149.87752187247781" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -1314,7 +1314,7 @@
     <text x="240.45126715092815" y="169.06194802259887" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="178.9448342211461" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -1377,7 +1377,7 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -1485,7 +1485,7 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>
@@ -1548,7 +1548,7 @@
     <text x="240.45126715092815" y="198.12926037126715" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="maroon" font-weight="normal">INT</text>
     <rect x="0.6459402744148507" y="208.01214656981438" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">JSON</text>
+    <text x="240.45126715092815" y="227.19657271993543" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin</text>
     <rect x="0.6459402744148507" y="237.07945891848266" width="274.68610169491524" height="29.06731234866828" fill="transparent" stroke="#cccccc" stroke-width="0.484455205811138"/>
     <text x="35.52671509281679" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="240.45126715092815" y="256.2638850686037" font-family="Cairo, Arial, sans-serif" font-size="12.918805488297014" text-anchor="end" fill="forestgreen" font-weight="normal">TIMESTAMP</text>

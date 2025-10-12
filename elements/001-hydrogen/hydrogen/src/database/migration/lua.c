@@ -67,7 +67,7 @@ bool lua_load_database_module(lua_State* L, const char* migration_name,
         return false;
     }
 
-    log_this(dqm_label, "Found database.lua in payload: %s (%zu bytes)", LOG_LEVEL_TRACE, 2, db_filename, db_file->size);
+    log_this(dqm_label, "Found database.lua in payload: %s (%'zu bytes)", LOG_LEVEL_TRACE, 2, db_filename, db_file->size);
 
     // Load and execute database.lua and make it available as a module
     if (luaL_loadbuffer(L, (const char*)db_file->data, db_file->size, "database.lua") != LUA_OK) {

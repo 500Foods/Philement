@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hydrogen Terminal</title>
+    <link rel="stylesheet" href="xterm.css">
+    <link rel="stylesheet" href="terminal.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1e1e1e;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            color: #ffffff;
+            overflow: hidden;
+        }
+        .header {
+            background: #2d2d30;
+            color: #cccccc;
+            padding: 8px 16px;
+            font-size: 12px;
+            border-bottom: 1px solid #3e3e42;
+        }
+        .terminal-container {
+            position: absolute;
+            top: 40px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1e1e1e;
+        }
+        #terminal {
+            width: 100%;
+            height: 100%;
+            padding: 8px;
+        }
+        .status {
+            display: none;
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            z-index: 1000;
+        }
+        .status.error {
+            background: rgba(220, 53, 69, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span id="header-title">Hydrogen Terminal</span>
+        <span id="header-info" style="position:absolute;right:16px">[Disconnected]</span>
+    </div>
+    <div class="terminal-container">
+        <div id="terminal"></div>
+    </div>
+    <div id="status" class="status"></div>
+
+    <script src="xterm.js"></script>
+    <script src="xterm-addon-attach.js"></script>
+    <script src="xterm-addon-fit.js"></script>
+
+    <script>
+        // Initialize terminal
+        const terminalElement = document.getElementById('terminal');
+        const headerInfo = document.getElementById('header-info');
+        const statusElement = document.getElementById('status');
+
+        let term = null;
+        let websocket = null;
+        let isConnected = false;
+
+        function showStatus(message, isError = false) {
+            statusElement.textContent = message;
+            statusElement.className = 'status' + (isError ? ' error' : '');
+            statusElement.style.display = 'block';
+            setTimeout(() => {
+                statusElement.style.display = 'none';
+            }, 3000);
+        }
+
+        function updateHeaderInfo() {
+            headerInfo.textContent = isConnected ? `[Connected - ${term.cols}x${term.rows}]` : '[Disconnected]';
+        }
+
+        function initializeTerminal() {
+            term = new Terminal({
+                cursorBlink: true,
+                cursorStyle: 'block',
+                fontSize: 14,
+                fontFamily: "'Fira Code', 'Cascadia Code', 'Monaco', 'Courier New', monospace",
+                letterSpacing: 0.5,
+                lineHeight: 1.2,
+                theme: {
+                    background: '#1e1e1e',
+                    foreground: '#d4d4d4',
+                    black: '#000000',
+                    blue: '#569cd6',
+                    brightBlack: '#000000',
+                    brightBlue: '#569cd6',
+                    brightCyan: '#4ec9b0',
+                    brightGreen: '#6a9955',
+                    brightMagenta: '#c586c0',
+                    brightRed: '#f44747',
+                    brightWhite: '#d4d4d4',
+                    brightYellow: '#dcdcaa',
+                    cyan: '#4ec9b0',
+                    green: '#6a9955',
+                    magenta: '#c586c0',
+                    red: '#f44747',
+                    white: '#d4d4d4',
+                    yellow: '#dcdcaa'
+                }
+            });
+
+            // Load addons
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+
+            // Open terminal
+            term.open(terminalElement);
+
+            // Fit to container
+            fitAddon.fit();
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                fitAddon.fit();
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
+                    websocket.send(JSON.stringify({
+                        type: 'resize',
+                        cols: term.cols,
+                        rows: term.rows
+                    }));
+                }
+                updateHeaderInfo();
+            });
+
+            // Handle terminal input
+            term.onData(data => {
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
+                    websocket.send(JSON.stringify({
+                        type: 'input',
+                        data: data
+                    }));
+                }
+            });
+
+            term.writeln('\x1b[32mHydrogen Terminal Ready\x1b[0m\r\n$ ');
+
+            updateHeaderInfo();
+        }
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            // Connect to WebSocket server on port 5261
+            const hostname = window.location.hostname;
+            const wsPort = '5261';
+            
+            // Get WebSocket key from environment or use a default
+            // In production, this should come from server-side configuration
+            const wsKey = 'ABDEFGHIJKLMNOP';
+            const wsUrl = `${protocol}//${hostname}:${wsPort}?key=${encodeURIComponent(wsKey)}`;
+
+            showStatus('Connecting to terminal...');
+
+            // Create WebSocket with terminal protocol
+            websocket = new WebSocket(wsUrl, 'terminal');
+
+            websocket.onopen = () => {
+                isConnected = true;
+                showStatus('Terminal connected successfully');
+                updateHeaderInfo();
+
+                // Send initial terminal size
+                websocket.send(JSON.stringify({
+                    type: 'resize',
+                    cols: term.cols,
+                    rows: term.rows
+                }));
+            };
+
+            websocket.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'output') {
+                        term.write(message.data);
+                    }
+                } catch (e) {
+                    term.write(event.data);
+                }
+            };
+
+            websocket.onclose = () => {
+                isConnected = false;
+                showStatus('Terminal disconnected', false);
+                updateHeaderInfo();
+                term.writeln('\r\n\x1b[31mTerminal disconnected\x1b[0m');
+                term.writeln('$ ');
+            };
+
+            websocket.onerror = (error) => {
+                isConnected = false;
+                showStatus('Connection error', true);
+                updateHeaderInfo();
+                term.writeln(`\r\n\x1b[31mTerminal connection error: ${error}\x1b[0m\r\n$ `);
+            };
+        }
+
+        // Initialize and connect
+        try {
+            initializeTerminal();
+            setTimeout(connectWebSocket, 500);
+        } catch (error) {
+            showStatus(`Initialization error: ${error.message}`, true);
+            console.error('Terminal initialization error:', error);
+        }
+
+        // Handle page visibility for reconnection
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && websocket) {
+                websocket.close();
+            } else if (!document.hidden && !isConnected) {
+                connectWebSocket();
+            }
+        });
+    </script>
+</body>
+</html>

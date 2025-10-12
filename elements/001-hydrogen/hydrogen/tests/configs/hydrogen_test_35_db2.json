@@ -17,7 +17,7 @@
                 "Port": 55555,
                 "User": "${env.HYDROTST_DB_USER}",
                 "Pass": "${env.HYDROTST_DB_PASS}",
-                "Bootstrap":"SELECT * FROM acuranzo.queries;",
+                "Bootstrap":"SELECT * FROM test.queries;",
                 "AutoMigration": true,
                 "TestMigration": true,
                 "Migrations":"PAYLOAD:acuranzo",
