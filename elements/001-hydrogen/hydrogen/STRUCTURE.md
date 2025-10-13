@@ -308,17 +308,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 </details>
 
-## Configuration
-
-<details>
-<summary><b>Configuration Files</b></summary>
-
-- [configs/hydrogen.json](configs/hydrogen.json) - Main configuration file for the Hydrogen server
-- [configs/hydrogen_env.json](configs/hydrogen_env.json) - Environment-specific configuration
-- [configs/hydrogen_default.json](configs/hydrogen_default.json) - Version included in the installer
-
-</details>
-
 ## Documentation
 
 <details>
