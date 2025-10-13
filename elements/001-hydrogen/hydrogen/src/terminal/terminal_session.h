@@ -232,6 +232,17 @@ int terminate_all_sessions(void);
 bool session_manager_has_capacity(void);
 
 /**
+ * Generate unique session ID
+ *
+ * Creates a unique session identifier using UUID. Exposed for testing.
+ *
+ * @param session_id Output buffer to store the session ID
+ * @param size Size of the output buffer (must be at least 37 bytes)
+ * @return true on success, false on failure
+ */
+bool generate_session_id(char *session_id, size_t size);
+
+/**
  * Test control functions - for making the code more testable
  *
  * These functions allow tests to control the behavior of the session manager

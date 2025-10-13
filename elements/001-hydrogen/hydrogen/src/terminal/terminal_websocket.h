@@ -153,6 +153,43 @@ bool terminal_websocket_requires_auth(const struct TerminalConfig *config);
  */
 bool get_websocket_connection_stats(size_t *connections, size_t *max_connections);
 
+/**
+ * Check if I/O bridge loop should continue
+ *
+ * Validates connection state, session state, and PTY availability
+ * to determine if the bridge thread should keep running.
+ *
+ * @param connection WebSocket connection context
+ * @return true if loop should continue, false if it should exit
+ */
+bool should_continue_io_bridge(TerminalWSConnection *connection);
+
+/**
+ * Perform select and read from PTY
+ *
+ * Sets up select() on the PTY file descriptor, waits for data with timeout,
+ * and reads available data into the provided buffer.
+ *
+ * @param connection WebSocket connection context
+ * @param buffer Buffer to read data into
+ * @param buffer_size Size of the buffer
+ * @return Number of bytes read (>0), 0 for timeout/no data, -1 for error, -2 for interrupted
+ */
+int read_pty_with_select(TerminalWSConnection *connection, char *buffer, size_t buffer_size);
+
+/**
+ * Process data read from PTY
+ *
+ * Handles different read result scenarios: success, no data, or error.
+ * Sends successful reads to the WebSocket client.
+ *
+ * @param connection WebSocket connection context
+ * @param buffer Data buffer
+ * @param bytes_read Number of bytes read from PTY
+ * @return true to continue loop, false to exit
+ */
+bool process_pty_read_result(TerminalWSConnection *connection, const char *buffer, int bytes_read);
+
 #ifdef __cplusplus
 }
 #endif

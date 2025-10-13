@@ -28,6 +28,20 @@ extern pthread_mutex_t terminate_mutex;
 
 void mdns_server_send_announcement(mdns_server_t *mdns_server_instance, const network_info_t *net_info_instance);
 
+/**
+ * Process a received mDNS query packet and send response if appropriate
+ *
+ * @param mdns_server_instance Server instance
+ * @param net_info Network information
+ * @param buffer Packet buffer
+ * @param len Length of received data
+ * @return true if packet was processed successfully, false on error
+ */
+bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
+                                       const network_info_t *net_info,
+                                       const uint8_t *buffer,
+                                       ssize_t len);
+
 void *mdns_server_announce_loop(void *arg) {
     // Handle NULL argument gracefully
     // cppcheck-suppress knownConditionTrueFalse
@@ -81,6 +95,59 @@ void *mdns_server_announce_loop(void *arg) {
     return NULL;
 }
 
+bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
+                                       const network_info_t *net_info_instance,
+                                       const uint8_t *buffer,
+                                       ssize_t len) {
+    if (!mdns_server_instance || !buffer || len < (ssize_t)sizeof(dns_header_t)) {
+        return false;
+    }
+
+    char name[256];
+    const dns_header_t *header = (const dns_header_t *)buffer;
+    const uint8_t *ptr = buffer + sizeof(dns_header_t);
+
+    for (int j = 0; j < ntohs(header->qdcount); j++) {
+        ptr = read_dns_name((uint8_t *)ptr, buffer, name, sizeof(name));
+        if (!ptr) {
+            return false;
+        }
+
+        uint16_t qtype = ntohs(*((const uint16_t*)ptr));
+        ptr += 2;
+        uint16_t qclass = ntohs(*((const uint16_t*)ptr));
+        ptr += 2;
+
+        if ((qclass & 0x7FFF) == MDNS_CLASS_IN) {
+            if (qtype == MDNS_TYPE_PTR) {
+                for (size_t k = 0; k < mdns_server_instance->num_services; k++) {
+                    if (strcmp(name, mdns_server_instance->services[k].type) == 0) {
+                        mdns_server_send_announcement(mdns_server_instance, net_info_instance);
+                        return true;
+                    }
+                }
+            } else if (qtype == MDNS_TYPE_SRV || qtype == MDNS_TYPE_TXT) {
+                for (size_t k = 0; k < mdns_server_instance->num_services; k++) {
+                    char full_name[256];
+                    snprintf(full_name, sizeof(full_name), "%s.%s",
+                            mdns_server_instance->services[k].name,
+                            mdns_server_instance->services[k].type);
+                    if (strcmp(name, full_name) == 0) {
+                        mdns_server_send_announcement(mdns_server_instance, net_info_instance);
+                        return true;
+                    }
+                }
+            } else if ((qtype == MDNS_TYPE_A || qtype == MDNS_TYPE_AAAA || qtype == MDNS_TYPE_ANY) &&
+                       strcmp(name, mdns_server_instance->hostname) == 0) {
+                mdns_server_send_announcement(mdns_server_instance, net_info_instance);
+                return true;
+            }
+        }
+    }
+    
+    return true;  // Packet processed successfully even if no match
+}
+
 void *mdns_server_responder_loop(void *arg) {
     // Handle NULL argument gracefully
     // cppcheck-suppress knownConditionTrueFalse
@@ -100,7 +167,6 @@ void *mdns_server_responder_loop(void *arg) {
 
     mdns_server_t *mdns_server_instance = thread_arg->mdns_server;
     uint8_t buffer[MDNS_MAX_PACKET_SIZE];
-    char name[256];
 
     add_service_thread(&mdns_server_threads, pthread_self());
     log_this(SR_MDNS_SERVER, "mDNS Server responder loop started", LOG_LEVEL_STATE, 0);
@@ -169,42 +235,8 @@ void *mdns_server_responder_loop(void *arg) {
                     continue;
                 }
 
-                dns_header_t *header = (dns_header_t *)buffer;
-                uint8_t *ptr = buffer + sizeof(dns_header_t);
-
-                for (int j = 0; j < ntohs(header->qdcount); j++) {
-                    ptr = read_dns_name(ptr, buffer, name, sizeof(name));
-                    if (!ptr) break;
-
-                    uint16_t qtype = ntohs(*((uint16_t*)ptr)); ptr += 2;
-                    uint16_t qclass = ntohs(*((uint16_t*)ptr)); ptr += 2;
-
-                    if ((qclass & 0x7FFF) == MDNS_CLASS_IN) {
-                        if (qtype == MDNS_TYPE_PTR) {
-                            for (size_t k = 0; k < mdns_server_instance->num_services; k++) {
-                                if (strcmp(name, mdns_server_instance->services[k].type) == 0) {
-                                    mdns_server_send_announcement(mdns_server_instance, thread_arg->net_info);
-                                    goto next_packet;
-                                }
-                            }
-                        } else if (qtype == MDNS_TYPE_SRV || qtype == MDNS_TYPE_TXT) {
-                            for (size_t k = 0; k < mdns_server_instance->num_services; k++) {
-                                char full_name[256];
-                                snprintf(full_name, sizeof(full_name), "%s.%s", mdns_server_instance->services[k].name, mdns_server_instance->services[k].type);
-                                if (strcmp(name, full_name) == 0) {
-                                    mdns_server_send_announcement(mdns_server_instance, thread_arg->net_info);
-                                    goto next_packet;
-                                }
-                            }
-                        } else if ((qtype == MDNS_TYPE_A || qtype == MDNS_TYPE_AAAA || qtype == MDNS_TYPE_ANY) &&
-                                   strcmp(name, mdns_server_instance->hostname) == 0) {
-                            mdns_server_send_announcement(mdns_server_instance, thread_arg->net_info);
-                            goto next_packet;
-                        }
-                    }
-                }
-            next_packet:
-                continue;
+                // Process the DNS query packet
+                mdns_server_process_query_packet(mdns_server_instance, thread_arg->net_info, buffer, len);
             }
         }
     }
