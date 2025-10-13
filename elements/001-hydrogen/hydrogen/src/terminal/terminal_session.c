@@ -71,7 +71,7 @@ static void *session_cleanup_thread(void *arg) {
  * @param size Size of the output buffer
  * @return true on success, false on failure
  */
-static bool generate_session_id(char *session_id, size_t size) {
+bool generate_session_id(char *session_id, size_t size) {
     if (!session_id || size < 37) { // UUID string is 36 chars + null terminator
         return false;
     }
@@ -355,7 +355,8 @@ int cleanup_expired_sessions(void) {
     int cleaned_count = 0;
     time_t current_time = time(NULL);
 
-    pthread_rwlock_rdlock(&global_session_manager->sessions_lock);
+    // Use write lock since we'll be modifying the list
+    pthread_rwlock_wrlock(&global_session_manager->sessions_lock);
 
     TerminalSession *session = global_session_manager->active_sessions;
     while (session) {
@@ -365,6 +366,21 @@ int cleanup_expired_sessions(void) {
         if (global_session_manager->idle_timeout_seconds > 0 &&
             difftime(current_time, session->last_activity) >= global_session_manager->idle_timeout_seconds) {
             log_this(SR_TERMINAL, "Session %s expired due to idle timeout", LOG_LEVEL_STATE, 1, session->session_id);
+
+            // Lock session mutex for cleanup
+            pthread_mutex_lock(&session->session_mutex);
+
+            // Terminate PTY shell if present
+            if (session->pty_shell) {
+                pty_cleanup_shell(session->pty_shell);
+                session->pty_shell = NULL;
+            }
+
+            session->active = false;
+            session->connected = false;
+
+            pthread_mutex_unlock(&session->session_mutex);
+            pthread_mutex_destroy(&session->session_mutex);
 
             // Remove from current position in list
             if (session->prev) {
@@ -377,8 +393,8 @@ int cleanup_expired_sessions(void) {
             }
             global_session_manager->session_count--;
 
-            // Cleanup session (will unlock mutex internally)
-            remove_terminal_session(session);
+            // Free the session
+            free(session);
             cleaned_count++;
         }
 

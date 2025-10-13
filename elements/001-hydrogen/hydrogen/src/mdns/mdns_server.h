@@ -203,4 +203,10 @@ void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_l
 network_info_t *create_single_interface_net_info(const mdns_server_interface_t *iface);
 void free_single_interface_net_info(network_info_t *net_info_instance);
 
+// DNS packet processing helper (made non-static for unit testing)
+bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
+                                       const network_info_t *net_info_instance,
+                                       const uint8_t *buffer,
+                                       ssize_t len);
+
 #endif // MDNS_SERVER_H

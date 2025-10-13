@@ -45,6 +45,20 @@ static TerminalFile *terminal_files = NULL;
 static size_t num_terminal_files = 0;
 
 /**
+ * Format file size for display
+ * Helper function to format file size in human-readable format
+ */
+void format_file_size(size_t size, char *buffer, size_t buffer_size) {
+    if (size < 1024) {
+        snprintf(buffer, buffer_size, "%zu bytes", size);
+    } else if (size < 1024 * 1024) {
+        snprintf(buffer, buffer_size, "%.1fK", (double)size / 1024.0);
+    } else {
+        snprintf(buffer, buffer_size, "%.1fM", (double)size / (1024.0 * 1024.0));
+    }
+}
+
+/**
  * URL validator for terminal subsystem
  * This function validates whether a URL should be handled by the terminal subsystem
  */
@@ -199,16 +213,10 @@ bool init_terminal_support(TerminalConfig *config) {
     if (is_payload_mode) {
         for (size_t i = 0; i < num_terminal_files; i++) {
             char size_display[32];
-            if (terminal_files[i].size < 1024) {
-                snprintf(size_display, sizeof(size_display), "%zu bytes", terminal_files[i].size);
-            } else if (terminal_files[i].size < 1024 * 1024) {
-                snprintf(size_display, sizeof(size_display), "%.1fK", (double)terminal_files[i].size / 1024.0);
-            } else {
-                snprintf(size_display, sizeof(size_display), "%.1fM", (double)terminal_files[i].size / (1024.0 * 1024.0));
-            }
+            format_file_size(terminal_files[i].size, size_display, sizeof(size_display));
 
             log_this(SR_TERMINAL, "-> %s (%s%s)", LOG_LEVEL_STATE, 3,
-                terminal_files[i].name, 
+                terminal_files[i].name,
                 size_display,
                 terminal_files[i].is_compressed ? ", compressed" : "");
         }
