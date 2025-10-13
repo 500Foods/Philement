@@ -22,6 +22,9 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
                                       const char *url,
                                       const TerminalConfig *config);
 
+// Helper function for file size formatting
+void format_file_size(size_t size, char *buffer, size_t buffer_size);
+
 /**
  * Terminal URL validator - wrapper for webserver integration
  * @param url The URL to validate

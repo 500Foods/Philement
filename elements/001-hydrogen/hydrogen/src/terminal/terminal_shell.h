@@ -32,6 +32,24 @@ typedef struct PtyShell {
 } PtyShell;
 
 /**
+ * Create and configure a PTY pair
+ *
+ * @param master_fd Pointer to store master file descriptor
+ * @param slave_fd Pointer to store slave file descriptor
+ * @param slave_name Buffer to store slave device name (at least 256 bytes)
+ * @return true on success, false on failure
+ */
+bool create_pty_pair(int *master_fd, int *slave_fd, char *slave_name);
+
+/**
+ * Configure master file descriptor as non-blocking
+ *
+ * @param master_fd File descriptor to configure
+ * @return true on success, false on failure
+ */
+bool configure_master_fd(int master_fd);
+
+/**
  * Spawn a new shell process using PTY
  *
  * This function creates a new pseudo-terminal pair, forks a child process,
