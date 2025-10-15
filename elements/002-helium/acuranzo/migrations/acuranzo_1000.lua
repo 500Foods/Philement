@@ -12,22 +12,22 @@ return {
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --        
         {
             sql =   [[
-                        CREATE TABLE %%SCHEMA%%queries (
-                            query_id %%INTEGER%%,
-                            query_ref %%INTEGER%% NOT NULL,
-                            query_type_lua_28 %%INTEGER%% NOT NULL,
-                            query_dialect_lua_30 %%INTEGER%% NOT NULL,
-                            name %%VARCHAR_100%% NOT NULL,
-                            summary %%BIGTEXT%%,
-                            query_code %%BIGTEXT%% NOT NULL,
-                            query_status_lua_27 %%INTEGER%% NOT NULL,
-                            collection %%JSONB%%,
-                            valid_after %%TIMESTAMP_TZ%%,
-                            valid_until %%TIMESTAMP_TZ%%,
-                            created_id %%INTEGER%% NOT NULL,
-                            created_at %%TIMESTAMP_TZ%% NOT NULL,
-                            updated_id %%INTEGER%% NOT NULL,
-                            updated_at %%TIMESTAMP_TZ%% NOT NULL
+                        CREATE TABLE ${SCHEMA}queries (
+                            query_id                ${INTEGER},
+                            query_ref               ${INTEGER}          NOT NULL,
+                            query_type_lua_28       ${INTEGER}          NOT NULL,
+                            query_dialect_lua_30    ${INTEGER}          NOT NULL,
+                            name                    ${VARCHAR_100}      NOT NULL,
+                            summary                 ${BIGTEXT},
+                            query_code              ${BIGTEXT}          NOT NULL,
+                            query_status_lua_27     ${INTEGER}          NOT NULL,
+                            collection              ${JSONB},
+                            valid_after             ${TIMESTAMP_TZ},
+                            valid_until             ${TIMESTAMP_TZ},
+                            created_id              ${INTEGER}          NOT NULL,
+                            created_at              ${TIMESTAMP_TZ}     NOT NULL,
+                            updated_id              ${INTEGER}          NOT NULL,
+                            updated_at              ${TIMESTAMP_TZ}     NOT NULL
                         );
                     ]]
         },
@@ -35,21 +35,21 @@ return {
         {
             sql =   [[
                         -- Defined in database.lua as a macro
-                        %%JSON_INGEST_FUNCTION%%
+                        ${JSON_INGEST_FUNCTION}
                     ]]
         },
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --        
         {
             sql =   [[
-                        INSERT INTO %%SCHEMA%%queries (
-                            %%QUERY_INSERT_COLUMNS%%
+                        INSERT INTO ${SCHEMA}queries (
+                            ${QUERY_INSERT_COLUMNS}
                         )           
                         VALUES (
-                            1,                                  -- query_id
-                            1000,                               -- query_ref
-                            %%TYPE_FORWARD_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Create Tables Query',              -- name, summary, query_code
+                            1,                                      -- query_id
+                            1000,                                   -- query_ref
+                            ${TYPE_FORWARD_MIGRATION},              -- query_type_lua_28    
+                            ${DIALECT},                             -- query_dialect_lua_30    
+                            'Create Tables Query',                  -- name, summary, query_code
                             [=[
                                 # Forward Migration 1000: Create Tables Query
 
@@ -59,47 +59,42 @@ return {
                                 in its config (this is the default if not supplied).
                             ]=],
                             [=[
-                                CREATE TABLE %%SCHEMA%%queries (
-                                    query_id %%SERIAL%%,
-                                    query_ref %%INTEGER%% NOT NULL,
-                                    query_type_lua_28 %%INTEGER%% NOT NULL,
-                                    query_dialect_lua_30 %%INTEGER%% NOT NULL,
-                                    name %%VARCHAR_100%% NOT NULL,
-                                    summary %%TEXT%%,
-                                    query_code %%TEXT%% NOT NULL,
-                                    query_status_lua_27 %%INTEGER%% NOT NULL,
-                                    collection %%JSONB%%,
-                                    valid_after %%TIMESTAMP_TZ%%,
-                                    valid_until %%TIMESTAMP_TZ%%,
-                                    created_id %%INTEGER%% NOT NULL,
-                                    created_at %%TIMESTAMP_TZ%% NOT NULL,
-                                    updated_id %%INTEGER%% NOT NULL,
-                                    updated_at %%TIMESTAMP_TZ%% NOT NULL
+                                CREATE TABLE ${SCHEMA}queries (
+                                    query_id                ${SERIAL},
+                                    query_ref               ${INTEGER}          NOT NULL,
+                                    query_type_lua_28       ${INTEGER}          NOT NULL,
+                                    query_dialect_lua_30    ${INTEGER}          NOT NULL,
+                                    name                    ${VARCHAR_100}      NOT NULL,
+                                    summary                 ${TEXT},
+                                    query_code              ${TEXT}             NOT NULL,
+                                    query_status_lua_27     ${INTEGER}          NOT NULL,
+                                    collection              ${JSONB},
+                                    valid_after             ${TIMESTAMP_TZ},
+                                    valid_until             ${TIMESTAMP_TZ},
+                                    created_id              ${INTEGER}          NOT NULL,
+                                    created_at              ${TIMESTAMP_TZ}     NOT NULL,
+                                    updated_id              ${INTEGER}          NOT NULL,
+                                    updated_at              ${TIMESTAMP_TZ}     NOT NULL
                                 );
                             ]=],
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27
-                            NULL,                               -- collection
-                            NULL,                               -- valid_after
-                            NULL,                               -- valid_until
-                            0,                                  -- created_id
-                            %%NOW%%,                            -- created_at
-                            0,                                  -- updated_id
-                            %%NOW%%                             -- updated_at
+                            ${STATUS_ACTIVE},                       -- query_status_lua_27
+                            NULL,                                   -- collection
+                            ${QUERY_COMMON_BOILERPLATE}
                         );
                     ]]
         },        
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --        
         {
             sql =   [[
-                        INSERT INTO %%SCHEMA%%queries (
-                            %%QUERY_INSERT_COLUMNS%%
+                        INSERT INTO ${SCHEMA}queries (
+                            ${QUERY_INSERT_COLUMNS}
                         )           
                         VALUES (
-                            2,                                  -- query_id
-                            1000,                               -- query_ref
-                            %%TYPE_REVERSE_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
-                            'Delete Tables Query',              -- name, summary, query_code
+                            2,                                      -- query_id
+                            1000,                                   -- query_ref
+                            ${TYPE_REVERSE_MIGRATION},              -- query_type_lua_28    
+                            ${DIALECT},                             -- query_dialect_lua_30    
+                            'Delete Tables Query',                  -- name, summary, query_code
                             [=[
                                 # Reverse Migration 1000: Delete Tables Query
 
@@ -107,42 +102,37 @@ return {
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE %%SCHEMA%%queries; 
+                                DROP TABLE ${SCHEMA}queries; 
                             ]=],
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27
-                            NULL,                               -- collection
-                            NULL,                               -- valid_after
-                            NULL,                               -- valid_until
-                            0,                                  -- created_id
-                            %%NOW%%,                            -- created_at
-                            0,                                  -- updated_id
-                            %%NOW%%                             -- updated_at
+                            ${STATUS_ACTIVE},                       -- query_status_lua_27
+                            NULL,                                   -- collection
+                            ${QUERY_COMMON_BOILERPLATE}
                         );
                     ]]
         },        
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --       
         {
             sql =   [[
-                        INSERT INTO %%SCHEMA%%queries (
-                            %%QUERY_INSERT_COLUMNS%%
+                        INSERT INTO ${SCHEMA}queries (
+                            ${QUERY_INSERT_COLUMNS}
                         )           
                         VALUES (
-                            3,                                   -- query_id
-                            1000,                                -- query_ref
-                            %%TYPE_DIAGRAM_MIGRATIO%%,           -- query_type_lua_28    
-                            %%DIALECT%%,                         -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%queries', -- name, summary
+                            3,                                      -- query_id
+                            1000,                                   -- query_ref
+                            ${TYPE_DIAGRAM_MIGRATION},              -- query_type_lua_28    
+                            ${DIALECT},                             -- query_dialect_lua_30    
+                            'Diagram Tables: ${SCHEMA}queries',     -- name, summary
                             [=[
                                 # Diagram Migration 1000
                                 
-                                ## Diagram Tables: %%SCHEMA%%queries
+                                ## Diagram Tables: ${SCHEMA}queries
 
                                 This is the first JSON Diagram code for the queries table.
                             ]=],
-                            'JSON Table Definition in collection',     -- query_code,
-                            %%STATUS_ACTIVE%%,                         -- query_status_lua_27, collection
-                                                                       -- DIAGRAM_START  
-                            %%JSON_INGEST_START%%                      
+                            'JSON Table Definition in collection',  -- query_code,
+                            ${STATUS_ACTIVE},                       -- query_status_lua_27, collection
+                                                                    -- DIAGRAM_START  
+                            ${JSON_INGEST_START}                      
                             [=[
                                 {
                                     "diagram": [
@@ -184,14 +174,14 @@ return {
                                             "table": [
                                                 {
                                                     "name": "query_id",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": true,
                                                     "unique": true
                                                 },
                                                 {
                                                     "name": "query_ref",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": true,
@@ -199,7 +189,7 @@ return {
                                                 },
                                                 {
                                                     "name": "name",
-                                                    "datatype": "%%VARCHAR_100%%",
+                                                    "datatype": "${VARCHAR_100}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -207,21 +197,21 @@ return {
                                                 },
                                                 {
                                                     "name": "summary",
-                                                    "datatype": "%%TEXT%%",
+                                                    "datatype": "${TEXT}",
                                                     "nullable": true,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "query_code",
-                                                    "datatype": "%%BIGTEXT%%",
+                                                    "datatype": "${BIGTEXT}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "query_status_lua_27",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -229,7 +219,7 @@ return {
                                                 },
                                                 {
                                                     "name": "query_type_lua_28",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -237,7 +227,7 @@ return {
                                                 },
                                                 {
                                                     "name": "query_dialect_lua_30",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -245,7 +235,7 @@ return {
                                                 },
                                                 {
                                                     "name": "collection",
-                                                    "datatype": "%%JSONB%%",
+                                                    "datatype": "${JSONB}",
                                                     "nullable": true,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -253,7 +243,7 @@ return {
                                                 },
                                                 {
                                                     "name": "valid_after",
-                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "datatype": "${TIMESTAMP_TZ}",
                                                     "nullable": true,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -261,7 +251,7 @@ return {
                                                 },
                                                 {
                                                     "name": "valid_until",
-                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "datatype": "${TIMESTAMP_TZ}",
                                                     "nullable": true,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -269,7 +259,7 @@ return {
                                                 },
                                                 {
                                                     "name": "created_id",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -277,7 +267,7 @@ return {
                                                 },
                                                 {
                                                     "name": "created_at",
-                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "datatype": "${TIMESTAMP_TZ}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -285,7 +275,7 @@ return {
                                                 },
                                                 {
                                                     "name": "updated_id",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -293,7 +283,7 @@ return {
                                                 },
                                                 {
                                                     "name": "updated_at",
-                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "datatype": "${TIMESTAMP_TZ}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -304,14 +294,9 @@ return {
                                     ]
                                 }
                             ]=]
-                            %%JSON_INGEST_END%%                 -- DIAGRAM_END
+                            ${JSON_INGEST_END}                      -- DIAGRAM_END
                             ,
-                            NULL,                               -- valid_after
-                            NULL,                               -- valid_until
-                            0,                                  -- created_id
-                            %%NOW%%,                            -- created_at
-                            0,                                  -- updated_id
-                            %%NOW%%                             -- updated_at
+                            ${QUERY_COMMON_BOILERPLATE}
                         );
                     ]]
         }

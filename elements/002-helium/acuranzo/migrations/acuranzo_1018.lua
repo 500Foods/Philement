@@ -12,14 +12,14 @@ return {
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --        
         {
             sql =   [[
-                        INSERT INTO %%SCHEMA%%queries (
-                            %%QUERY_INSERT_COLUMNS%%
+                        INSERT INTO ${SCHEMA}queries (
+                            ${QUERY_INSERT_COLUMNS}
                         )           
                         VALUES (
                             55,                                 -- query_id
                             1018,                               -- query_ref
-                            %%TYPE_FORWARD_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
+                            ${TYPE_FORWARD_MIGRATIO},          -- query_type_lua_28    
+                            ${DIALECT},                        -- query_dialect_lua_30    
                             'Create Sessions Table Query',      -- name, summary, query_code
                             [=[
                                 # Forward Migration 1018: Create Sessions Table Query
@@ -27,43 +27,43 @@ return {
                                 This migration creates the sessions table for storing session data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%sessions
+                                CREATE TABLE IF NOT EXISTS ${SCHEMA}sessions
                                 (
                                     session_id CHAR(20) PRIMARY KEY NOT NULL,   
-                                    account_id %%INTEGER%% NOT NULL,
-                                    session %%BIGTEXT%% NOT NULL,
-                                    session_length %%INTEGER%% NOT NULL,
-                                    session_issues %%INTEGER%% NOT NULL,
-                                    session_changes %%INTEGER%% NOT NULL,
-                                    session_secs %%INTEGER%% NOT NULL,
-                                    status_lua_25 %%INTEGER%% NOT NULL,
-                                    flag_lua_26 %%INTEGER%% NOT NULL,
-                                    created_at %%TIMESTAMP_TZ%% NOT NULL,
-                                    updated_at %%TIMESTAMP_TZ%% NOT NULL,
+                                    account_id ${INTEGER} NOT NULL,
+                                    session ${BIGTEXT} NOT NULL,
+                                    session_length ${INTEGER} NOT NULL,
+                                    session_issues ${INTEGER} NOT NULL,
+                                    session_changes ${INTEGER} NOT NULL,
+                                    session_secs ${INTEGER} NOT NULL,
+                                    status_lua_25 ${INTEGER} NOT NULL,
+                                    flag_lua_26 ${INTEGER} NOT NULL,
+                                    created_at ${TIMESTAMP_TZ} NOT NULL,
+                                    updated_at ${TIMESTAMP_TZ} NOT NULL,
                                 );
                             ]=],
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27
+                            ${STATUS_ACTIVE},                  -- query_status_lua_27
                             NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                            -- created_at
+                            ${NOW},                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                             -- updated_at
+                            ${NOW}                             -- updated_at
                         );
                     ]]
         },        
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --        
         {
             sql =   [[
-                        INSERT INTO %%SCHEMA%%queries (
-                            %%QUERY_INSERT_COLUMNS%%
+                        INSERT INTO ${SCHEMA}queries (
+                            ${QUERY_INSERT_COLUMNS}
                         )           
                         VALUES (
                             56,                                 -- query_id
                             1018,                               -- query_ref
-                            %%TYPE_REVERSE_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
+                            ${TYPE_REVERSE_MIGRATIO},          -- query_type_lua_28    
+                            ${DIALECT},                        -- query_dialect_lua_30    
                             'Delete Sessions Table Query',      -- name, summary, query_code
                             [=[
                                 # Reverse Migration 1018: Delete Sessions Table Query
@@ -72,42 +72,42 @@ return {
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE %%SCHEMA%%sessions; 
+                                DROP TABLE ${SCHEMA}sessions; 
                             ]=],
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27
+                            ${STATUS_ACTIVE},                  -- query_status_lua_27
                             NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                            -- created_at
+                            ${NOW},                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                             -- updated_at
+                            ${NOW}                             -- updated_at
                         );
                     ]]
         },        
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --       
         {
             sql =   [[
-                        INSERT INTO %%SCHEMA%%queries (
-                            %%QUERY_INSERT_COLUMNS%%
+                        INSERT INTO ${SCHEMA}queries (
+                            ${QUERY_INSERT_COLUMNS}
                         )           
                         VALUES (
                             57,                                         -- query_id
                             1018,                                       -- query_ref
-                            %%TYPE_DIAGRAM_MIGRATIO%%,                  -- query_type_lua_28    
-                            %%DIALECT%%,                                -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%sessions',       -- name, summary
+                            ${TYPE_DIAGRAM_MIGRATIO},                  -- query_type_lua_28    
+                            ${DIALECT},                                -- query_dialect_lua_30    
+                            'Diagram Tables: ${SCHEMA}sessions',       -- name, summary
                             [=[
                                 # Diagram Migration 1018
 
-                                ## Diagram Tables: %%SCHEMA%%sessions
+                                ## Diagram Tables: ${SCHEMA}sessions
 
                                 This is the first JSON Diagram code for the sessions table.
                             ]=],
                             'JSON Table Definition in collection',      -- query_code,
-                            %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
+                            ${STATUS_ACTIVE},                          -- query_status_lua_27, collection
                                                                         -- DIAGRAM_START  
-                            %%JSON_INGEST_START%%                      
+                            ${JSON_INGEST_START}                      
                             [=[
                                 {
                                     "diagram": [
@@ -118,56 +118,56 @@ return {
                                             "table": [
                                                 {
                                                     "name": "session_id",
-                                                    "datatype": "%%TEXT%%",
+                                                    "datatype": "${TEXT}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "account_id",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "session",
-                                                    "datatype": "%%BIGTEXT%%",
+                                                    "datatype": "${BIGTEXT}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "session_length",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "session_issues",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "session_changes",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "session_secs",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "status_lua_25",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -175,7 +175,7 @@ return {
                                                 },
                                                 {
                                                     "name": "flag_lua_26",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -183,7 +183,7 @@ return {
                                                 },
                                                 {
                                                     "name": "created_at",
-                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "datatype": "${TIMESTAMP_TZ}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -191,7 +191,7 @@ return {
                                                 },
                                                 {
                                                     "name": "updated_at",
-                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "datatype": "${TIMESTAMP_TZ}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -202,14 +202,14 @@ return {
                                     ]
                                 }
                             ]=]
-                            %%JSON_INGEST_END%%                 -- DIAGRAM_END
+                            ${JSON_INGEST_END}                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                            -- created_at
+                            ${NOW},                            -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                             -- updated_at
+                            ${NOW}                             -- updated_at
                         );
                     ]]
         }
