@@ -12,14 +12,14 @@ return {
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --        
         {
             sql =   [[
-                        INSERT INTO %%SCHEMA%%queries (
-                            %%QUERY_INSERT_COLUMNS%%
+                        INSERT INTO ${SCHEMA}queries (
+                            ${QUERY_INSERT_COLUMNS}
                         )           
                         VALUES (
                             64,                                 -- query_id
                             1021,                               -- query_ref
-                            %%TYPE_FORWARD_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
+                            ${TYPE_FORWARD_MIGRATIO},           -- query_type_lua_28    
+                            ${DIALECT},                         -- query_dialect_lua_30    
                             'Create Tokens Table Query',        -- name, summary, query_code
                             [=[
                                 # Forward Migration 1021: Create Tokens Table Query
@@ -27,40 +27,40 @@ return {
                                 This migration creates the tokens table for storing token data.
                             ]=],
                             [=[
-                                CREATE TABLE IF NOT EXISTS %%SCHEMA%%tokens
+                                CREATE TABLE IF NOT EXISTS ${SCHEMA}tokens
                                 (
                                     token_hash CHAR(128) NOT NULL,
-                                    account_id %%INTEGER%% NOT NULL,
-                                    system_id %%INTEGER%% NOT NULL,
-                                    application_id %%INTEGER%% NOT NULL,
-                                    application_version %%VARCHAR_20%% NOT NULL,
-                                    ip_address %%VARCHAR_50%% NOT NULL,
-                                    valid_after %%TIMESTAMP_TZ%% NOT NULL,
-                                    valid_until %%TIMESTAMP_TZ%% NOT NULL
+                                    account_id ${INTEGER} NOT NULL,
+                                    system_id ${INTEGER} NOT NULL,
+                                    application_id ${INTEGER} NOT NULL,
+                                    application_version ${VARCHAR_20} NOT NULL,
+                                    ip_address ${VARCHAR_50} NOT NULL,
+                                    valid_after ${TIMESTAMP_TZ} NOT NULL,
+                                    valid_until ${TIMESTAMP_TZ} NOT NULL
                                 );
                             ]=],
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27
+                            ${STATUS_ACTIVE},                   -- query_status_lua_27
                             NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                            -- created_at
+                            ${NOW},                             -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                             -- updated_at
+                            ${NOW}                              -- updated_at
                         );
                     ]]
         },        
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --        
         {
             sql =   [[
-                        INSERT INTO %%SCHEMA%%queries (
-                            %%QUERY_INSERT_COLUMNS%%
+                        INSERT INTO ${SCHEMA}queries (
+                            ${QUERY_INSERT_COLUMNS}
                         )           
                         VALUES (
                             65,                                 -- query_id
                             1021,                               -- query_ref
-                            %%TYPE_REVERSE_MIGRATIO%%,          -- query_type_lua_28    
-                            %%DIALECT%%,                        -- query_dialect_lua_30    
+                            ${TYPE_REVERSE_MIGRATIO},           -- query_type_lua_28    
+                            ${DIALECT},                         -- query_dialect_lua_30    
                             'Delete Tokens Table Query',        -- name, summary, query_code
                             [=[
                                 # Reverse Migration 1021: Delete Tokens Table Query
@@ -69,42 +69,42 @@ return {
                                 to ensure that forward and reverse migrations are complete.
                             ]=],
                             [=[
-                                DROP TABLE %%SCHEMA%%tokens; 
+                                DROP TABLE ${SCHEMA}tokens; 
                             ]=],
-                            %%STATUS_ACTIVE%%,                  -- query_status_lua_27
+                            ${STATUS_ACTIVE},                   -- query_status_lua_27
                             NULL,                               -- collection
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                            -- created_at
+                            ${NOW},                             -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                             -- updated_at
+                            ${NOW}                              -- updated_at
                         );
                     ]]
         },        
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --       
         {
             sql =   [[
-                        INSERT INTO %%SCHEMA%%queries (
-                            %%QUERY_INSERT_COLUMNS%%
+                        INSERT INTO ${SCHEMA}queries (
+                            ${QUERY_INSERT_COLUMNS}
                         )           
                         VALUES (
                             66,                                         -- query_id
                             1021,                                       -- query_ref
-                            %%TYPE_DIAGRAM_MIGRATIO%%,                  -- query_type_lua_28    
-                            %%DIALECT%%,                                -- query_dialect_lua_30    
-                            'Diagram Tables: %%SCHEMA%%tokens',         -- name, summary
+                            ${TYPE_DIAGRAM_MIGRATIO},                   -- query_type_lua_28    
+                            ${DIALECT},                                 -- query_dialect_lua_30    
+                            'Diagram Tables: ${SCHEMA}tokens',          -- name, summary
                             [=[
                                 # Diagram Migration 1021
 
-                                ## Diagram Tables: %%SCHEMA%%tokens
+                                ## Diagram Tables: ${SCHEMA}tokens
 
                                 This is the first JSON Diagram code for the tokens table.
                             ]=],
                             'JSON Table Definition in collection',      -- query_code,
-                            %%STATUS_ACTIVE%%,                          -- query_status_lua_27, collection
+                            ${STATUS_ACTIVE},                           -- query_status_lua_27, collection
                                                                         -- DIAGRAM_START  
-                            %%JSON_INGEST_START%%                      
+                            ${JSON_INGEST_START}                      
                             [=[
                                 {
                                     "diagram": [
@@ -122,42 +122,42 @@ return {
                                                 },
                                                 {
                                                     "name": "account_id",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "system_id",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "application_id",
-                                                    "datatype": "%%INTEGER%%",
+                                                    "datatype": "${INTEGER}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "application_version",
-                                                    "datatype": "%%VARCHAR_20%%",
+                                                    "datatype": "${VARCHAR_20}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "ip_address",
-                                                    "datatype": "%%VARCHAR_50%%",
+                                                    "datatype": "${VARCHAR_50}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false
                                                 },
                                                 {
                                                     "name": "valid_after",
-                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "datatype": "${TIMESTAMP_TZ}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -165,7 +165,7 @@ return {
                                                 },
                                                 {
                                                     "name": "valid_until",
-                                                    "datatype": "%%TIMESTAMP_TZ%%",
+                                                    "datatype": "${TIMESTAMP_TZ}",
                                                     "nullable": false,
                                                     "primary_key": false,
                                                     "unique": false,
@@ -176,14 +176,14 @@ return {
                                     ]
                                 }
                             ]=]
-                            %%JSON_INGEST_END%%                 -- DIAGRAM_END
+                            ${JSON_INGEST_END}                 -- DIAGRAM_END
                             ,
                             NULL,                               -- valid_after
                             NULL,                               -- valid_until
                             0,                                  -- created_id
-                            %%NOW%%,                            -- created_at
+                            ${NOW},                             -- created_at
                             0,                                  -- updated_id
-                            %%NOW%%                             -- updated_at
+                            ${NOW}                              -- updated_at
                         );
                     ]]
         }

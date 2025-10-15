@@ -39,11 +39,81 @@ lua_State* lua_setup(const char* dqm_label) {
 }
 
 /*
+ * Load database engine module into Lua state
+ */
+bool lua_load_engine_module(lua_State* L, const char* migration_name,
+                           const char* engine_name, PayloadFile* payload_files,
+                           size_t payload_count, const char* dqm_label) {
+    // Find database_<engine>.lua file
+    PayloadFile* engine_file = NULL;
+    char engine_filename[256];
+    snprintf(engine_filename, sizeof(engine_filename), "%s/database_%s.lua", migration_name, engine_name);
+
+    for (size_t j = 0; j < payload_count; j++) {
+        if (strcmp(payload_files[j].name, engine_filename) == 0) {
+            engine_file = &payload_files[j];
+            break;
+        }
+    }
+
+    if (!engine_file) {
+        log_this(dqm_label, "database_%s.lua not found in payload for migration", LOG_LEVEL_ERROR, 1, engine_name);
+        return false;
+    }
+
+    log_this(dqm_label, "Found database_%s.lua in payload: %s (%'zu bytes)", LOG_LEVEL_TRACE, 3,
+             engine_name, engine_filename, engine_file->size);
+
+    // Load and execute database_<engine>.lua
+    if (luaL_loadbuffer(L, (const char*)engine_file->data, engine_file->size, engine_filename) != LUA_OK) {
+        const char* error = lua_tostring(L, -1);
+        log_this(dqm_label, "Failed to load database_%s.lua: %s", LOG_LEVEL_ERROR, 2,
+                 engine_name, error ? error : "Unknown error");
+        return false;
+    }
+
+    if (lua_pcall(L, 0, 1, 0) != LUA_OK) {
+        const char* error = lua_tostring(L, -1);
+        log_this(dqm_label, "Failed to execute database_%s.lua: %s", LOG_LEVEL_ERROR, 2,
+                 engine_name, error ? error : "Unknown error");
+        return false;
+    }
+
+    // Check that database_<engine>.lua returned a table
+    if (!lua_istable(L, -1)) {
+        log_this(dqm_label, "database_%s.lua did not return a table", LOG_LEVEL_ERROR, 1, engine_name);
+        return false;
+    }
+
+    // Set the database engine module in package.loaded so require('database_<engine>') works
+    lua_getglobal(L, "package");
+    lua_getfield(L, -1, "loaded");
+    lua_pushvalue(L, -3);  // Push the database engine table
+    char module_name[256];
+    snprintf(module_name, sizeof(module_name), "database_%s", engine_name);
+    lua_setfield(L, -2, module_name);
+    lua_pop(L, 2);  // Pop package.loaded and package
+
+    return true;
+}
+
+/*
  * Load and execute database.lua module
  */
 bool lua_load_database_module(lua_State* L, const char* migration_name,
                              PayloadFile* payload_files, size_t payload_count,
                              const char* dqm_label) {
+    // First load all database engine modules that database.lua will require
+    const char* engines[] = {"sqlite", "postgresql", "mysql", "db2"};
+    size_t engine_count = sizeof(engines) / sizeof(engines[0]);
+
+    for (size_t i = 0; i < engine_count; i++) {
+        if (!lua_load_engine_module(L, migration_name, engines[i], payload_files, payload_count, dqm_label)) {
+            log_this(dqm_label, "Failed to load database engine module: %s", LOG_LEVEL_ERROR, 1, engines[i]);
+            return false;
+        }
+    }
+
     // Find database.lua file
     PayloadFile* db_file = NULL;
     char db_filename[256];
