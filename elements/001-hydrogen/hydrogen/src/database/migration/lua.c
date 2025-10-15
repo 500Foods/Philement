@@ -230,11 +230,21 @@ bool lua_execute_migration_function(lua_State* L, const char* engine_name,
         return false;
     }
 
-    // Get the engine config
+    // Get the engine config from database.defaults[engine]
     lua_getfield(L, -1, "defaults");
     if (!lua_istable(L, -1)) {
         log_this(dqm_label, "database.defaults table not found", LOG_LEVEL_ERROR, 0);
         return false;
+    }
+
+    // Debug: Check what's in defaults table
+    lua_pushnil(L);
+    log_this(dqm_label, "Database defaults table contents:", LOG_LEVEL_DEBUG, 0);
+    while (lua_next(L, -2) != 0) {
+        const char* key = lua_tostring(L, -2);
+        const char* type = lua_typename(L, lua_type(L, -1));
+        log_this(dqm_label, "  %s: %s", LOG_LEVEL_DEBUG, 2, key ? key : "?", type);
+        lua_pop(L, 1); // Remove value, keep key
     }
 
     lua_getfield(L, -1, engine_name);
@@ -242,6 +252,10 @@ bool lua_execute_migration_function(lua_State* L, const char* engine_name,
         log_this(dqm_label, "Engine config not found for: %s", LOG_LEVEL_ERROR, 1, engine_name);
         return false;
     }
+    log_this(dqm_label, "Engine config for %s found successfully", LOG_LEVEL_DEBUG, 1, engine_name);
+
+    // Don't modify the config table - let replace_query handle it
+    // The migration function expects the raw database.defaults[engine] table
 
     // Stack is now: [migration_func, database, defaults, cfg]
     // Call the migration function: migration_func(engine, design_name, schema_name, cfg)
@@ -249,13 +263,16 @@ bool lua_execute_migration_function(lua_State* L, const char* engine_name,
     lua_pushstring(L, engine_name);
     lua_pushstring(L, migration_name);
     lua_pushstring(L, schema_name);
-    lua_pushvalue(L, -5);  // Push engine config (now at position -5 after the pushes)
+    lua_pushvalue(L, -1);  // Push engine config table (copy of cfg at -1)
 
-    if (lua_pcall(L, 4, 1, 0) != LUA_OK) {
+    int pcall_result = lua_pcall(L, 4, 1, 0);
+    log_this(dqm_label, "Migration function pcall result: %d", LOG_LEVEL_DEBUG, 1, pcall_result);
+    if (pcall_result != LUA_OK) {
         const char* error = lua_tostring(L, -1);
         log_this(dqm_label, "Failed to call migration function: %s", LOG_LEVEL_ERROR, 1, error ? error : "Unknown error");
         return false;
     }
+    log_this(dqm_label, "Migration function called successfully", LOG_LEVEL_DEBUG, 0);
 
     // The migration function returns a queries table directly
     if (!lua_istable(L, -1)) {
@@ -263,13 +280,30 @@ bool lua_execute_migration_function(lua_State* L, const char* engine_name,
         return false;
     }
 
-    // Count queries in the table
+    // Count queries in the table and debug contents
     lua_pushnil(L);  // First key
     *query_count = 0;
+    log_this(dqm_label, "Queries table contents:", LOG_LEVEL_DEBUG, 0);
     while (lua_next(L, -2) != 0) {
         (*query_count)++;
+        // Debug: Check if this entry has sql field
+        if (lua_istable(L, -1)) {
+            lua_getfield(L, -1, "sql");
+            if (lua_isstring(L, -1)) {
+                size_t sql_len;
+                const char* sql_content = lua_tolstring(L, -1, &sql_len);
+                log_this(dqm_label, "  Query %d: sql field present (%zu bytes)", LOG_LEVEL_DEBUG, 2, *query_count, sql_len);
+                (void)sql_content; // Suppress unused variable warning
+            } else {
+                log_this(dqm_label, "  Query %d: no sql field or not string", LOG_LEVEL_DEBUG, 1, *query_count);
+            }
+            lua_pop(L, 1); // Pop sql field
+        } else {
+            log_this(dqm_label, "  Query %d: not a table", LOG_LEVEL_DEBUG, 1, *query_count);
+        }
         lua_pop(L, 1);  // Remove value, keep key for next iteration
     }
+    log_this(dqm_label, "Total queries found: %d", LOG_LEVEL_DEBUG, 1, *query_count);
 
     return true;
 }
@@ -278,9 +312,9 @@ bool lua_execute_migration_function(lua_State* L, const char* engine_name,
  * Execute run_migration function
  */
 bool lua_execute_run_migration(lua_State* L, const char* engine_name,
-                                const char* migration_name, const char* schema_name,
-                                size_t* sql_length, const char** sql_result,
-                                const char* dqm_label) {
+                                 const char* migration_name, const char* schema_name,
+                                 size_t* sql_length, const char** sql_result,
+                                 const char* dqm_label) {
     // The queries table should be at the top of the stack from lua_execute_migration_function
     if (!lua_istable(L, -1)) {
         log_this(dqm_label, "Queries table not found on Lua stack", LOG_LEVEL_ERROR, 0);
@@ -293,22 +327,24 @@ bool lua_execute_run_migration(lua_State* L, const char* engine_name,
         log_this(dqm_label, "database table not found in Lua state", LOG_LEVEL_ERROR, 0);
         return false;
     }
+
     // Get run_migration function
     lua_getfield(L, -1, "run_migration");
     if (!lua_isfunction(L, -1)) {
-        log_this(dqm_label, "run_migration function not found in database table", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label, "run_migration function not found in database table (type: %s)", LOG_LEVEL_ERROR, 1, lua_typename(L, lua_type(L, -1)));
         return false;
     }
 
     // Push arguments for method call: self, queries, engine, design_name, schema_name
     lua_pushvalue(L, -2);  // Push database table as 'self'
-    lua_pushvalue(L, -5);  // Push queries table (now at -5 due to database access)
+    lua_pushvalue(L, -4);  // Push queries table (from before we got database)
     lua_pushstring(L, engine_name);
     lua_pushstring(L, migration_name);
     lua_pushstring(L, schema_name);
 
-    // Call database:run_migration(queries, engine, design_name, schema_name)
-    if (lua_pcall(L, 5, 1, 0) != LUA_OK) {
+    // Call database:run_migration(queries, engine_name, design_name, schema_name)
+    int run_migration_result = lua_pcall(L, 5, 1, 0);
+    if (run_migration_result != LUA_OK) {
         const char* error = lua_tostring(L, -1);
         log_this(dqm_label, "Failed to call run_migration: %s", LOG_LEVEL_ERROR, 1, error ? error : "Unknown error");
         return false;
@@ -322,6 +358,28 @@ bool lua_execute_run_migration(lua_State* L, const char* engine_name,
     }
 
     *sql_result = lua_tolstring(L, -1, sql_length);
+    log_this(dqm_label, "Final SQL result: length %zu", LOG_LEVEL_DEBUG, 1, *sql_length);
+    if (*sql_length > 0 && *sql_result) {
+        // Log first 500 characters for debugging
+        char debug_preview[501];
+        size_t copy_len = *sql_length > 500 ? 500 : *sql_length;
+        memcpy(debug_preview, *sql_result, copy_len);
+        debug_preview[copy_len] = '\0';
+        log_this(dqm_label, "SQL result preview: %.500s%s", LOG_LEVEL_DEBUG, 2, debug_preview, *sql_length > 500 ? "..." : "");
+    }
+
+    *sql_result = lua_tolstring(L, -1, sql_length);
+
+    // Debug: Log the actual SQL length and first few characters
+    log_this(dqm_label, "Migration SQL result: %'zu bytes", LOG_LEVEL_DEBUG, 1, *sql_length);
+    if (*sql_length > 0 && *sql_result) {
+        char preview[101];
+        size_t preview_len = *sql_length > 100 ? 100 : *sql_length;
+        memcpy(preview, *sql_result, preview_len);
+        preview[preview_len] = '\0';
+        log_this(dqm_label, "SQL preview: %.100s%s", LOG_LEVEL_DEBUG, 2, preview, *sql_length > 100 ? "..." : "");
+    }
+
     return true;
 }
 
