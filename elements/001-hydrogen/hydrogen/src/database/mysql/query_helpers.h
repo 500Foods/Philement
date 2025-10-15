@@ -20,7 +20,6 @@ typedef struct QueryResult QueryResult;
 char** mysql_extract_column_names(void* mysql_result, size_t column_count);
 bool mysql_build_json_from_result(void* mysql_result, size_t row_count, size_t column_count,
                                    char** column_names, char** json_buffer);
-void mysql_cleanup_column_names(char** column_names, size_t column_count);
 size_t mysql_calculate_json_buffer_size(size_t row_count, size_t column_count);
 int mysql_json_escape_string(const char* input, char* output, size_t output_size);
 

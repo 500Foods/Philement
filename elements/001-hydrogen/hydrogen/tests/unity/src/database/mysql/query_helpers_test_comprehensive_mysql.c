@@ -15,8 +15,9 @@
 // MySQL mocks are enabled by CMake build system
 #include <unity/mocks/mock_libmysqlclient.h>
 
-// Include the module being tested
+// Include the modules being tested
 #include <src/database/mysql/query_helpers.h>
+#include <src/database/mysql/query.h>
 
 // Include database types for QueryResult
 #include <src/database/database.h>
