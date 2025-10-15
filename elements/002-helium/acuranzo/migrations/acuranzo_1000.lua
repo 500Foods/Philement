@@ -26,7 +26,9 @@ return function(engine, design_name, schema_name, cfg)
                 created_id              ${INTEGER}          NOT NULL,
                 created_at              ${TIMESTAMP_TZ}     NOT NULL,
                 updated_id              ${INTEGER}          NOT NULL,
-                updated_at              ${TIMESTAMP_TZ}     NOT NULL
+                updated_at              ${TIMESTAMP_TZ}     NOT NULL,
+                ${PRIMARY}(query_id),
+                ${UNIQUE}(query_ref)
             );
         ]]
     })
