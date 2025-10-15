@@ -1,1 +1,1 @@
-# GAIUS Database Diagrams
+# GAIUS Database

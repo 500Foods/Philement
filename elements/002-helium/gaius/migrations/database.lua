@@ -3,10 +3,21 @@
 
 --[[
     CHANGELOG
-    2025-09-13 | 1.0.0      | Andrew Simard     | Initial creation with support for SQLite, PostgreSQL, MySQL, DB2
+    2.1.2   | 2025-10-15  | Andrew Simard     | Added info{} element to track version information
+    2.1.1   | 2025-10-15  | Andrew Simard     | Changed replace_query to have a loop to check for nested macro replacements
+    2.1.0   | 2025-10-15  | Andrew Simard     | Changed run_migration to treet migration as a function call to make overrides easier
+    2.0.0   | 2025-10-15  | Andrew Simard     | Moved engine specifics into their own files (eg: database_db2.lua)
+    1.0.0   | 2025-09-13  | Andrew Simard     | Initial creation with support for SQLite, PostgreSQL, MySQL, DB2
 ]]
 
 local database = {
+
+    -- Database.lua versioning information
+    info = {
+      script = "database.lua",
+      version = "2.1.2",
+      release = "2025-10-15"
+    },
 
     -- Lookup #27 - Query Status
     query_status = {
@@ -60,258 +71,22 @@ local database = {
                               updated_at
                             ]],
 
+    -- This is the default for a great many queries                            
+    query_common_boilerplate =  [[
+                                  NULL,                                   -- valid_after
+                                  NULL,                                   -- valid_until
+                                  0,                                      -- created_id
+                                  ${NOW},                                 -- created_at
+                                  0,                                      -- updated_id
+                                  ${NOW}                                  -- updated_at
+                                ]],                            
+
+    -- Load engine-specific configurations from separate files
     defaults = {
-
-        sqlite = {
-            SERIAL = "INTEGER PRIMARY KEY AUTOINCREMENT",
-            INTEGER = "INTEGER",
-            VARCHAR_20 = "VARCHAR(20)",
-            VARCHAR_50 = "VARCHAR(50)",
-            VARCHAR_100 = "VARCHAR(100)",
-            VARCHAR_128 = "VARCHAR(128)",
-            VARCHAR_500 = "VARCHAR(500)",
-            TEXT = "TEXT",
-            BIGTEXT = "TEXT",
-            JSONB = "TEXT", -- SQLite doesn't have native JSON, store as TEXT
-            TIMESTAMP_TZ = "TEXT", -- SQLite stores as TEXT in ISO format
-            NOW = "CURRENT_TIMESTAMP",
-            CHECK_CONSTRAINT = "CHECK(status IN ('Pending', 'Applied', 'Utility'))",
-            JSON_INGEST_START = "",
-            JSON_INGEST_END = "",
-            JSON_INGEST_FUNCTION = "";
-        },
-
-        postgresql = {
-            SERIAL = "SERIAL",
-            INTEGER = "INTEGER",
-            VARCHAR_20 = "VARCHAR(20)",
-            VARCHAR_50 = "VARCHAR(50)",
-            VARCHAR_100 = "VARCHAR(100)",
-            VARCHAR_128 = "VARCHAR(128)",
-            VARCHAR_500 = "VARCHAR(500)",
-            TEXT = "TEXT",
-            BIGTEXT = "TEXT",
-            JSONB = "JSONB",
-            TIMESTAMP_TZ = "TIMESTAMPTZ",
-            NOW = "CURRENT_TIMESTAMP",
-            CHECK_CONSTRAINT = "CHECK(status IN ('Pending', 'Applied', 'Utility'))",
-            JSON_INGEST_START = "%%SCHEMA%%json_ingest (",
-            JSON_INGEST_END = ")",
-            JSON_INGEST_FUNCTION = [[
-                CREATE SCHEMA IF NOT EXISTS app;
-
-                CREATE OR REPLACE FUNCTION %%SCHEMA%%json_ingest(s TEXT)
-                RETURNS JSONB
-                LANGUAGE plpgsql
-                STRICT
-                STABLE
-                AS $fn$
-                DECLARE
-                  i      int := 1;
-                  L      int := length(s);
-                  ch     text;
-                  out    text := '';
-                  in_str boolean := false;  -- are we inside a "..." JSON string?
-                  esc    boolean := false;  -- previous char was a backslash
-                BEGIN
-                  -- Fast path: already valid JSON
-                  BEGIN
-                    RETURN s::jsonb;
-                  EXCEPTION WHEN others THEN
-                    -- fall through to fix-up pass
-                  END;
-
-                  -- Fix-up pass: escape only control chars *inside* JSON strings
-                  WHILE i <= L LOOP
-                    ch := substr(s, i, 1);
-
-                    IF esc THEN
-                      -- we were in an escape sequence: keep this char verbatim
-                      out := out || ch;
-                      esc := false;
-
-                    ELSIF ch = E'\\' THEN
-                      out := out || ch;
-                      esc := true;
-
-                    ELSIF ch = '"' THEN
-                      out := out || ch;
-                      in_str := NOT in_str;
-
-                    ELSIF in_str AND ch = E'\n' THEN
-                      out := out || E'\\n';
-
-                    ELSIF in_str AND ch = E'\r' THEN
-                      out := out || E'\\r';
-
-                    ELSIF in_str AND ch = E'\t' THEN
-                      out := out || E'\\t';
-
-                    ELSE
-                      out := out || ch;
-                    END IF;
-
-                    i := i + 1;
-                  END LOOP;
-
-                  -- Parse after fix-ups
-                  RETURN out::jsonb;
-                END
-                $fn$;
-            ]]
-        },
-
-        mysql = {
-            SERIAL = "INT AUTO_INCREMENT",
-            INTEGER = "INT",
-            VARCHAR_20 = "VARCHAR(20)",
-            VARCHAR_50 = "VARCHAR(50)",
-            VARCHAR_100 = "VARCHAR(100)",
-            VARCHAR_128 = "VARCHAR(128)",
-            VARCHAR_500 = "VARCHAR(500)",
-            TEXT = "TEXT",
-            BIGTEXT = "TEXT",
-            JSONB = "JSON",
-            TIMESTAMP_TZ = "TIMESTAMP",
-            NOW = "CURRENT_TIMESTAMP",
-            CHECK_CONSTRAINT = "ENUM('Pending', 'Applied', 'Utility')",
-            JSON_INGEST_START = "%%SCHEMA%%json_ingest(",
-            JSON_INGEST_END = ")",
-            JSON_INGEST_FUNCTION = [[
-                DELIMITER $$
-
-                DROP FUNCTION IF EXISTS json_ingest $$
-                CREATE FUNCTION json_ingest(s LONGTEXT)
-                RETURNS JSON
-                DETERMINISTIC
-                BEGIN
-                  DECLARE ok BOOL DEFAULT TRUE;
-                  DECLARE fixed LONGTEXT DEFAULT '';
-                  DECLARE i INT DEFAULT 1;
-                  DECLARE L INT DEFAULT CHAR_LENGTH(s);
-                  DECLARE ch CHAR(1);
-                  DECLARE in_str BOOL DEFAULT FALSE;
-                  DECLARE esc    BOOL DEFAULT FALSE;
-
-                  -- fast path
-                  BEGIN
-                    RETURN CAST(s AS JSON);
-                  EXCEPTION
-                    WHEN SQLEXCEPTION THEN SET ok = FALSE;
-                  END;
-
-                  WHILE i <= L DO
-                    SET ch = SUBSTRING(s, i, 1);
-
-                    IF esc THEN
-                      SET fixed = CONCAT(fixed, ch);
-                      SET esc = FALSE;
-
-                    ELSEIF ch = '\\' THEN
-                      SET fixed = CONCAT(fixed, ch);
-                      SET esc = TRUE;
-
-                    ELSEIF ch = '"' THEN
-                      SET fixed = CONCAT(fixed, ch);
-                      SET in_str = NOT in_str;
-
-                    ELSEIF in_str AND ch = '\n' THEN
-                      SET fixed = CONCAT(fixed, '\\n');
-
-                    ELSEIF in_str AND ch = '\r' THEN
-                      SET fixed = CONCAT(fixed, '\\r');
-
-                    ELSEIF in_str AND ch = '\t' THEN
-                      SET fixed = CONCAT(fixed, '\\t');
-
-                    ELSE
-                      SET fixed = CONCAT(fixed, ch);
-                    END IF;
-
-                    SET i = i + 1;
-                  END WHILE;
-
-                  RETURN CAST(fixed AS JSON);
-                END $$
-                DELIMITER ;
-            ]]
-        },
-
-        db2 = {
-            SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
-            INTEGER = "INTEGER",
-            VARCHAR_20 = "VARCHAR(20)",
-            VARCHAR_50 = "VARCHAR(50)",
-            VARCHAR_100 = "VARCHAR(100)",
-            VARCHAR_128 = "VARCHAR(128)",
-            VARCHAR_500 = "VARCHAR(500)",
-            TEXT = "VARCHAR(250)", -- DB2 TEXT equivalent
-            BIGTEXT = "CLOB(10M)",
-            JSONB = "VARCHAR(4000)", -- DB2 JSON stored as VARCHAR
-            TIMESTAMP_TZ = "TIMESTAMP",
-            NOW = "CURRENT TIMESTAMP",
-            CHECK_CONSTRAINT = "CHECK(status IN ('Pending', 'Applied', 'Utility'))",
-            JSON_INGEST_START = "%%SCHEMA%%json_ingest(",
-            JSON_INGEST_END = ")",
-            JSON_INGEST_FUNCTION = [[
-                CREATE OR REPLACE FUNCTION %%SCHEMA%%json_ingest(s CLOB)
-                RETURNS CLOB
-                LANGUAGE SQL
-                DETERMINISTIC
-                BEGIN
-                  DECLARE i INTEGER DEFAULT 1;
-                  DECLARE L INTEGER DEFAULT LENGTH(s);
-                  DECLARE ch CHAR(1);
-                  DECLARE out CLOB(10M) DEFAULT '';
-                  DECLARE in_str SMALLINT DEFAULT 0;
-                  DECLARE esc    SMALLINT DEFAULT 0;
-
-                  -- fast path
-                  IF s IS JSON THEN
-                    RETURN s;
-                  END IF;
-
-                  WHILE i <= L DO
-                    SET ch = SUBSTR(s, i, 1);
-
-                    IF esc = 1 THEN
-                      SET out = out || ch;
-                      SET esc = 0;
-
-                    ELSEIF ch = '\' THEN
-                      SET out = out || ch;
-                      SET esc = 1;
-
-                    ELSEIF ch = '"' THEN
-                      SET out = out || ch;
-                      SET in_str = 1 - in_str;
-
-                    ELSEIF in_str = 1 AND ch = X'0A' THEN     -- \n
-                      SET out = out || '\n';
-
-                    ELSEIF in_str = 1 AND ch = X'0D' THEN     -- \r
-                      SET out = out || '\r';
-
-                    ELSEIF in_str = 1 AND ch = X'09' THEN     -- \t
-                      SET out = out || '\t';
-
-                    ELSE
-                      SET out = out || ch;
-                    END IF;
-
-                    SET i = i + 1;
-                  END WHILE;
-
-                  -- ensure result is JSON
-                  IF out IS JSON THEN
-                    RETURN out;
-                  ELSE
-                    SIGNAL SQLSTATE '22032' SET MESSAGE_TEXT = 'Invalid JSON after normalization';
-                  END IF;
-                END
-                @            
-            ]]
-        }
+        sqlite = require("database_sqlite"),
+        postgresql = require("database_postgresql"),
+        mysql = require("database_mysql"),
+        db2 = require("database_db2")
     },
 
     replace_query = function(self, template, engine, design_name, schema_name)
@@ -323,47 +98,45 @@ local database = {
         local cfg = self.defaults[engine]
 
         -- Generate schema prefix based on design name and database conventions
-        local schema_prefix
-        if schema_name then
-            if engine == "postgresql" then
-                schema_prefix = schema_name .. "."
-            elseif engine == "mysql" then
-                schema_prefix = schema_name .. "."
-            elseif engine == "sqlite" then
-                schema_prefix = schema_name .. "."
-            elseif engine == "db2" then
-                schema_prefix = schema_name:upper() .. "."
-            else
-                schema_prefix = schema_name .. "."
-            end
-        else
-            schema_prefix = ''
+        -- Perfectly acceptable for schema to be empty (typical for SQLite)
+        local schema_prefix = ''
+        if schema_name and schema_name ~= '' and schema_name ~= '.' then
+          local prefixed_name = (engine == 'db2') and schema_name:upper() or schema_name
+          schema_prefix = prefixed_name .. '.'
         end
 
         -- Add additional placeholders to cfg for unified processing
         cfg.SCHEMA = schema_prefix
         cfg.DIALECT = self.query_dialects[engine]
         cfg.QUERY_INSERT_COLUMNS = self.query_insert_columns
-
-        -- Lookup #28
-        cfg.TYPE_SQL = self.query_types.system_sql
-        cfg.TYPE_FORWARD_MIGRATIO = self.query_types.forward_migration
-        cfg.TYPE_REVERSE_MIGRATIO = self.query_types.reverse_migration
-        cfg.TYPE_DIAGRAM_MIGRATIO = self.query_types.diagram_migration
+        cfg.QUERY_COMMON_BOILERPLATE = self.query_common_boilerplate
 
         -- Lookup #27
         cfg.STATUS_INACTIVE = self.query_status.inactive
         cfg.STATUS_ACTIVE = self.query_status.active
 
+        -- Lookup #28
+        cfg.TYPE_SQL = self.query_types.system_sql
+        cfg.TYPE_FORWARD_MIGRATION = self.query_types.forward_migration
+        cfg.TYPE_REVERSE_MIGRATION = self.query_types.reverse_migration
+        cfg.TYPE_DIAGRAM_MIGRATION = self.query_types.diagram_migration
+
         -- Get text block to work with
         local sql = template
 
-        -- Apply all placeholders in unified loop
-        for key, value in pairs(cfg) do
-            sql = sql:gsub("%%" .. key .. "%%", value)
-        end
-        for key, value in pairs(cfg) do
-            sql = sql:gsub("%%" .. key .. "%%", value)
+        -- Allows for 5 levels of macro nesting before giving up
+        local unresolved = 5
+        while unresolved > 0 do
+            -- Run macro expansion
+            for key, value in pairs(cfg) do
+                sql = sql:gsub("${" .. key .. "}", value)
+            end
+            -- Check if we still have macros left to expand
+            if sql:match("${([^}]+)}") then
+              unresolved = unresolved - 1
+            else
+              unresolved = 0
+            end
         end
 
         return sql
@@ -573,17 +346,15 @@ local database = {
 
     run_migration = function(self, queries, engine, design_name, schema_name)
         local processed_queries = {}
-        
         for i, q in ipairs(queries) do
             if q and q.sql then
-                local formatted = string.format(q.sql, engine)
-                local sql = self:replace_query(formatted, engine, design_name, schema_name)
+                local sql = self:replace_query(q.sql, engine, design_name, schema_name)
                 local indented_sql = self:indent_sql(sql)
                 table.insert(processed_queries, indented_sql)
             end
         end
-        return table.concat(processed_queries, "\n") .. "\n"
-    end
+        return table.concat(processed_queries, "\n-- QUERY DELIMITER\n") .. "\n"
+    end  
 
 }
 

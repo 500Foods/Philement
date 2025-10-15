@@ -3,10 +3,21 @@
 
 --[[
     CHANGELOG
-    2025-09-13 | 1.0.0      | Andrew Simard     | Initial creation with support for SQLite, PostgreSQL, MySQL, DB2
+    2.1.2   | 2025-10-15  | Andrew Simard     | Added info{} element to track version information
+    2.1.1   | 2025-10-15  | Andrew Simard     | Changed replace_query to have a loop to check for nested macro replacements
+    2.1.0   | 2025-10-15  | Andrew Simard     | Changed run_migration to treet migration as a function call to make overrides easier
+    2.0.0   | 2025-10-15  | Andrew Simard     | Moved engine specifics into their own files (eg: database_db2.lua)
+    1.0.0   | 2025-09-13  | Andrew Simard     | Initial creation with support for SQLite, PostgreSQL, MySQL, DB2
 ]]
 
 local database = {
+
+    -- Database.lua versioning information
+    info = {
+      script = "database.lua",
+      version = "2.1.2",
+      release = "2025-10-15"
+    },
 
     -- Lookup #27 - Query Status
     query_status = {
@@ -113,12 +124,19 @@ local database = {
         -- Get text block to work with
         local sql = template
 
-        -- Apply all placeholders in unified loop
-        for key, value in pairs(cfg) do
-            sql = sql:gsub("${" .. key .. "}", value)
-        end
-        for key, value in pairs(cfg) do
-            sql = sql:gsub("${" .. key .. "}", value)
+        -- Allows for 5 levels of macro nesting before giving up
+        local unresolved = 5
+        while unresolved > 0 do
+            -- Run macro expansion
+            for key, value in pairs(cfg) do
+                sql = sql:gsub("${" .. key .. "}", value)
+            end
+            -- Check if we still have macros left to expand
+            if sql:match("${([^}]+)}") then
+              unresolved = unresolved - 1
+            else
+              unresolved = 0
+            end
         end
 
         return sql
@@ -330,14 +348,13 @@ local database = {
         local processed_queries = {}
         for i, q in ipairs(queries) do
             if q and q.sql then
-                local formatted = string.format(q.sql, engine)
-                local sql = self:replace_query(formatted, engine, design_name, schema_name)
+                local sql = self:replace_query(q.sql, engine, design_name, schema_name)
                 local indented_sql = self:indent_sql(sql)
                 table.insert(processed_queries, indented_sql)
             end
         end
         return table.concat(processed_queries, "\n-- QUERY DELIMITER\n") .. "\n"
-    end
+    end  
 
 }
 
