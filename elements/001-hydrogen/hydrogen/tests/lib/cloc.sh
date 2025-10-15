@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 6.4.0 - 2025-10-15 - Added "Instrumented Tests" row to extended statistics table
 # 6.3.1 - 2025-09-30 - Fixed decimal .0 problem
 # 6.3.0 - 2025-09-29 - Added sorting by total lines within primary/secondary sections in table 1
 # 6.2.0 - 2025-09-29 - Promoted JavaScript to primary section in table 1, included in Code metrics in table 2
@@ -319,8 +320,14 @@ EOF
             markdown_code=$(jq -r '.Markdown.code // 0' "${core_json}" 2>/dev/null || echo 0)
 
             # Calculate summary values to match ratio calculations (for consistency)
-            local total_code_summary
+            local total_code_summary total_test_summary
             total_code_summary=$("${PRINTF}" "%'d" "$((c_code + header_code + cmake_code + shell_code + lua_code + javascript_code))")
+
+            # Extract test code value for the Test metric
+            local test_code_value
+            test_code_value=$(jq -r '.C.code // 0' "${test_json}" 2>/dev/null || echo 0)
+            total_test_summary=$("${PRINTF}" "%'d" "${test_code_value}")
+
             local total_docs_summary
             total_docs_summary=$("${PRINTF}" "%'d" "$((markdown_code))")
             local total_comments_summary
@@ -421,7 +428,7 @@ EOF
             coverage_combined_fmt=$(printf "%.3f" "${coverage_combined}" 2>/dev/null || echo "0.000")
 
             # Get instrumented lines and covered lines from coverage detailed files
-            local instrumented_blackbox instrumented_unity covered_blackbox covered_unity
+            local instrumented_blackbox instrumented_unity covered_blackbox covered_unity instrumented_tests
             if [[ -f "${PROJECT_DIR}/build/tests/results/coverage_blackbox.txt.detailed" ]]; then
                 IFS=',' read -r _ _ covered_blackbox instrumented_blackbox _ _ < "${PROJECT_DIR}/build/tests/results/coverage_blackbox.txt.detailed"
             else
@@ -434,13 +441,39 @@ EOF
                 instrumented_unity="19009"
                 covered_unity="8942"
             fi
+            # Get test instrumented lines - check environment variable first, then file
+            instrumented_tests="${TEST_INSTRUMENTED_LINES:-}"
+            if [[ -z "${instrumented_tests}" ]]; then
+                instrumented_tests=$(cat "${PROJECT_DIR}/build/tests/results/test_instrumented_lines.txt" 2>/dev/null || echo "0")
+                if [[ "${instrumented_tests}" == "0" ]]; then
+                    # Try to calculate it on the fly if not cached
+                    local unity_build_dir="${PROJECT_DIR}/build/unity"
+                    local timestamp
+                    timestamp=$("${DATE}" +"%Y-%m-%d %H:%M:%S")
+                    # Source coverage functions if available
+                    [[ -n "${COVERAGE_GUARD:-}" ]] || source "${PROJECT_DIR}/tests/lib/coverage.sh" >/dev/null 2>&1 || true
+                    # shellcheck disable=SC2310 # We want to continue even if the test fails
+                    instrumented_tests=$(calculate_test_instrumented_lines "${unity_build_dir}" "${timestamp}" 2>/dev/null || echo "0")
+                fi
+            fi
+
+            # Debug: ensure we have a valid number
+            if [[ -z "${instrumented_tests}" ]] || [[ "${instrumented_tests}" == "0" ]]; then
+                instrumented_tests="0"
+            fi
 
             # Format values with thousands separators
-            local format_instrumented_black format_instrumented_unity format_covered_black format_covered_unity
+            local format_instrumented_black format_instrumented_unity format_covered_black format_covered_unity format_instrumented_tests
             format_instrumented_black=$("${PRINTF}" "%'d" "${instrumented_blackbox}")
             format_instrumented_unity=$("${PRINTF}" "%'d" "${instrumented_unity}")
             format_covered_black=$("${PRINTF}" "%'d" "${covered_blackbox}")
             format_covered_unity=$("${PRINTF}" "%'d" "${covered_unity}")
+            # Debug: ensure instrumented_tests is not empty before formatting
+            if [[ -n "${instrumented_tests}" ]] && [[ "${instrumented_tests}" != "0" ]]; then
+                format_instrumented_tests=$("${PRINTF}" "%'d" "${instrumented_tests}")
+            else
+                format_instrumented_tests=""
+            fi
 
             # Calculate Unity Ratio as Test C/Headers code / Core C/Headers code (as percentage)
             local test_c_code unity_ratio
@@ -568,6 +601,12 @@ EOF
      },
      {
          "section": "code_metrics",
+         "metric": "Test",
+         "value": "${total_test_summary}",
+         "description": "Test C/Headers code"
+     },
+     {
+         "section": "code_metrics",
          "metric": "Code",
          "value": "${total_code_summary}",
          "description": "Core C/Headers + Bash + CMake + Lua + JS code"
@@ -594,7 +633,7 @@ EOF
          "section": "ratios",
          "metric": "Docs/Code",
          "value": "${docscode_ratio}",
-         "description": "Ratio of Docs to Code       ${docscode_color}Target: 0.400 - 0.6677{RESET}"
+         "description": "Ratio of Docs to Code       ${docscode_color}Target: 0.400 - 0.667{RESET}"
      },
      {
          "section": "ratios",
@@ -619,6 +658,12 @@ EOF
          "metric": "Instrumented Blackbox",
          "value": "${format_instrumented_black}",
          "description": "Lines of instrumented code - Blackbox"
+     },
+     {
+         "section": "coverage_lines",
+         "metric": "Instrumented Tests",
+         "value": "${format_instrumented_tests}",
+         "description": "Lines of instrumented code - Test articles"
      },
      {
          "section": "coverage_lines",
@@ -731,3 +776,4 @@ run_cloc_with_stats() {
         return 1
     fi
 }
+

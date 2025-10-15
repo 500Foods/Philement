@@ -15,6 +15,7 @@
 # calculate_blackbox_coverage()
 
 # CHANGELOG
+# 3.4.0 - 2025-10-15 - Added calculate_test_instrumented_lines() function for counting test file instrumentation
 # 3.3.0 - 2025-10-06 - Added instructions for updating discrepancy counts
 # 3.2.0 - 2025-09-17 - Added DISCREPANCY to calculation
 # 3.1.0 - 2025-08-10 - Added caching to calculate_unity/blackbox_coverage()
@@ -255,8 +256,7 @@ calculate_coverage_generic() {
                 continue
             fi
         else
-            # shellcheck disable=SC2235 # I like it like this, thanks
-            if [[ -f "${gcov_file}" && "${gcov_file}" -nt "${gcda}" ]] && ([[ ! -f "${gcno}" ]] || [[ "${gcov_file}" -nt "${gcno}" ]]); then
+            if [[ -f "${gcov_file}" && "${gcov_file}" -nt "${gcda}" ]] && { [[ ! -f "${gcno}" ]] || [[ "${gcov_file}" -nt "${gcno}" ]]; }; then
                 continue
             fi
         fi
@@ -461,4 +461,91 @@ calculate_blackbox_coverage() {
         touch "${marker_file}"
     fi
     return "${result}"
+}
+
+# Function to calculate total instrumented lines in test files
+# Usage: calculate_test_instrumented_lines <unity_build_dir> <timestamp>
+# Returns: Total number of instrumented lines across all test .gcov files
+calculate_test_instrumented_lines() {
+    local unity_build_dir="$1"
+    local timestamp="$2"
+    local test_lines_file="${RESULTS_DIR}/test_instrumented_lines.txt"
+    local marker_file="${BUILD_DIR}/test_lines_marker"
+
+    # Check if cache marker and results file exist
+    if [[ -f "${marker_file}" && -f "${test_lines_file}" ]]; then
+        cat "${test_lines_file}" 2>/dev/null || echo "0"
+        return 0
+    fi
+
+    local total_test_lines=0
+
+    # Generate gcov files for test files that need updating
+    declare -a to_process_dirs=()
+    declare -a to_process_bases=()
+    while IFS= read -r file; do
+        if [[ -z "${file}" ]]; then continue; fi
+        local subdir="${file%/*}"
+        local base="${file##*/}"
+        base="${base%.*}"  # Strip .gcno
+        local gcda="${subdir}/${base}.gcda"
+        local gcno="${subdir}/${base}.gcno"
+        local gcov_file="${subdir}/${base}.gcov"
+
+        # Check if gcov file needs updating
+        if [[ -f "${gcov_file}" && "${gcov_file}" -nt "${gcno}" ]] && { [[ ! -f "${gcda}" ]] || [[ "${gcov_file}" -nt "${gcda}" ]]; }; then
+            continue
+        fi
+
+        to_process_dirs+=("${subdir}")
+        to_process_bases+=("${base}")
+    done < <("${FIND}" "${unity_build_dir}" -type f -name "*_test*.gcno" 2>/dev/null || true)
+
+    if [[ ${#to_process_bases[@]} -gt 0 ]]; then
+        # Function to run gcov for a single test file
+        # shellcheck disable=SC2317,SC2250 # Called by xargs
+        run_gcov_test() {
+            local dir="$1"
+            local base="$2"
+            if [[ -d "$dir" && -f "${dir}/${base}.gcno" ]]; then
+                pushd "$dir" >/dev/null || {
+                    echo "Warning: Cannot change to directory $dir" >&2
+                    return
+                }
+                gcov -b -c "$base" >/dev/null 2>&1 || true
+                popd >/dev/null || {
+                    echo "Warning: Failed to restore directory from $dir" >&2
+                    return
+                }
+            else
+                echo "Warning: File ${dir}/${base}.gcno not found" >&2
+            fi
+        }
+
+        # Export the function for use in parallel
+        export -f run_gcov_test
+
+        # Run gcov commands in parallel using xargs
+        # shellcheck disable=SC2154,SC2016 # CORES defined in framework.sh, Fancy script stuff
+        for i in "${!to_process_bases[@]}"; do
+            echo "${to_process_dirs[i]} ${to_process_bases[i]}"
+        done | "${XARGS}" -n 2 -P "${CORES}" bash -c 'run_gcov_test "$0" "$1"'
+    fi
+
+    # Count instrumented lines from .gcov files for test files
+    while IFS= read -r gcov_file; do
+        if [[ -f "${gcov_file}" ]]; then
+            local test_lines
+            test_lines=$("${AWK}" '
+                /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { total++ }
+                /^[ \t]*#####:[ \t]*[0-9]+:/ { total++ }
+                END { print total }
+            ' "${gcov_file}" 2>/dev/null)
+            total_test_lines=$((total_test_lines + ${test_lines:-0}))
+        fi
+    done < <("${FIND}" "${unity_build_dir}" -name "*_test*.gcov" -type f 2>/dev/null || true)
+
+    echo "${total_test_lines}" > "${test_lines_file}"
+    touch "${marker_file}"
+    echo "${total_test_lines}"
 }
