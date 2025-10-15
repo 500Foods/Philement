@@ -87,11 +87,13 @@ PayloadFile* lua_find_migration_file(const char* migration_file_path,
                                    PayloadFile* payload_files, size_t payload_count);
 bool lua_load_migration_file(lua_State* L, PayloadFile* mig_file,
                             const char* migration_file_path, const char* dqm_label);
-bool lua_extract_queries_table(lua_State* L, int* query_count, const char* dqm_label);
+bool lua_execute_migration_function(lua_State* L, const char* engine_name,
+                                   const char* migration_name, const char* schema_name,
+                                   int* query_count, const char* dqm_label);
 bool lua_execute_run_migration(lua_State* L, const char* engine_name,
-                              const char* migration_name, const char* schema_name,
-                              size_t* sql_length, const char** sql_result,
-                              const char* dqm_label);
+                               const char* migration_name, const char* schema_name,
+                               size_t* sql_length, const char** sql_result,
+                               const char* dqm_label);
 void lua_log_execution_summary(const char* migration_file_path, size_t sql_length,
                               int line_count, int query_count, const char* dqm_label);
 void lua_cleanup(lua_State* L);

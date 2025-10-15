@@ -1,1 +1,1 @@
-# GLM Database Diagrams
+# GLM Database
