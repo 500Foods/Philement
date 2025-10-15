@@ -11,7 +11,7 @@ local queries = {}
 table.insert(queries,{sql=[[
 
     CREATE TABLE ${SCHEMA}queries (
-        query_id                ${INTEGER},
+        query_id                ${INTEGER}          NOT NULL,
         query_ref               ${INTEGER}          NOT NULL,
         query_type_lua_28       ${INTEGER}          NOT NULL,
         query_dialect_lua_30    ${INTEGER}          NOT NULL,
@@ -94,7 +94,7 @@ table.insert(queries,{sql=[[
     )
     VALUES (
         2,                                                                  -- query_id
-        1000,                                                               -- query_ref
+        1001,                                                               -- query_ref
         ${TYPE_REVERSE_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
         'Delete Tables Query',                                              -- name, summary, query_code
@@ -121,7 +121,7 @@ table.insert(queries,{sql=[[
     )
     VALUES (
         3,                                                                  -- query_id
-        1000,                                                               -- query_ref
+        1003,                                                               -- query_ref
         ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
         'Diagram Tables: ${SCHEMA}queries',                                 -- name
