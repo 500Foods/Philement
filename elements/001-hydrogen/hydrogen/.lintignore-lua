@@ -1,0 +1,43 @@
+# Luacheck Configuration File (.lintignore-lua)
+# This file contains settings and suppressions for luacheck.
+# Lines starting with # are comments. Use key=value for settings.
+#
+# SUMMARY: This configuration sets up luacheck for Lua code analysis, including:
+# - Standard library settings (LuaJIT compatibility)
+# - Global variable definitions
+# - Warning suppressions for common patterns
+# - Code style settings
+#
+# Used primarily by tests/test_38_luacheck.sh for Lua code linting.
+
+# Standard library (lua51, lua52, lua53, luajit, ngx_lua)
+std=max
+
+# Maximum line length
+max-line-length=120
+
+# Maximum cyclomatic complexity
+max-cyclomatic-complexity=15
+
+# Global variables (add project-specific globals here)
+global=migration
+global=database
+global=engine
+global=schema
+
+# Ignore specific warnings
+# 211: unused variable
+# 212: unused argument
+# 213: unused loop variable
+# 311: value assigned to variable is unused
+# 542: empty if branch
+ignore=542
+
+# Don't report unused arguments that start with underscore
+option=--no-unused-args
+option=--no-self
+
+# Additional options
+option=--formatter=plain
+option=--codes
+option=--ranges

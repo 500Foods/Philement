@@ -2,6 +2,8 @@
 -- DB2-specific configuration for Helium schema
 
 return {
+    PRIMARY = "PRIMARY KEY",
+    UNIQUE = "UNIQUE",
     SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
     INTEGER = "INTEGER",
     VARCHAR_20 = "VARCHAR(20)",
