@@ -9,6 +9,9 @@
 
 #include "../database.h"
 
+// Helper functions
+void mysql_cleanup_column_names(char** column_names, size_t column_count);
+
 // Query execution
 bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result);
 bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result);
