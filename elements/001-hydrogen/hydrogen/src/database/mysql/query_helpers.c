@@ -135,16 +135,6 @@ bool mysql_build_json_from_result(void* mysql_result, size_t row_count, size_t c
     return true;
 }
 
-// Helper function to cleanup column names (non-static for testing)
-void mysql_cleanup_column_names(char** column_names, size_t column_count) {
-    if (column_names) {
-        for (size_t i = 0; i < column_count; i++) {
-            free(column_names[i]);
-        }
-        free(column_names);
-    }
-}
-
 // Helper function to calculate JSON buffer size (non-static for testing)
 size_t mysql_calculate_json_buffer_size(size_t row_count, size_t column_count __attribute__((unused))) {
     // Estimate: 1024 bytes per row as a reasonable default

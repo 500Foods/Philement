@@ -35,6 +35,20 @@ extern mysql_stmt_free_result_t mysql_stmt_free_result_ptr;
 extern mysql_stmt_field_count_t mysql_stmt_field_count_ptr;
 
 /*
+ * Helper Functions
+ */
+
+// Helper function to cleanup column names
+void mysql_cleanup_column_names(char** column_names, size_t column_count) {
+    if (column_names) {
+        for (size_t i = 0; i < column_count; i++) {
+            free(column_names[i]);
+        }
+        free(column_names);
+    }
+}
+
+/*
  * Query Execution
  */
 
