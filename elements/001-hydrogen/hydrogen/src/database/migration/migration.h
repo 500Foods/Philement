@@ -77,6 +77,9 @@ bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, siz
 
 // Lua integration functions
 lua_State* lua_setup(const char* dqm_label);
+bool lua_load_engine_module(lua_State* L, const char* migration_name,
+                           const char* engine_name, PayloadFile* payload_files,
+                           size_t payload_count, const char* dqm_label);
 bool lua_load_database_module(lua_State* L, const char* migration_name,
                              PayloadFile* payload_files, size_t payload_count,
                              const char* dqm_label);

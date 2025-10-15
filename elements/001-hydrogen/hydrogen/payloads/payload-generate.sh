@@ -278,7 +278,7 @@ copy_migration_files() {
         local design_dir="${SWAGGERUI_DIR}/${design}"
         mkdir -p "${design_dir}"
 
-        # Copy database.lua for this design
+        # Copy database.lua and database_<engine>.lua files for this design
         local source_db="${HELIUM_DIR}/${design}/migrations/database.lua"
         if [[ -f "${source_db}" ]]; then
             cp "${source_db}" "${design_dir}/"
@@ -286,6 +286,21 @@ copy_migration_files() {
         else
             echo -e "${YELLOW}${WARN} Warning: ${source_db} not found${NC}"
         fi
+
+        # Copy database_<engine>.lua files for this design
+        local engine_files=()
+        while IFS= read -r -d '' engine_file; do
+            engine_files+=("${engine_file}")
+        done < <("${FIND}" "${HELIUM_DIR}/${design}/migrations" -name "database_*.lua" -type f -print0 2>/dev/null | sort -z || true)
+
+        for engine_file in "${engine_files[@]}"; do
+            if [[ -f "${engine_file}" ]]; then
+                local filename
+                filename=$(basename "${engine_file}")
+                cp "${engine_file}" "${design_dir}/"
+                echo -e "${GREEN}${PASS} Copied ${design}/migrations/${filename}${NC}"
+            fi
+        done
 
         # Copy all migration files for this design
         local migration_count=0
@@ -565,6 +580,12 @@ create_tarball() {
             if [[ -f "${SWAGGERUI_DIR}/${design}/database.lua" ]]; then
                 TAR_FILES+=("${design}/database.lua")
             fi
+
+            # Add database_<engine>.lua files
+            while IFS= read -r -d '' engine_file; do
+                local rel_path="${engine_file#"${SWAGGERUI_DIR}"/}"
+                TAR_FILES+=("${rel_path}")
+            done < <("${FIND}" "${SWAGGERUI_DIR}/${design}" -name "database_*.lua" -type f -print0 2>/dev/null || true)
 
             # Add all migration files
             while IFS= read -r -d '' migration_file; do
