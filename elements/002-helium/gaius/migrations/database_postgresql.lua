@@ -2,6 +2,8 @@
 -- PostgreSQL-specific configuration for Helium schema
 
 return {
+    PRIMARY = "PRIMARY KEY",
+    UNIQUE = "UNIQUE",
     SERIAL = "SERIAL",
     INTEGER = "INTEGER",
     VARCHAR_20 = "VARCHAR(20)",

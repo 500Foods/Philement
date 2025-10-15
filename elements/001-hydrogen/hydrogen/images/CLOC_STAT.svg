@@ -27,14 +27,14 @@
   <text x="20.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="28.40" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="193.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Code                  </text>
   <text x="221.60" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="230.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    57,078 </text>
+  <text x="230.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    57,077 </text>
   <text x="322.40" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="330.80" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="428.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Core C/Headers + Bash + CMake + Lua + JS code     </text>
   <text x="759.20" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="20.00" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="28.40" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="193.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Comments              </text>
   <text x="221.60" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="230.00" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    18,625 </text>
+  <text x="230.00" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    18,626 </text>
   <text x="322.40" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="330.80" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="428.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Core C/Headers + Bash + CMake + Lua + JS comments </text>
   <text x="759.20" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
@@ -99,14 +99,14 @@
   <text x="20.00" y="319.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="28.40" y="319.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="193.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Coverage Unity        </text>
   <text x="221.60" y="319.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="230.00" y="319.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    14,455 </text>
+  <text x="230.00" y="319.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    14,456 </text>
   <text x="322.40" y="319.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="330.80" y="319.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="428.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Lines of covered code - Unity                     </text>
   <text x="759.20" y="319.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="20.00" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="28.40" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="193.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Coverage Blackbox     </text>
   <text x="221.60" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="230.00" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    11,840 </text>
+  <text x="230.00" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    11,833 </text>
   <text x="322.40" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="330.80" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="428.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Lines of covered code - Blackbox                  </text>
   <text x="759.20" y="336.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
@@ -114,7 +114,7 @@
   <text x="20.00" y="370.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="28.40" y="370.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="193.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Coverage Unity %      </text>
   <text x="221.60" y="370.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="230.00" y="370.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  63.709 % </text>
+  <text x="230.00" y="370.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  63.714 % </text>
   <text x="322.40" y="370.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="330.80" y="370.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="319.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Unity test coverage                  </text>
   <text x="650.00" y="370.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="100.80" lengthAdjust="spacingAndGlyphs" fill="#0dbc79">Target: 60 %</text>
@@ -123,7 +123,7 @@
   <text x="20.00" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="28.40" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="193.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Coverage Blackbox %   </text>
   <text x="221.60" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="230.00" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  52.184 % </text>
+  <text x="230.00" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  52.153 % </text>
   <text x="322.40" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="330.80" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="319.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Blackbox test coverage               </text>
   <text x="650.00" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="100.80" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">Target: 70 %</text>
@@ -132,7 +132,7 @@
   <text x="20.00" y="403.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="28.40" y="403.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="193.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Coverage Combined %   </text>
   <text x="221.60" y="403.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="230.00" y="403.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  78.205 % </text>
+  <text x="230.00" y="403.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff">   0.000 % </text>
   <text x="322.40" y="403.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="330.80" y="403.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="319.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Combined test coverage               </text>
   <text x="650.00" y="403.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="100.80" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">Target: 80 %</text>
@@ -150,7 +150,7 @@
   <text x="20.00" y="437.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="747.60" lengthAdjust="spacingAndGlyphs" fill="#cd3131">╰───────────────────────┴───────────┴────────┬──────────────────────────────────────────┤</text>
   <text x="20.00" y="454.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="394.80" lengthAdjust="spacingAndGlyphs" fill="#cd3131">                                             │ </text>
   <text x="414.80" y="454.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">Generated</text>
-  <text x="490.40" y="454.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="260.40" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 2025-Oct-15 (Wed) 05:54:00 PDT</text>
+  <text x="490.40" y="454.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="260.40" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 2025-Oct-15 (Wed) 08:53:47 PDT</text>
   <text x="750.80" y="454.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
   <text x="759.20" y="454.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="20.00" y="470.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="747.60" lengthAdjust="spacingAndGlyphs" fill="#cd3131">                                             ╰──────────────────────────────────────────╯</text>
