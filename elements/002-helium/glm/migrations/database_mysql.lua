@@ -2,6 +2,8 @@
 -- MySQL-specific configuration for Helium schema
 
 return {
+    PRIMARY = "PRIMARY KEY",
+    UNIQUE = "UNIQUE KEY",
     SERIAL = "INT AUTO_INCREMENT",
     INTEGER = "INT",
     VARCHAR_20 = "VARCHAR(20)",
