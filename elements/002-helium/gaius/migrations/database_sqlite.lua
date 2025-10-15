@@ -2,6 +2,8 @@
 -- SQLite-specific configuration for Helium schema
 
 return {
+    PRIMARY = "PRIMARY KEY",
+    UNIQUE = "UNIQUE",
     SERIAL = "INTEGER PRIMARY KEY AUTOINCREMENT",
     INTEGER = "INTEGER",
     VARCHAR_20 = "VARCHAR(20)",

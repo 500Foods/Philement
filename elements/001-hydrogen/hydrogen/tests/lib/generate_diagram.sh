@@ -7,7 +7,7 @@
 # 1.1.0 - 2025-09-30 - Passing metadata
 # 1.0.0 - 2025-09-28 - Initial creation
 
-set -euo pipefail
+set -xeuo pipefail
 
 # Script configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -115,7 +115,7 @@ fi
 
 # Create temporary file for combined JSON
 TEMP_JSON=$(mktemp)
-trap 'rm -f "${TEMP_JSON}"' EXIT
+# trap 'rm -f "${TEMP_JSON}"' EXIT
 
 # Initialize combined JSON as empty array
 echo "[]" > "${TEMP_JSON}"
@@ -144,7 +144,7 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
     # Clean up the extracted JSON
     # Step 1: Remove DIAGRAM_START, DIAGRAM_END, and outer single quotes
     JSON_DATA=$(printf '%s' "${RAW_BLOCK}" | \
-        sed '/DIAGRAM_START/d; /DIAGRAM_END/d; s/^'\''//; s/'\''$//')
+        sed '/DIAGRAM_START/d; /DIAGRAM_END/d; s/^'\''//; s/'\''$//' | head -n -1)
 
     # Step 2: Escape newlines and tabs only within JSON strings
     JSON_DATA=$(printf '%s' "${JSON_DATA}" | awk '
