@@ -13,10 +13,13 @@ local database = require('database')
 
 -- Load the migration file
 local migration_file = design_name .. '_' .. migration_num
-local migration = require(migration_file)
+local migration_func = require(migration_file)
+
+-- Invoke it to get the queries (pass engine config for datatype access)
+local migration_queries = migration_func(engine, design_name, schema_name, database.defaults[engine])
 
 -- Generate SQL using the design's database
-local sql = database:run_migration(migration.queries, engine, design_name, schema_name)
+local sql = database:run_migration(migration_queries, engine, design_name, schema_name)
 
 -- Output the SQL
 print(sql)

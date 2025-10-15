@@ -137,7 +137,7 @@ bool execute_single_migration(DatabaseHandle* connection, const char* migration_
 
     // Extract queries table
     int query_count = 0;
-    if (!lua_extract_queries_table(L, &query_count, dqm_label)) {
+    if (!lua_execute_migration_function(L, engine_name, migration_name, schema_name, &query_count, dqm_label)) {
         // Free payload files
         free_payload_files(payload_files, payload_count);
         lua_close(L);
