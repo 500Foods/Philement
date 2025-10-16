@@ -152,9 +152,9 @@ bool lua_load_database_module(lua_State* L, const char* migration_name,
         return false;
     }
 
-    // Check that database.lua returned a table
-    if (!lua_istable(L, -1)) {
-        log_this(dqm_label, "database.lua did not return a table", LOG_LEVEL_ERROR, 0);
+    // Check that database.lua returned a function or table
+    if (!lua_isfunction(L, -1) && !lua_istable(L, -1)) {
+        log_this(dqm_label, "database.lua did not return a function or table", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -322,31 +322,38 @@ bool lua_execute_run_migration(lua_State* L, const char* engine_name,
     }
 
     // Now call the run_migration function
+    // Handle both old format (database is a function) and new format (database is a table with run_migration method)
     lua_getglobal(L, "database");
-    if (!lua_istable(L, -1)) {
-        log_this(dqm_label, "database table not found in Lua state", LOG_LEVEL_ERROR, 0);
-        return false;
-    }
-
-    // Get run_migration function
-    lua_getfield(L, -1, "run_migration");
-    if (!lua_isfunction(L, -1)) {
-        log_this(dqm_label, "run_migration function not found in database table (type: %s)", LOG_LEVEL_ERROR, 1, lua_typename(L, lua_type(L, -1)));
-        return false;
-    }
-
-    // Push arguments for method call: self, queries, engine, design_name, schema_name
-    lua_pushvalue(L, -2);  // Push database table as 'self'
-    lua_pushvalue(L, -4);  // Push queries table (from before we got database)
-    lua_pushstring(L, engine_name);
-    lua_pushstring(L, migration_name);
-    lua_pushstring(L, schema_name);
-
-    // Call database:run_migration(queries, engine_name, design_name, schema_name)
-    int run_migration_result = lua_pcall(L, 5, 1, 0);
-    if (run_migration_result != LUA_OK) {
-        const char* error = lua_tostring(L, -1);
-        log_this(dqm_label, "Failed to call run_migration: %s", LOG_LEVEL_ERROR, 1, error ? error : "Unknown error");
+    if (lua_isfunction(L, -1)) {
+        // Old format: database is the run_migration function directly
+        lua_pushvalue(L, -2);  // Push queries table
+        lua_pushstring(L, engine_name);
+        lua_pushstring(L, migration_name);
+        lua_pushstring(L, schema_name);
+        if (lua_pcall(L, 4, 1, 0) != LUA_OK) {
+            const char* error = lua_tostring(L, -1);
+            log_this(dqm_label, "Failed to call run_migration: %s", LOG_LEVEL_ERROR, 1, error ? error : "Unknown error");
+            return false;
+        }
+    } else if (lua_istable(L, -1)) {
+        // New format: database is a table with run_migration method
+        lua_getfield(L, -1, "run_migration");
+        if (!lua_isfunction(L, -1)) {
+            log_this(dqm_label, "run_migration function not found in database table (type: %s)", LOG_LEVEL_ERROR, 1, lua_typename(L, lua_type(L, -1)));
+            return false;
+        }
+        lua_pushvalue(L, -2);  // Push database table as 'self'
+        lua_pushvalue(L, -4);  // Push queries table (from before we got database)
+        lua_pushstring(L, engine_name);
+        lua_pushstring(L, migration_name);
+        lua_pushstring(L, schema_name);
+        if (lua_pcall(L, 5, 1, 0) != LUA_OK) {
+            const char* error = lua_tostring(L, -1);
+            log_this(dqm_label, "Failed to call run_migration: %s", LOG_LEVEL_ERROR, 1, error ? error : "Unknown error");
+            return false;
+        }
+    } else {
+        log_this(dqm_label, "database global is neither a function nor a table", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
