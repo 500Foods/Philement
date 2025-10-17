@@ -78,6 +78,7 @@ struct DatabaseQueue {
     volatile bool is_connected;
     volatile bool bootstrap_completed;  // True when bootstrap query has completed (Lead queues only)
     volatile bool initial_connection_attempted;  // True when initial connection attempt is complete (Lead queues only)
+    volatile bool conductor_sequence_completed;  // True when conductor pattern sequence has completed (Lead queues only)
 
     // Bootstrap completion synchronization (Lead queues only)
     pthread_mutex_t bootstrap_lock;
@@ -174,6 +175,15 @@ void database_queue_stop_worker(DatabaseQueue* db_queue);
 bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* queue_type);
 bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* queue_type);
 void database_queue_manage_child_queues(DatabaseQueue* lead_queue);
+
+// Lead DQM conductor pattern functions
+bool database_queue_lead_establish_connection(DatabaseQueue* lead_queue);
+bool database_queue_lead_run_bootstrap(DatabaseQueue* lead_queue);
+bool database_queue_lead_run_migration(DatabaseQueue* lead_queue);
+bool database_queue_lead_run_migration_test(DatabaseQueue* lead_queue);
+bool database_queue_lead_launch_additional_queues(DatabaseQueue* lead_queue);
+bool database_queue_lead_manage_heartbeats(DatabaseQueue* lead_queue);
+bool database_queue_lead_process_queries(DatabaseQueue* lead_queue);
 
 // Statistics and monitoring
 size_t database_queue_get_depth(DatabaseQueue* db_queue);

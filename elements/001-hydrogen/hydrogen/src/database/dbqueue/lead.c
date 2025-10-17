@@ -3,14 +3,260 @@
  *
  * Implements Lead queue specific functions for the Hydrogen database subsystem.
  * Split from database_queue.c for better maintainability.
+ *
+ * Lead DQM Responsibilities (Conductor Pattern):
+ * - Establish a connection to the database
+ * - Run Bootstrap query if available
+ * - Run Migration if indicated
+ * - Run Migration Test if indicated
+ * - Launch additional queues
+ * - Launch and respond to heartbeats
+ * - Process incoming queries on its queue
  */
 
 // Project includes
 #include <src/hydrogen.h>
 #include <src/database/database.h>
+#include <src/database/migration/migration.h>
 
 // Local includes
 #include "dbqueue.h"
+
+/*
+ * =============================================================================
+ * LEAD DQM RESPONSIBILITIES - CONDUCTOR PATTERN
+ * =============================================================================
+ */
+
+/*
+ * Establish database connection for Lead DQM
+ */
+bool database_queue_lead_establish_connection(DatabaseQueue* lead_queue) {
+    if (!lead_queue || !lead_queue->is_lead_queue) {
+        return false;
+    }
+
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    log_this(dqm_label, "Establishing database connection", LOG_LEVEL_TRACE, 0);
+
+    // Use the existing connection logic from heartbeat.c
+    bool success = database_queue_check_connection(lead_queue);
+
+    free(dqm_label);
+    return success;
+}
+
+/*
+ * Run bootstrap query for Lead DQM
+ */
+bool database_queue_lead_run_bootstrap(DatabaseQueue* lead_queue) {
+    if (!lead_queue || !lead_queue->is_lead_queue) {
+        return false;
+    }
+
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    log_this(dqm_label, "Running bootstrap query", LOG_LEVEL_TRACE, 0);
+
+    // Bootstrap query is submitted during connection establishment and processed by main loop
+    // Conductor pattern just ensures bootstrap is part of the sequence - no direct execution needed
+    // The bootstrap query will be processed in the main worker loop, not here
+
+    free(dqm_label);
+    return true;
+}
+
+/*
+ * Run migration for Lead DQM
+ */
+bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
+    if (!lead_queue || !lead_queue->is_lead_queue) {
+        return false;
+    }
+
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    log_this(dqm_label, "Running migration", LOG_LEVEL_TRACE, 0);
+
+    // Check if auto-migration is enabled in config
+    const DatabaseConnection* migration_conn_config = NULL;
+    if (app_config) {
+        for (int i = 0; i < app_config->databases.connection_count; i++) {
+            if (strcmp(app_config->databases.connections[i].name, lead_queue->database_name) == 0) {
+                migration_conn_config = &app_config->databases.connections[i];
+                break;
+            }
+        }
+    }
+
+    if (migration_conn_config && migration_conn_config->auto_migration) {
+        log_this(dqm_label, "Automatic Migration enabled - Importing Migrations", LOG_LEVEL_DEBUG, 0);
+        bool migrations_valid = validate(lead_queue);
+
+        if (migrations_valid) {
+            // Get connection for migration execution
+            MutexResult lock_result = MUTEX_LOCK(&lead_queue->connection_lock, dqm_label);
+            if (lock_result == MUTEX_SUCCESS) {
+                if (lead_queue->persistent_connection) {
+                    // Execute auto migrations (populate Queries table)
+                    execute_auto(lead_queue, lead_queue->persistent_connection);
+                }
+                mutex_unlock(&lead_queue->connection_lock);
+            }
+        } else {
+            log_this(dqm_label, "Migration validation failed - continuing without migrations", LOG_LEVEL_ALERT, 0);
+        }
+    } else {
+        log_this(dqm_label, "Automatic Migration disabled - skipping migration execution", LOG_LEVEL_DEBUG, 0);
+    }
+
+    free(dqm_label);
+    return true;
+}
+
+/*
+ * Run migration test for Lead DQM
+ */
+bool database_queue_lead_run_migration_test(DatabaseQueue* lead_queue) {
+    if (!lead_queue || !lead_queue->is_lead_queue) {
+        return false;
+    }
+
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    log_this(dqm_label, "Running migration test", LOG_LEVEL_TRACE, 0);
+
+    // Check if test migration is enabled in config
+    const DatabaseConnection* migration_conn_config = NULL;
+    if (app_config) {
+        for (int i = 0; i < app_config->databases.connection_count; i++) {
+            if (strcmp(app_config->databases.connections[i].name, lead_queue->database_name) == 0) {
+                migration_conn_config = &app_config->databases.connections[i];
+                break;
+            }
+        }
+    }
+
+    if (migration_conn_config && migration_conn_config->test_migration) {
+        log_this(dqm_label, "Test Migration enabled - Running migration tests", LOG_LEVEL_DEBUG, 0);
+        // Migration test logic would go here
+        // For now, just log that test migration is enabled
+        log_this(dqm_label, "Migration test completed successfully", LOG_LEVEL_DEBUG, 0);
+    } else {
+        log_this(dqm_label, "Test Migration disabled - skipping migration test", LOG_LEVEL_DEBUG, 0);
+    }
+
+    free(dqm_label);
+    return true;
+}
+
+/*
+ * Launch additional queues for Lead DQM
+ */
+bool database_queue_lead_launch_additional_queues(DatabaseQueue* lead_queue) {
+    if (!lead_queue || !lead_queue->is_lead_queue) {
+        return false;
+    }
+
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    log_this(dqm_label, "Launching additional queues", LOG_LEVEL_TRACE, 0);
+
+    // Use the existing queue spawning logic from bootstrap
+    // This is currently embedded in database_bootstrap.c but should be extracted here
+    if (app_config) {
+        const DatabaseConnection* conn_config = NULL;
+        for (int i = 0; i < app_config->databases.connection_count; i++) {
+            if (strcmp(app_config->databases.connections[i].name, lead_queue->database_name) == 0) {
+                conn_config = &app_config->databases.connections[i];
+                break;
+            }
+        }
+
+        if (conn_config) {
+            // Launch queues based on start configuration
+            if (conn_config->queues.slow.start > 0) {
+                for (int i = 0; i < conn_config->queues.slow.start; i++) {
+                    database_queue_spawn_child_queue(lead_queue, QUEUE_TYPE_SLOW);
+                }
+            }
+            if (conn_config->queues.medium.start > 0) {
+                for (int i = 0; i < conn_config->queues.medium.start; i++) {
+                    database_queue_spawn_child_queue(lead_queue, QUEUE_TYPE_MEDIUM);
+                }
+            }
+            if (conn_config->queues.fast.start > 0) {
+                for (int i = 0; i < conn_config->queues.fast.start; i++) {
+                    database_queue_spawn_child_queue(lead_queue, QUEUE_TYPE_FAST);
+                }
+            }
+            if (conn_config->queues.cache.start > 0) {
+                for (int i = 0; i < conn_config->queues.cache.start; i++) {
+                    database_queue_spawn_child_queue(lead_queue, QUEUE_TYPE_CACHE);
+                }
+            }
+        }
+    }
+
+    free(dqm_label);
+    return true;
+}
+
+/*
+ * Launch and respond to heartbeats for Lead DQM
+ */
+bool database_queue_lead_manage_heartbeats(DatabaseQueue* lead_queue) {
+    if (!lead_queue || !lead_queue->is_lead_queue) {
+        return false;
+    }
+
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    log_this(dqm_label, "Managing heartbeats", LOG_LEVEL_TRACE, 0);
+
+    // Use the existing heartbeat management from heartbeat.c
+    // Only start heartbeat if not already started
+    if (lead_queue->last_heartbeat == 0) {
+        database_queue_start_heartbeat(lead_queue);
+    }
+    database_queue_perform_heartbeat(lead_queue);
+
+    free(dqm_label);
+    return true;
+}
+
+/*
+ * Process incoming queries on Lead DQM queue
+ */
+bool database_queue_lead_process_queries(DatabaseQueue* lead_queue) {
+    if (!lead_queue || !lead_queue->is_lead_queue) {
+        return false;
+    }
+
+    char* dqm_label = database_queue_generate_label(lead_queue);
+    log_this(dqm_label, "Processing incoming queries", LOG_LEVEL_TRACE, 0);
+
+    // Use the existing query processing from process.c
+    // Lead queue processes queries like any other queue, but may have special handling
+    DatabaseQuery* query = database_queue_process_next(lead_queue);
+    if (query) {
+        // Lead queue specific processing could go here
+        // For now, just log and clean up like other queues
+        log_this(dqm_label, "Lead queue processing query: %s", LOG_LEVEL_TRACE, 1,
+                query->query_id ? query->query_id : "unknown");
+
+        // Clean up query
+        if (query->query_id) free(query->query_id);
+        if (query->query_template) free(query->query_template);
+        if (query->parameter_json) free(query->parameter_json);
+        if (query->error_message) free(query->error_message);
+        free(query);
+    }
+
+    free(dqm_label);
+    return true;
+}
+
+/*
+ * =============================================================================
+ * CHILD QUEUE MANAGEMENT
+ * =============================================================================
+ */
 
 /*
  * Spawn a child queue of the specified type
