@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 6.6.1 - 2025-10-16 - Added Luacheck to commands to search for
 # 6.6.0 - 2025-09-26 - Added JSON generation so that we have easier access to the table data later when we want to analyze historical trends
 # 6.5.0 - 2025-09-25 - Added metrics file generation with four ANSI tables (test results, coverage, cloc main, cloc stats) saved to docs/metrics/YYYY-MM/YYYY-MM-DD.txt
 # 6.4.0 - 2025-08-10 - Cleaned out some mktemp calls
@@ -45,19 +46,15 @@ export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
 source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_orchestration_environment
 
-# Test Setup
+# Commands used throughout the build system
 commands=(
-    "sort" "bc" 
-    "${PRINTF}" "${DATE}" "${FIND}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}" 
-    "${REALPATH}" "${DIRNAME}"  
-    "jq"  "nproc" "lsof" "brotli" "openssl"
-    "tshark" "zsh"
-    "cmake" "gcc" "ninja" "curl" "websocat" "wscat" 
-    "${GIT}" "${MD5SUM}" "${CLOC}"
-    "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "xmlstarlet" "jsonlint" "swagger-cli"
+    "zsh" "sort" "bc" "jq" "nproc"
+    "${PRINTF}" "${DATE}" "${FIND}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}" "${REALPATH}" "${DIRNAME}" "${MD5SUM}"   
+    "brotli" "openssl" "${GIT}" "cmake" "gcc" "ninja" "${CLOC}"
+    "tshark" "curl" "websocat" "wscat" "lsof" 
+    "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "xmlstarlet" "jsonlint" "swagger-cli" "luacheck"
+    "db2level" "mysql_config" "pg_config" "sqlite3" "lua" "sqruff"
     "${OH}" "${TABLES}" 
-    "db2level" "mysql_config" "pg_config" "sqlite3"
-    "lua" "sqruff"
 )
 
 # Array to store results
@@ -676,7 +673,7 @@ layout_json_content='{
 	        "justification": "right"
         },
         {
-            "header": "Test Name (Test Suite loc: '"${SCRIPT_SCALE})"'",
+            "header": "Test Name (Test Suite LOC: '"${SCRIPT_SCALE})"'",
             "key": "test_name",
             "datatype": "text",
             "width": 52,

@@ -80,7 +80,6 @@ void test_stop_pty_bridge_thread_with_bridge_context(void);
 // External variables that need to be accessible for testing
 extern WebSocketServerContext *ws_context;
 extern AppConfig* app_config;
-extern TerminalSession *terminal_session_map[256];
 
 // Test fixtures
 static WebSocketServerContext test_context;
@@ -125,8 +124,6 @@ void setUp(void) {
     test_session.authenticated = 1;
     test_session.connection_time = time(NULL);
 
-    // Clear terminal session map
-    memset(terminal_session_map, 0, sizeof(terminal_session_map));
 }
 
 void tearDown(void) {

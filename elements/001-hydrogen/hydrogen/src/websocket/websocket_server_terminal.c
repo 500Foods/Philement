@@ -27,9 +27,7 @@
 // External reference to the server context
 extern WebSocketServerContext *ws_context;
 
-// Global terminal session mapping for WebSocket connections
-// TODO: In future, this should be stored in WebSocketSessionData to avoid globals
-TerminalSession *terminal_session_map[256] = {NULL};
+// Terminal session management now uses WebSocketSessionData instead of globals
 
 // Terminal protocol validation
 int validate_terminal_protocol(struct lws *wsi)
@@ -146,13 +144,15 @@ TerminalSession* find_or_create_terminal_session(struct lws *wsi)
         return NULL;
     }
 
-    // Create a simple hash of the websocket connection for session mapping
-    // This is a basic implementation - in production, use better session management
-    uintptr_t wsi_addr = (uintptr_t)wsi;
-    size_t map_index = wsi_addr % (sizeof(terminal_session_map) / sizeof(terminal_session_map[0]));
+    // Get session data for this WebSocket connection
+    WebSocketSessionData *session_data = (WebSocketSessionData *)lws_wsi_user(wsi);
+    if (!session_data) {
+        log_this(SR_WEBSOCKET, "No session data found for WebSocket connection", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
 
-    // Check if we already have a session for this connection
-    TerminalSession *existing_session = terminal_session_map[map_index];
+    // Check if we already have a terminal session for this connection
+    TerminalSession *existing_session = session_data->terminal_session;
     if (existing_session && existing_session->active) {
         // Mark session as connected when reusing
         existing_session->connected = true;
@@ -172,15 +172,15 @@ TerminalSession* find_or_create_terminal_session(struct lws *wsi)
     const int DEFAULT_COLS = 80;
 
     TerminalSession *new_session = create_terminal_session(app_config->terminal.shell_command,
-                                                          DEFAULT_ROWS,
-                                                          DEFAULT_COLS);
+                                                           DEFAULT_ROWS,
+                                                           DEFAULT_COLS);
     if (!new_session) {
         log_this(SR_WEBSOCKET, "Failed to create new terminal session", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
-    // Store session in mapping
-    terminal_session_map[map_index] = new_session;
+    // Store session in WebSocket session data
+    session_data->terminal_session = new_session;
 
     // Mark session as connected
     new_session->connected = true;
