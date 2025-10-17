@@ -65,6 +65,27 @@ void* database_queue_worker_thread(void* arg) {
 
     // Start heartbeat monitoring immediately
     database_queue_start_heartbeat(db_queue);
+
+    // For Lead queues, trigger the conductor pattern sequence once
+    if (db_queue->is_lead_queue && !db_queue->conductor_sequence_completed) {
+        // Sequence: Connect -> Bootstrap -> Migration -> Launch Queues -> Heartbeats -> Query Processing
+        // Only establish connection if not already connected
+        bool connection_ready = db_queue->is_connected;
+        if (!connection_ready) {
+            connection_ready = database_queue_lead_establish_connection(db_queue);
+        }
+
+        if (connection_ready) {
+            if (database_queue_lead_run_bootstrap(db_queue)) {
+                database_queue_lead_run_migration(db_queue);
+                database_queue_lead_run_migration_test(db_queue);
+                database_queue_lead_launch_additional_queues(db_queue);
+                // database_queue_lead_manage_heartbeats(db_queue); // Disabled for now - causing mutex issues
+                db_queue->conductor_sequence_completed = true; // Mark as completed to prevent re-execution
+            }
+        }
+    }
+
     free(dqm_label);
 
     // Main worker loop - stay alive until shutdown is requested

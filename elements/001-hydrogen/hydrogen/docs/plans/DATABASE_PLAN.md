@@ -26,6 +26,18 @@ Hydrogen serves as a database gateway supporting PostgreSQL, SQLite, MySQL, DB2 
 
 **ARCHITECTURAL CHANGE:** The subsystem has evolved from the planned multi-queue-per-database approach to a **Database Queue Manager (DQM)** architecture where each database gets a single **Lead queue** that dynamically spawns **child worker queues** for different priority levels (slow/medium/fast/cache).
 
+### Lead DQM Responsibilities (Conductor Pattern)
+
+The Lead DQM acts as a conductor for database operations, orchestrating the entire database lifecycle:
+
+- **Establish a connection to the database** - Manages initial database connectivity and health monitoring
+- **Run Bootstrap query if available** - Executes initialization queries to verify database readiness
+- **Run Migration if indicated** - Triggers database schema migrations when auto-migration is enabled
+- **Run Migration Test if indicated** - Validates migration integrity and functionality
+- **Launch additional queues** - Spawns child worker queues based on configuration (slow/medium/fast/cache)
+- **Launch and respond to heartbeats** - Maintains connection health through periodic heartbeat checks
+- **Process incoming queries on its queue** - Handles queries routed to the Lead queue directly
+
 ## IMPLEMENTATION PHASES
 
 ### Phase 1: DQM (Database Queue Manager) Infrastructure ✅ **COMPLETED 9/8/2025**
@@ -983,11 +995,3 @@ The database subsystem is **production-ready for all implemented engines** with:
 - **Dynamic library loading** for deployment flexibility and graceful degradation
 - **Bootstrap query execution** working across all database engines
 - **Unified API surface** providing consistent interface across all engines
-
-### Total Implementation Progress: ~80% complete
-
-- Core infrastructure: 100% ✅
-- All database engines: 100% ✅
-- Testing framework: 100% ✅
-- Query caching: 0% (next priority)
-- API integration: 0% (pending)
