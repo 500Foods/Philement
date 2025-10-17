@@ -173,29 +173,8 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 log_this(dqm_label, "Bootstrap failure is acceptable - migrations will still run if enabled", LOG_LEVEL_ALERT, 0);
             }
 
-            // Perform migration processing if AutoMigration is enabled
-            // NOTE: Migrations run REGARDLESS of bootstrap success to allow table creation
-            const DatabaseConnection* migration_conn_config = NULL;
-            if (app_config) {
-                for (int i = 0; i < app_config->databases.connection_count; i++) {
-                    if (strcmp(app_config->databases.connections[i].name, db_queue->database_name) == 0) {
-                        migration_conn_config = &app_config->databases.connections[i];
-                        break;
-                    }
-                }
-            }
-
-            if (migration_conn_config && migration_conn_config->auto_migration) {
-                log_this(dqm_label, "Automatic Migration enabled - Importing Migrations", LOG_LEVEL_DEBUG, 0);
-                bool migrations_valid = validate(db_queue);
-
-                if (migrations_valid) {
-                    // Execute auto migrations (populate Queries table)
-                    execute_auto(db_queue, connection_to_use);
-                } else {
-                    log_this(dqm_label, "Migration validation failed - continuing without migrations", LOG_LEVEL_ALERT, 0);
-                }
-            }
+            // Migration processing moved to Lead DQM conductor pattern
+            // Now handled by database_queue_lead_run_migration() in lead.c
 
             // Launch additional DQMs based on configuration regardless of bootstrap/migration results
             if (query_success && result && result->success) {
