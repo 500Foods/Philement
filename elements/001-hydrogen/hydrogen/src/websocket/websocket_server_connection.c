@@ -20,8 +20,7 @@
 // External reference to the server context
 extern WebSocketServerContext *ws_context;
 
-// External reference to terminal session map
-extern TerminalSession *terminal_session_map[256];
+// Terminal session management now uses WebSocketSessionData instead of globals
 
 int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *session)
 {
@@ -57,29 +56,23 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
     return 0;
 }
 
-int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session)
+int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *session)
 {
-    // Parameters reserved for future use (e.g., cleanup operations)
-    (void)session;
-
     if (!ws_context) {
         log_this(SR_WEBSOCKET, "Invalid context during connection closure", LOG_LEVEL_DEBUG, 0);
         return -1;
     }
 
     // Stop PTY bridge thread for terminal connections
-    if (wsi) {
-        // Find terminal session for this WebSocket connection
-        uintptr_t wsi_addr = (uintptr_t)wsi;
-        size_t map_index = wsi_addr % (sizeof(terminal_session_map) / sizeof(terminal_session_map[0]));
-
-        TerminalSession *terminal_session = terminal_session_map[map_index];
+    if (wsi && session) {
+        // Get terminal session from session data
+        TerminalSession *terminal_session = session->terminal_session;
         if (terminal_session && terminal_session->active) {
             // Stop the PTY bridge thread
             stop_pty_bridge_thread(terminal_session);
 
-            // Clear the session from the map
-            terminal_session_map[map_index] = NULL;
+            // Clear the session from session data
+            session->terminal_session = NULL;
         }
     }
 

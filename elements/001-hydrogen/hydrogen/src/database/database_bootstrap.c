@@ -337,7 +337,6 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 
             // Log completion message for test synchronization
             log_this(dqm_label, "Lead DQM initialization is complete for %s", LOG_LEVEL_TRACE, 1, db_queue->database_name);
-            log_this(dqm_label, "Migration test completed in 3.134s", LOG_LEVEL_TRACE, 0);
 
         } else {
             // log_this(dqm_label, "No persistent connection available for bootstrap query", LOG_LEVEL_ERROR, 0);

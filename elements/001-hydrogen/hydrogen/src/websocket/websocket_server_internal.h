@@ -64,6 +64,7 @@ typedef struct {
     time_t connection_time;           // Connection establishment time
     bool status_response_sent;         // Flag for status response completion
     char *authenticated_key;           // Stored authenticated key for protocol filtering
+    TerminalSession *terminal_session; // Terminal session for this WebSocket connection
 } WebSocketSessionData;
 
 // Initialize the server context
@@ -80,7 +81,7 @@ void ws_clear_authentication(WebSocketSessionData *session);
 // Connection handlers
 void ws_update_client_info(struct lws *wsi, WebSocketSessionData *session);
 int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *session);
-int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session);
+int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *session);
 
 // Message processing
 int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len);

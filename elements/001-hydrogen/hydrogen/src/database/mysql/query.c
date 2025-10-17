@@ -105,7 +105,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     }
 
     db_result->success = true;
-    db_result->execution_time_ms = 0; // TODO: Implement timing
+    // db_result->execution_time_ms is now set by the engine abstraction layer
 
     // Get result metadata
     if (mysql_result) {
@@ -303,7 +303,7 @@ bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
     }
 
     db_result->success = true;
-    db_result->execution_time_ms = 0; // TODO: Implement timing
+    // db_result->execution_time_ms is now set by the engine abstraction layer
 
     // Get result metadata
     void* mysql_result = NULL;

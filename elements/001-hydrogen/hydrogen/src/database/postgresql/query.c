@@ -68,38 +68,19 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
         log_this(designator, "PostgreSQL execute_query: Failed to set statement timeout", LOG_LEVEL_ERROR, 0);
     }
 
-    time_t start_time = time(NULL);
-    // log_this(designator, "PostgreSQL execute_query: Starting query execution at %ld", LOG_LEVEL_TRACE, 1, start_time);
-
-    // CRITICAL DEBUG: Log right before PQexec call
-    // log_this(designator, "CRITICAL DEBUG: About to call PQexec_ptr - if hang occurs, it's here", LOG_LEVEL_ERROR, 0);
-    // log_this(designator, "CRITICAL DEBUG: connection=%p, query='%s'", LOG_LEVEL_ERROR, 2, pg_conn->connection, request->sql_template);
-
-    
-    // log_this(designator, "PQEXEC_CALL: Calling PQexec_ptr now...", LOG_LEVEL_ERROR, 0);
     // Execute the query (now with PostgreSQL-level timeout protection)
+    time_t query_start_time = time(NULL);
     void* pg_result = PQexec_ptr(pg_conn->connection, request->sql_template);
-    // log_this(designator, "PQEXEC_RETURN: PQexec_ptr returned %p", LOG_LEVEL_ERROR, 1, pg_result);
 
-    // CRITICAL DEBUG: Log immediately after PQexec call
-    // log_this(designator, "CRITICAL DEBUG: PQexec_ptr returned - result=%p", LOG_LEVEL_ERROR, 1, pg_result);
-
-    time_t end_time = time(NULL);
-
-    // log_this(designator, "Query execution completed in %ld seconds", LOG_LEVEL_TRACE, 1, execution_time);
-
-    // Check if query took too long (approximate check)
-    if (check_timeout_expired(start_time, query_timeout)) {
-        time_t execution_time = end_time - start_time;
-        log_this(designator, "PostgreSQL execute_query: Query execution time exceeded %d seconds (actual: %ld)", LOG_LEVEL_ERROR, 2, query_timeout, execution_time);
+    // Check if query took too long (timing now handled at engine abstraction layer, but we still need timeout checking)
+    if (check_timeout_expired(query_start_time, query_timeout)) {
+        log_this(designator, "PostgreSQL execute_query: Query execution time exceeded %d seconds", LOG_LEVEL_ERROR, 1, query_timeout);
         if (pg_result) {
             log_this(designator, "PostgreSQL execute_query: Cleaning up failed query result", LOG_LEVEL_TRACE, 0);
             PQclear_ptr(pg_result);
         }
         return false;
     }
-
-    // log_this(designator, "PostgreSQL execute_query: Query execution within timeout limits", LOG_LEVEL_TRACE, 0);
 
     if (!pg_result) {
         log_this(designator, "PostgreSQL execute_query: PQexec returned NULL", LOG_LEVEL_ERROR, 0);
@@ -129,7 +110,7 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
     db_result->success = true;
     db_result->row_count = (size_t)PQntuples_ptr(pg_result);
     db_result->column_count = (size_t)PQnfields_ptr(pg_result);
-    db_result->execution_time_ms = 0; // TODO: Implement timing
+    // db_result->execution_time_ms is now set by the engine abstraction layer
     db_result->affected_rows = atoi(PQcmdTuples_ptr(pg_result));
 
     // Extract column names
@@ -263,11 +244,10 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
         log_this(designator, "PostgreSQL execute_prepared: Failed to set statement timeout", LOG_LEVEL_ERROR, 0);
     }
 
-    time_t start_time = time(NULL);
-
     // Execute the prepared statement using PQexecPrepared API
+    time_t query_start_time = time(NULL);
     void* pg_result = NULL;
-    
+
     if (PQexecPrepared_ptr) {
         // Use true prepared statement execution with PQexecPrepared
         // For migration queries with no parameters, use nParams=0 and NULL parameter arrays
@@ -278,13 +258,10 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
         log_this(designator, "PostgreSQL execute_prepared: Falling back to PQexec (PQexecPrepared not available)", LOG_LEVEL_TRACE, 0);
         pg_result = PQexec_ptr(pg_conn->connection, stmt->name);
     }
-    
-    time_t end_time = time(NULL);
 
-    // Check if query took too long (approximate check)
-    if (check_timeout_expired(start_time, query_timeout)) {
-        time_t execution_time = end_time - start_time;
-        log_this(designator, "PostgreSQL execute_prepared: Query execution time exceeded %d seconds (actual: %ld)", LOG_LEVEL_ERROR, 2, query_timeout, execution_time);
+    // Check if query took too long (timing now handled at engine abstraction layer, but we still need timeout checking)
+    if (check_timeout_expired(query_start_time, query_timeout)) {
+        log_this(designator, "PostgreSQL execute_prepared: Query execution time exceeded %d seconds", LOG_LEVEL_ERROR, 1, query_timeout);
         if (pg_result) {
             log_this(designator, "PostgreSQL execute_prepared: Cleaning up failed query result", LOG_LEVEL_TRACE, 0);
             PQclear_ptr(pg_result);
@@ -318,7 +295,7 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
     db_result->success = true;
     db_result->row_count = (size_t)PQntuples_ptr(pg_result);
     db_result->column_count = (size_t)PQnfields_ptr(pg_result);
-    db_result->execution_time_ms = 0; // TODO: Implement timing
+    // db_result->execution_time_ms is now set by the engine abstraction layer
     db_result->affected_rows = atoi(PQcmdTuples_ptr(pg_result));
 
     // Extract column names

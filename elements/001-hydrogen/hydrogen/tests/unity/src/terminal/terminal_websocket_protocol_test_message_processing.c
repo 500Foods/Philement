@@ -82,22 +82,7 @@ void setup_test_connection(MockTerminalSession* session) {
     }
 }
 
-// Mock functions to replace actual implementations
-bool mock_send_data_to_session(TerminalSession* session, const char* data, size_t size) {
-    if (!session) return false;
-
-    MockTerminalSession* mock = (MockTerminalSession*)session;
-    if (mock->last_input_data) {
-        free(mock->last_input_data);
-    }
-    mock->last_input_data = malloc(size + 1);
-    if (mock->last_input_data) {
-        memcpy(mock->last_input_data, data, size);
-        mock->last_input_data[size] = '\0';
-        mock->last_input_size = size;
-    }
-    return true;
-}
+// Note: mock_send_data_to_session removed to avoid conflicts with comprehensive test file
 
 bool mock_resize_terminal_session(TerminalSession* session, int rows, int cols) {
     if (!session) return false;

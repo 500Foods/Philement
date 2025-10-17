@@ -7,12 +7,16 @@
 #include <stdlib.h>
 #include <microhttpd.h>
 
+// Project headers for TerminalConfig
+#include <src/config/config_terminal.h>
+
 // Mock state variables
 static const char* mock_mhd_lookup_result = NULL;
 static const union MHD_ConnectionInfo* mock_mhd_connection_info = NULL;
 static bool mock_mhd_create_response_should_fail = false;
 static bool mock_mhd_add_header_should_fail = false;
 static enum MHD_Result mock_mhd_queue_response_result = MHD_YES;
+static bool mock_mhd_is_terminal_websocket_request_result = true;
 
 /*
  * Mock implementation of MHD_lookup_connection_value
@@ -120,6 +124,7 @@ void mock_mhd_reset_all(void) {
     mock_mhd_create_response_should_fail = false;
     mock_mhd_add_header_should_fail = false;
     mock_mhd_queue_response_result = MHD_YES;
+    mock_mhd_is_terminal_websocket_request_result = true;
 }
 
 /*
@@ -304,4 +309,24 @@ void mock_mhd_set_add_header_should_fail(bool should_fail) {
  */
 void mock_mhd_set_queue_response_result(enum MHD_Result result) {
     mock_mhd_queue_response_result = result;
+}
+
+/*
+ * Mock implementation of is_terminal_websocket_request
+ */
+__attribute__((weak))
+bool is_terminal_websocket_request(struct MHD_Connection *connection, const char *method, const char *url, const struct TerminalConfig *config) {
+    (void)connection; // Suppress unused parameter warning
+    (void)method;     // Suppress unused parameter warning
+    (void)url;        // Suppress unused parameter warning
+    (void)config;     // Suppress unused parameter warning
+
+    return mock_mhd_is_terminal_websocket_request_result;
+}
+
+/*
+ * Set the result that is_terminal_websocket_request should return
+ */
+void mock_mhd_set_is_terminal_websocket_request_result(bool result) {
+    mock_mhd_is_terminal_websocket_request_result = result;
 }

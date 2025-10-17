@@ -18,9 +18,23 @@
 #include <src/hydrogen.h>
 #include <src/database/database.h>
 #include <src/database/migration/migration.h>
+#include <src/utils/utils_time.h>
 
 // Local includes
 #include "dbqueue.h"
+
+// Migration timing variables
+static struct timespec migration_start_time = {0, 0};
+static struct timespec migration_end_time = {0, 0};
+static volatile bool migration_timer_running = false;
+
+// Calculate elapsed time in seconds with nanosecond precision (local copy from utils_time.c)
+static double calc_elapsed_time(const struct timespec *end, const struct timespec *start) {
+    double seconds = (double)(end->tv_sec - start->tv_sec);
+    double nanoseconds = (double)(end->tv_nsec - start->tv_nsec) / 1000000000.0;
+    return seconds + nanoseconds;
+}
+
 
 /*
  * =============================================================================
@@ -75,6 +89,10 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
 
     char* dqm_label = database_queue_generate_label(lead_queue);
     log_this(dqm_label, "Running migration", LOG_LEVEL_TRACE, 0);
+
+    // Start the migration timer
+    clock_gettime(CLOCK_MONOTONIC, &migration_start_time);
+    migration_timer_running = true;
 
     // Check if auto-migration is enabled in config
     const DatabaseConnection* migration_conn_config = NULL;
@@ -141,6 +159,14 @@ bool database_queue_lead_run_migration_test(DatabaseQueue* lead_queue) {
         log_this(dqm_label, "Migration test completed successfully", LOG_LEVEL_DEBUG, 0);
     } else {
         log_this(dqm_label, "Test Migration disabled - skipping migration test", LOG_LEVEL_DEBUG, 0);
+    }
+
+    // End the migration timer and output elapsed time
+    if (migration_timer_running) {
+        clock_gettime(CLOCK_MONOTONIC, &migration_end_time);
+        double elapsed_seconds = calc_elapsed_time(&migration_end_time, &migration_start_time);
+        log_this(dqm_label, "Migration test completed in %.3fs", LOG_LEVEL_TRACE, 1, elapsed_seconds);
+        migration_timer_running = false;
     }
 
     free(dqm_label);

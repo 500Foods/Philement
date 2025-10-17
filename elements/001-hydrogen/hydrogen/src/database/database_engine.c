@@ -532,8 +532,18 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
     // log_this(designator, "database_engine_execute: Calling engine->execute_query", LOG_LEVEL_TRACE, 0);
 
-    // Execute query - no connection lock needed since thread owns connection exclusively
+    // Execute query with timing measurement - no connection lock needed since thread owns connection exclusively
+    time_t query_start_time = time(NULL);
     bool result_success = engine->execute_query(connection, request, result);
+    time_t query_end_time = time(NULL);
+
+    // Calculate execution time in milliseconds and store in result if successful
+    if (result_success && *result) {
+        time_t execution_time_seconds = query_end_time - query_start_time;
+        (*result)->execution_time_ms = (time_t)(execution_time_seconds * 1000); // Convert to milliseconds
+
+        // log_this(designator, "database_engine_execute: Query executed in %ld ms", LOG_LEVEL_TRACE, 1, (*result)->execution_time_ms);
+    }
 
     // log_this(designator, "database_engine_execute: Engine execute_query returned %s", LOG_LEVEL_TRACE, 1, result_success ? "SUCCESS" : "FAILURE");
 
