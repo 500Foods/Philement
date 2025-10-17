@@ -13,6 +13,9 @@
 #include <stdbool.h>
 #include <microhttpd.h>
 
+// Project headers for TerminalConfig
+#include <src/config/config_terminal.h>
+
 // Mock MHD types and constants (if not already defined by microhttpd.h)
 // Note: We include microhttpd.h first so that all types are available
 
@@ -52,6 +55,9 @@ void update_session_activity(TerminalSession *session);
 bool resize_terminal_session(TerminalSession *session, int rows, int cols);
 bool get_session_manager_stats(size_t *connections, size_t *max_connections);
 
+// Terminal WebSocket specific mock functions
+bool is_terminal_websocket_request(struct MHD_Connection *connection, const char *method, const char *url, const struct TerminalConfig *config);
+
 // Mock control functions for session management
 void mock_session_reset_all(void);
 void mock_session_set_has_capacity(bool capacity);
@@ -59,5 +65,8 @@ void mock_session_set_create_result(TerminalSession *session);
 void mock_session_set_send_result(int result);
 void mock_session_set_resize_result(bool result);
 void mock_session_set_stats(size_t connections, size_t max_connections);
+
+// Terminal WebSocket mock control functions
+void mock_mhd_set_is_terminal_websocket_request_result(bool result);
 
 #endif /* MOCK_LIBMICROHTTPD_H */

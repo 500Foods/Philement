@@ -36,6 +36,7 @@ Hydrogen is currently designed for technical users who:
 - [**Secrets Management**](SECRETS.md) - Environment variables and security configuration
 - [**Release Notes**](RELEASES.md) - Detailed version history and changes
 - [**Markdown Site Map**](SITEMAP.md) - Index to all Markdown files in this repository
+- [**TO-DO List**](TODO.md) - Summary of references to TODO in the code that still need work
 
 ### Core Documentation
 

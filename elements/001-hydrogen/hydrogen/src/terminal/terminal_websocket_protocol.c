@@ -83,8 +83,8 @@ enum MHD_Result handle_terminal_websocket_upgrade(struct MHD_Connection *connect
     strncpy(ws_conn->session_id, session->session_id, sizeof(ws_conn->session_id) - 1);
     ws_conn->session_id[sizeof(ws_conn->session_id) - 1] = '\0';
 
-    // TODO: In future integration, this would hand off to libwebsockets
-    // For now, we store the context for WebSocket handling
+    // Integration with libwebsockets - store the WebSocket connection context
+    // The wsi (WebSocket Instance) will be set when the connection is established
     *websocket_handle = ws_conn;
 
     log_this(SR_TERMINAL, "WebSocket upgrade accepted for session %s", LOG_LEVEL_STATE, 1, session->session_id);
@@ -194,30 +194,49 @@ bool send_terminal_websocket_output(TerminalWSConnection *connection,
         return false;
     }
 
-    // Create JSON response
-    json_t *json_response = json_object();
-    if (!json_response) {
-        return false;
-    }
+    // Send response via libwebsockets
+    if (connection->wsi) {
+        // Create JSON response for WebSocket
+        json_t *ws_json_response = json_object();
+        if (ws_json_response) {
+            json_object_set_new(ws_json_response, "type", json_string("output"));
+            json_object_set_new(ws_json_response, "data", json_stringn(data, data_size));
 
-    json_object_set_new(json_response, "type", json_string("output"));
-    json_object_set_new(json_response, "data", json_stringn(data, data_size));
+            char *ws_response_str = json_dumps(ws_json_response, JSON_COMPACT);
+            json_decref(ws_json_response);
 
-    char *response_str = json_dumps(json_response, JSON_COMPACT);
-    json_decref(json_response);
+            if (ws_response_str) {
+                size_t response_len = strlen(ws_response_str);
+                unsigned char *buf = (unsigned char *)malloc(LWS_SEND_BUFFER_PRE_PADDING + response_len + LWS_SEND_BUFFER_POST_PADDING);
 
-    if (!response_str) {
-        return false;
-    }
+                if (buf) {
+                    memcpy(&buf[LWS_SEND_BUFFER_PRE_PADDING], ws_response_str, response_len);
 
-    // TODO: Send response via libwebsockets when integrated
-    // For now, log the output
-    {
+                    int result = lws_write(connection->wsi, &buf[LWS_SEND_BUFFER_PRE_PADDING], response_len, LWS_WRITE_TEXT);
+                    if (result < 0) {
+                        log_this(SR_TERMINAL, "Failed to send WebSocket data for session %s", LOG_LEVEL_ERROR, 1, connection->session_id);
+                    } else {
+                        log_this(SR_TERMINAL, "Sent %d bytes of WebSocket data for session %s", LOG_LEVEL_DEBUG, 2, result, connection->session_id);
+                    }
+
+                    free(buf);
+                } else {
+                    log_this(SR_TERMINAL, "Failed to allocate WebSocket buffer for session %s", LOG_LEVEL_ERROR, 1, connection->session_id);
+                }
+
+                free(ws_response_str);
+            } else {
+                log_this(SR_TERMINAL, "Failed to serialize JSON response for session %s", LOG_LEVEL_ERROR, 1, connection->session_id);
+            }
+        } else {
+            log_this(SR_TERMINAL, "Failed to create JSON response for session %s", LOG_LEVEL_ERROR, 1, connection->session_id);
+        }
+    } else {
+        // Fallback: log the output if WebSocket connection not available
         size_t max_truncated = 100;
         size_t truncated_size = (data_size < max_truncated) ? data_size : max_truncated;
-        log_this(SR_TERMINAL, "WebSocket output for session %s: %.*s", LOG_LEVEL_DEBUG, 3, connection->session_id, (int)truncated_size, data);
+        log_this(SR_TERMINAL, "WebSocket output for session %s (no wsi): %.*s", LOG_LEVEL_DEBUG, 3, connection->session_id, (int)truncated_size, data);
     }
 
-    free(response_str);
     return true;
 }
