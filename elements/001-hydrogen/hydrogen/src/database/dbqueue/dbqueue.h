@@ -73,6 +73,11 @@ struct DatabaseQueue {
     DatabaseHandle* persistent_connection; // Maintained connection for query execution
     pthread_mutex_t connection_lock;       // Protects persistent connection access
 
+    // Migration status (Lead queues only)
+    volatile long long latest_available_migration;  // Highest query_ref for query_type_lua_28 = 1000
+    volatile long long latest_installed_migration;  // Highest query_ref for query_type_lua_28 = 1003
+    volatile bool empty_database;                   // True if no queries found in bootstrap results
+
     // Flags
     volatile bool shutdown_requested;
     volatile bool is_connected;

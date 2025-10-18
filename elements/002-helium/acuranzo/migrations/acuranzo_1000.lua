@@ -2,8 +2,9 @@
 -- Bootstraps the migration system by creating the queries table and populating it with the next migration.
 
 -- CHANGELOG
--- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 -0 2025-09-13 - Initial creation for queries table with SQLite, PostgreSQL, MySQL, DB2 support.
+-- 2.0.0 - 2025-10-18 - Moved to latest migration format
+-- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
+-- 1.0.0 - 2025-09-13 - Initial creation for queries table with SQLite, PostgreSQL, MySQL, DB2 support.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -27,7 +28,7 @@ table.insert(queries,{sql=[[
         updated_id              ${INTEGER}          NOT NULL,
         updated_at              ${TIMESTAMP_TZ}     NOT NULL,
         ${PRIMARY}(query_id),                                               -- Primary Key
-        ${UNIQUE}(query_ref)                                                -- Unique Column
+        ${UNIQUE}(query_ref, query_type_lua_28)                             -- Unique Column
     );
 
 ]]})
@@ -48,7 +49,7 @@ table.insert(queries,{sql=[[
     VALUES (
         1,                                                                  -- query_id
         1000,                                                               -- query_ref
-        ${TYPE_FORWARD_MIGRATION},                                          -- query_type_lua_28
+        ${TYPE_APPLIED_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
         'Create Tables Query',                                              -- name, summary, query_code
         [=[
@@ -94,7 +95,7 @@ table.insert(queries,{sql=[[
     )
     VALUES (
         2,                                                                  -- query_id
-        1001,                                                               -- query_ref
+        1000,                                                               -- query_ref
         ${TYPE_REVERSE_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
         'Delete Tables Query',                                              -- name, summary, query_code
@@ -121,7 +122,7 @@ table.insert(queries,{sql=[[
     )
     VALUES (
         3,                                                                  -- query_id
-        1003,                                                               -- query_ref
+        1000,                                                               -- query_ref
         ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
         'Diagram Tables: ${SCHEMA}queries',                                 -- name

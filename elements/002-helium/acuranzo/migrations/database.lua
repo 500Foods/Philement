@@ -33,7 +33,8 @@ local database = {
         reporting_sql = 3,
         forward_migration = 1000,
         reverse_migration = 1001,
-        diagram_migration = 1002
+        diagram_migration = 1002,
+        applied_migration = 1003
     },
 
     -- Currently supported database engines - mirrors Lookup #30
@@ -120,6 +121,7 @@ local database = {
         cfg.TYPE_FORWARD_MIGRATION = self.query_types.forward_migration
         cfg.TYPE_REVERSE_MIGRATION = self.query_types.reverse_migration
         cfg.TYPE_DIAGRAM_MIGRATION = self.query_types.diagram_migration
+        cfg.TYPE_APPLIED_MIGRATION = self.query_types.applied_migration
 
         -- Get text block to work with
         local sql = template
