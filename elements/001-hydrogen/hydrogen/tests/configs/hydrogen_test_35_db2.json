@@ -10,14 +10,14 @@
         "Connections": [
             {
                 "Enabled": true,
-                "Name": "HTST",
+                "Name": "HYDROTST",
                 "Engine": "${env.HYDROTST_DB_TYPE}",
                 "Database": "${env.HYDROTST_DB_NAME}",
                 "Host":"localhost",
                 "Port": 55555,
                 "User": "${env.HYDROTST_DB_USER}",
                 "Pass": "${env.HYDROTST_DB_PASS}",
-                "Bootstrap":"SELECT * FROM test.queries;",
+                "Bootstrap":"SELECT * FROM test.queries order by query_type_lua_28 desc;",
                 "AutoMigration": true,
                 "TestMigration": true,
                 "Migrations":"PAYLOAD:acuranzo",

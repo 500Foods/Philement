@@ -102,7 +102,7 @@ count_dqm_launches() {
 
     # Count "DQM launched successfully" messages that appear before "STARTUP COMPLETE"
     # The DQM launches happen during startup, before the final "STARTUP COMPLETE" message
-    count=$("${GREP}" -B 1000 "STARTUP COMPLETE" "${log_file}" 2>/dev/null | "${GREP}" -c "DQM launched successfully" || echo "0")
+    count=$("${GREP}" -B 10000 "STARTUP COMPLETE" "${log_file}" 2>/dev/null | "${GREP}" -c "DQM launched successfully" || echo "0")
 
     echo "${count}"
 }
