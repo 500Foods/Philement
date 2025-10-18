@@ -77,6 +77,27 @@ This TODO.md file serves as a central location to track plenty of incomplete ite
 | 21 | Pending | src/database/dbqueue/process.c:113 | Implement actual database query execution (Phase 2) |
 | 22 | Pending | src/database/dbqueue/process.c:160 | Implement intelligent queue management |
 
+### Database Migrations (20 TODOs)
+
+| # | Status | File | Description |
+|---|--------|------|-------------|
+| 1 | Pending | src/database/dbqueue/lead.c | Analyze current bootstrap query failure behavior when database is empty |
+| 2 | Pending | src/database/dbqueue/lead.c | Modify bootstrap query to return multiple fields including empty database detection |
+| 3 | Pending | src/database/dbqueue/lead.c | Update logging to differentiate between connection failures and empty database scenarios |
+| 4 | Pending | src/database/dbqueue/lead.c | Implement graceful fallback when bootstrap fails but AutoMigration is enabled |
+| 5 | Pending | src/database/dbqueue/lead.c | Design bootstrap query to return multiple fields (available_migrations, installed_migrations, etc.) |
+| 6 | Pending | src/database/migration/ | Implement migration tracking table structure for available vs installed migrations |
+| 7 | Pending | src/database/dbqueue/lead.c | Update bootstrap query to query both migration states from database |
+| 8 | Pending | src/database/dbqueue/lead.c | Modify lead.c to interpret bootstrap results for migration decision making |
+| 9 | Pending | src/database/dbqueue/lead.c | Separate migration loading from execution in AutoMigration process |
+| 10 | Pending | src/database/dbqueue/lead.c | Implement two-phase AutoMigration: load phase completes before execute phase |
+| 11 | Pending | src/database/dbqueue/lead.c | Add bootstrap re-execution after loading to verify loaded > installed migrations |
+| 12 | Pending | src/database/dbqueue/lead.c | Update lead.c migration workflow to handle both phases as transactions with error stopping |
+| 13 | Pending | src/database/dbqueue/lead.c | Design TestMigration mechanism for rollback functionality with built-in safety |
+| 14 | Pending | src/database/dbqueue/lead.c | Implement reverse migration execution that stops on SQL errors like other phases |
+| 15 | Pending | src/database/migration/ | Add validation that migrations only delete records they added and won't drop non-empty tables |
+| 16 | Pending | src/database/dbqueue/lead.c | Update lead.c to handle TestMigration as separate operation mode |
+
 ### Queue Folder (1 TODO)
 
 | # | Status | File | Description |

@@ -83,6 +83,39 @@ bool database_queue_lead_run_bootstrap(DatabaseQueue* lead_queue) {
  * Run migration for Lead DQM
  */
 bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
+
+    // Migration Available - The latest Migration script found (Lua script)
+    // Migration Loaded    - The latest Migration script in the database (type_lua_28 = 1000)
+    // Migration Applied   - The latest Migration script in the database (type_lua_28 = 1003)
+    // If AutoMigration is eanbled for this database, and this is the Lead DQM, then:
+    //
+    // LOOP: 
+    //
+    // CASE: Database is empty, so we want to initialize it:
+    // if Migration Available >= 1000
+    //   and Migration Loaded < 1000
+    //   and Migration Applied < 1000 
+    // then:
+    //   Run Migration, staring with load and report:
+    //   Migration Updating: Available = X, Loaded = Y, Applied = Z
+    //
+    // CASE: Newer Migrations are available than what is in the database
+    // if Migration Available >= 1000
+    //    and Migration Loaded < Migration Available
+    //    and Migration Applied < Migration Available
+    // then Run Migration starting with load
+    //   Migration Loading: Available = X, Loaded = Y, Applied = Z
+    //
+    // CASE: Migrations that were previously loaded have not been applied
+    // if Migration Loaded >= 1000
+    //    and Migration Loaded < Migration Applied
+    // then Run Migration starting with Apply
+    //   Migration Updating: Available = X, Loaded = Y, Applied = Z
+    //
+    // CASE: Migrations already up to date
+    // Otherwise, report and do nothing:
+    //   Migration Current: Available = X, Loaded = Y, Applied = Z
+
     if (!lead_queue || !lead_queue->is_lead_queue) {
         return false;
     }
@@ -107,6 +140,12 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
 
     if (migration_conn_config && migration_conn_config->auto_migration) {
         log_this(dqm_label, "Automatic Migration enabled - Importing Migrations", LOG_LEVEL_DEBUG, 0);
+
+        // Check if database is empty (no queries found in bootstrap)
+        if (lead_queue->empty_database) {
+            log_this(dqm_label, "Empty database detected - proceeding with migration validation", LOG_LEVEL_DEBUG, 0);
+        }
+
         bool migrations_valid = validate(lead_queue);
 
         if (migrations_valid) {
@@ -114,17 +153,76 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
             MutexResult lock_result = MUTEX_LOCK(&lead_queue->connection_lock, dqm_label);
             if (lock_result == MUTEX_SUCCESS) {
                 if (lead_queue->persistent_connection) {
-                    // Execute auto migrations (populate Queries table)
-                    execute_auto(lead_queue, lead_queue->persistent_connection);
+                    // Check if migrations should be executed
+                    // For empty databases or when migrations are needed, run migrations if AutoMigration is enabled
+                    bool should_run_migrations = false;
+
+                    if (lead_queue->empty_database) {
+                        should_run_migrations = true;
+                        log_this(dqm_label, "Empty database detected - will run migrations to bootstrap", LOG_LEVEL_DEBUG, 0);
+                    } else if (lead_queue->latest_available_migration > lead_queue->latest_installed_migration) {
+                        should_run_migrations = true;
+                        log_this(dqm_label, "Migration needed: available=%lld, installed=%lld - executing migrations",
+                                 LOG_LEVEL_DEBUG, 2, lead_queue->latest_available_migration, lead_queue->latest_installed_migration);
+                    } else {
+                        log_this(dqm_label, "No migration needed: available=%lld, installed=%lld",
+                                 LOG_LEVEL_DEBUG, 2, lead_queue->latest_available_migration, lead_queue->latest_installed_migration);
+                    }
+
+                    if (should_run_migrations) {
+                        log_this(dqm_label, "Executing migrations to bootstrap/populate database", LOG_LEVEL_DEBUG, 0);
+
+                        // Store pre-migration state for comparison and logging
+                        long long pre_load_available = lead_queue->latest_available_migration;
+                        long long pre_load_installed = lead_queue->latest_installed_migration;
+
+                        log_this(dqm_label, "Pre-load migration state: available=%lld, installed=%lld",
+                                 LOG_LEVEL_DEBUG, 2, pre_load_available, pre_load_installed);
+
+                        // Execute auto migrations (populate Queries table) - LOAD PHASE
+                        bool load_success = execute_auto(lead_queue, lead_queue->persistent_connection);
+
+                        if (load_success) {
+                            log_this(dqm_label, "Migration load phase completed successfully", LOG_LEVEL_DEBUG, 0);
+
+                            // Database operations are synchronous - transaction is already committed
+                            // No delay needed since database_engine_execute() blocks until complete
+
+                            // Re-run bootstrap query using existing connection to verify what was loaded
+                            log_this(dqm_label, "Re-running bootstrap query on existing connection to verify loaded migrations", LOG_LEVEL_DEBUG, 0);
+
+                            // Store current migration status before re-execution
+                            long long pre_reexec_available = lead_queue->latest_available_migration;
+                            long long pre_reexec_installed = lead_queue->latest_installed_migration;
+
+                            // Re-execute bootstrap query on the existing queue
+                            // Since Lead DQM is single-threaded, we shouldn't need mutexes here
+                            database_queue_execute_bootstrap_query(lead_queue);
+
+                            log_this(dqm_label, "Bootstrap re-execution complete: pre=(%lld,%lld) post=(%lld,%lld)",
+                                     LOG_LEVEL_DEBUG, 4, pre_reexec_available, pre_reexec_installed,
+                                     lead_queue->latest_available_migration, lead_queue->latest_installed_migration);
+
+                            log_this(dqm_label, "Migration status updated after load phase", LOG_LEVEL_DEBUG, 0);
+                        } else {
+                            log_this(dqm_label, "Migration load phase failed", LOG_LEVEL_ERROR, 0);
+                        }
+                    }
                 }
                 mutex_unlock(&lead_queue->connection_lock);
             }
         } else {
-            log_this(dqm_label, "Migration validation failed - continuing without migrations", LOG_LEVEL_ALERT, 0);
+            if (lead_queue->empty_database) {
+                log_this(dqm_label, "Migration validation failed on empty database - this is expected for new installations", LOG_LEVEL_DEBUG, 0);
+            } else {
+                log_this(dqm_label, "Migration validation failed - continuing without migrations", LOG_LEVEL_ALERT, 0);
+            }
         }
     } else {
         log_this(dqm_label, "Automatic Migration disabled - skipping migration execution", LOG_LEVEL_DEBUG, 0);
     }
+
+    log_this(dqm_label, "Lead DQM initialization is complete", LOG_LEVEL_DEBUG, 0);
 
     free(dqm_label);
     return true;

@@ -16,7 +16,7 @@ long long server_executable_size = 0;
 
 // Global logging variables
 int MAX_PRIORITY_LABEL_WIDTH = 5;    // All log level names are 5 characters
-int MAX_SUBSYSTEM_LABEL_WIDTH = 18;  // Default minimum width
+int MAX_SUBSYSTEM_LABEL_WIDTH = 20;  // Default minimum width
 
 // Global startup log level for filtering during initialization
 int startup_log_level = LOG_LEVEL_TRACE;  // Default to TRACE

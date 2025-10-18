@@ -191,7 +191,7 @@ static bool database_queue_perform_connection_attempt(DatabaseQueue* db_queue, C
     bool connection_success = database_engine_connect_with_designator(engine_type, config, &db_handle, dqm_designator);
 
     if (connection_success && db_handle) {
-        log_this(dqm_label_conn, "Database connection established successfully", LOG_LEVEL_TRACE, 0);
+        log_this(dqm_label_conn, "Database connection established successfully", LOG_LEVEL_DEBUG, 0);
         bool success = database_queue_handle_connection_success(db_queue, db_handle, config);
         free(dqm_label_conn);
         free(dqm_designator);
