@@ -144,6 +144,8 @@ void test_database_migrations_validate_migrations_disabled(void) {
 
     free(db_queue->database_name);
     free(db_queue);
+    // Note: We don't free the app_config->databases.connections[0].name and .migrations
+    // because they are managed by the config system, not our test
 }
 
 void test_database_migrations_validate_no_migrations_config(void) {
@@ -165,6 +167,8 @@ void test_database_migrations_validate_no_migrations_config(void) {
 
     free(db_queue->database_name);
     free(db_queue);
+    // Note: We don't free the app_config->databases.connections[0].name
+    // because it's managed by the config system, not our test
 }
 
 // ===== PAYLOAD MIGRATION TESTS =====
@@ -188,6 +192,8 @@ void test_database_migrations_validate_payload_empty_name(void) {
 
     free(db_queue->database_name);
     free(db_queue);
+    // Note: We don't free the app_config->databases.connections[0].name and .migrations
+    // because they are managed by the config system, not our test
 }
 
 void test_database_migrations_validate_payload_no_files(void) {
@@ -209,6 +215,8 @@ void test_database_migrations_validate_payload_no_files(void) {
 
     free(db_queue->database_name);
     free(db_queue);
+    // Note: We don't free the app_config->databases.connections[0].name and .migrations
+    // because they are managed by the config system, not our test
 }
 
 // ===== PATH-BASED MIGRATION TESTS (currently uncovered) =====
@@ -232,6 +240,8 @@ void test_database_migrations_validate_path_no_directory(void) {
 
     free(db_queue->database_name);
     free(db_queue);
+    // Note: We don't free the app_config->databases.connections[0].name and .migrations
+    // because they are managed by the config system, not our test
 }
 
 void test_database_migrations_validate_path_invalid_basename(void) {
@@ -253,6 +263,8 @@ void test_database_migrations_validate_path_invalid_basename(void) {
 
     free(db_queue->database_name);
     free(db_queue);
+    // Note: We don't free the app_config->databases.connections[0].name and .migrations
+    // because they are managed by the config system, not our test
 }
 
 // ===== SUCCESS CASES =====
@@ -276,11 +288,13 @@ void test_database_migrations_validate_success_disabled(void) {
 
     free(db_queue->database_name);
     free(db_queue);
+    // Note: We don't free the app_config->databases.connections[0].name
+    // because it's managed by the config system, not our test
 }
 
 // ===== INTERNAL FUNCTION TESTS =====
 
-// Test validate_payload_migrations with NULL config
+// Test validate_payload_migrations with NULL queue
 void test_validate_payload_migrations_null_config(void) {
     bool result = validate_payload_migrations(NULL, "test_label");
     TEST_ASSERT_FALSE(result);
@@ -298,39 +312,87 @@ void test_validate_payload_migrations_empty_name(void) {
 
 // Test validate_payload_migrations with get_payload_files_by_prefix failure
 void test_validate_payload_migrations_get_payload_files_failure(void) {
-    DatabaseConnection conn_config = {0};
-    conn_config.migrations = strdup("PAYLOAD:test");  // Valid format
+    DatabaseQueue* db_queue = calloc(1, sizeof(DatabaseQueue));
+    TEST_ASSERT_NOT_NULL(db_queue);
+    db_queue->database_name = strdup("testdb");
+
+    // Create a mock connection config
+    DatabaseConnection* conn_config = calloc(1, sizeof(DatabaseConnection));
+    TEST_ASSERT_NOT_NULL(conn_config);
+    conn_config->migrations = strdup("PAYLOAD:test");  // Valid format
+
+    // Mock the app_config lookup - use a simpler approach
+    if (!app_config) {
+        app_config = calloc(1, sizeof(AppConfig));
+        TEST_ASSERT_NOT_NULL(app_config);
+        app_config->databases.connection_count = 1;
+        // Note: In a real test environment, we'd need to handle the const pointer issue
+        // For now, we'll skip the complex setup and just test the basic function logic
+    }
 
     // This will test the case where get_payload_files_by_prefix returns false
     // In the current implementation, this happens when the payload system fails
-    bool result = validate_payload_migrations(&conn_config, "test_label");
+    bool result = validate_payload_migrations(conn_config, "test_label");
     TEST_ASSERT_FALSE(result);
-    free(conn_config.migrations);
+
+    free(db_queue->database_name);
+    free(db_queue);
+    free(conn_config->migrations);
+    free(conn_config);
 }
 
 // Test validate_payload_migrations with no matching files
 void test_validate_payload_migrations_no_matching_files(void) {
-    DatabaseConnection conn_config = {0};
-    conn_config.migrations = strdup("PAYLOAD:test");  // Valid format
+    DatabaseQueue* db_queue = calloc(1, sizeof(DatabaseQueue));
+    TEST_ASSERT_NOT_NULL(db_queue);
+    db_queue->database_name = strdup("testdb");
+
+    // Create a mock connection config
+    DatabaseConnection* conn_config = calloc(1, sizeof(DatabaseConnection));
+    TEST_ASSERT_NOT_NULL(conn_config);
+    conn_config->migrations = strdup("PAYLOAD:test");  // Valid format
+
+    // Mock the app_config lookup - use a simpler approach
+    if (!app_config) {
+        app_config = calloc(1, sizeof(AppConfig));
+        TEST_ASSERT_NOT_NULL(app_config);
+        app_config->databases.connection_count = 1;
+        // Note: In a real test environment, we'd need to handle the const pointer issue
+        // For now, we'll skip the complex setup and just test the basic function logic
+    }
 
     // This tests the case where get_payload_files_by_prefix succeeds but no files match the pattern
     // The result depends on what files are actually in the payload, but we're testing the logic
     // We call the function for coverage purposes - result may vary based on payload contents
-    (void)validate_payload_migrations(&conn_config, "test_label");  // For coverage
-    free(conn_config.migrations);
+    (void)validate_payload_migrations(conn_config, "test_label");  // For coverage
+
+    free(db_queue->database_name);
+    free(db_queue);
+    free(conn_config->migrations);
+    free(conn_config);
 }
 
 // Test validate_payload_migrations success case
 void test_validate_payload_migrations_success(void) {
-    DatabaseConnection conn_config = {0};
-    conn_config.migrations = strdup("PAYLOAD:test");  // Valid format
+    DatabaseQueue* db_queue = calloc(1, sizeof(DatabaseQueue));
+    TEST_ASSERT_NOT_NULL(db_queue);
+    db_queue->database_name = strdup("testdb");
+
+    // Create a mock connection config
+    DatabaseConnection* conn_config = calloc(1, sizeof(DatabaseConnection));
+    TEST_ASSERT_NOT_NULL(conn_config);
+    conn_config->migrations = strdup("PAYLOAD:test");  // Valid format
 
     // Result depends on actual payload contents, but we're ensuring the function runs
-    (void)validate_payload_migrations(&conn_config, "test_label");  // For coverage
-    free(conn_config.migrations);
+    (void)validate_payload_migrations(conn_config, "test_label");  // For coverage
+
+    free(db_queue->database_name);
+    free(db_queue);
+    free(conn_config->migrations);
+    free(conn_config);
 }
 
-// Test validate_path_migrations with NULL config
+// Test validate_path_migrations with NULL queue
 void test_validate_path_migrations_null_config(void) {
     bool result = validate_path_migrations(NULL, "test_label");
     TEST_ASSERT_FALSE(result);
@@ -338,52 +400,62 @@ void test_validate_path_migrations_null_config(void) {
 
 // Test validate_path_migrations with strdup failure (mock needed)
 void test_validate_path_migrations_strdup_failure(void) {
+    // Create a mock connection config
     DatabaseConnection conn_config = {0};
     conn_config.migrations = strdup("/test/path");
 
     // This would require mocking malloc/strdup to fail
     // For now, test with a valid path to ensure basic functionality
     (void)validate_path_migrations(&conn_config, "test_label");  // For coverage
+
     free(conn_config.migrations);
 }
 
 // Test validate_path_migrations with invalid path (no basename)
 void test_validate_path_migrations_invalid_path(void) {
+    // Create a mock connection config
     DatabaseConnection conn_config = {0};
     conn_config.migrations = strdup("/");  // Root directory, no valid basename
 
     bool result = validate_path_migrations(&conn_config, "test_label");
     TEST_ASSERT_FALSE(result);
+
     free(conn_config.migrations);
 }
 
 // Test validate_path_migrations with opendir failure
 void test_validate_path_migrations_opendir_failure(void) {
+    // Create a mock connection config
     DatabaseConnection conn_config = {0};
     conn_config.migrations = strdup("/nonexistent/directory/test");
 
     bool result = validate_path_migrations(&conn_config, "test_label");
     TEST_ASSERT_FALSE(result);  // Should fail because directory doesn't exist
+
     free(conn_config.migrations);
 }
 
 // Test validate_path_migrations with no files found
 void test_validate_path_migrations_no_files_found(void) {
+    // Create a mock connection config
     DatabaseConnection conn_config = {0};
     conn_config.migrations = strdup("/tmp/nonexistent_test");  // Non-existent file
 
     bool result = validate_path_migrations(&conn_config, "test_label");
     TEST_ASSERT_FALSE(result);  // Should fail because path doesn't exist
+
     free(conn_config.migrations);
 }
 
 // Test validate_path_migrations success case
 void test_validate_path_migrations_success(void) {
+    // Create a mock connection config
     DatabaseConnection conn_config = {0};
     conn_config.migrations = strdup("/tmp");  // Use /tmp which should exist
 
     // Result depends on whether there are matching migration files in /tmp
     (void)validate_path_migrations(&conn_config, "test_label");  // For coverage
+
     free(conn_config.migrations);
 }
 
