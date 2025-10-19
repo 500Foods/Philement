@@ -208,7 +208,7 @@ bool database_engine_connect(DatabaseEngine engine_type, ConnectionConfig* confi
 }
 
 bool database_engine_connect_with_designator(DatabaseEngine engine_type, ConnectionConfig* config, DatabaseHandle** connection, const char* designator) {
-    DatabaseEngineInterface* engine = database_engine_get(engine_type);
+    DatabaseEngineInterface* engine = database_engine_get_with_designator(engine_type, designator ? designator : SR_DATABASE);
     if (!engine || !engine->connect || !config || !connection) {
         return false;
     }
@@ -559,7 +559,8 @@ bool database_engine_begin_transaction(DatabaseHandle* connection, DatabaseIsola
         return false;
     }
 
-    DatabaseEngineInterface* engine = database_engine_get(connection->engine_type);
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    DatabaseEngineInterface* engine = database_engine_get_with_designator(connection->engine_type, designator);
     if (!engine || !engine->begin_transaction) {
         return false;
     }
@@ -572,7 +573,8 @@ bool database_engine_commit_transaction(DatabaseHandle* connection, Transaction*
         return false;
     }
 
-    DatabaseEngineInterface* engine = database_engine_get(connection->engine_type);
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    DatabaseEngineInterface* engine = database_engine_get_with_designator(connection->engine_type, designator);
     if (!engine || !engine->commit_transaction) {
         return false;
     }
@@ -585,7 +587,8 @@ bool database_engine_rollback_transaction(DatabaseHandle* connection, Transactio
         return false;
     }
 
-    DatabaseEngineInterface* engine = database_engine_get(connection->engine_type);
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    DatabaseEngineInterface* engine = database_engine_get_with_designator(connection->engine_type, designator);
     if (!engine || !engine->rollback_transaction) {
         return false;
     }
@@ -602,7 +605,7 @@ char* database_engine_build_connection_string(DatabaseEngine engine_type, Connec
         return NULL;
     }
 
-    DatabaseEngineInterface* engine = database_engine_get(engine_type);
+    DatabaseEngineInterface* engine = database_engine_get_with_designator(engine_type, SR_DATABASE);
     if (!engine || !engine->get_connection_string) {
         return NULL;
     }
@@ -615,7 +618,7 @@ bool database_engine_validate_connection_string(DatabaseEngine engine_type, cons
         return false;
     }
 
-    DatabaseEngineInterface* engine = database_engine_get(engine_type);
+    DatabaseEngineInterface* engine = database_engine_get_with_designator(engine_type, SR_DATABASE);
     if (!engine || !engine->validate_connection_string) {
         return false;
     }
@@ -632,7 +635,8 @@ void database_engine_cleanup_connection(DatabaseHandle* connection) {
         return;
     }
 
-    DatabaseEngineInterface* engine = database_engine_get(connection->engine_type);
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    DatabaseEngineInterface* engine = database_engine_get_with_designator(connection->engine_type, designator);
     if (engine && engine->disconnect) {
         engine->disconnect(connection);
     }

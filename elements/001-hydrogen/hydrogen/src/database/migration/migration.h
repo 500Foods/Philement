@@ -1,4 +1,4 @@
-/*
+ /*
  * Database Migration Management Header
  *
  * Function declarations for migration validation and execution.
@@ -23,6 +23,7 @@ struct DatabaseHandle;
 
 // Core migration functions
 bool validate(struct DatabaseQueue* db_queue);
+long long find_latest_available_migration(const struct DatabaseQueue* db_queue);
 bool execute_auto(struct DatabaseQueue* db_queue, DatabaseHandle* connection);
 bool execute_test(struct DatabaseQueue* db_queue);
 

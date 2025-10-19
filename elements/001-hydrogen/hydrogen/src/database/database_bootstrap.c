@@ -74,23 +74,27 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                     root = json_loads(result->data_json, 0, &error);
 
                     if (root && json_is_array(root)) {
-                        size_t row_count = json_array_size(root);
-                        log_this(dqm_label, "Parsing %zu bootstrap query rows for migration info", LOG_LEVEL_TRACE, 1, row_count);
+                         size_t row_count = json_array_size(root);
+                         // DECISION: Comment out verbose row parsing logging - keep only essential decision messages
+                         // log_this(dqm_label, "Parsing %zu bootstrap query rows for migration info", LOG_LEVEL_TRACE, 1, row_count);
 
-                        for (size_t i = 0; i < row_count; i++) {
-                            json_t* row = json_array_get(root, i);
-                            if (json_is_object(row)) {
+                         for (size_t i = 0; i < row_count; i++) {
+                             json_t* row = json_array_get(root, i);
+                             if (json_is_object(row)) {
+                                 // DECISION: Comment out verbose row parsing logging - keep only essential decision messages
+                                 // log_this(dqm_label, "Parsing %zu bootstrap query rows for migration info", LOG_LEVEL_TRACE, 1, row_count);
+                                // DECISION: Comment out verbose field-by-field logging - keep only essential decision messages
                                 // Debug: Log all field names and values in this row
-                                const char* key;
-                                json_t* value;
-                                log_this(dqm_label, "Row %zu fields:", LOG_LEVEL_TRACE, 1, i);
-                                json_object_foreach(row, key, value) {
-                                    if (json_is_integer(value)) {
-                                        log_this(dqm_label, "  %s = %lld", LOG_LEVEL_TRACE, 2, key, json_integer_value(value));
-                                    } else if (json_is_string(value)) {
-                                        log_this(dqm_label, "  %s = '%s'", LOG_LEVEL_TRACE, 2, key, json_string_value(value));
-                                    }
-                                }
+                                // const char* key;
+                                // json_t* value;
+                                // log_this(dqm_label, "Row %zu fields:", LOG_LEVEL_TRACE, 1, i);
+                                // json_object_foreach(row, key, value) {
+                                //     if (json_is_integer(value)) {
+                                //          log_this(dqm_label, "  %s = %lld", LOG_LEVEL_TRACE, 2, key, json_integer_value(value));
+                                //      } else if (json_is_string(value)) {
+                                //          log_this(dqm_label, "  %s = '%s'", LOG_LEVEL_TRACE, 2, key, json_string_value(value));
+                                //      }
+                                // }
 
                                 // Case-insensitive field lookup
                                 json_t* query_type_obj = NULL;
@@ -121,16 +125,23 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                                     long long query_type = json_integer_value(query_type_obj);
                                     long long query_ref = json_integer_value(query_ref_obj);
 
-                                    log_this(dqm_label, "Found migration data (integer values): type=%lld, ref=%lld", LOG_LEVEL_TRACE, 2, query_type, query_ref);
+                                    // DECISION: Comment out verbose migration data logging - keep only essential decision messages
+                                    // log_this(dqm_label, "Found migration data (integer values): type=%lld, ref=%lld", LOG_LEVEL_TRACE, 2, query_type, query_ref);
 
                                     // Process the migration data (same logic for both integer and string cases)
-                                    if (query_type == 1000 && query_ref > latest_available_migration) {
-                                        latest_available_migration = query_ref;
-                                        log_this(dqm_label, "Updated available migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
-                                    } else if (query_type == 1003 && query_ref > latest_installed_migration) {
-                                        latest_installed_migration = query_ref;
-                                        log_this(dqm_label, "Updated installed migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
-                                    }
+                                    if (query_type == 1000) {
+                                         // Track the highest version found for available migrations (query_type = 1000)
+                                         if (query_ref > latest_available_migration) {
+                                             latest_available_migration = query_ref;
+                                             // log_this(dqm_label, "Updated available migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
+                                         }
+                                     } else if (query_type == 1003) {
+                                         // Track the highest version found for installed migrations (query_type = 1003)
+                                         if (query_ref > latest_installed_migration) {
+                                             latest_installed_migration = query_ref;
+                                             // log_this(dqm_label, "Updated installed migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
+                                         }
+                                     }
                                 } else if ((query_type_obj && json_is_string(query_type_obj)) &&
                                            (query_ref_obj && json_is_string(query_ref_obj))) {
 
@@ -138,19 +149,27 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                                     long long query_type = strtoll(json_string_value(query_type_obj), NULL, 10);
                                     long long query_ref = strtoll(json_string_value(query_ref_obj), NULL, 10);
 
-                                    log_this(dqm_label, "Found migration data (string values): type=%lld, ref=%lld", LOG_LEVEL_TRACE, 2, query_type, query_ref);
+                                    // DECISION: Comment out verbose migration data logging - keep only essential decision messages
+                                    // log_this(dqm_label, "Found migration data (string values): type=%lld, ref=%lld", LOG_LEVEL_TRACE, 2, query_type, query_ref);
 
                                     // Process the migration data (same logic for both integer and string cases)
-                                    if (query_type == 1000 && query_ref > latest_available_migration) {
-                                        latest_available_migration = query_ref;
-                                        log_this(dqm_label, "Updated available migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
-                                    } else if (query_type == 1003 && query_ref > latest_installed_migration) {
-                                        latest_installed_migration = query_ref;
-                                        log_this(dqm_label, "Updated installed migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
-                                    }
+                                    if (query_type == 1000) {
+                                         // Track the highest version found for available migrations (query_type = 1000)
+                                         if (query_ref > latest_available_migration) {
+                                             latest_available_migration = query_ref;
+                                             // log_this(dqm_label, "Updated available migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
+                                         }
+                                     } else if (query_type == 1003) {
+                                         // Track the highest version found for installed migrations (query_type = 1003)
+                                         if (query_ref > latest_installed_migration) {
+                                             latest_installed_migration = query_ref;
+                                             // log_this(dqm_label, "Updated installed migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
+                                         }
+                                     }
                                 } else {
-                                    log_this(dqm_label, "Row %zu missing required migration fields", LOG_LEVEL_TRACE, 1, i);
-                                }
+                                     // DECISION: Comment out verbose missing fields logging - keep only essential decision messages
+                                     // log_this(dqm_label, "Row %zu missing required migration fields", LOG_LEVEL_TRACE, 1, i);
+                                 }
                             }
                         }
                         json_decref(root);
@@ -186,7 +205,8 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                 mutex_unlock(&db_queue->bootstrap_lock);
             }
 
-            log_this(dqm_label, "Bootstrap complete for %s - migration decision made", LOG_LEVEL_TRACE, 1, db_queue->database_name);
+            // DECISION: Comment out verbose bootstrap completion logging - keep only essential decision messages
+            // log_this(dqm_label, "Bootstrap complete for %s - migration decision made", LOG_LEVEL_TRACE, 1, db_queue->database_name);
         }
 
         mutex_unlock(&db_queue->connection_lock);

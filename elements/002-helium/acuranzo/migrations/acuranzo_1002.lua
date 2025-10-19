@@ -1,10 +1,9 @@
--- Migration: acuranzo_1001.lua
--- Creates the lookups table and populating it with the next migration.
+-- Migration: acuranzo_1002.lua
+-- Creates the account_access table and populating it with the next migration.
 
 -- CHANGELOG
--- 2.0.0 - 2025-10-18 - Moved to latest migration format
--- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 - 2025-09-13 - Initial creation for lookups table with PostgreSQL support.
+-- 1.1.0 -0 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
+-- 1.0.0 -0 2025-09-13 - Initial creation for account_access table with PostgreSQL support.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -16,26 +15,23 @@ table.insert(queries,{sql=[[
     )
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1001,                                                               -- query_ref
+        1002,                                                               -- query_ref
         ${TYPE_FORWARD_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
-        'Create Lookups Table Query',                                       -- name, summary, query_code
+        'Create Account Access Table Query',                                -- name, summary, query_code
         [=[
-            # Forward Migration 1001: Create Lookups Table Query
+            # Forward Migration 1002: Create Account Access Table Query
 
-            This migration creates the lookups table for storing key-value lookup data.
+            This migration creates the account_access table for storing account access data.
         ]=],
         [=[
-            CREATE TABLE IF NOT EXISTS ${SCHEMA}lookups
+            CREATE TABLE IF NOT EXISTS ${SCHEMA}account_access
             (
-                lookup_id               ${INTEGER}          NOT NULL,
-                key_idx                 ${INTEGER}          NOT NULL,
-                value_txt               ${TEXT}                     ,
-                value_int               ${INTEGER}                  ,
-                sort_seq                ${INTEGER}          NOT NULL,
-                status_lua_1            ${INTEGER}          NOT NULL,
-                summary                 ${BIGTEXT}                  ,
-                code                    ${BIGTEXT}                  ,
+                account_id              ${INTEGER}          NOT NULL,
+                access_id               ${INTEGER}          NOT NULL,
+                feature_lua_21          ${INTEGER}          NOT NULL,
+                access_type_lua_22      ${INTEGER}          NOT NULL,
+                status_lua_23           ${INTEGER}          NOT NULL,
                 collection              ${JSONB}                    ,
                 valid_after             ${TIMESTAMP_TZ}             ,
                 valid_until             ${TIMESTAMP_TZ}             ,
@@ -43,7 +39,7 @@ table.insert(queries,{sql=[[
                 created_at              ${TIMESTAMP_TZ}     NOT NULL,
                 updated_id              ${INTEGER}          NOT NULL,
                 updated_at              ${TIMESTAMP_TZ}     NOT NULL,
-                ${PRIMARY}(lookup_id, key_idx)
+                PRIMARY KEY (access_id)
             );
         ]=],
         ${STATUS_ACTIVE},                                                   -- query_status_lua_27
@@ -60,18 +56,18 @@ table.insert(queries,{sql=[[
     )
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1001,                                                               -- query_ref
+        1002,                                                               -- query_ref
         ${TYPE_REVERSE_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
-        'Delete Lookups Table Query',                                       -- name, summary, query_code
+        'Delete Account Access Table Query',                                -- name, summary, query_code
         [=[
-            # Reverse Migration 1001: Delete Lookups Table Query
+            # Reverse Migration 1002: Delete Account Access Table Query
 
             This is provided for completeness when testing the migration system
             to ensure that forward and reverse migrations are complete.
         ]=],
         [=[
-            DROP TABLE ${SCHEMA}lookups;
+            DROP TABLE ${SCHEMA}account_access;
         ]=],
         ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         NULL,                                                               -- collection
@@ -81,22 +77,21 @@ table.insert(queries,{sql=[[
 ]]})
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
-
     INSERT INTO ${SCHEMA}queries (
         ${QUERIES_INSERT}
     )
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1001,                                                               -- query_ref
+        1002,                                                               -- query_ref
         ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
-        'Diagram Tables: ${SCHEMA}lookups',                                 -- name, summary
+        'Diagram Tables: ${SCHEMA}account_access',                          -- name, summary
         [=[
-            # Diagram Migration 1001
+            # Diagram Migration 1002
 
-            ## Diagram Tables: ${SCHEMA}lookups
+            ## Diagram Tables: ${SCHEMA}account_access
 
-            This is the first JSON Diagram code for the lookups table.
+            This is the first JSON Diagram code for the account_access table.
         ]=],
         'JSON Table Definition in collection',                              -- query_code,
         ${STATUS_ACTIVE},                                                   -- query_status_lua_27
@@ -107,60 +102,41 @@ table.insert(queries,{sql=[[
                 "diagram": [
                     {
                         "object_type": "table",
-                        "object_id": "table.lookups",
-                        "object_ref": "1001",
+                        "object_id": "table.account_access",
+                        "object_ref": "1002",
                         "table": [
                             {
-                                "name": "lookup_id",
+                                "name": "access_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": true,
+                                "unique": true
+                            },
+                            {
+                                "name": "account_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": true,
                                 "unique": false
                             },
                             {
-                                "name": "key_idx",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": true,
-                                "unique": false
-                            },
-                            {
-                                "name": "value_txt",
-                                "datatype": "${VARCHAR_100}",
-                                "nullable": true,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
-                                "name": "value_int",
-                                "datatype": "${INTEGER}",
-                                "nullable": true,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
-                                "name": "sort_seq",
+                                "name": "feature_lua_21",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
-                                "unique": false
+                                "unique": false,
+                                "lookup": true
                             },
                             {
-                                "name": "summary",
-                                "datatype": "${TEXT}",
-                                "nullable": true,
+                                "name": "access_type_lua_22",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
                                 "primary_key": false,
-                                "unique": false
+                                "unique": false,
+                                "lookup": true
                             },
                             {
-                                "name": "code",
-                                "datatype": "${TEXT}",
-                                "nullable": true,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
-                                "name": "status_lua_1",
+                                "name": "status_lua_23",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,

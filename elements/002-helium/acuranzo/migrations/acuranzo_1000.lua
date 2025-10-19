@@ -47,7 +47,7 @@ table.insert(queries,{sql=[[
         ${QUERIES_INSERT}
     )
     VALUES (
-        1,                                                                  -- query_id
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1000,                                                               -- query_ref
         ${TYPE_APPLIED_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
@@ -94,7 +94,7 @@ table.insert(queries,{sql=[[
         ${QUERIES_INSERT}
     )
     VALUES (
-        2,                                                                  -- query_id
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1000,                                                               -- query_ref
         ${TYPE_REVERSE_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
@@ -121,7 +121,7 @@ table.insert(queries,{sql=[[
         ${QUERIES_INSERT}
     )
     VALUES (
-        3,                                                                  -- query_id
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1000,                                                               -- query_ref
         ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
