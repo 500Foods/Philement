@@ -133,9 +133,11 @@ bool validate_path_migrations(const DatabaseConnection* conn_config, const char*
         return false;
     }
 
-    // Find the migration file with the lowest number
+    // Find both the lowest and highest migration file numbers
     char* found_file = NULL;
+    char* latest_file = NULL;
     unsigned long lowest_number = ULONG_MAX;
+    unsigned long highest_number = 0;
     struct stat st;
 
     struct dirent* entry;
@@ -157,6 +159,8 @@ bool validate_path_migrations(const DatabaseConnection* conn_config, const char*
                     number_str[number_len] = '\0';
 
                     unsigned long file_number = strtoul(number_str, NULL, 10);
+
+                    // Track lowest number (first file)
                     if (file_number < lowest_number) {
                         lowest_number = file_number;
 
@@ -170,22 +174,35 @@ bool validate_path_migrations(const DatabaseConnection* conn_config, const char*
                         free(found_file);
                         found_file = strdup(full_path);
                     }
+
+                    // Track highest number (latest available)
+                    if (file_number > highest_number) {
+                        highest_number = file_number;
+                        free(latest_file);
+                        latest_file = strdup(entry->d_name);
+                    }
                 }
             }
         }
     }
 
+
     closedir(dir);
 
     if (found_file && stat(found_file, &st) == 0) {
         log_this(dqm_label, "Found first migration file: %s (%lld bytes)", LOG_LEVEL_TRACE, 2, found_file, (long long)st.st_size);
+        if (latest_file && strcmp(found_file, latest_file) != 0) {
+            log_this(dqm_label, "Found latest migration file: %s (version %lu)", LOG_LEVEL_TRACE, 2, latest_file, highest_number);
+        }
         free(found_file);
+        free(latest_file);
         free(path_copy);
         free(path_copy2);
         return true;
     } else {
         log_this(dqm_label, "No migration files found for: %s", LOG_LEVEL_ERROR, 1, conn_config->migrations);
         free(found_file);
+        free(latest_file);
         free(path_copy);
         free(path_copy2);
         return false;
@@ -235,6 +252,83 @@ bool validate(DatabaseQueue* db_queue) {
         migrations_valid = validate_path_migrations(conn_config, dqm_label);
     }
 
+    // Update the latest available migration version from payload files
+    if (migrations_valid && strncmp(conn_config->migrations, "PAYLOAD:", 8) == 0) {
+        long long latest_version = find_latest_available_migration(db_queue);
+        if (latest_version > 0) {
+            db_queue->latest_available_migration = latest_version;
+        }
+    }
+
     free(dqm_label);
     return migrations_valid;
+}
+
+/*
+ * Find the latest available migration version from payload files
+ */
+long long find_latest_available_migration(const DatabaseQueue* db_queue) {
+    const DatabaseConnection* conn_config = NULL;
+    if (app_config) {
+        for (int i = 0; i < app_config->databases.connection_count; i++) {
+            if (strcmp(app_config->databases.connections[i].name, db_queue->database_name) == 0) {
+                conn_config = &app_config->databases.connections[i];
+                break;
+            }
+        }
+    }
+
+    if (!conn_config || !conn_config->migrations) {
+        return -1;
+    }
+
+    // Extract migration name after PAYLOAD:
+    const char* migration_name = conn_config->migrations + 8;
+    if (strlen(migration_name) == 0) {
+        return -1;
+    }
+
+    // Find all migration files that match <migration>/<migration>_*.lua pattern
+    PayloadFile* files = NULL;
+    size_t num_files = 0;
+    size_t capacity_files = 0;
+    long long highest_version = -1;
+
+    if (get_payload_files_by_prefix(migration_name, &files, &num_files, &capacity_files)) {
+        for (size_t i = 0; i < num_files; i++) {
+            if (files[i].name) {
+                // Check if it matches the pattern <migration>/<migration>_XXXXX.lua
+                char expected_prefix[256];
+                snprintf(expected_prefix, sizeof(expected_prefix), "%s/%s_", migration_name, migration_name);
+
+                if (strncmp(files[i].name, expected_prefix, strlen(expected_prefix)) == 0) {
+                    // Extract the number part
+                    const char* number_start = files[i].name + strlen(expected_prefix);
+                    const char* lua_ext = strstr(number_start, ".lua");
+                    if (lua_ext) {
+                        size_t number_len = (size_t)(lua_ext - number_start);
+                        if (number_len >= 1 && number_len <= 6) {
+                            // Valid number length, try to parse
+                            char number_str[8];
+                            strncpy(number_str, number_start, number_len);
+                            number_str[number_len] = '\0';
+
+                            unsigned long file_number = strtoul(number_str, NULL, 10);
+                            if ((long long)file_number > highest_version) {
+                                highest_version = (long long)file_number;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Cleanup
+        for (size_t i = 0; i < num_files; i++) {
+            free(files[i].name);
+        }
+        free(files);
+    }
+
+    return highest_version;
 }

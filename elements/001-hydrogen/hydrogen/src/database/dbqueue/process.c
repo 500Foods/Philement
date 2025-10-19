@@ -83,7 +83,12 @@ void* database_queue_worker_thread(void* arg) {
                 // database_queue_lead_manage_heartbeats(db_queue); // Disabled for now - causing mutex issues
                 db_queue->conductor_sequence_completed = true; // Mark as completed to prevent re-execution
             }
+
         }
+
+        // NOTE: This is needed by tests 32, 33, 34, and 35 as confirmation of Lead DQM Launch 
+        log_this(dqm_label, "Lead DQM initialization is complete", LOG_LEVEL_DEBUG, 0);
+
     }
 
     free(dqm_label);
