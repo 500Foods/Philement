@@ -12,7 +12,7 @@
 #include "config_oidc.h"
 
 // Helper function to construct endpoint URL
-static char* construct_endpoint_path(const char* base_path) {
+char* construct_endpoint_path(const char* base_path) {
     if (!base_path) return NULL;
     char* path = strdup(base_path);
     if (!path) return NULL;

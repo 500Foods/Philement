@@ -54,6 +54,13 @@ typedef struct MailRelayConfig {
 } MailRelayConfig;
 
 /*
+ * Helper function to cleanup a single server configuration
+ *
+ * @param server Pointer to OutboundServer structure to cleanup
+ */
+void cleanup_server(OutboundServer* server);
+
+/*
  * Load mail relay configuration from JSON
  *
  * This function loads the mail relay configuration from the provided JSON root,

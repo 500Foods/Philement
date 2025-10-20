@@ -22,10 +22,10 @@ static __thread char value_buffer[1024];
 
 // Extract top-level section name from a dotted path
 // Forward declarations for internal functions
-static const char* get_top_level_section(const char* section);
-static const char* get_indent(const char* path);
+const char* get_top_level_section(const char* section);
+const char* get_indent(const char* path);
 
-static const char* get_top_level_section(const char* section) {
+const char* get_top_level_section(const char* section) {
     static __thread char section_buffer[MAX_SECTION_LENGTH + 1];
     
     if (!section) return "Unknown";
@@ -105,12 +105,12 @@ bool process_level_config(json_t* root, int* level_ptr, const char* level_name,
 }
 
 // Helper to check if a string starts with ${env.
-static bool is_env_var_ref(const char* str) {
+bool is_env_var_ref(const char* str) {
     return str && strncmp(str, "${env.", 6) == 0;
 }
 
 // Extract environment variable name from ${env.NAME} format
-static const char* get_env_var_name(const char* str, char* buffer, size_t buffer_size) {
+const char* get_env_var_name(const char* str, char* buffer, size_t buffer_size) {
     if (!is_env_var_ref(str)) return NULL;
     
     const char* start = str + 6;  // Skip "${env."
@@ -127,7 +127,7 @@ static const char* get_env_var_name(const char* str, char* buffer, size_t buffer
 }
 
 // Create indentation based on path depth
-static const char* get_indent(const char* path) {
+const char* get_indent(const char* path) {
     if (!path) return "";
     
     // Count dots and array indices, up to max level
@@ -153,7 +153,7 @@ static const char* get_indent(const char* path) {
 }
 
 // Format a value that might be sensitive
-static const char* format_sensitive(const char* value) {
+const char* format_sensitive(const char* value) {
     if (!value) return "(not set)";
     
     size_t len = strlen(value);
@@ -285,7 +285,7 @@ char* process_env_variable_string(const char* value) {
 }
 
 // Format and log a configuration value
-static void log_value(const char* path, const char* value, bool is_default, bool is_sensitive, const char* section) {
+void log_value(const char* path, const char* value, bool is_default, bool is_sensitive, const char* section) {
     if (!path) return;
     
     const char* key = strrchr(path, '.');
@@ -559,7 +559,7 @@ void log_config_item(const char* key, const char* value, bool is_default, const 
 }
 
 // Format array output
-static const char* format_int_array(const int* array, size_t count) {
+const char* format_int_array(const int* array, size_t count) {
     if (!array || count == 0) {
         return "[none]";  // Show [none] for empty arrays
     }
@@ -594,7 +594,7 @@ static const char* format_int_array(const int* array, size_t count) {
 }
 
 // Format string array for output
-static const char* format_string_array(const char** array, size_t count) {
+const char* format_string_array(const char** array, size_t count) {
     if (!array || count == 0) {
         return "[none]";  // Show [none] for empty arrays
     }

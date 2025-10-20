@@ -137,6 +137,30 @@ void create_indent_prefix(ConfigIndent* indent, const char* path);
  * Utility functions
  */
 
+// Extract top-level section name from a dotted path
+const char* get_top_level_section(const char* section);
+
+// Create indentation based on path depth
+const char* get_indent(const char* path);
+
+// Helper to check if a string starts with ${env.
+bool is_env_var_ref(const char* str);
+
+// Extract environment variable name from ${env.NAME} format
+const char* get_env_var_name(const char* str, char* buffer, size_t buffer_size);
+
+// Format a value that might be sensitive
+const char* format_sensitive(const char* value);
+
+// Format and log a configuration value
+void log_value(const char* path, const char* value, bool is_default, bool is_sensitive, const char* section);
+
+// Format array output
+const char* format_int_array(const int* array, size_t count);
+
+// Format string array for output
+const char* format_string_array(const char** array, size_t count);
+
 // Check if a value name indicates sensitive content
 bool is_sensitive_name(const char* name);
 

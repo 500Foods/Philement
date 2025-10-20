@@ -32,6 +32,30 @@ typedef struct MDNSServerConfig {
 } MDNSServerConfig;
 
 /*
+ * Helper function to cleanup a single service
+ *
+ * @param service Pointer to mdns_server_service_t structure to cleanup
+ */
+void cleanup_service(mdns_server_service_t* service);
+
+/*
+ * Helper function to cleanup services array up to index
+ *
+ * @param services Pointer to services array
+ * @param count Number of services to cleanup
+ */
+void cleanup_services(mdns_server_service_t* services, size_t count);
+
+/*
+ * Helper function to process a service's TXT records
+ *
+ * @param txt_records JSON object containing TXT records
+ * @param service Pointer to service structure to update
+ * @return true if successful, false on error
+ */
+bool process_txt_records(json_t* txt_records, mdns_server_service_t* service);
+
+/*
  * Load mDNS server configuration from JSON
  *
  * This function loads the mDNS server configuration from the provided JSON root,

@@ -69,6 +69,14 @@ typedef struct OIDCConfig {
 } OIDCConfig;
 
 /*
+ * Helper function to construct endpoint URL
+ *
+ * @param base_path Base path for the endpoint
+ * @return Allocated string with proper path format, or NULL on error
+ */
+char* construct_endpoint_path(const char* base_path);
+
+/*
  * Load OIDC configuration from JSON
  *
  * This function loads the OIDC configuration from the provided JSON root,

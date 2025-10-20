@@ -56,6 +56,34 @@ typedef struct NetworkConfig NetworkConfig;
 
 // Note: Interface names are maintained in sorted order within available_interfaces
 
+// Helper functions for network configuration
+
+/*
+ * Check if a port is within the specified range
+ *
+ * @param port Port number to check
+ * @param start_port Starting port of range
+ * @param end_port Ending port of range
+ * @return 1 if in range, 0 if not
+ */
+int is_port_in_range(int port, int start_port, int end_port);
+
+/*
+ * Sort available interfaces by name
+ *
+ * @param config Pointer to NetworkConfig structure
+ */
+void sort_available_interfaces(NetworkConfig* config);
+
+/*
+ * Compare function for interface sorting
+ *
+ * @param a First interface element
+ * @param b Second interface element
+ * @return Comparison result for qsort
+ */
+int compare_interface_names(const void* a, const void* b);
+
 // Get the network validation limits
 const NetworkLimits* get_network_limits(void);
 

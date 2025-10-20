@@ -47,6 +47,20 @@ typedef struct LoggingConfig {
     LoggingDestConfig notify;     // Notification output settings
 } LoggingConfig;
 
+// Helper function for initializing subsystems
+bool init_subsystems(LoggingDestConfig* dest);
+
+// Helper function for processing all subsystems
+bool process_subsystems(json_t* root, LoggingDestConfig* dest, const char* path,
+                       const LoggingConfig* config);
+
+// Helper function for dumping destination config
+void dump_destination(const LoggingConfig* config, const char* name, const LoggingDestConfig* dest);
+
+// Helper function to get subsystem level from a destination config
+int get_subsystem_level_internal(const LoggingDestConfig* dest_config,
+                                const char* subsystem, int safe_default);
+
 // Load logging configuration from JSON
 bool load_logging_config(json_t* root, AppConfig* config);
 
