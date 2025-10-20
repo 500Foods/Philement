@@ -34,16 +34,16 @@
 //@ swagger:tags "OIDC Service"
 //@ swagger:summary OAuth 2.0 token endpoint
 //@ swagger:description Issues access tokens, refresh tokens, and ID tokens based on the provided grant type. Supports authorization_code, refresh_token, client_credentials, and password grant types. Client authentication is required either via HTTP Basic Authentication or using client_id and client_secret parameters.
-//@ swagger:parameter grant_type string required The OAuth 2.0 grant type (authorization_code, refresh_token, client_credentials, password)
-//@ swagger:parameter code string conditional The authorization code (required for grant_type=authorization_code)
-//@ swagger:parameter redirect_uri string conditional The redirect URI used in the authorization request (required for grant_type=authorization_code)
-//@ swagger:parameter client_id string conditional The OAuth 2.0 client identifier (if not using HTTP Basic Authentication)
-//@ swagger:parameter client_secret string conditional The OAuth 2.0 client secret (if not using HTTP Basic Authentication)
-//@ swagger:parameter refresh_token string conditional The refresh token (required for grant_type=refresh_token)
-//@ swagger:parameter username string conditional The resource owner username (required for grant_type=password)
-//@ swagger:parameter password string conditional The resource owner password (required for grant_type=password)
-//@ swagger:parameter scope string optional Space-delimited list of requested scopes
-//@ swagger:parameter code_verifier string conditional PKCE code verifier (required if code_challenge was used in the authorization request)
+//@ swagger:parameter grant_type formData string true "The OAuth 2.0 grant type" authorization_code
+//@ swagger:parameter code formData string false "The authorization code (required for grant_type=authorization_code)"
+//@ swagger:parameter redirect_uri formData string false "The redirect URI used in the authorization request"
+//@ swagger:parameter client_id formData string false "The OAuth 2.0 client identifier (if not using HTTP Basic Auth)"
+//@ swagger:parameter client_secret formData string false "The OAuth 2.0 client secret (if not using HTTP Basic Auth)"
+//@ swagger:parameter refresh_token formData string false "The refresh token (required for grant_type=refresh_token)"
+//@ swagger:parameter username formData string false "The resource owner username (required for grant_type=password)"
+//@ swagger:parameter password formData string false "The resource owner password (required for grant_type=password)"
+//@ swagger:parameter scope formData string false "Space-delimited list of requested scopes" openid
+//@ swagger:parameter code_verifier formData string false "PKCE code verifier (if code_challenge was used)"
 //@ swagger:response 200 application/json {"type":"object","properties":{"access_token":{"type":"string"},"token_type":{"type":"string","example":"Bearer"},"expires_in":{"type":"integer"},"refresh_token":{"type":"string"},"id_token":{"type":"string"}}}
 //@ swagger:response 400 application/json {"type":"object","properties":{"error":{"type":"string"},"error_description":{"type":"string"}}}
 //@ swagger:response 401 application/json {"type":"object","properties":{"error":{"type":"string","example":"invalid_client"},"error_description":{"type":"string"}}}

@@ -37,6 +37,7 @@ Hydrogen is currently designed for technical users who:
 - [**Release Notes**](RELEASES.md) - Detailed version history and changes
 - [**Markdown Site Map**](SITEMAP.md) - Index to all Markdown files in this repository
 - [**TO-DO List**](TODO.md) - Summary of references to TODO in the code that still need work
+- [**Conduit**](CONDUIT.md) - Implementation plan for Conduit Service endpoints
 
 ### Core Documentation
 
