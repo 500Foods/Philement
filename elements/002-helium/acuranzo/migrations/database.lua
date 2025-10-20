@@ -37,6 +37,14 @@ local database = {
         applied_migration = 1003
     },
 
+    -- Lookup #58 - Query Queues
+    query_queues = {
+        slow = 0,
+        medium = 1,
+        fast = 2,
+        cached = 3
+    },
+
     -- Currently supported database engines - mirrors Lookup #30
     engines = {
         postgresql = true,
@@ -57,12 +65,14 @@ local database = {
     queries_insert =    [[
                             query_id,
                             query_ref,
+                            query_status_lua_27,
                             query_type_lua_28,
                             query_dialect_lua_30,
+                            query_queue_lua_58,
+                            query_timeout,
                             name,
                             summary,
                             query_code,
-                            query_status_lua_27,
                             collection,
                             valid_after,
                             valid_until,
@@ -122,6 +132,12 @@ local database = {
         cfg.TYPE_REVERSE_MIGRATION = self.query_types.reverse_migration
         cfg.TYPE_DIAGRAM_MIGRATION = self.query_types.diagram_migration
         cfg.TYPE_APPLIED_MIGRATION = self.query_types.applied_migration
+
+        -- Lookup #58
+        cfg.QTC_SLOW = self.query_queues.slow
+        cfg.QTC_MEDIUM = self.query_queues.medium
+        cfg.QTC_FAST = self.query_queues.fast
+        cfg.QTC_CACHED = self.query_queues.cached
 
         -- Get text block to work with
         local sql = template

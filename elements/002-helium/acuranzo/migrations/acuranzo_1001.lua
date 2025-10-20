@@ -17,8 +17,11 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1001,                                                               -- query_ref
+        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         ${TYPE_FORWARD_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
+        ${QTC_SLOW},                                                        -- query_queue_lua_58
+        5000,                                                               -- query_timeout (ms)
         'Create Lookups Table Query',                                       -- name, summary, query_code
         [=[
             # Forward Migration 1001: Create Lookups Table Query
@@ -46,7 +49,6 @@ table.insert(queries,{sql=[[
                 ${PRIMARY}(lookup_id, key_idx)
             );
         ]=],
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -61,8 +63,11 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1001,                                                               -- query_ref
+        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         ${TYPE_REVERSE_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
+        ${QTC_SLOW},                                                        -- query_queue_lua_58
+        5000,                                                               -- query_timeout (ms)
         'Delete Lookups Table Query',                                       -- name, summary, query_code
         [=[
             # Reverse Migration 1001: Delete Lookups Table Query
@@ -73,7 +78,6 @@ table.insert(queries,{sql=[[
         [=[
             DROP TABLE ${SCHEMA}lookups;
         ]=],
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -88,8 +92,11 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1001,                                                               -- query_ref
+        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
+        ${QTC_SLOW},                                                        -- query_queue_lua_58
+        5000,                                                               -- query_timeout (ms)
         'Diagram Tables: ${SCHEMA}lookups',                                 -- name, summary
         [=[
             # Diagram Migration 1001
@@ -99,7 +106,6 @@ table.insert(queries,{sql=[[
             This is the first JSON Diagram code for the lookups table.
         ]=],
         'JSON Table Definition in collection',                              -- query_code,
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
                                                                             -- DIAGRAM_START
         ${JSON_INGEST_START}
         [=[

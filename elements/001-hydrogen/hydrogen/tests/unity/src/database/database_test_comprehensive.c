@@ -7,6 +7,7 @@
 #include <unity.h>
 
 #include <src/database/database.h>
+#include <src/database/database_manage.h>
 
 // Function prototypes for test functions
 void test_database_comprehensive_all_functions(void);
@@ -94,7 +95,7 @@ void test_database_comprehensive_all_functions(void) {
     // Test database_escape_parameter
     char* escaped = database_escape_parameter("test'param");
     TEST_ASSERT_NOT_NULL(escaped); // Should return non-NULL
-    TEST_ASSERT_EQUAL_STRING("test'param", escaped); // Current implementation just duplicates
+    TEST_ASSERT_EQUAL_STRING("test\\'param", escaped); // Should escape single quotes
     free(escaped);
 
     escaped = database_escape_parameter(NULL);

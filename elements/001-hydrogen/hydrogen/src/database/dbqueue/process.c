@@ -52,6 +52,91 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
 }
 
 /*
+ * Helper function: Process a single query from the queue
+ * Extracted for testability - can be called directly in unit tests
+ */
+void database_queue_process_single_query(DatabaseQueue* db_queue) {
+    if (!db_queue) {
+        return;
+    }
+
+    // Process next query from this queue
+    DatabaseQuery* query = database_queue_process_next(db_queue);
+    if (query) {
+        char* dqm_label_exec = database_queue_generate_label(db_queue);
+        
+        // Execute actual database query if we have a persistent connection
+        if (db_queue->persistent_connection && query->query_template) {
+            // Create QueryRequest from DatabaseQuery
+            QueryRequest request = {0};
+            request.query_id = query->query_id;
+            request.sql_template = query->query_template;
+            request.parameters_json = query->parameter_json;
+            request.timeout_seconds = 30; // Default timeout
+            request.isolation_level = DB_ISOLATION_READ_COMMITTED;
+            request.use_prepared_statement = false;
+            request.prepared_statement_name = NULL;
+            
+            // Execute query using database engine
+            QueryResult* result = NULL;
+            bool success = database_engine_execute(db_queue->persistent_connection, &request, &result);
+            
+            if (success && result) {
+                log_this(dqm_label_exec, "Query executed successfully: %s (rows: %zu, time: %ld ms)",
+                        LOG_LEVEL_TRACE, 3,
+                        query->query_id ? query->query_id : "unknown",
+                        result->row_count,
+                        result->execution_time_ms);
+                
+                // Update query statistics
+                if (database_subsystem) {
+                    __sync_fetch_and_add(&database_subsystem->successful_queries, 1);
+                }
+                
+                // Clean up result
+                database_engine_cleanup_result(result);
+            } else {
+                log_this(dqm_label_exec, "Query execution failed: %s",
+                        LOG_LEVEL_ERROR, 1,
+                        query->query_id ? query->query_id : "unknown");
+                
+                // Update failure statistics
+                if (database_subsystem) {
+                    __sync_fetch_and_add(&database_subsystem->failed_queries, 1);
+                }
+            }
+        } else {
+            // No persistent connection or query template - simulate processing time
+            if (strcmp(db_queue->queue_type, "slow") == 0) {
+                usleep(5);
+            } else if (strcmp(db_queue->queue_type, "medium") == 0) {
+                usleep(2);
+            } else if (strcmp(db_queue->queue_type, "fast") == 0) {
+                usleep(5);
+            } else if (strcmp(db_queue->queue_type, "cache") == 0) {
+                usleep(5);
+            } else if (strcmp(db_queue->queue_type, "Lead") == 0) {
+                usleep(5);
+            }
+        }
+        
+        // Lead queue can also manage child queues here
+        if (db_queue->is_lead_queue) {
+            database_queue_manage_child_queues(db_queue);
+        }
+        
+        free(dqm_label_exec);
+
+        // Clean up query
+        if (query->query_id) free(query->query_id);
+        if (query->query_template) free(query->query_template);
+        if (query->parameter_json) free(query->parameter_json);
+        if (query->error_message) free(query->error_message);
+        free(query);
+    }
+}
+
+/*
  * Single generic worker thread function that works for all queue types
  */
 void* database_queue_worker_thread(void* arg) {
@@ -110,36 +195,8 @@ void* database_queue_worker_thread(void* arg) {
         if (sem_timedwait(&db_queue->worker_semaphore, &timeout) == 0) {
             // Check again if we should still process (avoid race conditions)
             if (!db_queue->shutdown_requested && !database_stopping) {
-                // Process next query from this queue
-                DatabaseQuery* query = database_queue_process_next(db_queue);
-                if (query) {
-                    // log_this(dqm_component, "%s queue processing query: %s", LOG_LEVEL_TRACE, 2, db_queue->queue_type, query->query_id ? query->query_id : "unknown");
-
-                    // TODO: Actual database query execution will be implemented in Phase 2
-                    // For now, just simulate processing time based on queue type
-                    if (strcmp(db_queue->queue_type, "slow") == 0) {
-                        usleep(5); // 500ms for slow queries
-                    } else if (strcmp(db_queue->queue_type, "medium") == 0) {
-                        usleep(2); // 200ms for medium queries
-                    } else if (strcmp(db_queue->queue_type, "fast") == 0) {
-                        usleep(5);  // 50ms for fast queries
-                    } else if (strcmp(db_queue->queue_type, "cache") == 0) {
-                        usleep(5);  // 10ms for cache queries
-                    } else if (strcmp(db_queue->queue_type, "Lead") == 0) {
-                        usleep(5); // 100ms for Lead queue queries
-                        // Lead queue can also manage child queues here
-                        if (db_queue->is_lead_queue) {
-                            database_queue_manage_child_queues(db_queue);
-                        }
-                    }
-
-                    // Clean up query
-                    if (query->query_id) free(query->query_id);
-                    if (query->query_template) free(query->query_template);
-                    if (query->parameter_json) free(query->parameter_json);
-                    if (query->error_message) free(query->error_message);
-                    free(query);
-                }
+                // Process query using extracted helper function
+                database_queue_process_single_query(db_queue);
             }
         }
         // Continue loop - timeout is expected and normal

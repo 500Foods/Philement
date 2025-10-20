@@ -50,10 +50,16 @@ void test_database_escape_parameter_empty_string(void) {
 }
 
 void test_database_escape_parameter_special_characters(void) {
-    // Test string with special characters
+    // Test string with special characters that need escaping
     char* result = database_escape_parameter("test'with'quotes");
     TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_EQUAL_STRING("test'with'quotes", result);
+    TEST_ASSERT_EQUAL_STRING("test\\'with\\'quotes", result);
+    free(result);
+    
+    // Test backslash escaping
+    result = database_escape_parameter("test\\path");
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("test\\\\path", result);
     free(result);
 }
 
