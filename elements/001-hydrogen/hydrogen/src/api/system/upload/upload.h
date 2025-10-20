@@ -48,9 +48,8 @@
 //@ swagger:tags "System Service"
 //@ swagger:summary File upload endpoint (API method)
 //@ swagger:description Uploads files via REST API with structured JSON responses. For web-based uploads, use the alternative method described below.
-//@ swagger:parameters
 //@ swagger:parameter file formData file true "File to upload"
-//@ swagger:parameter print formData string false "Set to 'true' to queue file for printing after upload"
+//@ swagger:parameter print formData string false "Set to true to queue file for printing after upload"
 //@ swagger:response 200 application/json {"type":"object","properties":{"files":{"type":"object"},"done":{"type":"boolean"}}}
 //@ swagger:response 400 application/json {"type":"object","properties":{"error":{"type":"string"}}}
 //@ swagger:response 413 application/json {"type":"object","properties":{"error":{"type":"string"}}}

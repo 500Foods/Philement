@@ -34,8 +34,8 @@
 //@ swagger:tags "OIDC Service"
 //@ swagger:summary OAuth 2.0 token revocation endpoint
 //@ swagger:description Allows clients to notify the authorization server that a token is no longer needed, allowing the server to invalidate the token. This endpoint implements RFC 7009 and supports revocation of both access tokens and refresh tokens.
-//@ swagger:parameter token string required The token to be revoked
-//@ swagger:parameter token_type_hint string optional A hint about the type of the token (access_token, refresh_token)
+//@ swagger:parameter token formData string true "The token to be revoked"
+//@ swagger:parameter token_type_hint formData string false "A hint about the type of the token" access_token
 //@ swagger:security BasicAuth
 //@ swagger:response 200 application/json {} An empty JSON object
 //@ swagger:response 400 application/json {"type":"object","properties":{"error":{"type":"string","example":"invalid_request"},"error_description":{"type":"string","example":"The request is missing a required parameter"}}}

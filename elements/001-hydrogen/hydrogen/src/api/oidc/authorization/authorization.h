@@ -35,14 +35,14 @@
 //@ swagger:tags "OIDC Service"
 //@ swagger:summary OAuth 2.0 authorization endpoint
 //@ swagger:description Initiates the OAuth 2.0 authorization flow. For GET requests, presents a login UI to the user. For POST requests, processes login data and redirects with an authorization code. Supports multiple response types including 'code' for Authorization Code flow and 'token' for Implicit flow.
-//@ swagger:parameter client_id string required The OAuth 2.0 client identifier
-//@ swagger:parameter redirect_uri string required The URI to redirect to after successful authorization
-//@ swagger:parameter response_type string required The OAuth 2.0 response type (code, token)
-//@ swagger:parameter scope string optional Space-delimited list of requested scopes
-//@ swagger:parameter state string recommended Opaque value used for state verification
-//@ swagger:parameter nonce string optional String value used for replay prevention
-//@ swagger:parameter code_challenge string optional PKCE code challenge
-//@ swagger:parameter code_challenge_method string optional PKCE code challenge method (S256, plain)
+//@ swagger:parameter client_id query string true "The OAuth 2.0 client identifier"
+//@ swagger:parameter redirect_uri query string true "The URI to redirect to after successful authorization"
+//@ swagger:parameter response_type query string true "The OAuth 2.0 response type" code
+//@ swagger:parameter scope query string false "Space-delimited list of requested scopes" openid
+//@ swagger:parameter state query string false "Opaque value used for state verification"
+//@ swagger:parameter nonce query string false "String value used for replay prevention"
+//@ swagger:parameter code_challenge query string false "PKCE code challenge"
+//@ swagger:parameter code_challenge_method query string false "PKCE code challenge method" S256
 //@ swagger:response 302 Redirect to the client's redirect_uri with authorization code or error
 //@ swagger:response 400 application/json {"type":"object","properties":{"error":{"type":"string"},"error_description":{"type":"string"}}}
 //@ swagger:response 500 application/json {"type":"object","properties":{"error":{"type":"string","example":"Internal server error"}}}

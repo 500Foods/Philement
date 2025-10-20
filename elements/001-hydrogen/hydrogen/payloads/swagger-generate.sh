@@ -1,25 +1,18 @@
 #!/usr/bin/env bash
 
-# ──────────────────────────────────────────────────────────────────────────────
+# swagger-generate.sh
 # OpenAPI JSON Generator for Hydrogen REST API
-# ──────────────────────────────────────────────────────────────────────────────
-# Script Name: swagger-generate.sh
-# Version: 1.2.0
-# Author: Hydrogen Development Team
-# Last Modified: 2025-06-17
-#
-# Version History:
-# 1.0.0 - Initial release with basic OpenAPI generation
-# 1.1.0 - Added support for multiple HTTP methods and improved tag handling
-# 1.2.0 - Improved modularity, fixed shellcheck warnings, enhanced error handling
-#
-# Description:
 # This script scans the API code and extracts OpenAPI annotations
 # to generate an OpenAPI 3.1.0 specification file for API documentation
-# ──────────────────────────────────────────────────────────────────────────────
+
+# CHANGELOG
+# 1.3.0 - 2025-10-20 - Added parameter processing support for query, path, header, and body parameters
+# 1.2.0 - 2024-01-01 - Improved modularity, fixed shellcheck warnings, enhanced error handling
+# 1.1.0 - 2024-01-01 - Added support for multiple HTTP methods and improved tag handling
+# 1.0.0 - 2024-01-01 - Initial release with basic OpenAPI generation
 
 # Display script information
-echo "swagger-generate.sh version 1.2.0"
+echo "swagger-generate.sh version 1.3.0"
 echo "OpenAPI JSON Generator for Hydrogen REST API"
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
@@ -215,15 +208,228 @@ process_swagger_responses() {
         
         # Add this response to the method responses file by status code
         jq --arg status "${status}" \
-           --slurpfile resp "${resp_temp_file}" \
-           '. + {($status): $resp[0]}' \
-           "${method_responses_file}" > "${method_responses_file}.tmp" && mv "${method_responses_file}.tmp" "${method_responses_file}"
+            --slurpfile resp "${resp_temp_file}" \
+            '. + {($status): $resp[0]}' \
+            "${method_responses_file}" > "${method_responses_file}.tmp" && mv "${method_responses_file}.tmp" "${method_responses_file}" || true
     done || true # End of response loop
     
     # If no responses were found, add a default 200 response for this method
     if [[ "$(jq 'length' "${method_responses_file}" || true)" -eq 0 ]]; then
         jq '. + {"200": {"description": "Successful operation", "content": {"application/json": {"schema": {"type": "object"}}}}}' \
            "${method_responses_file}" > "${method_responses_file}.tmp" && mv "${method_responses_file}.tmp" "${method_responses_file}"
+    fi
+# Function to process swagger request body
+process_swagger_request_body() {
+    local header_file="$1"
+    local method="$2"
+    local method_request_body_file="${TEMP_DIR}/request_body_${method}.json"
+    local method_formdata_file="${TEMP_DIR}/formdata_${method}.json"
+
+    # Initialize with null
+    echo "null" > "${method_request_body_file}"
+
+    # Process swagger:request annotation if present
+    local request_line
+    request_line=$("${GREP}" -E "//@ swagger:request" "${header_file}" | head -1 || echo "" || true)
+
+    if [[ -n "${request_line}" ]]; then
+        local line_without_prefix content_type schema_part
+
+        # Extract components from the line
+        line_without_prefix=${request_line#*//@ swagger:request}
+
+        # Parse: body content_type {json schema}
+        # shellcheck disable=SC2016 # We want to use single quotes to avoid variable expansion
+        content_type=$(echo "${line_without_prefix}" | "${AWK}" '{print $2}')
+
+        # Extract schema - everything after content_type
+        schema_part=$(echo "${line_without_prefix}" | "${SED}" -E 's/^[[:space:]]*body[[:space:]]+[^[:space:]]+[[:space:]]+//')
+
+        # Validate schema is valid JSON
+        if echo "${schema_part}" | jq empty &>/dev/null 2>&1; then
+            # Create request body object
+            echo "${schema_part}" | jq --arg ct "${content_type}" \
+                '{
+                   "required": true,
+                   "content": {
+                     ($ct): {
+                       "schema": .
+                     }
+                   }
+                 }' > "${method_request_body_file}"
+        fi
+    elif [[ -f "${method_formdata_file}" ]] && [[ "$(cat "${method_formdata_file}" || true)" != "{}" ]]; then
+        # If we have formData parameters but no explicit request body, create one
+        local formdata_schema
+        formdata_schema=$(cat "${method_formdata_file}")
+
+        # Create request body for form data
+        echo "${formdata_schema}" | jq \
+            '{
+               "required": true,
+               "content": {
+                 "application/x-www-form-urlencoded": {
+                   "schema": .
+                 }
+               }
+             }' > "${method_request_body_file}"
+    fi
+}
+
+}
+
+# Function to process swagger parameters
+process_swagger_parameters() {
+    local header_file="$1"
+    local method="$2"
+    local method_parameters_file="${TEMP_DIR}/parameters_${method}.json"
+    local method_formdata_file="${TEMP_DIR}/formdata_${method}.json"
+
+    echo "[]" > "${method_parameters_file}"
+    echo "{}" > "${method_formdata_file}"
+
+    # Process each swagger:parameter annotation
+    "${GREP}" -E "//@ swagger:parameter" "${header_file}" | while read -r line; do
+        local line_without_prefix param_name param_in param_type param_required param_desc param_example
+        local required_bool actual_in
+
+        # Extract components from the line
+        line_without_prefix=${line#*//@ swagger:parameter}
+
+        # Parse: name in type required "description" example
+        # shellcheck disable=SC2016 # We want to use single quotes to avoid variable expansion
+        param_name=$(echo "${line_without_prefix}" | "${AWK}" '{print $1}')
+        # shellcheck disable=SC2016 # We want to use single quotes to avoid variable expansion
+        param_in=$(echo "${line_without_prefix}" | "${AWK}" '{print $2}')
+        # shellcheck disable=SC2016 # We want to use single quotes to avoid variable expansion
+        param_type=$(echo "${line_without_prefix}" | "${AWK}" '{print $3}')
+        # shellcheck disable=SC2016 # We want to use single quotes to avoid variable expansion
+        param_required=$(echo "${line_without_prefix}" | "${AWK}" '{print $4}')
+
+        # Convert required to proper boolean for jq
+        if [[ "${param_required}" == "true" ]]; then
+            required_bool="true"
+        else
+            required_bool="false"
+        fi
+
+        # Extract description (between quotes)
+        param_desc=$(echo "${line_without_prefix}" | "${SED}" -E 's/.*"([^"]*)".*/\1/')
+
+        # Extract example (after the closing quote) - strip whitespace
+        # shellcheck disable=SC2016 # We want to use single quotes to avoid variable expansion
+        param_example=$(echo "${line_without_prefix}" | "${AWK}" -F'"' '{print $NF}' | "${AWK}" '{print $NF}' | tr -d ' ')
+
+        # Convert OpenAPI 2.0 "formData" to OpenAPI 3.0+ compatible format
+        if [[ "${param_in}" == "formData" ]]; then
+            if [[ "${method}" == "get" ]]; then
+                # For GET requests, convert formData to query parameters
+                actual_in="query"
+            else
+                # For POST/PUT requests, collect formData parameters for requestBody
+                # Build form data property for requestBody schema
+                if [[ -n "${param_example}" && "${param_example}" != "${param_required}" && "${param_example}" != "true" && "${param_example}" != "false" ]]; then
+                    if [[ "${param_type}" == "integer" || "${param_type}" == "number" ]]; then
+                        jq -n --arg name "${param_name}" \
+                              --arg desc "${param_desc}" \
+                              --arg type "${param_type}" \
+                              --argjson example "${param_example}" \
+                              --argjson required "${required_bool}" \
+                              '{"type": $type, "description": $desc, "example": $example}' | \
+                        jq --arg name "${param_name}" --argjson required "${required_bool}" \
+                           '{"properties": {($name): .}, "required": (if $required then [$name] else [] end)}' >> "${method_formdata_file}.tmp"
+                    else
+                        jq -n --arg name "${param_name}" \
+                              --arg desc "${param_desc}" \
+                              --arg type "${param_type}" \
+                              --arg example "${param_example}" \
+                              --argjson required "${required_bool}" \
+                              '{"type": $type, "description": $desc, "example": $example}' | \
+                        jq --arg name "${param_name}" --argjson required "${required_bool}" \
+                           '{"properties": {($name): .}, "required": (if $required then [$name] else [] end)}' >> "${method_formdata_file}.tmp"
+                    fi
+                else
+                    jq -n --arg name "${param_name}" \
+                          --arg desc "${param_desc}" \
+                          --arg type "${param_type}" \
+                          --argjson required "${required_bool}" \
+                          '{"type": $type, "description": $desc}' | \
+                    jq --arg name "${param_name}" --argjson required "${required_bool}" \
+                       '{"properties": {($name): .}, "required": (if $required then [$name] else [] end)}' >> "${method_formdata_file}.tmp"
+                fi
+                continue # Skip adding to parameters array for formData in POST/PUT
+            fi
+        else
+            actual_in="${param_in}"
+        fi
+
+        # Build parameter JSON using jq for proper escaping (for non-formData params)
+        if [[ -n "${param_example}" && "${param_example}" != "${param_required}" && "${param_example}" != "true" && "${param_example}" != "false" ]]; then
+            # Has example value
+            if [[ "${param_type}" == "integer" || "${param_type}" == "number" ]]; then
+                jq -n --arg name "${param_name}" \
+                      --arg in "${actual_in}" \
+                      --arg desc "${param_desc}" \
+                      --arg type "${param_type}" \
+                      --argjson example "${param_example}" \
+                      --argjson required "${required_bool}" \
+                      '{
+                         "name": $name,
+                         "in": $in,
+                         "required": $required,
+                         "description": $desc,
+                         "schema": {
+                           "type": $type,
+                           "example": $example
+                         }
+                       }' >> "${method_parameters_file}.tmp"
+            else
+                jq -n --arg name "${param_name}" \
+                      --arg in "${actual_in}" \
+                      --arg desc "${param_desc}" \
+                      --arg type "${param_type}" \
+                      --arg example "${param_example}" \
+                      --argjson required "${required_bool}" \
+                      '{
+                         "name": $name,
+                         "in": $in,
+                         "required": $required,
+                         "description": $desc,
+                         "schema": {
+                           "type": $type,
+                           "example": $example
+                         }
+                       }' >> "${method_parameters_file}.tmp"
+            fi
+        else
+            # No example value
+            jq -n --arg name "${param_name}" \
+                  --arg in "${actual_in}" \
+                  --arg desc "${param_desc}" \
+                  --arg type "${param_type}" \
+                  --argjson required "${required_bool}" \
+                  '{
+                     "name": $name,
+                     "in": $in,
+                     "required": $required,
+                     "description": $desc,
+                     "schema": {
+                       "type": $type
+                     }
+                   }' >> "${method_parameters_file}.tmp"
+        fi
+    done || true
+
+    # Combine all individual parameter objects into an array
+    if [[ -f "${method_parameters_file}.tmp" ]]; then
+        jq -s '.' "${method_parameters_file}.tmp" > "${method_parameters_file}"
+        rm -f "${method_parameters_file}.tmp"
+    fi
+
+    # Merge formData properties into a single schema
+    if [[ -f "${method_formdata_file}.tmp" ]]; then
+        jq -s 'reduce .[] as $item ({"properties": {}, "required": []}; .properties += $item.properties | .required += $item.required) | .type = "object"' "${method_formdata_file}.tmp" > "${method_formdata_file}"
+        rm -f "${method_formdata_file}.tmp"
     fi
 }
 
@@ -235,33 +441,64 @@ create_method_operation() {
     local operation_id="$4"
     local tag_array="$5"
     local method_responses_file="${TEMP_DIR}/responses_${method}.json"
+    local method_parameters_file="${TEMP_DIR}/parameters_${method}.json"
+    local method_request_body_file="${TEMP_DIR}/request_body_${method}.json"
     local method_operation_file="${TEMP_DIR}/operation_${method}.json"
     
-    if [[ -n "${operation_id}" ]]; then
-        jq -n --arg summary "${summary}" \
-              --arg desc "${description}" \
-              --arg opid "${operation_id}" \
-              --argjson tags "${tag_array}" \
-              --slurpfile responses "${method_responses_file}" \
-              '{
-                 "summary": $summary,
-                 "description": $desc,
-                 "operationId": $opid,
-                 "tags": $tags,
-                 "responses": $responses[0]
-               }' > "${method_operation_file}"
-    else
-        jq -n --arg summary "${summary}" \
-              --arg desc "${description}" \
-              --argjson tags "${tag_array}" \
-              --slurpfile responses "${method_responses_file}" \
-              '{
-                 "summary": $summary,
-                 "description": $desc,
-                 "tags": $tags,
-                 "responses": $responses[0]
-               }' > "${method_operation_file}"
+    # Check if parameters file exists and has content
+    local has_parameters=false
+    if [[ -f "${method_parameters_file}" ]] && [[ "$(jq 'length' "${method_parameters_file}" 2>/dev/null || echo 0 || true)" -gt 0 ]]; then
+        has_parameters=true
     fi
+    
+    # Check if request body exists and is not null
+    local has_request_body=false
+    if [[ -f "${method_request_body_file}" ]] && [[ "$(cat "${method_request_body_file}" 2>/dev/null || echo "null" || true)" != "null" ]]; then
+        has_request_body=true
+    fi
+    
+    # Build operation JSON based on what's available
+    local base_operation
+    if [[ -n "${operation_id}" ]]; then
+        base_operation=$(jq -n --arg summary "${summary}" \
+                  --arg desc "${description}" \
+                  --arg opid "${operation_id}" \
+                  --argjson tags "${tag_array}" \
+                  --slurpfile responses "${method_responses_file}" \
+                  '{
+                     "summary": $summary,
+                     "description": $desc,
+                     "operationId": $opid,
+                     "tags": $tags,
+                     "responses": $responses[0]
+                   }')
+    else
+        base_operation=$(jq -n --arg summary "${summary}" \
+                  --arg desc "${description}" \
+                  --argjson tags "${tag_array}" \
+                  --slurpfile responses "${method_responses_file}" \
+                  '{
+                     "summary": $summary,
+                     "description": $desc,
+                     "tags": $tags,
+                     "responses": $responses[0]
+                   }')
+    fi
+    
+    # Add parameters if present
+    if [[ "${has_parameters}" == "true" ]]; then
+        base_operation=$(echo "${base_operation}" | jq --slurpfile params "${method_parameters_file}" \
+            '. + {"parameters": $params[0]}')
+    fi
+    
+    # Add request body if present
+    if [[ "${has_request_body}" == "true" ]]; then
+        base_operation=$(echo "${base_operation}" | jq --slurpfile reqbody "${method_request_body_file}" \
+            '. + {"requestBody": $reqbody[0]}')
+    fi
+    
+    # Write final operation
+    echo "${base_operation}" > "${method_operation_file}"
 }
 
 # Function to process endpoint methods
@@ -284,8 +521,8 @@ process_endpoint_methods() {
     # Extract the service tag first - this is used for all methods
     local service_tag_file="${TEMP_DIR}/service_tag.txt"
     local service_tag tag_array summary description
-    "${GREP}" -E "//@ swagger:tag" "${service_dir}/${service_name}_service.h" | head -1 | "${SED}" -E 's/.*swagger:tag[[:space:]]*"([^"]+)".*/\1/' > "${service_tag_file}" || true
-    service_tag=$(cat "${service_tag_file}")
+    "${GREP}" -E "//@ swagger:tag" "${service_dir}/${service_name}_service.h" | head -1 | "${SED}" -E 's/.*swagger:tag[[:space:]]*"([^"]+)".*/\1/' > "${service_tag_file}" 2>/dev/null || true
+    service_tag=$(cat "${service_tag_file}" 2>/dev/null || echo "")
     tag_array="[\"${service_tag}\"]"
     
     # Extract common info for all methods
@@ -310,12 +547,12 @@ process_endpoint_methods() {
         # Get method-specific operationId if defined
         local operation_id method_op_id generic_op_id
         operation_id=""
-        method_op_id=$("${GREP}" -E "//@ swagger:operationId.*${method}" "${header_file}" | head -1 | "${SED}" -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' || echo "" || true)
+        method_op_id=$("${GREP}" -E "//@ swagger:operationId.*${method}" "${header_file}" | head -1 | "${SED}" -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' 2>/dev/null || echo "" || true)
         if [[ -n "${method_op_id}" ]]; then
             operation_id="${method_op_id}"
         else
             # Fall back to generic operationId
-            generic_op_id=$("${GREP}" -E "//@ swagger:operationId" "${header_file}" | head -1 | "${SED}" -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' || echo "" || true)
+            generic_op_id=$("${GREP}" -E "//@ swagger:operationId" "${header_file}" | head -1 | "${SED}" -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' 2>/dev/null || echo "" || true)
             if [[ -n "${generic_op_id}" ]]; then
                 operation_id="${generic_op_id}${method^}"  # Append capitalized method name
             fi
@@ -323,6 +560,12 @@ process_endpoint_methods() {
         
         # Process responses for this method
         process_swagger_responses "${header_file}" "${method}"
+        
+        # Process parameters for this method
+        process_swagger_parameters "${header_file}" "${method}"
+        
+        # Process request body for this method
+        process_swagger_request_body "${header_file}" "${method}"
         
         # Create method operation
         create_method_operation "${method}" "${summary}" "${description}" "${operation_id}" "${tag_array}"
