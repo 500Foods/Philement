@@ -368,8 +368,8 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     }
     // Conduit endpoints
     else if (strcmp(path, "conduit/query") == 0) {
-        return conduit_query_handler(connection, url, method, upload_data,
-                                   upload_data_size, con_cls);
+        return handle_conduit_query_request(connection, url, method, upload_data,
+                                    upload_data_size, con_cls);
     }
 
     // Endpoint not found
