@@ -16,6 +16,7 @@
 // Forward declarations to avoid circular dependencies
 typedef struct DatabaseHandle DatabaseHandle;
 typedef struct DatabaseEngineInterface DatabaseEngineInterface;
+typedef struct ConnectionConfig ConnectionConfig;
 
 // Queue types per database connection for different priority levels
 #define QUEUE_TYPE_SLOW    "slow"
@@ -189,6 +190,32 @@ bool database_queue_lead_run_migration_test(DatabaseQueue* lead_queue);
 bool database_queue_lead_launch_additional_queues(DatabaseQueue* lead_queue);
 bool database_queue_lead_manage_heartbeats(DatabaseQueue* lead_queue);
 bool database_queue_lead_process_queries(DatabaseQueue* lead_queue);
+
+// Lead queue internal helper functions (formerly static in lead.c)
+typedef enum {
+    MIGRATION_ACTION_NONE,
+    MIGRATION_ACTION_LOAD,
+    MIGRATION_ACTION_APPLY
+} MigrationAction;
+
+MigrationAction database_queue_lead_determine_migration_action(const DatabaseQueue* lead_queue);
+void database_queue_lead_log_migration_status(DatabaseQueue* lead_queue, const char* action);
+bool database_queue_lead_validate_migrations(DatabaseQueue* lead_queue);
+bool database_queue_lead_execute_migration_load(DatabaseQueue* lead_queue);
+bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue);
+void database_queue_lead_rerun_bootstrap(DatabaseQueue* lead_queue);
+bool database_queue_lead_is_auto_migration_enabled(const DatabaseQueue* lead_queue);
+bool database_queue_lead_acquire_migration_connection(DatabaseQueue* lead_queue, char* dqm_label);
+void database_queue_lead_release_migration_connection(DatabaseQueue* lead_queue);
+bool database_queue_lead_execute_migration_cycle(DatabaseQueue* lead_queue, char* dqm_label);
+
+// Query serialization functions (formerly static in submit.c)
+char* serialize_query_to_json(DatabaseQuery* query);
+DatabaseQuery* deserialize_query_from_json(const char* json);
+
+// Connection management helper functions (formerly static in heartbeat.c)
+bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseHandle* db_handle, ConnectionConfig* config);
+bool database_queue_perform_connection_attempt(DatabaseQueue* db_queue, ConnectionConfig* config, DatabaseEngine engine_type);
 
 // Statistics and monitoring
 size_t database_queue_get_depth(DatabaseQueue* db_queue);

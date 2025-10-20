@@ -58,23 +58,6 @@ This TODO.md file serves as a central location to track plenty of incomplete ite
 | 32 | Pending | src/database/dbqueue/lead.c | Implement reverse migration execution that stops on SQL errors like other phases |
 | 33 | Pending | src/database/migration/ | Add validation that migrations only delete records they added and won't drop non-empty tables |
 | 34 | Pending | src/database/dbqueue/lead.c | Update lead.c to handle TestMigration as separate operation mode |
-| 35 | Pending | src/database/dbqueue/lead.c:32 | Remove static flag from calc_elapsed_time function |
-| 36 | Pending | src/database/dbqueue/lead.c:84 | Remove static flag from database_queue_lead_determine_migration_action function |
-| 37 | Pending | src/database/dbqueue/lead.c:116 | Remove static flag from database_queue_lead_log_migration_status function |
-| 38 | Pending | src/database/dbqueue/lead.c:139 | Remove static flag from database_queue_lead_validate_migrations function |
-| 39 | Pending | src/database/dbqueue/lead.c:164 | Remove static flag from database_queue_lead_execute_migration_load function |
-| 40 | Pending | src/database/dbqueue/lead.c:191 | Remove static flag from database_queue_lead_execute_migration_apply function |
-| 41 | Pending | src/database/dbqueue/lead.c:210 | Remove static flag from database_queue_lead_rerun_bootstrap function |
-| 42 | Pending | src/database/dbqueue/lead.c:237 | Remove static flag from database_queue_lead_is_auto_migration_enabled function |
-| 43 | Pending | src/database/dbqueue/lead.c:254 | Remove static flag from database_queue_lead_acquire_migration_connection function |
-| 44 | Pending | src/database/dbqueue/lead.c:273 | Remove static flag from database_queue_lead_release_migration_connection function |
-| 45 | Pending | src/database/dbqueue/lead.c:280 | Remove static flag from database_queue_lead_execute_migration_cycle function |
-| 46 | Pending | src/database/dbqueue/submit.c:17 | Remove static flag from serialize_query_to_json function |
-| 47 | Pending | src/database/dbqueue/submit.c:31 | Remove static flag from deserialize_query_from_json function |
-| 48 | Pending | src/database/dbqueue/heartbeat.c:106 | Remove static flag from database_queue_handle_connection_success function |
-| 49 | Pending | src/database/dbqueue/heartbeat.c:174 | Remove static flag from database_queue_perform_connection_attempt function |
-| 50 | Pending | src/database/database_engine.c:261 | Remove static flag from find_prepared_statement function |
-| 51 | Pending | src/database/database_engine.c:277 | Remove static flag from store_prepared_statement function |
 
 ### Launch Folder (3 TODOs)
 

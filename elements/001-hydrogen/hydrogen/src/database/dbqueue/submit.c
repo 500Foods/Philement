@@ -15,7 +15,7 @@
 /*
  * Placeholder functions for JSON serialization (to be implemented)
  */
-static char* serialize_query_to_json(DatabaseQuery* query) {
+char* serialize_query_to_json(DatabaseQuery* query) {
     // Placeholder - return basic JSON string for now
     if (!query || !query->query_template) return NULL;
 
@@ -29,7 +29,7 @@ static char* serialize_query_to_json(DatabaseQuery* query) {
     return json;
 }
 
-static DatabaseQuery* deserialize_query_from_json(const char* json) {
+DatabaseQuery* deserialize_query_from_json(const char* json) {
     // Placeholder - return basic DatabaseQuery for now
     // Full implementation will parse JSON and create proper query struct
     (void)json;  // Suppress unused parameter warning for future implementation
