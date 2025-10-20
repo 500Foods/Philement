@@ -89,10 +89,14 @@ function renderTableBorder(x, y, width, height, scale = 1, fill = "white", strok
  * @param {number} width - Header width
  * @param {number} height - Header height
  * @param {number} scale - Scale factor
+ * @param {boolean} isDB2 - Whether this is a DB2 table (affects table name casing)
  * @returns {string} - SVG header elements
  */
-function renderTableHeader(tableDef, x, y, width, height, scale = 1) {
-    const tableName = tableDef.object_id.replace('table.', '');
+function renderTableHeader(tableDef, x, y, width, height, scale = 1, isDB2 = false) {
+    let tableName = tableDef.object_id.replace('table.', '');
+    if (isDB2) {
+        tableName = tableName.toUpperCase();
+    }
     const strokeWidth = 6 * scale; // Keep title separator black and thicker * 3
     const radius = 27 * scale; // Radius for rounded corners * 3 * 3 (more visible)
     const fontSize = 48 * scale; // Reduced proportionally with table width (from 12pt * 3 * 1.33)
@@ -125,10 +129,12 @@ function renderTableHeader(tableDef, x, y, width, height, scale = 1) {
  * @param {number} width - Row width
  * @param {number} height - Row height
  * @param {number} scale - Scale factor
+ * @param {boolean} isFirstRow - Whether this is the first row
+ * @param {boolean} isLastRow - Whether this is the last row
  * @param {boolean} isDB2 - Whether this is a DB2 table (affects column name casing)
  * @returns {string} - SVG row elements
  */
-function renderTableRow(column, x, y, width, height, scale = 1, isFirstRow = false, isLastRow = false) {
+function renderTableRow(column, x, y, width, height, scale = 1, isFirstRow = false, isLastRow = false, isDB2 = false) {
     const strokeWidth = 1.5 * scale; // Thinner lines * 3
     const fontSizeName = 40 * scale; // Reduced proportionally with table width (from 10pt * 3 * 1.33)
     const fontSizeType = 40 * scale; // 10 * 3 * scale * 1.33
@@ -145,6 +151,9 @@ function renderTableRow(column, x, y, width, height, scale = 1, isFirstRow = fal
 
     // Column name
     let colText = column.name;
+    if (isDB2) {
+        colText = colText.toUpperCase();
+    }
 
     // Determine font color and weight based on column attributes
     let fontColor = "black"; // default
@@ -232,9 +241,10 @@ function renderTableRow(column, x, y, width, height, scale = 1, isFirstRow = fal
  * @param {number} x - X position
  * @param {number} y - Y position
  * @param {number} scale - Scale factor for the table
+ * @param {boolean} isDB2 - Whether this is a DB2 table (affects column name casing)
  * @returns {string} - Complete SVG table elements with shadow and margin
  */
-function renderTable(tableDef, x, y, scale = 1) {
+function renderTable(tableDef, x, y, scale = 1, isDB2 = false) {
     const tableName = tableDef.object_id.replace('table.', '');
     const columns = tableDef.table;
 
@@ -270,14 +280,14 @@ function renderTable(tableDef, x, y, scale = 1) {
     svg += `    ${renderTableBorder(tableX, tableY, tableWidth, tableHeight, scale, "white", "transparent")}\n`;
 
     // Table header (rendered second)
-    svg += `    ${renderTableHeader(tableDef, tableX, tableY, tableWidth, headerHeight, scale)}\n`;
+    svg += `    ${renderTableHeader(tableDef, tableX, tableY, tableWidth, headerHeight, scale, isDB2)}\n`;
 
     // Column rows
     columns.forEach((col, index) => {
         const rowY = tableY + headerHeight + (index * rowHeight);
         const isFirstRow = index === 0;
         const isLastRow = index === columns.length - 1;
-        svg += `    ${renderTableRow(col, tableX, rowY, tableWidth, rowHeight, scale, isFirstRow, isLastRow)}\n`;
+        svg += `    ${renderTableRow(col, tableX, rowY, tableWidth, rowHeight, scale, isFirstRow, isLastRow, isDB2)}\n`;
     });
 
     // Border-only rectangle (no background) - top layer
@@ -518,9 +528,10 @@ function calculateAutoFitTablePositions(tables, layoutX = 42.51, layoutY = 42.51
 /**
  * Generate SVG content for all tables with auto-fitting layout
  * @param {Array} tables - Array of table definitions
+ * @param {boolean} isDB2 - Whether this is a DB2 database engine
  * @returns {string} - SVG content for layout region and all tables
  */
-function generateTablesSVG(tables) {
+function generateTablesSVG(tables, isDB2 = false) {
     // Layout region dimensions (5mm inset from page edge, like border is 2mm inset)
     // Updated for 3x larger template (2520x1980)
     const layoutX = 42.51;  // 14.17 * 3
@@ -589,7 +600,7 @@ function generateTablesSVG(tables) {
             const tableName = tableDef.object_id.replace('table.', '');
             console.error(`SVG: Placing ${tableName} at (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)})`);
             svg += `    <!-- ${tableDef.object_id} at (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) -->\n`;
-            svg += renderTable(tableDef, pos.x, pos.y, layout.scale);
+            svg += renderTable(tableDef, pos.x, pos.y, layout.scale, isDB2);
         }
     });
     svg += `</g>\n`;
@@ -644,8 +655,11 @@ function generateDiagramCore(jsonInput, options = {}) {
         // Output metadata to STDERR for shell script consumption
         console.error(`METADATA: ${JSON.stringify(metadata)}`);
 
+        // Determine if this is DB2 engine
+        const isDB2 = options.engine === 'db2';
+
         // Generate SVG with auto-fitting layout
-        const svgContent = generateTablesSVG(tables);
+        const svgContent = generateTablesSVG(tables, isDB2);
 
         // Replace placeholder in template
         const finalSVG = template.replace('<!-- ERD SVG content goes here -->', svgContent);
@@ -695,13 +709,19 @@ if (typeof process !== 'undefined' && import.meta.url === `file://${process.argv
     const args = process.argv.slice(2);
 
     let jsonContent;
+    let engine = 'postgresql'; // default engine
 
     if (args.length === 0) {
         // Read from stdin
         jsonContent = fs.readFileSync(0, 'utf8');
+    } else if (args.length === 1) {
+        // Read from stdin, engine as first arg
+        engine = args[0];
+        jsonContent = fs.readFileSync(0, 'utf8');
     } else {
-        // Read from file (legacy support)
-        const jsonFile = args[0];
+        // Read from file (legacy support), engine as first arg
+        engine = args[0];
+        const jsonFile = args[1];
 
         if (!fs.existsSync(jsonFile)) {
             console.error(`File not found: ${jsonFile}`);
@@ -711,7 +731,7 @@ if (typeof process !== 'undefined' && import.meta.url === `file://${process.argv
         jsonContent = fs.readFileSync(jsonFile, 'utf8');
     }
 
-    const svgOutput = generateDiagram(jsonContent);
+    const svgOutput = generateDiagram(jsonContent, { engine });
 
     // Output to stdout
     console.log(svgOutput);
