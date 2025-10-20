@@ -301,7 +301,7 @@ void custom_lws_log(int level, const char *line)
 }
 
 // Server thread function
-static void *websocket_server_run(void *arg)
+void *websocket_server_run(void *arg)
 {
     (void)arg;  // Unused parameter
 

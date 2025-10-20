@@ -35,8 +35,6 @@ typedef struct PtyBridgeContext {
     bool connection_closed;       /**< Whether WebSocket connection is closed */
 } PtyBridgeContext;
 
-// Forward declarations
-static int pty_bridge_iteration(PtyBridgeContext *bridge);
 void *pty_output_bridge_thread(void *arg);
 __attribute__((unused)) void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session);
 
@@ -71,7 +69,7 @@ int setup_pty_select(int master_fd, fd_set *readfds, struct timeval *timeout)
 }
 
 // PTY bridge iteration - read from PTY and send to WebSocket
-int pty_bridge_iteration(PtyBridgeContext *bridge)
+static int pty_bridge_iteration(PtyBridgeContext *bridge)
 {
     fd_set readfds;
     struct timeval timeout;

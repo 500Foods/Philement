@@ -68,7 +68,7 @@ bool configure_master_fd(int master_fd) {
  * @param slave_fd The slave PTY file descriptor
  * @param master_fd The master PTY file descriptor to close in child
  */
-static void setup_child_process(const char *shell_command, int slave_fd, int master_fd) {
+void setup_child_process(const char *shell_command, int slave_fd, int master_fd) {
     // Child process
     close(master_fd); // Close master in child
 

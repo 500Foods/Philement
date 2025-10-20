@@ -29,7 +29,7 @@ volatile sig_atomic_t final_shutdown_mode = 0;
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Private function declarations
-static size_t get_thread_stack_size(pid_t tid);
+size_t get_thread_stack_size(pid_t tid);
 
 // Initialize service thread tracking
 void init_service_threads(ServiceThreads *threads, const char* subsystem_name) {
@@ -105,7 +105,7 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
 
 // Remove a thread from service tracking
 // If skip_logging is true, don't generate log messages (used during shutdown)
-static void remove_thread_internal(ServiceThreads *threads, int index, bool skip_logging) {
+void remove_thread_internal(ServiceThreads *threads, int index, bool skip_logging) {
     pthread_t thread_id = threads->thread_ids[index];
 
     // Move last thread to this position to maintain array compaction
@@ -151,7 +151,7 @@ void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
 }
 
 // Get thread stack size from /proc/[tid]/status
-static size_t get_thread_stack_size(pid_t tid) {
+size_t get_thread_stack_size(pid_t tid) {
     char path[64];
     snprintf(path, sizeof(path), "/proc/self/task/%d/status", tid);
     

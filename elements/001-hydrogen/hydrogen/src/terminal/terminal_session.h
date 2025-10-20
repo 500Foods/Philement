@@ -270,6 +270,13 @@ void terminal_session_disable_cleanup_thread(void);
  */
 void terminal_session_enable_cleanup_thread(void);
 
+/**
+ * Background cleanup thread function
+ *
+ * Periodically cleans up expired sessions in the background.
+ */
+void *session_cleanup_thread(void *arg);
+
 #ifdef __cplusplus
 }
 #endif

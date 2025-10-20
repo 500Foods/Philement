@@ -32,17 +32,17 @@ static struct timespec startup_complete_time = {0, 0}; // When startup is fully 
 static struct timespec shutdown_initiate_time = {0, 0}; // When shutdown is initiated
 
 // Private function declarations
-static void format_iso_time(time_t t, char *buffer, size_t buflen);
-static double calc_elapsed_time(const struct timespec *end, const struct timespec *start);
+void format_iso_time(time_t t, char *buffer, size_t buflen);
+double calc_elapsed_time(const struct timespec *end, const struct timespec *start);
 
 // Format time as ISO 8601 UTC timestamp
-static void format_iso_time(time_t t, char *buffer, size_t buflen) {
+void format_iso_time(time_t t, char *buffer, size_t buflen) {
     const struct tm *tm = gmtime(&t);
     strftime(buffer, buflen, "%Y-%m-%dT%H:%M:%SZ", tm);
 }
 
 // Calculate elapsed time in seconds with nanosecond precision
-static double calc_elapsed_time(const struct timespec *end, const struct timespec *start) {
+double calc_elapsed_time(const struct timespec *end, const struct timespec *start) {
     double seconds = (double)(end->tv_sec - start->tv_sec);
     double nanoseconds = (double)(end->tv_nsec - start->tv_nsec);
     return seconds + (nanoseconds / 1000000000.0);
