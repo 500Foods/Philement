@@ -109,4 +109,10 @@ void *call_lib_function_helper(LibraryHandle *handle, const char *func_name, ...
 // Helper function to make void function calls in an ISO C compliant way
 void call_lib_void_function_helper(void *func_ptr, ...);
 
+// Internal cache functions (made non-static for testing)
+char* get_cache_file_path(const char *db_name);
+bool ensure_cache_dir(void);
+const char* load_cached_version(const char *db_name, char *buffer, size_t size);
+void save_cache(const char *db_name, const char *version);
+
 #endif // UTILS_DEPENDENCY_H

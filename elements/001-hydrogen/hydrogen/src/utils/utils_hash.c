@@ -8,10 +8,10 @@
 void get_stmt_hash(const char* prefix, const char* statement, size_t length, char* output_buf);
 
 // Private function declarations
-static uint64_t djb2_hash_64(const char* str);
+uint64_t djb2_hash_64(const char* str);
 
 // djb2 hash algorithm implementation (64-bit version)
-static uint64_t djb2_hash_64(const char* str) {
+uint64_t djb2_hash_64(const char* str) {
     if (str == NULL) {
         return 0;
     }

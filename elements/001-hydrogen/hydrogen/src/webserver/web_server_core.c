@@ -111,7 +111,7 @@ extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
 
 // Check if a network port is available for binding
-static bool is_port_available(int port, bool check_ipv6) {
+bool is_port_available(int port, bool check_ipv6) {
     bool ipv4_ok = false;
 
     // Check IPv4

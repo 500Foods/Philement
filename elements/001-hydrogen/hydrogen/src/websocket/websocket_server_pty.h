@@ -20,6 +20,8 @@ typedef struct PtyBridgeContext {
 
 // Forward declarations for PTY functions
 int pty_bridge_iteration(PtyBridgeContext *bridge);
+// Forward declarations for PTY functions
+int pty_bridge_iteration(PtyBridgeContext *bridge);
 void *pty_output_bridge_thread(void *arg);
 __attribute__((unused)) void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session);
 void stop_pty_bridge_thread(TerminalSession *session);

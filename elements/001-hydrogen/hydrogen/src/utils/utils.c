@@ -8,8 +8,8 @@
 static int stored_argc;
 static char** stored_argv;
 
-// Forward declarations of static functions
-static void init_all_service_threads(void);
+// Forward declarations of functions
+void init_all_service_threads(void);
 
 // Initialize service threads when module loads
 static void __attribute__((constructor)) init_utils(void) {
@@ -55,7 +55,7 @@ void update_queue_limits_from_config(const AppConfig *config) {
 }
 
 // Initialize all service thread tracking
-static void __attribute__((unused)) init_all_service_threads(void) {
+void __attribute__((unused)) init_all_service_threads(void) {
     init_service_threads(&logging_threads, SR_LOGGING);
     init_service_threads(&webserver_threads, SR_WEBSERVER);
     init_service_threads(&websocket_threads, SR_WEBSOCKET);

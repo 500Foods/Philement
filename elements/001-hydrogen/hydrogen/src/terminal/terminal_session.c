@@ -38,7 +38,7 @@ static bool test_mode_disable_cleanup_thread = false;
  *
  * Periodically cleans up expired sessions in the background.
  */
-static void *session_cleanup_thread(void *arg) {
+void *session_cleanup_thread(void *arg) {
     (void)arg; // Suppress unused parameter warning
 
     log_this(SR_TERMINAL, "Session cleanup thread started", LOG_LEVEL_STATE, 0);
