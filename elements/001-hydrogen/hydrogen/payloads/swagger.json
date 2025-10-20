@@ -24,6 +24,10 @@
   ],
   "tags": [
     {
+      "name": "Conduit Service",
+      "description": "Provides database query execution by reference with typed parameters"
+    },
+    {
       "name": "OIDC Service",
       "description": "Provides OpenID Connect protocol endpoints and authentication services"
     },
@@ -33,6 +37,626 @@
     }
   ],
   "paths": {
+    "/conduit/query": {
+      "get": {
+        "summary": "Execute database query by reference",
+        "description": "Executes a pre-defined query from the Query Table Cache using a query reference ID. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) that are automatically converted to database-specific parameter formats. Returns query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "operationId": "executeQueryByReferenceGet",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "query_ref",
+                    "rows"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Indicates successful query execution",
+                      "example": true
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "description": "The query reference ID that was executed",
+                      "example": 1234
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Human-readable description of the query",
+                      "example": "Fetch user profile by ID"
+                    },
+                    "rows": {
+                      "type": "array",
+                      "description": "Array of result rows as JSON objects",
+                      "items": {
+                        "type": "object"
+                      },
+                      "example": [
+                        {
+                          "user_id": 123,
+                          "username": "johndoe",
+                          "email": "john@example.com",
+                          "is_active": true
+                        }
+                      ]
+                    },
+                    "row_count": {
+                      "type": "integer",
+                      "description": "Number of rows returned",
+                      "example": 1
+                    },
+                    "column_count": {
+                      "type": "integer",
+                      "description": "Number of columns in result",
+                      "example": 4
+                    },
+                    "execution_time_ms": {
+                      "type": "integer",
+                      "description": "Query execution time in milliseconds",
+                      "example": 45
+                    },
+                    "queue_used": {
+                      "type": "string",
+                      "description": "Database queue that handled the request",
+                      "example": "fast"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message",
+                      "example": "Missing required parameter: query_ref"
+                    },
+                    "details": {
+                      "type": "string",
+                      "description": "Additional error details",
+                      "example": "The query_ref parameter is required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Query not found"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 9999
+                    },
+                    "database": {
+                      "type": "string",
+                      "example": "Acuranzo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Query execution timeout"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 1234
+                    },
+                    "timeout_seconds": {
+                      "type": "integer",
+                      "example": 30
+                    },
+                    "database": {
+                      "type": "string",
+                      "example": "Acuranzo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Database error"
+                    },
+                    "database_error": {
+                      "type": "string",
+                      "example": "Table 'users' not found"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 1234
+                    },
+                    "database": {
+                      "type": "string",
+                      "example": "Acuranzo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Query execution not yet implemented"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "The Conduit service infrastructure is being built. This endpoint will execute pre-defined queries once the Query Table Cache, parameter processing, and queue selection systems are complete."
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "under_construction"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "query_ref",
+            "in": "query",
+            "required": true,
+            "description": "Query identifier from Query Table Cache",
+            "schema": {
+              "type": "integer",
+              "example": 1234
+            }
+          },
+          {
+            "name": "database",
+            "in": "query",
+            "required": true,
+            "description": "Target database name",
+            "schema": {
+              "type": "string",
+              "example": "Acuranzo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "query_ref",
+                  "database"
+                ],
+                "properties": {
+                  "query_ref": {
+                    "type": "integer",
+                    "description": "Query identifier from Query Table Cache (required)",
+                    "example": 1234
+                  },
+                  "database": {
+                    "type": "string",
+                    "description": "Target database name (required)",
+                    "example": "Acuranzo"
+                  },
+                  "params": {
+                    "type": "object",
+                    "description": "Typed parameters for query execution (optional)",
+                    "properties": {
+                      "INTEGER": {
+                        "type": "object",
+                        "description": "Integer parameters as key-value pairs",
+                        "example": {
+                          "userId": 123,
+                          "quantity": 50
+                        }
+                      },
+                      "STRING": {
+                        "type": "object",
+                        "description": "String parameters as key-value pairs",
+                        "example": {
+                          "username": "johndoe",
+                          "email": "john@example.com"
+                        }
+                      },
+                      "BOOLEAN": {
+                        "type": "object",
+                        "description": "Boolean parameters as key-value pairs",
+                        "example": {
+                          "isActive": true,
+                          "requireAuth": false
+                        }
+                      },
+                      "FLOAT": {
+                        "type": "object",
+                        "description": "Float parameters as key-value pairs",
+                        "example": {
+                          "discount": 0.15,
+                          "tax": 0.07
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Execute database query by reference",
+        "description": "Executes a pre-defined query from the Query Table Cache using a query reference ID. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) that are automatically converted to database-specific parameter formats. Returns query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "operationId": "executeQueryByReferencePost",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "query_ref",
+                    "rows"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Indicates successful query execution",
+                      "example": true
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "description": "The query reference ID that was executed",
+                      "example": 1234
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Human-readable description of the query",
+                      "example": "Fetch user profile by ID"
+                    },
+                    "rows": {
+                      "type": "array",
+                      "description": "Array of result rows as JSON objects",
+                      "items": {
+                        "type": "object"
+                      },
+                      "example": [
+                        {
+                          "user_id": 123,
+                          "username": "johndoe",
+                          "email": "john@example.com",
+                          "is_active": true
+                        }
+                      ]
+                    },
+                    "row_count": {
+                      "type": "integer",
+                      "description": "Number of rows returned",
+                      "example": 1
+                    },
+                    "column_count": {
+                      "type": "integer",
+                      "description": "Number of columns in result",
+                      "example": 4
+                    },
+                    "execution_time_ms": {
+                      "type": "integer",
+                      "description": "Query execution time in milliseconds",
+                      "example": 45
+                    },
+                    "queue_used": {
+                      "type": "string",
+                      "description": "Database queue that handled the request",
+                      "example": "fast"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message",
+                      "example": "Missing required parameter: query_ref"
+                    },
+                    "details": {
+                      "type": "string",
+                      "description": "Additional error details",
+                      "example": "The query_ref parameter is required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Query not found"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 9999
+                    },
+                    "database": {
+                      "type": "string",
+                      "example": "Acuranzo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Query execution timeout"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 1234
+                    },
+                    "timeout_seconds": {
+                      "type": "integer",
+                      "example": 30
+                    },
+                    "database": {
+                      "type": "string",
+                      "example": "Acuranzo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Database error"
+                    },
+                    "database_error": {
+                      "type": "string",
+                      "example": "Table 'users' not found"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 1234
+                    },
+                    "database": {
+                      "type": "string",
+                      "example": "Acuranzo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Query execution not yet implemented"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "The Conduit service infrastructure is being built. This endpoint will execute pre-defined queries once the Query Table Cache, parameter processing, and queue selection systems are complete."
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "under_construction"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "query_ref",
+            "in": "query",
+            "required": true,
+            "description": "Query identifier from Query Table Cache",
+            "schema": {
+              "type": "integer",
+              "example": 1234
+            }
+          },
+          {
+            "name": "database",
+            "in": "query",
+            "required": true,
+            "description": "Target database name",
+            "schema": {
+              "type": "string",
+              "example": "Acuranzo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "query_ref",
+                  "database"
+                ],
+                "properties": {
+                  "query_ref": {
+                    "type": "integer",
+                    "description": "Query identifier from Query Table Cache (required)",
+                    "example": 1234
+                  },
+                  "database": {
+                    "type": "string",
+                    "description": "Target database name (required)",
+                    "example": "Acuranzo"
+                  },
+                  "params": {
+                    "type": "object",
+                    "description": "Typed parameters for query execution (optional)",
+                    "properties": {
+                      "INTEGER": {
+                        "type": "object",
+                        "description": "Integer parameters as key-value pairs",
+                        "example": {
+                          "userId": 123,
+                          "quantity": 50
+                        }
+                      },
+                      "STRING": {
+                        "type": "object",
+                        "description": "String parameters as key-value pairs",
+                        "example": {
+                          "username": "johndoe",
+                          "email": "john@example.com"
+                        }
+                      },
+                      "BOOLEAN": {
+                        "type": "object",
+                        "description": "Boolean parameters as key-value pairs",
+                        "example": {
+                          "isActive": true,
+                          "requireAuth": false
+                        }
+                      },
+                      "FLOAT": {
+                        "type": "object",
+                        "description": "Float parameters as key-value pairs",
+                        "example": {
+                          "discount": 0.15,
+                          "tax": 0.07
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/oauth/authorize": {
       "get": {
         "summary": "OAuth 2.0 authorization endpoint",
@@ -86,7 +710,84 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "description": "The OAuth 2.0 client identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "description": "The URI to redirect to after successful authorization",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "description": "The OAuth 2.0 response type",
+            "schema": {
+              "type": "string",
+              "example": "code"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "description": "Space-delimited list of requested scopes",
+            "schema": {
+              "type": "string",
+              "example": "openid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Opaque value used for state verification",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nonce",
+            "in": "query",
+            "required": false,
+            "description": "String value used for replay prevention",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code_challenge",
+            "in": "query",
+            "required": false,
+            "description": "PKCE code challenge",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code_challenge_method",
+            "in": "query",
+            "required": false,
+            "description": "PKCE code challenge method",
+            "schema": {
+              "type": "string",
+              "example": "S256"
+            }
+          }
+        ]
       },
       "post": {
         "summary": "OAuth 2.0 authorization endpoint",
@@ -140,7 +841,84 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "description": "The OAuth 2.0 client identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "description": "The URI to redirect to after successful authorization",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "description": "The OAuth 2.0 response type",
+            "schema": {
+              "type": "string",
+              "example": "code"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "description": "Space-delimited list of requested scopes",
+            "schema": {
+              "type": "string",
+              "example": "openid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Opaque value used for state verification",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nonce",
+            "in": "query",
+            "required": false,
+            "description": "String value used for replay prevention",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code_challenge",
+            "in": "query",
+            "required": false,
+            "description": "PKCE code challenge",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code_challenge_method",
+            "in": "query",
+            "required": false,
+            "description": "PKCE code challenge method",
+            "schema": {
+              "type": "string",
+              "example": "S256"
+            }
+          }
+        ]
       }
     },
     "/.well-known/openid-configuration": {
@@ -257,7 +1035,36 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_token_hint",
+            "in": "query",
+            "required": false,
+            "description": "The ID Token previously issued to the client",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_logout_redirect_uri",
+            "in": "query",
+            "required": false,
+            "description": "URI to redirect the user to after logout",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Opaque value used by the client to maintain state",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       },
       "post": {
         "summary": "OpenID Connect Session Management endpoint",
@@ -305,7 +1112,36 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_token_hint",
+            "in": "query",
+            "required": false,
+            "description": "The ID Token previously issued to the client",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_logout_redirect_uri",
+            "in": "query",
+            "required": false,
+            "description": "URI to redirect the user to after logout",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Opaque value used by the client to maintain state",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/oauth/introspect": {
@@ -402,6 +1238,30 @@
                     }
                   }
                 }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "The string value of the token"
+                  },
+                  "token_type_hint": {
+                    "type": "string",
+                    "description": "A hint about the type of the token",
+                    "example": "access_token"
+                  }
+                },
+                "required": [
+                  "token"
+                ],
+                "type": "object"
               }
             }
           }
@@ -626,6 +1486,30 @@
               }
             }
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "The token to be revoked"
+                  },
+                  "token_type_hint": {
+                    "type": "string",
+                    "description": "A hint about the type of the token",
+                    "example": "access_token"
+                  }
+                },
+                "required": [
+                  "token"
+                ],
+                "type": "object"
+              }
+            }
+          }
         }
       }
     },
@@ -700,6 +1584,63 @@
                     }
                   }
                 }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "description": "The OAuth 2.0 grant type",
+                    "example": "authorization_code"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "The authorization code (required for grant_type=authorization_code)"
+                  },
+                  "redirect_uri": {
+                    "type": "string",
+                    "description": "The redirect URI used in the authorization request"
+                  },
+                  "client_id": {
+                    "type": "string",
+                    "description": "The OAuth 2.0 client identifier (if not using HTTP Basic Auth)"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "description": "The OAuth 2.0 client secret (if not using HTTP Basic Auth)"
+                  },
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "The refresh token (required for grant_type=refresh_token)"
+                  },
+                  "username": {
+                    "type": "string",
+                    "description": "The resource owner username (required for grant_type=password)"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "The resource owner password (required for grant_type=password)"
+                  },
+                  "scope": {
+                    "type": "string",
+                    "description": "Space-delimited list of requested scopes",
+                    "example": "openid"
+                  },
+                  "code_verifier": {
+                    "type": "string",
+                    "description": "PKCE code verifier (if code_challenge was used)"
+                  }
+                },
+                "required": [
+                  "grant_type"
+                ],
+                "type": "object"
               }
             }
           }
@@ -1337,6 +2278,29 @@
                     }
                   }
                 }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "type": "file",
+                    "description": "File to upload"
+                  },
+                  "print": {
+                    "type": "string",
+                    "description": "Set to true to queue file for printing after upload"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
               }
             }
           }

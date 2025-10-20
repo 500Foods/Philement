@@ -188,24 +188,24 @@ POST /api/conduit/query
 
 ### Files That Will Be Modified
 
-- [`src/database/dbqueue/dbqueue.h`](src/database/dbqueue/dbqueue.h:DatabaseQueue) - Add QTC and timestamp fields
-- [`src/database/database_bootstrap.c`](src/database/database_bootstrap.c) - Populate QTC from bootstrap
-- [`src/database/dbqueue/submit.c`](src/database/dbqueue/submit.c:database_queue_submit_query) - Update timestamp
-- [`src/api/api_service.c`](src/api/api_service.c) - Register conduit endpoint
+- src/database/dbqueue/dbqueue.h:DatabaseQueue - Add QTC and timestamp fields
+- src/database/database_bootstrap.c - Populate QTC from bootstrap
+- src/database/dbqueue/submit.c:database_queue_submit_query - Update timestamp
+- src/api/api_service.c - Register conduit endpoint
 
 ### Files That Will Be Created
 
-- [`src/database/database_cache.h`](src/database/database_cache.h) - QTC structures
-- [`src/database/database_cache.c`](src/database/database_cache.c) - QTC implementation
-- [`src/database/database_params.h`](src/database/database_params.h) - Parameter structures
-- [`src/database/database_params.c`](src/database/database_params.c) - Parameter parsing
-- [`src/database/database_queue_select.c`](src/database/database_queue_select.c) - Queue selection
-- [`src/database/database_pending.h`](src/database/database_pending.h) - Pending results
-- [`src/database/database_pending.c`](src/database/database_pending.c) - Result waiting
-- [`src/api/conduit/conduit_service.h`](src/api/conduit/conduit_service.h) - Service header
-- [`src/api/conduit/conduit_service.c`](src/api/conduit/conduit_service.c) - Service implementation
-- [`src/api/conduit/query/query.h`](src/api/conduit/query/query.h) - Query endpoint
-- [`src/api/conduit/query/query.c`](src/api/conduit/query/query.c) - Query handler
+- src/database/database_cache.h - QTC structures
+- src/database/database_cache.c - QTC implementation
+- src/database/database_params.h - Parameter structures
+- src/database/database_params.c - Parameter parsing
+- src/database/database_queue_select.c - Queue selection
+- src/database/database_pending.h - Pending results
+- src/database/database_pending.c - Result waiting
+- src/api/conduit/conduit_service.h - Service header
+- src/api/conduit/conduit_service.c - Service implementation
+- src/api/conduit/query/query.h - Query endpoint
+- src/api/conduit/query/query.c - Query handler
 
 ## Common Pitfalls & Gotchas
 
@@ -422,7 +422,7 @@ typedef struct QueryTableCache {
 
 **Integration**:
 
-Add to [`DatabaseQueue`](src/database/dbqueue/dbqueue.h:DatabaseQueue) structure:
+Add to src/database/dbqueue/dbqueue.h:DatabaseQueue structure:
 
 ```c
 struct DatabaseQueue {
@@ -434,7 +434,7 @@ struct DatabaseQueue {
 
 **Bootstrap Loading**:
 
-Modify [`database_queue_execute_bootstrap_query()`](src/database/database_bootstrap.c:database_queue_execute_bootstrap_query) to:
+Modify src/database/database_bootstrap.c:database_queue_execute_bootstrap_query to:
 
 1. Execute bootstrap query
 2. Parse result rows into QueryCacheEntry structures
@@ -462,7 +462,7 @@ ORDER BY query_ref;
 
 **New Field**:
 
-Add to [`DatabaseQueue`](src/database/dbqueue/dbqueue.h:DatabaseQueue) structure:
+Add to src/database/dbqueue/dbqueue.h:DatabaseQueue structure:
 
 ```c
 struct DatabaseQueue {
@@ -501,7 +501,7 @@ DatabaseQueue* select_optimal_queue(
 
 **Update Logic**:
 
-In [`database_queue_submit_query()`](src/database/dbqueue/submit.c:database_queue_submit_query):
+In src/database/dbqueue/submit.c:database_queue_submit_query:
 
 ```c
 // Update last_request_time atomically when query is submitted
@@ -870,7 +870,7 @@ int conduit_query_handler(
 
 **Service Registration**:
 
-Add to [`src/api/api_service.c`](src/api/api_service.c):
+Add to src/api/api_service.c:
 
 ```c
 #include "conduit/conduit_service.h"
@@ -1002,7 +1002,7 @@ graph TB
 
 ### Unit Tests
 
-**QTC Management** (`tests/unity/src/database/database_cache_test.c`):
+**QTC Management** tests/unity/src/database/database_cache_test.c:
 
 - Create and destroy cache
 - Add entries
@@ -1010,7 +1010,7 @@ graph TB
 - Update usage statistics
 - Thread-safety with concurrent readers
 
-**Parameter Parsing** (`tests/unity/src/database/database_params_test.c`):
+**Parameter Parsing** tests/unity/src/database/database_params_test.c:
 
 - Parse all parameter types
 - Handle malformed JSON
@@ -1018,7 +1018,7 @@ graph TB
 - Named parameter conversion
 - Database-specific format conversion
 
-**Queue Selection** (`tests/unity/src/database/database_queue_select_test.c`):
+**Queue Selection** tests/unity/src/database/database_queue_select_test.c:
 
 - Filter by database
 - Filter by queue type
@@ -1026,7 +1026,7 @@ graph TB
 - Tie-breaking by timestamp
 - Edge cases (no queues, all queues full)
 
-**Pending Results** (`tests/unity/src/database/database_pending_test.c`):
+**Pending Results** tests/unity/src/database/database_pending_test.c:
 
 - Register result
 - Wait with success
@@ -1036,7 +1036,7 @@ graph TB
 
 ### Integration Tests
 
-**End-to-End Query** (`tests/test_40_conduit_query.sh`):
+**End-to-End Query** tests/test_40_conduit_query.sh:
 
 - Bootstrap QTC loading
 - Submit query via API
@@ -1044,20 +1044,20 @@ graph TB
 - Test all parameter types
 - Measure execution time
 
-**Timeout Handling** (`tests/test_41_conduit_timeout.sh`):
+**Timeout Handling** tests/test_41_conduit_timeout.sh:
 
 - Submit long-running query
 - Verify timeout response
 - Check cleanup
 
-**Concurrent Requests** (`tests/test_42_conduit_concurrent.sh`):
+**Concurrent Requests** tests/test_42_conduit_concurrent.sh:
 
 - Submit multiple queries concurrently
 - Verify queue distribution
 - Check for race conditions
 - Measure throughput
 
-**Error Scenarios** (`tests/test_43_conduit_errors.sh`):
+**Error Scenarios** tests/test_43_conduit_errors.sh:
 
 - Query not found
 - Invalid parameters
@@ -1068,24 +1068,24 @@ graph TB
 
 ### Phase 1: Query Table Cache
 
-- [ ] Create [`database_cache.h`](src/database/database_cache.h) with QTC structures
-- [ ] Implement [`database_cache.c`](src/database/database_cache.c) with cache management functions
-- [ ] Add `query_cache` field to [`DatabaseQueue`](src/database/dbqueue/dbqueue.h:DatabaseQueue) structure
-- [ ] Modify [`database_queue_execute_bootstrap_query()`](src/database/database_bootstrap.c:database_queue_execute_bootstrap_query) to populate QTC
+- [ ] Create src/database/database_cache.h with QTC structures
+- [ ] Implement src/database/database_cache.c with cache management functions
+- [ ] Add `query_cache` field to src/database/dbqueue/dbqueue.h:DatabaseQueue structure
+- [ ] Modify src/database/database_bootstrap.c:database_queue_execute_bootstrap_query to populate QTC
 - [ ] Add unit tests for QTC operations
 
 ### Phase 2: Queue Selection
 
-- [ ] Add `last_request_time` field to [`DatabaseQueue`](src/database/dbqueue/dbqueue.h:DatabaseQueue)
-- [ ] Create [`database_queue_select.c`](src/database/database_queue_select.c) with selection algorithm
-- [ ] Update [`database_queue_submit_query()`](src/database/dbqueue/submit.c:database_queue_submit_query) to set timestamp
+- [ ] Add `last_request_time` field to src/database/dbqueue/dbqueue.h:DatabaseQueue
+- [ ] Create src/database/database_queue_select.c with selection algorithm
+- [ ] Update src/database/dbqueue/submit.c:database_queue_submit_query to set timestamp
 - [ ] Initialize `last_request_time` in queue creation functions
 - [ ] Add unit tests for selection algorithm
 
 ### Phase 3: JSON Parameter Processing
 
-- [ ] Create [`database_params.h`](src/database/database_params.h) with parameter structures
-- [ ] Implement [`database_params.c`](src/database/database_params.c) with parsing functions
+- [ ] Create src/database/database_params.h with parameter structures
+- [ ] Implement src/database/database_params.c with parsing functions
 - [ ] Implement typed JSON parser
 - [ ] Implement named-to-positional converter
 - [ ] Add database-specific format handlers
@@ -1093,21 +1093,21 @@ graph TB
 
 ### Phase 4: Synchronous Execution
 
-- [ ] Create [`database_pending.h`](src/database/database_pending.h) with pending result structures
-- [ ] Implement [`database_pending.c`](src/database/database_pending.c) with wait mechanism
+- [ ] Create src/database/database_pending.h with pending result structures
+- [ ] Implement src/database/database_pending.c with wait mechanism
 - [ ] Integrate signaling into DQM worker thread
 - [ ] Add periodic cleanup of expired results
 - [ ] Add unit tests for pending results
 
 ### Phase 5: API Service
 
-- [ ] Create directory structure: [`src/api/conduit/`](src/api/conduit/)
-- [ ] Implement [`conduit_service.h`](src/api/conduit/conduit_service.h) with swagger annotations
-- [ ] Implement [`conduit_service.c`](src/api/conduit/conduit_service.c)
-- [ ] Create [`query/`](src/api/conduit/query/) subdirectory
-- [ ] Implement [`query.h`](src/api/conduit/query/query.h) with endpoint swagger
-- [ ] Implement [`query.c`](src/api/conduit/query/query.c) with handler logic
-- [ ] Register endpoint in [`api_service.c`](src/api/api_service.c)
+- [ ] Create directory structure: src/api/conduit/
+- [ ] Implement src/api/conduit/conduit_service.h with swagger annotations
+- [ ] Implement src/api/conduit/conduit_service.c
+- [ ] Create src/api/conduit/query/ subdirectory
+- [ ] Implement src/api/conduit/query/query.h with endpoint swagger
+- [ ] Implement src/api/conduit/query/query.c with handler logic
+- [ ] Register endpoint in src/api/api_service.c
 - [ ] Add integration tests
 
 ### Documentation

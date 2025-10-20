@@ -34,8 +34,8 @@
 //@ swagger:tags "OIDC Service"
 //@ swagger:summary OAuth 2.0 token introspection endpoint
 //@ swagger:description Allows authorized clients to determine the active state of a token and its metadata as specified in RFC 7662. Resource servers use this endpoint to validate tokens presented by clients and retrieve associated metadata.
-//@ swagger:parameter token string required The string value of the token
-//@ swagger:parameter token_type_hint string optional A hint about the type of the token (access_token, refresh_token)
+//@ swagger:parameter token formData string true "The string value of the token"
+//@ swagger:parameter token_type_hint formData string false "A hint about the type of the token" access_token
 //@ swagger:security BasicAuth
 //@ swagger:response 200 application/json {"type":"object","properties":{"active":{"type":"boolean"},"scope":{"type":"string"},"client_id":{"type":"string"},"username":{"type":"string"},"token_type":{"type":"string"},"exp":{"type":"integer"},"iat":{"type":"integer"},"nbf":{"type":"integer"},"sub":{"type":"string"},"aud":{"type":"string"},"iss":{"type":"string"},"jti":{"type":"string"}}}
 //@ swagger:response 401 application/json {"type":"object","properties":{"error":{"type":"string","example":"invalid_client"},"error_description":{"type":"string","example":"Client authentication failed"}}}
