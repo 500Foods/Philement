@@ -44,8 +44,18 @@ typedef struct QueueElement {
 } QueueElement;
 
 /*
+ * Queue Configuration
+ *
+ */
+typedef struct QueueAttributes {
+    size_t initial_memory;  // Initial memory allocation
+    size_t chunk_size;      // Memory allocation granularity
+    size_t warning_limit;   // Memory usage warning threshold
+} QueueAttributes;
+
+/*
  * Queue Structure
- * 
+ *
  */
 typedef struct Queue {
     char* name;                                     // Queue identifier
@@ -60,17 +70,8 @@ typedef struct Queue {
     int highest_priority;                           // Highest current priority
     struct timespec oldest_element_timestamp;       // Oldest message time
     struct timespec youngest_element_timestamp;     // Newest message time
+    QueueAttributes attrs;                          // Queue configuration attributes
 } Queue;
-
-/*
- * Queue Configuration
- * 
- */
-typedef struct QueueAttributes {
-    size_t initial_memory;  // Initial memory allocation
-    size_t chunk_size;      // Memory allocation granularity
-    size_t warning_limit;   // Memory usage warning threshold
-} QueueAttributes;
 
 /*
  * Queue System State
@@ -91,8 +92,11 @@ extern int queue_system_initialized;  // Flag indicating if queue system is read
 
 /*
  * Queue System Interface
- * 
+ *
  */
+
+// Hash Function
+unsigned int queue_hash(const char* str);  // DJB2 hash function for queue name lookup
 
 // System Lifecycle
 void queue_system_init(void);    // Initialize queue system
