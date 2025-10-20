@@ -67,18 +67,18 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-10-20 05:16:45 UTC
+Last updated at 2025-10-20 05:52:42 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              746          30052          28952         106678
+C                              746          30052          28951         106678
 JSON                            67             26              0          83387
-Markdown                       347           9626             59          29026
+Markdown                       347           9616             59          28994
 Bourne Shell                    84           3905          62165          17912
 Text                            24             23              0           7652
 SVG                             17             28            174           7007
 Lua                             32            342            430           6274
-C/C++ Header                   169           1838           4888           5265
+C/C++ Header                   170           1847           4911           5286
 CMake                           17            171            315           1025
 HTML                             8            138             23            882
 JavaScript                       2            131            191            444
@@ -90,7 +90,7 @@ Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 -------------------------------------------------------------------------------
-SUM:                          1536          46420          97274         266237
+SUM:                          1537          46419          97296         266226
 -------------------------------------------------------------------------------
 66 Files were skipped (duplicate, binary, or without source code):
   lua: 16
