@@ -54,14 +54,14 @@ int version_matches(const char* loaded_version, const char* expected_version) {
 }
 
 // Parse major version from version string
-static int parse_major_version(const char* v) {
+int parse_major_version(const char* v) {
     int maj = -1;
     sscanf(v, "%d", &maj);
     return maj;
 }
 
 // Check if IP is RFC1918 or local
-static int is_rfc1918_or_local_ip(const char* v) {
+int is_rfc1918_or_local_ip(const char* v) {
     int a, b, c, d;
     if (sscanf(v, "%d.%d.%d.%d", &a, &b, &c, &d) != 4) return 0;
     if (a < 0 || a > 255 || b < 0 || b > 255 || c < 0 || c > 255 || d < 0 || d > 255) return 0;
@@ -74,7 +74,7 @@ static int is_rfc1918_or_local_ip(const char* v) {
 }
 
 // Check if version is plausible for DB2
-static int is_plausible_db2_version(const char* v, int dots) {
+int is_plausible_db2_version(const char* v, int dots) {
     int maj = parse_major_version(v);
     if (maj < 8 || maj > 15) return 0;  // drop nonsense like 27.*
     if (dots < 1 || dots > 3) return 0;
@@ -82,7 +82,7 @@ static int is_plausible_db2_version(const char* v, int dots) {
 }
 
 // Check if DB2-related keywords are nearby
-static int has_db2_keywords_nearby(const char* hay, size_t start, size_t end) {
+int has_db2_keywords_nearby(const char* hay, size_t start, size_t end) {
     (void)end;  // Suppress unused parameter warning
     static const char* kws[] = {"DB2", "IBM", "Data Server", "Driver", "ODBC", "CLI", "db2"};
     size_t lo = start > 400 ? start - 400 : 0;
@@ -92,7 +92,7 @@ static int has_db2_keywords_nearby(const char* hay, size_t start, size_t end) {
 }
 
 // Score DB2 version hit
-static int score_db2_version(const char* hay, size_t start, size_t end, int dots, const char* vstr) {
+int score_db2_version(const char* hay, size_t start, size_t end, int dots, const char* vstr) {
     // Hard drops first
     char pre = (start > 0) ? hay[start - 1] : '\0';
     char post = hay[end];

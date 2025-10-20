@@ -41,12 +41,12 @@ static pthread_key_t mutex_operation_key;  // To detect mutex context
 static bool tls_keys_initialized = false;
 
 // Destructor for logging flag (frees malloc'd bool)
-static void free_logging_flag(void *ptr) {
+void free_logging_flag(void *ptr) {
     if (ptr) free(ptr);
 }
 
 // Lazy init TLS keys
-static void init_tls_keys(void) {
+void init_tls_keys(void) {
     if (!tls_keys_initialized) {
         pthread_key_create(&logging_operation_key, free_logging_flag);
         pthread_key_create(&log_group_key, free_logging_flag);
@@ -56,7 +56,7 @@ static void init_tls_keys(void) {
 }
 
 // Accessors for logging_operation
-static bool* get_logging_operation_flag(void) {
+bool* get_logging_operation_flag(void) {
     init_tls_keys();
     bool *flag = pthread_getspecific(logging_operation_key);
     if (!flag) {
@@ -77,14 +77,14 @@ bool log_is_in_logging_operation(void) {
     return *flag;
 }
 
-static void set_logging_operation_flag(bool val) {
+void set_logging_operation_flag(bool val) {
     bool *flag = get_logging_operation_flag();
     if (flag) *flag = val;
 }
 
 
 // Accessors for mutex_operation
-static bool* get_mutex_operation_flag(void) {
+bool* get_mutex_operation_flag(void) {
     init_tls_keys();
     bool *flag = pthread_getspecific(mutex_operation_key);
     if (!flag) {
@@ -100,13 +100,13 @@ static bool* get_mutex_operation_flag(void) {
     return flag;
 }
 
-static void set_mutex_operation_flag(bool val) {
+void set_mutex_operation_flag(bool val) {
     bool *flag = get_mutex_operation_flag();
     if (flag) *flag = val;
 }
 
 // Accessors for log_group
-static bool* get_log_group_flag(void) {
+bool* get_log_group_flag(void) {
     init_tls_keys();
     bool *flag = pthread_getspecific(log_group_key);
     if (!flag) {
@@ -122,7 +122,7 @@ static bool* get_log_group_flag(void) {
     return flag;
 }
 
-static void set_log_group_flag(bool val) {
+void set_log_group_flag(bool val) {
     bool *flag = get_log_group_flag();
     if (flag) *flag = val;
 }
@@ -284,7 +284,7 @@ char* log_get_last_n(size_t count) {
 }
 
 // Private function declarations
-static void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count);
+void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count);
 
 // Fallback priority labels for when config is unavailable
 const char* get_fallback_priority_label(int priority) {
@@ -297,7 +297,7 @@ const char* get_fallback_priority_label(int priority) {
     return fallback_labels[LOG_LEVEL_STATE];  // Default to STATE
 }
 
-static void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count) {
+void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count) {
     // Format the counter as two 3-digit numbers
     char counter_prefix[16];
     snprintf(counter_prefix, sizeof(counter_prefix), "[ %03lu %03lu ]",

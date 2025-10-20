@@ -265,7 +265,7 @@ void list_tar_contents(const uint8_t *tar_data, size_t tar_size) {
  * Parse tar data and store files in global cache
  */
 // Comparator function for sorting files by name
-static int compare_files(const void *a, const void *b) {
+int compare_files(const void *a, const void *b) {
     const PayloadFile *fa = (const PayloadFile *)a;
     const PayloadFile *fb = (const PayloadFile *)b;
     return strcmp(fa->name, fb->name);
