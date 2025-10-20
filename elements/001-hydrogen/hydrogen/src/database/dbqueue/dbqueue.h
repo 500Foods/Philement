@@ -177,6 +177,9 @@ void* database_queue_worker_thread(void* arg);
 bool database_queue_start_worker(DatabaseQueue* db_queue);
 void database_queue_stop_worker(DatabaseQueue* db_queue);
 
+// Helper function for processing queries (extracted for testability)
+void database_queue_process_single_query(DatabaseQueue* db_queue);
+
 // Lead queue management
 bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* queue_type);
 bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* queue_type);
@@ -203,7 +206,6 @@ void database_queue_lead_log_migration_status(DatabaseQueue* lead_queue, const c
 bool database_queue_lead_validate_migrations(DatabaseQueue* lead_queue);
 bool database_queue_lead_execute_migration_load(DatabaseQueue* lead_queue);
 bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue);
-void database_queue_lead_rerun_bootstrap(DatabaseQueue* lead_queue);
 bool database_queue_lead_is_auto_migration_enabled(const DatabaseQueue* lead_queue);
 bool database_queue_lead_acquire_migration_connection(DatabaseQueue* lead_queue, char* dqm_label);
 void database_queue_lead_release_migration_connection(DatabaseQueue* lead_queue);

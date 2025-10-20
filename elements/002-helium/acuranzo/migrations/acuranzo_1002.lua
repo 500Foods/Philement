@@ -16,8 +16,11 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1002,                                                               -- query_ref
+        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         ${TYPE_FORWARD_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
+        ${QTC_SLOW},                                                        -- query_queue_lua_58
+        5000,                                                               -- query_timeout (ms)
         'Create Account Access Table Query',                                -- name, summary, query_code
         [=[
             # Forward Migration 1002: Create Account Access Table Query
@@ -42,7 +45,6 @@ table.insert(queries,{sql=[[
                 PRIMARY KEY (access_id)
             );
         ]=],
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -57,8 +59,11 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1002,                                                               -- query_ref
+        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         ${TYPE_REVERSE_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
+        ${QTC_SLOW},                                                        -- query_queue_lua_58
+        5000,                                                               -- query_timeout (ms)
         'Delete Account Access Table Query',                                -- name, summary, query_code
         [=[
             # Reverse Migration 1002: Delete Account Access Table Query
@@ -69,7 +74,6 @@ table.insert(queries,{sql=[[
         [=[
             DROP TABLE ${SCHEMA}account_access;
         ]=],
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -83,8 +87,11 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1002,                                                               -- query_ref
+        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
+        ${QTC_SLOW},                                                        -- query_queue_lua_58
+        5000,                                                               -- query_timeout (ms)
         'Diagram Tables: ${SCHEMA}account_access',                          -- name, summary
         [=[
             # Diagram Migration 1002
@@ -94,7 +101,6 @@ table.insert(queries,{sql=[[
             This is the first JSON Diagram code for the account_access table.
         ]=],
         'JSON Table Definition in collection',                              -- query_code,
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
                                                                             -- DIAGRAM_START
         ${JSON_INGEST_START}
         [=[

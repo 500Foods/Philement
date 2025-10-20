@@ -20,6 +20,14 @@ void test_parse_connection_string_invalid_format(void);
 void test_free_connection_config_null_input(void);
 void test_free_connection_config_valid_config(void);
 
+// New tests for uncovered code
+void test_parse_connection_string_mysql_no_username(void);
+void test_parse_connection_string_mysql_no_port(void);
+void test_parse_connection_string_postgresql_fallback_database(void);
+void test_parse_connection_string_empty_string(void);
+void test_parse_connection_string_db2_minimal(void);
+void test_parse_connection_string_db2_quoted_values(void);
+
 void setUp(void) {
     // Set up test fixtures if needed
 }
@@ -131,6 +139,104 @@ void test_free_connection_config_valid_config(void) {
     // Test passes if no crash occurs
 }
 
+// NEW TESTS FOR UNCOVERED CODE
+
+// Test MySQL connection string without username (covers line 92)
+void test_parse_connection_string_mysql_no_username(void) {
+    const char* conn_str = "mysql://:password@host:3306/database";
+    ConnectionConfig* config = parse_connection_string(conn_str);
+
+    TEST_ASSERT_NOT_NULL(config);
+    TEST_ASSERT_EQUAL_STRING("host", config->host);
+    TEST_ASSERT_EQUAL(3306, config->port);
+    TEST_ASSERT_EQUAL_STRING("database", config->database);
+    TEST_ASSERT_EQUAL_STRING("", config->username); // Empty username
+    TEST_ASSERT_EQUAL_STRING("password", config->password);
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
+
+    free_connection_config(config);
+}
+
+// Test MySQL connection string without port (covers line 116)
+void test_parse_connection_string_mysql_no_port(void) {
+    const char* conn_str = "mysql://user:password@host/database";
+    ConnectionConfig* config = parse_connection_string(conn_str);
+
+    TEST_ASSERT_NOT_NULL(config);
+    TEST_ASSERT_EQUAL_STRING("host", config->host);
+    TEST_ASSERT_EQUAL(3306, config->port); // Default MySQL port
+    TEST_ASSERT_EQUAL_STRING("database", config->database);
+    TEST_ASSERT_EQUAL_STRING("user", config->username);
+    TEST_ASSERT_EQUAL_STRING("password", config->password);
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
+
+    free_connection_config(config);
+}
+
+// Test PostgreSQL connection string that triggers fallback database (covers line 268)
+void test_parse_connection_string_postgresql_fallback_database(void) {
+    const char* conn_str = "postgresql://user:password@host:5432";
+    ConnectionConfig* config = parse_connection_string(conn_str);
+
+    TEST_ASSERT_NOT_NULL(config);
+    TEST_ASSERT_EQUAL_STRING("localhost", config->host); // Default host since no host specified
+    TEST_ASSERT_EQUAL(5432, config->port);
+    TEST_ASSERT_EQUAL_STRING("postgres", config->database); // Fallback database
+    TEST_ASSERT_EQUAL_STRING("user", config->username);
+    TEST_ASSERT_EQUAL_STRING("password", config->password);
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
+
+    free_connection_config(config);
+}
+
+// Test empty string input
+void test_parse_connection_string_empty_string(void) {
+    const char* conn_str = "";
+    ConnectionConfig* config = parse_connection_string(conn_str);
+
+    TEST_ASSERT_NOT_NULL(config);
+    TEST_ASSERT_EQUAL_STRING("localhost", config->host);
+    TEST_ASSERT_EQUAL(5432, config->port);
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->database); // Empty string as database
+    TEST_ASSERT_EQUAL_STRING("", config->username);
+    TEST_ASSERT_EQUAL_STRING("", config->password);
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
+
+    free_connection_config(config);
+}
+
+// Test minimal DB2 connection string
+void test_parse_connection_string_db2_minimal(void) {
+    const char* conn_str = "DRIVER={DB2};DATABASE=test";
+    ConnectionConfig* config = parse_connection_string(conn_str);
+
+    TEST_ASSERT_NOT_NULL(config);
+    TEST_ASSERT_EQUAL_STRING("localhost", config->host); // Default host
+    TEST_ASSERT_EQUAL(5432, config->port); // Default port
+    TEST_ASSERT_EQUAL_STRING("test", config->database);
+    TEST_ASSERT_EQUAL_STRING("", config->username); // Empty username
+    TEST_ASSERT_EQUAL_STRING("", config->password); // Empty password
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
+
+    free_connection_config(config);
+}
+
+// Test DB2 connection string with quoted values
+void test_parse_connection_string_db2_quoted_values(void) {
+    const char* conn_str = "DRIVER={IBM DB2 ODBC DRIVER};DATABASE=\"test database\";HOSTNAME=\"test host\";UID=\"test user\";PWD=\"test pass\"";
+    ConnectionConfig* config = parse_connection_string(conn_str);
+
+    TEST_ASSERT_NOT_NULL(config);
+    TEST_ASSERT_EQUAL_STRING("test host", config->host);
+    TEST_ASSERT_EQUAL(5432, config->port); // Default port since PORT not specified
+    TEST_ASSERT_EQUAL_STRING("test database", config->database);
+    TEST_ASSERT_EQUAL_STRING("test user", config->username);
+    TEST_ASSERT_EQUAL_STRING("test pass", config->password);
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
+
+    free_connection_config(config);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -142,6 +248,14 @@ int main(void) {
     RUN_TEST(test_parse_connection_string_invalid_format);
     RUN_TEST(test_free_connection_config_null_input);
     RUN_TEST(test_free_connection_config_valid_config);
+
+    // Run new tests for uncovered code
+    RUN_TEST(test_parse_connection_string_mysql_no_username);
+    RUN_TEST(test_parse_connection_string_mysql_no_port);
+    RUN_TEST(test_parse_connection_string_postgresql_fallback_database);
+    RUN_TEST(test_parse_connection_string_empty_string);
+    RUN_TEST(test_parse_connection_string_db2_minimal);
+    RUN_TEST(test_parse_connection_string_db2_quoted_values);
 
     return UNITY_END();
 }

@@ -191,32 +191,6 @@ bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue) {
     return apply_success;
 }
 
-/*
- * Re-run bootstrap query to verify loaded migrations
- */
-void database_queue_lead_rerun_bootstrap(DatabaseQueue* lead_queue) {
-    char* dqm_label = database_queue_generate_label(lead_queue);
-
-    // DECISION: Comment out verbose bootstrap logging - keep only essential status messages
-    // log_this(dqm_label, "Re-running bootstrap query on existing connection to verify loaded migrations", LOG_LEVEL_DEBUG, 0);
-
-    // DECISION: Comment out unused variables since we removed the logging that used them
-    // Store current migration status before re-execution
-    // long long pre_reexec_available = lead_queue->latest_available_migration;
-    // long long pre_reexec_installed = lead_queue->latest_installed_migration;
-
-    // Re-execute bootstrap query on the existing queue
-    // Since Lead DQM is single-threaded, we shouldn't need mutexes here
-    database_queue_execute_bootstrap_query(lead_queue);
-
-    // log_this(dqm_label, "Bootstrap re-execution complete: pre=(%lld,%lld) post=(%lld,%lld)",
-    //          LOG_LEVEL_DEBUG, 4, pre_reexec_available, pre_reexec_installed,
-    //          lead_queue->latest_available_migration, lead_queue->latest_installed_migration);
-
-    // log_this(dqm_label, "Migration status updated after load phase", LOG_LEVEL_DEBUG, 0);
-
-    free(dqm_label);
-}
 
 /*
  * Check if auto-migration is enabled for this database
@@ -286,7 +260,7 @@ bool database_queue_lead_execute_migration_cycle(DatabaseQueue* lead_queue, char
 
             if (database_queue_lead_execute_migration_load(lead_queue)) {
                 // Re-run bootstrap query to verify what was loaded
-                database_queue_lead_rerun_bootstrap(lead_queue);
+                database_queue_execute_bootstrap_query(lead_queue);
             } else {
                 success = false;
             }
