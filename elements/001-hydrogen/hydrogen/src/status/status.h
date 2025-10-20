@@ -17,6 +17,9 @@ void status_init(void);
 // Clean up the status collection system
 void status_cleanup(void);
 
+// Helper function to collect all metrics
+SystemMetrics* collect_all_metrics(const WebSocketMetrics *ws_metrics);
+
 // Get complete system status in JSON format
 // This is the original format used by the /api/system/info endpoint
 // Returns a new JSON object that must be freed by the caller
