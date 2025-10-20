@@ -1,0 +1,192 @@
+{
+    "ServerName": "hydrogen-test-41-conduit",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "WebServer": {
+        "Enabled": true,
+        "EnableIPv6": false,
+        "Port": 5341
+    },
+    "Databases": {
+        "ConnectionCount": 4,
+        "Connections": [
+            {
+                "Enabled": true,
+                "Name": "ACZ",
+                "Engine": "${env.ACURANZO_DB_TYPE}",
+                "Host": "${env.ACURANZO_DB_HOST}",
+                "Port": "${env.ACURANZO_DB_PORT}",
+                "Database": "${env.ACURANZO_DB_NAME}",
+                "User": "${env.ACURANZO_DB_USER}",
+                "Pass": "${env.ACURANZO_DB_PASS}",
+                "Bootstrap":"SELECT * FROM app.queries;",
+                "Queues": {
+                    "Slow": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 10,
+                        "down": 2,
+                        "inactivity": 300
+                    },
+                    "Medium": {
+                        "start": 2,
+                        "min": 1,
+                        "max": 8,
+                        "up": 15,
+                        "down": 3,
+                        "inactivity": 240
+                    },
+                    "Fast": {
+                        "start": 4,
+                        "min": 2,
+                        "max": 16,
+                        "up": 20,
+                        "down": 5,
+                        "inactivity": 180
+                    },
+                    "Cache": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 5,
+                        "down": 1,
+                        "inactivity": 600
+                    }
+                }
+            },
+            {
+                "Enabled": true,
+                "Name": "CNV",
+                "Engine": "${env.CANVAS_DB_TYPE}",
+                "Host": "${env.CANVAS_DB_HOST}",
+                "Port": "${env.CANVAS_DB_PORT}",
+                "Database": "${env.CANVAS_DB_NAME}",
+                "User": "${env.CANVAS_DB_USER}",
+                "Pass": "${env.CANVAS_DB_PASS}",
+                "Bootstrap": "select * from canvas.queries;",
+                "Queues": {
+                    "Slow": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 10,
+                        "down": 2,
+                        "inactivity": 300
+                    },
+                    "Medium": {
+                        "start": 2,
+                        "min": 1,
+                        "max": 8,
+                        "up": 15,
+                        "down": 3,
+                        "inactivity": 240
+                    },
+                    "Fast": {
+                        "start": 4,
+                        "min": 2,
+                        "max": 16,
+                        "up": 20,
+                        "down": 5,
+                        "inactivity": 180
+                    },
+                    "Cache": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 5,
+                        "down": 1,
+                        "inactivity": 600
+                    }
+                }
+            },
+            {
+                "Name": "Helium",
+                "Engine": "sqlite",
+                "Enabled": true,
+                "Database": "tests/artifacts/database/sqlite/hydrotst.sqlite",
+                "Bootstrap": "select * from queries;",
+                "Queues": {
+                    "Slow": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 10,
+                        "down": 2,
+                        "inactivity": 300
+                    },
+                    "Medium": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 15,
+                        "down": 3,
+                        "inactivity": 240
+                    },
+                    "Fast": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 20,
+                        "down": 5,
+                        "inactivity": 180
+                    },
+                    "Cache": {
+                        "start": 0,
+                        "min": 0,
+                        "max": 0,
+                        "up": 5,
+                        "down": 1,
+                        "inactivity": 600
+                    }
+                }
+            },
+            {
+                "Enabled": true,
+                "Name": "HTST",
+                "Engine": "${env.HYDROTST_DB_TYPE}",
+                "Database": "${env.HYDROTST_DB_NAME}",
+                "Host":"localhost",
+                "Port": 55555,
+                "User": "${env.HYDROTST_DB_USER}",
+                "Pass": "${env.HYDROTST_DB_PASS}",
+                "Bootstrap":"SELECT * FROM acuranzo.queries;",
+                "Design": "acuranzo",
+                "Schema": "acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 10,
+                        "down": 2,
+                        "inactivity": 300
+                    },
+                    "Medium": {
+                        "start": 2,
+                        "min": 1,
+                        "max": 8,
+                        "up": 15,
+                        "down": 3,
+                        "inactivity": 240
+                    },
+                    "Fast": {
+                        "start": 4,
+                        "min": 2,
+                        "max": 16,
+                        "up": 20,
+                        "down": 5,
+                        "inactivity": 180
+                    },
+                    "Cache": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 5,
+                        "down": 1,
+                        "inactivity": 600
+                    }
+                }
+            }
+        ]
+    }
+}
