@@ -108,13 +108,3 @@ This TODO.md file serves as a central location to track plenty of incomplete ite
 | # | Status | File | Description |
 |---|--------|------|-------------|
 | 1 | Pending | src/print/print_queue_manager.c:66 | Implement actual print job processing |
-
-### Status Folder (5 TODOs)
-
-| # | Status | File | Description |
-|---|---|------|-------------|
-| 1 | Pending | src/status/status_process.c:297 | Implement message counting for logging metrics |
-| 2 | Pending | src/status/status_process.c:302 | Implement request tracking for webserver metrics |
-| 3 | Pending | src/status/status_process.c:322 | Implement discovery counting for mDNS metrics |
-| 4 | Pending | src/status/status_process.c:327 | Implement job counting for print metrics |
-| 5 | Pending | src/status/status.c:26 | Remove static flag from collect_all_metrics function |
