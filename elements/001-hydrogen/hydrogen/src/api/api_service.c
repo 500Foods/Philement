@@ -16,6 +16,7 @@
 #include "system/system_service.h"
 #include "system/upload/upload.h"
 #include "conduit/conduit_service.h"
+#include "conduit/query/query.h"
 
 // Simple hardcoded endpoint validator and handler for /api/version
 bool is_exact_api_version_endpoint(const char *url) {
@@ -367,8 +368,8 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     }
     // Conduit endpoints
     else if (strcmp(path, "conduit/query") == 0) {
-        return handle_conduit_query_request(connection, url, method, upload_data,
-                                           upload_data_size, con_cls);
+        return conduit_query_handler(connection, url, method, upload_data,
+                                   upload_data_size, con_cls);
     }
 
     // Endpoint not found

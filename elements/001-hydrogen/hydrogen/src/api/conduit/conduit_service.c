@@ -1,15 +1,23 @@
 /*
- * Conduit API Service
- * 
- * This file serves as an integration point for all conduit API endpoints.
- * The actual endpoint implementations are in their specific subdirectories.
+ * Conduit Service Implementation
+ *
+ * REST API service for database query execution by reference.
  */
 
-// Global includes 
-#include <src/hydrogen.h>
-
-// Local includes
 #include "conduit_service.h"
 
-// This file intentionally left minimal as the implementations
-// have been moved to their respective subdirectories.
+// Initialize conduit service
+bool conduit_service_init(void) {
+    log_this("CONDUIT", "Conduit service initialized", LOG_LEVEL_STATE, true, true, true);
+    return true;
+}
+
+// Cleanup conduit service
+void conduit_service_cleanup(void) {
+    log_this("CONDUIT", "Conduit service cleaned up", LOG_LEVEL_STATE, true, true, true);
+}
+
+// Get service name for logging
+const char* conduit_service_name(void) {
+    return "Conduit";
+}

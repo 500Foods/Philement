@@ -11,6 +11,7 @@
 #include "dbqueue/dbqueue.h"
 #include "database.h"
 #include "database_bootstrap.h"
+#include "database_cache.h"
 #include "migration/migration.h"
 
 /*
@@ -26,8 +27,9 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 
     // Use the configured bootstrap query from database configuration
     // This will fail on empty databases (expected), then succeed after migrations create the queries table
+    // Updated to include Conduit QTC fields: sql_template, description, queue_type, timeout_seconds
     const char* bootstrap_query = db_queue->bootstrap_query ? db_queue->bootstrap_query :
-        "SELECT query_id, query_ref, query_type_lua_28, query_dialect_lua_30, name, summary, code, collection FROM queries ORDER BY query_ref DESC";
+        "SELECT query_ref, sql_template, description, queue_type, timeout_seconds, query_type_lua_28, query_dialect_lua_30, name, summary, code, collection FROM queries ORDER BY query_ref";
 
     // Create query request
     QueryRequest* request = calloc(1, sizeof(QueryRequest));
@@ -65,7 +67,15 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             if (query_success && result && result->success) {
                 log_this(dqm_label, "Bootstrap query succeeded: %zu rows, %zu columns", LOG_LEVEL_DEBUG, 2, result->row_count, result->column_count);
 
-                // Parse migration information from results
+                // Initialize QTC if not already done
+                if (!db_queue->query_cache) {
+                    db_queue->query_cache = query_cache_create();
+                    if (!db_queue->query_cache) {
+                        log_this(dqm_label, "Failed to create query cache", LOG_LEVEL_ERROR, true, true, true);
+                    }
+                }
+
+                // Parse bootstrap query results for migration information and QTC
                 if (result->row_count > 0 && result->data_json) {
                     empty_database = false;
 
@@ -75,101 +85,68 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 
                     if (root && json_is_array(root)) {
                          size_t row_count = json_array_size(root);
-                         // DECISION: Comment out verbose row parsing logging - keep only essential decision messages
-                         // log_this(dqm_label, "Parsing %zu bootstrap query rows for migration info", LOG_LEVEL_TRACE, 1, row_count);
+                         log_this(dqm_label, "Processing %zu bootstrap query rows for QTC and migrations", LOG_LEVEL_DEBUG, 1, row_count);
 
                          for (size_t i = 0; i < row_count; i++) {
                              json_t* row = json_array_get(root, i);
                              if (json_is_object(row)) {
-                                 // DECISION: Comment out verbose row parsing logging - keep only essential decision messages
-                                 // log_this(dqm_label, "Parsing %zu bootstrap query rows for migration info", LOG_LEVEL_TRACE, 1, row_count);
-                                // DECISION: Comment out verbose field-by-field logging - keep only essential decision messages
-                                // Debug: Log all field names and values in this row
-                                // const char* key;
-                                // json_t* value;
-                                // log_this(dqm_label, "Row %zu fields:", LOG_LEVEL_TRACE, 1, i);
-                                // json_object_foreach(row, key, value) {
-                                //     if (json_is_integer(value)) {
-                                //          log_this(dqm_label, "  %s = %lld", LOG_LEVEL_TRACE, 2, key, json_integer_value(value));
-                                //      } else if (json_is_string(value)) {
-                                //          log_this(dqm_label, "  %s = '%s'", LOG_LEVEL_TRACE, 2, key, json_string_value(value));
-                                //      }
-                                // }
+                                // Extract QTC fields (Conduit)
+                                json_t* query_ref_obj = json_object_get(row, "query_ref");
+                                json_t* sql_template_obj = json_object_get(row, "sql_template");
+                                json_t* description_obj = json_object_get(row, "description");
+                                json_t* queue_type_obj = json_object_get(row, "queue_type");
+                                json_t* timeout_seconds_obj = json_object_get(row, "timeout_seconds");
 
-                                // Case-insensitive field lookup
-                                json_t* query_type_obj = NULL;
-                                json_t* query_ref_obj = NULL;
+                                // Extract migration fields (existing)
+                                json_t* query_type_obj = json_object_get(row, "query_type_lua_28");
 
-                                // Convert field names to lowercase and find matches
-                                const char* lowercase_key;
-                                json_t* field_value;
-                                json_object_foreach(row, lowercase_key, field_value) {
-                                    // Convert to lowercase for comparison
-                                    char lower_key[256];
-                                    size_t j;
-                                    for (j = 0; j < sizeof(lower_key) - 1 && lowercase_key[j]; j++) {
-                                        lower_key[j] = (char)tolower(lowercase_key[j]);
-                                    }
-                                    lower_key[j] = '\0';
+                                // Process QTC entry if all required fields present
+                                if (query_ref_obj && json_is_integer(query_ref_obj) &&
+                                    sql_template_obj && json_is_string(sql_template_obj) &&
+                                    description_obj && json_is_string(description_obj) &&
+                                    queue_type_obj && json_is_string(queue_type_obj) &&
+                                    timeout_seconds_obj && json_is_integer(timeout_seconds_obj)) {
 
-                                    if (strcmp(lower_key, "query_type_lua_28") == 0) {
-                                        query_type_obj = field_value;
-                                    } else if (strcmp(lower_key, "query_ref") == 0) {
-                                        query_ref_obj = field_value;
+                                    int query_ref = (int)json_integer_value(query_ref_obj);
+                                    const char* sql_template = json_string_value(sql_template_obj);
+                                    const char* description = json_string_value(description_obj);
+                                    const char* queue_type = json_string_value(queue_type_obj);
+                                    int timeout_seconds = (int)json_integer_value(timeout_seconds_obj);
+
+                                    // Create and add QTC entry
+                                    QueryCacheEntry* entry = query_cache_entry_create(
+                                        query_ref, sql_template, description, queue_type, timeout_seconds);
+
+                                    if (entry && db_queue->query_cache) {
+                                        if (query_cache_add_entry(db_queue->query_cache, entry)) {
+                                            log_this(dqm_label, "Added QTC entry: query_ref=%d, queue_type=%s",
+                                                    LOG_LEVEL_DEBUG, 2, query_ref, queue_type);
+                                        } else {
+                                            log_this(dqm_label, "Failed to add QTC entry: query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
+                                            query_cache_entry_destroy(entry);
+                                        }
+                                    } else {
+                                        log_this(dqm_label, "Failed to create QTC entry: query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
                                     }
                                 }
 
-                                if ((query_type_obj && json_is_integer(query_type_obj)) &&
-                                    (query_ref_obj && json_is_integer(query_ref_obj))) {
-
+                                // Process migration information (existing logic)
+                                if (query_type_obj && query_ref_obj && json_is_integer(query_ref_obj)) {
                                     long long query_type = json_integer_value(query_type_obj);
                                     long long query_ref = json_integer_value(query_ref_obj);
 
-                                    // DECISION: Comment out verbose migration data logging - keep only essential decision messages
-                                    // log_this(dqm_label, "Found migration data (integer values): type=%lld, ref=%lld", LOG_LEVEL_TRACE, 2, query_type, query_ref);
-
-                                    // Process the migration data (same logic for both integer and string cases)
                                     if (query_type == 1000) {
                                          // Track the highest version found for available migrations (query_type = 1000)
                                          if (query_ref > latest_available_migration) {
                                              latest_available_migration = query_ref;
-                                             // log_this(dqm_label, "Updated available migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
                                          }
                                      } else if (query_type == 1003) {
                                          // Track the highest version found for installed migrations (query_type = 1003)
                                          if (query_ref > latest_installed_migration) {
                                              latest_installed_migration = query_ref;
-                                             // log_this(dqm_label, "Updated installed migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
                                          }
                                      }
-                                } else if ((query_type_obj && json_is_string(query_type_obj)) &&
-                                           (query_ref_obj && json_is_string(query_ref_obj))) {
-
-                                    // Handle string values - convert to integers
-                                    long long query_type = strtoll(json_string_value(query_type_obj), NULL, 10);
-                                    long long query_ref = strtoll(json_string_value(query_ref_obj), NULL, 10);
-
-                                    // DECISION: Comment out verbose migration data logging - keep only essential decision messages
-                                    // log_this(dqm_label, "Found migration data (string values): type=%lld, ref=%lld", LOG_LEVEL_TRACE, 2, query_type, query_ref);
-
-                                    // Process the migration data (same logic for both integer and string cases)
-                                    if (query_type == 1000) {
-                                         // Track the highest version found for available migrations (query_type = 1000)
-                                         if (query_ref > latest_available_migration) {
-                                             latest_available_migration = query_ref;
-                                             // log_this(dqm_label, "Updated available migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
-                                         }
-                                     } else if (query_type == 1003) {
-                                         // Track the highest version found for installed migrations (query_type = 1003)
-                                         if (query_ref > latest_installed_migration) {
-                                             latest_installed_migration = query_ref;
-                                             // log_this(dqm_label, "Updated installed migration to: %lld", LOG_LEVEL_TRACE, 1, query_ref);
-                                         }
-                                     }
-                                } else {
-                                     // DECISION: Comment out verbose missing fields logging - keep only essential decision messages
-                                     // log_this(dqm_label, "Row %zu missing required migration fields", LOG_LEVEL_TRACE, 1, i);
-                                 }
+                                }
                             }
                         }
                         json_decref(root);

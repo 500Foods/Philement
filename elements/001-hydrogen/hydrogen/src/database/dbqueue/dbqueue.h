@@ -12,6 +12,7 @@
 #include <src/hydrogen.h>
 #include "../../queue/queue.h"
 #include "../database_types.h"
+#include "../database_cache.h"
 
 // Forward declarations to avoid circular dependencies
 typedef struct DatabaseHandle DatabaseHandle;
@@ -78,6 +79,9 @@ struct DatabaseQueue {
     volatile long long latest_available_migration;  // Highest query_ref for query_type_lua_28 = 1000
     volatile long long latest_installed_migration;  // Highest query_ref for query_type_lua_28 = 1003
     volatile bool empty_database;                   // True if no queries found in bootstrap results
+
+    // Query Table Cache (QTC) - shared across all queues for this database
+    QueryTableCache* query_cache;                  // In-memory cache of query templates
 
     // Flags
     volatile bool shutdown_requested;
