@@ -84,6 +84,9 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_33_mysql_migrations.sh](docs/test_33_mysql_migrations.md)**: MySQL migration performance test
 - **[test_34_sqlite_migrations.sh](docs/test_34_sqlite_migrations.md)**: SQLite migration performance test
 - **[test_35_db2_migrations.sh](docs/test_35_db2_migrations.md)**: DB2 migration performance test
+- **[test_38_luacheck.sh](docs/test_38_luacheck.md)**: Lua code analysis with luacheck
+- **[test_39_database_diagrams.sh](docs/test_39_database_diagrams.md)**: Database diagram generation
+- **[test_41_conduit.sh](docs/test_41_conduit.md)**: Conduit Query endpoint test
 
 ### Static Analysis & Code Quality Tests
 
