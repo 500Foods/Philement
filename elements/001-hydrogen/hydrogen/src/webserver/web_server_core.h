@@ -65,6 +65,7 @@ const WebServerEndpoint* get_endpoint_for_url(const char* url);
 // Shared utility functions
 void add_cors_headers(struct MHD_Response *response);
 const char* get_upload_path(void);
+bool is_port_available(int port, bool check_ipv6);
 
 // WebRoot path resolution functions
 char* resolve_webroot_path(const char* webroot_spec, const PayloadData* payload,

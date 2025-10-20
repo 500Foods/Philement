@@ -80,7 +80,7 @@ static const DatabaseDependencyConfig db_configs[] = {
 static int cache_hits = 0;  // Track cache hits across all database checks
 
 // Get the cache file path for a specific database
-static char* get_cache_file_path(const char *db_name) {
+char* get_cache_file_path(const char *db_name) {
     const struct passwd *pw = getpwuid(getuid());
     if (!pw) return NULL;
 
@@ -93,7 +93,7 @@ static char* get_cache_file_path(const char *db_name) {
 }
 
 // Ensure cache directory exists
-static bool ensure_cache_dir(void) {
+bool ensure_cache_dir(void) {
     const struct passwd *pw = getpwuid(getuid());
     if (!pw) return false;
 
@@ -123,7 +123,7 @@ static bool ensure_cache_dir(void) {
 }
 
 // Load cached version for a specific database
-static const char* load_cached_version(const char *db_name, char *buffer, size_t size) {
+const char* load_cached_version(const char *db_name, char *buffer, size_t size) {
     char *cache_path = get_cache_file_path(db_name);
     if (!cache_path) return NULL;
 
@@ -154,7 +154,7 @@ static const char* load_cached_version(const char *db_name, char *buffer, size_t
 }
 
 // Save cache to file for a specific database
-static void save_cache(const char *db_name, const char *version) {
+void save_cache(const char *db_name, const char *version) {
     if (!ensure_cache_dir()) return;
 
     char *cache_path = get_cache_file_path(db_name);

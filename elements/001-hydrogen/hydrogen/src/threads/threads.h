@@ -59,4 +59,8 @@ ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t
 void report_thread_status(void);
 void free_threads_resources(void);
 
+// Internal function declarations (made public for testing)
+size_t get_thread_stack_size(pid_t tid);
+void remove_thread_internal(ServiceThreads *threads, int index, bool skip_logging);
+
 #endif // THREADS_H

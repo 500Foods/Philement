@@ -46,5 +46,7 @@ void configure_lws_vhost_info(struct lws_context_creation_info* vhost_info,
                              int port, struct lws_protocols* protocols,
                              WebSocketServerContext* context);
 int verify_websocket_port_binding(int port);
+// WebSocket server thread function (made non-static for testing)
+void *websocket_server_run(void *arg);
 
 #endif // WEBSOCKET_SERVER_H

@@ -114,6 +114,15 @@ bool pty_terminate_shell(PtyShell *shell);
  */
 void pty_cleanup_shell(PtyShell *shell);
 
+/**
+ * Setup child process with PTY and execute shell
+ *
+ * @param shell_command The shell command to execute
+ * @param slave_fd The slave PTY file descriptor
+ * @param master_fd The master PTY file descriptor to close in child
+ */
+void setup_child_process(const char *shell_command, int slave_fd, int master_fd);
+
 #ifdef __cplusplus
 }
 #endif
