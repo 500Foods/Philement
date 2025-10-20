@@ -103,7 +103,7 @@ void database_queue_signal_initial_connection_complete(DatabaseQueue* db_queue) 
 /*
  * Handle connection success - store connection and perform health check
  */
-static bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseHandle* db_handle, ConnectionConfig* config) {
+bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseHandle* db_handle, ConnectionConfig* config) {
     char* dqm_designator = database_queue_generate_label(db_queue);
 
     // Store the persistent connection
@@ -171,7 +171,7 @@ static bool database_queue_handle_connection_success(DatabaseQueue* db_queue, Da
 /*
  * Perform the actual database connection attempt
  */
-static bool database_queue_perform_connection_attempt(DatabaseQueue* db_queue, ConnectionConfig* config, DatabaseEngine engine_type) {
+bool database_queue_perform_connection_attempt(DatabaseQueue* db_queue, ConnectionConfig* config, DatabaseEngine engine_type) {
     // Attempt real database connection with DQM designator
     DatabaseHandle* db_handle = NULL;
     char* dqm_designator = database_queue_generate_label(db_queue);

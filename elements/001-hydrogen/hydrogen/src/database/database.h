@@ -319,6 +319,10 @@ void database_engine_cleanup_connection(DatabaseHandle* connection);
 void database_engine_cleanup_result(QueryResult* result);
 void database_engine_cleanup_transaction(Transaction* transaction);
 
+// Prepared statement management helper functions (formerly static in database_engine.c)
+PreparedStatement* find_prepared_statement(DatabaseHandle* connection, const char* name);
+bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stmt);
+
 // Statistics and counting functions
 int database_get_total_queue_count(void);
 void database_get_queue_counts_by_type(int* lead_count, int* slow_count, int* medium_count, int* fast_count, int* cache_count);
