@@ -109,13 +109,6 @@ This TODO.md file serves as a central location to track plenty of incomplete ite
 |---|--------|------|-------------|
 | 1 | Pending | src/print/print_queue_manager.c:66 | Implement actual print job processing |
 
-### Queue Folder (2 TODOs)
-
-| # | Status | File | Description |
-|---|--------|------|-------------|
-| 1 | Pending | src/queue/queue.c:182 | Initialize queue with attributes |
-| 2 | Pending | src/queue/queue.c:26 | Remove static flag from hash function |
-
 ### Status Folder (5 TODOs)
 
 | # | Status | File | Description |
