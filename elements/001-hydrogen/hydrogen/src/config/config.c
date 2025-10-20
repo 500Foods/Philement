@@ -50,7 +50,7 @@
 #include "config.h"
 
 // Forward declaration for cleanup function
-static void clean_app_config(AppConfig* config);
+void clean_app_config(AppConfig* config);
 
 // Standard system paths to check for configuration
 static const char* const CONFIG_PATHS[] = {
@@ -256,7 +256,7 @@ AppConfig* load_config(const char* cmdline_path) {
 }
 
 // Count UTF-8 characters
-static size_t utf8_char_count(const char* str) {
+size_t utf8_char_count(const char* str) {
     size_t chars = 0;
     while (*str) {
         if ((*str & 0xC0) != 0x80) { // Start byte
@@ -268,7 +268,7 @@ static size_t utf8_char_count(const char* str) {
 }
 
 // Truncate to N UTF-8 characters
-static void utf8_truncate(char* str, size_t max_chars) {
+void utf8_truncate(char* str, size_t max_chars) {
     size_t chars = 0;
     char* pos = str;
     char* last_valid = str; // Track start of last complete character
@@ -287,7 +287,7 @@ static void utf8_truncate(char* str, size_t max_chars) {
     *last_valid = '\0'; // Truncate at start of last valid character
 }
 
-static void format_section_header(char* buffer, size_t size, const char* letter, const char* name) {
+void format_section_header(char* buffer, size_t size, const char* letter, const char* name) {
     if (!buffer || !letter || !name || size <= strlen(LOG_LINE_BREAK)) {
         if (buffer) buffer[0] = '\0';
         return;
@@ -389,7 +389,7 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
  *
  * @param config The config structure to clean up
  */
-static void clean_app_config(AppConfig* config) {
+void clean_app_config(AppConfig* config) {
     if (!config) return;
 
     // Clean up configurations in A-P order

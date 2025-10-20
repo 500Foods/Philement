@@ -139,6 +139,39 @@ void log_config_env_value(
 void dumpAppConfig(const AppConfig* config, const char* section);
 
 /*
+ * Helper function to clean up all resources in AppConfig
+ *
+ * @param config Pointer to AppConfig structure to cleanup
+ */
+void clean_app_config(AppConfig* config);
+
+/*
+ * Count UTF-8 characters in a string
+ *
+ * @param str String to count characters in
+ * @return Number of UTF-8 characters
+ */
+size_t utf8_char_count(const char* str);
+
+/*
+ * Truncate string to N UTF-8 characters
+ *
+ * @param str String to truncate (modified in place)
+ * @param max_chars Maximum number of UTF-8 characters
+ */
+void utf8_truncate(char* str, size_t max_chars);
+
+/*
+ * Format a section header with proper UTF-8 handling
+ *
+ * @param buffer Output buffer
+ * @param size Size of output buffer
+ * @param letter Section letter
+ * @param name Section name
+ */
+void format_section_header(char* buffer, size_t size, const char* letter, const char* name);
+
+/*
  * Get the current configuration as formatted text
  * 
  * Similar to dumpAppConfig but writes to a provided buffer instead of logs.

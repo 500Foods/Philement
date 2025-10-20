@@ -13,7 +13,7 @@
 #include "config_logging.h"
 
 // Helper function for initializing subsystems
-static bool init_subsystems(LoggingDestConfig* dest) {
+bool init_subsystems(LoggingDestConfig* dest) {
     dest->subsystems = calloc(2, sizeof(LoggingSubsystem));
     if (!dest->subsystems) return false;
     dest->subsystem_count = 2;
@@ -27,7 +27,7 @@ static bool init_subsystems(LoggingDestConfig* dest) {
 }
 
 // Helper function for processing all subsystems
-static bool process_subsystems(json_t* root, LoggingDestConfig* dest, const char* path,
+bool process_subsystems(json_t* root, LoggingDestConfig* dest, const char* path,
                              const LoggingConfig* config) {
     char subsys_path[256];
     snprintf(subsys_path, sizeof(subsys_path), "%s.Subsystems", path);
@@ -117,7 +117,7 @@ static bool process_subsystems(json_t* root, LoggingDestConfig* dest, const char
 }
 
 // Helper function for dumping destination config
-static void dump_destination(const LoggingConfig* config, const char* name, const LoggingDestConfig* dest) {
+void dump_destination(const LoggingConfig* config, const char* name, const LoggingDestConfig* dest) {
     // Dump section header
     DUMP_TEXT("――", name);
 
@@ -267,7 +267,7 @@ const char* config_logging_get_level_name(const LoggingConfig* config, int level
     return NULL;
 }
 
-static int get_subsystem_level_internal(const LoggingDestConfig* dest_config, 
+int get_subsystem_level_internal(const LoggingDestConfig* dest_config,
                                       const char* subsystem, int safe_default) {
     if (!dest_config || !subsystem) return safe_default;
     
