@@ -124,6 +124,25 @@ bool validate_thread_limits(const ResourceConfig* config, int* msg_count, const 
 bool validate_file_limits(const ResourceConfig* config, int* msg_count, const char** messages);
 bool validate_monitoring_settings(const ResourceConfig* config, int* msg_count, const char** messages);
 
+// Forward declaration for register_network function
+void register_network(void);
+
+// Forward declaration for register_webserver function
+void register_webserver(void);
+
+// Forward declaration for register_mdns_server_for_launch function
+void register_mdns_server_for_launch(void);
+
+// Forward declaration for register_mdns_client_for_launch function
+void register_mdns_client_for_launch(void);
+
+// Forward declarations for DB2 version detection functions
+int parse_major_version(const char* v);
+int is_rfc1918_or_local_ip(const char* v);
+int is_plausible_db2_version(const char* v, int dots);
+int has_db2_keywords_nearby(const char* hay, size_t start, size_t end);
+int score_db2_version(const char* hay, size_t start, size_t end, int dots, const char* vstr);
+
 // Subsystem readiness checks (in standard order)
 LaunchReadiness check_registry_launch_readiness(void);  // Must be first
 LaunchReadiness check_payload_launch_readiness(void);
@@ -144,7 +163,7 @@ LaunchReadiness check_notify_launch_readiness(void);
 LaunchReadiness check_oidc_launch_readiness(void);
 LaunchReadiness check_resources_launch_readiness(void);
 
-// Subsystem launch functions 
+// Subsystem launch functions
 int launch_registry_subsystem(bool is_restart);  // Must be first
 int launch_payload_subsystem(void);
 int launch_threads_subsystem(void);
@@ -163,5 +182,14 @@ int launch_mail_relay_subsystem(void);
 int launch_print_subsystem(void);
 int launch_oidc_subsystem(void);
 int launch_resources_subsystem(void);
+
+// Log early startup information (before any initialization)
+void log_early_info(void);
+
+// Convert subsystem name to uppercase
+char* get_uppercase_name(const char* name);
+
+// Launch approved subsystems in registry order
+bool launch_approved_subsystems(ReadinessResults* results);
 
 #endif /* LAUNCH_H */

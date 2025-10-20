@@ -29,7 +29,7 @@ volatile sig_atomic_t network_system_shutdown = 0;
 int network_subsystem_id = -1;
 
 // Register the network subsystem with the registry (for readiness)
-static void register_network(void) {
+void register_network(void) {
     if (network_subsystem_id < 0) {
         network_subsystem_id = register_subsystem(SR_NETWORK, NULL, NULL, NULL, NULL, NULL);
     }

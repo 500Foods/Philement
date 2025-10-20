@@ -49,7 +49,7 @@ LaunchReadiness check_notify_landing_readiness(void) {
 /**
  * Free resources allocated during notify launch
  */
-static void free_notify_resources(void) {
+void free_notify_resources(void) {
     // Begin LANDING: NOTIFY section
     log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
     log_this(SR_LANDING, "LANDING: NOTIFY", LOG_LEVEL_DEBUG, 0);

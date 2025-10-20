@@ -55,7 +55,7 @@ bool is_interface_configured(const char* interface_name, bool* is_available) {
 }
 
 // Test a single interface with UDP socket
-static bool test_interface(bool is_ipv6, struct ifreq *ifr, int *mtu) {
+bool test_interface(bool is_ipv6, struct ifreq *ifr, int *mtu) {
     int sockfd;
     bool success = false;
     struct timeval tv = {.tv_sec = 1, .tv_usec = 0};
@@ -403,7 +403,7 @@ bool network_shutdown(void) {
 // Forward declarations for static functions
 
 // Find interface name for given IP (returns NULL if not found)
-static char *find_iface_for_ip(const char *ip_str) {
+char *find_iface_for_ip(const char *ip_str) {
     struct ifaddrs *ifaddr, *ifa;
     if (getifaddrs(&ifaddr) == -1) return NULL;
     char *iface = NULL;

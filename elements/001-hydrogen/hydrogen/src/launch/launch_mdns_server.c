@@ -32,7 +32,7 @@ int mdns_server_subsystem_id = -1;
 // Forward declarations - now handled in launch function
 
 // Register the mDNS server subsystem with the registry (for launch)
-static void register_mdns_server_for_launch(void) {
+void register_mdns_server_for_launch(void) {
     // Always register during readiness check if not already registered
     if (mdns_server_subsystem_id < 0) {
         mdns_server_subsystem_id = register_subsystem_from_launch(SR_MDNS_SERVER, &mdns_server_threads, NULL,

@@ -107,4 +107,17 @@ void mutex_system_cleanup(void);
 const char* mutex_result_to_string(MutexResult result);
 void mutex_log_result(MutexResult result, MutexId* id, int timeout_ms);
 
+// Destructor for MutexId* (free on thread exit)
+void free_mutex_id(void *ptr);
+
+// Lazy init mutex TLS keys
+void init_mutex_tls_keys(void);
+
+// Accessors for current_mutex_operation_id
+MutexId* get_current_mutex_op_id(void);
+void set_current_mutex_op_id(const MutexId *id);
+pthread_mutex_t* get_current_mutex_op_ptr(void);
+void set_current_mutex_op_ptr(pthread_mutex_t *ptr);
+void detect_potential_deadlock(MutexId* current_id);
+
 #endif // MUTEX_H

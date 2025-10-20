@@ -27,10 +27,10 @@
 int mdns_client_subsystem_id = -1;
 
 // Forward declarations
-static void register_mdns_client_for_launch(void);
+void register_mdns_client_for_launch(void);
 
 // Register the mDNS client subsystem with the registry (for launch)
-static void register_mdns_client_for_launch(void) {
+void register_mdns_client_for_launch(void) {
     // Always register during readiness check if not already registered
     if (mdns_client_subsystem_id < 0) {
         // Register with the launch system

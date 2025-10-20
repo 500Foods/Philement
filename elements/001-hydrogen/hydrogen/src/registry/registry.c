@@ -35,11 +35,11 @@ static const char* state_strings[] = {
 /*
  * Grow the registry capacity to accommodate more subsystems.
  * Must be called with the registry mutex locked.
- * 
+ *
  * @param new_capacity The new capacity to grow to
  * @return true if successful, false if allocation failed
  */
-static bool grow_registry(size_t new_capacity) {
+bool grow_registry(size_t new_capacity) {
     if (new_capacity <= (size_t)subsystem_registry.capacity) {
         return true;  // Already large enough
     }

@@ -50,7 +50,7 @@ LaunchReadiness check_oidc_landing_readiness(void) {
 /**
  * Free resources allocated during OIDC launch
  */
-static void free_oidc_resources(void) {
+void free_oidc_resources(void) {
     // Begin LANDING: OIDC section
     log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
     log_this(SR_LANDING, "LANDING: OIDC", LOG_LEVEL_DEBUG, 0);

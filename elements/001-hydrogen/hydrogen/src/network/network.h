@@ -65,4 +65,10 @@ network_info_t *filter_enabled_interfaces(const network_info_t *net_info, const 
 // Measure actual ping time for interface IP address (returns seconds)
 double interface_time(const char *ip_str);
 
+// Test a single interface with UDP socket
+bool test_interface(bool is_ipv6, struct ifreq *ifr, int *mtu);
+
+// Find interface name for given IP (returns NULL if not found)
+char *find_iface_for_ip(const char *ip_str);
+
 #endif // NETWORK_H
