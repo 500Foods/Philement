@@ -51,6 +51,8 @@ typedef struct {
     int capacity;                  // Current capacity of the subsystems array
     pthread_mutex_t mutex;         // For thread-safe access
 } SubsystemRegistry;
+// Forward declarations for internal functions
+bool grow_registry(size_t new_capacity);
 
 // Global instance
 extern SubsystemRegistry subsystem_registry;

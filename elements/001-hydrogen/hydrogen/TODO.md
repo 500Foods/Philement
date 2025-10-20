@@ -76,71 +76,22 @@ This TODO.md file serves as a central location to track plenty of incomplete ite
 | 50 | Pending | src/database/database_engine.c:261 | Remove static flag from find_prepared_statement function |
 | 51 | Pending | src/database/database_engine.c:277 | Remove static flag from store_prepared_statement function |
 
-### Landing Folder (2 TODOs)
-
-| # | Status | File | Description |
-|---|---|------|-------------|
-| 1 | Pending | src/landing/landing_oidc.c:52 | Remove static flag from free_oidc_resources function |
-| 2 | Pending | src/landing/landing_notify.c:51 | Remove static flag from free_notify_resources function |
-
-### Launch Folder (16 TODOs)
+### Launch Folder (3 TODOs)
 
 | # | Status | File | Description |
 |---|--------|------|-------------|
 | 1 | Pending | src/launch/launch_notify.c:201 | Add actual notification service initialization |
 | 2 | Pending | src/launch/launch_mail_relay.c:162 | Add proper mail relay initialization |
 | 3 | Pending | src/launch/launch_mdns_client.c:188 | Implement actual mDNS client initialization |
-| 4 | Pending | src/launch/launch.c:114 | Remove static flag from log_early_info function |
-| 5 | Pending | src/launch/launch.c:117 | Remove static flag from get_uppercase_name function |
-| 6 | Pending | src/launch/launch.c:136 | Remove static flag from launch_approved_subsystems function |
-| 7 | Pending | src/launch/launch.c:201 | Remove static flag from log_early_info function |
-| 8 | Pending | src/launch/launch_network.c:31 | Remove static flag from register_network function |
-| 9 | Pending | src/launch/launch_webserver.c:31 | Remove static flag from register_webserver function |
-| 10 | Pending | src/launch/launch_mdns_server.c:34 | Remove static flag from register_mdns_server_for_launch function |
-| 11 | Pending | src/launch/launch_mdns_client.c:29 | Remove static flag from register_mdns_client_for_launch function |
-| 12 | Pending | src/launch/launch_readiness.c:56 | Remove static flag from parse_major_version function |
-| 13 | Pending | src/launch/launch_readiness.c:63 | Remove static flag from is_rfc1918_or_local_ip function |
-| 14 | Pending | src/launch/launch_readiness.c:76 | Remove static flag from is_plausible_db2_version function |
-| 15 | Pending | src/launch/launch_readiness.c:84 | Remove static flag from has_db2_keywords_nearby function |
-| 16 | Pending | src/launch/launch_readiness.c:94 | Remove static flag from score_db2_version function |
 
-### Logging Folder (13 TODOs)
+### Logging Folder (4 TODOs)
 
 | # | Status | File | Description |
 |---|--------|------|-------------|
 | 1 | Pending | src/logging/log_queue_manager.c:155 | Implement database logging when needed |
 | 2 | Pending | src/logging/log_queue_manager.c:168 | Call SMTP send function for notification subsystem |
-| 3 | Pending | src/logging/logging.c:44 | Remove static flag from free_logging_flag function |
-| 4 | Pending | src/logging/logging.c:49 | Remove static flag from init_tls_keys function |
-| 5 | Pending | src/logging/logging.c:59 | Remove static flag from get_logging_operation_flag function |
-| 6 | Pending | src/logging/logging.c:79 | Remove static flag from set_logging_operation_flag function |
-| 7 | Pending | src/logging/logging.c:87 | Remove static flag from get_mutex_operation_flag function |
-| 8 | Pending | src/logging/logging.c:102 | Remove static flag from set_mutex_operation_flag function |
-| 9 | Pending | src/logging/logging.c:109 | Remove static flag from get_log_group_flag function |
-| 10 | Pending | src/logging/logging.c:124 | Remove static flag from set_log_group_flag function |
-| 11 | Pending | src/logging/logging.c:287 | Remove static flag from console_log function |
-| 12 | Pending | src/logging/log_queue_manager.c:155 | Remove static flag from database logging implementation |
-| 13 | Pending | src/logging/log_queue_manager.c:168 | Remove static flag from SMTP send function call |
-
-### Mutex Folder (8 TODOs)
-
-| # | Status | File | Description |
-|---|---|------|-------------|
-| 1 | Pending | src/mutex/mutex.c:32 | Remove static flag from free_mutex_id function |
-| 2 | Pending | src/mutex/mutex.c:38 | Remove static flag from init_mutex_tls_keys function |
-| 3 | Pending | src/mutex/mutex.c:47 | Remove static flag from get_current_mutex_op_id function |
-| 4 | Pending | src/mutex/mutex.c:52 | Remove static flag from set_current_mutex_op_id function |
-| 5 | Pending | src/mutex/mutex.c:71 | Remove static flag from get_current_mutex_op_ptr function |
-| 6 | Pending | src/mutex/mutex.c:76 | Remove static flag from set_current_mutex_op_ptr function |
-| 7 | Pending | src/mutex/mutex.c:83 | Remove static flag from detect_potential_deadlock function |
-| 8 | Pending | src/mutex/mutex.c:309 | Remove static flag from detect_potential_deadlock function |
-
-### Network Folder (2 TODOs)
-
-| # | Status | File | Description |
-|---|---|------|-------------|
-| 1 | Pending | src/network/network_linux.c:57 | Remove static flag from test_interface function |
-| 2 | Pending | src/network/network_linux.c:405 | Remove static flag from find_iface_for_ip function |
+| 3 | Pending | src/logging/log_queue_manager.c:155 | Remove static flag from database logging implementation |
+| 4 | Pending | src/logging/log_queue_manager.c:168 | Remove static flag from SMTP send function call |
 
 ### OIDC Folder (5 TODOs)
 
@@ -151,12 +102,6 @@ This TODO.md file serves as a central location to track plenty of incomplete ite
 | 3 | Pending | src/oidc/oidc_service.c:279 | Implement actual userinfo request handling |
 | 4 | Pending | src/oidc/oidc_service.c:316 | Implement actual introspection request handling |
 | 5 | Pending | src/oidc/oidc_service.c:353 | Implement actual revocation request handling |
-
-### Payload Folder (1 TODO)
-
-| # | Status | File | Description |
-|---|---|------|-------------|
-| 1 | Pending | src/payload/payload_cache.c:267 | Remove static flag from compare_files function |
 
 ### Print Folder (1 TODO)
 
@@ -170,12 +115,6 @@ This TODO.md file serves as a central location to track plenty of incomplete ite
 |---|--------|------|-------------|
 | 1 | Pending | src/queue/queue.c:182 | Initialize queue with attributes |
 | 2 | Pending | src/queue/queue.c:26 | Remove static flag from hash function |
-
-### Registry Folder (1 TODO)
-
-| # | Status | File | Description |
-|---|---|------|-------------|
-| 1 | Pending | src/registry/registry.c:41 | Remove static flag from grow_registry function |
 
 ### Status Folder (5 TODOs)
 

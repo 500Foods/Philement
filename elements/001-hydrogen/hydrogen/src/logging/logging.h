@@ -108,4 +108,15 @@ const char* get_fallback_priority_label(int priority);
  */
 size_t count_format_specifiers(const char* format);
 
+// Forward declarations for static functions
+void free_logging_flag(void *ptr);
+void init_tls_keys(void);
+bool* get_logging_operation_flag(void);
+void set_logging_operation_flag(bool val);
+bool* get_mutex_operation_flag(void);
+void set_mutex_operation_flag(bool val);
+bool* get_log_group_flag(void);
+void set_log_group_flag(bool val);
+void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count);
+
 #endif // LOGGING_H

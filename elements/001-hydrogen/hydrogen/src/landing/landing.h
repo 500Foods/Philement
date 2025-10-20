@@ -105,4 +105,10 @@ LaunchReadiness check_resources_landing_readiness(void);
 LaunchReadiness check_oidc_landing_readiness(void);
 LaunchReadiness check_notify_landing_readiness(void);
 
+// Free resources allocated during OIDC launch
+void free_oidc_resources(void);
+
+// Free resources allocated during notify launch
+void free_notify_resources(void);
+
 #endif /* LANDING_H */

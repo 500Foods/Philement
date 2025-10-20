@@ -29,10 +29,10 @@ extern volatile sig_atomic_t web_server_shutdown;
 int webserver_subsystem_id = -1;
 
 // Forward declarations
-static void register_webserver(void);
+void register_webserver(void);
 
 // Register the webserver subsystem with the registry
-static void register_webserver(void) {
+void register_webserver(void) {
     // Always register during readiness check if not already registered
     if (webserver_subsystem_id < 0) {
         webserver_subsystem_id = register_subsystem(SR_WEBSERVER, NULL, NULL, NULL,

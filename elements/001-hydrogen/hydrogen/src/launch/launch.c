@@ -112,12 +112,12 @@ bool is_subsystem_launchable_by_name(const char* name) {
 }
 
 // Private declarations
-static void log_early_info(void);
-static bool launch_approved_subsystems(ReadinessResults* results);
-static char* get_uppercase_name(const char* name);
+void log_early_info(void);
+bool launch_approved_subsystems(ReadinessResults* results);
+char* get_uppercase_name(const char* name);
 
 // Convert subsystem name to uppercase
-static char* get_uppercase_name(const char* name) {
+char* get_uppercase_name(const char* name) {
     size_t len = strlen(name);
     char* upper = malloc(len + 1);
     if (!upper) return NULL;
@@ -133,7 +133,7 @@ static char* get_uppercase_name(const char* name) {
  * Launch approved subsystems in registry order
  * Each subsystem's specific launch code is in its own launch_*.c file
  */
-static bool launch_approved_subsystems(ReadinessResults* results) {
+bool launch_approved_subsystems(ReadinessResults* results) {
     if (!results) return false;
     
     bool all_launched = true;
@@ -198,7 +198,7 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
 
 
 // Log early startup information (before any initialization)
-static void log_early_info(void) {
+void log_early_info(void) {
     log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_STARTUP, "HYDROGEN STARTUP", LOG_LEVEL_ALERT, 0);
     log_this(SR_STARTUP, "― Version:  %s", LOG_LEVEL_ALERT, 1, VERSION);

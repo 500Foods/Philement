@@ -30,13 +30,13 @@ static pthread_key_t mutex_op_ptr_key;
 static bool mutex_tls_keys_initialized = false;
 
 // Destructor for MutexId* (free on thread exit)
-static void free_mutex_id(void *ptr) {
+void free_mutex_id(void *ptr) {
     MutexId *id = (MutexId *)ptr;
     if (id) free(id);
 }
 
 // Lazy init mutex TLS keys
-static void init_mutex_tls_keys(void) {
+void init_mutex_tls_keys(void) {
     if (!mutex_tls_keys_initialized) {
         pthread_key_create(&mutex_op_id_key, free_mutex_id);
         pthread_key_create(&mutex_op_ptr_key, NULL);  // No free for mutex ptr
@@ -45,12 +45,12 @@ static void init_mutex_tls_keys(void) {
 }
 
 // Accessors for current_mutex_operation_id
-static MutexId* get_current_mutex_op_id(void) {
+MutexId* get_current_mutex_op_id(void) {
     init_mutex_tls_keys();
     return pthread_getspecific(mutex_op_id_key);
 }
 
-static void set_current_mutex_op_id(const MutexId *id) {
+void set_current_mutex_op_id(const MutexId *id) {
     init_mutex_tls_keys();
     // Free any existing MutexId before setting new one
     MutexId *existing = pthread_getspecific(mutex_op_id_key);
@@ -69,18 +69,18 @@ static void set_current_mutex_op_id(const MutexId *id) {
 }
 
 // Accessors for current_mutex_operation_ptr
-static pthread_mutex_t* get_current_mutex_op_ptr(void) {
+pthread_mutex_t* get_current_mutex_op_ptr(void) {
     init_mutex_tls_keys();
     return pthread_getspecific(mutex_op_ptr_key);
 }
 
-static void set_current_mutex_op_ptr(pthread_mutex_t *ptr) {
+void set_current_mutex_op_ptr(pthread_mutex_t *ptr) {
     init_mutex_tls_keys();
     pthread_setspecific(mutex_op_ptr_key, ptr);
 }
 
 // Forward declarations
-static void detect_potential_deadlock(MutexId* current_id);
+void detect_potential_deadlock(MutexId* current_id);
 
 // Statistics
 static MutexStats global_stats = {0};
@@ -306,7 +306,7 @@ MutexResult mutex_unlock_with_id(pthread_mutex_t* mutex, MutexId* id) {
 /*
  * Deadlock detection helper
  */
-static void detect_potential_deadlock(MutexId* current_id) {
+void detect_potential_deadlock(MutexId* current_id) {
     pthread_mutex_lock(&deadlock_detection_mutex);
     // Look for threads waiting for mutexes we might hold
     for (size_t i = 0; i < active_lock_count; i++) {
