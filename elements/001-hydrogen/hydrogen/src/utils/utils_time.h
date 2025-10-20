@@ -32,6 +32,9 @@ const char* get_system_start_time_string(void);
 double calculate_startup_time(void);     // Time since current startup began
 double calculate_total_runtime(void);    // Time since original startup
 
+// Time calculation utilities
+double calc_elapsed_time(const struct timespec *end, const struct timespec *start);
+
 // New timing functions for shutdown improvements
 void record_startup_complete_time(void);     // Record when startup finishes
 void record_shutdown_initiate_time(void);    // Record when shutdown begins

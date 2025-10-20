@@ -258,7 +258,7 @@ bool database_engine_health_check(DatabaseHandle* connection) {
  */
 
 // Find a prepared statement by name in the connection
-static PreparedStatement* find_prepared_statement(DatabaseHandle* connection, const char* name) {
+PreparedStatement* find_prepared_statement(DatabaseHandle* connection, const char* name) {
     if (!connection || !name || !connection->prepared_statements) {
         return NULL;
     }
@@ -274,7 +274,7 @@ static PreparedStatement* find_prepared_statement(DatabaseHandle* connection, co
 }
 
 // Store a prepared statement in the connection's array
-static bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stmt) {
+bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stmt) {
     if (!connection || !stmt) {
         return false;
     }

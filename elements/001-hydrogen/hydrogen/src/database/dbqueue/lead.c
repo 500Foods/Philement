@@ -28,13 +28,6 @@ static struct timespec migration_start_time = {0, 0};
 static struct timespec migration_end_time = {0, 0};
 static volatile bool migration_timer_running = false;
 
-// Calculate elapsed time in seconds with nanosecond precision (local copy from utils_time.c)
-static double calc_elapsed_time(const struct timespec *end, const struct timespec *start) {
-    double seconds = (double)(end->tv_sec - start->tv_sec);
-    double nanoseconds = (double)(end->tv_nsec - start->tv_nsec) / 1000000000.0;
-    return seconds + nanoseconds;
-}
-
 /*
  * Establish database connection for Lead DQM
  */
@@ -75,13 +68,7 @@ bool database_queue_lead_run_bootstrap(DatabaseQueue* lead_queue) {
 /*
  * Determine what migration action should be taken based on documented algorithm
  */
-typedef enum {
-    MIGRATION_ACTION_NONE,
-    MIGRATION_ACTION_LOAD,
-    MIGRATION_ACTION_APPLY
-} MigrationAction;
-
-static MigrationAction database_queue_lead_determine_migration_action(const DatabaseQueue* lead_queue) {
+MigrationAction database_queue_lead_determine_migration_action(const DatabaseQueue* lead_queue) {
     // Migration Available - The latest Migration script found (Lua script)
     // Migration Loaded    - The latest Migration script in the database (type_lua_28 = 1000)
     // Migration Applied   - The latest Migration script in the database (type_lua_28 = 1003)
@@ -113,7 +100,7 @@ static MigrationAction database_queue_lead_determine_migration_action(const Data
 /*
  * Log migration status according to documented format
  */
-static void database_queue_lead_log_migration_status(DatabaseQueue* lead_queue, const char* action) {
+void database_queue_lead_log_migration_status(DatabaseQueue* lead_queue, const char* action) {
     char* dqm_label = database_queue_generate_label(lead_queue);
 
     long long available = lead_queue->latest_available_migration;
@@ -136,7 +123,7 @@ static void database_queue_lead_log_migration_status(DatabaseQueue* lead_queue, 
 /*
  * Validate migrations for Lead DQM
  */
-static bool database_queue_lead_validate_migrations(DatabaseQueue* lead_queue) {
+bool database_queue_lead_validate_migrations(DatabaseQueue* lead_queue) {
     char* dqm_label = database_queue_generate_label(lead_queue);
 
     // DECISION: Comment out verbose logging - keep only essential status messages
@@ -161,7 +148,7 @@ static bool database_queue_lead_validate_migrations(DatabaseQueue* lead_queue) {
 /*
  * Execute migration load phase
  */
-static bool database_queue_lead_execute_migration_load(DatabaseQueue* lead_queue) {
+bool database_queue_lead_execute_migration_load(DatabaseQueue* lead_queue) {
     char* dqm_label = database_queue_generate_label(lead_queue);
 
     // DECISION: Comment out verbose state logging - keep only essential status messages
@@ -188,7 +175,7 @@ static bool database_queue_lead_execute_migration_load(DatabaseQueue* lead_queue
 /*
  * Execute migration apply phase
  */
-static bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue) {
+bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue) {
     char* dqm_label = database_queue_generate_label(lead_queue);
 
     // Execute auto migrations (apply loaded migrations) - APPLY PHASE
@@ -207,7 +194,7 @@ static bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queu
 /*
  * Re-run bootstrap query to verify loaded migrations
  */
-static void database_queue_lead_rerun_bootstrap(DatabaseQueue* lead_queue) {
+void database_queue_lead_rerun_bootstrap(DatabaseQueue* lead_queue) {
     char* dqm_label = database_queue_generate_label(lead_queue);
 
     // DECISION: Comment out verbose bootstrap logging - keep only essential status messages
@@ -234,7 +221,7 @@ static void database_queue_lead_rerun_bootstrap(DatabaseQueue* lead_queue) {
 /*
  * Check if auto-migration is enabled for this database
  */
-static bool database_queue_lead_is_auto_migration_enabled(const DatabaseQueue* lead_queue) {
+bool database_queue_lead_is_auto_migration_enabled(const DatabaseQueue* lead_queue) {
     if (!app_config) {
         return false;
     }
@@ -251,7 +238,7 @@ static bool database_queue_lead_is_auto_migration_enabled(const DatabaseQueue* l
 /*
  * Acquire migration connection with proper locking
  */
-static bool database_queue_lead_acquire_migration_connection(DatabaseQueue* lead_queue, char* dqm_label) {
+bool database_queue_lead_acquire_migration_connection(DatabaseQueue* lead_queue, char* dqm_label) {
     MutexResult lock_result = MUTEX_LOCK(&lead_queue->connection_lock, dqm_label);
     if (lock_result != MUTEX_SUCCESS) {
         log_this(dqm_label, "Failed to acquire connection lock for migration", LOG_LEVEL_ERROR, 0);
@@ -270,14 +257,14 @@ static bool database_queue_lead_acquire_migration_connection(DatabaseQueue* lead
 /*
  * Release migration connection lock
  */
-static void database_queue_lead_release_migration_connection(DatabaseQueue* lead_queue) {
+void database_queue_lead_release_migration_connection(DatabaseQueue* lead_queue) {
     mutex_unlock(&lead_queue->connection_lock);
 }
 
 /*
  * Execute a single migration cycle according to the documented algorithm
  */
-static bool database_queue_lead_execute_migration_cycle(DatabaseQueue* lead_queue, char* dqm_label) {
+bool database_queue_lead_execute_migration_cycle(DatabaseQueue* lead_queue, char* dqm_label) {
     // Validate migrations first
     if (!database_queue_lead_validate_migrations(lead_queue)) {
         return true; // Validation failed but this is not an error for the orchestration
