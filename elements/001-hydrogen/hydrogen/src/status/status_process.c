@@ -294,13 +294,13 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     // Logging service
     metrics->logging.enabled = true;
     convert_thread_metrics(&logging_threads, &metrics->logging.threads);
-    metrics->logging.specific.logging.message_count = 0;  // TODO: Implement message counting
+    metrics->logging.specific.logging.message_count = (int)log_queue_memory.entry_count;
 
     // Web service
     metrics->webserver.enabled = (app_config->webserver.enable_ipv4 || app_config->webserver.enable_ipv6);
     convert_thread_metrics(&webserver_threads, &metrics->webserver.threads);
-    metrics->webserver.specific.webserver.active_requests = 0;  // TODO: Implement request tracking
-    metrics->webserver.specific.webserver.total_requests = 0;
+    metrics->webserver.specific.webserver.active_requests = (int)webserver_queue_memory.entry_count;
+    metrics->webserver.specific.webserver.total_requests = (int)webserver_queue_memory.entry_count;
 
     // WebSocket service
     metrics->websocket.enabled = (app_config->websocket.enable_ipv4 || app_config->websocket.enable_ipv6);
@@ -319,12 +319,12 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     // mDNS service
     metrics->mdns.enabled = (app_config->mdns_server.enable_ipv4 || app_config->mdns_server.enable_ipv6);
     convert_thread_metrics(&mdns_server_threads, &metrics->mdns.threads);
-    metrics->mdns.specific.mdns.discovery_count = 0;  // TODO: Implement discovery counting
+    metrics->mdns.specific.mdns.discovery_count = (int)mdns_server_queue_memory.entry_count;
 
     // Print service
     metrics->print.enabled = app_config->print.enabled;
     convert_thread_metrics(&print_threads, &metrics->print.threads);
-    metrics->print.specific.print.queued_jobs = 0;  // TODO: Implement job counting
+    metrics->print.specific.print.queued_jobs = (int)print_queue_memory.entry_count;
     metrics->print.specific.print.completed_jobs = 0;
 
     // Update queue metrics

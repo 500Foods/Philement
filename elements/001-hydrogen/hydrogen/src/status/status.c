@@ -24,7 +24,7 @@ void status_cleanup(void) {
 }
 
 // Helper function to collect all metrics
-static SystemMetrics* collect_all_metrics(const WebSocketMetrics *ws_metrics) {
+SystemMetrics* collect_all_metrics(const WebSocketMetrics *ws_metrics) {
     SystemMetrics *metrics = collect_system_metrics(ws_metrics);
     if (!metrics) {
         log_this(SR_STATUS, "Failed to allocate metrics structure", LOG_LEVEL_ERROR, 0);
