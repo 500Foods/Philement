@@ -24,7 +24,7 @@ int queue_system_initialized = 0;  // Initialize to 0 (not initialized)
 //
 // We use modulo QUEUE_HASH_SIZE to bound the result, accepting the slight
 // increase in collision probability to maintain fixed memory usage.
-static unsigned int hash(const char* str) {
+unsigned int queue_hash(const char* str) {
     if (str == NULL) {
         return 0;  // Return 0 for NULL strings
     }
@@ -98,7 +98,7 @@ void queue_system_destroy(void) {
  * - Queue's own mutex for operations
  */
 Queue* queue_find_with_label(const char* name, const char* subsystem) {
-    unsigned int index = hash(name);
+    unsigned int index = queue_hash(name);
     MutexResult lock_result = MUTEX_LOCK(&queue_system.mutex, subsystem);
     if (lock_result == MUTEX_SUCCESS) {
         Queue* queue = queue_system.queues[index];
@@ -179,10 +179,13 @@ Queue* queue_create_with_label(const char* name, const QueueAttributes* attrs, c
         return NULL;
     }
 
-    // TODO: Initialize queue with attributes
+    // Initialize queue with attributes
+    queue->attrs.initial_memory = attrs->initial_memory;
+    queue->attrs.chunk_size = attrs->chunk_size;
+    queue->attrs.warning_limit = attrs->warning_limit;
 
     // Add the queue to the hash table
-    unsigned int index = hash(name);
+    unsigned int index = queue_hash(name);
     MutexResult hash_lock_result = MUTEX_LOCK(&queue_system.mutex, subsystem);
     if (hash_lock_result == MUTEX_SUCCESS) {
         queue->hash_next = queue_system.queues[index];
@@ -221,7 +224,7 @@ void queue_destroy(Queue* queue) {
 
     // Remove from hash table first to prevent race conditions
     if (queue->name) {
-        unsigned int index = hash(queue->name);
+        unsigned int index = queue_hash(queue->name);
         MutexResult hash_lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
         if (hash_lock_result == MUTEX_SUCCESS) {
             Queue** current = &queue_system.queues[index];
