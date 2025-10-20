@@ -114,7 +114,7 @@ void cleanup_print_config(PrintConfig* config) {
 }
 
 // Helper function for dumping priority settings
-static void dump_priorities(const PrintQueuePrioritiesConfig* priorities) {
+void dump_priorities(const PrintQueuePrioritiesConfig* priorities) {
     DUMP_TEXT("――", "Priorities");
     DUMP_INT("――――Default Priority", priorities->default_priority);
     DUMP_INT("――――Emergency Priority", priorities->emergency_priority);
@@ -123,21 +123,21 @@ static void dump_priorities(const PrintQueuePrioritiesConfig* priorities) {
 }
 
 // Helper function for dumping timeout settings
-static void dump_timeouts(const PrintQueueTimeoutsConfig* timeouts) {
+void dump_timeouts(const PrintQueueTimeoutsConfig* timeouts) {
     DUMP_TEXT("――", "Timeouts");
     DUMP_SIZE("――――Shutdown Wait (ms)", timeouts->shutdown_wait_ms);
     DUMP_SIZE("――――Job Processing Timeout (ms)", timeouts->job_processing_timeout_ms);
 }
 
 // Helper function for dumping buffer settings
-static void dump_buffers(const PrintQueueBuffersConfig* buffers) {
+void dump_buffers(const PrintQueueBuffersConfig* buffers) {
     DUMP_TEXT("――", "Buffers");
     DUMP_SIZE("――――Job Message Size", buffers->job_message_size);
     DUMP_SIZE("――――Status Message Size", buffers->status_message_size);
 }
 
 // Helper function for dumping motion control settings with units
-static void dump_motion(const MotionConfig* motion) {
+void dump_motion(const MotionConfig* motion) {
     DUMP_TEXT("――", "Motion Control");
     char buffer[32];
 

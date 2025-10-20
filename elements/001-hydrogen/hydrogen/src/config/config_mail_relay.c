@@ -9,7 +9,7 @@
 #include "config_mail_relay.h"
 
 // Helper function to cleanup a single server configuration
-static void cleanup_server(OutboundServer* server) {
+void cleanup_server(OutboundServer* server) {
     if (!server) return;
 
     free(server->Host);

@@ -32,11 +32,11 @@ const NetworkLimits* get_network_limits(void) {
 }
 
 // Forward declarations for internal functions
-static int is_port_in_range(int port, int start_port, int end_port);
-static void sort_available_interfaces(NetworkConfig* config);
+int is_port_in_range(int port, int start_port, int end_port);
+void sort_available_interfaces(NetworkConfig* config);
 
 // Compare function for interface sorting
-static int compare_interface_names(const void* a, const void* b) {
+int compare_interface_names(const void* a, const void* b) {
     const struct {
         char* interface_name;
         bool available;
@@ -50,7 +50,7 @@ static int compare_interface_names(const void* a, const void* b) {
 }
 
 // Sort available interfaces by name
-static void sort_available_interfaces(NetworkConfig* config) {
+void sort_available_interfaces(NetworkConfig* config) {
     if (!config || !config->available_interfaces || config->available_interfaces_count <= 1) {
         return;
     }
@@ -308,7 +308,7 @@ void cleanup_network_config(NetworkConfig* config) {
 }
 
 // Check if a port is within the specified range
-static int is_port_in_range(int port, int start_port, int end_port) {
+int is_port_in_range(int port, int start_port, int end_port) {
     return port >= start_port && port <= end_port;
 }
 

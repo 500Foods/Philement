@@ -12,7 +12,7 @@
 #include "config_mdns_server.h"
 
 // Helper function to cleanup a single service
-static void cleanup_service(mdns_server_service_t* service) {
+void cleanup_service(mdns_server_service_t* service) {
     if (!service) return;
 
     free(service->name);
@@ -27,7 +27,7 @@ static void cleanup_service(mdns_server_service_t* service) {
 }
 
 // Helper function to cleanup services array up to index
-static void cleanup_services(mdns_server_service_t* services, size_t count) {
+void cleanup_services(mdns_server_service_t* services, size_t count) {
     if (!services) return;
 
     for (size_t i = 0; i < count; i++) {
@@ -37,7 +37,7 @@ static void cleanup_services(mdns_server_service_t* services, size_t count) {
 }
 
 // Helper function to process a service's TXT records
-static bool process_txt_records(json_t* txt_records, mdns_server_service_t* service) {
+bool process_txt_records(json_t* txt_records, mdns_server_service_t* service) {
     if (json_is_string(txt_records)) {
         // Single TXT record
         service->num_txt_records = 1;

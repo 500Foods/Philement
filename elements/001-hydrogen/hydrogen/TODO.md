@@ -13,37 +13,12 @@ Review docs/plans/DATABASE_PLAN.md
 
 This TODO.md file serves as a central location to track plenty of incomplete items in the Hydrogen project. Use this file to prioritize and manage development tasks as they are identified and addressed.
 
-### Status Folder (4 TODOs)
-
-| # | Status | File | Description |
-|---|--------|------|-------------|
-| 1 | Pending | src/status/status_process.c:297 | Implement message counting for logging metrics |
-| 2 | Pending | src/status/status_process.c:302 | Implement request tracking for webserver metrics |
-| 3 | Pending | src/status/status_process.c:322 | Implement discovery counting for mDNS metrics |
-| 4 | Pending | src/status/status_process.c:327 | Implement job counting for print metrics |
-
-### Print Folder (1 TODO)
-
-| # | Status | File | Description |
-|---|--------|------|-------------|
-| 1 | Pending | src/print/print_queue_manager.c:66 | Implement actual print job processing |
-
-### API Folder (2 TODO)
+### API Folder (2 TODOs)
 
 | # | Status | File | Description |
 |---|--------|------|-------------|
 | 1 | Pending | src/api/api_utils.c:364 | Implement actual JWT creation with the provided secret |
 | 2 | Pending | src/api/api_utils.c:364 | Remove static flag from create_jwt_token function |
-
-### OIDC Folder (5 TODOs)
-
-| # | Status | File | Description |
-|---|--------|------|-------------|
-| 1 | Pending | src/oidc/oidc_service.c:202 | Implement actual authorization flow |
-| 2 | Pending | src/oidc/oidc_service.c:247 | Implement actual token request handling |
-| 3 | Pending | src/oidc/oidc_service.c:279 | Implement actual userinfo request handling |
-| 4 | Pending | src/oidc/oidc_service.c:316 | Implement actual introspection request handling |
-| 5 | Pending | src/oidc/oidc_service.c:353 | Implement actual revocation request handling |
 
 ### Database Folder (51 TODOs)
 
@@ -101,12 +76,12 @@ This TODO.md file serves as a central location to track plenty of incomplete ite
 | 50 | Pending | src/database/database_engine.c:261 | Remove static flag from find_prepared_statement function |
 | 51 | Pending | src/database/database_engine.c:277 | Remove static flag from store_prepared_statement function |
 
-### Queue Folder (2 TODO)
+### Landing Folder (2 TODOs)
 
 | # | Status | File | Description |
-|---|--------|------|-------------|
-| 1 | Pending | src/queue/queue.c:182 | Initialize queue with attributes |
-| 2 | Pending | src/queue/queue.c:26 | Remove static flag from hash function |
+|---|---|------|-------------|
+| 1 | Pending | src/landing/landing_oidc.c:52 | Remove static flag from free_oidc_resources function |
+| 2 | Pending | src/landing/landing_notify.c:51 | Remove static flag from free_notify_resources function |
 
 ### Launch Folder (16 TODOs)
 
@@ -147,47 +122,6 @@ This TODO.md file serves as a central location to track plenty of incomplete ite
 | 12 | Pending | src/logging/log_queue_manager.c:155 | Remove static flag from database logging implementation |
 | 13 | Pending | src/logging/log_queue_manager.c:168 | Remove static flag from SMTP send function call |
 
-### Config Folder (29 TODOs)
-
-| # | Status | File | Description |
-|---|---|------|-------------|
-| 1 | Pending | src/config/config_oidc.c:15 | Remove static flag from construct_endpoint_path function |
-| 2 | Pending | src/config/config_logging.c:15 | Remove static flag from init_subsystems function |
-| 3 | Pending | src/config/config_logging.c:30 | Remove static flag from process_subsystems function |
-| 4 | Pending | src/config/config_logging.c:120 | Remove static flag from dump_destination function |
-| 5 | Pending | src/config/config_logging.c:269 | Remove static flag from get_subsystem_level_internal function |
-| 6 | Pending | src/config/config_mdns_server.c:14 | Remove static flag from cleanup_service function |
-| 7 | Pending | src/config/config_mdns_server.c:30 | Remove static flag from cleanup_services function |
-| 8 | Pending | src/config/config_mdns_server.c:40 | Remove static flag from process_txt_records function |
-| 9 | Pending | src/config/config_print.c:116 | Remove static flag from dump_priorities function |
-| 10 | Pending | src/config/config_print.c:125 | Remove static flag from dump_timeouts function |
-| 11 | Pending | src/config/config_print.c:132 | Remove static flag from dump_buffers function |
-| 12 | Pending | src/config/config_print.c:139 | Remove static flag from dump_motion function |
-| 13 | Pending | src/config/config_network.c:34 | Remove static flag from is_port_in_range function |
-| 14 | Pending | src/config/config_network.c:39 | Remove static flag from compare_interface_names function |
-| 15 | Pending | src/config/config_network.c:53 | Remove static flag from sort_available_interfaces function |
-| 16 | Pending | src/config/config.c:52 | Remove static flag from clean_app_config function |
-| 17 | Pending | src/config/config.c:259 | Remove static flag from utf8_char_count function |
-| 18 | Pending | src/config/config.c:271 | Remove static flag from utf8_truncate function |
-| 19 | Pending | src/config/config.c:289 | Remove static flag from format_section_header function |
-| 20 | Pending | src/config/config_utils.c:24 | Remove static flag from get_top_level_section function |
-| 21 | Pending | src/config/config_utils.c:28 | Remove static flag from get_indent function |
-| 22 | Pending | src/config/config_utils.c:108 | Remove static flag from is_env_var_ref function |
-| 23 | Pending | src/config/config_utils.c:113 | Remove static flag from get_env_var_name function |
-| 24 | Pending | src/config/config_utils.c:130 | Remove static flag from get_indent function |
-| 25 | Pending | src/config/config_utils.c:156 | Remove static flag from format_sensitive function |
-| 26 | Pending | src/config/config_utils.c:288 | Remove static flag from log_value function |
-| 27 | Pending | src/config/config_utils.c:562 | Remove static flag from format_int_array function |
-| 28 | Pending | src/config/config_utils.c:597 | Remove static flag from format_string_array function |
-| 29 | Pending | src/config/config_mail_relay.c:11 | Remove static flag from cleanup_server function |
-
-### Landing Folder (2 TODOs)
-
-| # | Status | File | Description |
-|---|---|------|-------------|
-| 1 | Pending | src/landing/landing_oidc.c:52 | Remove static flag from free_oidc_resources function |
-| 2 | Pending | src/landing/landing_notify.c:51 | Remove static flag from free_notify_resources function |
-
 ### Mutex Folder (8 TODOs)
 
 | # | Status | File | Description |
@@ -208,11 +142,34 @@ This TODO.md file serves as a central location to track plenty of incomplete ite
 | 1 | Pending | src/network/network_linux.c:57 | Remove static flag from test_interface function |
 | 2 | Pending | src/network/network_linux.c:405 | Remove static flag from find_iface_for_ip function |
 
+### OIDC Folder (5 TODOs)
+
+| # | Status | File | Description |
+|---|--------|------|-------------|
+| 1 | Pending | src/oidc/oidc_service.c:202 | Implement actual authorization flow |
+| 2 | Pending | src/oidc/oidc_service.c:247 | Implement actual token request handling |
+| 3 | Pending | src/oidc/oidc_service.c:279 | Implement actual userinfo request handling |
+| 4 | Pending | src/oidc/oidc_service.c:316 | Implement actual introspection request handling |
+| 5 | Pending | src/oidc/oidc_service.c:353 | Implement actual revocation request handling |
+
 ### Payload Folder (1 TODO)
 
 | # | Status | File | Description |
 |---|---|------|-------------|
 | 1 | Pending | src/payload/payload_cache.c:267 | Remove static flag from compare_files function |
+
+### Print Folder (1 TODO)
+
+| # | Status | File | Description |
+|---|--------|------|-------------|
+| 1 | Pending | src/print/print_queue_manager.c:66 | Implement actual print job processing |
+
+### Queue Folder (2 TODOs)
+
+| # | Status | File | Description |
+|---|--------|------|-------------|
+| 1 | Pending | src/queue/queue.c:182 | Initialize queue with attributes |
+| 2 | Pending | src/queue/queue.c:26 | Remove static flag from hash function |
 
 ### Registry Folder (1 TODO)
 
@@ -220,11 +177,15 @@ This TODO.md file serves as a central location to track plenty of incomplete ite
 |---|---|------|-------------|
 | 1 | Pending | src/registry/registry.c:41 | Remove static flag from grow_registry function |
 
-### Status Folder (1 TODO)
+### Status Folder (5 TODOs)
 
 | # | Status | File | Description |
 |---|---|------|-------------|
-| 1 | Pending | src/status/status.c:26 | Remove static flag from collect_all_metrics function |
+| 1 | Pending | src/status/status_process.c:297 | Implement message counting for logging metrics |
+| 2 | Pending | src/status/status_process.c:302 | Implement request tracking for webserver metrics |
+| 3 | Pending | src/status/status_process.c:322 | Implement discovery counting for mDNS metrics |
+| 4 | Pending | src/status/status_process.c:327 | Implement job counting for print metrics |
+| 5 | Pending | src/status/status.c:26 | Remove static flag from collect_all_metrics function |
 
 ### Terminal Folder (3 TODOs)
 

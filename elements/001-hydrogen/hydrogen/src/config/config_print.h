@@ -65,6 +65,34 @@ typedef struct PrintConfig {
 } PrintConfig;
 
 /*
+ * Helper function for dumping priority settings
+ *
+ * @param priorities Pointer to PrintQueuePrioritiesConfig structure to dump
+ */
+void dump_priorities(const PrintQueuePrioritiesConfig* priorities);
+
+/*
+ * Helper function for dumping timeout settings
+ *
+ * @param timeouts Pointer to PrintQueueTimeoutsConfig structure to dump
+ */
+void dump_timeouts(const PrintQueueTimeoutsConfig* timeouts);
+
+/*
+ * Helper function for dumping buffer settings
+ *
+ * @param buffers Pointer to PrintQueueBuffersConfig structure to dump
+ */
+void dump_buffers(const PrintQueueBuffersConfig* buffers);
+
+/*
+ * Helper function for dumping motion control settings with units
+ *
+ * @param motion Pointer to MotionConfig structure to dump
+ */
+void dump_motion(const MotionConfig* motion);
+
+/*
  * Load print configuration from JSON
  *
  * This function loads the print configuration from the provided JSON root,
