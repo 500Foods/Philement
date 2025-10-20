@@ -13,6 +13,7 @@
 
 // Include source headers after mocks
 #include <src/database/database.h>
+#include <src/database/database_manage.h>
 
 // Function prototypes for test functions
 void test_database_subsystem_init_null_checks(void);
@@ -45,6 +46,15 @@ void test_database_get_queue_counts_by_type_no_manager(void);
 void test_database_get_queue_counts_by_type_with_queues(void);
 void test_database_get_counts_by_type_no_config(void);
 void test_database_get_counts_by_type_with_config(void);
+void test_database_subsystem_shutdown_null_subsystem(void);
+void test_database_get_stats_null_buffer(void);
+void test_database_get_stats_zero_buffer_size(void);
+void test_database_get_stats_null_subsystem(void);
+void test_database_health_check_null_subsystem(void);
+void test_database_get_supported_engines_null_buffer(void);
+void test_database_get_supported_engines_zero_buffer_size(void);
+void test_database_get_supported_engines_null_subsystem(void);
+void test_database_get_supported_engines_valid(void);
 
 void setUp(void) {
     // Initialize database subsystem for testing
@@ -406,6 +416,99 @@ void test_database_validate_query_edge_cases(void) {
     TEST_ASSERT_TRUE(result);
 }
 
+// Test database_subsystem_shutdown with NULL subsystem
+void test_database_subsystem_shutdown_null_subsystem(void) {
+    // Save original subsystem
+    DatabaseSubsystem* saved_subsystem = database_subsystem;
+    database_subsystem = NULL;
+
+    // Should not crash with NULL subsystem
+    database_subsystem_shutdown();
+    // Test passes if no crash occurs
+
+    // Restore
+    database_subsystem = saved_subsystem;
+}
+
+// Test database_get_stats with NULL buffer
+void test_database_get_stats_null_buffer(void) {
+    // Should not crash with NULL buffer
+    database_get_stats(NULL, 256);
+    // Test passes if no crash occurs
+}
+
+// Test database_get_stats with zero buffer size
+void test_database_get_stats_zero_buffer_size(void) {
+    char buffer[256];
+    // Should not crash with zero buffer size
+    database_get_stats(buffer, 0);
+    // Test passes if no crash occurs
+}
+
+// Test database_get_stats with NULL subsystem
+void test_database_get_stats_null_subsystem(void) {
+    char buffer[256];
+    // Save original subsystem
+    DatabaseSubsystem* saved_subsystem = database_subsystem;
+    database_subsystem = NULL;
+
+    database_get_stats(buffer, sizeof(buffer));
+    TEST_ASSERT_TRUE(strstr(buffer, "not initialized") != NULL);
+
+    // Restore
+    database_subsystem = saved_subsystem;
+}
+
+// Test database_health_check with NULL subsystem
+void test_database_health_check_null_subsystem(void) {
+    // Save original subsystem
+    DatabaseSubsystem* saved_subsystem = database_subsystem;
+    database_subsystem = NULL;
+
+    bool result = database_health_check();
+    TEST_ASSERT_FALSE(result);
+
+    // Restore
+    database_subsystem = saved_subsystem;
+}
+
+// Test database_get_supported_engines with NULL buffer
+void test_database_get_supported_engines_null_buffer(void) {
+    // Should not crash with NULL buffer
+    database_get_supported_engines(NULL, 256);
+    // Test passes if no crash occurs
+}
+
+// Test database_get_supported_engines with zero buffer size
+void test_database_get_supported_engines_zero_buffer_size(void) {
+    char buffer[256];
+    // Should not crash with zero buffer size
+    database_get_supported_engines(buffer, 0);
+    // Test passes if no crash occurs
+}
+
+// Test database_get_supported_engines with NULL subsystem
+void test_database_get_supported_engines_null_subsystem(void) {
+    char buffer[256];
+    // Save original subsystem
+    DatabaseSubsystem* saved_subsystem = database_subsystem;
+    database_subsystem = NULL;
+
+    database_get_supported_engines(buffer, sizeof(buffer));
+    TEST_ASSERT_TRUE(strstr(buffer, "not initialized") != NULL);
+
+    // Restore
+    database_subsystem = saved_subsystem;
+}
+
+// Test database_get_supported_engines with valid parameters
+void test_database_get_supported_engines_valid(void) {
+    char buffer[256];
+    database_get_supported_engines(buffer, sizeof(buffer));
+    TEST_ASSERT_TRUE(strlen(buffer) > 0);
+    TEST_ASSERT_TRUE(strstr(buffer, "PostgreSQL") != NULL);
+}
+
 // Test database_escape_parameter edge cases
 void test_database_escape_parameter_edge_cases(void) {
     // Test NULL parameter
@@ -418,10 +521,16 @@ void test_database_escape_parameter_edge_cases(void) {
     TEST_ASSERT_EQUAL_STRING("", result);
     free(result);
 
-    // Test normal parameter
+    // Test parameter with quotes (should be escaped)
     result = database_escape_parameter("test'param");
     TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_EQUAL_STRING("test'param", result); // Current implementation just duplicates
+    TEST_ASSERT_EQUAL_STRING("test\\'param", result);
+    free(result);
+    
+    // Test parameter with backslashes (should be escaped)
+    result = database_escape_parameter("test\\param");
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("test\\\\param", result);
     free(result);
 }
 
@@ -579,6 +688,16 @@ int main(void) {
     RUN_TEST(test_database_get_queue_counts_by_type_with_queues);
     RUN_TEST(test_database_get_counts_by_type_no_config);
     RUN_TEST(test_database_get_counts_by_type_with_config);
+
+    RUN_TEST(test_database_subsystem_shutdown_null_subsystem);
+    RUN_TEST(test_database_get_stats_null_buffer);
+    RUN_TEST(test_database_get_stats_zero_buffer_size);
+    RUN_TEST(test_database_get_stats_null_subsystem);
+    RUN_TEST(test_database_health_check_null_subsystem);
+    RUN_TEST(test_database_get_supported_engines_null_buffer);
+    RUN_TEST(test_database_get_supported_engines_zero_buffer_size);
+    RUN_TEST(test_database_get_supported_engines_null_subsystem);
+    RUN_TEST(test_database_get_supported_engines_valid);
 
     return UNITY_END();
 }

@@ -14,12 +14,14 @@ table.insert(queries,{sql=[[
     CREATE TABLE ${SCHEMA}queries (
         query_id                ${INTEGER}          NOT NULL,
         query_ref               ${INTEGER}          NOT NULL,
+        query_status_lua_27     ${INTEGER}          NOT NULL,
         query_type_lua_28       ${INTEGER}          NOT NULL,
         query_dialect_lua_30    ${INTEGER}          NOT NULL,
+        query_queue_lua_58      ${INTEGER}          NOT NULL,
+        query_timeout           ${INTEGER}          NOT NULL,
         name                    ${VARCHAR_100}      NOT NULL,
         summary                 ${BIGTEXT}                  ,
         query_code              ${BIGTEXT}          NOT NULL,
-        query_status_lua_27     ${INTEGER}          NOT NULL,
         collection              ${JSONB}                    ,
         valid_after             ${TIMESTAMP_TZ}             ,
         valid_until             ${TIMESTAMP_TZ}             ,
@@ -49,8 +51,11 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1000,                                                               -- query_ref
+        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         ${TYPE_APPLIED_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
+        ${QTC_SLOW},                                                        -- query_queue_lua_58
+        5000,                                                               -- query_timeout (ms)
         'Create Tables Query',                                              -- name, summary, query_code
         [=[
             # Forward Migration 1000: Create Tables Query
@@ -62,7 +67,7 @@ table.insert(queries,{sql=[[
         ]=],
         [=[
             CREATE TABLE ${SCHEMA}queries (
-                query_id                ${SERIAL},
+                query_id                ${INTEGER},
                 query_ref               ${INTEGER}          NOT NULL,
                 query_type_lua_28       ${INTEGER}          NOT NULL,
                 query_dialect_lua_30    ${INTEGER}          NOT NULL,
@@ -70,6 +75,8 @@ table.insert(queries,{sql=[[
                 summary                 ${TEXT}                     ,
                 query_code              ${TEXT}             NOT NULL,
                 query_status_lua_27     ${INTEGER}          NOT NULL,
+                query_timeout           ${INTEGER}          NOT NULL,
+                query_queue_lua_58      ${INTEGER}          NOT NULL,
                 collection              ${JSONB}                    ,
                 valid_after             ${TIMESTAMP_TZ}             ,
                 valid_until             ${TIMESTAMP_TZ}             ,
@@ -81,7 +88,6 @@ table.insert(queries,{sql=[[
                 ${UNIQUE}(query_ref)                                        -- Unique Column
             );
         ]=],
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -96,8 +102,11 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1000,                                                               -- query_ref
+        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         ${TYPE_REVERSE_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
+        ${QTC_SLOW},                                                        -- query_queue_lua_58
+        5000,                                                               -- query_timeout (ms)
         'Delete Tables Query',                                              -- name, summary, query_code
         [=[
             # Reverse Migration 1000: Delete Tables Query
@@ -108,7 +117,6 @@ table.insert(queries,{sql=[[
         [=[
             DROP TABLE ${SCHEMA}queries;
         ]=],
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -123,8 +131,11 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1000,                                                               -- query_ref
+        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
         ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_lua_28
         ${DIALECT},                                                         -- query_dialect_lua_30
+        ${QTC_SLOW},                                                        -- query_queue_lua_58
+        5000,                                                               -- query_timeout (ms)
         'Diagram Tables: ${SCHEMA}queries',                                 -- name
                                                                             -- summary
         [=[
@@ -135,7 +146,6 @@ table.insert(queries,{sql=[[
             This is the first JSON Diagram code for the queries table.
         ]=],
         'JSON Table Definition in collection',                              -- query_code,
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
                                                                             -- DIAGRAM_START
         ${JSON_INGEST_START}
         [=[

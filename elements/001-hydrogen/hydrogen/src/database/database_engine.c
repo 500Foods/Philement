@@ -254,71 +254,6 @@ bool database_engine_health_check(DatabaseHandle* connection) {
 }
 
 /*
- * Prepared Statement Management Helpers
- */
-
-// Find a prepared statement by name in the connection
-PreparedStatement* find_prepared_statement(DatabaseHandle* connection, const char* name) {
-    if (!connection || !name || !connection->prepared_statements) {
-        return NULL;
-    }
-
-    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
-        if (connection->prepared_statements[i] &&
-            strcmp(connection->prepared_statements[i]->name, name) == 0) {
-            return connection->prepared_statements[i];
-        }
-    }
-
-    return NULL;
-}
-
-// Store a prepared statement in the connection's array
-bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stmt) {
-    if (!connection || !stmt) {
-        return false;
-    }
-
-    // Get cache size from connection config (default to 1000 if not set)
-    size_t cache_size = 1000; // Default value
-    if (connection->config && connection->config->prepared_statement_cache_size > 0) {
-        cache_size = (size_t)connection->config->prepared_statement_cache_size;
-    }
-
-    // Initialize array if needed
-    if (!connection->prepared_statements) {
-        connection->prepared_statements = calloc(cache_size, sizeof(PreparedStatement*));
-        if (!connection->prepared_statements) {
-            return false;
-        }
-        connection->prepared_statement_count = 0;
-        // Initialize LRU counter
-        if (!connection->prepared_statement_lru_counter) {
-            connection->prepared_statement_lru_counter = calloc(cache_size, sizeof(uint64_t));
-        }
-    }
-
-    // Check if we need to expand the array
-    if (connection->prepared_statement_count >= cache_size) {
-        // For now, just don't store if we exceed capacity
-        // TODO: Implement dynamic resizing
-        log_this(connection->designator ? connection->designator : SR_DATABASE,
-                 "Prepared statement cache full, not storing: %s", LOG_LEVEL_ALERT, 1, stmt->name);
-        return false;
-    }
-
-    // Store the statement
-    connection->prepared_statements[connection->prepared_statement_count] = stmt;
-    connection->prepared_statement_count++;
-
-    log_this(connection->designator ? connection->designator : SR_DATABASE,
-             "Stored prepared statement: %s (total: %zu)", LOG_LEVEL_TRACE, 2,
-             stmt->name, connection->prepared_statement_count);
-
-    return true;
-}
-
-/*
  * Query Execution
  */
 
@@ -705,4 +640,120 @@ void database_engine_cleanup_transaction(Transaction* transaction) {
     }
 
     free(transaction);
+}
+
+
+/*
+ * Prepared Statement Management Helpers
+ */
+
+// Find a prepared statement by name in the connection
+PreparedStatement* find_prepared_statement(DatabaseHandle* connection, const char* name) {
+    if (!connection || !name || !connection->prepared_statements) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+        if (connection->prepared_statements[i] &&
+            strcmp(connection->prepared_statements[i]->name, name) == 0) {
+            return connection->prepared_statements[i];
+        }
+    }
+
+    return NULL;
+}
+
+// Store a prepared statement in the connection's array
+bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stmt) {
+    if (!connection || !stmt) {
+        return false;
+    }
+
+    // Get cache size from connection config (default to 1000 if not set)
+    size_t cache_size = 1000; // Default value
+    if (connection->config && connection->config->prepared_statement_cache_size > 0) {
+        cache_size = (size_t)connection->config->prepared_statement_cache_size;
+    }
+
+    // Initialize array if needed
+    if (!connection->prepared_statements) {
+        connection->prepared_statements = calloc(cache_size, sizeof(PreparedStatement*));
+        if (!connection->prepared_statements) {
+            return false;
+        }
+        connection->prepared_statement_count = 0;
+        // Initialize LRU counter
+        if (!connection->prepared_statement_lru_counter) {
+            connection->prepared_statement_lru_counter = calloc(cache_size, sizeof(uint64_t));
+        }
+    }
+
+    // Check if we need to expand the array
+    if (connection->prepared_statement_count >= cache_size) {
+        // For now, just don't store if we exceed capacity
+        // TODO: Implement dynamic resizing
+        log_this(connection->designator ? connection->designator : SR_DATABASE,
+                 "Prepared statement cache full, not storing: %s", LOG_LEVEL_ALERT, 1, stmt->name);
+        return false;
+    }
+
+    // Store the statement
+    connection->prepared_statements[connection->prepared_statement_count] = stmt;
+    connection->prepared_statement_count++;
+
+    log_this(connection->designator ? connection->designator : SR_DATABASE,
+             "Stored prepared statement: %s (total: %zu)", LOG_LEVEL_TRACE, 2,
+             stmt->name, connection->prepared_statement_count);
+
+    return true;
+}
+
+// Get database counts by type
+void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count) {
+    if (!app_config) {
+        *postgres_count = 0;
+        *mysql_count = 0;
+        *sqlite_count = 0;
+        *db2_count = 0;
+        return;
+    }
+
+    const DatabaseConfig* db_config = &app_config->databases;
+
+    *postgres_count = 0;
+    *mysql_count = 0;
+    *sqlite_count = 0;
+    *db2_count = 0;
+
+    for (int i = 0; i < db_config->connection_count; i++) {
+        const DatabaseConnection* conn = &db_config->connections[i];
+        if (conn->enabled && conn->type) {
+            if (strcmp(conn->type, "postgresql") == 0 || strcmp(conn->type, "postgres") == 0) {
+                (*postgres_count)++;
+            } else if (strcmp(conn->type, "mysql") == 0) {
+                (*mysql_count)++;
+            } else if (strcmp(conn->type, "sqlite") == 0) {
+                (*sqlite_count)++;
+            } else if (strcmp(conn->type, "db2") == 0) {
+                (*db2_count)++;
+            }
+        }
+    }
+}
+
+// Get supported database engines
+void database_get_supported_engines(char* buffer, size_t buffer_size) {
+    if (!buffer || buffer_size == 0) {
+        return;
+    }
+
+    if (!database_subsystem) {
+        snprintf(buffer, buffer_size, "Database subsystem not initialized");
+        return;
+    }
+
+    // List supported engines
+    const char* engines = "PostgreSQL, SQLite, MySQL, DB2";
+    strncpy(buffer, engines, buffer_size - 1);
+    buffer[buffer_size - 1] = '\0';
 }

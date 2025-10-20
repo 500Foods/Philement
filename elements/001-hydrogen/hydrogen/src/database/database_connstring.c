@@ -12,6 +12,43 @@
 #include "database.h"
 #include "database_connstring.h"
 
+// Test database connectivity
+bool database_test_connection(const char* database_name) {
+    if (!database_subsystem || !database_name) {
+        return false;
+    }
+
+    // Find the database queue for this database
+    if (!global_queue_manager) {
+        log_this(SR_DATABASE, "Queue manager not initialized", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    MutexResult lock_result = MUTEX_LOCK(&global_queue_manager->manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return false;
+    }
+
+    const DatabaseQueue* db_queue = NULL;
+    for (size_t i = 0; i < global_queue_manager->database_count; i++) {
+        if (global_queue_manager->databases[i] &&
+            strcmp(global_queue_manager->databases[i]->database_name, database_name) == 0) {
+            db_queue = global_queue_manager->databases[i];
+            break;
+        }
+    }
+
+    mutex_unlock(&global_queue_manager->manager_lock);
+
+    if (!db_queue) {
+        log_this(SR_DATABASE, "Database not found: %s", LOG_LEVEL_ERROR, 1, database_name);
+        return false;
+    }
+
+    // Test if the database is connected and can perform operations
+    return db_queue->is_connected && !db_queue->shutdown_requested;
+}
+
 /*
  * Parse connection string into ConnectionConfig
  * Supports formats like: postgresql://user:pass@host:port/database
@@ -255,6 +292,72 @@ cleanup:
     if (config->connection_string) free(config->connection_string);
     free(config);
     return NULL;
+}
+
+/*
+ * Build connection string for database
+ */
+char* database_build_connection_string(const char* engine, const DatabaseConnection* conn_config) {
+    if (!engine || !conn_config) return NULL;
+
+    DatabaseEngineInterface* engine_interface = database_get_engine_interface(engine);
+    if (!engine_interface) return NULL;
+
+    if (engine_interface->get_connection_string) {
+        // Use the engine's connection string builder with engine-specific defaults
+        int default_port = 5432; // PostgreSQL default
+        if (strcmp(engine, "mysql") == 0) {
+            default_port = 3306;
+        } else if (strcmp(engine, "db2") == 0) {
+            default_port = 50000; // DB2 default port
+        }
+
+        ConnectionConfig temp_config = {
+            .host = conn_config->host,
+            .port = conn_config->port ? atoi(conn_config->port) : default_port,
+            .database = conn_config->database,
+            .username = conn_config->user,
+            .password = conn_config->pass,
+            .connection_string = NULL,  // Not available in DatabaseConnection
+            .timeout_seconds = 30
+        };
+
+        return engine_interface->get_connection_string(&temp_config);
+    } else {
+        // Fallback connection string building
+        if (strcmp(engine, "sqlite") == 0) {
+            // For SQLite, use the database path directly
+            return strdup(conn_config->database ? conn_config->database : ":memory:");
+        } else {
+            // For other engines, build connection string from config
+            size_t conn_str_len = 256;
+            char* conn_str = malloc(conn_str_len);
+            if (conn_str) {
+                if (strcmp(engine, "mysql") == 0) {
+                    snprintf(conn_str, conn_str_len, "mysql://%s:%s@%s:%s/%s",
+                            conn_config->user ? conn_config->user : "",
+                            conn_config->pass ? conn_config->pass : "",
+                            conn_config->host ? conn_config->host : "localhost",
+                            conn_config->port ? conn_config->port : "3306",
+                            conn_config->database ? conn_config->database : "");
+                } else if (strcmp(engine, "db2") == 0) {
+                    // DB2 uses database name as DSN
+                    free(conn_str); // Free the previously allocated buffer
+                    conn_str = strdup(conn_config->database ? conn_config->database : "SAMPLE");
+                } else {
+                    // Default PostgreSQL-style
+                    snprintf(conn_str, conn_str_len, "%s://%s:%s@%s:%s/%s",
+                            engine,
+                            conn_config->user ? conn_config->user : "",
+                            conn_config->pass ? conn_config->pass : "",
+                            conn_config->host ? conn_config->host : "localhost",
+                            conn_config->port ? conn_config->port : "5432",
+                            conn_config->database ? conn_config->database : "test");
+                }
+            }
+            return conn_str;
+        }
+    }
 }
 
 /*
