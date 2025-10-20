@@ -16,26 +16,20 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1002,                                                               -- query_ref
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
-        ${TYPE_FORWARD_MIGRATION},                                          -- query_type_lua_28
-        ${DIALECT},                                                         -- query_dialect_lua_30
-        ${QTC_SLOW},                                                        -- query_queue_lua_58
-        5000,                                                               -- query_timeout (ms)
-        'Create Account Access Table Query',                                -- name, summary, query_code
-        [=[
-            # Forward Migration 1002: Create Account Access Table Query
-
-            This migration creates the account_access table for storing account access data.
-        ]=],
+        ${STATUS_ACTIVE},                                                   -- query_status_a27
+        ${TYPE_FORWARD_MIGRATION},                                          -- query_type_a28
+        ${DIALECT},                                                         -- query_dialect_a30
+        ${QTC_SLOW},                                                        -- query_queue_a58
+        5000,                                                               -- query_timeout
         [=[
             CREATE TABLE IF NOT EXISTS ${SCHEMA}account_access
             (
                 account_id              ${INTEGER}          NOT NULL,
                 access_id               ${INTEGER}          NOT NULL,
-                feature_lua_21          ${INTEGER}          NOT NULL,
-                access_type_lua_22      ${INTEGER}          NOT NULL,
-                status_lua_23           ${INTEGER}          NOT NULL,
-                collection              ${JSONB}                    ,
+                feature_a21             ${INTEGER}          NOT NULL,
+                access_type_a22         ${INTEGER}          NOT NULL,
+                status_a23              ${INTEGER}          NOT NULL,
+                collection              ${JSON}                     ,
                 valid_after             ${TIMESTAMP_TZ}             ,
                 valid_until             ${TIMESTAMP_TZ}             ,
                 created_id              ${INTEGER}          NOT NULL,
@@ -45,6 +39,14 @@ table.insert(queries,{sql=[[
                 PRIMARY KEY (access_id)
             );
         ]=],
+                                                                            -- code
+        'Create Account Access Table Query',                                -- name
+        [=[
+            # Forward Migration 1002: Create Account Access Table Query
+
+            This migration creates the account_access table for storing account access data.
+        ]=],
+                                                                            -- summary
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -59,21 +61,23 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1002,                                                               -- query_ref
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
-        ${TYPE_REVERSE_MIGRATION},                                          -- query_type_lua_28
-        ${DIALECT},                                                         -- query_dialect_lua_30
-        ${QTC_SLOW},                                                        -- query_queue_lua_58
-        5000,                                                               -- query_timeout (ms)
-        'Delete Account Access Table Query',                                -- name, summary, query_code
+        ${STATUS_ACTIVE},                                                   -- query_status_a27
+        ${TYPE_REVERSE_MIGRATION},                                          -- query_type_a28
+        ${DIALECT},                                                         -- query_dialect_a30
+        ${QTC_SLOW},                                                        -- query_queue_a58
+        5000,                                                               -- query_timeout
+        [=[
+            DROP TABLE ${SCHEMA}account_access;
+        ]=],
+                                                                            -- code
+        'Delete Account Access Table Query',                                -- name
         [=[
             # Reverse Migration 1002: Delete Account Access Table Query
 
             This is provided for completeness when testing the migration system
             to ensure that forward and reverse migrations are complete.
         ]=],
-        [=[
-            DROP TABLE ${SCHEMA}account_access;
-        ]=],
+                                                                            -- summary
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -87,12 +91,13 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1002,                                                               -- query_ref
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
-        ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_lua_28
-        ${DIALECT},                                                         -- query_dialect_lua_30
-        ${QTC_SLOW},                                                        -- query_queue_lua_58
-        5000,                                                               -- query_timeout (ms)
-        'Diagram Tables: ${SCHEMA}account_access',                          -- name, summary
+        ${STATUS_ACTIVE},                                                   -- query_status_a27
+        ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_a28
+        ${DIALECT},                                                         -- query_dialect_a30
+        ${QTC_SLOW},                                                        -- query_queue_a58
+        5000,                                                               -- query_timeout
+        'JSON Table Definition in collection',                              -- code,
+        'Diagram Tables: ${SCHEMA}account_access',                          -- name
         [=[
             # Diagram Migration 1002
 
@@ -100,7 +105,7 @@ table.insert(queries,{sql=[[
 
             This is the first JSON Diagram code for the account_access table.
         ]=],
-        'JSON Table Definition in collection',                              -- query_code,
+                                                                            -- summary
                                                                             -- DIAGRAM_START
         ${JSON_INGEST_START}
         [=[
@@ -126,7 +131,7 @@ table.insert(queries,{sql=[[
                                 "unique": false
                             },
                             {
-                                "name": "feature_lua_21",
+                                "name": "feature_a21",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -134,7 +139,7 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "access_type_lua_22",
+                                "name": "access_type_a22",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -142,7 +147,7 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "status_lua_23",
+                                "name": "status_a23",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -151,7 +156,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "collection",
-                                "datatype": "${JSONB}",
+                                "datatype": "${JSON}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false,

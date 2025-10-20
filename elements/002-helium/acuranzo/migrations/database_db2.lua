@@ -2,21 +2,21 @@
 -- DB2-specific configuration for Helium schema
 
 return {
-    PRIMARY = "PRIMARY KEY",
-    UNIQUE = "UNIQUE",
-    SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
     INTEGER = "INTEGER",
+    NOW = "CURRENT TIMESTAMP",
+    PRIMARY = "PRIMARY KEY",
+    SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
+    TEXT = "VARCHAR(250)",
+    TEXTBIG = "CLOB(1M)",
+    TIMESTAMP_TZ = "TIMESTAMP",
+    UNIQUE = "UNIQUE",
     VARCHAR_20 = "VARCHAR(20)",
     VARCHAR_50 = "VARCHAR(50)",
     VARCHAR_100 = "VARCHAR(100)",
     VARCHAR_128 = "VARCHAR(128)",
     VARCHAR_500 = "VARCHAR(500)",
-    TEXT = "VARCHAR(250)", -- DB2 TEXT equivalent
-    BIGTEXT = "CLOB(10M)",
-    JSONB = "CLOB(1M)",
-    TIMESTAMP_TZ = "TIMESTAMP",
-    NOW = "CURRENT TIMESTAMP",
-    CHECK_CONSTRAINT = "CHECK(status IN ('Pending', 'Applied', 'Utility'))",
+
+    JSON = "CLOB(1M)",
     JSON_INGEST_START = "${SCHEMA}json_ingest(",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = [[

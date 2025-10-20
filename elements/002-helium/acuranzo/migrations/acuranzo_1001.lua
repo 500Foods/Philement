@@ -17,29 +17,23 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1001,                                                               -- query_ref
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
-        ${TYPE_FORWARD_MIGRATION},                                          -- query_type_lua_28
-        ${DIALECT},                                                         -- query_dialect_lua_30
-        ${QTC_SLOW},                                                        -- query_queue_lua_58
-        5000,                                                               -- query_timeout (ms)
-        'Create Lookups Table Query',                                       -- name, summary, query_code
-        [=[
-            # Forward Migration 1001: Create Lookups Table Query
-
-            This migration creates the lookups table for storing key-value lookup data.
-        ]=],
+        ${STATUS_ACTIVE},                                                   -- query_status_a27
+        ${TYPE_FORWARD_MIGRATION},                                          -- query_type_a28
+        ${DIALECT},                                                         -- query_dialect_a30
+        ${QTC_SLOW},                                                        -- query_queue_a58
+        5000,                                                               -- query_timeout
         [=[
             CREATE TABLE IF NOT EXISTS ${SCHEMA}lookups
             (
                 lookup_id               ${INTEGER}          NOT NULL,
                 key_idx                 ${INTEGER}          NOT NULL,
+                status_a1               ${INTEGER}          NOT NULL,
                 value_txt               ${TEXT}                     ,
                 value_int               ${INTEGER}                  ,
                 sort_seq                ${INTEGER}          NOT NULL,
-                status_lua_1            ${INTEGER}          NOT NULL,
-                summary                 ${BIGTEXT}                  ,
-                code                    ${BIGTEXT}                  ,
-                collection              ${JSONB}                    ,
+                code                    ${TEXTBIG}                  ,
+                summary                 ${TEXTBIG}                  ,
+                collection              ${JSON}                     ,
                 valid_after             ${TIMESTAMP_TZ}             ,
                 valid_until             ${TIMESTAMP_TZ}             ,
                 created_id              ${INTEGER}          NOT NULL,
@@ -49,6 +43,14 @@ table.insert(queries,{sql=[[
                 ${PRIMARY}(lookup_id, key_idx)
             );
         ]=],
+                                                                            -- code
+        'Create Lookups Table Query',                                       -- name
+        [=[
+            # Forward Migration 1001: Create Lookups Table Query
+
+            This migration creates the lookups table for storing key-value lookup data.
+        ]=],
+                                                                            -- summary
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -63,21 +65,23 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1001,                                                               -- query_ref
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
-        ${TYPE_REVERSE_MIGRATION},                                          -- query_type_lua_28
-        ${DIALECT},                                                         -- query_dialect_lua_30
-        ${QTC_SLOW},                                                        -- query_queue_lua_58
-        5000,                                                               -- query_timeout (ms)
-        'Delete Lookups Table Query',                                       -- name, summary, query_code
+        ${STATUS_ACTIVE},                                                   -- query_status_a27
+        ${TYPE_REVERSE_MIGRATION},                                          -- query_type_a28
+        ${DIALECT},                                                         -- query_dialect_a30
+        ${QTC_SLOW},                                                        -- query_queue_a58
+        5000,                                                               -- query_timeout
+        [=[
+            DROP TABLE ${SCHEMA}lookups;
+        ]=],
+                                                                            -- code
+        'Delete Lookups Table Query',                                       -- name
         [=[
             # Reverse Migration 1001: Delete Lookups Table Query
 
             This is provided for completeness when testing the migration system
             to ensure that forward and reverse migrations are complete.
         ]=],
-        [=[
-            DROP TABLE ${SCHEMA}lookups;
-        ]=],
+                                                                            -- summary
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -92,12 +96,13 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1001,                                                               -- query_ref
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
-        ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_lua_28
-        ${DIALECT},                                                         -- query_dialect_lua_30
-        ${QTC_SLOW},                                                        -- query_queue_lua_58
-        5000,                                                               -- query_timeout (ms)
-        'Diagram Tables: ${SCHEMA}lookups',                                 -- name, summary
+        ${STATUS_ACTIVE},                                                   -- query_status_a27
+        ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_a28
+        ${DIALECT},                                                         -- query_dialect_a30
+        ${QTC_SLOW},                                                        -- query_queue_a58
+        5000,                                                               -- query_timeout
+        'JSON Table Definition in collection',                              -- code
+        'Diagram Tables: ${SCHEMA}lookups',                                 -- name
         [=[
             # Diagram Migration 1001
 
@@ -105,7 +110,7 @@ table.insert(queries,{sql=[[
 
             This is the first JSON Diagram code for the lookups table.
         ]=],
-        'JSON Table Definition in collection',                              -- query_code,
+                                                                            -- summary
                                                                             -- DIAGRAM_START
         ${JSON_INGEST_START}
         [=[
@@ -131,6 +136,14 @@ table.insert(queries,{sql=[[
                                 "unique": false
                             },
                             {
+                                "name": "status_a1",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
                                 "name": "value_txt",
                                 "datatype": "${VARCHAR_100}",
                                 "nullable": true,
@@ -152,30 +165,23 @@ table.insert(queries,{sql=[[
                                 "unique": false
                             },
                             {
-                                "name": "summary",
-                                "datatype": "${TEXT}",
-                                "nullable": true,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
                                 "name": "code",
-                                "datatype": "${TEXT}",
+                                "datatype": "${TEXTBIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
-                                "name": "status_lua_1",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
+                                "name": "summary",
+                                "datatype": "${TEXTBIG}",
+                                "nullable": true,
                                 "primary_key": false,
                                 "unique": false,
-                                "lookup": true
+                                "standard": true
                             },
                             {
                                 "name": "collection",
-                                "datatype": "${JSONB}",
+                                "datatype": "${JSON}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false,
