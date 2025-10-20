@@ -2,8 +2,6 @@
 
 ## Quick Start Guide
 
-**For Picking Up This Work Later:**
-
 1. **Read This First**: [`CONDUIT.md`](CONDUIT.md) - This document (comprehensive plan)
 2. **Check Context**: [`DATABASE_PLAN.md`](docs/plans/DATABASE_PLAN.md) - Existing database architecture
 3. **Review Code**: [`src/database/`](src/database/) - Current database implementation
@@ -11,18 +9,21 @@
 5. **Build Order**: QTC → Queue Selection → Parameter Processing → Pending Results → API Endpoint
 6. **Test As You Go**: Write unit tests for each component before moving to next phase
 
-**Current Status**: Planning phase complete, ready for implementation
+## Current Status**: Phase 1 (QTC Foundation) COMPLETED ✅
 
-**Estimated Time**: 2-3 weeks for full implementation with testing
+**Completed Work**:
+
+- ✅ **Phase 1: Query Table Cache (QTC) Foundation** - Full implementation with thread-safe operations
+- ✅ **Database Bootstrap Integration** - QTC populated from bootstrap query results
+- ✅ **API Service Structure** - Conduit service and query endpoint framework created
+- ✅ **Unit Tests** - Comprehensive test coverage for QTC and API components
+- ✅ **Swagger Documentation** - OpenAPI annotations for `/api/conduit/query` endpoint
+
+**Next Phase**: Phase 2 - Enhanced Queue Selection with `last_request_time` field and intelligent selection algorithm
 
 ## Executive Summary
 
-The Conduit Service adds a RESTful query execution endpoint to Hydrogen that allows clients to execute pre-defined database queries by ID reference rather than sending raw SQL. This enables:
-
-- **Security**: Queries are pre-vetted and stored in Query Table Cache (QTC)
-- **Type Safety**: Strongly-typed JSON parameters (INTEGER, STRING, BOOLEAN, FLOAT)
-- **Performance**: Intelligent queue selection and parameter caching
-- **Maintainability**: Query changes don't require client updates
+The Conduit Service adds a RESTful query execution endpoint to Hydrogen that allows clients to execute pre-defined database queries by ID reference rather than sending raw SQL.
 
 **Key Innovation**: Named parameters (`:userId`) in SQL are automatically converted to database-specific formats (PostgreSQL `$1`, MySQL `?`) based on the target database engine.
 
@@ -30,17 +31,11 @@ The Conduit Service adds a RESTful query execution endpoint to Hydrogen that all
 
 ```todo
 POST /api/conduit/query
-  ↓
 [1] Lookup query_ref in QTC → Get SQL template + metadata
-  ↓
 [2] Parse typed JSON params → Build parameter list
-  ↓
 [3] Convert :named to positional → Generate final SQL
-  ↓
 [4] Select optimal DQM → Consider depth + timestamp
-  ↓
 [5] Submit + Wait → Block with timeout via condition variable
-  ↓
 [6] Return JSON result → Success or error
 ```
 
@@ -48,31 +43,11 @@ POST /api/conduit/query
 
 ### 1. Query Table Cache (QTC) Design
 
-**Decision**: In-memory cache per database, loaded during bootstrap, protected by read-write lock
-
-**Rationale**:
-
-- Fast lookup (O(log n) or O(1))
-- No round-trip to database for every query
-- Read-write lock allows many concurrent queries while supporting future cache refreshes
-- Per-database storage naturally aligns with DQM architecture
-
-**Alternatives Considered**:
-
-- ❌ Database query every time: Too slow
-- ❌ Global cache across databases: Complicates cache invalidation
-- ❌ File-based cache: Reload complexity, race conditions
+In-memory cache per database, loaded during bootstrap, protected by read-write lock
 
 ### 2. Typed Parameter Format
 
-**Decision**: Explicit type grouping in JSON (`INTEGER`, `STRING`, `BOOLEAN`, `FLOAT`)
-
-**Rationale**:
-
-- Database types are more specific than JSON types
-- Avoids ambiguity (is `123` a number or string?)
-- Future-proof for adding DATE, BLOB, JSON types
-- Clear intent from client
+Explicit type grouping in JSON (`INTEGER`, `STRING`, `BOOLEAN`, `FLOAT`)
 
 **Example**:
 
@@ -83,44 +58,18 @@ POST /api/conduit/query
 }
 ```
 
-**Alternatives Considered**:
-
-- ❌ Auto-detect types: Ambiguous, error-prone
-- ❌ Separate type array: More verbose, harder to maintain
-- ❌ String-everything: Loses type safety
-
 ### 3. Named Parameter Conversion
 
-**Decision**: Convert `:paramName` to positional parameters (`?` or `$1`) at runtime
-
-**Rationale**:
-
-- Queries are database-agnostic in QTC
-- Single SQL template works across all engines
-- Simplifies migration between databases
-- Standard SQL syntax (`:name`) is readable
+Convert `:paramName` to positional parameters (`?` or `$1`) at runtime
 
 **Conversion Rules**:
 
 - PostgreSQL: `:userId` → `$1`, `:email` → `$2`
 - MySQL/SQLite/DB2: `:userId` → `?`, `:email` → `?`
 
-**Alternatives Considered**:
-
-- ❌ Store separate SQL per engine: Maintenance nightmare
-- ❌ Use engine-specific syntax in cache: Not portable
-- ❌ No named parameters: Less readable, error-prone ordering
-
 ### 4. Queue Selection Algorithm
 
-**Decision**: Select queue with minimum depth; tie-break by earliest `last_request_time`
-
-**Rationale**:
-
-- Load balancing across queues naturally
-- LRU-style selection promotes fairness
-- Zero-depth queues round-robin automatically
-- Simple, no complex heuristics needed
+Select queue with minimum depth; tie-break by earliest `last_request_time`
 
 **Algorithm**:
 
@@ -132,22 +81,9 @@ POST /api/conduit/query
 5. Update timestamp on submission
 ```
 
-**Alternatives Considered**:
-
-- ❌ Round-robin only: Ignores queue depth
-- ❌ Random selection: No fairness guarantee
-- ❌ Weighted load balancing: Too complex for initial version
-
 ### 5. Synchronous Execution Model
 
-**Decision**: Block calling thread on condition variable with timeout
-
-**Rationale**:
-
-- Simplest for clients (request-response)
-- No polling or callback complexity
-- Timeout prevents indefinite hangs
-- Natural for REST API pattern
+Block calling thread on condition variable with timeout
 
 **Workflow**:
 
@@ -157,21 +93,7 @@ POST /api/conduit/query
 - DQM worker signals completion
 - Thread wakes, returns result
 
-**Alternatives Considered**:
-
-- ❌ Async with polling: Client complexity
-- ❌ WebSocket response: Different protocol
-- ❌ Callback: Requires connection tracking
-
 ## Dependencies & Prerequisites
-
-### Required Knowledge
-
-- **C Programming**: Pointers, structs, memory management
-- **Threading**: Mutexes, condition variables, read-write locks
-- **JSON**: Jansson library usage
-- **Database Engines**: PostgreSQL, MySQL, SQLite, DB2 basics
-- **HTTP/REST**: MicroHTTPD library
 
 ### Required Systems
 
@@ -213,13 +135,13 @@ POST /api/conduit/query
 
 **Pitfall**: Bootstrap query doesn't return expected columns
 
-**Solution**: Ensure bootstrap query returns exactly:
+Ensure bootstrap query returns exactly:
 
 - `query_ref` (INTEGER)
-- `sql_template` (TEXT)
-- `description` (TEXT)
-- `queue_type` (TEXT)
-- `timeout_seconds` (INTEGER)
+- `code` (TEXT)
+- `name` (TEXT)
+- `query_queue_lu_58` (INTEGER) (0 = slow, 1 = medium, 2 = fast 3 = cached)
+- `query_timeout` (INTEGER)
 
 **Test**: Manually run bootstrap query before implementing parser
 
@@ -554,11 +476,6 @@ typedef struct ParameterList {
     "username": "johndoe",
     "email": "john@example.com",
     "description": "Sample user profile"
-  },
-  "BOOLEAN": {
-    "isActive": true,
-    "enableLogging": false,
-    "requireAuth": true
   },
   "FLOAT": {
     "temperature": 22.5,
@@ -1034,36 +951,6 @@ graph TB
 - Signal completion
 - Concurrent access
 
-### Integration Tests
-
-**End-to-End Query** tests/test_40_conduit_query.sh:
-
-- Bootstrap QTC loading
-- Submit query via API
-- Verify result format
-- Test all parameter types
-- Measure execution time
-
-**Timeout Handling** tests/test_41_conduit_timeout.sh:
-
-- Submit long-running query
-- Verify timeout response
-- Check cleanup
-
-**Concurrent Requests** tests/test_42_conduit_concurrent.sh:
-
-- Submit multiple queries concurrently
-- Verify queue distribution
-- Check for race conditions
-- Measure throughput
-
-**Error Scenarios** tests/test_43_conduit_errors.sh:
-
-- Query not found
-- Invalid parameters
-- Database error
-- Connection lost
-
 ## Implementation Tasks
 
 ### Phase 1: Query Table Cache
@@ -1109,18 +996,3 @@ graph TB
 - [ ] Implement src/api/conduit/query/query.c with handler logic
 - [ ] Register endpoint in src/api/api_service.c
 - [ ] Add integration tests
-
-### Documentation
-
-- [ ] Update [`DATABASE_PLAN.md`](docs/plans/DATABASE_PLAN.md) with QTC and Conduit sections
-- [ ] Update [`src/api/README.md`](src/api/README.md) with Conduit Service documentation
-- [ ] Add [`docs/reference/conduit_api.md`](docs/reference/conduit_api.md) with API reference
-- [ ] Update [`SITEMAP.md`](SITEMAP.md) with new documentation links
-
-## References
-
-- [`RECIPE.md`](RECIPE.md) - Development standards
-- [`DATABASE_PLAN.md`](docs/plans/DATABASE_PLAN.md) - Database architecture
-- [`tests/README.md`](tests/README.md) - Testing framework
-- [`tests/UNITY.md`](tests/UNITY.md) - Unit testing guide
-- [`src/api/README.md`](src/api/README.md) - API development guide

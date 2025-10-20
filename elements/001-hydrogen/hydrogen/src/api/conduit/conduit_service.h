@@ -1,17 +1,24 @@
 /*
- * Conduit Service API module for the Hydrogen Project.
- * Provides database query execution by reference.
+ * Conduit Service Header
+ *
+ * REST API service for database query execution by reference.
  */
 
-#ifndef HYDROGEN_CONDUIT_SERVICE_H
-#define HYDROGEN_CONDUIT_SERVICE_H
+#ifndef CONDUIT_SERVICE_H
+#define CONDUIT_SERVICE_H
 
-//@ swagger:service Conduit Service
-//@ swagger:description Database query execution endpoints for executing pre-defined queries by reference
-//@ swagger:version 1.0.0
-//@ swagger:tag "Conduit Service" Provides database query execution by reference with typed parameters
+// Project includes
+#include <src/hydrogen.h>
 
-// Include all conduit endpoint headers
-#include "query/conduit_query.h"
+// Function prototypes
 
-#endif /* HYDROGEN_CONDUIT_SERVICE_H */
+// Initialize conduit service
+bool conduit_service_init(void);
+
+// Cleanup conduit service
+void conduit_service_cleanup(void);
+
+// Get service name for logging
+const char* conduit_service_name(void);
+
+#endif // CONDUIT_SERVICE_H
