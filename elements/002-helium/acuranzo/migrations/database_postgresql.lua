@@ -2,26 +2,26 @@
 -- PostgreSQL-specific configuration for Helium schema
 
 return {
-    PRIMARY = "PRIMARY KEY",
-    UNIQUE = "UNIQUE",
-    SERIAL = "SERIAL",
-    INTEGER = "INTEGER",
-    VARCHAR_20 = "VARCHAR(20)",
-    VARCHAR_50 = "VARCHAR(50)",
-    VARCHAR_100 = "VARCHAR(100)",
-    VARCHAR_128 = "VARCHAR(128)",
-    VARCHAR_500 = "VARCHAR(500)",
-    TEXT = "TEXT",
-    BIGTEXT = "TEXT",
-    JSONB = "JSONB",
-    TIMESTAMP_TZ = "TIMESTAMPTZ",
+    INTEGER = "integer",
     NOW = "CURRENT_TIMESTAMP",
-    CHECK_CONSTRAINT = "CHECK(status IN ('Pending', 'Applied', 'Utility'))",
+    PRIMARY = "PRIMARY KEY",
+    SERIAL = "serial",
+    TEXT = "text",
+    TEXTBIG = "text",
+    TIMESTAMP_TZ = "timestamptz",
+    UNIQUE = "UNIQUE",
+    VARCHAR_20 = "varchar(20)",
+    VARCHAR_50 = "varchar(50)",
+    VARCHAR_100 = "varchar(100)",
+    VARCHAR_128 = "varchar(128)",
+    VARCHAR_500 = "varchar(500)",
+
+    JSON = "jsonb",
     JSON_INGEST_START = "${SCHEMA}json_ingest (",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = [[
-        CREATE OR REPLACE FUNCTION ${SCHEMA}json_ingest(s TEXT)
-        RETURNS JSONB
+        CREATE OR REPLACE FUNCTION ${SCHEMA}json_ingest(s text)
+        RETURNS jsonb
         LANGUAGE plpgsql
         STRICT
         STABLE

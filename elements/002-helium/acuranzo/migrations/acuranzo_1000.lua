@@ -14,15 +14,15 @@ table.insert(queries,{sql=[[
     CREATE TABLE ${SCHEMA}queries (
         query_id                ${INTEGER}          NOT NULL,
         query_ref               ${INTEGER}          NOT NULL,
-        query_status_lua_27     ${INTEGER}          NOT NULL,
-        query_type_lua_28       ${INTEGER}          NOT NULL,
-        query_dialect_lua_30    ${INTEGER}          NOT NULL,
-        query_queue_lua_58      ${INTEGER}          NOT NULL,
+        query_status_a27        ${INTEGER}          NOT NULL,
+        query_type_a28          ${INTEGER}          NOT NULL,
+        query_dialect_a30       ${INTEGER}          NOT NULL,
+        query_queue_a58         ${INTEGER}          NOT NULL,
         query_timeout           ${INTEGER}          NOT NULL,
+        code                    ${TEXTBIG}          NOT NULL,
         name                    ${VARCHAR_100}      NOT NULL,
-        summary                 ${BIGTEXT}                  ,
-        query_code              ${BIGTEXT}          NOT NULL,
-        collection              ${JSONB}                    ,
+        summary                 ${TEXTBIG}                  ,
+        collection              ${JSON}                     ,
         valid_after             ${TIMESTAMP_TZ}             ,
         valid_until             ${TIMESTAMP_TZ}             ,
         created_id              ${INTEGER}          NOT NULL,
@@ -30,7 +30,7 @@ table.insert(queries,{sql=[[
         updated_id              ${INTEGER}          NOT NULL,
         updated_at              ${TIMESTAMP_TZ}     NOT NULL,
         ${PRIMARY}(query_id),                                               -- Primary Key
-        ${UNIQUE}(query_ref, query_type_lua_28)                             -- Unique Column
+        ${UNIQUE}(query_ref, query_type_a28)                             -- Unique Column
     );
 
 ]]})
@@ -51,33 +51,24 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1000,                                                               -- query_ref
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
-        ${TYPE_APPLIED_MIGRATION},                                          -- query_type_lua_28
-        ${DIALECT},                                                         -- query_dialect_lua_30
-        ${QTC_SLOW},                                                        -- query_queue_lua_58
-        5000,                                                               -- query_timeout (ms)
-        'Create Tables Query',                                              -- name, summary, query_code
-        [=[
-            # Forward Migration 1000: Create Tables Query
-
-            This is the first migration that, technically, is run automatically
-            when connecting to an empty database and kicks off the migration,
-            so long as the database has been configured with AutoMigration: true
-            in its config (this is the default if not supplied).
-        ]=],
+        ${STATUS_ACTIVE},                                                   -- query_status_a27
+        ${TYPE_APPLIED_MIGRATION},                                          -- query_type_a28
+        ${DIALECT},                                                         -- query_dialect_a30
+        ${QTC_SLOW},                                                        -- query_queue_a58
+        5000,                                                               -- query_timeout
         [=[
             CREATE TABLE ${SCHEMA}queries (
                 query_id                ${INTEGER},
                 query_ref               ${INTEGER}          NOT NULL,
-                query_type_lua_28       ${INTEGER}          NOT NULL,
-                query_dialect_lua_30    ${INTEGER}          NOT NULL,
-                name                    ${VARCHAR_100}      NOT NULL,
-                summary                 ${TEXT}                     ,
-                query_code              ${TEXT}             NOT NULL,
-                query_status_lua_27     ${INTEGER}          NOT NULL,
+                query_status_a27        ${INTEGER}          NOT NULL,
+                query_type_a28          ${INTEGER}          NOT NULL,
+                query_dialect_a30       ${INTEGER}          NOT NULL,
+                query_queue_a58         ${INTEGER}          NOT NULL,
                 query_timeout           ${INTEGER}          NOT NULL,
-                query_queue_lua_58      ${INTEGER}          NOT NULL,
-                collection              ${JSONB}                    ,
+                query_code              ${TEXTBIG}          NOT NULL,
+                name                    ${VARCHAR_100}      NOT NULL,
+                summary                 ${TEXTBIG}                  ,
+                collection              ${JSON}                     ,
                 valid_after             ${TIMESTAMP_TZ}             ,
                 valid_until             ${TIMESTAMP_TZ}             ,
                 created_id              ${INTEGER}          NOT NULL,
@@ -88,6 +79,17 @@ table.insert(queries,{sql=[[
                 ${UNIQUE}(query_ref)                                        -- Unique Column
             );
         ]=],
+                                                                            -- code
+        'Create Tables Query',                                              -- name
+        [=[
+            # Forward Migration 1000: Create Tables Query
+
+            This is the first migration that, technically, is run automatically
+            when connecting to an empty database and kicks off the migration,
+            so long as the database has been configured with AutoMigration: true
+            in its config (this is the default if not supplied).
+        ]=],
+                                                                            -- summary
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -102,21 +104,23 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1000,                                                               -- query_ref
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
-        ${TYPE_REVERSE_MIGRATION},                                          -- query_type_lua_28
-        ${DIALECT},                                                         -- query_dialect_lua_30
-        ${QTC_SLOW},                                                        -- query_queue_lua_58
-        5000,                                                               -- query_timeout (ms)
-        'Delete Tables Query',                                              -- name, summary, query_code
+        ${STATUS_ACTIVE},                                                   -- query_status_a27
+        ${TYPE_REVERSE_MIGRATION},                                          -- query_type_a28
+        ${DIALECT},                                                         -- query_dialect_a30
+        ${QTC_SLOW},                                                        -- query_queue_a58
+        5000,                                                               -- query_timeout
+        [=[
+            DROP TABLE ${SCHEMA}queries;
+        ]=],
+                                                                            -- code
+        'Delete Tables Query',                                              -- name
         [=[
             # Reverse Migration 1000: Delete Tables Query
 
             This is provided for completeness when testing the migration system
             to ensure that forward and reverse migrations are complete.
         ]=],
-        [=[
-            DROP TABLE ${SCHEMA}queries;
-        ]=],
+                                                                            -- summary
         NULL,                                                               -- collection
         ${QUERIES_COMMON}
     );
@@ -131,13 +135,13 @@ table.insert(queries,{sql=[[
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
         1000,                                                               -- query_ref
-        ${STATUS_ACTIVE},                                                   -- query_status_lua_27
-        ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_lua_28
-        ${DIALECT},                                                         -- query_dialect_lua_30
-        ${QTC_SLOW},                                                        -- query_queue_lua_58
-        5000,                                                               -- query_timeout (ms)
+        ${STATUS_ACTIVE},                                                   -- query_status_a27
+        ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_a28
+        ${DIALECT},                                                         -- query_dialect_a30
+        ${QTC_SLOW},                                                        -- query_queue_a58
+        5000,                                                               -- query_timeout
+        'JSON Table Definition in collection',                              -- code
         'Diagram Tables: ${SCHEMA}queries',                                 -- name
-                                                                            -- summary
         [=[
             # Diagram Migration 1000
 
@@ -145,7 +149,7 @@ table.insert(queries,{sql=[[
 
             This is the first JSON Diagram code for the queries table.
         ]=],
-        'JSON Table Definition in collection',                              -- query_code,
+                                                                            -- summary
                                                                             -- DIAGRAM_START
         ${JSON_INGEST_START}
         [=[
@@ -199,58 +203,73 @@ table.insert(queries,{sql=[[
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
-                                "unique": true,
-                                "highlight": true
+                                "unique": true
+                            },
+                            {
+                                "name": "query_status_a27",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "query_type_a28",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "query_dialect_a30",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "query_queue_a58",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "query_timeout",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": false
+                            },
+                            {
+                                "name": "query_code",
+                                "datatype": "${TEXTBIG}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
                             },
                             {
                                 "name": "name",
                                 "datatype": "${VARCHAR_100}",
                                 "nullable": false,
                                 "primary_key": false,
-                                "unique": false,
-                                "highlight": true
+                                "unique": false
+
                             },
                             {
                                 "name": "summary",
-                                "datatype": "${TEXT}",
+                                "datatype": "${TEXTBIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
-                                "name": "query_code",
-                                "datatype": "${BIGTEXT}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
-                                "name": "query_status_lua_27",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
-                                "name": "query_type_lua_28",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
-                                "name": "query_dialect_lua_30",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
                                 "name": "collection",
-                                "datatype": "${JSONB}",
+                                "datatype": "${JSON}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false,
