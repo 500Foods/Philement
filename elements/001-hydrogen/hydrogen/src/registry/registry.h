@@ -15,7 +15,7 @@
 #define REGISTRY_H
 
 // System includes
-#include "../globals.h"
+#include <src/globals.h>
 #include <stdbool.h>
 #include <time.h>
 #include <signal.h>

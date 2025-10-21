@@ -5,14 +5,14 @@
  * for monitoring and diagnostics.
  */
 
- // Global includes 
+// Project includes 
 #include <src/hydrogen.h>
+#include <src/api/api_utils.h>
+#include <src/api/system/system_service.h>
+#include <src/websocket/websocket_server_internal.h>
 
 // Local includes
 #include "info.h"
-#include "../system_service.h"
-#include "../../../websocket/websocket_server_internal.h"
-#include "../../../api/api_utils.h"
 
 // External variables
 extern WebSocketServerContext *ws_context;

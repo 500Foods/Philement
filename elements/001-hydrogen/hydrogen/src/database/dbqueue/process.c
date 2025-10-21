@@ -8,6 +8,7 @@
 // Project includes
 #include <src/hydrogen.h>
 #include <src/database/database.h>
+#include <src/database/database_pending.h>
 
 // Local includes
 #include "dbqueue.h"
@@ -87,19 +88,38 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
                         query->query_id ? query->query_id : "unknown",
                         result->row_count,
                         result->execution_time_ms);
-                
+
+                // Signal pending result if this query was synchronous
+                if (query->query_id) {
+                    PendingResultManager* pending_mgr = get_pending_result_manager();
+                    if (pending_mgr) {
+                        pending_result_signal_ready(pending_mgr, query->query_id, result);
+                        result = NULL; // Ownership transferred to pending result
+                    }
+                }
+
                 // Update query statistics
                 if (database_subsystem) {
                     __sync_fetch_and_add(&database_subsystem->successful_queries, 1);
                 }
-                
-                // Clean up result
-                database_engine_cleanup_result(result);
+
+                // Clean up result (only if not transferred to pending result)
+                if (result) {
+                    database_engine_cleanup_result(result);
+                }
             } else {
                 log_this(dqm_label_exec, "Query execution failed: %s",
                         LOG_LEVEL_ERROR, 1,
                         query->query_id ? query->query_id : "unknown");
-                
+
+                // Signal pending result with NULL result on failure
+                if (query->query_id) {
+                    PendingResultManager* pending_mgr = get_pending_result_manager();
+                    if (pending_mgr) {
+                        pending_result_signal_ready(pending_mgr, query->query_id, NULL);
+                    }
+                }
+
                 // Update failure statistics
                 if (database_subsystem) {
                     __sync_fetch_and_add(&database_subsystem->failed_queries, 1);

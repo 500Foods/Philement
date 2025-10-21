@@ -30,6 +30,7 @@ Hydrogen is currently designed for technical users who:
 
 ### Getting Started
 
+- [**Curiosities**](CURIOSITIES.md) - Conventions and Curiosities worth noting before proceeding
 - [**AI Recipe**](RECIPE.md) - Development guide optimized for AI assistance
 - [**Project Structure**](STRUCTURE.md) - Complete file organization and architecture overview
 - [**Build Environment**](SETUP.md) - Build and runtime requirements, environment setup
@@ -37,7 +38,6 @@ Hydrogen is currently designed for technical users who:
 - [**Release Notes**](RELEASES.md) - Detailed version history and changes
 - [**Markdown Site Map**](SITEMAP.md) - Index to all Markdown files in this repository
 - [**TO-DO List**](TODO.md) - Summary of references to TODO in the code that still need work
-- [**Conduit**](CONDUIT.md) - Implementation plan for Conduit Service endpoints
 
 ### Core Documentation
 
@@ -64,6 +64,11 @@ Hydrogen is currently designed for technical users who:
 - [**Print Queue System**](docs/print_queue.md) - 3D printing queue management
 - [**OIDC Integration**](docs/oidc_integration.md) - OpenID Connect authentication
 - [**System Information**](docs/system_info.md) - System monitoring and reporting
+
+### Implementation Notes
+
+- [**Database**](docs/plans/DATABASE_PLAN.md) - Implementation plan for Database subsystem
+- [**Conduit**](docs/plans/CONDUIT.md) - Implementation plan for Conduit Service endpoints
 
 ### Examples & Implementation
 

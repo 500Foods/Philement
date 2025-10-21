@@ -7,7 +7,7 @@
 #ifndef SQLITE_PREPARED_H
 #define SQLITE_PREPARED_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Prepared statement management
 bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);

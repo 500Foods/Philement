@@ -7,7 +7,7 @@
 #ifndef DATABASE_ENGINE_MYSQL_TRANSACTION_H
 #define DATABASE_ENGINE_MYSQL_TRANSACTION_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Transaction management
 bool mysql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel level, Transaction** transaction);

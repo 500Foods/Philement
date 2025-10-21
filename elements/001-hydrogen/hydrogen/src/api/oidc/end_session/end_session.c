@@ -4,13 +4,13 @@
  * Implements the end session endpoint (/oauth/end-session)
  */
 
-  // Global includes 
+// Project includes 
 #include <src/hydrogen.h>
+#include <src/api/oidc/oidc_service.h>
+#include <src/oidc/oidc_service.h>
 
 // Local includes
 #include "end_session.h"
-#include "../oidc_service.h"
-#include "../../../oidc/oidc_service.h"
 
 /**
  * End session endpoint

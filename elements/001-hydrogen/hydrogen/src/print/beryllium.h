@@ -5,7 +5,7 @@
 #ifndef BERYLLIUM_H
 #define BERYLLIUM_H
 
-#include "../globals.h"
+#include <src/globals.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>

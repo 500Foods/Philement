@@ -12,7 +12,7 @@
 #define UTILS_QUEUE_H
 
 #include <stddef.h>
-#include "../globals.h"
+#include <src/globals.h>
 #include <src/config/config.h>  // For AppConfig and queue constants
 
 // Memory metrics structure

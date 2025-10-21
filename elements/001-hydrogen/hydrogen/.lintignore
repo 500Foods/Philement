@@ -51,3 +51,6 @@ docs/metrics/*
 
 # Node.js dependencies - these are third-party code and shouldn't be linted
 **/node_modules/**
+
+# Let's not worry about this guy so much
+CURIOSITIES.md

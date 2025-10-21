@@ -6,16 +6,22 @@
 #ifndef HYDROGEN_CONDUIT_QUERY_H
 #define HYDROGEN_CONDUIT_QUERY_H
 
-// Network headers
-#include <microhttpd.h>
-
-// Standard C headers
+// Standard includes
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 // Third-party libraries
+#include <microhttpd.h>
 #include <jansson.h>
+
+// Database subsystem includes for type definitions
+#include <src/database/database.h>
+#include <src/database/database_cache.h>
+#include <src/database/database_params.h>
+#include <src/database/database_pending.h>
+#include <src/database/database_queue_select.h>
+#include <src/database/dbqueue/dbqueue.h>
 
 /**
  * Handles the /api/conduit/query endpoint request.
@@ -58,6 +64,26 @@
 //@ swagger:response 408 application/json {"type":"object","properties":{"success":{"type":"boolean","example":false},"error":{"type":"string","example":"Query execution timeout"},"query_ref":{"type":"integer","example":1234},"timeout_seconds":{"type":"integer","example":30},"database":{"type":"string","example":"Acuranzo"}}}
 //@ swagger:response 500 application/json {"type":"object","properties":{"success":{"type":"boolean","example":false},"error":{"type":"string","example":"Database error"},"database_error":{"type":"string","example":"Table 'users' not found"},"query_ref":{"type":"integer","example":1234},"database":{"type":"string","example":"Acuranzo"}}}
 //@ swagger:response 501 application/json {"type":"object","properties":{"success":{"type":"boolean","example":false},"error":{"type":"string","example":"Query execution not yet implemented"},"message":{"type":"string","example":"The Conduit service infrastructure is being built. This endpoint will execute pre-defined queries once the Query Table Cache, parameter processing, and queue selection systems are complete."},"status":{"type":"string","example":"under_construction"}}}
+
+// Function declarations for testable helper functions
+char* generate_query_id(void);
+bool validate_http_method(const char* method);
+json_t* parse_request_data(struct MHD_Connection* connection, const char* method,
+                          const char* upload_data, const size_t* upload_data_size);
+bool extract_request_fields(json_t* request_json, int* query_ref, const char** database, json_t** params);
+bool lookup_database_and_query(DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
+                              const char* database, int query_ref);
+bool process_parameters(json_t* params_json, ParameterList** param_list,
+                       const char* sql_template, DatabaseEngineType engine_type,
+                       char** converted_sql, TypedParameter*** ordered_params, size_t* param_count);
+DatabaseQueue* select_query_queue(const char* database, const char* queue_type);
+bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_id,
+                             const char* converted_sql, TypedParameter** ordered_params,
+                             size_t param_count, const QueryCacheEntry* cache_entry);
+json_t* build_response_json(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
+                           const DatabaseQueue* selected_queue, PendingQueryResult* pending);
+unsigned int determine_http_status(const PendingQueryResult* pending, const QueryResult* result);
+
 enum MHD_Result handle_conduit_query_request(
     struct MHD_Connection *connection,
     const char *url,

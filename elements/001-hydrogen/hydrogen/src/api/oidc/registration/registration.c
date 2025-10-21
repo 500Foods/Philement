@@ -4,13 +4,13 @@
  * Implements the client registration endpoint (/oauth/register)
  */
 
-  // Global includes 
+// Project includes 
 #include <src/hydrogen.h>
+#include <src/api/oidc/oidc_service.h>
+#include <src/oidc/oidc_service.h>
 
 // Local includes
 #include "registration.h"
-#include "../oidc_service.h"
-#include "../../../oidc/oidc_service.h"
 
 /**
  * Client registration endpoint

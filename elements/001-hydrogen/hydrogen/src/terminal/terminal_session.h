@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <pthread.h>
-#include "../globals.h"
+#include <src/globals.h>
 
 #ifdef __cplusplus
 extern "C" {

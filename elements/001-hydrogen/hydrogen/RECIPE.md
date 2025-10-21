@@ -117,6 +117,9 @@ tests/          Test framework
 - cmake/CMakeLists.txt is used for all project builds including Unity
 - Run tests/test_91_cppcheck.sh whenever C code is changed
 - Unit test filenames must be unique - search beforee creating new files
+- Don't use static functions if possible as we can't test those
+- When using #include use <src/folder/...> instead of "../../.."
+- cmake files are in cmake/ folder, starting with cmake/CMakeLists.txt
 
 ## BASH CODING REQUIREMENTS
 

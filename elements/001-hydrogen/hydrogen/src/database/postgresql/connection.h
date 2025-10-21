@@ -7,7 +7,7 @@
 #ifndef DATABASE_ENGINE_POSTGRESQL_CONNECTION_H
 #define DATABASE_ENGINE_POSTGRESQL_CONNECTION_H
 
-#include "../database.h"
+#include <src/database/database.h>
 #include "types.h"
 
 // PostgreSQL-specific connection structure

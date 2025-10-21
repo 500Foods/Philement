@@ -7,7 +7,7 @@
 #ifndef SQLITE_CONNECTION_H
 #define SQLITE_CONNECTION_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Utility functions
 bool sqlite_check_timeout_expired(time_t start_time, int timeout_seconds);

@@ -5,18 +5,20 @@
  * for development and debugging, including caller information, headers, and parameters.
  */
 
- // Global includes 
-#include <src/hydrogen.h>
-
-// Local includes
-#include "test.h"
-#include "../../../api/api_utils.h"
-#include "../../../webserver/web_server_core.h"
+// Standard includes
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-/**
+// Project includes 
+#include <src/hydrogen.h>
+#include <src/api/api_utils.h>
+#include <src/webserver/web_server_core.h>
+
+// Local includes
+#include "test.h"
+
+/*
  * Enhanced test endpoint with complete diagnostics
  * 
  * This test endpoint is designed to help diagnose API issues by returning:

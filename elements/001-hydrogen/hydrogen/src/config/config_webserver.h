@@ -8,7 +8,7 @@
 #ifndef HYDROGEN_CONFIG_WEBSERVER_H
 #define HYDROGEN_CONFIG_WEBSERVER_H
 
-#include "../globals.h"
+#include <src/globals.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <jansson.h>

@@ -8,7 +8,7 @@
 #ifndef HYDROGEN_CONFIG_PRINT_PRIORITIES_H
 #define HYDROGEN_CONFIG_PRINT_PRIORITIES_H
 
-#include "../globals.h"
+#include <src/globals.h>
 #include <stdbool.h>
 #include <jansson.h>
 

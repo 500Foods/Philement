@@ -9,7 +9,7 @@
 #ifndef STATUS_CORE_H
 #define STATUS_CORE_H
 
-#include "../globals.h"
+#include <globals.h>
 #include <sys/types.h>
 #include <pthread.h>
 #include <stdbool.h>

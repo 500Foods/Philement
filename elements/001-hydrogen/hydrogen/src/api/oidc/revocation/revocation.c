@@ -4,13 +4,13 @@
  * Implements the token revocation endpoint (/oauth/revoke)
  */
 
-  // Global includes 
+// Project includes 
 #include <src/hydrogen.h>
+#include <src/api/oidc/oidc_service.h>
+#include <src/oidc/oidc_service.h>
 
 // Local includes
 #include "revocation.h"
-#include "../oidc_service.h"
-#include "../../../oidc/oidc_service.h"
 
 /**
  * Token revocation endpoint

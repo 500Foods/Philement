@@ -5,12 +5,12 @@
  * for the service, used for monitoring and health checks.
  */
 
-// Global includes 
+// Project includes 
 #include <src/hydrogen.h>
+#include <src/api/api_utils.h>
 
 // Local includes
 #include "health.h"
-#include "../../../api/api_utils.h"
 
 // Handle GET /api/system/health requests
 // Returns a simple health check response in JSON format

@@ -7,7 +7,7 @@
 #ifndef SQLITE_TYPES_H
 #define SQLITE_TYPES_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Function pointer types for libsqlite3 functions
 typedef int (*sqlite3_open_t)(const char*, void**);

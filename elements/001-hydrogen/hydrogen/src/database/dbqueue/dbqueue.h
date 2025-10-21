@@ -10,9 +10,9 @@
 
 // Project includes
 #include <src/hydrogen.h>
-#include "../../queue/queue.h"
-#include "../database_types.h"
-#include "../database_cache.h"
+#include <src/queue/queue.h>
+#include <src/database/database_types.h>
+#include <src/database/database_cache.h>
 
 // Forward declarations to avoid circular dependencies
 typedef struct DatabaseHandle DatabaseHandle;

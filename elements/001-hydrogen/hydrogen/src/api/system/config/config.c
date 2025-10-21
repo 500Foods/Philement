@@ -4,13 +4,15 @@
  * Returns the complete server configuration file as JSON.
  */
 
- // Global includes 
+// Standard includes
+#include <sys/utsname.h>
+
+// Project includes 
 #include <src/hydrogen.h>
+#include <src/api/api_utils.h>
 
 // Local includes
-#include <sys/utsname.h>
 #include "config.h"
-#include "../../../api/api_utils.h"
 
 enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
                                            const char *method,
