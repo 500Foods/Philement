@@ -12,14 +12,14 @@
 #include <lua.h>
 
 // Include database types for DatabaseEngine
-#include "../database_types.h"
+#include <src/database/database_types.h>
 
 // Forward declarations
 struct DatabaseQueue;
 struct DatabaseHandle;
 
 // Include payload types
-#include "../../payload/payload.h"
+#include <src/payload/payload.h>
 
 // Core migration functions
 bool validate(struct DatabaseQueue* db_queue);

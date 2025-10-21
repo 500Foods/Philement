@@ -27,7 +27,8 @@
   "cstdlib": "c",
   "terminal_session.h": "c",
   "database_bootstrap.h": "c",
-  "mock_system.h": "c"
+  "mock_system.h": "c",
+  "state.h": "c"
 },
 "C_Cpp.default.compilerPath": "/usr/lib64/ccache/gcc",
 "C_Cpp.default.includePath": [

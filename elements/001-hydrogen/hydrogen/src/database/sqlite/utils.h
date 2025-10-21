@@ -7,7 +7,7 @@
 #ifndef SQLITE_UTILS_H
 #define SQLITE_UTILS_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Utility functions
 char* sqlite_get_connection_string(const ConnectionConfig* config);

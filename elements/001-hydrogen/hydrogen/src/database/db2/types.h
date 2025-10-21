@@ -7,7 +7,7 @@
 #ifndef DATABASE_ENGINE_DB2_TYPES_H
 #define DATABASE_ENGINE_DB2_TYPES_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Function pointer types for libdb2 functions
 typedef int (*SQLAllocHandle_t)(int, void*, void**);

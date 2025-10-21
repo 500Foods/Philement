@@ -7,7 +7,7 @@
 #ifndef DATABASE_ENGINE_MYSQL_PREPARED_H
 #define DATABASE_ENGINE_MYSQL_PREPARED_H
 
-#include "../database.h"
+#include <src/database/database.h>
 #include "types.h"
 
 // Prepared statement management

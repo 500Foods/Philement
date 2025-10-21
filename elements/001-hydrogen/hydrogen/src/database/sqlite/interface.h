@@ -7,7 +7,7 @@
 #ifndef SQLITE_INTERFACE_H
 #define SQLITE_INTERFACE_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Function prototype for the main interface function
 DatabaseEngineInterface* sqlite_get_interface(void);

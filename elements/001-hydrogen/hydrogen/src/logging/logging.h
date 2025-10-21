@@ -6,7 +6,7 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-#include "../globals.h"
+#include <src/globals.h>
 #include <stdbool.h>
 
 /*

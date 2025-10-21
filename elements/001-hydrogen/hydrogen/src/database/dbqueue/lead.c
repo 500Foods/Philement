@@ -22,7 +22,7 @@
 
 // Local includes
 #include "dbqueue.h"
-#include "../database_bootstrap.h"
+#include <src/database/database_bootstrap.h>
 
 // Migration timing variables
 static struct timespec migration_start_time = {0, 0};

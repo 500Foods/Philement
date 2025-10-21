@@ -5,13 +5,13 @@
  * to the most recent log messages in reverse chronological order.
  */
 
- // Global includes 
+// Project includes 
 #include <src/hydrogen.h>
+#include <src/api/api_utils.h>
+#include <src/api/system/system_service.h>
 
 // Local includes
 #include "recent.h"
-#include "../system_service.h"
-#include "../../../api/api_utils.h"
 
 // Extract log lines from raw text into an array
 // This function can be mocked in unit tests

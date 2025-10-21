@@ -11,7 +11,7 @@
 #ifndef WEB_SERVER_UPLOAD_H
 #define WEB_SERVER_UPLOAD_H
 
-#include "../globals.h"
+#include <src/globals.h>
 #include <microhttpd.h>
 #include "web_server_core.h"
 

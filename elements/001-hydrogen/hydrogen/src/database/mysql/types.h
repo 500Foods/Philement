@@ -7,7 +7,7 @@
 #ifndef DATABASE_ENGINE_MYSQL_TYPES_H
 #define DATABASE_ENGINE_MYSQL_TYPES_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Function pointer types for libmysqlclient functions
 typedef void* (*mysql_init_t)(void*);

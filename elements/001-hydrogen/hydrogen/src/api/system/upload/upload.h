@@ -6,23 +6,19 @@
 #ifndef HYDROGEN_SYSTEM_UPLOAD_H
 #define HYDROGEN_SYSTEM_UPLOAD_H
 
-// Core system headers
-#include <sys/types.h>
-
-// Network headers
-#include <microhttpd.h>
-
-// Standard C headers
+// Standard includes
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
-// Third-party libraries
+// Third-party includes
+#include <microhttpd.h>
 #include <jansson.h>
 
-// Project headers
-#include "../../../config/config.h"
-#include "../../../state/state.h"
+// Project includes
+#include <src/config/config.h>
+#include <src/state/state.h>
 
 /**
  * Handles the /api/system/upload endpoint request.

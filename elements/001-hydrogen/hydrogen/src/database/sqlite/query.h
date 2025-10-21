@@ -7,7 +7,7 @@
 #ifndef SQLITE_QUERY_H
 #define SQLITE_QUERY_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Query execution
 bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result);

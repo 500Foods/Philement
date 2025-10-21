@@ -9,7 +9,7 @@
 
 #include <stdbool.h>
 
-#include "../database.h"
+#include <src/database/database.h>
 #include "connection.h"
 
 // Function prototypes for transaction management

@@ -5,12 +5,12 @@
  * (.well-known/openid-configuration)
  */
 
-  // Global includes 
+// Project includes 
 #include <src/hydrogen.h>
+#include <src/api/oidc/oidc_service.h>
 
 // Local includes
 #include "discovery.h"
-#include "../oidc_service.h"
 
 /**
  * Discovery document endpoint

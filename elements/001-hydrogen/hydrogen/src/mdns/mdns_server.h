@@ -12,7 +12,7 @@
  */
 
 // System Libraries
-#include "../globals.h"
+#include <src/globals.h>
 #include <stdint.h>
 #include <pthread.h>
 

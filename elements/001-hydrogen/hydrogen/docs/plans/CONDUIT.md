@@ -3,8 +3,8 @@
 ## Quick Start Guide
 
 1. **Read This First**: [`CONDUIT.md`](CONDUIT.md) - This document (comprehensive plan)
-2. **Check Context**: [`DATABASE_PLAN.md`](docs/plans/DATABASE_PLAN.md) - Existing database architecture
-3. **Review Code**: [`src/database/`](src/database/) - Current database implementation
+2. **Check Context**: [`DATABASE_PLAN.md`](DATABASE_PLAN.md) - Existing database architecture
+3. **Review Code**: [`src/database/`](../../src/database/) - Current database implementation
 4. **Start With**: Phase 1 (Query Table Cache) - Foundation for everything else
 5. **Build Order**: QTC → Queue Selection → Parameter Processing → Pending Results → API Endpoint
 6. **Test As You Go**: Write unit tests for each component before moving to next phase
@@ -80,42 +80,6 @@ Block calling thread on condition variable with timeout
 - Blocks on `pthread_cond_timedwait()`
 - DQM worker signals completion
 - Thread wakes, returns result
-
-## Dependencies & Prerequisites
-
-### Required Systems
-
-- **Database Subsystem**: DQM architecture (Phase 1 complete per DATABASE_PLAN.md)
-- **Queue System**: `src/queue/queue.c` - Thread-safe queue infrastructure
-- **API Subsystem**: `src/api/` - Endpoint registration
-- **Config System**: `src/config/config_databases.c` - Database configuration
-
-### Required Libraries
-
-- **jansson**: JSON parsing/generation
-- **pthread**: Threading primitives
-- **Database clients**: libpq, sqlite3, mysqlclient, db2cli (dynamically loaded)
-
-### Files That Will Be Modified
-
-- src/database/dbqueue/dbqueue.h:DatabaseQueue - Add QTC and timestamp fields
-- src/database/database_bootstrap.c - Populate QTC from bootstrap
-- src/database/dbqueue/submit.c:database_queue_submit_query - Update timestamp
-- src/api/api_service.c - Register conduit endpoint
-
-### Files That Will Be Created
-
-- src/database/database_cache.h - QTC structures
-- src/database/database_cache.c - QTC implementation
-- src/database/database_params.h - Parameter structures
-- src/database/database_params.c - Parameter parsing
-- src/database/database_queue_select.c - Queue selection
-- src/database/database_pending.h - Pending results
-- src/database/database_pending.c - Result waiting
-- src/api/conduit/conduit_service.h - Service header
-- src/api/conduit/conduit_service.c - Service implementation
-- src/api/conduit/query/query.h - Query endpoint
-- src/api/conduit/query/query.c - Query handler
 
 ## Common Pitfalls & Gotchas
 
@@ -197,8 +161,8 @@ while (!pending->completed && !pending->timed_out) {
 When picking up this work in a future session:
 
 - [ ] Read this CONDUIT.md document top to bottom
-- [ ] Review current [`DATABASE_PLAN.md`](docs/plans/DATABASE_PLAN.md) status
-- [ ] Check existing [`src/database/`](src/database/) implementation
+- [ ] Review current [`DATABASE_PLAN.md`](DATABASE_PLAN.md) status
+- [ ] Check existing [`src/database/`](../../src/database/) implementation
 - [ ] Identify which phase was last worked on (check todo list)
 - [ ] Review any existing code in `src/api/conduit/` (if created)
 - [ ] Run existing tests: `./tests/test_30_database.sh`
@@ -542,9 +506,7 @@ SELECT * FROM users WHERE user_id = ? AND username = ?
 4. Create ordered array of TypedParameter pointers
 5. Return modified SQL and parameter array
 
-**Implementation Status**: ⏳ **NOT STARTED**
-
-### Phase 4: Synchronous Query Execution
+### Phase 4: Synchronous Query Execution ✅ **COMPLETED**
 
 **Purpose**: Implement blocking wait mechanism for query results with timeout support.
 
@@ -576,59 +538,71 @@ typedef struct PendingResultManager {
 
 ```c
 // Create and register pending result
-PendingQueryResult* register_pending_result(
+PendingQueryResult* pending_result_register(
+    PendingResultManager* manager,
     const char* query_id,
     int timeout_seconds
 );
 
 // Wait for result with timeout
-QueryResult* wait_for_result(
-    PendingQueryResult* pending,
-    int timeout_seconds
-);
+int pending_result_wait(PendingQueryResult* pending);
 
 // Signal result completion (called by DQM worker)
-void signal_result_ready(
+bool pending_result_signal_ready(
+    PendingResultManager* manager,
     const char* query_id,
     QueryResult* result
 );
 
 // Cleanup expired results
-void cleanup_expired_results(PendingResultManager* manager);
+size_t pending_result_cleanup_expired(PendingResultManager* manager);
 ```
 
 **Workflow**:
 
 1. **Endpoint**: Register pending result before submitting query
 2. **Endpoint**: Submit query to selected DQM
-3. **Endpoint**: Call `wait_for_result()` with timeout
+3. **Endpoint**: Call `pending_result_wait()` with timeout
 4. **DQM Worker**: Execute query
-5. **DQM Worker**: Call `signal_result_ready()` with result
+5. **DQM Worker**: Call `pending_result_signal_ready()` with result
 6. **Endpoint**: Wake up and return result to client
 
 **Timeout Handling**:
 
 ```c
-int wait_for_result(PendingQueryResult* pending, int timeout_seconds) {
+int pending_result_wait(PendingQueryResult* pending) {
     struct timespec timeout;
-    clock_gettime(CLOCK_REALTIME, &timeout);
-    timeout.tv_sec += timeout_seconds;
-    
+    gettimeofday(&tv, NULL);
+    timeout.tv_sec = tv.tv_sec + pending->timeout_seconds;
+    timeout.tv_nsec = tv.tv_usec * 1000;
+
     pthread_mutex_lock(&pending->result_lock);
-    while (!pending->completed) {
+
+    while (!pending->completed && !pending->timed_out) {
         int rc = pthread_cond_timedwait(
             &pending->result_ready,
             &pending->result_lock,
             &timeout
         );
+
         if (rc == ETIMEDOUT) {
             pending->timed_out = true;
+            log_this("DATABASE", "Query timeout occurred", LOG_LEVEL_ERROR, true, true, true);
+            break;
+        } else if (rc != 0) {
+            log_this("DATABASE", "Error waiting for query result", LOG_LEVEL_ERROR, true, true, true);
             pthread_mutex_unlock(&pending->result_lock);
-            return -1;  // Timeout
+            return -1;
         }
     }
+
     pthread_mutex_unlock(&pending->result_lock);
-    return 0;  // Success
+
+    if (pending->timed_out) {
+        return -1;
+    }
+
+    return 0;
 }
 ```
 
@@ -954,11 +928,11 @@ graph TB
 
 ### Phase 1: Query Table Cache
 
-- [ ] Create src/database/database_cache.h with QTC structures
-- [ ] Implement src/database/database_cache.c with cache management functions
-- [ ] Add `query_cache` field to src/database/dbqueue/dbqueue.h:DatabaseQueue structure
-- [ ] Modify src/database/database_bootstrap.c:database_queue_execute_bootstrap_query to populate QTC
-- [ ] Add unit tests for QTC operations
+- [x] Create src/database/database_cache.h with QTC structures
+- [x] Implement src/database/database_cache.c with cache management functions
+- [x] Add `query_cache` field to src/database/dbqueue/dbqueue.h:DatabaseQueue structure
+- [x] Modify src/database/database_bootstrap.c:database_queue_execute_bootstrap_query to populate QTC
+- [x] Add unit tests for QTC operations
 
 ### Phase 2: Queue Selection
 
@@ -970,28 +944,28 @@ graph TB
 
 ### Phase 3: JSON Parameter Processing
 
-- [ ] Create src/database/database_params.h with parameter structures
-- [ ] Implement src/database/database_params.c with parsing functions
-- [ ] Implement typed JSON parser
-- [ ] Implement named-to-positional converter
-- [ ] Add database-specific format handlers
-- [ ] Add unit tests for parameter processing
+- [x] Create src/database/database_params.h with parameter structures
+- [x] Implement src/database/database_params.c with parsing functions
+- [x] Implement typed JSON parser
+- [x] Implement named-to-positional converter
+- [x] Add database-specific format handlers
+- [x] Add unit tests for parameter processing
 
 ### Phase 4: Synchronous Execution
 
-- [ ] Create src/database/database_pending.h with pending result structures
-- [ ] Implement src/database/database_pending.c with wait mechanism
-- [ ] Integrate signaling into DQM worker thread
-- [ ] Add periodic cleanup of expired results
-- [ ] Add unit tests for pending results
+- [x] Create src/database/database_pending.h with pending result structures
+- [x] Implement src/database/database_pending.c with wait mechanism
+- [x] Integrate signaling into DQM worker thread
+- [x] Add periodic cleanup of expired results
+- [x] Add unit tests for pending results
 
 ### Phase 5: API Service
 
-- [ ] Create directory structure: src/api/conduit/
-- [ ] Implement src/api/conduit/conduit_service.h with swagger annotations
-- [ ] Implement src/api/conduit/conduit_service.c
-- [ ] Create src/api/conduit/query/ subdirectory
-- [ ] Implement src/api/conduit/query/query.h with endpoint swagger
-- [ ] Implement src/api/conduit/query/query.c with handler logic
-- [ ] Register endpoint in src/api/api_service.c
-- [ ] Add integration tests
+- [x] Create directory structure: src/api/conduit/
+- [x] Implement src/api/conduit/conduit_service.h with swagger annotations
+- [x] Implement src/api/conduit/conduit_service.c
+- [x] Create src/api/conduit/query/ subdirectory
+- [x] Implement src/api/conduit/query/query.h with endpoint swagger
+- [x] Implement src/api/conduit/query/query.c with handler logic
+- [x] Register endpoint in src/api/api_service.c
+- [x] Add integration tests
