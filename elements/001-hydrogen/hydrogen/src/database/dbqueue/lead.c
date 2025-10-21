@@ -22,6 +22,7 @@
 
 // Local includes
 #include "dbqueue.h"
+#include "../database_bootstrap.h"
 
 // Migration timing variables
 static struct timespec migration_start_time = {0, 0};
@@ -259,7 +260,7 @@ bool database_queue_lead_execute_migration_cycle(DatabaseQueue* lead_queue, char
             database_queue_lead_log_migration_status(lead_queue, "updating");
 
             if (database_queue_lead_execute_migration_load(lead_queue)) {
-                // Re-run bootstrap query to verify what was loaded
+                // Re-run bootstrap query to verify what was loaded (migration info only)
                 database_queue_execute_bootstrap_query(lead_queue);
             } else {
                 success = false;
@@ -343,6 +344,11 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
             log_this(dqm_label, "Migration completed in %.3fs", LOG_LEVEL_TRACE, 1, elapsed_seconds);
             migration_timer_running = false;
         }
+
+        // If no migration was run, populate QTC now since this is the final step
+        log_this(dqm_label, "No migration needed - populating QTC for Conduit", LOG_LEVEL_DEBUG, 0);
+        database_queue_execute_bootstrap_query_with_qtc(lead_queue);
+
         free(dqm_label);
         return true;
     }
@@ -385,6 +391,13 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
         log_this(dqm_label, "Migration completed in %.3fs", LOG_LEVEL_TRACE, 1, elapsed_seconds);
 //        migration_timer_running = false;
     }
+
+    // Migration process completed - now populate QTC for Conduit regardless of migration success
+    // The migration situation has been resolved (either succeeded or failed), so we can proceed with QTC population
+    // This allows the application to continue even if migration failed, enabling troubleshooting
+    log_this(dqm_label, "Migration process completed (%s) - populating QTC for Conduit",
+             LOG_LEVEL_DEBUG, 1, success ? "success" : "failed but continuing");
+    database_queue_execute_bootstrap_query_with_qtc(lead_queue);
 
     free(dqm_label);
     return success;

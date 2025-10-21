@@ -69,6 +69,7 @@ struct DatabaseQueue {
     // Timer loop management for heartbeat and monitoring
     volatile time_t last_heartbeat; // Timestamp of last heartbeat check
     volatile time_t last_connection_attempt; // Timestamp of last connection attempt
+    volatile time_t last_request_time; // Timestamp of last query submission (for queue selection)
     volatile int heartbeat_interval_seconds; // Configurable heartbeat interval (default 30)
 
     // Persistent database connection for this queue

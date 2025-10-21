@@ -9,18 +9,6 @@
 5. **Build Order**: QTC → Queue Selection → Parameter Processing → Pending Results → API Endpoint
 6. **Test As You Go**: Write unit tests for each component before moving to next phase
 
-## Current Status**: Phase 1 (QTC Foundation) COMPLETED ✅
-
-**Completed Work**:
-
-- ✅ **Phase 1: Query Table Cache (QTC) Foundation** - Full implementation with thread-safe operations
-- ✅ **Database Bootstrap Integration** - QTC populated from bootstrap query results
-- ✅ **API Service Structure** - Conduit service and query endpoint framework created
-- ✅ **Unit Tests** - Comprehensive test coverage for QTC and API components
-- ✅ **Swagger Documentation** - OpenAPI annotations for `/api/conduit/query` endpoint
-
-**Next Phase**: Phase 2 - Enhanced Queue Selection with `last_request_time` field and intelligent selection algorithm
-
 ## Executive Summary
 
 The Conduit Service adds a RESTful query execution endpoint to Hydrogen that allows clients to execute pre-defined database queries by ID reference rather than sending raw SQL.
@@ -378,13 +366,13 @@ WHERE active = true
 ORDER BY query_ref;
 ```
 
-### Phase 2: Enhanced Queue Selection
+### Phase 2: Enhanced Queue Selection ✅ **COMPLETED**
 
 **Purpose**: Implement intelligent DQM selection algorithm considering queue depth and request timing.
 
 **New Field**:
 
-Add to src/database/dbqueue/dbqueue.h:DatabaseQueue structure:
+Added to src/database/dbqueue/dbqueue.h:DatabaseQueue structure:
 
 ```c
 struct DatabaseQueue {
@@ -429,6 +417,15 @@ In src/database/dbqueue/submit.c:database_queue_submit_query:
 // Update last_request_time atomically when query is submitted
 db_queue->last_request_time = time(NULL);
 ```
+
+**Implementation Status**: ✅ **FULLY IMPLEMENTED**
+
+- Queue selection algorithm implemented in `src/database/database_queue_select.c`
+- `last_request_time` field added to DatabaseQueue structure
+- Timestamp updates implemented in queue submission
+- Comprehensive unit tests added in `tests/unity/src/database/database_queue_select_test.c`
+- All static analysis warnings resolved
+- Memory leak free with proper cleanup in all test cases
 
 ### Phase 3: Parameter Processing
 
@@ -544,6 +541,8 @@ SELECT * FROM users WHERE user_id = ? AND username = ?
 3. Replace each `:paramName` with appropriate placeholder
 4. Create ordered array of TypedParameter pointers
 5. Return modified SQL and parameter array
+
+**Implementation Status**: ⏳ **NOT STARTED**
 
 ### Phase 4: Synchronous Query Execution
 
@@ -963,11 +962,11 @@ graph TB
 
 ### Phase 2: Queue Selection
 
-- [ ] Add `last_request_time` field to src/database/dbqueue/dbqueue.h:DatabaseQueue
-- [ ] Create src/database/database_queue_select.c with selection algorithm
-- [ ] Update src/database/dbqueue/submit.c:database_queue_submit_query to set timestamp
-- [ ] Initialize `last_request_time` in queue creation functions
-- [ ] Add unit tests for selection algorithm
+- [x] Add `last_request_time` field to src/database/dbqueue/dbqueue.h:DatabaseQueue
+- [x] Create src/database/database_queue_select.c with selection algorithm
+- [x] Update src/database/dbqueue/submit.c:database_queue_submit_query to set timestamp
+- [x] Initialize `last_request_time` in queue creation functions
+- [x] Add unit tests for selection algorithm
 
 ### Phase 3: JSON Parameter Processing
 
