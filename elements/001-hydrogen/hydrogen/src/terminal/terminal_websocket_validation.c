@@ -7,7 +7,7 @@
  */
 
 #include <src/hydrogen.h>
-#include "../globals.h"
+#include <src/globals.h>
 #include <src/logging/logging.h>
 #include <src/config/config_terminal.h>
 #include "terminal_websocket.h"

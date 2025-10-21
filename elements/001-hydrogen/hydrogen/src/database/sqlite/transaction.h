@@ -7,7 +7,7 @@
 #ifndef SQLITE_TRANSACTION_H
 #define SQLITE_TRANSACTION_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Transaction management
 bool sqlite_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel level, Transaction** transaction);

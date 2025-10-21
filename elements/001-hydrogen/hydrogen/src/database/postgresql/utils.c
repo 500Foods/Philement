@@ -5,7 +5,7 @@
  */
 
 #include <src/hydrogen.h>
-#include "../database.h"
+#include <src/database/database.h>
 #include "types.h"
 #include "connection.h"
 #include "utils.h"

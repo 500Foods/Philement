@@ -4,13 +4,13 @@
  * Implements the OAuth 2.0 authorization endpoint (/oauth/authorize)
  */
 
-  // Global includes 
+// Project includes 
 #include <src/hydrogen.h>
+#include <src/api/oidc/oidc_service.h>
+#include <src/oidc/oidc_service.h>
 
 // Local includes
 #include "authorization.h"
-#include "../oidc_service.h"
-#include "../../../oidc/oidc_service.h"
 
 /**
  * Authorization endpoint

@@ -5,14 +5,14 @@
  * to file upload functionality with structured JSON responses.
  */
 
-// Global includes
+// Project includes
 #include <src/hydrogen.h>
+#include <src/api/api_utils.h>
+#include <src/api/system/system_service.h>
+#include <src/webserver/web_server_upload.h>
 
 // Local includes
 #include "upload.h"
-#include "../system_service.h"
-#include "../../../webserver/web_server_upload.h"
-#include "../../../api/api_utils.h"
 
 // Validate HTTP method for upload requests
 // Returns MHD_YES if method is valid (POST), MHD_NO if invalid

@@ -5,13 +5,13 @@
  * version information for the API and server.
  */
 
-// Global includes
+// Project includes
 #include <src/hydrogen.h>
+#include <src/api/api_utils.h>
+#include <src/webserver/web_server_core.h>
 
 // Local includes
 #include "version.h"
-#include "../../api_utils.h"
-#include "../../../webserver/web_server_core.h"
 
 /**
  * Simple version endpoint that returns version information

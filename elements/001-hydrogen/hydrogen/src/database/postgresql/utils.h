@@ -9,7 +9,7 @@
 
 #include <stdbool.h>
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Function prototypes for utility functions
 char* postgresql_get_connection_string(const ConnectionConfig* config);

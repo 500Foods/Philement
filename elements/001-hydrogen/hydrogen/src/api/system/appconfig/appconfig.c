@@ -5,13 +5,13 @@
  * application configuration in plain text format.
  */
 
-  // Global includes 
+// Project includes 
 #include <src/hydrogen.h>
+#include <src/api/system/system_service.h>
+#include <src/api/api_utils.h>
 
 // Local includes
 #include "appconfig.h"
-#include "../system_service.h"
-#include "../../../api/api_utils.h"
 
 // Handle GET /api/system/appconfig requests
 // Returns current application configuration in plain text format

@@ -10,6 +10,7 @@
 #include <src/database/database.h>
 #include <src/database/database_connstring.h>
 #include <src/database/database_bootstrap.h>
+#include <src/database/database_pending.h>
 #include <src/database/sqlite/types.h>
 
 // Local includes
@@ -366,6 +367,17 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
     // If Lead queue, manage child queues
     if (db_queue->is_lead_queue) {
         database_queue_manage_child_queues(db_queue);
+    }
+
+    // Periodic cleanup of expired pending results
+    PendingResultManager* pending_mgr = get_pending_result_manager();
+    if (pending_mgr) {
+        size_t cleaned = pending_result_cleanup_expired(pending_mgr);
+        if (cleaned > 0) {
+            char* cleanup_label = database_queue_generate_label(db_queue);
+            log_this(cleanup_label, "Cleaned up %zu expired pending results", LOG_LEVEL_DEBUG, 1, cleaned);
+            free(cleanup_label);
+        }
     }
 }
 

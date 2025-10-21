@@ -7,7 +7,7 @@
 #ifndef DATABASE_ENGINE_DB2_UTILS_H
 #define DATABASE_ENGINE_DB2_UTILS_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Utility functions
 char* db2_get_connection_string(const ConnectionConfig* config);

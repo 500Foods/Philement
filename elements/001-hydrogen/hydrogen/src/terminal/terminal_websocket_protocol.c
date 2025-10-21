@@ -6,7 +6,7 @@
  */
 
 #include <src/hydrogen.h>
-#include "../globals.h"
+#include <src/globals.h>
 #include <src/logging/logging.h>
 #include <src/utils/utils.h>
 #include <src/webserver/web_server_core.h>

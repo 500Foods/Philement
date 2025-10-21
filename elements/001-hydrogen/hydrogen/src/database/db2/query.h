@@ -7,7 +7,7 @@
 #ifndef DATABASE_ENGINE_DB2_QUERY_H
 #define DATABASE_ENGINE_DB2_QUERY_H
 
-#include "../database.h"
+#include <src/database/database.h>
 
 // Query execution
 bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result);

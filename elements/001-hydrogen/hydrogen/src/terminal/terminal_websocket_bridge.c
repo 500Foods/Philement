@@ -7,7 +7,7 @@
  */
 
 #include <src/hydrogen.h>
-#include "../globals.h"
+#include <src/globals.h>
 #include <src/logging/logging.h>
 #include "terminal_shell.h"
 #include "terminal_session.h"
