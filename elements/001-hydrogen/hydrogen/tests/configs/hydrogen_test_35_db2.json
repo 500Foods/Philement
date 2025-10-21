@@ -17,7 +17,7 @@
                 "Port": 55555,
                 "User": "${env.HYDROTST_DB_USER}",
                 "Pass": "${env.HYDROTST_DB_PASS}",
-                "Bootstrap":"SELECT query_id, query_ref, query_status_lua_27, query_type_lua_28, query_dialect_lua_30, query_queue_lua_58, query_timeout, name, code FROM test.queries WHERE (query_status_lua_27 = 1) ORDER BY query_type_lua_28 desc;",
+                "Bootstrap":"SELECT query_id id, query_ref ref, query_status_a27 status, query_type_lua_28 type, query_dialect_lua_30 engine, query_queue_lua_58 queue, query_timeout timeout, name, code query FROM test.queries WHERE (query_status_lua_27 = 1) ORDER BY query_type_lua_28 desc;",
                 "AutoMigration": true,
                 "TestMigration": true,
                 "Migrations":"PAYLOAD:acuranzo",
