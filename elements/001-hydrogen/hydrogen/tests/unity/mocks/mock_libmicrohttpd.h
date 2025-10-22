@@ -41,6 +41,7 @@ void MHD_destroy_response(struct MHD_Response *response);
 void mock_mhd_reset_all(void);
 void mock_mhd_set_lookup_result(const char *result);
 const char* mock_mhd_get_lookup_result(void);
+void mock_mhd_add_lookup(const char* key, const char* value);
 void mock_mhd_set_connection_info(const union MHD_ConnectionInfo *info);
 void mock_mhd_set_create_response_should_fail(bool should_fail);
 void mock_mhd_set_add_header_should_fail(bool should_fail);

@@ -3,92 +3,129 @@
  * This file contains unit tests for determine_http_status function in query.c
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+// Standard includes
+#include <stdlib.h>
+#include <string.h>
+
+// Project includes
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
-#include "../../../../../src/database/database_pending.h"
+#include <src/database/database_pending.h>
+#include <src/database/database_types.h>
 
 // Include source header
-#include "../../../../../src/api/conduit/query/query.h"
+#include <src/api/conduit/query/query.h>
 
-// Forward declaration for the function under test
+void setUp(void);
+void tearDown(void);
 
-// Mock for pending_result_is_timed_out
-static bool mock_pending_result_is_timed_out(const PendingQueryResult* pending);
-#define pending_result_is_timed_out mock_pending_result_is_timed_out
+// Helper to create dummy QueryResult
+static QueryResult* create_dummy_query_result(bool success, bool has_error, const char* error_msg) {
+    QueryResult* result = calloc(1, sizeof(QueryResult));
+    if (!result) return NULL;
 
-// Mock implementation
-static bool mock_is_timed_out = false;
+    result->success = success;
+    if (has_error && error_msg) {
+        result->error_message = strdup(error_msg);
+    }
+    return result;
+}
 
-static bool mock_pending_result_is_timed_out(const PendingQueryResult* pending) {
-    (void)pending;
-    return mock_is_timed_out;
+// Helper to create dummy PendingQueryResult
+static PendingQueryResult* create_dummy_pending(bool timed_out) {
+    PendingQueryResult* pending = calloc(1, sizeof(PendingQueryResult));
+    if (!pending) return NULL;
+
+    pending->timed_out = timed_out;
+    return pending;
 }
 
 void setUp(void) {
-    // Reset mocks
-    mock_is_timed_out = false;
-    (void)mock_pending_result_is_timed_out(NULL);
+    // No setup needed for real implementations
 }
 
 void tearDown(void) {
-    // Clean up
+    // No cleanup needed
 }
 
 // Test timeout case
 static void test_determine_http_status_timeout(void) {
-    PendingQueryResult* dummy_pending = (PendingQueryResult*)0x1;
-    const QueryResult* dummy_result = (const QueryResult*)0x1;
-    mock_is_timed_out = true;
+    PendingQueryResult* pending = create_dummy_pending(true);
+    TEST_ASSERT_NOT_NULL(pending);
 
-    unsigned int status = determine_http_status(dummy_pending, dummy_result);
+    QueryResult* result = create_dummy_query_result(true, false, NULL);
+    TEST_ASSERT_NOT_NULL(result);
+
+    unsigned int status = determine_http_status(pending, result);
 
     TEST_ASSERT_EQUAL_UINT(MHD_HTTP_REQUEST_TIMEOUT, status);
+
+    free(pending);
+    free(result->error_message);
+    free(result);
 }
 
 // Test database error case
 static void test_determine_http_status_database_error(void) {
-    PendingQueryResult* dummy_pending = (PendingQueryResult*)0x1;
-    const QueryResult* result = (const QueryResult*)0x1;
-    mock_is_timed_out = false;
+    PendingQueryResult* pending = create_dummy_pending(false);
+    TEST_ASSERT_NOT_NULL(pending);
 
-    unsigned int status = determine_http_status(dummy_pending, result);
+    QueryResult* result = create_dummy_query_result(false, true, "Database connection failed");
+    TEST_ASSERT_NOT_NULL(result);
+
+    unsigned int status = determine_http_status(pending, result);
 
     TEST_ASSERT_EQUAL_UINT(MHD_HTTP_INTERNAL_SERVER_ERROR, status);
+
+    free(pending);
+    free(result->error_message);
+    free(result);
 }
 
 // Test general bad request case (no timeout, no error_message)
 static void test_determine_http_status_general_failure(void) {
-    PendingQueryResult* dummy_pending = (PendingQueryResult*)0x1;
-    const QueryResult* result = (const QueryResult*)0x1; // No error_message
-    mock_is_timed_out = false;
+    PendingQueryResult* pending = create_dummy_pending(false);
+    TEST_ASSERT_NOT_NULL(pending);
 
-    unsigned int status = determine_http_status(dummy_pending, result);
+    QueryResult* result = create_dummy_query_result(false, false, NULL);
+    TEST_ASSERT_NOT_NULL(result);
+
+    unsigned int status = determine_http_status(pending, result);
 
     TEST_ASSERT_EQUAL_UINT(MHD_HTTP_BAD_REQUEST, status);
+
+    free(pending);
+    free(result);
 }
 
 // Test with NULL result
 static void test_determine_http_status_null_result(void) {
-    PendingQueryResult* dummy_pending = (PendingQueryResult*)0x1;
-    const QueryResult* result = NULL;
-    mock_is_timed_out = false;
+    PendingQueryResult* pending = create_dummy_pending(false);
+    TEST_ASSERT_NOT_NULL(pending);
 
-    unsigned int status = determine_http_status(dummy_pending, result);
+    const QueryResult* result = NULL;
+
+    unsigned int status = determine_http_status(pending, result);
 
     TEST_ASSERT_EQUAL_UINT(MHD_HTTP_BAD_REQUEST, status);
+
+    free(pending);
 }
 
 // Test with NULL pending (should fall to bad request)
 static void test_determine_http_status_null_pending(void) {
-    PendingQueryResult* pending = NULL;
-    const QueryResult* dummy_result = (const QueryResult*)0x1;
-    mock_is_timed_out = false; // Won't be called
+    const PendingQueryResult* pending = NULL;
 
-    unsigned int status = determine_http_status(pending, dummy_result);
+    QueryResult* result = create_dummy_query_result(false, false, NULL);
+    TEST_ASSERT_NOT_NULL(result);
+
+    unsigned int status = determine_http_status(pending, result);
 
     TEST_ASSERT_EQUAL_UINT(MHD_HTTP_BAD_REQUEST, status);
+
+    free(result);
 }
 
 int main(void) {

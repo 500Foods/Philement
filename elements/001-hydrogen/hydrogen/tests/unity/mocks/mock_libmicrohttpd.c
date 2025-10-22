@@ -18,6 +18,15 @@ static bool mock_mhd_add_header_should_fail = false;
 static enum MHD_Result mock_mhd_queue_response_result = MHD_YES;
 static bool mock_mhd_is_terminal_websocket_request_result = true;
 
+// For key-based lookup
+typedef struct {
+    const char* key;
+    const char* value;
+} MockLookupEntry;
+
+static MockLookupEntry mock_lookup_entries[10];
+static int mock_lookup_count = 0;
+
 /*
  * Mock implementation of MHD_lookup_connection_value
  * Use weak linkage to avoid conflicts with other test files
@@ -28,9 +37,15 @@ const char* MHD_lookup_connection_value(struct MHD_Connection *connection,
                                          const char *key) {
     (void)connection; // Suppress unused parameter warning
     (void)kind;       // Suppress unused parameter warning
-    (void)key;        // Suppress unused parameter warning
 
-    // Return the mock result
+    // First check key-based lookups
+    for (int i = 0; i < mock_lookup_count; i++) {
+        if (strcmp(mock_lookup_entries[i].key, key) == 0) {
+            return mock_lookup_entries[i].value;
+        }
+    }
+
+    // Fall back to global mock if no key match
     return mock_mhd_lookup_result;
 }
 
@@ -125,6 +140,13 @@ void mock_mhd_reset_all(void) {
     mock_mhd_add_header_should_fail = false;
     mock_mhd_queue_response_result = MHD_YES;
     mock_mhd_is_terminal_websocket_request_result = true;
+
+    // Reset key-based lookups
+    for (int i = 0; i < mock_lookup_count; i++) {
+        if (mock_lookup_entries[i].key) free((void*)mock_lookup_entries[i].key);
+        if (mock_lookup_entries[i].value) free((void*)mock_lookup_entries[i].value);
+    }
+    mock_lookup_count = 0;
 }
 
 /*
@@ -140,6 +162,19 @@ void mock_mhd_set_lookup_result(const char *result) {
     } else {
         mock_mhd_lookup_result = NULL;
     }
+}
+
+/*
+ * Add a key-value pair for lookup
+ */
+void mock_mhd_add_lookup(const char* key, const char* value) {
+    if (mock_lookup_count >= 10) {
+        return; // Max entries reached
+    }
+
+    mock_lookup_entries[mock_lookup_count].key = strdup(key);
+    mock_lookup_entries[mock_lookup_count].value = value ? strdup(value) : NULL;
+    mock_lookup_count++;
 }
 
 /*

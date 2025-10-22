@@ -3,37 +3,48 @@
  * This file contains unit tests for lookup_query_cache_entry function in query.c
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary database headers
-#include "../../../../../src/database/database_cache.h"
+#include <src/database/database_cache.h>
 
 // Include source header
-#include "../../../../../src/api/conduit/query/query.h"
+#include <src/api/conduit/query/query.h>
 
-// No forward declaration needed
-
-// Mock for query_cache_lookup to avoid external dependencies
-QueryCacheEntry* mock_query_cache_lookup(void* cache, int ref);
-#define query_cache_lookup mock_query_cache_lookup
-
-// Dummy implementations for compilation
-
-QueryCacheEntry* mock_query_cache_lookup(void* cache, int ref) {
-    (void)cache;
-    (void)ref;
-    // Return a dummy entry for valid cases
-    static QueryCacheEntry dummy_entry = {0};
-    return &dummy_entry;
-}
+// Global test fixtures
+static QueryTableCache* g_cache = NULL;
+static DatabaseQueue* g_db_queue = NULL;
+static QueryCacheEntry* g_entry = NULL;
 
 void setUp(void) {
-    // Reset any mock state
+    // Create test fixtures
+    g_cache = query_cache_create();
+    TEST_ASSERT_NOT_NULL(g_cache);
+
+    g_entry = query_cache_entry_create(1, "SELECT 1", "test description", "select", 30);
+    TEST_ASSERT_NOT_NULL(g_entry);
+
+    bool added = query_cache_add_entry(g_cache, g_entry);
+    TEST_ASSERT_TRUE(added);
+
+    g_db_queue = malloc(sizeof(DatabaseQueue));
+    TEST_ASSERT_NOT_NULL(g_db_queue);
+    memset(g_db_queue, 0, sizeof(DatabaseQueue));
+    g_db_queue->query_cache = g_cache;
 }
 
 void tearDown(void) {
-    // Clean up
+    if (g_cache) {
+        query_cache_destroy(g_cache);
+        g_cache = NULL;
+    }
+    if (g_db_queue) {
+        free(g_db_queue);
+        g_db_queue = NULL;
+    }
+    g_entry = NULL;
 }
 
 // Test with NULL db_queue
@@ -48,46 +59,43 @@ static void test_lookup_query_cache_entry_null_db_queue(void) {
 
 // Test with db_queue but NULL query_cache
 static void test_lookup_query_cache_entry_null_query_cache(void) {
-    DatabaseQueue db_queue = {0}; // query_cache is NULL
+    DatabaseQueue db_queue_local = {0}; // query_cache is NULL
     int query_ref = 1;
 
-    QueryCacheEntry* result = lookup_query_cache_entry(&db_queue, query_ref);
+    QueryCacheEntry* result = lookup_query_cache_entry(&db_queue_local, query_ref);
 
     TEST_ASSERT_NULL(result);
 }
 
 // Test with valid db_queue and query_cache, valid query_ref
 static void test_lookup_query_cache_entry_valid(void) {
-    DatabaseQueue db_queue;
-    db_queue.query_cache = (void*)0x1; // Dummy non-NULL pointer
     int query_ref = 1;
 
-    QueryCacheEntry* result = lookup_query_cache_entry(&db_queue, query_ref);
+    QueryCacheEntry* result = lookup_query_cache_entry(g_db_queue, query_ref);
 
-    TEST_ASSERT_NOT_NULL(result); // Should return the mock result
-    // Additional assertions on the returned entry if needed
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_INT(1, result->query_ref);
+    TEST_ASSERT_EQUAL_STRING("SELECT 1", result->sql_template);
+    TEST_ASSERT_EQUAL_STRING("test description", result->description);
+    TEST_ASSERT_EQUAL_STRING("select", result->queue_type);
 }
 
 // Test with valid db_queue and query_cache, query_ref 0
 static void test_lookup_query_cache_entry_query_ref_zero(void) {
-    DatabaseQueue db_queue;
-    db_queue.query_cache = (void*)0x1;
     int query_ref = 0;
 
-    QueryCacheEntry* result = lookup_query_cache_entry(&db_queue, query_ref);
+    QueryCacheEntry* result = lookup_query_cache_entry(g_db_queue, query_ref);
 
-    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_NULL(result);
 }
 
 // Test with valid db_queue and query_cache, negative query_ref
 static void test_lookup_query_cache_entry_negative_query_ref(void) {
-    DatabaseQueue db_queue;
-    db_queue.query_cache = (void*)0x1;
     int query_ref = -1;
 
-    QueryCacheEntry* result = lookup_query_cache_entry(&db_queue, query_ref);
+    QueryCacheEntry* result = lookup_query_cache_entry(g_db_queue, query_ref);
 
-    TEST_ASSERT_NOT_NULL(result); // Mock returns dummy regardless
+    TEST_ASSERT_NULL(result);
 }
 
 int main(void) {

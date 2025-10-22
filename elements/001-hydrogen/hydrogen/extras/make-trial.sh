@@ -26,6 +26,52 @@ else
     cd cmake || return
 fi
 
+# Build mku completions mechanism
+project_root=$(cd ".." && pwd 2>/dev/null) || return 0
+unity_src_dir="${project_root}/tests/unity/src"
+mapfile -t tests < <(find "${unity_src_dir}" -name "*.c" -exec basename {} .c \; | sort -u || true)
+
+# Generate/update the completion file
+completion_file="${HOME}/.mku-complete.bash"
+cat > "${completion_file}" << EOF
+# Auto-generated mku completions on $(date || true)
+complete -W "${tests[*]}" mku
+EOF
+
+# Count for logging
+num_tests=${#tests[@]}
+echo "$(date +%H:%M:%S.%3N || true) - Updating ${num_tests} Completions" 
+export MKU_NUM_TESTS=${num_tests}
+
+# Print eval command for immediate reload in current shell
+# (User pastes/runs this once; it sources the new file)
+# cat << 'EOT'
+# # To apply now in this terminal: eval "$(cat << 'RELOAD_EOF'
+# source ~/.mku-complete.bash
+# #RELOAD_EOF
+# )"
+# EOT
+
+zsh_file="${HOME}/.mku-zsh-complete.zsh"
+cat > "${zsh_file}" << EOS
+# Dynamic mku completions for zsh (generated on $(date || true))
+_mku() {
+    local cur="\${words[CURRENT]}"
+    local project_root="/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen"
+    local unity_src_dir="\$project_root/tests/unity/src"
+    local -a tests
+    tests=(\$(find "\$unity_src_dir" -name "*.c" -exec basename {} .c \\; | sort -u))
+    if [[ \$CURRENT -gt 2 ]]; then
+        return 0
+    fi
+    compadd "${tests[@]}" 
+}
+compdef _mku mku
+
+# Embedded count for reload feedback
+export MKU_NUM_TESTS=${num_tests}
+EOS
+
 echo "$(date +%H:%M:%S.%3N || true) - Default Build"
 
 # Build main project with payload and check for errors
