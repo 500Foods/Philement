@@ -3,8 +3,9 @@
  * This file contains unit tests for database_get_queue_counts_by_type function
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
 #include "../../../../src/database/database.h"

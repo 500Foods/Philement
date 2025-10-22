@@ -71,6 +71,8 @@ bool validate_http_method(const char* method);
 json_t* parse_request_data(struct MHD_Connection* connection, const char* method,
                           const char* upload_data, const size_t* upload_data_size);
 bool extract_request_fields(json_t* request_json, int* query_ref, const char** database, json_t** params);
+DatabaseQueue* lookup_database_queue(const char* database);
+QueryCacheEntry* lookup_query_cache_entry(DatabaseQueue* db_queue, int query_ref);
 bool lookup_database_and_query(DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
                               const char* database, int query_ref);
 bool process_parameters(json_t* params_json, ParameterList** param_list,
@@ -80,6 +82,12 @@ DatabaseQueue* select_query_queue(const char* database, const char* queue_type);
 bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_id,
                              const char* converted_sql, TypedParameter** ordered_params,
                              size_t param_count, const QueryCacheEntry* cache_entry);
+const QueryResult* wait_for_query_result(PendingQueryResult* pending);
+json_t* parse_query_result_data(const QueryResult* result);
+json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry,
+                             const QueryResult* result, const DatabaseQueue* selected_queue);
+json_t* build_error_response(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
+                           const PendingQueryResult* pending, const QueryResult* result);
 json_t* build_response_json(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
                            const DatabaseQueue* selected_queue, PendingQueryResult* pending);
 unsigned int determine_http_status(const PendingQueryResult* pending, const QueryResult* result);

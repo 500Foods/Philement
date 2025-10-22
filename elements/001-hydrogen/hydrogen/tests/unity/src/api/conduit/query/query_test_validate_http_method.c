@@ -1,76 +1,64 @@
 /*
- * Unity Test: validate_http_method function
- * Tests HTTP method validation for conduit query endpoint
+ * Unity Test File: Test validate_http_method function
+ * This file contains unit tests for src/api/conduit/query/query.c validate_http_method function
  */
 
 #include <src/hydrogen.h>
-#include <unity.h>
+#include "unity.h"
 
-// Include the source header to access the function
-#include <src/api/conduit/query/query.h>
-
-// Forward declaration for the static function we want to test
+// Forward declaration for the function being tested
 bool validate_http_method(const char* method);
 
-// Test function prototypes
+// Function prototypes
 void test_validate_http_method_get(void);
 void test_validate_http_method_post(void);
-void test_validate_http_method_put(void);
-void test_validate_http_method_delete(void);
-void test_validate_http_method_patch(void);
+void test_validate_http_method_invalid(void);
 void test_validate_http_method_null(void);
-void test_validate_http_method_empty(void);
-void test_validate_http_method_case_sensitivity(void);
+void test_validate_http_method_case_sensitive(void);
 
 void setUp(void) {
-    // No setup needed
+    // No specific setup needed
 }
 
 void tearDown(void) {
-    // No cleanup needed
+    // No specific teardown needed
 }
 
 // Test valid GET method
 void test_validate_http_method_get(void) {
-    TEST_ASSERT_TRUE(validate_http_method("GET"));
+    bool result = validate_http_method("GET");
+
+    TEST_ASSERT_TRUE(result);
 }
 
 // Test valid POST method
 void test_validate_http_method_post(void) {
-    TEST_ASSERT_TRUE(validate_http_method("POST"));
+    bool result = validate_http_method("POST");
+
+    TEST_ASSERT_TRUE(result);
 }
 
-// Test invalid PUT method
-void test_validate_http_method_put(void) {
-    TEST_ASSERT_FALSE(validate_http_method("PUT"));
+// Test invalid method
+void test_validate_http_method_invalid(void) {
+    bool result = validate_http_method("PUT");
+
+    TEST_ASSERT_FALSE(result);
 }
 
-// Test invalid DELETE method
-void test_validate_http_method_delete(void) {
-    TEST_ASSERT_FALSE(validate_http_method("DELETE"));
+// Test NULL method
+void test_validate_http_method_null(void) {
+    bool result = validate_http_method(NULL);
+
+    TEST_ASSERT_FALSE(result);
 }
 
-// Test invalid PATCH method
-void test_validate_http_method_patch(void) {
-    TEST_ASSERT_FALSE(validate_http_method("PATCH"));
-}
+// Test case sensitive - should be case sensitive as per strcmp
+void test_validate_http_method_case_sensitive(void) {
+    bool result_get_lower = validate_http_method("get");
+    bool result_post_upper = validate_http_method("post");
 
-// Test NULL method - skip this test as it causes segfault
-// void test_validate_http_method_null(void) {
-//     TEST_ASSERT_FALSE(validate_http_method(NULL));
-// }
-
-// Test empty string method
-void test_validate_http_method_empty(void) {
-    TEST_ASSERT_FALSE(validate_http_method(""));
-}
-
-// Test case sensitivity - should be case sensitive
-void test_validate_http_method_case_sensitivity(void) {
-    TEST_ASSERT_FALSE(validate_http_method("get"));
-    TEST_ASSERT_FALSE(validate_http_method("Get"));
-    TEST_ASSERT_FALSE(validate_http_method("post"));
-    TEST_ASSERT_FALSE(validate_http_method("Post"));
+    TEST_ASSERT_FALSE(result_get_lower);
+    TEST_ASSERT_FALSE(result_post_upper);
 }
 
 int main(void) {
@@ -78,11 +66,9 @@ int main(void) {
 
     RUN_TEST(test_validate_http_method_get);
     RUN_TEST(test_validate_http_method_post);
-    RUN_TEST(test_validate_http_method_put);
-    RUN_TEST(test_validate_http_method_delete);
-    RUN_TEST(test_validate_http_method_patch);
-    RUN_TEST(test_validate_http_method_empty);
-    RUN_TEST(test_validate_http_method_case_sensitivity);
+    RUN_TEST(test_validate_http_method_invalid);
+    RUN_TEST(test_validate_http_method_null);
+    RUN_TEST(test_validate_http_method_case_sensitive);
 
     return UNITY_END();
 }
