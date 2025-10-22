@@ -14,7 +14,7 @@
 #include <src/landing/landing.h>
 
 // Include mock header (but we'll override the functions)
-#include "../../../mocks/mock_landing.h"
+#include <unity/mocks/mock_landing.h>
 
 // Forward declarations for functions being tested
 LaunchReadiness check_mdns_client_landing_readiness(void);

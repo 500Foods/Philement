@@ -11,7 +11,7 @@
 #include <src/landing/landing.h>
 
 // Include mock header
-#include "../../../mocks/mock_landing.h"
+#include <unity/mocks/mock_landing.h>
 
 // Forward declarations for functions being tested
 void report_registry_landing_status(void);
