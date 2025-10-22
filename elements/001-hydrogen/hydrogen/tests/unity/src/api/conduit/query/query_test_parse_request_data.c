@@ -3,17 +3,19 @@
  * This file contains unit tests for parse_request_data function in query.c
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
-
+// Third-party includes
 #include <microhttpd.h>
+
+// Project includes
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Enable MHD mock BEFORE including source headers
 #define USE_MOCK_LIBMICROHTTPD
-#include "../../../../../tests/unity/mocks/mock_libmicrohttpd.h"
+#include <unity/mocks/mock_libmicrohttpd.h>
 
 // Include source header (functions will be mocked where applicable)
-#include "../../../../../src/api/conduit/query/query.h"
+#include <src/api/conduit/query/query.h>
 
 // Forward declaration for the function under test
 json_t* parse_request_data(struct MHD_Connection* connection, const char* method,
@@ -88,14 +90,25 @@ static void test_parse_request_data_get_valid_params(void) {
     const char* upload_data = NULL;
     size_t upload_data_size = 0;
 
-    // Mock MHD_lookup_connection_value calls - using available mock
-    mock_mhd_set_lookup_result("1"); // For query_ref
-    // Note: For full coverage, multiple calls would need sequential mocks, but this covers the GET branch
-
+    mock_mhd_add_lookup("query_ref", "1");
+    mock_mhd_add_lookup("database", "testdb");
+    mock_mhd_add_lookup("params", "{}");
+    
     json_t* result = parse_request_data(mock_connection, method, upload_data, &upload_data_size);
-
+    
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_TRUE(json_is_object(result));
+    
+    json_t* query_ref = json_object_get(result, "query_ref");
+    json_t* database = json_object_get(result, "database");
+    json_t* params = json_object_get(result, "params");
+    
+    TEST_ASSERT_NOT_NULL(query_ref);
+    TEST_ASSERT_EQUAL_INT(1, json_integer_value(query_ref));
+    TEST_ASSERT_NOT_NULL(database);
+    TEST_ASSERT_EQUAL_STRING("testdb", json_string_value(database));
+    TEST_ASSERT_NOT_NULL(params);
+    TEST_ASSERT_TRUE(json_is_object(params));
 
     // At least the branch is taken; fields may not be set if mock not per-key
     json_decref(result);

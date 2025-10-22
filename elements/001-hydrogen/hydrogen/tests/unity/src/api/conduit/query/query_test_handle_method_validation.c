@@ -3,12 +3,12 @@
  * This file contains unit tests for handle_method_validation function in query.c
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include source header
 #include <microhttpd.h>
-#include "../../../../../src/api/conduit/query/query.h"
+#include <src/api/conduit/query/query.h>
 
 // Forward declaration for the function under test
 enum MHD_Result handle_method_validation(struct MHD_Connection *connection, const char* method);
