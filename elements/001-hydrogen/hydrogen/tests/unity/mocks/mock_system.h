@@ -20,6 +20,7 @@
 
 // Override system functions with our mocks
 #define malloc mock_malloc
+#define calloc mock_calloc
 #define free mock_free
 #define realloc mock_realloc
 #define strdup mock_strdup
@@ -46,6 +47,7 @@
 
 // Always declare mock function prototypes for the .c file
 void *mock_malloc(size_t size);
+void *mock_calloc(size_t num, size_t size);
 void *mock_realloc(void *ptr, size_t size);
 void mock_free(void *ptr);
 char *mock_strdup(const char *s);
@@ -72,6 +74,7 @@ int mock_sem_init(sem_t *sem, int pshared, unsigned int value);
 
 // Mock control functions for tests - always available
 void mock_system_set_malloc_failure(int should_fail);
+void mock_system_set_calloc_failure(int should_fail);
 void mock_system_set_realloc_failure(int should_fail);
 void mock_system_set_gethostname_failure(int should_fail);
 void mock_system_set_gethostname_result(const char *result);

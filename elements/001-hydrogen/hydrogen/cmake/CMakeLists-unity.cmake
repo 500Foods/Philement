@@ -42,6 +42,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_migrations.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_db2_transaction.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_engine.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_dbqueue.c
 )
 
 # Print-specific mock sources (only linked to print tests)
@@ -280,7 +281,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(MOCK_DEFINES "-DUSE_MOCK_LIBSQLITE3")
     elseif(IS_DATABASE_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
-        set(MOCK_DEFINES "-DUSE_MOCK_DATABASE_MIGRATIONS -DUSE_MOCK_DATABASE_ENGINE -DUSE_MOCK_DB2_TRANSACTION -DUSE_MOCK_SYSTEM")
+        set(MOCK_DEFINES "-DUSE_MOCK_DATABASE_MIGRATIONS -DUSE_MOCK_DATABASE_ENGINE -DUSE_MOCK_DB2_TRANSACTION -DUSE_MOCK_SYSTEM -DUSE_MOCK_DBQUEUE")
     elseif(IS_PRINT_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LOGGING -Dlog_this=mock_log_this")
