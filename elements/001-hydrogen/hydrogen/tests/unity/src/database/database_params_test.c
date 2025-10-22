@@ -4,8 +4,9 @@
  * This file contains unit tests for database parameter parsing and conversion functionality.
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <unity.h>
 
 #include "../../../../src/database/database_params.h"
 

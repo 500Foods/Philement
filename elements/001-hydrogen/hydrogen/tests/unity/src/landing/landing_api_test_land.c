@@ -18,7 +18,7 @@
 #include <src/globals.h>
 
 // Include mock header
-#include "../../../mocks/mock_landing.h"
+#include <unity/mocks/mock_landing.h>
 
 // Forward declarations for functions being tested
 int land_api_subsystem(void);

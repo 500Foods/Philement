@@ -3,9 +3,9 @@
  * Tests the database_queue_shutdown_child_queue function
  */
 
-// Standard project header plus Unity Framework header
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
 #include "../../../../../src/database/dbqueue/dbqueue.h"

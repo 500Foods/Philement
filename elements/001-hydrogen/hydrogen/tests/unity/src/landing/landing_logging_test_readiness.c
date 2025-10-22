@@ -18,7 +18,7 @@
 #include <src/state/state_types.h>
 
 // Include mock header
-#include "../../../mocks/mock_landing.h"
+#include <unity/mocks/mock_landing.h>
 
 // Forward declarations for functions being tested
 LaunchReadiness check_logging_landing_readiness(void);

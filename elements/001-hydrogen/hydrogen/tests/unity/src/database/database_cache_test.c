@@ -4,8 +4,10 @@
  * Tests the database cache functionality for storing and retrieving query templates.
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <unity.h>
+
 #include "../../../../src/database/database_cache.h"
 
 // Test function prototypes

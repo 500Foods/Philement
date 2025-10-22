@@ -4,9 +4,9 @@
  * from src/terminal/terminal.c to improve overall test coverage
  */
 
-// Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers
 #include "../../../../src/terminal/terminal.h"

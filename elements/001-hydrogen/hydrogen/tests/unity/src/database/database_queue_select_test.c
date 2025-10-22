@@ -4,8 +4,9 @@
  * from src/database/database_queue_select.c
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include source headers
 #include "../../../../src/database/dbqueue/dbqueue.h"

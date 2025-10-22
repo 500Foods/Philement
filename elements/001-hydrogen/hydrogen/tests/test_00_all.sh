@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 6.6.2 - 2025-10-21 - Fixed formatting issue when calling cloc_tables.sh by adding LANG to: env -i "LANG=$LANG" bash -c <command>
 # 6.6.1 - 2025-10-16 - Added Luacheck to commands to search for
 # 6.6.0 - 2025-09-26 - Added JSON generation so that we have easier access to the table data later when we want to analyze historical trends
 # 6.5.0 - 2025-09-25 - Added metrics file generation with four ANSI tables (test results, coverage, cloc main, cloc stats) saved to docs/metrics/YYYY-MM/YYYY-MM-DD.txt
@@ -39,7 +40,7 @@ TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
 TEST_COUNTER=0
-TEST_VERSION="6.6.0"
+TEST_VERSION="6.6.2"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -790,7 +791,7 @@ mkdir -p "${metrics_dir}"
 cloc_output=""
 cloc_json_main=""
 cloc_json_stats=""
-if cloc_output=$(env -i bash -c "${SCRIPT_DIR}/lib/cloc_tables.sh"); then
+if cloc_output=$(env -i LANG="${LANG}" bash -c "${SCRIPT_DIR}/lib/cloc_tables.sh"); then
     # Capture CLOC JSON data if available
     cloc_json_main="${RESULTS_DIR}/cloc_main_data.json"
     cloc_json_stats="${RESULTS_DIR}/cloc_stats_data.json"
@@ -798,6 +799,7 @@ if cloc_output=$(env -i bash -c "${SCRIPT_DIR}/lib/cloc_tables.sh"); then
 else
     cloc_output="Error: cloc_tables.sh failed"
 fi
+echo "${cloc_output}"
 
 # Capture coverage JSON data
 coverage_json=""

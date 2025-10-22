@@ -3,8 +3,9 @@
  * This file contains unit tests for synchronous query execution
  */
 
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <unity.h>
 
 #include "../../../../src/database/database_pending.h"
 #include "../../../../src/database/database.h"

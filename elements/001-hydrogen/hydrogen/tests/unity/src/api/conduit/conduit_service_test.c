@@ -4,8 +4,10 @@
  * Tests the conduit service initialization and lifecycle functions.
  */
 
-#include "../../../../../src/hydrogen.h"
-#include "unity.h"
+// Project includes
+#include <src/hydrogen.h>
+#include <unity.h>
+
 #include "../../../../../src/api/conduit/conduit_service.h"
 
 // Test function prototypes
