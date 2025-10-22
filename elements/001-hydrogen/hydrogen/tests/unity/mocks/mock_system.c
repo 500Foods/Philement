@@ -38,6 +38,7 @@ typedef long ssize_t;
 
 // Undefine the macros in this file so we can call the real functions
 #undef malloc
+#undef calloc
 #undef realloc
 #undef free
 #undef strdup
@@ -62,6 +63,7 @@ typedef long ssize_t;
 
 // Function prototypes - these are defined in the header when USE_MOCK_SYSTEM is set
 void *mock_malloc(size_t size);
+void *mock_calloc(size_t num, size_t size);
 void *mock_realloc(void *ptr, size_t size);
 void mock_free(void *ptr);
 char *mock_strdup(const char *s);
@@ -85,6 +87,7 @@ int mock_kill(pid_t pid, int sig);
 int mock_close(int fd);
 int mock_sem_init(sem_t *sem, int pshared, unsigned int value);
 void mock_system_set_malloc_failure(int should_fail);
+void mock_system_set_calloc_failure(int should_fail);
 void mock_system_set_realloc_failure(int should_fail);
 void mock_system_set_gethostname_failure(int should_fail);
 void mock_system_set_gethostname_result(const char *result);
@@ -112,6 +115,7 @@ void mock_system_reset_all(void);
 
 // Static variables to store mock state
 static int mock_malloc_should_fail = 0;
+static int mock_calloc_should_fail = 0;
 static int mock_realloc_should_fail = 0;
 static int mock_gethostname_should_fail = 0;
 static const char *mock_gethostname_result = NULL;
@@ -144,6 +148,15 @@ void *mock_malloc(size_t size) {
     }
     // Now we can call the real malloc since we undefined the macro
     return malloc(size);
+}
+
+// Mock implementation of calloc
+void *mock_calloc(size_t num, size_t size) {
+    if (mock_calloc_should_fail) {
+        return NULL;
+    }
+    // Now we can call the real calloc since we undefined the macro
+    return calloc(num, size);
 }
 
 // Mock implementation of realloc
@@ -254,6 +267,10 @@ void mock_system_set_malloc_failure(int should_fail) {
     mock_malloc_should_fail = should_fail;
 }
 
+void mock_system_set_calloc_failure(int should_fail) {
+    mock_calloc_should_fail = should_fail;
+}
+
 void mock_system_set_realloc_failure(int should_fail) {
     mock_realloc_should_fail = should_fail;
 }
@@ -352,6 +369,7 @@ void mock_system_set_sem_init_failure(int should_fail) {
 
 void mock_system_reset_all(void) {
     mock_malloc_should_fail = 0;
+    mock_calloc_should_fail = 0;
     mock_realloc_should_fail = 0;
     mock_gethostname_should_fail = 0;
     mock_gethostname_result = NULL;

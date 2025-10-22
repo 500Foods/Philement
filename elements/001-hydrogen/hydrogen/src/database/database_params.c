@@ -325,6 +325,7 @@ bool build_parameter_array(
         if (!found_param) {
             log_this("DATABASE", "Parameter not found in parameter list", LOG_LEVEL_ERROR, true, true, true);
             free(*ordered_params);
+            *ordered_params = NULL;
             regfree(&regex);
             return false;
         }

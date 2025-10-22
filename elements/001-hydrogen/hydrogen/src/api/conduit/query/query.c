@@ -18,6 +18,16 @@
 // Local includes
 #include "query.h"
 
+// Enable mock database queue functions for unit testing
+#ifdef USE_MOCK_DBQUEUE
+#include <unity/mocks/mock_dbqueue.h>
+#endif
+
+// Enable mock system functions for unit testing
+#ifdef USE_MOCK_SYSTEM
+#include <unity/mocks/mock_system.h>
+#endif
+
 // Forward declarations for helper functions
 json_t* create_validation_error_response(const char* error_msg, const char* error_detail);
 json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref);

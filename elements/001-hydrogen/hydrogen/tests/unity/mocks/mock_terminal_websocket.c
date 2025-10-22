@@ -65,12 +65,8 @@ int mock_send_data_to_session(struct TerminalSession *session, const char *data,
 
 
 
-void* mock_calloc(size_t num, size_t size) {
-    (void)num;   // Suppress unused parameter warning
-    (void)size;  // Suppress unused parameter warning
-
-    return mock_calloc_result;
-}
+// Note: mock_calloc is now defined in mock_system.c to avoid conflicts
+// This function is kept for backward compatibility but should not be used
 
 void* mock_json_object(void) {
     return mock_json_object_result;
