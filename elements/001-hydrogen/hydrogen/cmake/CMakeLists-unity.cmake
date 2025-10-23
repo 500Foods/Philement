@@ -43,6 +43,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_db2_transaction.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_engine.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_dbqueue.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_generate_query_id.c
 )
 
 # Print-specific mock sources (only linked to print tests)
@@ -74,7 +75,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     endif()
 
-    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, or migration source file to include mock headers
+    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, migration, or conduit source file to include mock headers
     string(FIND "${SOURCE_FILE}" "websocket" IS_WEBSOCKET_SOURCE)
     string(FIND "${SOURCE_FILE}" "terminal" IS_TERMINAL_SOURCE)
     string(FIND "${SOURCE_FILE}" "mdns" IS_MDNS_SOURCE)
@@ -83,6 +84,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     string(FIND "${SOURCE_FILE}" "db2" IS_DB2_SOURCE)
     string(FIND "${SOURCE_FILE}" "sqlite" IS_SQLITE_SOURCE)
     string(FIND "${SOURCE_FILE}" "migration" IS_MIGRATION_SOURCE)
+    string(FIND "${SOURCE_FILE}" "conduit" IS_CONDUIT_SOURCE)
     if(IS_WEBSOCKET_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LIBWEBSOCKETS")
@@ -107,6 +109,9 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     elseif(IS_MIGRATION_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_DATABASE_ENGINE -DUSE_MOCK_DB2_TRANSACTION -DUSE_MOCK_SYSTEM -include ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.h -include ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_engine.h -include ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_db2_transaction.h")
+    elseif(IS_CONDUIT_SOURCE GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_GENERATE_QUERY_ID")
     else()
         set(MOCK_INCLUDES "")
         set(MOCK_DEFINES "")
@@ -248,7 +253,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(TEST_OUTPUT_DIR "${CMAKE_BINARY_DIR}/unity/src")
     endif()
 
-    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, database, or print test to include mock headers
+    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, database, conduit, or print test to include mock headers
     string(FIND "${TEST_SOURCE}" "websocket" IS_WEBSOCKET_TEST)
     string(FIND "${TEST_SOURCE}" "terminal" IS_TERMINAL_TEST)
     string(FIND "${TEST_SOURCE}" "mdns" IS_MDNS_TEST)
@@ -257,6 +262,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     string(FIND "${TEST_SOURCE}" "db2" IS_DB2_TEST)
     string(FIND "${TEST_SOURCE}" "sqlite" IS_SQLITE_TEST)
     string(FIND "${TEST_SOURCE}" "database" IS_DATABASE_TEST)
+    string(FIND "${TEST_SOURCE}" "conduit" IS_CONDUIT_TEST)
     string(FIND "${TEST_SOURCE}" "print" IS_PRINT_TEST)
     if(IS_WEBSOCKET_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
@@ -282,6 +288,9 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     elseif(IS_DATABASE_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_DATABASE_MIGRATIONS -DUSE_MOCK_DATABASE_ENGINE -DUSE_MOCK_DB2_TRANSACTION -DUSE_MOCK_SYSTEM -DUSE_MOCK_DBQUEUE")
+    elseif(IS_CONDUIT_TEST GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_GENERATE_QUERY_ID -DUSE_MOCK_LOGGING -DUSE_MOCK_LIBMICROHTTPD -DUSE_MOCK_SYSTEM -Dlog_this=mock_log_this")
     elseif(IS_PRINT_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LOGGING -Dlog_this=mock_log_this")

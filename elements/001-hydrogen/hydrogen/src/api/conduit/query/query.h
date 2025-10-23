@@ -92,6 +92,48 @@ json_t* build_response_json(int query_ref, const char* database, const QueryCach
                            const DatabaseQueue* selected_queue, PendingQueryResult* pending);
 unsigned int determine_http_status(const PendingQueryResult* pending, const QueryResult* result);
 
+// Error response creation functions
+json_t* create_validation_error_response(const char* error_msg, const char* error_detail);
+json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref);
+json_t* create_processing_error_response(const char* error_msg, const char* database, int query_ref);
+
+// Request handling helper functions
+enum MHD_Result handle_method_validation(struct MHD_Connection *connection, const char* method);
+enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const char* method,
+                                      const char* upload_data, const size_t* upload_data_size,
+                                      json_t** request_json);
+enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_t* request_json,
+                                       int* query_ref, const char** database, json_t** params_json);
+enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const char* database,
+                                      int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry);
+enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, json_t* params_json,
+                                           const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
+                                           const char* database, int query_ref,
+                                           ParameterList** param_list, char** converted_sql,
+                                           TypedParameter*** ordered_params, size_t* param_count);
+enum MHD_Result handle_queue_selection(struct MHD_Connection *connection, const char* database,
+                                      int query_ref, const QueryCacheEntry* cache_entry,
+                                      ParameterList* param_list, char* converted_sql,
+                                      TypedParameter** ordered_params,
+                                      DatabaseQueue** selected_queue);
+enum MHD_Result handle_query_id_generation(struct MHD_Connection *connection, const char* database,
+                                          int query_ref, ParameterList* param_list, char* converted_sql,
+                                          TypedParameter** ordered_params, char** query_id);
+enum MHD_Result handle_pending_registration(struct MHD_Connection *connection, const char* database,
+                                           int query_ref, char* query_id, ParameterList* param_list,
+                                           char* converted_sql, TypedParameter** ordered_params,
+                                           const QueryCacheEntry* cache_entry, PendingQueryResult** pending);
+enum MHD_Result handle_query_submission(struct MHD_Connection *connection, const char* database,
+                                       int query_ref, DatabaseQueue* selected_queue, char* query_id,
+                                       char* converted_sql, ParameterList* param_list,
+                                       TypedParameter** ordered_params, size_t param_count,
+                                       const QueryCacheEntry* cache_entry);
+enum MHD_Result handle_response_building(struct MHD_Connection *connection, int query_ref,
+                                        const char* database, const QueryCacheEntry* cache_entry,
+                                        const DatabaseQueue* selected_queue, PendingQueryResult* pending,
+                                        char* query_id, char* converted_sql, ParameterList* param_list,
+                                        TypedParameter** ordered_params);
+
 enum MHD_Result handle_conduit_query_request(
     struct MHD_Connection *connection,
     const char *url,
