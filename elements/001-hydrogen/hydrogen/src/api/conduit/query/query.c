@@ -28,50 +28,29 @@
 #include <unity/mocks/mock_system.h>
 #endif
 
+// Enable mock for generate_query_id
+#ifdef USE_MOCK_GENERATE_QUERY_ID
+extern char* mock_generate_query_id(void);
+#endif
+
+// Enable mock for select_query_queue
+#ifdef USE_MOCK_SELECT_QUERY_QUEUE
+extern DatabaseQueue* mock_select_query_queue(const char* database, const char* queue_type);
+#endif
+
 // Forward declarations for helper functions
 json_t* create_validation_error_response(const char* error_msg, const char* error_detail);
 json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref);
 json_t* create_processing_error_response(const char* error_msg, const char* database, int query_ref);
 
 // Forward declarations for request handling helper functions
-enum MHD_Result handle_method_validation(struct MHD_Connection *connection, const char* method);
-enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const char* method,
-                                      const char* upload_data, const size_t* upload_data_size,
-                                      json_t** request_json);
-enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_t* request_json,
-                                       int* query_ref, const char** database, json_t** params_json);
-enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const char* database,
-                                      int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry);
-enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, json_t* params_json,
-                                          const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
-                                          const char* database, int query_ref,
-                                          ParameterList** param_list, char** converted_sql,
-                                          TypedParameter*** ordered_params, size_t* param_count);
-enum MHD_Result handle_queue_selection(struct MHD_Connection *connection, const char* database,
-                                      int query_ref, const QueryCacheEntry* cache_entry,
-                                      ParameterList* param_list, char* converted_sql,
-                                      TypedParameter** ordered_params,
-                                      DatabaseQueue** selected_queue);
-enum MHD_Result handle_query_id_generation(struct MHD_Connection *connection, const char* database,
-                                          int query_ref, ParameterList* param_list, char* converted_sql,
-                                          TypedParameter** ordered_params, char** query_id);
-enum MHD_Result handle_pending_registration(struct MHD_Connection *connection, const char* database,
-                                           int query_ref, char* query_id, ParameterList* param_list,
-                                           char* converted_sql, TypedParameter** ordered_params,
-                                           const QueryCacheEntry* cache_entry, PendingQueryResult** pending);
-enum MHD_Result handle_query_submission(struct MHD_Connection *connection, const char* database,
-                                       int query_ref, DatabaseQueue* selected_queue, char* query_id,
-                                       char* converted_sql, ParameterList* param_list,
-                                       TypedParameter** ordered_params, size_t param_count,
-                                       const QueryCacheEntry* cache_entry);
-enum MHD_Result handle_response_building(struct MHD_Connection *connection, int query_ref,
-                                        const char* database, const QueryCacheEntry* cache_entry,
-                                        const DatabaseQueue* selected_queue, PendingQueryResult* pending,
-                                        char* query_id, char* converted_sql, ParameterList* param_list,
-                                        TypedParameter** ordered_params);
+// (Now declared in header file)
 
 // Generate unique query ID
 char* generate_query_id(void) {
+#ifdef USE_MOCK_GENERATE_QUERY_ID
+    return mock_generate_query_id();
+#else
     static volatile unsigned long long counter = 0;
     unsigned long long id = __atomic_fetch_add(&counter, 1, __ATOMIC_SEQ_CST);
 
@@ -80,6 +59,7 @@ char* generate_query_id(void) {
 
     snprintf(query_id, 32, "conduit_%llu_%ld", id, time(NULL));
     return query_id;
+#endif
 }
 
 // Validate HTTP method - only GET and POST are allowed
@@ -162,6 +142,7 @@ QueryCacheEntry* lookup_query_cache_entry(DatabaseQueue* db_queue, int query_ref
 }
 
 // Lookup database queue and query cache entry
+#ifndef USE_MOCK_LOOKUP_DATABASE_AND_QUERY
 bool lookup_database_and_query(DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
                               const char* database, int query_ref) {
     if (!db_queue || !cache_entry || !database) {
@@ -181,8 +162,10 @@ bool lookup_database_and_query(DatabaseQueue** db_queue, QueryCacheEntry** cache
 
     return true;
 }
+#endif
 
 // Parse and convert parameters
+#ifndef USE_MOCK_PROCESS_PARAMETERS
 bool process_parameters(json_t* params_json, ParameterList** param_list,
                        const char* sql_template, DatabaseEngineType engine_type,
                        char** converted_sql, TypedParameter*** ordered_params, size_t* param_count) {
@@ -214,10 +197,15 @@ bool process_parameters(json_t* params_json, ParameterList** param_list,
 
     return (*converted_sql != NULL);
 }
+#endif
 
 // Select optimal queue for query execution
 DatabaseQueue* select_query_queue(const char* database, const char* queue_type) {
+#ifdef USE_MOCK_SELECT_QUERY_QUEUE
+    return mock_select_query_queue(database, queue_type);
+#else
     return select_optimal_queue(database, queue_type, global_queue_manager);
+#endif
 }
 
 // Prepare and submit database query

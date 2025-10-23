@@ -6,7 +6,7 @@
 
 // Project includes
 #include <src/hydrogen.h>
-#include <unity.h>
+#include "unity.h"
 
 // Include source header
 #include <src/api/conduit/query/query.h>
@@ -14,66 +14,67 @@
 // Function prototypes
 void test_validate_http_method_get(void);
 void test_validate_http_method_post(void);
+void test_validate_http_method_invalid(void);
 void test_validate_http_method_null(void);
-void test_validate_http_method_invalid_put(void);
-void test_validate_http_method_invalid_delete(void);
-void test_validate_http_method_get_lowercase(void);
-void test_validate_http_method_post_mixed(void);
+void test_validate_http_method_case_sensitivity(void);
 
 void setUp(void) {
-    // No setup required
+    // No setup needed for this function
 }
 
 void tearDown(void) {
-    // No teardown required
+    // No cleanup needed for this function
 }
 
-// Test valid GET method
+// Test GET method validation
 void test_validate_http_method_get(void) {
-    const char* method = "GET";
-    bool result = validate_http_method(method);
+    bool result = validate_http_method("GET");
     TEST_ASSERT_TRUE(result);
 }
 
-// Test valid POST method
+// Test POST method validation
 void test_validate_http_method_post(void) {
-    const char* method = "POST";
-    bool result = validate_http_method(method);
+    bool result = validate_http_method("POST");
     TEST_ASSERT_TRUE(result);
 }
 
-// Test invalid method (NULL)
+// Test invalid method rejection
+void test_validate_http_method_invalid(void) {
+    bool result = validate_http_method("PUT");
+    TEST_ASSERT_FALSE(result);
+
+    result = validate_http_method("DELETE");
+    TEST_ASSERT_FALSE(result);
+
+    result = validate_http_method("PATCH");
+    TEST_ASSERT_FALSE(result);
+
+    result = validate_http_method("HEAD");
+    TEST_ASSERT_FALSE(result);
+
+    result = validate_http_method("OPTIONS");
+    TEST_ASSERT_FALSE(result);
+}
+
+// Test NULL method handling
 void test_validate_http_method_null(void) {
-    const char* method = NULL;
-    bool result = validate_http_method(method);
+    bool result = validate_http_method(NULL);
     TEST_ASSERT_FALSE(result);
 }
 
-// Test invalid method (PUT)
-void test_validate_http_method_invalid_put(void) {
-    const char* method = "PUT";
-    bool result = validate_http_method(method);
+// Test case sensitivity
+void test_validate_http_method_case_sensitivity(void) {
+    // Should be case sensitive - these should fail
+    bool result = validate_http_method("get");
     TEST_ASSERT_FALSE(result);
-}
 
-// Test invalid method (DELETE)
-void test_validate_http_method_invalid_delete(void) {
-    const char* method = "DELETE";
-    bool result = validate_http_method(method);
+    result = validate_http_method("post");
     TEST_ASSERT_FALSE(result);
-}
 
-// Test case-sensitive: get (lowercase)
-void test_validate_http_method_get_lowercase(void) {
-    const char* method = "get";
-    bool result = validate_http_method(method);
-    TEST_ASSERT_FALSE(result);  // Function uses strcmp, so case-sensitive
-}
+    result = validate_http_method("Get");
+    TEST_ASSERT_FALSE(result);
 
-// Test case-sensitive: Post (mixed case)
-void test_validate_http_method_post_mixed(void) {
-    const char* method = "Post";
-    bool result = validate_http_method(method);
+    result = validate_http_method("Post");
     TEST_ASSERT_FALSE(result);
 }
 
@@ -82,11 +83,9 @@ int main(void) {
 
     RUN_TEST(test_validate_http_method_get);
     RUN_TEST(test_validate_http_method_post);
+    RUN_TEST(test_validate_http_method_invalid);
     RUN_TEST(test_validate_http_method_null);
-    RUN_TEST(test_validate_http_method_invalid_put);
-    RUN_TEST(test_validate_http_method_invalid_delete);
-    RUN_TEST(test_validate_http_method_get_lowercase);
-    RUN_TEST(test_validate_http_method_post_mixed);
+    RUN_TEST(test_validate_http_method_case_sensitivity);
 
     return UNITY_END();
 }
