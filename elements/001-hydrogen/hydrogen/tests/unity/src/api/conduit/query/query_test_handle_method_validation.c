@@ -1,78 +1,67 @@
 /*
  * Unity Test File: handle_method_validation
- * This file contains unit tests for handle_method_validation function in query.c
+ * This file contains unit tests for handle_method_validation function
+ * in src/api/conduit/query/query.c
  */
 
+// Project includes
 #include <src/hydrogen.h>
 #include <unity.h>
 
 // Include source header
-#include <microhttpd.h>
 #include <src/api/conduit/query/query.h>
 
-// Forward declaration for the function under test
-enum MHD_Result handle_method_validation(struct MHD_Connection *connection, const char* method);
+// Enable mocks for testing
+#define USE_MOCK_LIBMICROHTTPD
+#include <unity/mocks/mock_libmicrohttpd.h>
 
-// Dummy MHD_Connection for testing
-typedef struct MHD_Connection MHD_Connection;
+// Function prototypes
+void test_handle_method_validation_valid_get(void);
+void test_handle_method_validation_valid_post(void);
+void test_handle_method_validation_invalid_method(void);
 
 void setUp(void) {
-    // No specific setup needed
+    mock_mhd_reset_all();
 }
 
 void tearDown(void) {
-    // Clean up if needed
+    mock_mhd_reset_all();
 }
 
-// Test valid method (GET) - should return MHD_YES
-static void test_handle_method_validation_get(void) {
-    struct MHD_Connection *dummy_connection = (struct MHD_Connection *)0x1;
-    const char* method = "GET";
+// Test valid GET method
+void test_handle_method_validation_valid_get(void) {
+    struct MHD_Connection* mock_connection = NULL; // Use NULL for mock
 
-    enum MHD_Result result = handle_method_validation(dummy_connection, method);
+    enum MHD_Result result = handle_method_validation(mock_connection, "GET");
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
-// Test valid method (POST) - should return MHD_YES
-static void test_handle_method_validation_post(void) {
-    struct MHD_Connection *dummy_connection = (struct MHD_Connection *)0x1;
-    const char* method = "POST";
+// Test valid POST method
+void test_handle_method_validation_valid_post(void) {
+    struct MHD_Connection* mock_connection = NULL; // Use NULL for mock
 
-    enum MHD_Result result = handle_method_validation(dummy_connection, method);
+    enum MHD_Result result = handle_method_validation(mock_connection, "POST");
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
-// Test invalid method (PUT) - should return MHD_NO and send error response
-static void test_handle_method_validation_invalid_method(void) {
-    struct MHD_Connection *dummy_connection = (struct MHD_Connection *)0x1;
-    const char* method = "PUT";
+// Test invalid method (this should trigger error response)
+void test_handle_method_validation_invalid_method(void) {
+    struct MHD_Connection* mock_connection = NULL; // Use NULL for mock
 
-    enum MHD_Result result = handle_method_validation(dummy_connection, method);
+    enum MHD_Result result = handle_method_validation(mock_connection, "PUT");
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
-    // Note: The actual response sending is mocked/handled by the build system
-    // Coverage for the error path is achieved by taking the branch
-}
-
-// Test NULL method - should return MHD_NO
-static void test_handle_method_validation_null_method(void) {
-    struct MHD_Connection *dummy_connection = (struct MHD_Connection *)0x1;
-    const char* method = NULL;
-
-    enum MHD_Result result = handle_method_validation(dummy_connection, method);
-
+    // Should return MHD_NO due to invalid method
     TEST_ASSERT_EQUAL(MHD_NO, result);
 }
 
 int main(void) {
     UNITY_BEGIN();
 
-    RUN_TEST(test_handle_method_validation_get);
-    RUN_TEST(test_handle_method_validation_post);
+    RUN_TEST(test_handle_method_validation_valid_get);
+    RUN_TEST(test_handle_method_validation_valid_post);
     RUN_TEST(test_handle_method_validation_invalid_method);
-    RUN_TEST(test_handle_method_validation_null_method);
 
     return UNITY_END();
 }

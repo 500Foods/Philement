@@ -1,87 +1,113 @@
 /*
- * Unity Test File: Test create_lookup_error_response function
- * This file contains unit tests for src/api/conduit/query/query.c create_lookup_error_response function
+ * Unity Test File: create_lookup_error_response
+ * This file contains unit tests for create_lookup_error_response function
+ * in src/api/conduit/query/query.c
  */
 
 // Project includes
 #include <src/hydrogen.h>
-#include <unity.h>
+#include "unity.h"
 
-// Forward declaration for the function being tested
+// Include source header
+#include <src/api/conduit/query/query.h>
+
+// Forward declarations for functions not in header
 json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref);
 
+// Function prototypes
+void test_create_lookup_error_response_with_database(void);
+void test_create_lookup_error_response_without_database(void);
+void test_create_lookup_error_response_include_query_ref(void);
+void test_create_lookup_error_response_exclude_query_ref(void);
+
 void setUp(void) {
-    // No specific setup
+    // No setup needed for this function
 }
 
 void tearDown(void) {
-    // No specific teardown
+    // No cleanup needed for this function
 }
 
-// Test basic error response without database or query_ref
-// Test function prototypes
-void test_create_lookup_error_response_basic(void);
-void test_create_lookup_error_response_with_database_no_ref(void);
-void test_create_lookup_error_response_with_ref_no_database(void);
-void test_create_lookup_error_response_full(void);
-void test_create_lookup_error_response_basic(void) {
-    json_t* response = create_lookup_error_response("Test error", NULL, 0, false);
+// Test error response creation with database included
+void test_create_lookup_error_response_with_database(void) {
+    json_t* response = create_lookup_error_response("Database not found", "test_db", 123, true);
 
     TEST_ASSERT_NOT_NULL(response);
     TEST_ASSERT_TRUE(json_is_object(response));
 
+    // Check success field
+    json_t* success = json_object_get(response, "success");
+    TEST_ASSERT_NOT_NULL(success);
+    TEST_ASSERT_TRUE(json_is_false(success));
+
+    // Check error field
+    json_t* error = json_object_get(response, "error");
+    TEST_ASSERT_NOT_NULL(error);
+    TEST_ASSERT_TRUE(json_is_string(error));
+    TEST_ASSERT_EQUAL_STRING("Database not found", json_string_value(error));
+
+    // Check database field
+    json_t* database = json_object_get(response, "database");
+    TEST_ASSERT_NOT_NULL(database);
+    TEST_ASSERT_TRUE(json_is_string(database));
+    TEST_ASSERT_EQUAL_STRING("test_db", json_string_value(database));
+
+    // Check query_ref field (should be included)
+    json_t* query_ref = json_object_get(response, "query_ref");
+    TEST_ASSERT_NOT_NULL(query_ref);
+    TEST_ASSERT_TRUE(json_is_integer(query_ref));
+    TEST_ASSERT_EQUAL(123, json_integer_value(query_ref));
+
+    json_decref(response);
+}
+
+// Test error response creation without database
+void test_create_lookup_error_response_without_database(void) {
+    json_t* response = create_lookup_error_response("Query not found", NULL, 456, false);
+
+    TEST_ASSERT_NOT_NULL(response);
+    TEST_ASSERT_TRUE(json_is_object(response));
+
+    // Check success field
     json_t* success = json_object_get(response, "success");
     TEST_ASSERT_TRUE(json_is_false(success));
 
+    // Check error field
     json_t* error = json_object_get(response, "error");
-    TEST_ASSERT_EQUAL_STRING("Test error", json_string_value(error));
+    TEST_ASSERT_TRUE(json_is_string(error));
+    TEST_ASSERT_EQUAL_STRING("Query not found", json_string_value(error));
 
-    // No database or query_ref
-    TEST_ASSERT_NULL(json_object_get(response, "database"));
-    TEST_ASSERT_NULL(json_object_get(response, "query_ref"));
+    // Check database field (should not be present)
+    json_t* database = json_object_get(response, "database");
+    TEST_ASSERT_NULL(database);
 
-    json_decref(response);
-}
-
-// Test with database but no query_ref
-void test_create_lookup_error_response_with_database_no_ref(void) {
-    json_t* response = create_lookup_error_response("Database error", "test_db", 0, false);
-
-    TEST_ASSERT_NOT_NULL(response);
-
-    json_t* db = json_object_get(response, "database");
-    TEST_ASSERT_EQUAL_STRING("test_db", json_string_value(db));
-
-    TEST_ASSERT_NULL(json_object_get(response, "query_ref"));
+    // Check query_ref field (should not be included)
+    json_t* query_ref = json_object_get(response, "query_ref");
+    TEST_ASSERT_NULL(query_ref);
 
     json_decref(response);
 }
 
-// Test with query_ref but no database
-void test_create_lookup_error_response_with_ref_no_database(void) {
-    json_t* response = create_lookup_error_response("Query error", NULL, 123, true);
+// Test with query_ref included
+void test_create_lookup_error_response_include_query_ref(void) {
+    json_t* response = create_lookup_error_response("Test error", "test_db", 789, true);
 
-    TEST_ASSERT_NOT_NULL(response);
-
-    json_t* ref = json_object_get(response, "query_ref");
-    TEST_ASSERT_EQUAL_INT(123, json_integer_value(ref));
-
-    TEST_ASSERT_NULL(json_object_get(response, "database"));
+    // Check query_ref field
+    json_t* query_ref = json_object_get(response, "query_ref");
+    TEST_ASSERT_NOT_NULL(query_ref);
+    TEST_ASSERT_TRUE(json_is_integer(query_ref));
+    TEST_ASSERT_EQUAL(789, json_integer_value(query_ref));
 
     json_decref(response);
 }
 
-// Test with both database and query_ref
-void test_create_lookup_error_response_full(void) {
-    json_t* response = create_lookup_error_response("Full error", "test_db", 456, true);
+// Test with query_ref excluded
+void test_create_lookup_error_response_exclude_query_ref(void) {
+    json_t* response = create_lookup_error_response("Test error", "test_db", 999, false);
 
-    TEST_ASSERT_NOT_NULL(response);
-
-    json_t* db = json_object_get(response, "database");
-    TEST_ASSERT_EQUAL_STRING("test_db", json_string_value(db));
-
-    json_t* ref = json_object_get(response, "query_ref");
-    TEST_ASSERT_EQUAL_INT(456, json_integer_value(ref));
+    // Check query_ref field (should not be present)
+    json_t* query_ref = json_object_get(response, "query_ref");
+    TEST_ASSERT_NULL(query_ref);
 
     json_decref(response);
 }
@@ -89,10 +115,10 @@ void test_create_lookup_error_response_full(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    RUN_TEST(test_create_lookup_error_response_basic);
-    RUN_TEST(test_create_lookup_error_response_with_database_no_ref);
-    RUN_TEST(test_create_lookup_error_response_with_ref_no_database);
-    RUN_TEST(test_create_lookup_error_response_full);
+    RUN_TEST(test_create_lookup_error_response_with_database);
+    RUN_TEST(test_create_lookup_error_response_without_database);
+    RUN_TEST(test_create_lookup_error_response_include_query_ref);
+    RUN_TEST(test_create_lookup_error_response_exclude_query_ref);
 
     return UNITY_END();
 }
