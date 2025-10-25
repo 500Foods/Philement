@@ -1,9 +1,13 @@
 # Release Notes
-
 <!--
+
 CRITICAL INSTRUCTIONS
 
 The dev team for this project is based in Vancouver, so PACIFIC TIME applies
+
+IMPORTANT: File paths in release notes should be relative to the RELEASES.md file location (project root).
+When creating release notes in docs/releases/YYYY-MM/YYYY-MM-DD.md, use ../../../ prefix to navigate
+from the release note file back to project root before descending to target files.
 
 Step 1: Gather Changes
 - Use git log to list ALL changed files for the day with the numbers representing the number of lines added or removed:
@@ -57,7 +61,34 @@ Remember:
 - Group by topic to maintain clarity
 -->
 
+- October 2025
+  - [2025-Oct-25 (Fri)](docs/releases/2025-10/2025-10-25.md): Database bootstrap coverage completion
+  - [2025-Oct-23 (Thu)](docs/releases/2025-10/2025-10-23.md): CONDUIT query coverage completion
+  - [2025-Oct-22 (Wed)](docs/releases/2025-10/2025-10-22.md): CONDUIT query coverage improvements
+  - [2025-Oct-21 (Tue)](docs/releases/2025-10/2025-10-21.md): Database parameters, CONDUIT query handling
+  - [2025-Oct-20 (Mon)](docs/releases/2025-10/2025-10-20.md): CONDUIT service implementation, database cache management
+  - [2025-Oct-19 (Sat)](docs/releases/2025-10/2025-10-19.md): Lead DQM algorithm, migration testing
+  - [2025-Oct-18 (Fri)](docs/releases/2025-10/2025-10-18.md): Database configuration tests, migration updates
+  - [2025-Oct-17 (Fri)](docs/releases/2025-10/2025-10-17.md): Terminal websocket protocol, TODO tracking
+  - [2025-Oct-16 (Thu)](docs/releases/2025-10/2025-10-16.md): Database queue lead implementation
+  - [2025-Oct-15 (Wed)](docs/releases/2025-10/2025-10-15.md): Migration updates, Lua check test, diagram generation
+  - [2025-Oct-13 (Mon)](docs/releases/2025-10/2025-10-13.md): SQLite support, terminal websocket bridge
+  - [2025-Oct-12 (Sun)](docs/releases/2025-10/2025-10-12.md): Database query improvements, prepared statements
+  - [2025-Oct-11 (Sat)](docs/releases/2025-10/2025-10-11.md): Migration path handling, backup cleanup
+  - [2025-Oct-10 (Fri)](docs/releases/2025-10/2025-10-10.md): Database reorganization, CMake updates
+  - [2025-Oct-09 (Thu)](docs/releases/2025-10/2025-10-09.md): Database queue creation, migration file handling
+  - [2025-Oct-08 (Wed)](docs/releases/2025-10/2025-10-08.md): Database migration execution, Lua integration
+  - [2025-Oct-07 (Tue)](docs/releases/2025-10/2025-10-07.md): Database migrations, Lead DQM implementation
+  - [2025-Oct-06 (Mon)](docs/releases/2025-10/2025-10-06.md): Database launch logging, migration transaction handling
+  - [2025-Oct-05 (Sun)](docs/releases/2025-10/2025-10-05.md): WebSocket coverage, launch network improvements
+  - [2025-Oct-04 (Sat)](docs/releases/2025-10/2025-10-04.md): WebSocket unit tests, coverage improvements
+  - [2025-Oct-02 (Thu)](docs/releases/2025-10/2025-10-02.md): Launch system improvements, logging cleanup
+  - [2025-Oct-01 (Wed)](docs/releases/2025-10/2025-10-01.md): Database designs, unit tests, documentation updates, build enhancements
+
 - September 2025
+  - [2025-Sep-30 (Tue)](docs/releases/2025-09/2025-09-30.md): Database migration files, test framework updates, code organization
+  - [2025-Sep-29 (Mon)](docs/releases/2025-09/2025-09-29.md): Database diagram improvements, SVG generation, test enhancements
+  - [2025-Sep-28 (Sun)](docs/releases/2025-09/2025-09-28.md): Database diagram generation, preprocessing functions, test script
   - [2025-Sep-26 (Fri)](docs/releases/2025-09/2025-09-26.md): Installer System, Database Migration Testing
   - [2025-Sep-25 (Thu)](docs/releases/2025-09/2025-09-25.md): Helium Database System, Test Framework Improvements
   - [2025-Sep-24 (Wed)](docs/releases/2025-09/2025-09-24.md): Payload Subsystem Enhancement, Build Optimization

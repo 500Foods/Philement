@@ -770,6 +770,7 @@ if [[ ! "${results_summary}" == "${coverage_summary}" ]]; then
     echo "The coverage percentage values differ:"
     echo "Results:  ${results_summary}"
     echo "Coverage: ${coverage_summary}"
+    echo "Please adjust via tests/lib/coverage.sh"
 fi
 
 # Generate SVGs from generated tables
