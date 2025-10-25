@@ -28,25 +28,26 @@ table.insert(queries,{sql=[[
         [=[
             CREATE TABLE ${SCHEMA}account_contacts
             (
-                contact_id ${INTEGER} NOT NULL,
-                account_id ${INTEGER} NOT NULL,
-                contact_type_lua_18 ${INTEGER} NOT NULL,
-                contact_seq ${INTEGER} NOT NULL,
-                contact ${VARCHAR_100} NOT NULL,
-                summary ${VARCHAR_500},
-                authenticate_lua_19 ${INTEGER} NOT NULL,
-                status_lua_20 ${INTEGER} NOT NULL,
-                collection ${JSONB},
-                valid_after ${TIMESTAMP_TZ},
-                valid_until ${TIMESTAMP_TZ},
-                created_id ${INTEGER} NOT NULL,
-                created_at ${TIMEZONE_TZ} NOT NULL,
-                updated_id ${INTEGER} NOT NULL,
-                updated_at ${TIMEZONE_TZ} NOT NULL
+                contact_id              ${INTEGER}          NOT NULL,
+                account_id              ${INTEGER}          NOT NULL,
+                contact_seq             ${INTEGER}          NOT NULL,
+                contact_type_a18        ${INTEGER}          NOT NULL,
+                authenticate_a19        ${INTEGER}          NOT NULL,
+                status_a20              ${INTEGER}          NOT NULL,
+                contact                 ${VARCHAR_100}      NOT NULL,
+                summary                 ${TEXTBIG}                  ,
+                collection              ${JSON}                     ,
+                valid_after             ${TIMESTAMP_TZ}             ,
+                valid_until             ${TIMESTAMP_TZ}             ,
+                created_id              ${INTEGER}          NOT NULL,
+                created_at              ${TIMEZONE_TZ}      NOT NULL,
+                updated_id              ${INTEGER}          NOT NULL,
+                updated_at              ${TIMEZONE_TZ}      NOT NULL,
+                PRIMARY KEY(contact_id)
             );
         ]=],
                                                                             -- code
-        'Create Account Contacts Table Query',                               -- name
+        'Create Account Contacts Table Query',                              -- name
         [=[
             # Forward Migration 1003: Create Account Contacts Table Query
 
@@ -124,25 +125,49 @@ table.insert(queries,{sql=[[
                         "object_ref": "1003",
                         "table": [
                             {
-                                "name": "account_id",
+                                "name": "contact_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": true,
                                 "unique": false
                             },
                             {
-                                "name": "contact_id",
+                                "name": "account_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
-                                "primary_key": true,
-                                "unique": true
+                                "primary_key": false,
+                                "unique": false
                             },
                             {
                                 "name": "contact_seq",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
-                                "primary_key": true,
+                                "primary_key": false,
                                 "unique": false
+                            },
+                            {
+                                "name": "contact_type_a18",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "authenticate_a19",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "status_a20",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
                             },
                             {
                                 "name": "contact",
@@ -153,38 +178,14 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "summary",
-                                "datatype": "${VARCHAR_500}",
+                                "datatype": "${TEXTBIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
-                                "name": "contact_type_lua_18",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
-                                "name": "authenticate_lua_19",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
-                                "name": "status_lua_20",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
                                 "name": "collection",
-                                "datatype": "${JSONB}",
+                                "datatype": "${JSON}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false,
