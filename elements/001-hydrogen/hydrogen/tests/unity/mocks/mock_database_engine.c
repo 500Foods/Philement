@@ -22,6 +22,7 @@ static bool mock_commit_result = true;
 static bool mock_rollback_result = true;
 static bool mock_execute_success = true;
 static QueryResult* mock_query_result = NULL;
+static char* mock_execute_json_data = NULL;
 static int mock_affected_rows = 0;
 static Transaction* mock_tx = NULL;
 
@@ -85,8 +86,28 @@ bool mock_database_engine_execute(DatabaseHandle* connection, QueryRequest* requ
     QueryResult* fresh_result = calloc(1, sizeof(QueryResult));
     if (fresh_result) {
         fresh_result->success = mock_execute_success;
-        fresh_result->data_json = strdup("{}");
-        fresh_result->row_count = 0;
+        fresh_result->data_json = mock_execute_json_data ? strdup(mock_execute_json_data) : strdup("{}");
+
+        // Set row_count based on JSON data - if we have JSON data, assume it represents rows
+        if (mock_execute_json_data && strlen(mock_execute_json_data) > 2) { // More than just "{}"
+            // Simple heuristic: count array elements if it's an array
+            if (mock_execute_json_data[0] == '[') {
+                // Count commas at top level to estimate array size
+                int comma_count = 0;
+                int brace_depth = 0;
+                for (const char* p = mock_execute_json_data; *p; p++) {
+                    if (*p == '[' || *p == '{') brace_depth++;
+                    else if (*p == ']' || *p == '}') brace_depth--;
+                    else if (*p == ',' && brace_depth == 1) comma_count++;
+                }
+                fresh_result->row_count = (size_t)comma_count + 1; // number of elements = commas + 1
+            } else {
+                fresh_result->row_count = 1; // Single object
+            }
+        } else {
+            fresh_result->row_count = 0;
+        }
+
         fresh_result->column_count = 0;
         fresh_result->affected_rows = mock_affected_rows;
         fresh_result->error_message = NULL;
@@ -134,10 +155,16 @@ void mock_database_engine_reset_all(void) {
     mock_rollback_result = true;
     mock_execute_success = true;
     mock_affected_rows = 0;
-    
+
     // Note: mock_query_result is no longer static - results are freed by cleanup_result
     mock_query_result = NULL;
-    
+
+    // Clean up mock JSON data
+    if (mock_execute_json_data) {
+        free(mock_execute_json_data);
+        mock_execute_json_data = NULL;
+    }
+
     // Clean up mock transaction
     if (mock_tx) {
         if (mock_tx->transaction_id) {
@@ -167,6 +194,13 @@ void mock_database_engine_set_execute_result(bool success) {
 
 void mock_database_engine_set_execute_query_result(QueryResult* result) {
     mock_query_result = result;
+}
+
+void mock_database_engine_set_execute_json_data(const char* json_data) {
+    if (mock_execute_json_data) {
+        free(mock_execute_json_data);
+    }
+    mock_execute_json_data = json_data ? strdup(json_data) : NULL;
 }
 
 void mock_database_engine_set_affected_rows(int rows) {
