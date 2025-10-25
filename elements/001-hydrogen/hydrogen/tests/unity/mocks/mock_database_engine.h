@@ -37,6 +37,7 @@ void mock_database_engine_set_commit_result(bool result);
 void mock_database_engine_set_rollback_result(bool result);
 void mock_database_engine_set_execute_result(bool success);
 void mock_database_engine_set_execute_query_result(QueryResult* result);
+void mock_database_engine_set_execute_json_data(const char* json_data);
 void mock_database_engine_set_affected_rows(int rows);
 
 #endif // MOCK_DATABASE_ENGINE_H
