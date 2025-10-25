@@ -10,10 +10,13 @@
 
 #include <stddef.h>
 #include <unistd.h>
+#include <sys/socket.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <pty.h>
+#include <poll.h>
+#include <semaphore.h>
 
 // Mock function declarations - these will override the real ones when USE_MOCK_SYSTEM is defined
 #ifdef USE_MOCK_SYSTEM
@@ -53,7 +56,7 @@ void mock_free(void *ptr);
 char *mock_strdup(const char *s);
 int mock_gethostname(char *name, size_t len);
 int mock_nanosleep(const struct timespec *req, struct timespec *rem);
-int mock_clock_gettime(clockid_t clk_id, struct timespec *tp);
+int mock_clock_gettime(int clk_id, struct timespec *tp);
 int mock_poll(struct pollfd *fds, nfds_t nfds, int timeout);
 ssize_t mock_recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
 void *mock_dlopen(const char *filename, int flags);

@@ -21,6 +21,10 @@
 #include "database_cache.h"
 #include "migration/migration.h"
 
+#ifdef USE_MOCK_DATABASE_ENGINE
+#include <unity/mocks/mock_database_engine.h>
+#endif
+
 /*
  * Execute bootstrap query with QTC population control
  * This loads migration information and optionally populates QTC based on populate_qtc flag
@@ -49,8 +53,32 @@ void database_queue_execute_bootstrap_query_full(DatabaseQueue* db_queue, bool p
     // At this point request is guaranteed to be non-NULL
 
     request->query_id = strdup("bootstrap_query");
+    if (!request->query_id) {
+        log_this(dqm_label, "Failed to allocate query_id for bootstrap", LOG_LEVEL_ERROR, 0);
+        free(request);
+        free(dqm_label);
+        return;
+    }
+
     request->sql_template = strdup(bootstrap_query);
+    if (!request->sql_template) {
+        log_this(dqm_label, "Failed to allocate sql_template for bootstrap", LOG_LEVEL_ERROR, 0);
+        free(request->query_id);
+        free(request);
+        free(dqm_label);
+        return;
+    }
+
     request->parameters_json = strdup("{}");
+    if (!request->parameters_json) {
+        log_this(dqm_label, "Failed to allocate parameters_json for bootstrap", LOG_LEVEL_ERROR, 0);
+        free(request->sql_template);
+        free(request->query_id);
+        free(request);
+        free(dqm_label);
+        return;
+    }
+
     request->timeout_seconds = 1;
     request->isolation_level = DB_ISOLATION_READ_COMMITTED;
     request->use_prepared_statement = false;
@@ -67,8 +95,8 @@ void database_queue_execute_bootstrap_query_full(DatabaseQueue* db_queue, bool p
             bool query_success = database_engine_execute(db_queue->persistent_connection, request, &result);
 
             // Parse bootstrap query results for migration information
-            long long latest_available_migration = -1;
-            long long latest_installed_migration = -1;
+            long long latest_available_migration = 0;
+            long long latest_installed_migration = 0;
             bool empty_database = true;
 
             if (query_success && result && result->success) {
@@ -104,10 +132,10 @@ void database_queue_execute_bootstrap_query_full(DatabaseQueue* db_queue, bool p
                                  // Extract QTC fields (Conduit) if populating QTC
                                  if (populate_qtc) {
                                      json_t* query_ref_obj = json_object_get(row, "query_ref");
-                                     json_t* sql_template_obj = json_object_get(row, "sql_template");
-                                     json_t* description_obj = json_object_get(row, "description");
-                                     json_t* queue_type_obj = json_object_get(row, "queue_type");
-                                     json_t* timeout_seconds_obj = json_object_get(row, "timeout_seconds");
+                                     json_t* sql_template_obj = json_object_get(row, "query");
+                                     json_t* description_obj = json_object_get(row, "query_name");
+                                     json_t* queue_type_obj = json_object_get(row, "query_queue");
+                                     json_t* timeout_seconds_obj = json_object_get(row, "query_timeout");
 
                                      // Process QTC entry if all required fields present
                                      if (query_ref_obj && json_is_integer(query_ref_obj) &&
