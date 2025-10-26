@@ -1,13 +1,13 @@
 -- Migration: acuranzo_1002.lua
 -- Creates the account_access table and populating it with the next migration.
 
+-- luacheck: no max line length
+-- luacheck: no unused args
+
 -- CHANGELOG
 -- 2.0.0 - 2025-10-18 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
 -- 1.0.0 - 2025-09-13 - Initial creation for account_access table with PostgreSQL support.
-
--- luacheck: no max line length
--- luacheck: no unused args
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -34,12 +34,7 @@ table.insert(queries,{sql=[[
                 access_type_a22         ${INTEGER}          NOT NULL,
                 status_a23              ${INTEGER}          NOT NULL,
                 collection              ${JSON}                     ,
-                valid_after             ${TIMESTAMP_TZ}             ,
-                valid_until             ${TIMESTAMP_TZ}             ,
-                created_id              ${INTEGER}          NOT NULL,
-                created_at              ${TIMESTAMP_TZ}     NOT NULL,
-                updated_id              ${INTEGER}          NOT NULL,
-                updated_at              ${TIMESTAMP_TZ}     NOT NULL,
+                ${COMMON_CREATE}
                 PRIMARY KEY (access_id)
             );
         ]=],
@@ -52,7 +47,7 @@ table.insert(queries,{sql=[[
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
-        ${QUERIES_COMMON}
+        ${COMMON_INSERT}
     );
 
 ]]})
@@ -83,7 +78,7 @@ table.insert(queries,{sql=[[
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
-        ${QUERIES_COMMON}
+        ${COMMON_INSERT}
     );
 
 ]]})
@@ -167,54 +162,7 @@ table.insert(queries,{sql=[[
                                 "unique": false,
                                 "standard": true
                             },
-                            {
-                                "name": "valid_after",
-                                "datatype": "${TIMESTAMP_TZ}",
-                                "nullable": true,
-                                "primary_key": false,
-                                "unique": false,
-                                "standard": true
-                            },
-                            {
-                                "name": "valid_until",
-                                "datatype": "${TIMESTAMP_TZ}",
-                                "nullable": true,
-                                "primary_key": false,
-                                "unique": false,
-                                "standard": true
-                            },
-                            {
-                                "name": "created_id",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "standard": true
-                            },
-                            {
-                                "name": "created_at",
-                                "datatype": "${TIMESTAMP_TZ}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "standard": true
-                            },
-                            {
-                                "name": "updated_id",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "standard": true
-                            },
-                            {
-                                "name": "updated_at",
-                                "datatype": "${TIMESTAMP_TZ}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "standard": true
-                            }
+                            ${COMMON_DIAGRAM}
                         ]
                     }
                 ]
@@ -223,7 +171,7 @@ table.insert(queries,{sql=[[
         ${JSON_INGEST_END}
                                                                             -- DIAGRAM_END
         ,                                                                   -- collection
-        ${QUERIES_COMMON}
+        ${COMMON_INSERT}
     );
 
 ]]})
