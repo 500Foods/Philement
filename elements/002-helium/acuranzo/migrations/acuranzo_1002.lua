@@ -33,6 +33,7 @@ table.insert(queries,{sql=[[
                 feature_a21             ${INTEGER}          NOT NULL,
                 access_type_a22         ${INTEGER}          NOT NULL,
                 status_a23              ${INTEGER}          NOT NULL,
+                summary                 ${TEXTBIG}                  ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 PRIMARY KEY (access_id)
@@ -155,12 +156,19 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
+                                "name": "summary",
+                                "datatype": "${TEXTBIG}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
                                 "name": "collection",
                                 "datatype": "${JSON}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false,
-                                "standard": true
+                                "standard": false
                             },
                             ${COMMON_DIAGRAM}
                         ]

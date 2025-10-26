@@ -124,8 +124,8 @@
     <text x="61.7485181665988" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">summary</text>
     <text x="417.9251979548437" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="1.1227003303017964" y="563.6292468214109" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
-    <text x="61.7485181665988" y="596.9734466313743" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="417.9251979548437" y="596.9734466313743" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">longtest characterset utf8mb4 collate utf8mb4_bin</text>
+    <text x="61.7485181665988" y="596.9734466313743" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">collection</text>
+    <text x="417.9251979548437" y="596.9734466313743" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">longtest characterset utf8mb4 collate utf8mb4_bin</text>
     <rect x="1.1227003303017964" y="614.1507616849917" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
     <text x="61.7485181665988" y="647.4949614949551" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="417.9251979548437" y="647.4949614949551" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
@@ -189,11 +189,11 @@
     <text x="61.7485181665988" y="394.88738717705087" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">code</text>
     <text x="417.9251979548437" y="394.88738717705087" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="1.1227003303017964" y="412.0647022306684" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
-    <text x="61.7485181665988" y="445.40890204063174" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">summary</text>
-    <text x="417.9251979548437" y="445.40890204063174" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">text</text>
+    <text x="61.7485181665988" y="445.40890204063174" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">summary</text>
+    <text x="417.9251979548437" y="445.40890204063174" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="1.1227003303017964" y="462.5862170942492" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
-    <text x="61.7485181665988" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="417.9251979548437" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">longtest characterset utf8mb4 collate utf8mb4_bin</text>
+    <text x="61.7485181665988" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">collection</text>
+    <text x="417.9251979548437" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">longtest characterset utf8mb4 collate utf8mb4_bin</text>
     <rect x="1.1227003303017964" y="513.10773195783" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
     <text x="61.7485181665988" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="417.9251979548437" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
@@ -218,14 +218,14 @@
     <text x="417.9251979548437" y="799.0595060856976" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
     <rect x="1.1227003303017964" y="1.1227003303017964" width="477.4283154608389" height="815.1141208090133" fill="transparent" stroke="silver" stroke-width="1.6840504954526945" rx="15.15645445907425" ry="15.15645445907425"/>
 </g>
-    <!-- table.account_access at (1115.42, 211.08) -->
+    <!-- table.account_access at (1115.42, 185.82) -->
 <defs>
     <filter id="shadow-account-access" x="-20%" y="-20%" width="140%" height="140%">
         <feDropShadow dx="2" dy="2" stdDeviation="1.5" flood-color="rgba(0,0,0,0.3)"/>
     </filter>
 </defs>
-<g transform="translate(1115.4196606488395, 211.08454459074255)" filter="url(#shadow-account-access)">
-    <rect x="1.1227003303017964" y="1.1227003303017964" width="477.4283154608389" height="663.5495762182708" fill="white" stroke="transparent" stroke-width="1.6840504954526945" rx="15.15645445907425" ry="15.15645445907425"/>
+<g transform="translate(1115.4196606488395, 185.8237871589521)" filter="url(#shadow-account-access)">
+    <rect x="1.1227003303017964" y="1.1227003303017964" width="477.4283154608389" height="714.0710910818516" fill="white" stroke="transparent" stroke-width="1.6840504954526945" rx="15.15645445907425" ry="15.15645445907425"/>
     <path d="M 16.279154789376047 1.1227003303017964 L 463.3945613320664 1.1227003303017964 Q 478.5510157911407 1.1227003303017964 478.5510157911407 16.279154789376047 L 478.5510157911407 58.41409818560247 L 1.1227003303017964 58.41409818560247 L 1.1227003303017964 16.279154789376047 Q 1.1227003303017964 1.1227003303017964 16.279154789376047 1.1227003303017964 Z" fill="skyblue" stroke="transparent" stroke-width="3.368100990905389"/>
     <text x="17.963205284828742" y="36.13411013076332" font-family="Cairo, Arial, sans-serif" font-size="26.94480792724311" font-weight="bold">account_access</text>    <text x="461.71051083661376" y="36.13411013076332" font-family="Cairo, Arial, sans-serif" font-size="20.208605945432335" font-weight="bold" fill="navy" text-anchor="end">1002</text>
     <rect x="1.1227003303017964" y="58.41409818560247" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="transparent" stroke-width="0.8420252477263472"/>
@@ -254,31 +254,34 @@
     <text x="61.7485181665988" y="293.8443574498892" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="maroon" font-weight="normal">status_a23</text>
     <text x="417.9251979548437" y="293.8443574498892" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="maroon" font-weight="normal">int</text>
     <rect x="1.1227003303017964" y="311.0216725035067" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
-    <text x="61.7485181665988" y="344.36587231347005" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="417.9251979548437" y="344.36587231347005" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">longtest characterset utf8mb4 collate utf8mb4_bin</text>
+    <text x="61.7485181665988" y="344.36587231347005" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">summary</text>
+    <text x="417.9251979548437" y="344.36587231347005" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="1.1227003303017964" y="361.5431873670875" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
-    <text x="61.7485181665988" y="394.88738717705087" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="417.9251979548437" y="394.88738717705087" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
+    <text x="61.7485181665988" y="394.88738717705087" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">collection</text>
+    <text x="417.9251979548437" y="394.88738717705087" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">longtest characterset utf8mb4 collate utf8mb4_bin</text>
     <rect x="1.1227003303017964" y="412.0647022306684" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
-    <text x="61.7485181665988" y="445.40890204063174" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">valid_until</text>
+    <text x="61.7485181665988" y="445.40890204063174" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="417.9251979548437" y="445.40890204063174" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
     <rect x="1.1227003303017964" y="462.5862170942492" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
-    <use href="#not-null-icon-darkgreen" x="434.76570290937065" y="474.37457056241806" width="26.94480792724311" height="26.94480792724311" rx="5.388961585448623" ry="5.388961585448623"/>
-    <text x="61.7485181665988" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">created_id</text>
-    <text x="417.9251979548437" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">int</text>
+    <text x="61.7485181665988" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">valid_until</text>
+    <text x="417.9251979548437" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
     <rect x="1.1227003303017964" y="513.10773195783" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
     <use href="#not-null-icon-darkgreen" x="434.76570290937065" y="524.8960854259989" width="26.94480792724311" height="26.94480792724311" rx="5.388961585448623" ry="5.388961585448623"/>
-    <text x="61.7485181665988" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="417.9251979548437" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
+    <text x="61.7485181665988" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">created_id</text>
+    <text x="417.9251979548437" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">int</text>
     <rect x="1.1227003303017964" y="563.6292468214109" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
     <use href="#not-null-icon-darkgreen" x="434.76570290937065" y="575.4176002895798" width="26.94480792724311" height="26.94480792724311" rx="5.388961585448623" ry="5.388961585448623"/>
-    <text x="61.7485181665988" y="596.9734466313743" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">updated_id</text>
-    <text x="417.9251979548437" y="596.9734466313743" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">int</text>
-    <rect x="1.1227003303017964" y="614.1507616849917" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="transparent" stroke-width="0.8420252477263472"/>
+    <text x="61.7485181665988" y="596.9734466313743" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">created_at</text>
+    <text x="417.9251979548437" y="596.9734466313743" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
+    <rect x="1.1227003303017964" y="614.1507616849917" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
     <use href="#not-null-icon-darkgreen" x="434.76570290937065" y="625.9391151531606" width="26.94480792724311" height="26.94480792724311" rx="5.388961585448623" ry="5.388961585448623"/>
-    <text x="61.7485181665988" y="647.4949614949551" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="417.9251979548437" y="647.4949614949551" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
-    <rect x="1.1227003303017964" y="1.1227003303017964" width="477.4283154608389" height="663.5495762182708" fill="transparent" stroke="silver" stroke-width="1.6840504954526945" rx="15.15645445907425" ry="15.15645445907425"/>
+    <text x="61.7485181665988" y="647.4949614949551" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">updated_id</text>
+    <text x="417.9251979548437" y="647.4949614949551" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">int</text>
+    <rect x="1.1227003303017964" y="664.6722765485725" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="transparent" stroke-width="0.8420252477263472"/>
+    <use href="#not-null-icon-darkgreen" x="434.76570290937065" y="676.4606300167414" width="26.94480792724311" height="26.94480792724311" rx="5.388961585448623" ry="5.388961585448623"/>
+    <text x="61.7485181665988" y="698.0164763585359" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">updated_at</text>
+    <text x="417.9251979548437" y="698.0164763585359" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
+    <rect x="1.1227003303017964" y="1.1227003303017964" width="477.4283154608389" height="714.0710910818516" fill="transparent" stroke="silver" stroke-width="1.6840504954526945" rx="15.15645445907425" ry="15.15645445907425"/>
 </g>
     <!-- table.account_contacts at (59.52, 1054.84) -->
 <defs>
@@ -326,8 +329,8 @@
     <text x="61.7485181665988" y="445.40890204063174" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">summary</text>
     <text x="417.9251979548437" y="445.40890204063174" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="1.1227003303017964" y="462.5862170942492" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
-    <text x="61.7485181665988" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="417.9251979548437" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">longtest characterset utf8mb4 collate utf8mb4_bin</text>
+    <text x="61.7485181665988" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">collection</text>
+    <text x="417.9251979548437" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">longtest characterset utf8mb4 collate utf8mb4_bin</text>
     <rect x="1.1227003303017964" y="513.10773195783" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
     <text x="61.7485181665988" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="417.9251979548437" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
@@ -389,8 +392,8 @@
     <text x="61.7485181665988" y="344.36587231347005" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">summary</text>
     <text x="417.9251979548437" y="344.36587231347005" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="1.1227003303017964" y="361.5431873670875" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
-    <text x="61.7485181665988" y="394.88738717705087" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="417.9251979548437" y="394.88738717705087" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">longtest characterset utf8mb4 collate utf8mb4_bin</text>
+    <text x="61.7485181665988" y="394.88738717705087" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">collection</text>
+    <text x="417.9251979548437" y="394.88738717705087" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">longtest characterset utf8mb4 collate utf8mb4_bin</text>
     <rect x="1.1227003303017964" y="412.0647022306684" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
     <text x="61.7485181665988" y="445.40890204063174" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="417.9251979548437" y="445.40890204063174" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
@@ -415,13 +418,13 @@
     <text x="417.9251979548437" y="698.0164763585359" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
     <rect x="1.1227003303017964" y="1.1227003303017964" width="477.4283154608389" height="714.0710910818516" fill="transparent" stroke="silver" stroke-width="1.6840504954526945" rx="15.15645445907425" ry="15.15645445907425"/>
 </g>
-    <!-- table.accounts at (1115.42, 903.28) -->
+    <!-- table.accounts at (1115.42, 928.54) -->
 <defs>
     <filter id="shadow-accounts" x="-20%" y="-20%" width="140%" height="140%">
         <feDropShadow dx="2" dy="2" stdDeviation="1.5" flood-color="rgba(0,0,0,0.3)"/>
     </filter>
 </defs>
-<g transform="translate(1115.4196606488395, 903.2798197366635)" filter="url(#shadow-accounts)">
+<g transform="translate(1115.4196606488395, 928.5405771684539)" filter="url(#shadow-accounts)">
     <rect x="1.1227003303017964" y="1.1227003303017964" width="477.4283154608389" height="865.6356356725942" fill="white" stroke="transparent" stroke-width="1.6840504954526945" rx="15.15645445907425" ry="15.15645445907425"/>
     <path d="M 16.279154789376047 1.1227003303017964 L 463.3945613320664 1.1227003303017964 Q 478.5510157911407 1.1227003303017964 478.5510157911407 16.279154789376047 L 478.5510157911407 58.41409818560247 L 1.1227003303017964 58.41409818560247 L 1.1227003303017964 16.279154789376047 Q 1.1227003303017964 1.1227003303017964 16.279154789376047 1.1227003303017964 Z" fill="skyblue" stroke="transparent" stroke-width="3.368100990905389"/>
     <text x="17.963205284828742" y="36.13411013076332" font-family="Cairo, Arial, sans-serif" font-size="26.94480792724311" font-weight="bold">accounts</text>    <text x="461.71051083661376" y="36.13411013076332" font-family="Cairo, Arial, sans-serif" font-size="20.208605945432335" font-weight="bold" fill="navy" text-anchor="end">1005</text>
@@ -464,8 +467,8 @@
     <text x="61.7485181665988" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">summary</text>
     <text x="417.9251979548437" y="495.93041690421256" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="1.1227003303017964" y="513.10773195783" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
-    <text x="61.7485181665988" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="417.9251979548437" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">${JSONB}</text>
+    <text x="61.7485181665988" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="black" font-weight="normal">collection</text>
+    <text x="417.9251979548437" y="546.4519317677933" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="black" font-weight="normal">${JSONB}</text>
     <rect x="1.1227003303017964" y="563.6292468214109" width="477.4283154608389" height="50.52151486358084" fill="transparent" stroke="#cccccc" stroke-width="0.8420252477263472"/>
     <text x="61.7485181665988" y="596.9734466313743" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="417.9251979548437" y="596.9734466313743" font-family="Cairo, Arial, sans-serif" font-size="22.45400660603593" text-anchor="end" fill="forestgreen" font-weight="normal">timestamp</text>
