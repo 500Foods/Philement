@@ -1,13 +1,13 @@
--- Migration: acuranzo_1003.lua
--- Creates the account_contacts table and populating it with the next migration.
+-- Migration: acuranzo_1005.lua
+-- Creates the accounts table and populating it with the next migration.
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 2.0.0 - 2025-10-25 - Moved to latest migration format
+-- 2.0.0 - 2025-10-26 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 - 2025-09-13 - Initial creation for account_contacts table with PostgreSQL support.
+-- 1.0.0 - 2025-09-13 - Initial creation for accounts table with PostgreSQL support.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -19,34 +19,34 @@ table.insert(queries,{sql=[[
     )
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1002,                                                               -- query_ref
+        1005,                                                               -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_FORWARD_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
         5000,                                                               -- query_timeout
         [=[
-            CREATE TABLE ${SCHEMA}account_contacts
+            CREATE TABLE IF NOT EXISTS ${SCHEMA}accounts
             (
-                contact_id              ${INTEGER}          NOT NULL,
                 account_id              ${INTEGER}          NOT NULL,
-                contact_seq             ${INTEGER}          NOT NULL,
-                contact_type_a18        ${INTEGER}          NOT NULL,
-                authenticate_a19        ${INTEGER}          NOT NULL,
-                status_a20              ${INTEGER}          NOT NULL,
-                contact                 ${VARCHAR_100}      NOT NULL,
-                summary                 ${TEXTBIG}                  ,
+                status_lua_16           ${INTEGER}          NOT NULL,
+                iana_timezone_lua_17    ${INTEGER}          NOT NULL,
+                name                    ${VARCHAR_100}      NOT NULL,
+                first_name              ${VARCHAR_100}      NOT NULL,
+                middle_name             ${VARCHAR_100}               ,
+                last_name               ${VARCHAR_100}      NOT NULL,
+                password_hash           ${VARCHAR_128}      NOT NULL,
+                summary                 ${TEXTBIG}          NOT NULL,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
-                PRIMARY KEY(contact_id)
             );
         ]=],
                                                                             -- code
-        'Create Account Contacts Table Query',                              -- name
+        'Create Accounts Table Query',                                      -- name
         [=[
-            # Forward Migration 1003: Create Account Contacts Table Query
+            # Forward Migration 1005: Create Accounts Table Query
 
-            This migration creates the account_contacts table for storing account contact data.
+            This migration creates the accounts table for storing account data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -62,19 +62,19 @@ table.insert(queries,{sql=[[
     )
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1003,                                                               -- query_ref
+        1005,                                                               -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_REVERSE_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
         5000,                                                               -- query_timeout
         [=[
-            DROP TABLE ${SCHEMA}account_contacts;
+            DROP TABLE ${SCHEMA}accounts;
         ]=],
                                                                             -- code
-        'Delete Account Contacts Table Query',                              -- name
+        'Delete Account Table Query',                                       -- name
         [=[
-            # Reverse Migration 1003: Delete Account Contacts Table Query
+            # Reverse Migration 1005: Delete Accounts Table Query
 
             This is provided for completeness when testing the migration system
             to ensure that forward and reverse migrations are complete.
@@ -93,20 +93,20 @@ table.insert(queries,{sql=[[
     )
     VALUES (
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1003,                                                               -- query_ref
+        1004,                                                               -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
         5000,                                                               -- query_timeout
         'JSON Table Definition in collection',                              -- code,
-        'Diagram Tables: ${SCHEMA}account_contacts',                        -- name
+        'Diagram Tables: ${SCHEMA}accounts',                                -- name
         [=[
-            # Diagram Migration 1003
+            # Diagram Migration 1005
 
-            ## Diagram Tables: ${SCHEMA}account_contacts
+            ## Diagram Tables: ${SCHEMA}accounts
 
-            This is the first JSON Diagram code for the account_contacts table.
+            This is the first JSON Diagram code for the accounts table.
         ]=],
                                                                             -- summary
                                                                             -- DIAGRAM_START
@@ -116,32 +116,18 @@ table.insert(queries,{sql=[[
                 "diagram": [
                     {
                         "object_type": "table",
-                        "object_id": "table.account_contacts",
-                        "object_ref": "1003",
+                        "object_id": "table.accounts",
+                        "object_ref": "1005",
                         "table": [
-                            {
-                                "name": "contact_id",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": true,
-                                "unique": false
-                            },
                             {
                                 "name": "account_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
-                                "primary_key": false,
-                                "unique": false
+                                "primary_key": true,
+                                "unique": true
                             },
                             {
-                                "name": "contact_seq",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
-                                "name": "contact_type_a18",
+                                "name": "status_lua_16",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -149,7 +135,7 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "authenticate_a19",
+                                "name": "iana_timezone_lua_17",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -157,16 +143,36 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "status_a20",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
-                                "name": "contact",
+                                "name": "name",
                                 "datatype": "${VARCHAR_100}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": true
+                            },
+                            {
+                                "name": "first_name",
+                                "datatype": "${VARCHAR_100}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "middle_name",
+                                "datatype": "${VARCHAR_100}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "last_name",
+                                "datatype": "${VARCHAR_100}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "password_hash",
+                                "datatype": "${VARCHAR_128}",
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false
@@ -180,7 +186,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "collection",
-                                "datatype": "${JSON}",
+                                "datatype": "${JSONB}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false,

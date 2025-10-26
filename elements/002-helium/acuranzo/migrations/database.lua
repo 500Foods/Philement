@@ -1,14 +1,15 @@
 -- database.lua
 -- Defines the Helium schema, supported database engines, and SQL defaults for migrations used in Hydrogen
 
---[[
-    CHANGELOG
-    2.1.2   | 2025-10-15  | Andrew Simard     | Added info{} element to track version information
-    2.1.1   | 2025-10-15  | Andrew Simard     | Changed replace_query to have a loop to check for nested macro replacements
-    2.1.0   | 2025-10-15  | Andrew Simard     | Changed run_migration to treet migration as a function call to make overrides easier
-    2.0.0   | 2025-10-15  | Andrew Simard     | Moved engine specifics into their own files (eg: database_db2.lua)
-    1.0.0   | 2025-09-13  | Andrew Simard     | Initial creation with support for SQLite, PostgreSQL, MySQL, DB2
-]]
+-- luacheck: no max line length
+
+-- CHANGELOG
+-- 2.2.0 - 2025-10-26 - Added more boilerplates for common_insert, common_create, common_diagram
+-- 2.1.2 - 2025-10-15 - Added info{} element to track version information
+-- 2.1.1 - 2025-10-15 - Changed replace_query to have a loop to check for nested macro replacements
+-- 2.1.0 - 2025-10-15 - Changed run_migration to treet migration as a function call to make overrides easier
+-- 2.0.0 - 2025-10-15 - Moved engine specifics into their own files (eg: database_db2.lua)
+-- 1.0.0 - 2025-09-13 - Initial creation with support for SQLite, PostgreSQL, MySQL, DB2
 
 local database = {
 
@@ -82,14 +83,74 @@ local database = {
                             updated_at
                         ]],
 
-    -- This is the default for a great many queries
-    queries_common =    [[
-                            NULL,       -- valid_after
-                            NULL,       -- valid_until
-                            0,          -- created_id
-                            ${NOW},     -- created_at
-                            0,          -- updated_id
-                            ${NOW}      -- updated_at
+    -- This is the default for nearly every table created
+    common_insert = [[
+                        NULL,       -- valid_after
+                        NULL,       -- valid_until
+                        0,          -- created_id
+                        ${NOW},     -- created_at
+                        0,          -- updated_id
+                        ${NOW}      -- updated_at
+                    ]],
+
+    common_create = [[
+                        valid_after             ${TIMESTAMP_TZ}             ,
+                        valid_until             ${TIMESTAMP_TZ}             ,
+                        created_id              ${INTEGER}          NOT NULL,
+                        created_at              ${TIMESTAMP_TZ}     NOT NULL,
+                        updated_id              ${INTEGER}          NOT NULL,
+                        updated_at              ${TIMESTAMP_TZ}     NOT NULL,
+                    ]],
+
+    common_diagram =    [[
+                            {
+                                "name": "valid_after",
+                                "datatype": "${TIMESTAMP_TZ}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": true
+                            },
+                            {
+                                "name": "valid_until",
+                                "datatype": "${TIMESTAMP_TZ}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": true
+                            },
+                            {
+                                "name": "created_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": true
+                            },
+                            {
+                                "name": "created_at",
+                                "datatype": "${TIMESTAMP_TZ}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": true
+                            },
+                            {
+                                "name": "updated_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": true
+                            },
+                            {
+                                "name": "updated_at",
+                                "datatype": "${TIMESTAMP_TZ}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": true
+                            }
                         ]],
 
     -- Load engine-specific configurations from separate files
@@ -103,7 +164,7 @@ local database = {
     replace_query = function(self, template, engine, design_name, schema_name)
 
         if not self.engines[engine] then
-            error("Unsupported engine: " .. engine)
+            error("Unsupported engine: " .. engine .. " / " .. design_name)
         end
 
         local cfg = self.defaults[engine]
@@ -120,7 +181,9 @@ local database = {
         cfg.SCHEMA = schema_prefix
         cfg.DIALECT = self.query_dialects[engine]
         cfg.QUERIES_INSERT = self.queries_insert
-        cfg.QUERIES_COMMON = self.queries_common
+        cfg.COMMON_INSERT = self.common_insert
+        cfg.COMMON_CREATE = self.common_create
+        cfg.COMMON_DIAGRAM = self.common_diagram
 
         -- Lookup #27
         cfg.STATUS_INACTIVE = self.query_status.inactive
@@ -160,7 +223,7 @@ local database = {
         return sql
     end,
 
-    indent_sql = function(self, sql)
+    indent_sql = function(sql)
         -- Split into lines, strip leading and trailing whitespace from each line
         local lines = {}
         -- Use split by newline to preserve empty lines
@@ -194,7 +257,7 @@ local database = {
         local pending_opening_quote = nil
         local last_comment_position = -1  -- Track comment alignment position
 
-        for i, line in ipairs(lines) do
+        for _, line in ipairs(lines) do
             local processed_line = line
             local has_mlstring_start = false
             local has_mlstring_end = false
@@ -345,6 +408,7 @@ local database = {
                 elseif not is_in_multiline_string() then
                     -- Only skip empty lines when not in multiline string
                     -- Don't add empty lines to the output
+                    current_indent = current_indent
                 else
                     -- In multiline string, preserve empty lines with current indentation
                     local indent = indent_unit:rep(current_indent)
@@ -363,10 +427,10 @@ local database = {
 
     run_migration = function(self, queries, engine, design_name, schema_name)
         local processed_queries = {}
-        for i, q in ipairs(queries) do
+        for _, q in ipairs(queries) do
             if q and q.sql then
                 local sql = self:replace_query(q.sql, engine, design_name, schema_name)
-                local indented_sql = self:indent_sql(sql)
+                local indented_sql = self.indent_sql(sql)
                 table.insert(processed_queries, indented_sql)
             end
         end
