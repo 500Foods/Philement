@@ -11,26 +11,29 @@
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
+
+cfg.TABLE = "accounts"
+cfg.MIGRATION = "1005"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
-    INSERT INTO ${SCHEMA}queries (
+    INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
     )
     VALUES (
-        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1005,                                                               -- query_ref
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}${QUERIES}),   -- query_id
+        ${MIGRATION},                                                       -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_FORWARD_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
-        5000,                                                               -- query_timeout
+        ${TIMEOUT},                                                         -- query_timeout
         [=[
-            CREATE TABLE IF NOT EXISTS ${SCHEMA}accounts
+            CREATE TABLE ${SCHEMA}${TABLE}
             (
                 account_id              ${INTEGER}          NOT NULL,
-                status_lua_16           ${INTEGER}          NOT NULL,
-                iana_timezone_lua_17    ${INTEGER}          NOT NULL,
+                status_a16              ${INTEGER}          NOT NULL,
+                iana_timezone_a17       ${INTEGER}          NOT NULL,
                 name                    ${VARCHAR_100}      NOT NULL,
                 first_name              ${VARCHAR_100}      NOT NULL,
                 middle_name             ${VARCHAR_100}               ,
@@ -42,11 +45,11 @@ table.insert(queries,{sql=[[
             );
         ]=],
                                                                             -- code
-        'Create Accounts Table Query',                                      -- name
+        'Create ${TABLE} Table',                                            -- name
         [=[
-            # Forward Migration 1005: Create Accounts Table Query
+            # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This migration creates the accounts table for storing account data.
+            This migration creates the ${TABLE} table for storing account data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -57,24 +60,24 @@ table.insert(queries,{sql=[[
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
-    INSERT INTO ${SCHEMA}queries (
+    INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
     )
     VALUES (
-        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1005,                                                               -- query_ref
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}${QUERIES}),   -- query_id
+        ${MIGRATION},                                                       -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_REVERSE_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
-        5000,                                                               -- query_timeout
+        ${TIMEOUT},                                                         -- query_timeout
         [=[
-            DROP TABLE ${SCHEMA}accounts;
+            DROP TABLE ${SCHEMA}${TABLE};
         ]=],
                                                                             -- code
-        'Delete Account Table Query',                                       -- name
+        'Drop ${TABLE} Table',                                              -- name
         [=[
-            # Reverse Migration 1005: Delete Accounts Table Query
+            # Reverse Migration ${MIGRATION}: Drop ${TABLE} Table
 
             This is provided for completeness when testing the migration system
             to ensure that forward and reverse migrations are complete.
@@ -88,25 +91,25 @@ table.insert(queries,{sql=[[
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
-    INSERT INTO ${SCHEMA}queries (
+    INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
     )
     VALUES (
-        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1004,                                                               -- query_ref
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}${QUERIES}),   -- query_id
+        ${MIGRATION},                                                       -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
-        5000,                                                               -- query_timeout
+        ${TIMEOUT},                                                         -- query_timeout
         'JSON Table Definition in collection',                              -- code,
-        'Diagram Tables: ${SCHEMA}accounts',                                -- name
+        'Diagram Tables: ${SCHEMA}${TABLE}',                                -- name
         [=[
-            # Diagram Migration 1005
+            # Diagram Migration ${MIGRATION}
 
-            ## Diagram Tables: ${SCHEMA}accounts
+            ## Diagram Tables: ${SCHEMA}${TABLE}
 
-            This is the first JSON Diagram code for the accounts table.
+            This is the first JSON Diagram code for the ${TABLE} table.
         ]=],
                                                                             -- summary
                                                                             -- DIAGRAM_START
@@ -116,8 +119,8 @@ table.insert(queries,{sql=[[
                 "diagram": [
                     {
                         "object_type": "table",
-                        "object_id": "table.accounts",
-                        "object_ref": "1005",
+                        "object_id": "table.${TABLE}",
+                        "object_ref": "${MIGRATION}",
                         "table": [
                             {
                                 "name": "account_id",
@@ -127,7 +130,7 @@ table.insert(queries,{sql=[[
                                 "unique": true
                             },
                             {
-                                "name": "status_lua_16",
+                                "name": "status_a16",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -135,7 +138,7 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "iana_timezone_lua_17",
+                                "name": "iana_timezone_a17",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,

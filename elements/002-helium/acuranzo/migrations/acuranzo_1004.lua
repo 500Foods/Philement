@@ -11,22 +11,25 @@
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
+
+cfg.TABLE = "account_roles"
+cfg.MIGRATION = "1004"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
-    INSERT INTO ${SCHEMA}queries (
+    INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
     )
     VALUES (
-        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1004,                                                               -- query_ref
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}${QUERIES}),   -- query_id
+        ${MIGRATION},                                                       -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_FORWARD_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
-        5000,                                                               -- query_timeout
+        ${TIMEOUT},                                                         -- query_timeout
         [=[
-            CREATE TABLE IF NOT EXISTS ${SCHEMA}account_roles
+            CREATE TABLE ${SCHEMA}${TABLE}
             (
                 account_id              ${INTEGER}          NOT NULL,
                 role_id                 ${INTEGER}          NOT NULL,
@@ -40,11 +43,11 @@ table.insert(queries,{sql=[[
             );
         ]=],
                                                                             -- code
-        'Create Account Roles Table Query',                                 -- name
+        'Create ${TABLE} Table',                                            -- name
         [=[
-            # Forward Migration 1004: Create Account Roles Table Query
+            # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This migration creates the account_roles table for storing account role data.
+            This migration creates the ${TABLE} table for storing account role data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -55,24 +58,24 @@ table.insert(queries,{sql=[[
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
-    INSERT INTO ${SCHEMA}queries (
+    INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
     )
     VALUES (
-        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1003,                                                               -- query_ref
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}${QUERIES}),   -- query_id
+        ${MIGRATION},                                                       -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_REVERSE_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
-        5000,                                                               -- query_timeout
+        ${TIMEOUT},                                                         -- query_timeout
         [=[
-            DROP TABLE ${SCHEMA}account_roles;
+            DROP TABLE ${SCHEMA}${TABLE};
         ]=],
                                                                             -- code
-        'Delete Account Roles Table Query',                                 -- name
+        'Drop ${TABLE} Table',                                              -- name
         [=[
-            # Reverse Migration 1004: Delete Account Roles Table Query
+            # Reverse Migration ${MIGRATION}: Drop ${TABLE} Table
 
             This is provided for completeness when testing the migration system
             to ensure that forward and reverse migrations are complete.
@@ -86,25 +89,25 @@ table.insert(queries,{sql=[[
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
-    INSERT INTO ${SCHEMA}queries (
+    INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
     )
     VALUES (
-        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1004,                                                               -- query_ref
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}${QUERIES}),    -- query_id
+        ${MIGRATION},                                                       -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
-        5000,                                                               -- query_timeout
-        'JSON Table Definition in collection',                              -- code,
-        'Diagram Tables: ${SCHEMA}account_roles',                           -- name
+        ${TIMEOUT},                                                         -- query_timeout
+        'JSON Table Definition in collection',                              -- code
+        'Diagram Tables: ${SCHEMA}${TABLE}',                                -- name
         [=[
-            # Diagram Migration 1004
+            # Diagram Migration ${MIGRATION}
 
-            ## Diagram Tables: ${SCHEMA}account_roles
+            ## Diagram Tables: ${SCHEMA}${TABLE}
 
-            This is the first JSON Diagram code for the account_roles table.
+            This is the first JSON Diagram code for the ${TABLE} table.
         ]=],
                                                                             -- summary
                                                                             -- DIAGRAM_START
@@ -114,8 +117,8 @@ table.insert(queries,{sql=[[
                 "diagram": [
                     {
                         "object_type": "table",
-                        "object_id": "table.account_roles",
-                        "object_ref": "1004",
+                        "object_id": "table.${TABLE}",
+                        "object_ref": "${MIGRATION}",
                         "table": [
                             {
                                 "name": "account_id",

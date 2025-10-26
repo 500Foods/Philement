@@ -179,6 +179,8 @@ local database = {
 
         -- Add additional placeholders to cfg for unified processing
         cfg.SCHEMA = schema_prefix
+        cfg.QUERIES = "queries" -- default table name for queries
+        cfg.TIMEOUT = "5000" -- default query timeout value (ms)
         cfg.DIALECT = self.query_dialects[engine]
         cfg.QUERIES_INSERT = self.queries_insert
         cfg.COMMON_INSERT = self.common_insert
