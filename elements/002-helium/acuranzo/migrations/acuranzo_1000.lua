@@ -266,7 +266,7 @@ table.insert(queries,{sql=[[
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false,
-                                "standard": true
+                                "standard": false
                             },
                             ${COMMON_DIAGRAM}
                         ]
