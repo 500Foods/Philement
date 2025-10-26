@@ -1,48 +1,19 @@
--- Migration: acuranzo_1000.lua
--- Bootstraps the migration system by creating the queries table and populating it with the next migration.
+-- Migration: acuranzo_1007.lua
+-- Creates the connections table and populating it with the next migration.
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 2.0.0 - 2025-10-18 - Moved to latest migration format
+-- 2.0.0 - 2025-10-26 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 - 2025-09-13 - Initial creation for queries table with SQLite, PostgreSQL, MySQL, DB2 support.
+-- 1.0.0 - 2025-09-13 - Initial creation for connections table with PostgreSQL support.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
-cfg.TABLE = "queries"
-cfg.MIGRATION = "1000"
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-table.insert(queries,{sql=[[
-
-    CREATE TABLE ${SCHEMA}${QUERIES} (
-        query_id                ${INTEGER}          NOT NULL,
-        query_ref               ${INTEGER}          NOT NULL,
-        query_status_a27        ${INTEGER}          NOT NULL,
-        query_type_a28          ${INTEGER}          NOT NULL,
-        query_dialect_a30       ${INTEGER}          NOT NULL,
-        query_queue_a58         ${INTEGER}          NOT NULL,
-        query_timeout           ${INTEGER}          NOT NULL,
-        code                    ${TEXTBIG}          NOT NULL,
-        name                    ${VARCHAR_100}      NOT NULL,
-        summary                 ${TEXTBIG}                  ,
-        collection              ${JSON}                     ,
-        ${COMMON_CREATE}
-        ${PRIMARY}(query_id),                                               -- Primary Key
-        ${UNIQUE}(query_ref, query_type_a28)                                -- Unique Column
-    );
-
-]]})
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
--- NOTE: SQLite has no JSON handling peculiarities, so no custom function is defined
-if engine ~= 'sqlite' then table.insert(queries,{sql=[[
-
-    -- Defined in database_<engine>.lua as a macro
-    ${JSON_INGEST_FUNCTION}
-
-]]}) end
+cfg.TABLE = "connections"
+cfg.MIGRATION = "1007"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -53,26 +24,22 @@ table.insert(queries,{sql=[[
         (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}${QUERIES}),   -- query_id
         ${MIGRATION},                                                       -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
-        ${TYPE_APPLIED_MIGRATION},                                          -- query_type_a28
+        ${TYPE_FORWARD_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
         ${TIMEOUT},                                                         -- query_timeout
         [=[
-            CREATE TABLE ${SCHEMA}${TABLE} (
-                query_id                ${INTEGER},
-                query_ref               ${INTEGER}          NOT NULL,
-                query_status_a27        ${INTEGER}          NOT NULL,
-                query_type_a28          ${INTEGER}          NOT NULL,
-                query_dialect_a30       ${INTEGER}          NOT NULL,
-                query_queue_a58         ${INTEGER}          NOT NULL,
-                query_timeout           ${INTEGER}          NOT NULL,
-                query_code              ${TEXTBIG}          NOT NULL,
+            CREATE TABLE ${SCHEMA}${TABLE}
+            (
+                connection_id           ${INTEGER}          NOT NULL,
+                connection_type_a4      ${INTEGER}          NOT NULL,
+                connected_a5            ${INTEGER}          NOT NULL,
+                status_a6               ${INTEGER}          NOT NULL,
                 name                    ${VARCHAR_100}      NOT NULL,
                 summary                 ${TEXTBIG}                  ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
-                ${PRIMARY}(query_id),                                       -- Primary Key
-                ${UNIQUE}(query_ref)                                        -- Unique Column
+                PRIMARY KEY(connection_id)
             );
         ]=],
                                                                             -- code
@@ -80,10 +47,7 @@ table.insert(queries,{sql=[[
         [=[
             # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This is the first migration that, technically, is run automatically
-            when connecting to an empty database and kicks off the migration,
-            so long as the database has been configured with AutoMigration: true
-            in its config (this is the default if not supplied).
+            This migration creates the ${TABLE} table for storing connection data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -136,7 +100,7 @@ table.insert(queries,{sql=[[
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
         ${TIMEOUT},                                                         -- query_timeout
-        'JSON Table Definition in collection',                              -- code
+        'JSON Table Definition in collection',                              -- code,
         'Diagram Tables: ${SCHEMA}${TABLE}',                                -- name
         [=[
             # Diagram Migration ${MIGRATION}
@@ -152,57 +116,19 @@ table.insert(queries,{sql=[[
             {
                 "diagram": [
                     {
-                        "object_type": "template",
-                        "object_id": "base template",
-                        "object_value": "<svg   xmlns=\"http://www.w3.org/2000/svg\"
-                                                xmlns:xlink=\"http://www.w3.org/1999/xlink\"
-                                                width=\"2520\"
-                                                height=\"1980\"
-                                                viewBox=\"0 0 2520 1980\">
-                                            <!-- Define clipPath for rounded border with 2mm margin -->
-                                            <defs>
-                                                <clipPath id=\"border-clip\">
-                                                <rect x=\"18\" y=\"18\" width=\"2484\" height=\"1944\" rx=\"42.51\" ry=\"42.51\"/>
-                                                </clipPath>
-                                            </defs>
-                                            <!-- Thin black border with 2mm margin -->
-                                            <rect x=\"18\" y=\"18\" width=\"2484\" height=\"1944\" fill=\"none\" stroke=\"black\" stroke-width=\"3\" rx=\"42.51\" ry=\"42.51\"/>
-                                            <!-- White background within border, clipped to rounded shape -->
-                                            <rect x=\"18\" y=\"18\" width=\"2484\" height=\"1944\" fill=\"white\" clip-path=\"url(#border-clip)\"/>
-                                            <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
-                                            <defs>
-                                                <pattern id=\"grid\" width=\"84.9\" height=\"84.9\" patternUnits=\"userSpaceOnUse\" x=\"18\" y=\"18\">
-                                                    <path d=\"M 84.9 0 L 0 0 0 84.9\" fill=\"none\" stroke=\"black\" stroke-width=\"1.5\" stroke-dasharray=\"6,6\"/>
-                                                </pattern>
-                                            </defs>
-                                            <rect x=\"18\" y=\"18\" width=\"2484\" height=\"1944\" fill=\"url(#grid)\" clip-path=\"url(#border-clip)\"/>
-                                            <!-- ERD content placeholder -->
-                                            <g id=\"erd-content\" transform=\"translate(0, 0)\">
-                                                <!-- ERD SVG content goes here -->
-                                            </g>
-                                        </svg>"
-                    },
-                    {
                         "object_type": "table",
                         "object_id": "table.${TABLE}",
                         "object_ref": "${MIGRATION}",
                         "table": [
                             {
-                                "name": "query_id",
+                                "name": "connection_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": true,
                                 "unique": true
                             },
                             {
-                                "name": "query_ref",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": true
-                            },
-                            {
-                                "name": "query_status_a27",
+                                "name": "connection_type_a4",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -210,7 +136,7 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "query_type_a28",
+                                "name": "connected_a5",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -218,35 +144,12 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "query_dialect_a30",
+                                "name": "status_a6",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false,
                                 "lookup": true
-                            },
-                            {
-                                "name": "query_queue_a58",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
-                                "name": "query_timeout",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": false
-                            },
-                            {
-                                "name": "query_code",
-                                "datatype": "${TEXTBIG}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false
                             },
                             {
                                 "name": "name",
@@ -254,7 +157,6 @@ table.insert(queries,{sql=[[
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false
-
                             },
                             {
                                 "name": "summary",
@@ -269,7 +171,7 @@ table.insert(queries,{sql=[[
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false,
-                                "standard": false
+                                "standard": true
                             },
                             ${COMMON_DIAGRAM}
                         ]

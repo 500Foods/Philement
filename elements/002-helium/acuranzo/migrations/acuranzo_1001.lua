@@ -11,22 +11,25 @@
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
+
+cfg.TABLE = "lookups"
+cfg.MIGRATION = "1001"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
-    INSERT INTO ${SCHEMA}queries (
+    INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
     )
     VALUES (
-        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1001,                                                               -- query_ref
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}${QUERIES}),   -- query_id
+        ${MIGRATION},                                                       -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_FORWARD_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
-        5000,                                                               -- query_timeout
+        ${TIMEOUT}                                                          -- query_timeout
         [=[
-            CREATE TABLE IF NOT EXISTS ${SCHEMA}lookups
+            CREATE TABLE ${SCHEMA}{$TABLE}
             (
                 lookup_id               ${INTEGER}          NOT NULL,
                 key_idx                 ${INTEGER}          NOT NULL,
@@ -42,11 +45,11 @@ table.insert(queries,{sql=[[
             );
         ]=],
                                                                             -- code
-        'Create Lookups Table Query',                                       -- name
+        'Create ${TABLE} Table',                                            -- name
         [=[
-            # Forward Migration 1001: Create Lookups Table Query
+            # Forward Migration 1001: Create ${TABLE} Table
 
-            This migration creates the lookups table for storing key-value lookup data.
+            This migration creates the ${TABLE} table for storing key-value lookup data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -57,24 +60,24 @@ table.insert(queries,{sql=[[
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
-    INSERT INTO ${SCHEMA}queries (
+    INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
     )
     VALUES (
-        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1001,                                                               -- query_ref
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}${QUERIES}),   -- query_id
+        ${MIGRATION},                                                       -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_REVERSE_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
-        5000,                                                               -- query_timeout
+        ${TIMEOUT},                                                         -- query_timeout
         [=[
-            DROP TABLE ${SCHEMA}lookups;
+            DROP TABLE ${SCHEMA}${TABLE};
         ]=],
                                                                             -- code
-        'Delete Lookups Table Query',                                       -- name
+        'Drop ${TABLE} Table',                                              -- name
         [=[
-            # Reverse Migration 1001: Delete Lookups Table Query
+            # Reverse Migration ${MIGRATION}: Drop ${TABLE} Table
 
             This is provided for completeness when testing the migration system
             to ensure that forward and reverse migrations are complete.
@@ -88,25 +91,25 @@ table.insert(queries,{sql=[[
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
-    INSERT INTO ${SCHEMA}queries (
+    INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
     )
     VALUES (
-        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}queries),      -- query_id
-        1001,                                                               -- query_ref
+        (SELECT COALESCE(MAX(query_id), 0) + 1 FROM ${SCHEMA}${QUERIES}),   -- query_id
+        ${MIGRATION},                                                       -- query_ref
         ${STATUS_ACTIVE},                                                   -- query_status_a27
         ${TYPE_DIAGRAM_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
-        5000,                                                               -- query_timeout
+        ${TIMEOUT},                                                         -- query_timeout
         'JSON Table Definition in collection',                              -- code
-        'Diagram Tables: ${SCHEMA}lookups',                                 -- name
+        'Diagram Tables: ${SCHEMA}${TABLE}',                                -- name
         [=[
-            # Diagram Migration 1001
+            # Diagram Migration ${MIGRATION}
 
-            ## Diagram Tables: ${SCHEMA}lookups
+            ## Diagram Tables: ${SCHEMA}${TABLE}
 
-            This is the first JSON Diagram code for the lookups table.
+            This is the first JSON Diagram code for the ${TABLE} table.
         ]=],
                                                                             -- summary
                                                                             -- DIAGRAM_START
@@ -116,8 +119,8 @@ table.insert(queries,{sql=[[
                 "diagram": [
                     {
                         "object_type": "table",
-                        "object_id": "table.lookups",
-                        "object_ref": "1001",
+                        "object_id": "table.${TABLE}",
+                        "object_ref": "${MIGRATION}",
                         "table": [
                             {
                                 "name": "lookup_id",
