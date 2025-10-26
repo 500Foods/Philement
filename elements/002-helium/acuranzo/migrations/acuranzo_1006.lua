@@ -1,19 +1,19 @@
--- Migration: acuranzo_1003.lua
--- Creates the account_contacts table and populating it with the next migration.
+-- Migration: acuranzo_1006.lua
+-- Creates the actions table and populating it with the next migration.
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 2.0.0 - 2025-10-25 - Moved to latest migration format
+-- 2.0.0 - 2025-10-26 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 - 2025-09-13 - Initial creation for account_contacts table with PostgreSQL support.
+-- 1.0.0 - 2025-09-13 - Initial creation for actions table with PostgreSQL support.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
-cfg.TABLE = "account_contacts"
-cfg.MIGRATION = "1003"
+cfg.TABLE = "actions"
+cfg.MIGRATION = "1006"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -31,17 +31,19 @@ table.insert(queries,{sql=[[
         [=[
             CREATE TABLE ${SCHEMA}${TABLE}
             (
-                contact_id              ${INTEGER}          NOT NULL,
-                account_id              ${INTEGER}          NOT NULL,
-                contact_seq             ${INTEGER}          NOT NULL,
-                contact_type_a18        ${INTEGER}          NOT NULL,
-                authenticate_a19        ${INTEGER}          NOT NULL,
-                status_a20              ${INTEGER}          NOT NULL,
-                contact                 ${VARCHAR_100}      NOT NULL,
-                summary                 ${TEXTBIG}                  ,
-                collection              ${JSON}                     ,
-                ${COMMON_CREATE}
-                PRIMARY KEY(contact_id)
+                action_id               ${INTEGER}          NOT NULL,
+                feature_a21             ${INTEGER}          NOT NULL,
+                action_type_a24         ${INTEGER}          NOT NULL,
+                system_id               ${INTEGER}                  ,
+                app_id                  ${INTEGER}                  ,
+                app_ver                 ${VARCHAR_50}               ,
+                account_id              ${INTEGER}                  ,
+                action                  ${TEXTBIG}                  ,
+                action_msecs            ${INTEGER}          NOT NULL,
+                ip_address              ${VARCHAR_50}               ,
+                created_id              ${INTEGER} NOT NULL         ,
+                created_at              ${TIMESTAMP_TZ}             ,
+                PRIMARY KEY(action_id)
             );
         ]=],
                                                                             -- code
@@ -49,7 +51,7 @@ table.insert(queries,{sql=[[
         [=[
             # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This migration creates the ${TABLE} table for storing account contact data.
+            This migration creates the ${TABLE} table for storing actions data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -102,7 +104,7 @@ table.insert(queries,{sql=[[
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
         ${TIMEOUT},                                                         -- query_timeout
-        'JSON Table Definition in collection',                              -- code
+        'JSON Table Definition in collection',                              -- code,
         'Diagram Tables: ${SCHEMA}${TABLE}',                                -- name
         [=[
             # Diagram Migration ${MIGRATION}
@@ -123,73 +125,93 @@ table.insert(queries,{sql=[[
                         "object_ref": "${MIGRATION}",
                         "table": [
                             {
-                                "name": "contact_id",
+                                "name": "action_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": true,
                                 "unique": false
                             },
                             {
+                                "name": "feature_a21",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "action_type_a24",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "system_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "app_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "app_ver",
+                                "datatype": "${VARCHAR_50}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
                                 "name": "account_id",
                                 "datatype": "${INTEGER}",
-                                "nullable": false,
+                                "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
-                                "name": "contact_seq",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
-                                "name": "contact_type_a18",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
-                                "name": "authenticate_a19",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
-                                "name": "status_a20",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
-                                "name": "contact",
-                                "datatype": "${VARCHAR_100}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
-                                "name": "summary",
+                                "name": "action",
                                 "datatype": "${TEXTBIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
-                                "name": "collection",
-                                "datatype": "${JSON}",
+                                "name": "action_msecs",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "ip_address",
+                                "datatype": "${VARCHAR_50}",
                                 "nullable": true,
                                 "primary_key": false,
-                                "unique": false,
-                                "standard": false
+                                "unique": false
                             },
-                            ${COMMON_DIAGRAM}
+                            {
+                                "name": "created_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": true
+                            },
+                            {
+                                "name": "created_at",
+                                "datatype": "${TIMESTAMP_TZ}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": true
+                            }
                         ]
                     }
                 ]
