@@ -1,19 +1,19 @@
--- Migration: acuranzo_1007.lua
--- Creates the connections table and populating it with the next migration.
+-- Migration: acuranzo_1009.lua
+-- Creates the dictionaries table and populating it with the next migration.
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 2.0.0 - 2025-10-26 - Moved to latest migration format
+-- 2.0.0 - 2025-10-27 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 - 2025-09-13 - Initial creation for connections table with PostgreSQL support.
+-- 1.0.0 - 2025-09-13 - Initial creation for dictionaries table with PostgreSQL support.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
-cfg.TABLE = "connections"
-cfg.MIGRATION = "1007"
+cfg.TABLE = "dictionaries"
+cfg.MIGRATION = "1009"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -31,23 +31,22 @@ table.insert(queries,{sql=[[
         [=[
             CREATE TABLE ${SCHEMA}${TABLE}
             (
-                connection_id           ${INTEGER}          NOT NULL,
-                connection_type_a4      ${INTEGER}          NOT NULL,
-                connected_a5            ${INTEGER}          NOT NULL,
-                status_a6               ${INTEGER}          NOT NULL,
+                dictionary_id           ${INTEGER}          NOT NULL,
+                language_id             ${INTEGER}          NOT NULL,
+                status_a3               ${INTEGER}          NOT NULL,
                 name                    ${TEXT}             NOT NULL,
                 summary                 ${TEXTBIG}                  ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
-                ${PRIMARY}(connection_id)
+                ${PRIMARY}(dictionary_id, language_id)
             );
-        ]=],
+       ]=],
                                                                             -- code
         'Create ${TABLE} Table',                                            -- name
         [=[
             # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This migration creates the ${TABLE} table for storing connection data.
+            This migration creates the ${TABLE} table for storing dictiionary data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -121,30 +120,21 @@ table.insert(queries,{sql=[[
                         "object_ref": "${MIGRATION}",
                         "table": [
                             {
-                                "name": "connection_id",
+                                "name": "dictionary_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": true,
-                                "unique": true
+                                "unique": false
                             },
                             {
-                                "name": "connection_type_a4",
+                                "name": "language_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
+                                "primary_key": true,
+                                "unique": false
                             },
                             {
-                                "name": "connected_a5",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false,
-                                "lookup": true
-                            },
-                            {
-                                "name": "status_a6",
+                                "name": "status_a3",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,

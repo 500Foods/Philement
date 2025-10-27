@@ -2,6 +2,7 @@
 -- PostgreSQL-specific configuration for Helium schema
 
 return {
+    CHAR_2 = "char(2)",
     INTEGER = "integer",
     NOW = "CURRENT_TIMESTAMP",
     PRIMARY = "PRIMARY KEY",
