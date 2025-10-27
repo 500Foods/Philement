@@ -1,19 +1,19 @@
--- Migration: acuranzo_1007.lua
--- Creates the connections table and populating it with the next migration.
+-- Migration: acuranzo_1010.lua
+-- Creates the documents table and populating it with the next migration.
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 2.0.0 - 2025-10-26 - Moved to latest migration format
+-- 2.0.0 - 2025-10-27 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 - 2025-09-13 - Initial creation for connections table with PostgreSQL support.
+-- 1.0.0 - 2025-09-13 - Initial creation for documents table with PostgreSQL support.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
-cfg.TABLE = "connections"
-cfg.MIGRATION = "1007"
+cfg.TABLE = "documents"
+cfg.MIGRATION = "1010"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -29,25 +29,30 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW},                                                        -- query_queue_a58
         ${TIMEOUT},                                                         -- query_timeout
         [=[
-            CREATE TABLE ${SCHEMA}${TABLE}
+            CREATE TABLE IF NOT EXISTS ${SCHEMA}${TABLE}
             (
-                connection_id           ${INTEGER}          NOT NULL,
-                connection_type_a4      ${INTEGER}          NOT NULL,
-                connected_a5            ${INTEGER}          NOT NULL,
-                status_a6               ${INTEGER}          NOT NULL,
+                doc_id                  ${INTEGER}          NOT NULL,
+                rev_id                  ${INTEGER}          NOT NULL,
+                doc_library_a49         ${INTEGER}          NOT NULL,
+                doc_status_a50          ${INTEGER}          NOT NULL,
+                doc_type_a51            ${INTEGER}                  ,
+                file_preview            ${TEXTBIG}                  ,
+                file_name               ${TEXT}                     ,
+                file_data               ${TEXTBIG}                  ,
+                file_text               ${TEXTBIG}                  ,
                 name                    ${TEXT}             NOT NULL,
                 summary                 ${TEXTBIG}                  ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
-                ${PRIMARY}(connection_id)
+                ${PRIMARY}(doc_id, rev_id)
             );
-        ]=],
+       ]=],
                                                                             -- code
         'Create ${TABLE} Table',                                            -- name
         [=[
             # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This migration creates the ${TABLE} table for storing connection data.
+            This migration creates the ${TABLE} table for storing conversation data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -121,14 +126,21 @@ table.insert(queries,{sql=[[
                         "object_ref": "${MIGRATION}",
                         "table": [
                             {
-                                "name": "connection_id",
+                                "name": "doc_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": true,
-                                "unique": true
+                                "unique": false
                             },
                             {
-                                "name": "connection_type_a4",
+                                "name": "rev_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": true,
+                                "unique": false
+                            },
+                            {
+                                "name": "doc_library_a49",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -136,7 +148,7 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "connected_a5",
+                                "name": "doc_status_a50",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -144,12 +156,40 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "status_a6",
+                                "name": "doc_type_a51",
                                 "datatype": "${INTEGER}",
-                                "nullable": false,
+                                "nullable": true,
                                 "primary_key": false,
                                 "unique": false,
                                 "lookup": true
+                            },
+                            {
+                                "name": "file_preview",
+                                "datatype": "${TEXTBIG}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "file_name",
+                                "datatype": "${TEXT}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "file_data",
+                                "datatype": "${TEXTBIG}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "file_text",
+                                "datatype": "${TEXTBIG}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
                             },
                             {
                                 "name": "name",

@@ -6,6 +6,7 @@
 -- SQLite doesn't have native JSON, so no need to deal with invalid JSON at this stage
 
 return {
+    CHAR_2 = "char(2)",
     INTEGER = "integer",
     NOW = "CURRENT_TIMESTAMP",
     PRIMARY = "PRIMARY KEY",

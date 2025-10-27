@@ -26,7 +26,7 @@ table.insert(queries,{sql=[[
         query_queue_a58         ${INTEGER}          NOT NULL,
         query_timeout           ${INTEGER}          NOT NULL,
         code                    ${TEXTBIG}          NOT NULL,
-        name                    ${VARCHAR_100}      NOT NULL,
+        name                    ${TEXT}             NOT NULL,
         summary                 ${TEXTBIG}                  ,
         collection              ${JSON}                     ,
         ${COMMON_CREATE}
@@ -250,7 +250,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "name",
-                                "datatype": "${VARCHAR_100}",
+                                "datatype": "${TEXT}",
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false

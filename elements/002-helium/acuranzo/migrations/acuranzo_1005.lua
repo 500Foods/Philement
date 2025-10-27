@@ -34,10 +34,10 @@ table.insert(queries,{sql=[[
                 account_id              ${INTEGER}          NOT NULL,
                 status_a16              ${INTEGER}          NOT NULL,
                 iana_timezone_a17       ${INTEGER}          NOT NULL,
-                name                    ${VARCHAR_100}      NOT NULL,
-                first_name              ${VARCHAR_100}      NOT NULL,
-                middle_name             ${VARCHAR_100}               ,
-                last_name               ${VARCHAR_100}      NOT NULL,
+                name                    ${TEXT}             NOT NULL,
+                first_name              ${TEXT}                     ,
+                middle_name             ${TEXT}                     ,
+                last_name               ${TEXT}             NOT NULL,
                 password_hash           ${VARCHAR_128}      NOT NULL,
                 summary                 ${TEXTBIG}          NOT NULL,
                 collection              ${JSON}                     ,
@@ -147,28 +147,28 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "name",
-                                "datatype": "${VARCHAR_100}",
+                                "datatype": "${TEXT}",
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": true
                             },
                             {
                                 "name": "first_name",
-                                "datatype": "${VARCHAR_100}",
-                                "nullable": false,
+                                "datatype": "${TEXT}",
+                                "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
                                 "name": "middle_name",
-                                "datatype": "${VARCHAR_100}",
+                                "datatype": "${TEXT}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
                                 "name": "last_name",
-                                "datatype": "${VARCHAR_100}",
+                                "datatype": "${TEXT}",
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false
@@ -189,7 +189,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "collection",
-                                "datatype": "${JSONB}",
+                                "datatype": "${JSON}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false,

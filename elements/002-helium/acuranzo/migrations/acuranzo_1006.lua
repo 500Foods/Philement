@@ -43,7 +43,7 @@ table.insert(queries,{sql=[[
                 ip_address              ${VARCHAR_50}               ,
                 created_id              ${INTEGER} NOT NULL         ,
                 created_at              ${TIMESTAMP_TZ}             ,
-                PRIMARY KEY(action_id)
+                ${PRIMARY}(action_id)
             );
         ]=],
                                                                             -- code

@@ -146,7 +146,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "value_txt",
-                                "datatype": "${VARCHAR_100}",
+                                "datatype": "${TEXT}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false

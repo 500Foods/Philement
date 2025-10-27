@@ -1,19 +1,20 @@
--- Migration: acuranzo_1007.lua
--- Creates the connections table and populating it with the next migration.
+-- Migration: acuranzo_1012.lua
+-- Creates the licenses table and populating it with the next migration.
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 2.0.0 - 2025-10-26 - Moved to latest migration format
+-- 2.0.0 - 2025-10-27 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 - 2025-09-13 - Initial creation for connections table with PostgreSQL support.
+-- 1.0.0 - 2025-09-13 - Initial creation for licenses table with PostgreSQL support.
+
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
-cfg.TABLE = "connections"
-cfg.MIGRATION = "1007"
+cfg.TABLE = "licenses"
+cfg.MIGRATION = "1012"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -29,25 +30,25 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW},                                                        -- query_queue_a58
         ${TIMEOUT},                                                         -- query_timeout
         [=[
-            CREATE TABLE ${SCHEMA}${TABLE}
+            CREATE TABLE IF NOT EXISTS ${SCHEMA}${TABLE}
             (
-                connection_id           ${INTEGER}          NOT NULL,
-                connection_type_a4      ${INTEGER}          NOT NULL,
-                connected_a5            ${INTEGER}          NOT NULL,
-                status_a6               ${INTEGER}          NOT NULL,
+                license_id              ${INTEGER}          NOT NULL,
+                status_a13              ${INTEGER}          NOT NULL,
+                app_key                 ${TEXT}             NOT NULL,
+                system_id               ${INTEGER}          NOT NULL,
                 name                    ${TEXT}             NOT NULL,
                 summary                 ${TEXTBIG}                  ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
-                ${PRIMARY}(connection_id)
+                ${PRIMARY}(license_id)
             );
-        ]=],
+       ]=],
                                                                             -- code
         'Create ${TABLE} Table',                                            -- name
         [=[
             # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This migration creates the ${TABLE} table for storing connection data.
+            This migration creates the ${TABLE} table for storing license data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -121,14 +122,14 @@ table.insert(queries,{sql=[[
                         "object_ref": "${MIGRATION}",
                         "table": [
                             {
-                                "name": "connection_id",
+                                "name": "license_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": true,
                                 "unique": true
                             },
                             {
-                                "name": "connection_type_a4",
+                                "name": "status_a13",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -136,20 +137,18 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "connected_a5",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
+                                "name": "app_key",
+                                "datatype": "${TEXT}",
+                                "nullable": true,
                                 "primary_key": false,
-                                "unique": false,
-                                "lookup": true
+                                "unique": false
                             },
                             {
-                                "name": "status_a6",
+                                "name": "system_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
-                                "unique": false,
-                                "lookup": true
+                                "unique": false
                             },
                             {
                                 "name": "name",
@@ -167,7 +166,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "collection",
-                                "datatype": "${JSON}",
+                                "datatype": "${JSONB}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false,

@@ -39,7 +39,7 @@ table.insert(queries,{sql=[[
                 summary                 ${TEXTBIG}                  ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
-                PRIMARY KEY (account_id, access_id)
+                ${PRIMARY}(account_id, access_id)
             );
         ]=],
                                                                             -- code
