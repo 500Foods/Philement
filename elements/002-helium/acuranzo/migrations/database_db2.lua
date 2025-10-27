@@ -3,6 +3,9 @@
 
 return {
     CHAR_2 = "CHAR(2)",
+    CHAR_20 = "CHAR(20)",
+    CHAR_50 = "CHAR(50)",
+    CHAR_128 = "CHAR(128)",
     INTEGER = "INTEGER",
     NOW = "CURRENT TIMESTAMP",
     PRIMARY = "PRIMARY KEY",

@@ -1,5 +1,5 @@
--- Migration: acuranzo_1013.lua
--- Creates the lists table and populating it with the next migration.
+-- Migration: acuranzo_1018.lua
+-- Creates the sessions table and populating it with the next migration.
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -7,13 +7,13 @@
 -- CHANGELOG
 -- 2.0.0 - 2025-10-27 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 - 2025-09-13 - Initial creation for lists table with PostgreSQL support.
+-- 1.0.0 - 2025-09-13 - Initial creation for sessions table with PostgreSQL support.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
-cfg.TABLE = "lists"
-cfg.MIGRATION = "1013"
+cfg.TABLE = "sessions"
+cfg.MIGRATION = "1018"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -31,14 +31,18 @@ table.insert(queries,{sql=[[
         [=[
             CREATE TABLE ${SCHEMA}${TABLE}
             (
-                list_key                ${INTEGER}          NOT NULL,
-                list_type_a31           ${INTEGER}          NOT NULL,
-                status_a32              ${INTEGER}          NOT NULL,
-                list_value              ${TEXT}                     ,
-                list_note               ${TEXT}                     ,
-                collection              ${JSON}                     ,
-                ${COMMON_CREATE}
-                ${PRIMARY}(list_key)
+                session_id              ${CHAR_20}          NOT NULL,
+                status_lua_25           ${INTEGER}          NOT NULL,
+                flag_lua_26             ${INTEGER}          NOT NULL,
+                account_id              ${INTEGER}          NOT NULL,
+                session_length          ${INTEGER}          NOT NULL,
+                session_issues          ${INTEGER}          NOT NULL,
+                session_changes         ${INTEGER}          NOT NULL,
+                session_secs            ${INTEGER}          NOT NULL,
+                session                 ${TEXT_BIG}         NOT NULL,
+                created_at              ${TIMESTAMP_TZ}     NOT NULL,
+                updated_at              ${TIMESTAMP_TZ}     NOT NULL,
+                ${PRIMARY}(session_id)
             );
        ]=],
                                                                             -- code
@@ -46,7 +50,7 @@ table.insert(queries,{sql=[[
         [=[
             # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This migration creates the ${TABLE} table for storing list data.
+            This migration creates the ${TABLE} table for storing session data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -120,21 +124,14 @@ table.insert(queries,{sql=[[
                         "object_ref": "${MIGRATION}",
                         "table": [
                             {
-                                "name": "list_key",
-                                "datatype": "${INTEGER}",
+                                "name": "session_id",
+                                "datatype": "${TEXT}",
                                 "nullable": false,
                                 "primary_key": true,
                                 "unique": false
                             },
                             {
-                                "name": "list_type_lua_31",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
-                                "name": "status_lua_32",
+                                "name": "status_lua_25",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -142,28 +139,70 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "list_value",
-                                "datatype": "${TEXT}",
-                                "nullable": true,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
-                                "name": "list_note",
-                                "datatype": "${TEXT}",
-                                "nullable": true,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
-                                "name": "collection",
-                                "datatype": "${JSON}",
-                                "nullable": true,
+                                "name": "flag_lua_26",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
                                 "primary_key": false,
                                 "unique": false,
-                                "standard": false
+                                "lookup": true
+                            },                            {
+                                "name": "account_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
                             },
-                            ${COMMON_DIAGRAM}
+                            {
+                                "name": "session_length",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "session_issues",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "session_changes",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "session_secs",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "session",
+                                "datatype": "${TEXT_BIG}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "created_at",
+                                "datatype": "${TIMESTAMP_TZ}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": true
+                            },
+                            {
+                                "name": "updated_at",
+                                "datatype": "${TIMESTAMP_TZ}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": true
+                            }
                         ]
                     }
                 ]

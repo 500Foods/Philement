@@ -29,7 +29,7 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW},                                                        -- query_queue_a58
         ${TIMEOUT},                                                         -- query_timeout
         [=[
-            CREATE TABLE IF NOT EXISTS ${SCHEMA}${TABLE}
+            CREATE TABLE ${SCHEMA}${TABLE}
             (
                 role_id                 ${INTEGER}          NOT NULL,
                 status_a34              ${INTEGER}          NOT NULL,
@@ -47,7 +47,7 @@ table.insert(queries,{sql=[[
         [=[
             # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This migration creates the ${TABLE} table for storing report data.
+            This migration creates the ${TABLE} table for storing roles data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
