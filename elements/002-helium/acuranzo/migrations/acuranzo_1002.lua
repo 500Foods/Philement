@@ -36,7 +36,7 @@ table.insert(queries,{sql=[[
                 feature_a21             ${INTEGER}          NOT NULL,
                 access_type_a22         ${INTEGER}          NOT NULL,
                 status_a23              ${INTEGER}          NOT NULL,
-                summary                 ${TEXTBIG}                  ,
+                summary                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 ${PRIMARY}(account_id, access_id)
@@ -160,7 +160,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "summary",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false

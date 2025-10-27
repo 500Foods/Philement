@@ -12,7 +12,7 @@ return {
     PRIMARY = "PRIMARY KEY",
     SERIAL = "integer AUTOINCREMENT",
     TEXT = "text",
-    TEXTBIG = "text",
+    TEXT_BIG = "text",
     TIMESTAMP_TZ = "text",
     UNIQUE = "UNIQUE",
     VARCHAR_20 = "varchar(20)",

@@ -8,7 +8,7 @@ return {
     PRIMARY = "PRIMARY KEY",
     SERIAL = "serial",
     TEXT = "text",
-    TEXTBIG = "text",
+    TEXT_BIG = "text",
     TIMESTAMP_TZ = "timestamptz",
     UNIQUE = "UNIQUE",
     VARCHAR_20 = "varchar(20)",

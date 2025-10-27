@@ -9,7 +9,6 @@
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
 -- 1.0.0 - 2025-09-13 - Initial creation for licenses table with PostgreSQL support.
 
-
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
@@ -37,7 +36,7 @@ table.insert(queries,{sql=[[
                 app_key                 ${TEXT}             NOT NULL,
                 system_id               ${INTEGER}          NOT NULL,
                 name                    ${TEXT}             NOT NULL,
-                summary                 ${TEXTBIG}                  ,
+                summary                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 ${PRIMARY}(license_id)
@@ -159,7 +158,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "summary",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false

@@ -1,5 +1,5 @@
--- Migration: acuranzo_1009.lua
--- Creates the dictionaries table and populating it with the next migration.
+-- Migration: acuranzo_1014.lua
+-- Creates the notes table and populating it with the next migration.
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -7,13 +7,13 @@
 -- CHANGELOG
 -- 2.0.0 - 2025-10-27 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 - 2025-09-13 - Initial creation for dictionaries table with PostgreSQL support.
+-- 1.0.0 - 2025-09-13 - Initial creation for notes table with PostgreSQL support.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
-cfg.TABLE = "dictionaries"
-cfg.MIGRATION = "1009"
+cfg.TABLE = "notes"
+cfg.MIGRATION = "1014"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -29,16 +29,17 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW},                                                        -- query_queue_a58
         ${TIMEOUT},                                                         -- query_timeout
         [=[
-            CREATE TABLE ${SCHEMA}${TABLE}
+            CREATE TABLE IF NOT EXISTS ${SCHEMA}${TABLE}
             (
-                dictionary_id           ${INTEGER}          NOT NULL,
-                language_id             ${INTEGER}          NOT NULL,
-                status_a3               ${INTEGER}          NOT NULL,
+                note_id                 ${INTEGER}          NOT NULL,
+                status_a8               ${INTEGER}          NOT NULL,
+                entity_type_a9          ${INTEGER}          NOT NULL,
+                entity_id               ${INTEGER}          NOT NULL,
                 name                    ${TEXT}             NOT NULL,
                 summary                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
-                ${PRIMARY}(dictionary_id, language_id)
+                ${PRIMARY}(noted_id)
             );
        ]=],
                                                                             -- code
@@ -46,7 +47,7 @@ table.insert(queries,{sql=[[
         [=[
             # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This migration creates the ${TABLE} table for storing dictiionary data.
+            This migration creates the ${TABLE} table for storing note data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -120,26 +121,34 @@ table.insert(queries,{sql=[[
                         "object_ref": "${MIGRATION}",
                         "table": [
                             {
-                                "name": "dictionary_id",
+                                "name": "note_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": true,
-                                "unique": false
+                                "unique": true
                             },
                             {
-                                "name": "language_id",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": true,
-                                "unique": false
-                            },
-                            {
-                                "name": "status_a3",
+                                "name": "status_a8",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false,
                                 "lookup": true
+                            },
+                            {
+                                "name": "entity_type_a9",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "entity_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
                             },
                             {
                                 "name": "name",

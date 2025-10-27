@@ -35,7 +35,7 @@ table.insert(queries,{sql=[[
                 status_a2               ${INTEGER}          NOT NULL,
                 iso639                  ${CHAR_2}           NOT NULL,
                 name                    ${TEXT}             NOT NULL,
-                summary                 ${TEXTBIG}                  ,
+                summary                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 ${PRIMARY}(language_id)
@@ -150,7 +150,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "summary",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
