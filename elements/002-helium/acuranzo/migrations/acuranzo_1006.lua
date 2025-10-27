@@ -36,11 +36,11 @@ table.insert(queries,{sql=[[
                 action_type_a24         ${INTEGER}          NOT NULL,
                 system_id               ${INTEGER}                  ,
                 app_id                  ${INTEGER}                  ,
-                app_ver                 ${VARCHAR_50}               ,
+                app_version             ${CHAR_20}               ,
                 account_id              ${INTEGER}                  ,
                 action                  ${TEXT_BIG}                 ,
                 action_msecs            ${INTEGER}          NOT NULL,
-                ip_address              ${VARCHAR_50}               ,
+                ip_address              ${CHAR_50}               ,
                 created_id              ${INTEGER} NOT NULL         ,
                 created_at              ${TIMESTAMP_TZ}             ,
                 ${PRIMARY}(action_id)
@@ -162,8 +162,8 @@ table.insert(queries,{sql=[[
                                 "unique": false
                             },
                             {
-                                "name": "app_ver",
-                                "datatype": "${VARCHAR_50}",
+                                "name": "app_version",
+                                "datatype": "${CHAR_20}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
@@ -191,7 +191,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "ip_address",
-                                "datatype": "${VARCHAR_50}",
+                                "datatype": "${CHAR_50}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false

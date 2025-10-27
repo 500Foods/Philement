@@ -29,7 +29,7 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW},                                                        -- query_queue_a58
         ${TIMEOUT},                                                         -- query_timeout
         [=[
-            CREATE TABLE IF NOT EXISTS ${SCHEMA}${TABLE}
+            CREATE TABLE ${SCHEMA}${TABLE}
             (
                 note_id                 ${INTEGER}          NOT NULL,
                 status_a8               ${INTEGER}          NOT NULL,

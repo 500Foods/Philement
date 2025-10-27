@@ -38,7 +38,7 @@ table.insert(queries,{sql=[[
                 first_name              ${TEXT}                     ,
                 middle_name             ${TEXT}                     ,
                 last_name               ${TEXT}             NOT NULL,
-                password_hash           ${VARCHAR_128}      NOT NULL,
+                password_hash           ${CHAR_128}         NOT NULL,
                 summary                 ${TEXT_BIG}         NOT NULL,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
@@ -175,7 +175,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "password_hash",
-                                "datatype": "${VARCHAR_128}",
+                                "datatype": "${CHAR_128}",
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false

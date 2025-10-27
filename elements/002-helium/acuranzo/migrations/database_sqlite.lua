@@ -7,6 +7,9 @@
 
 return {
     CHAR_2 = "char(2)",
+    CHAR_20 = "char(20)",
+    CHAR_50 = "char(50)",
+    CHAR_128 = "char(128)",
     INTEGER = "integer",
     NOW = "CURRENT_TIMESTAMP",
     PRIMARY = "PRIMARY KEY",
