@@ -37,11 +37,11 @@ table.insert(queries,{sql=[[
                 contact_type_a18        ${INTEGER}          NOT NULL,
                 authenticate_a19        ${INTEGER}          NOT NULL,
                 status_a20              ${INTEGER}          NOT NULL,
-                contact                 ${VARCHAR_100}      NOT NULL,
+                contact                 ${TEXT}             NOT NULL,
                 summary                 ${TEXTBIG}                  ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
-                PRIMARY KEY(contact_id)
+                ${PRIMARY}(contact_id)
             );
         ]=],
                                                                             -- code
@@ -169,7 +169,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "contact",
-                                "datatype": "${VARCHAR_100}",
+                                "datatype": "${TEXT}",
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false

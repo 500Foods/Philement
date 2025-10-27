@@ -2,6 +2,7 @@
 -- DB2-specific configuration for Helium schema
 
 return {
+    CHAR_2 = "CHAR(2)",
     INTEGER = "INTEGER",
     NOW = "CURRENT TIMESTAMP",
     PRIMARY = "PRIMARY KEY",

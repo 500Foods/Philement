@@ -2,29 +2,31 @@
 -- MySQL-specific configuration for Helium schema
 
 return {
+    CHAR_2 = "char(2)",
     INTEGER = "int",
     NOW = "CURRENT_TIMESTAMP",
-    PRIMARY = "primary key",
+    PRIMARY = "PRIMARY KEY",
     SERIAL = "int auto increment",
     TEXT = "text",
     TEXTBIG = "text",
     TIMESTAMP_TZ = "timestamp",
-    UNIQUE = "unique key",
+    UNIQUE = "UNIQUE",
     VARCHAR_20 = "varchar(20)",
     VARCHAR_50 = "varchar(50)",
     VARCHAR_100 = "varchar(100)",
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
 
-    JSON = "longtest characterset utf8mb4 collate utf8mb4_bin", -- because JSON_VALID doesn't pass our JSON properly
+    -- JSON = "longtext characterset utf8mb4 collate utf8mb4_bin", -- because JSON_VALID doesn't pass our JSON properly
+    JSON = "longtext",
     JSON_INGEST_START = "${SCHEMA}json_ingest(",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = [[
-        CREATE OR REPLACE FUNCTION json_ingest(s LONGTEXT)
-        RETURNS LONGTEXT
+        CREATE OR REPLACE FUNCTION json_ingest(s longtext)
+        RETURNS longtext
         DETERMINISTIC
         BEGIN
-          DECLARE fixed LONGTEXT DEFAULT '';
+          DECLARE fixed longtext DEFAULT '';
           DECLARE i INT DEFAULT 1;
           DECLARE L INT DEFAULT CHAR_LENGTH(s);
           DECLARE ch CHAR(1);

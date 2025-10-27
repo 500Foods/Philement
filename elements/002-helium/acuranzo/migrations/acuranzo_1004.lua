@@ -35,11 +35,11 @@ table.insert(queries,{sql=[[
                 role_id                 ${INTEGER}          NOT NULL,
                 system_id               ${INTEGER}          NOT NULL,
                 status_a37              ${INTEGER}          NOT NULL,
-                name                    ${VARCHAR_100}              ,
+                name                    ${TEXT}                     ,
                 summary                 ${TEXTBIG}                  ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
-                PRIMARY KEY(account_id, role_id, system_id)
+                ${PRIMARY}(account_id, role_id, system_id)
             );
         ]=],
                                                                             -- code
@@ -151,7 +151,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "name",
-                                "datatype": "${VARCHAR_100}",
+                                "datatype": "${TEXT}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
