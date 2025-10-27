@@ -33,12 +33,12 @@ table.insert(queries,{sql=[[
             (
                 convos_id               ${INTEGER}          NOT NULL,
                 convos_ref              ${VARCHAR_50}       NOT NULL,
-                convos_keywords         ${TEXTBIG}                  ,
-                convos_icon             ${TEXTBIG}                  ,
-                prompt                  ${TEXTBIG}                  ,
-                response                ${TEXTBIG}                  ,
-                context                 ${TEXTBIG}                  ,
-                history                 ${TEXTBIG}                  ,
+                convos_keywords         ${TEXT_BIG}                 ,
+                convos_icon             ${TEXT_BIG}                 ,
+                prompt                  ${TEXT_BIG}                 ,
+                response                ${TEXT_BIG}                 ,
+                context                 ${TEXT_BIG}                 ,
+                history                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 ${PRIMARY}(convos_id)
@@ -138,42 +138,42 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "convos_keywords",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
                                 "name": "convos_icon",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
                                 "name": "prompt",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
                                 "name": "response",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
                                 "name": "context",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
                                 "name": "history",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false

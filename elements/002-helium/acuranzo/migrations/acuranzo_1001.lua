@@ -37,8 +37,8 @@ table.insert(queries,{sql=[[
                 value_txt               ${TEXT}                     ,
                 value_int               ${INTEGER}                  ,
                 sort_seq                ${INTEGER}          NOT NULL,
-                code                    ${TEXTBIG}                  ,
-                summary                 ${TEXTBIG}                  ,
+                code                    ${TEXT_BIG}                 ,
+                summary                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 ${PRIMARY}(lookup_id, key_idx)
@@ -167,14 +167,14 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "code",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
                                 "name": "summary",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false,

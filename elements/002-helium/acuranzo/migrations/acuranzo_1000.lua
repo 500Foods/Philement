@@ -25,9 +25,9 @@ table.insert(queries,{sql=[[
         query_dialect_a30       ${INTEGER}          NOT NULL,
         query_queue_a58         ${INTEGER}          NOT NULL,
         query_timeout           ${INTEGER}          NOT NULL,
-        code                    ${TEXTBIG}          NOT NULL,
+        code                    ${TEXT_BIG}         NOT NULL,
         name                    ${TEXT}             NOT NULL,
-        summary                 ${TEXTBIG}                  ,
+        summary                 ${TEXT_BIG}                 ,
         collection              ${JSON}                     ,
         ${COMMON_CREATE}
         ${PRIMARY}(query_id),                                               -- Primary Key
@@ -66,9 +66,9 @@ table.insert(queries,{sql=[[
                 query_dialect_a30       ${INTEGER}          NOT NULL,
                 query_queue_a58         ${INTEGER}          NOT NULL,
                 query_timeout           ${INTEGER}          NOT NULL,
-                query_code              ${TEXTBIG}          NOT NULL,
+                query_code              ${TEXT_BIG}         NOT NULL,
                 name                    ${VARCHAR_100}      NOT NULL,
-                summary                 ${TEXTBIG}                  ,
+                summary                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 ${PRIMARY}(query_id),                                       -- Primary Key
@@ -243,7 +243,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "query_code",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false
@@ -258,7 +258,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "summary",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false

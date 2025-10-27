@@ -36,7 +36,7 @@ table.insert(queries,{sql=[[
                 connected_a5            ${INTEGER}          NOT NULL,
                 status_a6               ${INTEGER}          NOT NULL,
                 name                    ${TEXT}             NOT NULL,
-                summary                 ${TEXTBIG}                  ,
+                summary                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 ${PRIMARY}(connection_id)
@@ -160,7 +160,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "summary",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
