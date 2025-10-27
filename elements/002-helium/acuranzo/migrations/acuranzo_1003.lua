@@ -38,7 +38,7 @@ table.insert(queries,{sql=[[
                 authenticate_a19        ${INTEGER}          NOT NULL,
                 status_a20              ${INTEGER}          NOT NULL,
                 contact                 ${TEXT}             NOT NULL,
-                summary                 ${TEXTBIG}                  ,
+                summary                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 ${PRIMARY}(contact_id)
@@ -176,7 +176,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "summary",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false

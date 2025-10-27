@@ -38,7 +38,7 @@ table.insert(queries,{sql=[[
                 app_id                  ${INTEGER}                  ,
                 app_ver                 ${VARCHAR_50}               ,
                 account_id              ${INTEGER}                  ,
-                action                  ${TEXTBIG}                  ,
+                action                  ${TEXT_BIG}                 ,
                 action_msecs            ${INTEGER}          NOT NULL,
                 ip_address              ${VARCHAR_50}               ,
                 created_id              ${INTEGER} NOT NULL         ,
@@ -177,7 +177,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "action",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false

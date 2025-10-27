@@ -36,12 +36,12 @@ table.insert(queries,{sql=[[
                 doc_library_a49         ${INTEGER}          NOT NULL,
                 doc_status_a50          ${INTEGER}          NOT NULL,
                 doc_type_a51            ${INTEGER}                  ,
-                file_preview            ${TEXTBIG}                  ,
+                file_preview            ${TEXT_BIG}                 ,
                 file_name               ${TEXT}                     ,
-                file_data               ${TEXTBIG}                  ,
-                file_text               ${TEXTBIG}                  ,
+                file_data               ${TEXT_BIG}                 ,
+                file_text               ${TEXT_BIG}                 ,
                 name                    ${TEXT}             NOT NULL,
-                summary                 ${TEXTBIG}                  ,
+                summary                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 ${PRIMARY}(doc_id, rev_id)
@@ -165,7 +165,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "file_preview",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
@@ -179,14 +179,14 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "file_data",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
                                 "name": "file_text",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
@@ -200,7 +200,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "summary",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false

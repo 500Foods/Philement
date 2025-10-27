@@ -39,7 +39,7 @@ table.insert(queries,{sql=[[
                 middle_name             ${TEXT}                     ,
                 last_name               ${TEXT}             NOT NULL,
                 password_hash           ${VARCHAR_128}      NOT NULL,
-                summary                 ${TEXTBIG}          NOT NULL,
+                summary                 ${TEXT_BIG}         NOT NULL,
                 collection              ${JSON}                     ,
                 ${COMMON_CREATE}
             );
@@ -182,7 +182,7 @@ table.insert(queries,{sql=[[
                             },
                             {
                                 "name": "summary",
-                                "datatype": "${TEXTBIG}",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
