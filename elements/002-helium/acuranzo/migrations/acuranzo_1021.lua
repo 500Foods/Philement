@@ -1,5 +1,5 @@
--- Migration: acuranzo_1013.lua
--- Creates the lists table and populating it with the next migration.
+-- Migration: acuranzo_1021.lua
+-- Creates the tokens table and populating it with the next migration.
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -7,13 +7,13 @@
 -- CHANGELOG
 -- 2.0.0 - 2025-10-27 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 - 2025-09-13 - Initial creation for lists table with PostgreSQL support.
+-- 1.0.0 - 2025-09-13 - Initial creation for tokens table with PostgreSQL support.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
-cfg.TABLE = "lists"
-cfg.MIGRATION = "1013"
+cfg.TABLE = "tokens"
+cfg.MIGRATION = "1021"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -31,14 +31,15 @@ table.insert(queries,{sql=[[
         [=[
             CREATE TABLE ${SCHEMA}${TABLE}
             (
-                list_key                ${INTEGER}          NOT NULL,
-                list_type_a31           ${INTEGER}          NOT NULL,
-                status_a32              ${INTEGER}          NOT NULL,
-                list_value              ${TEXT}                     ,
-                list_note               ${TEXT}                     ,
-                collection              ${JSON}                     ,
-                ${COMMON_CREATE}
-                ${PRIMARY}(list_key)
+                token_hash              ${CHAR_128}         NOT NULL,
+                account_id              ${INTEGER}          NOT NULL,
+                system_id               ${INTEGER}          NOT NULL,
+                app_id                  ${INTEGER}          NOT NULL,
+                app_version             ${CHAR_20}          NOT NULL,
+                ip_address              ${CHAR_50}          NOT NULL,
+                valid_after             ${TIMESTAMP_TZ}     NOT NULL,
+                valid_until             ${TIMESTAMP_TZ}     NOT NULL,
+                ${PRIMARY}(token_hash)
             );
        ]=],
                                                                             -- code
@@ -46,7 +47,7 @@ table.insert(queries,{sql=[[
         [=[
             # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This migration creates the ${TABLE} table for storing list data.
+            This migration creates the ${TABLE} table for storing template data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -120,50 +121,63 @@ table.insert(queries,{sql=[[
                         "object_ref": "${MIGRATION}",
                         "table": [
                             {
-                                "name": "list_key",
-                                "datatype": "${INTEGER}",
+                                "name": "token_hash",
+                                "datatype": "${CHAR_128}",
                                 "nullable": false,
                                 "primary_key": true,
-                                "unique": false
+                                "unique": true
                             },
                             {
-                                "name": "list_type_lua_31",
+                                "name": "account_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
-                                "name": "status_lua_32",
+                                "name": "system_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
-                                "unique": false,
-                                "lookup": true
+                                "unique": false
                             },
                             {
-                                "name": "list_value",
-                                "datatype": "${TEXT}",
-                                "nullable": true,
+                                "name": "application_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
-                                "name": "list_note",
-                                "datatype": "${TEXT}",
-                                "nullable": true,
+                                "name": "app_version",
+                                "datatype": "${CHAR_20}",
+                                "nullable": false,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
-                                "name": "collection",
-                                "datatype": "${JSON}",
-                                "nullable": true,
+                                "name": "ip_address",
+                                "datatype": "${CHAR_50}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "valid_after",
+                                "datatype": "${TIMESTAMP_TZ}",
+                                "nullable": false,
                                 "primary_key": false,
                                 "unique": false,
-                                "standard": false
+                                "standard": true
                             },
-                            ${COMMON_DIAGRAM}
+                            {
+                                "name": "valid_until",
+                                "datatype": "${TIMESTAMP_TZ}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": true
+                            }
                         ]
                     }
                 ]

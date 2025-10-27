@@ -1,5 +1,5 @@
--- Migration: acuranzo_1013.lua
--- Creates the lists table and populating it with the next migration.
+-- Migration: acuranzo_1023.lua
+-- Creates the workflows table and populating it with the next migration.
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -7,13 +7,13 @@
 -- CHANGELOG
 -- 2.0.0 - 2025-10-27 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
--- 1.0.0 - 2025-09-13 - Initial creation for lists table with PostgreSQL support.
+-- 1.0.0 - 2025-09-13 - Initial creation for workflows table with PostgreSQL support.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
-cfg.TABLE = "lists"
-cfg.MIGRATION = "1013"
+cfg.TABLE = "workflows"
+cfg.MIGRATION = "1023"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -31,14 +31,14 @@ table.insert(queries,{sql=[[
         [=[
             CREATE TABLE ${SCHEMA}${TABLE}
             (
-                list_key                ${INTEGER}          NOT NULL,
-                list_type_a31           ${INTEGER}          NOT NULL,
-                status_a32              ${INTEGER}          NOT NULL,
-                list_value              ${TEXT}                     ,
-                list_note               ${TEXT}                     ,
+                workflow_id             ${INTEGER}          NOT NULL,
+                entity_type_a9          ${INTEGER}          NOT NULL,
+                status_a10              ${INTEGER}          NOT NULL,
+                entity_id               ${INTEGER}          NOT NULL,
+                name                    ${TEXT}             NOT NULL,
+                summary                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
-                ${COMMON_CREATE}
-                ${PRIMARY}(list_key)
+                ${PRIMARY}(workflow_id)
             );
        ]=],
                                                                             -- code
@@ -46,7 +46,7 @@ table.insert(queries,{sql=[[
         [=[
             # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            This migration creates the ${TABLE} table for storing list data.
+            This migration creates the ${TABLE} table for storing workflow step data.
         ]=],
                                                                             -- summary
         NULL,                                                               -- collection
@@ -120,21 +120,14 @@ table.insert(queries,{sql=[[
                         "object_ref": "${MIGRATION}",
                         "table": [
                             {
-                                "name": "list_key",
+                                "name": "workflow_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": true,
-                                "unique": false
+                                "unique": true
                             },
                             {
-                                "name": "list_type_lua_31",
-                                "datatype": "${INTEGER}",
-                                "nullable": false,
-                                "primary_key": false,
-                                "unique": false
-                            },
-                            {
-                                "name": "status_lua_32",
+                                "name": "entity_type_a9",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -142,15 +135,30 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "list_value",
-                                "datatype": "${TEXT}",
-                                "nullable": true,
+                                "name": "status_a10",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "entity_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
-                                "name": "list_note",
+                                "name": "name",
                                 "datatype": "${TEXT}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "summary",
+                                "datatype": "${TEXT_BIG}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
