@@ -45,15 +45,15 @@
   <text x="162.80" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="171.20" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="58.80" lengthAdjust="spacingAndGlyphs" fill="#ffffff">   359 </text>
   <text x="230.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="238.40" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  9,977 </text>
+  <text x="238.40" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  9,993 </text>
   <text x="305.60" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="314.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  14,845 </text>
+  <text x="314.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  14,849 </text>
   <text x="389.60" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="398.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  41,429 </text>
+  <text x="398.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  41,541 </text>
   <text x="473.60" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="482.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> 35.8 % </text>
+  <text x="482.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> 35.7 % </text>
   <text x="549.20" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="557.60" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  66,251 </text>
+  <text x="557.60" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  66,383 </text>
   <text x="633.20" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="20.00" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="28.40" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="134.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Markdown       </text>
@@ -140,11 +140,11 @@
   <text x="305.60" y="252.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="314.00" y="252.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">   2,098 </text>
   <text x="389.60" y="252.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="398.00" y="252.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  77,260 </text>
+  <text x="398.00" y="252.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  77,262 </text>
   <text x="473.60" y="252.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="482.00" y="252.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  2.7 % </text>
   <text x="549.20" y="252.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="557.60" y="252.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  79,538 </text>
+  <text x="557.60" y="252.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  79,540 </text>
   <text x="633.20" y="252.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="20.00" y="269.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="28.40" y="269.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="134.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> JSON           </text>
@@ -212,20 +212,20 @@
   <text x="162.80" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="171.20" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="58.80" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 1,551 </text>
   <text x="230.00" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="238.40" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 47,876 </text>
+  <text x="238.40" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 47,892 </text>
   <text x="305.60" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="314.00" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5">  42,963 </text>
+  <text x="314.00" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5">  42,967 </text>
   <text x="389.60" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="398.00" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 247,570 </text>
+  <text x="398.00" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 247,684 </text>
   <text x="473.60" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="482.00" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5">        </text>
   <text x="549.20" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="557.60" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 338,409 </text>
+  <text x="557.60" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 338,543 </text>
   <text x="633.20" y="353.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="20.00" y="370.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="621.60" lengthAdjust="spacingAndGlyphs" fill="#cd3131">╰────────────────┴───────┴────┬───┴─────────┴─────────┴────────┴─────────┤</text>
   <text x="20.00" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="268.80" lengthAdjust="spacingAndGlyphs" fill="#cd3131">                              │ </text>
   <text x="288.80" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">Generated</text>
-  <text x="364.40" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="260.40" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 2025-Oct-29 (Wed) 12:53:37 PDT</text>
+  <text x="364.40" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="260.40" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 2025-Oct-29 (Wed) 14:30:54 PDT</text>
   <text x="624.80" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
   <text x="633.20" y="386.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="20.00" y="403.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="621.60" lengthAdjust="spacingAndGlyphs" fill="#cd3131">                              ╰──────────────────────────────────────────╯</text>
