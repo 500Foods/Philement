@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 2.0.2 - 2025-10-29 - Fixed typo - missing comma after first ${TIMEOUT}
 -- 2.0.1 - 2025-10-29 - Fixed typo - {$TABLE} instead of ${TABLE}
 -- 2.0.0 - 2025-10-18 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
@@ -28,7 +29,7 @@ table.insert(queries,{sql=[[
         ${TYPE_FORWARD_MIGRATION},                                          -- query_type_a28
         ${DIALECT},                                                         -- query_dialect_a30
         ${QTC_SLOW},                                                        -- query_queue_a58
-        ${TIMEOUT}                                                          -- query_timeout
+        ${TIMEOUT},                                                         -- query_timeout
         [=[
             CREATE TABLE ${SCHEMA}${TABLE}
             (
