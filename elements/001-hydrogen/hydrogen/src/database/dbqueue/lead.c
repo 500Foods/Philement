@@ -1,9 +1,6 @@
 /*
  * Database Queue Lead Management Functions
  *
- * Implements Lead queue specific functions for the Hydrogen database subsystem.
- * Split from database_queue.c for better maintainability.
- *
  * Lead DQM Responsibilities (Conductor Pattern):
  * - Establish a connection to the database
  * - Run Bootstrap query if available
@@ -17,12 +14,12 @@
 // Project includes
 #include <src/hydrogen.h>
 #include <src/database/database.h>
+#include <src/database/database_bootstrap.h>
 #include <src/database/migration/migration.h>
 #include <src/utils/utils_time.h>
 
 // Local includes
 #include "dbqueue.h"
-#include <src/database/database_bootstrap.h>
 
 // Migration timing variables
 static struct timespec migration_start_time = {0, 0};
@@ -91,8 +88,14 @@ MigrationAction database_queue_lead_determine_migration_action(const DatabaseQue
     }
 
     // CASE 3: Migrations that were previously loaded have not been applied
-    // For now, treating loaded and applied as the same concept since struct doesn't distinguish them
-    // This case would need clarification if applied vs loaded are different concepts
+    // Check if we have loaded migrations (1000) that haven't been applied (1003)
+    if (available >= 1000 && loaded >= 1000) {
+        // We have some migrations loaded, check if any are not applied
+        // This would require querying the database to see if there are type_lua_28 = 1000 records
+        // For now, assume if loaded >= available, we need to check for unapplied migrations
+        // This is a simplified check - in practice we'd need to query the database
+        return MIGRATION_ACTION_APPLY;
+    }
 
     // CASE 4: Migrations already up to date - no action needed
     return MIGRATION_ACTION_NONE;
@@ -126,11 +129,6 @@ void database_queue_lead_log_migration_status(DatabaseQueue* lead_queue, const c
  */
 bool database_queue_lead_validate_migrations(DatabaseQueue* lead_queue) {
     char* dqm_label = database_queue_generate_label(lead_queue);
-
-    // DECISION: Comment out verbose logging - keep only essential status messages
-    // if (lead_queue->empty_database) {
-    //     log_this(dqm_label, "Empty database detected - proceeding with migration validation", LOG_LEVEL_DEBUG, 0);
-    // }
 
     bool migrations_valid = validate(lead_queue);
 
@@ -177,9 +175,7 @@ bool database_queue_lead_execute_migration_load(DatabaseQueue* lead_queue) {
  *
  * APPLY Phase: Process loaded migrations through normal query pipeline
  * - Get list of loaded-but-not-applied migrations from bootstrap query results
- * - Execute each migration through normal query processing (parameter replacement, transactions)
  * - Handle multi-statement queries for all engines (DB2 requirement becomes universal)
- * - Update migration status after successful application
  * - Re-run bootstrap query between each migration to maintain current state
  */
 bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue) {
@@ -236,7 +232,6 @@ bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue) {
     free(dqm_label);
     return overall_success;
 }
-
 
 /*
  * Check if auto-migration is enabled for this database
@@ -392,7 +387,6 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
         free(dqm_label);
         return true;
     }
-    
 
     log_this(dqm_label, "Automatic Migration enabled - Importing Migrations", LOG_LEVEL_DEBUG, 0);
 
@@ -869,12 +863,6 @@ bool database_queue_lead_process_queries(DatabaseQueue* lead_queue) {
 }
 
 /*
- * =============================================================================
- * CHILD QUEUE MANAGEMENT
- * =============================================================================
- */
-
-/*
  * Spawn a child queue of the specified type
  */
 bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* queue_type) {
@@ -942,8 +930,6 @@ bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* que
     // Add to child queue array
     lead_queue->child_queues[lead_queue->child_queue_count] = child_queue;
     lead_queue->child_queue_count++;
-
-    // Note: Lead queue retains all its original tags - no tag removal
 
     mutex_unlock(&lead_queue->children_lock);
 

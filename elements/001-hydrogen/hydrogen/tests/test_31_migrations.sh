@@ -111,7 +111,7 @@ validate_migration() {
     fi
 
     # Check for unsubstituted variables in the generated SQL
-    if echo "${sql_output}" | grep -q '\${[^}]*}' || echo "${sql_output}" | grep -q '{[^}]*}'; then
+    if echo "${sql_output}" | grep -q "\${[^}]*}" || echo "${sql_output}" | grep -q "{[^}]*}"; then
         # Found unsubstituted variables or braces, save error to diags_file
         local diags_file="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}/${design}_${engine}_${schema_name}_${migration_num}.txt"
         mkdir -p "$(dirname "${diags_file}")"
