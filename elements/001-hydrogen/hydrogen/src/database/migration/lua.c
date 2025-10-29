@@ -309,12 +309,12 @@ bool lua_execute_migration_function(lua_State* L, const char* engine_name,
 }
 
 /*
- * Execute run_migration function
+ * Execute run_migration function (APPLY phase - generates schema change SQL)
  */
 bool lua_execute_run_migration(lua_State* L, const char* engine_name,
-                                 const char* migration_name, const char* schema_name,
-                                 size_t* sql_length, const char** sql_result,
-                                 const char* dqm_label) {
+                                  const char* migration_name, const char* schema_name,
+                                  size_t* sql_length, const char** sql_result,
+                                  const char* dqm_label) {
     // The queries table should be at the top of the stack from lua_execute_migration_function
     if (!lua_istable(L, -1)) {
         log_this(dqm_label, "Queries table not found on Lua stack", LOG_LEVEL_ERROR, 0);
@@ -386,6 +386,78 @@ bool lua_execute_run_migration(lua_State* L, const char* engine_name,
         preview[preview_len] = '\0';
         log_this(dqm_label, "SQL preview: %.100s%s", LOG_LEVEL_DEBUG, 2, preview, *sql_length > 100 ? "..." : "");
     }
+
+    return true;
+}
+
+/*
+ * Execute load_metadata function (LOAD phase - generates metadata INSERT statements)
+ */
+bool lua_execute_load_metadata(lua_State* L, const char* engine_name,
+                              const char* migration_name, const char* schema_name,
+                              size_t* sql_length, const char** sql_result,
+                              const char* dqm_label) {
+    // The queries table should be at the top of the stack from lua_execute_migration_function
+    if (!lua_istable(L, -1)) {
+        log_this(dqm_label, "Queries table not found on Lua stack for LOAD phase", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    // LOAD PHASE: Call load_metadata function to generate INSERT statements for Queries table
+    // This should create INSERT statements with type_lua_28 = 1000 (loaded status)
+    lua_getglobal(L, "database");
+    if (lua_isfunction(L, -1)) {
+        // Old format: database is the load_metadata function directly
+        lua_pushvalue(L, -2);  // Push queries table
+        lua_pushstring(L, engine_name);
+        lua_pushstring(L, migration_name);
+        lua_pushstring(L, schema_name);
+        if (lua_pcall(L, 4, 1, 0) != LUA_OK) {
+            const char* error = lua_tostring(L, -1);
+            log_this(dqm_label, "Failed to call load_metadata: %s", LOG_LEVEL_ERROR, 1, error ? error : "Unknown error");
+            return false;
+        }
+    } else if (lua_istable(L, -1)) {
+        // New format: database is a table with load_metadata method
+        lua_getfield(L, -1, "load_metadata");
+        if (!lua_isfunction(L, -1)) {
+            log_this(dqm_label, "load_metadata function not found in database table (type: %s)", LOG_LEVEL_ERROR, 1, lua_typename(L, lua_type(L, -1)));
+            return false;
+        }
+        lua_pushvalue(L, -2);  // Push database table as 'self'
+        lua_pushvalue(L, -4);  // Push queries table (from before we got database)
+        lua_pushstring(L, engine_name);
+        lua_pushstring(L, migration_name);
+        lua_pushstring(L, schema_name);
+        if (lua_pcall(L, 5, 1, 0) != LUA_OK) {
+            const char* error = lua_tostring(L, -1);
+            log_this(dqm_label, "Failed to call load_metadata: %s", LOG_LEVEL_ERROR, 1, error ? error : "Unknown error");
+            return false;
+        }
+    } else {
+        log_this(dqm_label, "database global is neither a function nor a table for LOAD phase", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    // Get the metadata SQL output from the return value (load_metadata returns the SQL string)
+    if (!lua_isstring(L, -1)) {
+        log_this(dqm_label, "load_metadata did not return a string (type: %s)", LOG_LEVEL_ERROR, 1,
+                  lua_typename(L, lua_type(L, -1)));
+        return false;
+    }
+
+    *sql_result = lua_tolstring(L, -1, sql_length);
+    log_this(dqm_label, "LOAD metadata SQL result: length %zu", LOG_LEVEL_DEBUG, 1, *sql_length);
+    if (*sql_length > 0 && *sql_result) {
+        // Log first 500 characters for debugging
+        char debug_preview[501];
+        size_t copy_len = *sql_length > 500 ? 500 : *sql_length;
+        memcpy(debug_preview, *sql_result, copy_len);
+        debug_preview[copy_len] = '\0';
+        log_this(dqm_label, "LOAD metadata SQL preview: %.500s%s", LOG_LEVEL_DEBUG, 2, debug_preview, *sql_length > 500 ? "..." : "");
+    }
+
+    *sql_result = lua_tolstring(L, -1, sql_length);
 
     return true;
 }

@@ -256,6 +256,11 @@ void database_queue_signal_initial_connection_complete(DatabaseQueue* db_queue);
 // Launch synchronization functions
 bool database_queue_wait_for_initial_connection(DatabaseQueue* db_queue, int timeout_seconds);
 
+// Migration helper functions
+long long database_queue_find_next_migration_to_apply(DatabaseQueue* lead_queue);
+bool database_queue_apply_single_migration(DatabaseQueue* lead_queue, long long migration_id, const char* dqm_label);
+
+
 // Debug functions
 // void debug_dump_connection(const char* label, const DatabaseHandle* conn, const char* dqm_label);
 // void debug_dump_engine(const char* label, DatabaseEngineInterface* engine, const char* dqm_label);
