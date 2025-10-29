@@ -25,6 +25,7 @@ struct DatabaseHandle;
 bool validate(struct DatabaseQueue* db_queue);
 long long find_latest_available_migration(const struct DatabaseQueue* db_queue);
 bool execute_auto(struct DatabaseQueue* db_queue, DatabaseHandle* connection);
+bool execute_load_migrations(struct DatabaseQueue* db_queue, DatabaseHandle* connection);
 bool execute_test(struct DatabaseQueue* db_queue);
 
 // Utility functions for migration execution
@@ -68,13 +69,22 @@ bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** sta
                          size_t* statement_count, size_t* statements_capacity,
                          const char* dqm_label);
 bool execute_db2_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
-                          const char* migration_file, const char* dqm_label);
+                         const char* migration_file, const char* dqm_label);
 bool execute_postgresql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
-                                 const char* migration_file, const char* dqm_label);
+                                const char* migration_file, const char* dqm_label);
 bool execute_mysql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
-                            const char* migration_file, const char* dqm_label);
+                           const char* migration_file, const char* dqm_label);
 bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
-                             const char* migration_file, const char* dqm_label);
+                            const char* migration_file, const char* dqm_label);
+
+// LOAD phase functions (metadata population only)
+bool execute_migration_files_load_only(DatabaseHandle* connection, char** migration_files,
+                                      size_t migration_count, const char* engine_name,
+                                      const char* migration_name, const char* schema_name,
+                                      const char* dqm_label);
+bool execute_single_migration_load_only(DatabaseHandle* connection, const char* migration_file,
+                                       const char* engine_name, const char* migration_name,
+                                       const char* schema_name, const char* dqm_label);
 
 // Lua integration functions
 lua_State* lua_setup(const char* dqm_label);
@@ -95,6 +105,10 @@ bool lua_execute_run_migration(lua_State* L, const char* engine_name,
                                const char* migration_name, const char* schema_name,
                                size_t* sql_length, const char** sql_result,
                                const char* dqm_label);
+bool lua_execute_load_metadata(lua_State* L, const char* engine_name,
+                              const char* migration_name, const char* schema_name,
+                              size_t* sql_length, const char** sql_result,
+                              const char* dqm_label);
 void lua_log_execution_summary(const char* migration_file_path, size_t sql_length,
                               int line_count, int query_count, const char* dqm_label);
 void lua_cleanup(lua_State* L);

@@ -148,25 +148,24 @@ bool database_queue_lead_validate_migrations(DatabaseQueue* lead_queue) {
 
 /*
  * Execute migration load phase
+ *
+ * LOAD Phase: Extract migration metadata from Lua scripts and populate Queries table
+ * - Execute Lua migration scripts to generate SQL templates
+ * - INSERT records into Queries table with type_lua_28 = 1000 (loaded status)
+ * - NO database schema changes occur in this phase
+ * - Only metadata population for later APPLY phase execution
  */
 bool database_queue_lead_execute_migration_load(DatabaseQueue* lead_queue) {
     char* dqm_label = database_queue_generate_label(lead_queue);
+    log_this(dqm_label, "Starting migration LOAD phase - populating Queries table metadata", LOG_LEVEL_DEBUG, 0);
 
-    // DECISION: Comment out verbose state logging - keep only essential status messages
-    // Store pre-migration state for comparison and logging
-    // long long pre_load_available = lead_queue->latest_available_migration;
-    // long long pre_load_installed = lead_queue->latest_installed_migration;
-
-    // log_this(dqm_label, "Pre-load migration state: available=%lld, installed=%lld",
-    //          LOG_LEVEL_DEBUG, 2, pre_load_available, pre_load_installed);
-
-    // Execute auto migrations (populate Queries table) - LOAD PHASE
-    bool load_success = execute_auto(lead_queue, lead_queue->persistent_connection);
+    // Execute LOAD migrations (populate Queries table metadata only) - LOAD PHASE
+    bool load_success = execute_load_migrations(lead_queue, lead_queue->persistent_connection);
 
     if (load_success) {
-        // log_this(dqm_label, "Migration load phase completed successfully", LOG_LEVEL_DEBUG, 0);
+        log_this(dqm_label, "Migration LOAD phase completed successfully - Queries table populated with migration metadata", LOG_LEVEL_DEBUG, 0);
     } else {
-        log_this(dqm_label, "Migration load phase failed", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label, "Migration LOAD phase failed - could not populate Queries table", LOG_LEVEL_ERROR, 0);
     }
 
     free(dqm_label);
@@ -175,21 +174,64 @@ bool database_queue_lead_execute_migration_load(DatabaseQueue* lead_queue) {
 
 /*
  * Execute migration apply phase
+ *
+ * APPLY Phase: Process loaded migrations through normal query pipeline
+ * - Get list of loaded-but-not-applied migrations from bootstrap query results
+ * - Execute each migration through normal query processing (parameter replacement, transactions)
+ * - Handle multi-statement queries for all engines (DB2 requirement becomes universal)
+ * - Update migration status after successful application
+ * - Re-run bootstrap query between each migration to maintain current state
  */
 bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue) {
     char* dqm_label = database_queue_generate_label(lead_queue);
+    log_this(dqm_label, "Starting migration APPLY phase", LOG_LEVEL_DEBUG, 0);
 
-    // Execute auto migrations (apply loaded migrations) - APPLY PHASE
-    bool apply_success = execute_auto(lead_queue, lead_queue->persistent_connection);
+    bool overall_success = true;
+    bool more_work = true;
+    int applied_count = 0;
 
-    if (apply_success) {
-        // log_this(dqm_label, "Migration apply phase completed successfully", LOG_LEVEL_DEBUG, 0);
+    // Continue applying migrations until no more work or error
+    while (more_work && overall_success) {
+        // Re-run bootstrap query to get current migration state
+        database_queue_execute_bootstrap_query(lead_queue);
+        // Note: bootstrap query always succeeds (void return), continue with migration application
+
+        // Find next migration to apply (loaded but not applied)
+        // Look for migrations with type_lua_28 = 1000 (loaded) that haven't been applied yet
+        long long next_migration_id = database_queue_find_next_migration_to_apply(lead_queue);
+
+        if (next_migration_id == 0) {
+            // No more migrations to apply
+            more_work = false;
+            log_this(dqm_label, "No more migrations to apply - APPLY phase complete", LOG_LEVEL_DEBUG, 0);
+            break;
+        }
+
+        log_this(dqm_label, "Applying migration ID: %lld", LOG_LEVEL_DEBUG, 1, next_migration_id);
+
+        // Apply the migration through normal query pipeline
+        if (database_queue_apply_single_migration(lead_queue, next_migration_id, dqm_label)) {
+            applied_count++;
+            log_this(dqm_label, "Successfully applied migration %lld (total applied: %d)", LOG_LEVEL_DEBUG, 2, next_migration_id, applied_count);
+
+            // Re-run bootstrap query to update state after successful application
+            database_queue_execute_bootstrap_query(lead_queue);
+            // Note: bootstrap query always succeeds (void return)
+        } else {
+            log_this(dqm_label, "Failed to apply migration %lld - stopping APPLY phase", LOG_LEVEL_ERROR, 1, next_migration_id);
+            overall_success = false;
+            break;
+        }
+    }
+
+    if (overall_success) {
+        log_this(dqm_label, "Migration APPLY phase completed successfully - applied %d migrations", LOG_LEVEL_DEBUG, 1, applied_count);
     } else {
-        log_this(dqm_label, "Migration apply phase failed", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label, "Migration APPLY phase failed after applying %d migrations", LOG_LEVEL_ERROR, 1, applied_count);
     }
 
     free(dqm_label);
-    return apply_success;
+    return overall_success;
 }
 
 
@@ -238,6 +280,13 @@ void database_queue_lead_release_migration_connection(DatabaseQueue* lead_queue)
 
 /*
  * Execute a single migration cycle according to the documented algorithm
+ *
+ * Migration Cycle Logic:
+ * 1. LOAD phase: Populate Queries table with migration metadata (no schema changes)
+ * 2. After LOAD, re-run bootstrap query to update migration state
+ * 3. APPLY phase: Execute loaded migrations through normal query pipeline
+ * 4. After each APPLY, re-run bootstrap query to check for more work
+ * 5. Stop when no more migrations to apply or on error
  */
 bool database_queue_lead_execute_migration_cycle(DatabaseQueue* lead_queue, char* dqm_label) {
     // Validate migrations first
@@ -260,8 +309,18 @@ bool database_queue_lead_execute_migration_cycle(DatabaseQueue* lead_queue, char
             database_queue_lead_log_migration_status(lead_queue, "updating");
 
             if (database_queue_lead_execute_migration_load(lead_queue)) {
-                // Re-run bootstrap query to verify what was loaded (migration info only)
+                // Re-run bootstrap query to get updated migration state after LOAD
                 database_queue_execute_bootstrap_query(lead_queue);
+                log_this(dqm_label, "Migration LOAD phase completed - checking if APPLY phase needed", LOG_LEVEL_DEBUG, 0);
+
+                // After successful LOAD, check if we need to proceed to APPLY
+                MigrationAction next_action = database_queue_lead_determine_migration_action(lead_queue);
+                if (next_action == MIGRATION_ACTION_APPLY) {
+                    log_this(dqm_label, "Proceeding to APPLY phase after successful LOAD", LOG_LEVEL_DEBUG, 0);
+                    // Continue in the loop - next iteration will handle APPLY
+                } else {
+                    log_this(dqm_label, "No APPLY phase needed after LOAD", LOG_LEVEL_DEBUG, 0);
+                }
             } else {
                 success = false;
             }
@@ -271,7 +330,7 @@ bool database_queue_lead_execute_migration_cycle(DatabaseQueue* lead_queue, char
             database_queue_lead_log_migration_status(lead_queue, "updating");
 
             if (!database_queue_lead_execute_migration_apply(lead_queue)) {
-                log_this(dqm_label, "Migration apply phase failed", LOG_LEVEL_ERROR, 0);
+                log_this(dqm_label, "Migration APPLY phase failed", LOG_LEVEL_ERROR, 0);
                 success = false;
             }
             break;
@@ -290,37 +349,15 @@ bool database_queue_lead_execute_migration_cycle(DatabaseQueue* lead_queue, char
 /*
  * Run migration for Lead DQM - Orchestration Function
  *
+ * Migration Workflow:
+ * 1. LOAD Phase: Extract migration metadata from Lua scripts → populate Queries table
+ * 2. APPLY Phase: Execute stored migrations through normal query pipeline
+ * 3. Bootstrap Query Integration: Re-run between phases to maintain current state
+ * 4. Iterative Application: Apply migrations one-by-one with state updates
+ *
  * Migration Available - The latest Migration script found (Lua script)
  * Migration Loaded    - The latest Migration script in the database (type_lua_28 = 1000)
  * Migration Applied   - The latest Migration script in the database (type_lua_28 = 1003)
- * If AutoMigration is enabled for this database, and this is the Lead DQM, then:
- *
- * LOOP:
- *
- * CASE: Database is empty, so we want to initialize it:
- * if Migration Available >= 1000
- *   and Migration Loaded < 1000
- *   and Migration Applied < 1000
- * then:
- *   Run Migration, starting with load and report:
- *   Migration Updating: Available = X, Loaded = Y, Applied = Z
- *
- * CASE: Newer Migrations are available than what is in the database
- * if Migration Available >= 1000
- *    and Migration Loaded < Migration Available
- *    and Migration Applied < Migration Available
- * then Run Migration starting with load
- *   Migration Loading: Available = X, Loaded = Y, Applied = Z
- *
- * CASE: Migrations that were previously loaded have not been applied
- * if Migration Loaded >= 1000
- *    and Migration Applied < Migration Loaded
- * then Run Migration starting with Apply
- *   Migration Updating: Available = X, Loaded = Y, Applied = Z
- *
- * CASE: Migrations already up to date
- * Otherwise, report and do nothing:
- *   Migration Current: Available = X, Loaded = Y, Applied = Z
  */
 bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
     if (!lead_queue || !lead_queue->is_lead_queue) {
@@ -352,6 +389,7 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
         free(dqm_label);
         return true;
     }
+    
 
     log_this(dqm_label, "Automatic Migration enabled - Importing Migrations", LOG_LEVEL_DEBUG, 0);
 
@@ -517,6 +555,278 @@ bool database_queue_lead_manage_heartbeats(DatabaseQueue* lead_queue) {
 
     free(dqm_label);
     return true;
+}
+
+/*
+ * Find the next migration to apply from the loaded migrations
+ * Returns migration ID if found, 0 if no more migrations to apply
+ */
+long long database_queue_find_next_migration_to_apply(DatabaseQueue* lead_queue) {
+    if (!lead_queue) {
+        return 0;
+    }
+
+    char* dqm_label = database_queue_generate_label(lead_queue);
+
+    log_this(dqm_label, "Looking for next migration to apply (loaded but not applied)", LOG_LEVEL_DEBUG, 0);
+
+    // Query to find migrations that are loaded (1000) but not yet applied (1003)
+    const char* find_sql = "SELECT query_ref FROM test.queries WHERE query_type_lua_28 = 1000 "
+                          "AND query_ref NOT IN (SELECT query_ref FROM test.queries WHERE query_type_lua_28 = 1003) "
+                          "ORDER BY query_ref LIMIT 1";
+
+    QueryRequest* find_request = calloc(1, sizeof(QueryRequest));
+    if (!find_request) {
+        log_this(dqm_label, "Failed to allocate find request", LOG_LEVEL_ERROR, 0);
+        free(dqm_label);
+        return 0;
+    }
+
+    find_request->query_id = strdup("find_next_migration");
+    find_request->sql_template = strdup(find_sql);
+    find_request->parameters_json = strdup("{}");
+    find_request->timeout_seconds = 30;
+    find_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
+    find_request->use_prepared_statement = false;
+
+    if (!find_request->query_id || !find_request->sql_template || !find_request->parameters_json) {
+        log_this(dqm_label, "Failed to allocate find request fields", LOG_LEVEL_ERROR, 0);
+        if (find_request->query_id) free(find_request->query_id);
+        if (find_request->sql_template) free(find_request->sql_template);
+        if (find_request->parameters_json) free(find_request->parameters_json);
+        free(find_request);
+        free(dqm_label);
+        return 0;
+    }
+
+    // Execute query
+    QueryResult* find_result = NULL;
+    bool find_success = false;
+    long long next_migration_id = 0;
+
+    MutexResult lock_result = MUTEX_LOCK(&lead_queue->connection_lock, dqm_label);
+    if (lock_result == MUTEX_SUCCESS) {
+        if (lead_queue->persistent_connection) {
+            find_success = database_engine_execute(lead_queue->persistent_connection, find_request, &find_result);
+        } else {
+            log_this(dqm_label, "No persistent connection available for find query", LOG_LEVEL_ERROR, 0);
+        }
+        mutex_unlock(&lead_queue->connection_lock);
+    } else {
+        log_this(dqm_label, "Failed to acquire connection lock for find query", LOG_LEVEL_ERROR, 0);
+    }
+
+    // Process result
+    if (find_success && find_result && find_result->success && find_result->row_count > 0) {
+        // Extract migration ID from data_json field (JSON format)
+        if (find_result->data_json) {
+            // Parse JSON to extract first row's first column
+            // For now, assume simple case where data_json contains the ID directly
+            next_migration_id = atoll(find_result->data_json);
+            log_this(dqm_label, "Found next migration to apply: %lld", LOG_LEVEL_DEBUG, 1, next_migration_id);
+        } else {
+            log_this(dqm_label, "No migration data found in query result", LOG_LEVEL_DEBUG, 0);
+        }
+    } else {
+        log_this(dqm_label, "No migrations found to apply", LOG_LEVEL_DEBUG, 0);
+    }
+
+    if (find_result) {
+        database_engine_cleanup_result(find_result);
+    }
+
+    // Clean up request
+    if (find_request->query_id) free(find_request->query_id);
+    if (find_request->sql_template) free(find_request->sql_template);
+    if (find_request->parameters_json) free(find_request->parameters_json);
+    free(find_request);
+
+    free(dqm_label);
+    return next_migration_id;
+}
+
+/*
+ * Apply a single migration through the normal query processing pipeline
+ * This retrieves the migration SQL from the database (via bootstrap query results) and executes it as a normal query
+ */
+bool database_queue_apply_single_migration(DatabaseQueue* lead_queue, long long migration_id, const char* dqm_label) {
+    log_this(dqm_label, "Applying migration %lld through normal query pipeline", LOG_LEVEL_DEBUG, 1, migration_id);
+
+    // Step 1: Retrieve migration SQL from Queries table using bootstrap query results
+    // The bootstrap query already loaded all query information into the query cache
+    // We need to find the migration SQL from the cache
+    char* migration_sql = NULL;
+
+    if (lead_queue->query_cache) {
+        QueryCacheEntry* entry = query_cache_lookup(lead_queue->query_cache, (int)migration_id);
+        if (entry && entry->sql_template) {
+            migration_sql = strdup(entry->sql_template);
+            log_this(dqm_label, "Retrieved SQL for migration %lld from QTC (%zu bytes)", LOG_LEVEL_DEBUG, 2, migration_id, strlen(migration_sql));
+        } else {
+            log_this(dqm_label, "Migration %lld not found in query cache", LOG_LEVEL_ERROR, 1, migration_id);
+            return false;
+        }
+    } else {
+        log_this(dqm_label, "No query cache available for migration %lld", LOG_LEVEL_ERROR, 1, migration_id);
+        return false;
+    }
+
+    // Step 2: Split multi-statement SQL for all engines (DB2 requirement becomes universal)
+    char** statements = NULL;
+    size_t statement_count = 0;
+    size_t statements_capacity = 0;
+
+    // Use the existing parse_sql_statements function from transaction.c
+    if (!parse_sql_statements(migration_sql, strlen(migration_sql), &statements, &statement_count, &statements_capacity, dqm_label)) {
+        log_this(dqm_label, "Failed to split migration SQL for migration %lld", LOG_LEVEL_ERROR, 1, migration_id);
+        free(migration_sql);
+        return false;
+    }
+
+    free(migration_sql); // No longer needed after splitting
+
+    // Step 3: Execute each statement as a separate transaction
+    bool success = true;
+    for (size_t i = 0; i < statement_count && success; i++) {
+        // Create QueryRequest for each statement
+        QueryRequest* stmt_request = calloc(1, sizeof(QueryRequest));
+        if (!stmt_request) {
+            log_this(dqm_label, "Failed to allocate statement request", LOG_LEVEL_ERROR, 0);
+            success = false;
+            break;
+        }
+
+        // Generate hash for prepared statement caching
+        char stmt_hash[64];
+        get_stmt_hash("MPSC", statements[i], 16, stmt_hash);
+
+        stmt_request->query_id = strdup("migration_statement");
+        stmt_request->sql_template = strdup(statements[i]);
+        stmt_request->parameters_json = strdup("{}");
+        stmt_request->timeout_seconds = 30;
+        stmt_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
+        stmt_request->use_prepared_statement = true;
+        stmt_request->prepared_statement_name = strdup(stmt_hash);
+
+        if (!stmt_request->query_id || !stmt_request->sql_template ||
+            !stmt_request->parameters_json || !stmt_request->prepared_statement_name) {
+            log_this(dqm_label, "Failed to allocate request fields", LOG_LEVEL_ERROR, 0);
+            success = false;
+            if (stmt_request->query_id) free(stmt_request->query_id);
+            if (stmt_request->sql_template) free(stmt_request->sql_template);
+            if (stmt_request->parameters_json) free(stmt_request->parameters_json);
+            if (stmt_request->prepared_statement_name) free(stmt_request->prepared_statement_name);
+            free(stmt_request);
+            break;
+        }
+
+        // Execute statement
+        QueryResult* stmt_result = NULL;
+        bool stmt_success = false;
+
+        MutexResult lock_result = MUTEX_LOCK(&lead_queue->connection_lock, dqm_label);
+        if (lock_result == MUTEX_SUCCESS) {
+            if (lead_queue->persistent_connection) {
+                stmt_success = database_engine_execute(lead_queue->persistent_connection, stmt_request, &stmt_result);
+            } else {
+                log_this(dqm_label, "No persistent connection available", LOG_LEVEL_ERROR, 0);
+            }
+            mutex_unlock(&lead_queue->connection_lock);
+        } else {
+            log_this(dqm_label, "Failed to acquire connection lock", LOG_LEVEL_ERROR, 0);
+        }
+
+        // Clean up request
+        if (stmt_request->query_id) free(stmt_request->query_id);
+        if (stmt_request->sql_template) free(stmt_request->sql_template);
+        if (stmt_request->parameters_json) free(stmt_request->parameters_json);
+        if (stmt_request->prepared_statement_name) free(stmt_request->prepared_statement_name);
+        free(stmt_request);
+
+        if (stmt_success && stmt_result && stmt_result->success) {
+            log_this(dqm_label, "Statement %zu executed successfully (hash: %s): affected %lld rows",
+                     LOG_LEVEL_TRACE, 3, i + 1, stmt_hash, stmt_result->affected_rows);
+        } else {
+            log_this(dqm_label, "Statement %zu failed (hash: %s)", LOG_LEVEL_ERROR, 2, i + 1, stmt_hash);
+            success = false;
+        }
+
+        if (stmt_result) {
+            database_engine_cleanup_result(stmt_result);
+        }
+    }
+
+    // Step 4: Update migration status to applied (1003) on success
+    if (success) {
+        // Create UPDATE query to change migration status from 1000 (loaded) to 1003 (applied)
+        char update_sql[512];
+        snprintf(update_sql, sizeof(update_sql),
+                 "UPDATE test.queries SET query_type_lua_28 = 1003 WHERE query_ref = %lld AND query_type_lua_28 = 1000",
+                 migration_id);
+
+        QueryRequest* update_request = calloc(1, sizeof(QueryRequest));
+        if (!update_request) {
+            log_this(dqm_label, "Failed to allocate update request", LOG_LEVEL_ERROR, 0);
+            success = false;
+        } else {
+            update_request->query_id = strdup("update_migration_status");
+            update_request->sql_template = strdup(update_sql);
+            update_request->parameters_json = strdup("{}");
+            update_request->timeout_seconds = 30;
+            update_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
+            update_request->use_prepared_statement = false;
+
+            if (!update_request->query_id || !update_request->sql_template || !update_request->parameters_json) {
+                log_this(dqm_label, "Failed to allocate update request fields", LOG_LEVEL_ERROR, 0);
+                success = false;
+            } else {
+                // Execute update
+                QueryResult* update_result = NULL;
+                bool update_success = false;
+
+                MutexResult lock_result = MUTEX_LOCK(&lead_queue->connection_lock, dqm_label);
+                if (lock_result == MUTEX_SUCCESS) {
+                    if (lead_queue->persistent_connection) {
+                        update_success = database_engine_execute(lead_queue->persistent_connection, update_request, &update_result);
+                    } else {
+                        log_this(dqm_label, "No persistent connection available for status update", LOG_LEVEL_ERROR, 0);
+                    }
+                    mutex_unlock(&lead_queue->connection_lock);
+                } else {
+                    log_this(dqm_label, "Failed to acquire connection lock for status update", LOG_LEVEL_ERROR, 0);
+                }
+
+                if (update_success && update_result && update_result->success) {
+                    log_this(dqm_label, "Migration %lld status updated to applied (1003)", LOG_LEVEL_DEBUG, 1, migration_id);
+                } else {
+                    log_this(dqm_label, "Failed to update migration status to applied for migration %lld", LOG_LEVEL_ERROR, 1, migration_id);
+                    success = false;
+                }
+
+                if (update_result) {
+                    database_engine_cleanup_result(update_result);
+                }
+            }
+
+            // Clean up update request
+            if (update_request->query_id) free(update_request->query_id);
+            if (update_request->sql_template) free(update_request->sql_template);
+            if (update_request->parameters_json) free(update_request->parameters_json);
+            free(update_request);
+        }
+    }
+
+    // Cleanup
+    for (size_t i = 0; i < statement_count; i++) {
+        free(statements[i]);
+    }
+    free(statements);
+
+    if (success) {
+        log_this(dqm_label, "Successfully applied migration %lld (%zu statements)", LOG_LEVEL_DEBUG, 2, migration_id, statement_count);
+    }
+
+    return success;
 }
 
 /*
