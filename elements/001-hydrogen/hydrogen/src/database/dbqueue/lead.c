@@ -224,6 +224,9 @@ bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue) {
         }
     }
 
+    // Variable 'more_work' is no longer used after the loop
+    (void)more_work;
+
     if (overall_success) {
         log_this(dqm_label, "Migration APPLY phase completed successfully - applied %d migrations", LOG_LEVEL_DEBUG, 1, applied_count);
     } else {
@@ -658,9 +661,13 @@ bool database_queue_apply_single_migration(DatabaseQueue* lead_queue, long long 
     char* migration_sql = NULL;
 
     if (lead_queue->query_cache) {
-        QueryCacheEntry* entry = query_cache_lookup(lead_queue->query_cache, (int)migration_id);
+        const QueryCacheEntry* entry = query_cache_lookup(lead_queue->query_cache, (int)migration_id);
         if (entry && entry->sql_template) {
             migration_sql = strdup(entry->sql_template);
+            if (!migration_sql) {
+                log_this(dqm_label, "Failed to duplicate SQL template for migration %lld", LOG_LEVEL_ERROR, 1, migration_id);
+                return false;
+            }
             log_this(dqm_label, "Retrieved SQL for migration %lld from QTC (%zu bytes)", LOG_LEVEL_DEBUG, 2, migration_id, strlen(migration_sql));
         } else {
             log_this(dqm_label, "Migration %lld not found in query cache", LOG_LEVEL_ERROR, 1, migration_id);
