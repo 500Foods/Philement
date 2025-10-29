@@ -22,7 +22,7 @@ Hydrogen serves as a database gateway supporting PostgreSQL, SQLite, MySQL, DB2 
   - **Management Role**: Handles connection heartbeats, trigger monitoring, and cross-queue coordination
   - **Tag Assignment**: Always tagged with "Lead" and inherits tags from disabled queues
 
-## EXISTING SUBSYSTEM STATE (UPDATED 9/10/2025 - TEST 27 OPERATIONAL)
+## EXISTING SUBSYSTEM STATE (UPDATED 10/29/2025 - MIGRATION WORKFLOW CLARIFIED)
 
 **ARCHITECTURAL CHANGE:** The subsystem has evolved from the planned multi-queue-per-database approach to a **Database Queue Manager (DQM)** architecture where each database gets a single **Lead queue** that dynamically spawns **child worker queues** for different priority levels (slow/medium/fast/cache).
 
@@ -37,6 +37,38 @@ The Lead DQM acts as a conductor for database operations, orchestrating the enti
 - **Launch additional queues** - Spawns child worker queues based on configuration (slow/medium/fast/cache)
 - **Launch and respond to heartbeats** - Maintains connection health through periodic heartbeat checks
 - **Process incoming queries on its queue** - Handles queries routed to the Lead queue directly
+
+### Migration Workflow Architecture
+
+The migration system uses a two-phase approach with distinct LOAD and APPLY phases:
+
+#### LOAD Phase: Lua Script Processing
+
+- **Purpose**: Extract migration metadata and populate Queries table
+- **Process**: Execute Lua migration scripts to generate SQL templates
+- **Result**: INSERT records into Queries table with `type_lua_28 = 1000` (loaded status)
+- **No Schema Changes**: LOAD phase only adds metadata, doesn't modify database structure
+
+#### APPLY Phase: Query Execution Pipeline
+
+- **Purpose**: Execute actual database schema changes using stored queries
+- **Process**: Retrieve loaded queries from database and process through normal query pipeline
+- **Key Features**:
+  - Uses existing query processing infrastructure (parameter replacement, transaction handling)
+  - Multi-statement query splitting for all engines (DB2 requirement becomes universal)
+  - Transaction-wrapped execution for each migration
+  - Bootstrap query re-runs between each migration to maintain current state
+  - Updates migration status to `type_lua_28 = 1003` (applied status)
+- **Iteration**: Continues until no more migrations to apply or transaction error occurs
+
+#### Bootstrap Query Integration
+
+The bootstrap query serves as the source of truth throughout migration:
+
+- **Before LOAD**: Shows available vs currently loaded/applied migrations
+- **After LOAD**: Shows updated status with newly loaded migrations
+- **During APPLY**: Provides list of loaded-but-not-applied migrations for selective execution
+- **After Each APPLY**: Updates status to determine if more work is needed
 
 ## IMPLEMENTATION PHASES
 
@@ -924,74 +956,3 @@ void* conn = PQconnectdb_ptr(conninfo);
 - Queue operations and thread-safe submission testing
 - Full processing pipeline with query ID caching end-to-end
 - Performance & stress testing with memory leak verification
-
-### 🔄 **REMAINING WORK**
-
-**Phase 2.2: SQLite Engine Implementation** (Estimated: 1-2 weeks)
-
-- SQLite3 integration with dynamic loading
-- File-based database support
-- WAL mode configuration
-- Connection pooling for concurrent access
-- DQM integration and testing
-
-**Phase 2.3: MySQL Engine Implementation** (Estimated: 1-2 weeks)
-
-- MySQL/MariaDB client integration
-- Auto-reconnect capability
-- Connection pooling
-- Prepared statement support
-- DQM integration and testing
-
-**Phase 2.4: DB2 Engine Implementation** (Estimated: 2-3 weeks)
-
-- IBM DB2 client integration
-- Deadlock detection and handling
-- iSeries connection support
-- Advanced transaction management
-- DQM integration and testing
-
-**Phase 3: Query Caching** (Estimated: 1-2 weeks)
-
-- Template cache loading from database
-- Parameter injection engine for SQL generation
-- Cache invalidation mechanisms
-
-**Phase 4: Acuranzo Integration** (Estimated: 2 weeks)
-
-- Query template creation and management
-- End-to-end integration with PostgreSQL backend
-- API surface completion (`/api/query/:database/:query_id/:queue_path/:params`)
-
-**Phase 5: Multi-Engine Expansion** (Estimated: 3-4 weeks)
-
-- SQLite, MySQL/MariaDB, IBM DB2 engines
-- Engine-specific optimizations and testing
-
-### 📚 **DOCUMENTATION COMPLETED**
-
-- ✅ **[DATABASE_PLAN.md](DATABASE_PLAN.md)** - Updated with current implementation status
-- ✅ **[lead_dqm.md](../../docs/reference/lead_dqm.md)** - Comprehensive Lead DQM developer guide
-- ✅ **SITEMAP.md** - Updated with lead_dqm.md reference
-
-### 🎯 **NEXT IMMEDIATE STEPS**
-
-1. **Complete SQLite Engine** - Foundation for file-based databases and testing
-2. **Expand Query API** - Implement missing `/api/query/*` endpoints
-3. **Add Unity Tests** - Fill coverage gaps for error paths and internal logic
-4. **Performance Optimization** - Monitor and optimize DQM operations
-
-### ⚡ **CURRENT CAPABILITIES**
-
-The database subsystem is **production-ready for all implemented engines** with:
-
-- **Multi-Engine Support**: PostgreSQL, SQLite, MySQL, and DB2 all fully implemented
-- **Robust Lead DQM architecture** with bootstrap-driven queue launching
-- **Configuration-based scaling**: Automatic spawning of worker queues after successful bootstrap
-- **Comprehensive error handling and recovery** with engine-specific optimizations
-- **Thread-safe operations throughout** with proper synchronization
-- **Extensive monitoring and logging** with structured DQM labeling for all operations
-- **Integration with existing Hydrogen infrastructure** and launch/landing system
-- **Dynamic library loading** for deployment flexibility and graceful degradation
-- **Bootstrap query execution** working across all database engines
-- **Unified API surface** providing consistent interface across all engines
