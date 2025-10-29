@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 2.0.1 - 2025-10-29 - Fixed typo - {$TABLE} instead of ${TABLE}
 -- 2.0.0 - 2025-10-18 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
 -- 1.0.0 - 2025-09-13 - Initial creation for lookups table with PostgreSQL support.
@@ -29,7 +30,7 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW},                                                        -- query_queue_a58
         ${TIMEOUT}                                                          -- query_timeout
         [=[
-            CREATE TABLE ${SCHEMA}{$TABLE}
+            CREATE TABLE ${SCHEMA}${TABLE}
             (
                 lookup_id               ${INTEGER}          NOT NULL,
                 key_idx                 ${INTEGER}          NOT NULL,

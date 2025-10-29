@@ -8,6 +8,7 @@
 # validate_migration()
 
 # CHANGELOG
+# 1.2.0 - 2025-10-29 - Added check for unsubstituted variables in generated SQL
 # 1.1.0 - 2025-09-30 - Updated location of Helium migration files
 # 1.0.0 - 2025-09-14 - Initial creation for database migration validation
 
@@ -18,7 +19,7 @@ TEST_NAME="Migrations"
 TEST_ABBR="MGR"
 TEST_NUMBER="31"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -105,6 +106,18 @@ validate_migration() {
         echo "SQL generation failed:" > "${diags_file}"
         echo "${sql_output}" >> "${diags_file}"
         echo "❌ ${design} ${engine} ${migration} FAILED (SQL generation)" > "${cache_file}"
+        echo "fresh|${diags_file}"
+        return 1
+    fi
+
+    # Check for unsubstituted variables in the generated SQL
+    if echo "${sql_output}" | grep -q '\${[^}]*}' || echo "${sql_output}" | grep -q '{[^}]*}'; then
+        # Found unsubstituted variables or braces, save error to diags_file
+        local diags_file="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}/${design}_${engine}_${schema_name}_${migration_num}.txt"
+        mkdir -p "$(dirname "${diags_file}")"
+        echo "Unsubstituted variables found in generated SQL:" > "${diags_file}"
+        echo "${sql_output}" >> "${diags_file}"
+        echo "❌ ${design} ${engine} ${migration} FAILED (unsubstituted variables)" > "${cache_file}"
         echo "fresh|${diags_file}"
         return 1
     fi
