@@ -106,7 +106,7 @@ void database_queue_execute_bootstrap_query_full(DatabaseQueue* db_queue, bool p
                 if (populate_qtc && !db_queue->query_cache) {
                     db_queue->query_cache = query_cache_create();
                     if (!db_queue->query_cache) {
-                        log_this(dqm_label, "Failed to create query cache", LOG_LEVEL_ERROR, true, true, true);
+                        log_this(dqm_label, "Failed to create query cache", LOG_LEVEL_ERROR, 0);
                     }
                 }
 
@@ -178,12 +178,12 @@ void database_queue_execute_bootstrap_query_full(DatabaseQueue* db_queue, bool p
                                      long long query_ref = json_integer_value(query_ref_obj);
 
                                      if (query_type == 1000) {
-                                          // Track the highest version found for available migrations (query_type = 1000)
+                                          // Track the highest version found for loaded migrations (query_type = 1000)
                                           if (query_ref > latest_available_migration) {
                                               latest_available_migration = query_ref;
                                           }
                                       } else if (query_type == 1003) {
-                                          // Track the highest version found for installed migrations (query_type = 1003)
+                                          // Track the highest version found for applied migrations (query_type = 1003)
                                           if (query_ref > latest_installed_migration) {
                                               latest_installed_migration = query_ref;
                                           }
@@ -210,6 +210,8 @@ void database_queue_execute_bootstrap_query_full(DatabaseQueue* db_queue, bool p
             }
 
             // Store migration information in the queue structure
+            // latest_available_migration tracks the highest query_ref with type 1000 (loaded)
+            // latest_installed_migration tracks the highest query_ref with type 1003 (applied)
             db_queue->latest_available_migration = latest_available_migration;
             db_queue->latest_installed_migration = latest_installed_migration;
             db_queue->empty_database = empty_database;

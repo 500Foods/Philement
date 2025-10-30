@@ -25,26 +25,26 @@ static const char* PARAM_TYPE_STRINGS[] = {
 // Parse typed JSON parameters into parameter list
 ParameterList* parse_typed_parameters(const char* json_params) {
     if (!json_params) {
-        log_this("DATABASE", "NULL JSON parameters provided", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "NULL JSON parameters provided", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
     json_error_t error;
     json_t* root = json_loads(json_params, 0, &error);
     if (!root) {
-        log_this("DATABASE", "Failed to parse JSON parameters", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to parse JSON parameters", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
     if (!json_is_object(root)) {
-        log_this("DATABASE", "JSON parameters must be an object", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "JSON parameters must be an object", LOG_LEVEL_ERROR, 0);
         json_decref(root);
         return NULL;
     }
 
     ParameterList* param_list = (ParameterList*)malloc(sizeof(ParameterList));
     if (!param_list) {
-        log_this("DATABASE", "Failed to allocate parameter list", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to allocate parameter list", LOG_LEVEL_ERROR, 0);
         json_decref(root);
         return NULL;
     }
@@ -65,7 +65,7 @@ ParameterList* parse_typed_parameters(const char* json_params) {
     }
 
     if (total_params == 0) {
-        log_this("DATABASE", "No parameters found in JSON", LOG_LEVEL_DEBUG, true, true, true);
+        log_this("DATABASE", "No parameters found in JSON", LOG_LEVEL_DEBUG, 0);
         json_decref(root);
         return param_list; // Return empty list
     }
@@ -73,7 +73,7 @@ ParameterList* parse_typed_parameters(const char* json_params) {
     // Allocate parameter array
     param_list->params = (TypedParameter**)malloc(total_params * sizeof(TypedParameter*));
     if (!param_list->params) {
-        log_this("DATABASE", "Failed to allocate parameter array", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to allocate parameter array", LOG_LEVEL_ERROR, 0);
         free(param_list);
         json_decref(root);
         return NULL;
@@ -97,7 +97,7 @@ ParameterList* parse_typed_parameters(const char* json_params) {
         json_object_foreach(type_obj, param_name, param_value) {
             TypedParameter* param = (TypedParameter*)malloc(sizeof(TypedParameter));
             if (!param) {
-                log_this("DATABASE", "Failed to allocate typed parameter", LOG_LEVEL_ERROR, true, true, true);
+                log_this("DATABASE", "Failed to allocate typed parameter", LOG_LEVEL_ERROR, 0);
                 free_parameter_list(param_list);
                 json_decref(root);
                 return NULL;
@@ -108,7 +108,7 @@ ParameterList* parse_typed_parameters(const char* json_params) {
             param->type = param_type;
 
             if (!param->name) {
-                log_this("DATABASE", "Failed to duplicate parameter name", LOG_LEVEL_ERROR, true, true, true);
+                log_this("DATABASE", "Failed to duplicate parameter name", LOG_LEVEL_ERROR, 0);
                 free(param);
                 free_parameter_list(param_list);
                 json_decref(root);
@@ -154,7 +154,7 @@ ParameterList* parse_typed_parameters(const char* json_params) {
             }
 
             if (!parse_success) {
-                log_this("DATABASE", "Invalid parameter value type", LOG_LEVEL_ERROR, true, true, true);
+                log_this("DATABASE", "Invalid parameter value type", LOG_LEVEL_ERROR, 0);
                 free_typed_parameter(param);
                 free_parameter_list(param_list);
                 json_decref(root);
@@ -168,7 +168,7 @@ ParameterList* parse_typed_parameters(const char* json_params) {
     param_list->count = param_index;
     json_decref(root);
 
-    log_this("DATABASE", "Successfully parsed typed parameters", LOG_LEVEL_DEBUG, true, true, true);
+    log_this("DATABASE", "Successfully parsed typed parameters", LOG_LEVEL_DEBUG, 0);
     return param_list;
 }
 
@@ -192,7 +192,7 @@ char* convert_named_to_positional(
     // Create a copy of the SQL template to modify
     char* modified_sql = strdup(sql_template);
     if (!modified_sql) {
-        log_this("DATABASE", "Failed to duplicate SQL template", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to duplicate SQL template", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -233,7 +233,7 @@ char* convert_named_to_positional(
 
             char* new_sql = (char*)malloc((size_t)strlen(result) + placeholder_len - (size_t)strlen(named_param) + 1);
             if (!new_sql) {
-                log_this("DATABASE", "Failed to allocate modified SQL", LOG_LEVEL_ERROR, true, true, true);
+                log_this("DATABASE", "Failed to allocate modified SQL", LOG_LEVEL_ERROR, 0);
                 free(modified_sql);
                 return NULL;
             }
@@ -266,7 +266,7 @@ bool build_parameter_array(
     regex_t regex;
     int reti = regcomp(&regex, ":[a-zA-Z_][a-zA-Z0-9_]*", REG_EXTENDED);
     if (reti) {
-        log_this("DATABASE", "Failed to compile regex for parameter matching", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to compile regex for parameter matching", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -290,7 +290,7 @@ bool build_parameter_array(
     // Allocate ordered parameter array
     *ordered_params = (TypedParameter**)malloc(match_count * sizeof(TypedParameter*));
     if (!*ordered_params) {
-        log_this("DATABASE", "Failed to allocate ordered parameter array", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to allocate ordered parameter array", LOG_LEVEL_ERROR, 0);
         regfree(&regex);
         return false;
     }
@@ -304,7 +304,7 @@ bool build_parameter_array(
         size_t name_len = (size_t)(match.rm_eo - match.rm_so - 1);
         char param_name[MAX_PARAM_NAME_LEN];
         if (name_len >= sizeof(param_name)) {
-            log_this("DATABASE", "Parameter name too long", LOG_LEVEL_ERROR, true, true, true);
+            log_this("DATABASE", "Parameter name too long", LOG_LEVEL_ERROR, 0);
             free(*ordered_params);
             regfree(&regex);
             return false;
@@ -323,7 +323,7 @@ bool build_parameter_array(
         }
 
         if (!found_param) {
-            log_this("DATABASE", "Parameter not found in parameter list", LOG_LEVEL_ERROR, true, true, true);
+            log_this("DATABASE", "Parameter not found in parameter list", LOG_LEVEL_ERROR, 0);
             free(*ordered_params);
             *ordered_params = NULL;
             regfree(&regex);

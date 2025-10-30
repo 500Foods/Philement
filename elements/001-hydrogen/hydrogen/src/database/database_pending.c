@@ -25,7 +25,7 @@ static PendingResultManager* g_pending_manager = NULL;
 PendingResultManager* pending_result_manager_create(void) {
     PendingResultManager* manager = calloc(1, sizeof(PendingResultManager));
     if (!manager) {
-        log_this("DATABASE", "Failed to allocate pending result manager", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to allocate pending result manager", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -33,20 +33,20 @@ PendingResultManager* pending_result_manager_create(void) {
     manager->capacity = 64;
     manager->results = calloc(manager->capacity, sizeof(PendingQueryResult*));
     if (!manager->results) {
-        log_this("DATABASE", "Failed to allocate pending results array", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to allocate pending results array", LOG_LEVEL_ERROR, 0);
         free(manager);
         return NULL;
     }
 
     // Initialize mutex
     if (pthread_mutex_init(&manager->manager_lock, NULL) != 0) {
-        log_this("DATABASE", "Failed to initialize manager mutex", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to initialize manager mutex", LOG_LEVEL_ERROR, 0);
         free(manager->results);
         free(manager);
         return NULL;
     }
 
-    log_this("DATABASE", "Pending result manager created", LOG_LEVEL_DEBUG, true, true, true);
+    log_this("DATABASE", "Pending result manager created", LOG_LEVEL_DEBUG, 0);
     return manager;
 }
 
@@ -79,7 +79,7 @@ void pending_result_manager_destroy(PendingResultManager* manager) {
     pthread_mutex_destroy(&manager->manager_lock);
     free(manager);
 
-    log_this("DATABASE", "Pending result manager destroyed", LOG_LEVEL_DEBUG, true, true, true);
+    log_this("DATABASE", "Pending result manager destroyed", LOG_LEVEL_DEBUG, 0);
 }
 
 /**
@@ -91,20 +91,20 @@ PendingQueryResult* pending_result_register(
     int timeout_seconds
 ) {
     if (!manager || !query_id) {
-        log_this("DATABASE", "Invalid parameters for pending result registration", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Invalid parameters for pending result registration", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
     PendingQueryResult* pending = calloc(1, sizeof(PendingQueryResult));
     if (!pending) {
-        log_this("DATABASE", "Failed to allocate pending result", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to allocate pending result", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
     // Copy query ID
     pending->query_id = strdup(query_id);
     if (!pending->query_id) {
-        log_this("DATABASE", "Failed to copy query ID", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to copy query ID", LOG_LEVEL_ERROR, 0);
         free(pending);
         return NULL;
     }
@@ -116,14 +116,14 @@ PendingQueryResult* pending_result_register(
 
     // Initialize synchronization primitives
     if (pthread_mutex_init(&pending->result_lock, NULL) != 0) {
-        log_this("DATABASE", "Failed to initialize result mutex", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to initialize result mutex", LOG_LEVEL_ERROR, 0);
         free(pending->query_id);
         free(pending);
         return NULL;
     }
 
     if (pthread_cond_init(&pending->result_ready, NULL) != 0) {
-        log_this("DATABASE", "Failed to initialize result condition", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to initialize result condition", LOG_LEVEL_ERROR, 0);
         pthread_mutex_destroy(&pending->result_lock);
         free(pending->query_id);
         free(pending);
@@ -138,7 +138,7 @@ PendingQueryResult* pending_result_register(
         size_t new_capacity = manager->capacity * 2;
         PendingQueryResult** new_results = realloc(manager->results, new_capacity * sizeof(PendingQueryResult*));
         if (!new_results) {
-            log_this("DATABASE", "Failed to expand pending results array", LOG_LEVEL_ERROR, true, true, true);
+            log_this("DATABASE", "Failed to expand pending results array", LOG_LEVEL_ERROR, 0);
             pthread_mutex_unlock(&manager->manager_lock);
             pthread_cond_destroy(&pending->result_ready);
             pthread_mutex_destroy(&pending->result_lock);
@@ -153,7 +153,7 @@ PendingQueryResult* pending_result_register(
     manager->results[manager->count++] = pending;
     pthread_mutex_unlock(&manager->manager_lock);
 
-    log_this("DATABASE", "Pending result registered", LOG_LEVEL_DEBUG, true, true, true);
+    log_this("DATABASE", "Pending result registered", LOG_LEVEL_DEBUG, 0);
     return pending;
 }
 
@@ -183,10 +183,10 @@ int pending_result_wait(PendingQueryResult* pending) {
 
         if (rc == ETIMEDOUT) {
             pending->timed_out = true;
-            log_this("DATABASE", "Query timeout occurred", LOG_LEVEL_ERROR, true, true, true);
+            log_this("DATABASE", "Query timeout occurred", LOG_LEVEL_ERROR, 0);
             break;
         } else if (rc != 0) {
-            log_this("DATABASE", "Error waiting for query result", LOG_LEVEL_ERROR, true, true, true);
+            log_this("DATABASE", "Error waiting for query result", LOG_LEVEL_ERROR, 0);
             pthread_mutex_unlock(&pending->result_lock);
             return -1;
         }
@@ -236,9 +236,9 @@ bool pending_result_signal_ready(
     pthread_mutex_unlock(&manager->manager_lock);
 
     if (found) {
-        log_this("DATABASE", "Query result signaled as ready", LOG_LEVEL_DEBUG, true, true, true);
+        log_this("DATABASE", "Query result signaled as ready", LOG_LEVEL_DEBUG, 0);
     } else {
-        log_this("DATABASE", "Query result not found for signaling", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Query result not found for signaling", LOG_LEVEL_ERROR, 0);
         // Clean up the result if not claimed - but don't free it here as caller owns it
         // The caller (test) will handle cleanup
     }
@@ -320,7 +320,7 @@ size_t pending_result_cleanup_expired(PendingResultManager* manager) {
     pthread_mutex_unlock(&manager->manager_lock);
 
     if (cleaned > 0) {
-        log_this("DATABASE", "Cleaned up expired pending results", LOG_LEVEL_DEBUG, true, true, true);
+        log_this("DATABASE", "Cleaned up expired pending results", LOG_LEVEL_DEBUG, 0);
     }
 
     return cleaned;

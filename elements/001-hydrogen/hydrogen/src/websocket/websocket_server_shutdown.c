@@ -109,17 +109,17 @@ void cleanup_websocket_server(void)
         return;
     }
     
-    log_this(SR_WEBSOCKET, "Starting WebSocket server cleanup", LOG_LEVEL_STATE,4,3,2,1,0);
+    log_this(SR_WEBSOCKET, "Starting WebSocket server cleanup", LOG_LEVEL_STATE, 0);
     
     // Minimal delay - just enough to clear immediate callbacks (reduced from 100ms to 50ms)
-    log_this(SR_WEBSOCKET, "Brief pause for callbacks (50ms)", LOG_LEVEL_STATE,4,3,2,1,0);
+    log_this(SR_WEBSOCKET, "Brief pause for callbacks (50ms)", LOG_LEVEL_STATE, 0);
     usleep(50000);  // 50ms delay
     
     // Force close all remaining connections
     pthread_mutex_lock(&ws_context->mutex);
     if (ws_context->active_connections > 0) {
         log_this(SR_WEBSOCKET, "Forcing close of %d connections during cleanup", 
-                LOG_LEVEL_ALERT, true, true, true, ws_context->active_connections);
+                LOG_LEVEL_ALERT, 1, ws_context->active_connections);
         ws_context->active_connections = 0;
     }
     
@@ -135,7 +135,7 @@ void cleanup_websocket_server(void)
     
     // Extra cancellation calls on context before destruction
     if (ctx_to_destroy && ctx_to_destroy->lws_context) {
-        log_this(SR_WEBSOCKET, "Forcing multiple service cancellations", LOG_LEVEL_STATE,4,3,2,1,0);
+        log_this(SR_WEBSOCKET, "Forcing multiple service cancellations", LOG_LEVEL_STATE, 0);
         lws_cancel_service(ctx_to_destroy->lws_context);
         lws_cancel_service(ctx_to_destroy->lws_context);
         lws_cancel_service(ctx_to_destroy->lws_context);  // Triple cancellation for reliability
@@ -144,19 +144,18 @@ void cleanup_websocket_server(void)
     // Aggressively terminate any lingering threads BEFORE context destruction
     
     // First log what threads are still active
-    log_this(SR_WEBSOCKET, "Checking for remaining threads before cleanup", LOG_LEVEL_STATE,4,3,2,1,0);
+    log_this(SR_WEBSOCKET, "Checking for remaining threads before cleanup", LOG_LEVEL_STATE, 0);
     update_service_thread_metrics(&websocket_threads);
     
     if (websocket_threads.thread_count > 0) {
         log_this(SR_WEBSOCKET, "Found %d active websocket threads, forcing termination", 
-                LOG_LEVEL_ALERT, true, true, true, websocket_threads.thread_count);
+                LOG_LEVEL_ALERT, 1, websocket_threads.thread_count);
         
         // Force cancel all tracked threads
         for (int i = 0; i < websocket_threads.thread_count; i++) {
             pthread_t thread = websocket_threads.thread_ids[i];
             if (thread != 0) {
-                log_this(SR_WEBSOCKET, "Cancelling thread %lu", LOG_LEVEL_ALERT, 
-                        true, true, true, (unsigned long)thread);
+                log_this(SR_WEBSOCKET, "Cancelling thread %lu", LOG_LEVEL_ALERT, 1, (unsigned long)thread);
                 pthread_cancel(thread);
             }
         }
@@ -166,21 +165,21 @@ void cleanup_websocket_server(void)
         
         // Clear thread tracking completely
         websocket_threads.thread_count = 0;
-        log_this(SR_WEBSOCKET, "Forced all thread tracking to clear", LOG_LEVEL_ALERT,4,3,2,1,0);
+        log_this(SR_WEBSOCKET, "Forced all thread tracking to clear", LOG_LEVEL_ALERT, 0);
     }
     
     // Direct cleanup without threading to avoid potential issues
     if (ctx_to_destroy) {
-        log_this(SR_WEBSOCKET, "Destroying WebSocket context directly", LOG_LEVEL_STATE,4,3,2,1,0);
+        log_this(SR_WEBSOCKET, "Destroying WebSocket context directly", LOG_LEVEL_STATE, 0);
         ws_context_destroy(ctx_to_destroy);
-        log_this(SR_WEBSOCKET, "WebSocket context destroyed", LOG_LEVEL_STATE,4,3,2,1,0);
+        log_this(SR_WEBSOCKET, "WebSocket context destroyed", LOG_LEVEL_STATE, 0);
     }
     
     // Final check for any remaining threads and force termination
     update_service_thread_metrics(&websocket_threads);
     if (websocket_threads.thread_count > 0) {
         log_this(SR_WEBSOCKET, "CRITICAL: %d threads still remain after full cleanup, forcing exit", 
-                LOG_LEVEL_ERROR, true, true, true, websocket_threads.thread_count);
+                LOG_LEVEL_ERROR, 1, websocket_threads.thread_count);
         
         // Force cancel any remaining threads one last time
         for (int i = 0; i < websocket_threads.thread_count; i++) {
@@ -193,5 +192,5 @@ void cleanup_websocket_server(void)
         websocket_threads.thread_count = 0;
     }
     
-    log_this(SR_WEBSOCKET, "WebSocket server cleanup completed", LOG_LEVEL_STATE,4,3,2,1,0);
+    log_this(SR_WEBSOCKET, "WebSocket server cleanup completed", LOG_LEVEL_STATE, 0);
 }
