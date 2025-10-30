@@ -8,13 +8,13 @@
 
 // Initialize conduit service
 bool conduit_service_init(void) {
-    log_this("CONDUIT", "Conduit service initialized", LOG_LEVEL_STATE, true, true, true);
+    log_this("CONDUIT", "Conduit service initialized", LOG_LEVEL_STATE, 0);
     return true;
 }
 
 // Cleanup conduit service
 void conduit_service_cleanup(void) {
-    log_this("CONDUIT", "Conduit service cleaned up", LOG_LEVEL_STATE, true, true, true);
+    log_this("CONDUIT", "Conduit service cleaned up", LOG_LEVEL_STATE, 0);
 }
 
 // Get service name for logging

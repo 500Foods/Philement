@@ -16,7 +16,7 @@
 QueryTableCache* query_cache_create(void) {
     QueryTableCache* cache = (QueryTableCache*)malloc(sizeof(QueryTableCache));
     if (!cache) {
-        log_this("DATABASE", "Failed to allocate memory for query cache", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to allocate memory for query cache", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -27,7 +27,7 @@ QueryTableCache* query_cache_create(void) {
 
     // Initialize reader-writer lock
     if (pthread_rwlock_init(&cache->cache_lock, NULL) != 0) {
-        log_this("DATABASE", "Failed to initialize cache lock", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to initialize cache lock", LOG_LEVEL_ERROR, 0);
         free(cache);
         return NULL;
     }
@@ -35,7 +35,7 @@ QueryTableCache* query_cache_create(void) {
     // Allocate initial entries array
     cache->entries = (QueryCacheEntry**)malloc(INITIAL_CACHE_CAPACITY * sizeof(QueryCacheEntry*));
     if (!cache->entries) {
-        log_this("DATABASE", "Failed to allocate memory for cache entries", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to allocate memory for cache entries", LOG_LEVEL_ERROR, 0);
         pthread_rwlock_destroy(&cache->cache_lock);
         free(cache);
         return NULL;
@@ -46,7 +46,7 @@ QueryTableCache* query_cache_create(void) {
     // Initialize all entries to NULL
     memset(cache->entries, 0, INITIAL_CACHE_CAPACITY * sizeof(QueryCacheEntry*));
 
-    log_this("DATABASE", "Query cache created successfully", LOG_LEVEL_DEBUG, true, true, true);
+    log_this("DATABASE", "Query cache created successfully", LOG_LEVEL_DEBUG, 0);
     return cache;
 }
 
@@ -76,7 +76,7 @@ void query_cache_destroy(QueryTableCache* cache) {
     // Free cache structure
     free(cache);
 
-    log_this("DATABASE", "Query cache destroyed", LOG_LEVEL_DEBUG, true, true, true);
+    log_this("DATABASE", "Query cache destroyed", LOG_LEVEL_DEBUG, 0);
 }
 
 // Create a new cache entry
@@ -85,7 +85,7 @@ QueryCacheEntry* query_cache_entry_create(int query_ref, const char* sql_templat
                                          int timeout_seconds) {
     QueryCacheEntry* entry = (QueryCacheEntry*)malloc(sizeof(QueryCacheEntry));
     if (!entry) {
-        log_this("DATABASE", "Failed to allocate memory for cache entry", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to allocate memory for cache entry", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -104,7 +104,7 @@ QueryCacheEntry* query_cache_entry_create(int query_ref, const char* sql_templat
     if ((sql_template && !entry->sql_template) ||
         (description && !entry->description) ||
         (queue_type && !entry->queue_type)) {
-        log_this("DATABASE", "Failed to allocate memory for cache entry strings", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to allocate memory for cache entry strings", LOG_LEVEL_ERROR, 0);
         query_cache_entry_destroy(entry);
         return NULL;
     }
@@ -130,7 +130,7 @@ static bool query_cache_add_entry_locked(QueryTableCache* cache, QueryCacheEntry
         QueryCacheEntry** new_entries = (QueryCacheEntry**)realloc(cache->entries,
                                                                    new_capacity * sizeof(QueryCacheEntry*));
         if (!new_entries) {
-            log_this("DATABASE", "Failed to resize cache entries array", LOG_LEVEL_ERROR, true, true, true);
+            log_this("DATABASE", "Failed to resize cache entries array", LOG_LEVEL_ERROR, 0);
             return false;
         }
 
@@ -151,13 +151,13 @@ static bool query_cache_add_entry_locked(QueryTableCache* cache, QueryCacheEntry
 // Add entry to cache with proper locking
 bool query_cache_add_entry(QueryTableCache* cache, QueryCacheEntry* entry) {
     if (!cache || !entry) {
-        log_this("DATABASE", "Invalid parameters for cache add entry", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Invalid parameters for cache add entry", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Acquire write lock
     if (pthread_rwlock_wrlock(&cache->cache_lock) != 0) {
-        log_this("DATABASE", "Failed to acquire write lock for cache", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to acquire write lock for cache", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -167,7 +167,7 @@ bool query_cache_add_entry(QueryTableCache* cache, QueryCacheEntry* entry) {
     pthread_rwlock_unlock(&cache->cache_lock);
 
     if (result) {
-        log_this("DATABASE", "Added query entry to cache", LOG_LEVEL_DEBUG, true, true, true);
+        log_this("DATABASE", "Added query entry to cache", LOG_LEVEL_DEBUG, 0);
     }
 
     return result;
@@ -179,7 +179,7 @@ QueryCacheEntry* query_cache_lookup(QueryTableCache* cache, int query_ref) {
 
     // Acquire read lock
     if (pthread_rwlock_rdlock(&cache->cache_lock) != 0) {
-        log_this("DATABASE", "Failed to acquire read lock for cache lookup", LOG_LEVEL_ERROR, true, true, true);
+        log_this("DATABASE", "Failed to acquire read lock for cache lookup", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
