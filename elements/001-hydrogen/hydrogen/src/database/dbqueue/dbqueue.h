@@ -77,8 +77,9 @@ struct DatabaseQueue {
     pthread_mutex_t connection_lock;       // Protects persistent connection access
 
     // Migration status (Lead queues only)
-    volatile long long latest_available_migration;  // Highest query_ref for query_type_lua_28 = 1000
-    volatile long long latest_installed_migration;  // Highest query_ref for query_type_lua_28 = 1003
+    volatile long long latest_available_migration;  // AVAIL: Highest number of Lua scripts available
+    volatile long long latest_loaded_migration;     // LOAD: Highest query_ref for type = 1000
+    volatile long long latest_applied_migration;    // APPLY: Highest query_ref for type = 1003
     volatile bool empty_database;                   // True if no queries found in bootstrap results
 
     // Query Table Cache (QTC) - shared across all queues for this database

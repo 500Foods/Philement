@@ -17,6 +17,7 @@ typedef struct QueryRequest QueryRequest;
 typedef struct QueryResult QueryResult;
 
 // Forward declarations for helper functions (non-static for testing)
+bool mysql_is_numeric_type(unsigned int type);
 char** mysql_extract_column_names(void* mysql_result, size_t column_count);
 bool mysql_build_json_from_result(void* mysql_result, size_t row_count, size_t column_count,
                                    char** column_names, char** json_buffer);

@@ -109,7 +109,7 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
                 }
             } else {
                 log_this(dqm_label_exec, "Query execution failed: %s",
-                        LOG_LEVEL_ERROR, 1,
+                        LOG_LEVEL_TRACE, 1,
                         query->query_id ? query->query_id : "unknown");
 
                 // Signal pending result with NULL result on failure

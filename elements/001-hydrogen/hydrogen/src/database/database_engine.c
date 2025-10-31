@@ -64,7 +64,7 @@ bool database_engine_init(void) {
     if (postgres_count > 0) {
         DatabaseEngineInterface* postgresql_engine = postgresql_get_interface();
         if (postgresql_engine) {
-            log_this(SR_DATABASE, "- Registering PostgreSQL engine: %s at index %d", LOG_LEVEL_TRACE, 2,
+            log_this(SR_DATABASE, "- Registering PostgreSQL engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
                 postgresql_engine->name ? postgresql_engine->name : "NULL",
                 DB_ENGINE_POSTGRESQL);
             engine_registry[DB_ENGINE_POSTGRESQL] = postgresql_engine;
@@ -78,7 +78,7 @@ bool database_engine_init(void) {
     if (sqlite_count > 0) {
         DatabaseEngineInterface* sqlite_engine = sqlite_get_interface();
         if (sqlite_engine) {
-            log_this(SR_DATABASE, "- Registering SQLite engine: %s at index %d", LOG_LEVEL_TRACE, 2,
+            log_this(SR_DATABASE, "- Registering SQLite engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
                 sqlite_engine->name ? sqlite_engine->name : "NULL",
                 DB_ENGINE_SQLITE);
             engine_registry[DB_ENGINE_SQLITE] = sqlite_engine;
@@ -90,7 +90,7 @@ bool database_engine_init(void) {
     if (mysql_count > 0) {
         DatabaseEngineInterface* mysql_engine = mysql_get_interface();
         if (mysql_engine) {
-            log_this(SR_DATABASE, "- Registering MySQL engine: %s at index %d", LOG_LEVEL_TRACE, 2,
+            log_this(SR_DATABASE, "- Registering MySQL engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
                 mysql_engine->name ? mysql_engine->name : "NULL",
                 DB_ENGINE_MYSQL);
             engine_registry[DB_ENGINE_MYSQL] = mysql_engine;
@@ -102,7 +102,7 @@ bool database_engine_init(void) {
     if (db2_count > 0) {
         DatabaseEngineInterface* db2_engine = db2_get_interface();
         if (db2_engine) {
-            log_this(SR_DATABASE, "- Registering DB2 engine: %s at index %d", LOG_LEVEL_TRACE, 2,
+            log_this(SR_DATABASE, "- Registering DB2 engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
                 db2_engine->name ? db2_engine->name : "NULL",
                 DB_ENGINE_DB2);
             engine_registry[DB_ENGINE_DB2] = db2_engine;

@@ -95,6 +95,11 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
             (*json_buffer_size)++;
         }
 
+        // Get column type to determine if we should quote the value
+        int sql_type = 0;
+        bool got_type = db2_get_column_type(stmt_handle, col, &sql_type);
+        bool is_numeric = got_type && db2_is_numeric_type(sql_type);
+
         // Get column data
         char col_data[256] = {0};
         int data_len = 0;
@@ -105,8 +110,11 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
             char col_json[1024];
             if (data_len == SQL_NULL_DATA) {
                 snprintf(col_json, sizeof(col_json), "\"%s\":null", column_names[col]);
+            } else if (is_numeric) {
+                // Numeric types - no quotes around value
+                snprintf(col_json, sizeof(col_json), "\"%s\":%s", column_names[col], col_data);
             } else {
-                // Escape data using helper function
+                // String types - quote and escape the value
                 char escaped_data[512] = {0};
                 db2_json_escape_string(col_data, escaped_data, sizeof(escaped_data));
                 snprintf(col_json, sizeof(col_json), "\"%s\":\"%s\"", column_names[col], escaped_data);
@@ -276,12 +284,12 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
                 }
                 msg++;
             }
-            log_this(designator, "DB2 query execution failed - MESSAGE: %s", LOG_LEVEL_ERROR, 1, (char*)error_msg);
-            log_this(designator, "DB2 query execution failed - SQLSTATE: %s, Native Error: %ld", LOG_LEVEL_ERROR, 2, (char*)sql_state, (long int)native_error);
-            log_this(designator, "DB2 query execution failed - STATEMENT:\n%s", LOG_LEVEL_ERROR, 1, request->sql_template);
+            log_this(designator, "DB2 query execution failed - MESSAGE: %s", LOG_LEVEL_TRACE, 1, (char*)error_msg);
+            log_this(designator, "DB2 query execution failed - SQLSTATE: %s, Native Error: %ld", LOG_LEVEL_TRACE, 2, (char*)sql_state, (long int)native_error);
+            log_this(designator, "DB2 query execution failed - STATEMENT:\n%s", LOG_LEVEL_TRACE, 1, request->sql_template);
 
         } else {
-            log_this(designator, "DB2 query execution failed - result: %d (could not get error details)", LOG_LEVEL_ERROR, 1, exec_result);
+            log_this(designator, "DB2 query execution failed - result: %d (could not get error details)", LOG_LEVEL_TRACE, 1, exec_result);
         }
 
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
@@ -295,7 +303,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
     SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
     
     if (process_result) {
-        log_this(designator, "DB2 execute_query: Query completed successfully", LOG_LEVEL_TRACE, 0);
+        log_this(designator, "DB2 execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
     }
     
     return process_result;

@@ -15,8 +15,37 @@
 #include <string.h>
 #include <stdio.h>
 
+// MySQL type constants (from mysql_com.h)
+#define MYSQL_TYPE_DECIMAL      0
+#define MYSQL_TYPE_TINY         1
+#define MYSQL_TYPE_SHORT        2
+#define MYSQL_TYPE_LONG         3
+#define MYSQL_TYPE_FLOAT        4
+#define MYSQL_TYPE_DOUBLE       5
+#define MYSQL_TYPE_LONGLONG     8
+#define MYSQL_TYPE_INT24        9
+#define MYSQL_TYPE_NEWDECIMAL   246
+
 // External declarations for libmysqlclient function pointers
 extern mysql_fetch_fields_t mysql_fetch_fields_ptr;
+
+// Helper function to check if MySQL type is numeric
+bool mysql_is_numeric_type(unsigned int type) {
+    switch (type) {
+        case MYSQL_TYPE_DECIMAL:
+        case MYSQL_TYPE_TINY:
+        case MYSQL_TYPE_SHORT:
+        case MYSQL_TYPE_LONG:
+        case MYSQL_TYPE_FLOAT:
+        case MYSQL_TYPE_DOUBLE:
+        case MYSQL_TYPE_LONGLONG:
+        case MYSQL_TYPE_INT24:
+        case MYSQL_TYPE_NEWDECIMAL:
+            return true;
+        default:
+            return false;
+    }
+}
 
 // Helper function to extract column names (non-static for testing)
 char** mysql_extract_column_names(void* mysql_result, size_t column_count) {
@@ -157,11 +186,11 @@ bool mysql_execute_query_statement(void* mysql_connection, const char* sql_templ
     }
 
     if (mysql_query_ptr(mysql_connection, sql_template) != 0) {
-        log_this(designator, "MySQL query execution failed", LOG_LEVEL_ERROR, 0);
+        log_this(designator, "MySQL query execution failed", LOG_LEVEL_TRACE, 0);
         if (mysql_error_ptr) {
             const char* error_msg = mysql_error_ptr(mysql_connection);
             if (error_msg && strlen(error_msg) > 0) {
-                log_this(designator, "MySQL query error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+                log_this(designator, "MySQL query error: %s", LOG_LEVEL_TRACE, 1, error_msg);
             }
         }
         return false;

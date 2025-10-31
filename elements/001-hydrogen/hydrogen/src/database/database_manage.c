@@ -214,7 +214,7 @@ bool database_add_database(const char* name, const char* engine, const char* con
     }
 
     // Launch complete - DQM is now independent and handles its own database work
-    log_this(SR_DATABASE, "DQM launched successfully for %s", LOG_LEVEL_TRACE, 1, name);
+    log_this(SR_DATABASE, "DQM launched successfully for %s", LOG_LEVEL_DEBUG, 1, name);
 
     return true;
 }

@@ -14,6 +14,9 @@
 #include "query.h"
 #include "query_helpers.h"
 
+// Forward declaration for numeric value checking
+bool sqlite_is_numeric_value(const char* value);
+
 // External declarations for libsqlite3 function pointers (defined in connection.c)
 extern sqlite3_exec_t sqlite3_exec_ptr;
 extern sqlite3_prepare_v2_t sqlite3_prepare_v2_ptr;
@@ -28,6 +31,8 @@ extern sqlite3_reset_t sqlite3_reset_ptr;
 extern sqlite3_errmsg_t sqlite3_errmsg_ptr;
 
 // Callback function for sqlite3_exec
+// Note: This callback doesn't have access to column types, so all values are quoted as strings
+// For type-aware JSON serialization, use prepared statements instead
 int sqlite_exec_callback(void* data, int argc, char** argv, char** col_names) {
     QueryResult* result = (QueryResult*)data;
 
@@ -44,32 +49,104 @@ int sqlite_exec_callback(void* data, int argc, char** argv, char** col_names) {
         }
     }
 
-    // Build JSON for this row
+    // Build JSON for this row with dynamic buffering
     if (result->row_count == 0) {
-        result->data_json = calloc(1, 1024); // Initial allocation
+        result->data_json = calloc(1, 16384); // Larger initial allocation for query templates
         if (result->data_json) {
             strcpy(result->data_json, "[");
         }
     } else {
-        // Extend JSON string
+        // Add comma between rows
         size_t current_len = strlen(result->data_json);
-        result->data_json = realloc(result->data_json, current_len + 1024);
+        size_t needed = current_len + 2;
+        // Check if we need to grow buffer
+        if (needed > 16384) {
+            char* new_json = realloc(result->data_json, needed + 16384);
+            if (new_json) {
+                result->data_json = new_json;
+            }
+        }
         if (result->data_json) {
             strcat(result->data_json, ",");
         }
     }
 
     if (result->data_json) {
+        size_t row_start_pos = strlen(result->data_json);
+        
         strcat(result->data_json, "{");
         for (int i = 0; i < argc; i++) {
             if (i > 0) strcat(result->data_json, ",");
-            char buffer[256];
-            const char* value = argv[i] ? argv[i] : "";
-            snprintf(buffer, sizeof(buffer), "\"%s\":\"%s\"",
-                    result->column_names ? result->column_names[i] : "", value);
-            strcat(result->data_json, buffer);
+            
+            const char* col_name = result->column_names ? result->column_names[i] : "";
+            const char* value = argv[i];
+            
+            // Calculate needed size for this column
+            size_t value_len = value ? strlen(value) : 0;
+            size_t needed_size = strlen(col_name) + (value_len * 2) + 20;
+            
+            // Ensure buffer has enough space
+            size_t current_len = strlen(result->data_json);
+            size_t total_needed = current_len + needed_size;
+            if (total_needed > 16384) {
+                char* new_json = realloc(result->data_json, total_needed + 1024);
+                if (!new_json) continue; // Skip column on allocation failure
+                result->data_json = new_json;
+            }
+            
+            // Append column to JSON (always quoted since we don't have type info in callback)
+            char* append_pos = result->data_json + current_len;
+            
+            if (value == NULL) {
+                sprintf(append_pos, "\"%s\":null", col_name);
+            } else {
+                // Check if value should be treated as numeric (for SQLite's dynamic typing)
+                bool is_numeric_value = sqlite_is_numeric_value(value);
+
+                if (is_numeric_value && strlen(value) > 0) {
+                    // Numeric value - no quotes around value
+                    sprintf(append_pos, "\"%s\":%s", col_name, value);
+                } else {
+                    // String type - escape and quote
+                    sprintf(append_pos, "\"%s\":\"", col_name);
+                    char* dst = append_pos + strlen(append_pos);
+                    const char* src = value;
+                    while (*src) {
+                        if (*src == '"' || *src == '\\') {
+                            *dst++ = '\\';
+                            *dst++ = *src++;
+                        } else if (*src == '\n') {
+                            *dst++ = '\\';
+                            *dst++ = 'n';
+                            src++;
+                        } else if (*src == '\r') {
+                            *dst++ = '\\';
+                            *dst++ = 'r';
+                            src++;
+                        } else if (*src == '\t') {
+                            *dst++ = '\\';
+                            *dst++ = 't';
+                            src++;
+                        } else {
+                            *dst++ = *src++;
+                        }
+                    }
+                    *dst++ = '"';
+                    *dst = '\0';
+                }
+            }
         }
         strcat(result->data_json, "}");
+        
+        // Debug: Log first row JSON for diagnosis
+        if (result->row_count == 0) {
+            size_t row_len = strlen(result->data_json) - row_start_pos;
+            char* row_json = strndup(result->data_json + row_start_pos, row_len);
+            if (row_json) {
+                log_this(SR_DATABASE, "SQLite first row JSON: %s", LOG_LEVEL_DEBUG, 1, row_json);
+                free(row_json);
+            }
+        }
     }
 
     result->row_count++;
@@ -114,9 +191,9 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
     int exec_result = sqlite3_exec_ptr(sqlite_conn->db, request->sql_template, sqlite_exec_callback, db_result, &error_msg);
 
     if (exec_result != SQLITE_OK) {
-        log_this(designator, "SQLite query execution failed - result: %d", LOG_LEVEL_ERROR, 1, exec_result);
+        log_this(designator, "SQLite query execution failed - result: %d", LOG_LEVEL_TRACE, 1, exec_result);
         if (error_msg) {
-            log_this(designator, "SQLite query error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+            log_this(designator, "SQLite query error: %s", LOG_LEVEL_TRACE, 1, error_msg);
             // Note: sqlite3_free is a macro that calls free() in most implementations
             free(error_msg);
         }
@@ -164,7 +241,7 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
 
     *result = db_result;
 
-    log_this(designator, "SQLite execute_query: Query completed successfully", LOG_LEVEL_TRACE, 0);
+    log_this(designator, "SQLite execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 

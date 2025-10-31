@@ -55,9 +55,13 @@ bool database_queue_lead_run_bootstrap(DatabaseQueue* lead_queue) {
     char* dqm_label = database_queue_generate_label(lead_queue);
     log_this(dqm_label, "Running bootstrap query", LOG_LEVEL_TRACE, 0);
 
-    // Bootstrap query is submitted during connection establishment and processed by main loop
-    // Conductor pattern just ensures bootstrap is part of the sequence - no direct execution needed
-    // The bootstrap query will be processed in the main worker loop, not here
+    // CRITICAL: Validate migrations FIRST to set latest_available_migration (AVAIL)
+    // This must happen before bootstrap query so AVAIL is correct when bootstrap logs migration status
+    database_queue_lead_validate_migrations(lead_queue);
+
+    // Now execute the bootstrap query - it will correctly preserve AVAIL from validation
+    // and extract LOAD and APPLY values from the database query results
+    database_queue_execute_bootstrap_query(lead_queue);
 
     free(dqm_label);
     return true;
@@ -67,33 +71,29 @@ bool database_queue_lead_run_bootstrap(DatabaseQueue* lead_queue) {
  * Determine what migration action should be taken based on documented algorithm
  */
 MigrationAction database_queue_lead_determine_migration_action(const DatabaseQueue* lead_queue) {
-    // Migration Available - The latest Migration script found (Lua script)
-    // Migration Loaded    - The latest Migration script in the database (type_lua_28 = 1000)
-    // Migration Applied   - The latest Migration script in the database (type_lua_28 = 1003)
-    // Note: Based on the struct, "applied" appears to be the same as "loaded" or not tracked separately
+    // AVAIL: The highest number of Lua scripts available
+    // LOAD: The highest number from Bootstrap query where type = 1000
+    // APPLY: The highest number from Bootstrap query where type = 1003
 
     long long available = lead_queue->latest_available_migration;
-    long long loaded = lead_queue->latest_installed_migration;
+    long long loaded = lead_queue->latest_loaded_migration;
+    long long applied = lead_queue->latest_applied_migration;
 
     // CASE 1: Database is empty, so we want to initialize it:
-    // if Migration Available >= 1000 and Migration Loaded < 1000
+    // if AVAIL >= 1000 and LOAD < 1000
     if (available >= 1000 && loaded < 1000) {
         return MIGRATION_ACTION_LOAD;
     }
 
     // CASE 2: Newer Migrations are available than what is in the database
-    // if Migration Available >= 1000 and Migration Loaded < Migration Available
+    // if AVAIL >= 1000 and LOAD < AVAIL
     if (available >= 1000 && loaded < available) {
         return MIGRATION_ACTION_LOAD;
     }
 
     // CASE 3: Migrations that were previously loaded have not been applied
-    // Check if we have loaded migrations (1000) that haven't been applied (1003)
-    if (available >= 1000 && loaded >= 1000) {
-        // We have some migrations loaded, check if any are not applied
-        // This would require querying the database to see if there are type_lua_28 = 1000 records
-        // For now, assume if loaded >= available, we need to check for unapplied migrations
-        // This is a simplified check - in practice we'd need to query the database
+    // if LOAD > APPLY (meaning there are loaded migrations that haven't been applied)
+    if (loaded > applied) {
         return MIGRATION_ACTION_APPLY;
     }
 
@@ -108,17 +108,18 @@ void database_queue_lead_log_migration_status(DatabaseQueue* lead_queue, const c
     char* dqm_label = database_queue_generate_label(lead_queue);
 
     long long available = lead_queue->latest_available_migration;
-    long long loaded = lead_queue->latest_installed_migration;
+    long long loaded = lead_queue->latest_loaded_migration;
+    long long applied = lead_queue->latest_applied_migration;
 
     if (strcmp(action, "current") == 0) {
-        log_this(dqm_label, "Migration Current: Available = %lld, Loaded = %lld, Applied = %lld",
-                 LOG_LEVEL_DEBUG, 3, available, loaded, loaded); // Using loaded for applied since struct doesn't distinguish
+        log_this(dqm_label, "Migration Current: AVAIL = %lld, LOAD = %lld, APPLY = %lld",
+                 LOG_LEVEL_DEBUG, 3, available, loaded, applied);
     } else if (strcmp(action, "updating") == 0) {
-        log_this(dqm_label, "Migration Updating: Available = %lld, Loaded = %lld, Applied = %lld",
-                 LOG_LEVEL_DEBUG, 3, available, loaded, loaded); // Using loaded for applied since struct doesn't distinguish
+        log_this(dqm_label, "Migration Updating: AVAIL = %lld, LOAD = %lld, APPLY = %lld",
+                 LOG_LEVEL_DEBUG, 3, available, loaded, applied);
     } else if (strcmp(action, "loading") == 0) {
-        log_this(dqm_label, "Migration Loading: Available = %lld, Loaded = %lld, Applied = %lld",
-                 LOG_LEVEL_DEBUG, 3, available, loaded, loaded); // Using loaded for applied since struct doesn't distinguish
+        log_this(dqm_label, "Migration Loading: AVAIL = %lld, LOAD = %lld, APPLY = %lld",
+                 LOG_LEVEL_DEBUG, 3, available, loaded, applied);
     }
 
     free(dqm_label);
@@ -149,7 +150,7 @@ bool database_queue_lead_validate_migrations(DatabaseQueue* lead_queue) {
  *
  * LOAD Phase: Extract migration metadata from Lua scripts and populate Queries table
  * - Execute Lua migration scripts to generate SQL templates
- * - INSERT records into Queries table with type_lua_28 = 1000 (loaded status)
+ * - INSERT records into Queries table with type = 1000 (loaded status)
  * - NO database schema changes occur in this phase
  * - Only metadata population for later APPLY phase execution
  */
@@ -193,7 +194,7 @@ bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue) {
         // Note: bootstrap query always succeeds (void return), continue with migration application
 
         // Find next migration to apply (loaded but not applied)
-        // Look for migrations with type_lua_28 = 1000 (loaded) that haven't been applied yet
+        // Look for migrations with type = 1000 (loaded) that haven't been applied yet
         long long next_migration_id = database_queue_find_next_migration_to_apply(lead_queue);
 
         if (next_migration_id == 0) {
@@ -353,9 +354,9 @@ bool database_queue_lead_execute_migration_cycle(DatabaseQueue* lead_queue, char
  * 3. Bootstrap Query Integration: Re-run between phases to maintain current state
  * 4. Iterative Application: Apply migrations one-by-one with state updates
  *
- * Migration Available - The latest Migration script found (Lua script)
- * Migration Loaded    - The latest Migration script in the database (type_lua_28 = 1000)
- * Migration Applied   - The latest Migration script in the database (type_lua_28 = 1003)
+ * AVAIL: The highest number of Lua scripts available
+ * LOAD: The highest number from Bootstrap query where type = 1000
+ * APPLY: The highest number from Bootstrap query where type = 1003
  */
 bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
     if (!lead_queue || !lead_queue->is_lead_queue) {
@@ -388,7 +389,7 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
         return true;
     }
 
-    log_this(dqm_label, "Automatic Migration enabled - Importing Migrations", LOG_LEVEL_DEBUG, 0);
+    log_this(dqm_label, "Automatic Migration enabled", LOG_LEVEL_DEBUG, 0);
 
     // Execute migration cycles in a loop until no more work is needed
     bool migration_complete = false;
@@ -557,6 +558,13 @@ bool database_queue_lead_manage_heartbeats(DatabaseQueue* lead_queue) {
 /*
  * Find the next migration to apply from the loaded migrations
  * Returns migration ID if found, 0 if no more migrations to apply
+ *
+ * This function searches the bootstrap query results (already loaded into query_cache)
+ * to find migrations that are loaded (type 1000) but not yet applied (type 1003).
+ *
+ * Since the query cache doesn't currently store query_type, we use a different approach:
+ * We compare the LOAD and APPLY values from the bootstrap query results.
+ * If LOAD > APPLY, we need to apply migrations starting from APPLY + 1.
  */
 long long database_queue_find_next_migration_to_apply(DatabaseQueue* lead_queue) {
     if (!lead_queue) {
@@ -567,76 +575,35 @@ long long database_queue_find_next_migration_to_apply(DatabaseQueue* lead_queue)
 
     log_this(dqm_label, "Looking for next migration to apply (loaded but not applied)", LOG_LEVEL_DEBUG, 0);
 
-    // Query to find migrations that are loaded (1000) but not yet applied (1003)
-    const char* find_sql = "SELECT query_ref FROM test.queries WHERE query_type_lua_28 = 1000 "
-                          "AND query_ref NOT IN (SELECT query_ref FROM test.queries WHERE query_type_lua_28 = 1003) "
-                          "ORDER BY query_ref LIMIT 1";
+    // Use the migration state already determined by bootstrap query parsing
+    // If LOAD > APPLY, we need to apply the next migration (APPLY + 1)
+    long long load_count = lead_queue->latest_loaded_migration;
+    long long apply_count = lead_queue->latest_applied_migration;
 
-    QueryRequest* find_request = calloc(1, sizeof(QueryRequest));
-    if (!find_request) {
-        log_this(dqm_label, "Failed to allocate find request", LOG_LEVEL_ERROR, 0);
-        free(dqm_label);
-        return 0;
-    }
-
-    find_request->query_id = strdup("find_next_migration");
-    find_request->sql_template = strdup(find_sql);
-    find_request->parameters_json = strdup("{}");
-    find_request->timeout_seconds = 30;
-    find_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
-    find_request->use_prepared_statement = false;
-
-    if (!find_request->query_id || !find_request->sql_template || !find_request->parameters_json) {
-        log_this(dqm_label, "Failed to allocate find request fields", LOG_LEVEL_ERROR, 0);
-        if (find_request->query_id) free(find_request->query_id);
-        if (find_request->sql_template) free(find_request->sql_template);
-        if (find_request->parameters_json) free(find_request->parameters_json);
-        free(find_request);
-        free(dqm_label);
-        return 0;
-    }
-
-    // Execute query
-    QueryResult* find_result = NULL;
-    bool find_success = false;
     long long next_migration_id = 0;
 
-    MutexResult lock_result = MUTEX_LOCK(&lead_queue->connection_lock, dqm_label);
-    if (lock_result == MUTEX_SUCCESS) {
-        if (lead_queue->persistent_connection) {
-            find_success = database_engine_execute(lead_queue->persistent_connection, find_request, &find_result);
-        } else {
-            log_this(dqm_label, "No persistent connection available for find query", LOG_LEVEL_ERROR, 0);
-        }
-        mutex_unlock(&lead_queue->connection_lock);
-    } else {
-        log_this(dqm_label, "Failed to acquire connection lock for find query", LOG_LEVEL_ERROR, 0);
-    }
+    if (load_count > apply_count) {
+        // There are loaded migrations that haven't been applied
+        // Start with the next one after the last applied migration
+        next_migration_id = apply_count + 1;
 
-    // Process result
-    if (find_success && find_result && find_result->success && find_result->row_count > 0) {
-        // Extract migration ID from data_json field (JSON format)
-        if (find_result->data_json) {
-            // Parse JSON to extract first row's first column
-            // For now, assume simple case where data_json contains the ID directly
-            next_migration_id = atoll(find_result->data_json);
-            log_this(dqm_label, "Found next migration to apply: %lld", LOG_LEVEL_DEBUG, 1, next_migration_id);
+        // Verify this migration exists in the query cache
+        if (lead_queue->query_cache) {
+            const QueryCacheEntry* entry = query_cache_lookup(lead_queue->query_cache, (int)next_migration_id);
+            if (entry && entry->sql_template) {
+                log_this(dqm_label, "Found next migration to apply: %lld (LOAD=%lld, APPLY=%lld)",
+                        LOG_LEVEL_DEBUG, 3, next_migration_id, load_count, apply_count);
+            } else {
+                log_this(dqm_label, "Migration %lld not found in query cache", LOG_LEVEL_ERROR, 1, next_migration_id);
+                next_migration_id = 0;
+            }
         } else {
-            log_this(dqm_label, "No migration data found in query result", LOG_LEVEL_DEBUG, 0);
+            log_this(dqm_label, "No query cache available to verify migration %lld", LOG_LEVEL_ERROR, 1, next_migration_id);
+            next_migration_id = 0;
         }
     } else {
-        log_this(dqm_label, "No migrations found to apply", LOG_LEVEL_DEBUG, 0);
+        log_this(dqm_label, "No migrations to apply (LOAD=%lld, APPLY=%lld)", LOG_LEVEL_DEBUG, 2, load_count, apply_count);
     }
-
-    if (find_result) {
-        database_engine_cleanup_result(find_result);
-    }
-
-    // Clean up request
-    if (find_request->query_id) free(find_request->query_id);
-    if (find_request->sql_template) free(find_request->sql_template);
-    if (find_request->parameters_json) free(find_request->parameters_json);
-    free(find_request);
 
     free(dqm_label);
     return next_migration_id;
@@ -757,64 +724,11 @@ bool database_queue_apply_single_migration(DatabaseQueue* lead_queue, long long 
         }
     }
 
-    // Step 4: Update migration status to applied (1003) on success
+    // Migration has been successfully applied through the normal query pipeline
+    // The migration SQL itself should have updated its own status to applied (1003)
+    // No additional status update is needed here
     if (success) {
-        // Create UPDATE query to change migration status from 1000 (loaded) to 1003 (applied)
-        char update_sql[512];
-        snprintf(update_sql, sizeof(update_sql),
-                 "UPDATE test.queries SET query_type_lua_28 = 1003 WHERE query_ref = %lld AND query_type_lua_28 = 1000",
-                 migration_id);
-
-        QueryRequest* update_request = calloc(1, sizeof(QueryRequest));
-        if (!update_request) {
-            log_this(dqm_label, "Failed to allocate update request", LOG_LEVEL_ERROR, 0);
-            success = false;
-        } else {
-            update_request->query_id = strdup("update_migration_status");
-            update_request->sql_template = strdup(update_sql);
-            update_request->parameters_json = strdup("{}");
-            update_request->timeout_seconds = 30;
-            update_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
-            update_request->use_prepared_statement = false;
-
-            if (!update_request->query_id || !update_request->sql_template || !update_request->parameters_json) {
-                log_this(dqm_label, "Failed to allocate update request fields", LOG_LEVEL_ERROR, 0);
-                success = false;
-            } else {
-                // Execute update
-                QueryResult* update_result = NULL;
-                bool update_success = false;
-
-                MutexResult lock_result = MUTEX_LOCK(&lead_queue->connection_lock, dqm_label);
-                if (lock_result == MUTEX_SUCCESS) {
-                    if (lead_queue->persistent_connection) {
-                        update_success = database_engine_execute(lead_queue->persistent_connection, update_request, &update_result);
-                    } else {
-                        log_this(dqm_label, "No persistent connection available for status update", LOG_LEVEL_ERROR, 0);
-                    }
-                    mutex_unlock(&lead_queue->connection_lock);
-                } else {
-                    log_this(dqm_label, "Failed to acquire connection lock for status update", LOG_LEVEL_ERROR, 0);
-                }
-
-                if (update_success && update_result && update_result->success) {
-                    log_this(dqm_label, "Migration %lld status updated to applied (1003)", LOG_LEVEL_DEBUG, 1, migration_id);
-                } else {
-                    log_this(dqm_label, "Failed to update migration status to applied for migration %lld", LOG_LEVEL_ERROR, 1, migration_id);
-                    success = false;
-                }
-
-                if (update_result) {
-                    database_engine_cleanup_result(update_result);
-                }
-            }
-
-            // Clean up update request
-            if (update_request->query_id) free(update_request->query_id);
-            if (update_request->sql_template) free(update_request->sql_template);
-            if (update_request->parameters_json) free(update_request->parameters_json);
-            free(update_request);
-        }
+        log_this(dqm_label, "Migration %lld successfully applied through query pipeline", LOG_LEVEL_DEBUG, 1, migration_id);
     }
 
     // Cleanup

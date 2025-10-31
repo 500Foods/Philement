@@ -13,6 +13,7 @@
 #include "types.h"
 #include "connection.h"
 #include "query.h"
+#include "query_helpers.h"
 #include "utils.h"
 
 // External declarations for libmysqlclient function pointers (defined in connection.c)
@@ -76,11 +77,11 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
 
     // Execute query
     if (mysql_query_ptr(mysql_conn->connection, request->sql_template) != 0) {
-        log_this(designator, "MySQL query execution failed", LOG_LEVEL_ERROR, 0);
+        log_this(designator, "MySQL query execution failed", LOG_LEVEL_TRACE, 0);
         if (mysql_error_ptr) {
             const char* error_msg = mysql_error_ptr(mysql_conn->connection);
             if (error_msg && strlen(error_msg) > 0) {
-                log_this(designator, "MySQL query error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+                log_this(designator, "MySQL query error: %s", LOG_LEVEL_TRACE, 1, error_msg);
             }
         }
         return false;
@@ -91,7 +92,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     if (mysql_store_result_ptr) {
         mysql_result = mysql_store_result_ptr(mysql_conn->connection);
         if (!mysql_result) {
-            log_this(designator, "MySQL execute_query: No result set returned", LOG_LEVEL_TRACE, 0);
+            log_this(designator, "MySQL execute_query: No result set returned", LOG_LEVEL_DEBUG, 0);
         }
     }
 
@@ -113,49 +114,51 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
             db_result->row_count = (size_t)mysql_num_rows_ptr(mysql_result);
             db_result->column_count = (size_t)mysql_num_fields_ptr(mysql_result);
 
+            // Complete MYSQL_FIELD structure definition to match libmysqlclient
+            // This ensures correct memory alignment and array indexing
+            typedef struct {
+                char *name;                  /* Name of column */
+                char *org_name;              /* Original column name, if an alias */
+                char *table;                 /* Table of column if column was a field */
+                char *org_table;             /* Org table name, if table was an alias */
+                char *db;                    /* Database for table */
+                char *catalog;               /* Catalog for table */
+                char *def;                   /* Default value (set by mysql_list_fields) */
+                unsigned long length;        /* Width of column (create length) */
+                unsigned long max_length;    /* Max width for selected set */
+                unsigned int name_length;
+                unsigned int org_name_length;
+                unsigned int table_length;
+                unsigned int org_table_length;
+                unsigned int db_length;
+                unsigned int catalog_length;
+                unsigned int def_length;
+                unsigned int flags;          /* Div flags */
+                unsigned int decimals;       /* Number of decimals in field */
+                unsigned int charsetnr;      /* Character set */
+                unsigned int type;           /* Type of field */
+                void *extension;
+            } MYSQL_FIELD_COMPLETE;
+            
+            // Get fields for type checking (declared at broader scope for use in row loop)
+            const MYSQL_FIELD_COMPLETE* fields = NULL;
+            if (mysql_fetch_fields_ptr) {
+                fields = (const MYSQL_FIELD_COMPLETE*)mysql_fetch_fields_ptr(mysql_result);
+            }
 
             // Extract column names
-            if (db_result->column_count > 0 && mysql_fetch_fields_ptr) {
-                // Complete MYSQL_FIELD structure definition to match libmysqlclient
-                // This ensures correct memory alignment and array indexing
-                typedef struct {
-                    char *name;                  /* Name of column */
-                    char *org_name;              /* Original column name, if an alias */
-                    char *table;                 /* Table of column if column was a field */
-                    char *org_table;             /* Org table name, if table was an alias */
-                    char *db;                    /* Database for table */
-                    char *catalog;               /* Catalog for table */
-                    char *def;                   /* Default value (set by mysql_list_fields) */
-                    unsigned long length;        /* Width of column (create length) */
-                    unsigned long max_length;    /* Max width for selected set */
-                    unsigned int name_length;
-                    unsigned int org_name_length;
-                    unsigned int table_length;
-                    unsigned int org_table_length;
-                    unsigned int db_length;
-                    unsigned int catalog_length;
-                    unsigned int def_length;
-                    unsigned int flags;          /* Div flags */
-                    unsigned int decimals;       /* Number of decimals in field */
-                    unsigned int charsetnr;      /* Character set */
-                    unsigned int type;           /* Type of field */
-                    void *extension;
-                } MYSQL_FIELD_COMPLETE;
-                
-                const MYSQL_FIELD_COMPLETE* fields = (const MYSQL_FIELD_COMPLETE*)mysql_fetch_fields_ptr(mysql_result);
-                if (fields) {
-                    db_result->column_names = calloc(db_result->column_count, sizeof(char*));
-                    if (db_result->column_names) {
-                        for (size_t i = 0; i < db_result->column_count; i++) {
-                            // Extract actual field name from MYSQL_FIELD structure
-                            if (fields[i].name) {
-                                db_result->column_names[i] = strdup(fields[i].name);
-                            } else {
-                                // Fallback for NULL field names
-                                char col_name[32];
-                                snprintf(col_name, sizeof(col_name), "col_%zu", i);
-                                db_result->column_names[i] = strdup(col_name);
-                            }
+            if (db_result->column_count > 0 && fields) {
+                db_result->column_names = calloc(db_result->column_count, sizeof(char*));
+                if (db_result->column_names) {
+                    for (size_t i = 0; i < db_result->column_count; i++) {
+                        // Extract actual field name from MYSQL_FIELD structure
+                        if (fields[i].name) {
+                            db_result->column_names[i] = strdup(fields[i].name);
+                        } else {
+                            // Fallback for NULL field names
+                            char col_name[32];
+                            snprintf(col_name, sizeof(col_name), "col_%zu", i);
+                            db_result->column_names[i] = strdup(col_name);
                         }
                     }
                 }
@@ -163,12 +166,16 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
 
             // Convert result to JSON
             if (db_result->row_count > 0 && db_result->column_count > 0 && mysql_fetch_row_ptr) {
-                size_t json_size = 1024 * db_result->row_count;
+                // Increase buffer size to handle large query templates (migration SQL can be 10KB+)
+                size_t json_size = 16384 * db_result->row_count; // Larger estimate for query templates
                 db_result->data_json = calloc(1, json_size);
                 if (db_result->data_json) {
                     strcpy(db_result->data_json, "[");
                     for (size_t row = 0; row < db_result->row_count; row++) {
                         if (row > 0) strcat(db_result->data_json, ",");
+
+                        // Track start of this row for debug logging
+                        size_t row_start_pos = strlen(db_result->data_json);
 
                         // MYSQL_ROW is char** (array of strings)
                         char** row_data = (char**)mysql_fetch_row_ptr(mysql_result);
@@ -177,23 +184,77 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                             for (size_t col = 0; col < db_result->column_count; col++) {
                                 if (col > 0) strcat(db_result->data_json, ",");
                                 
-                                // Build column JSON
-                                char col_json[1024];
-                                const char* col_name = db_result->column_names ? db_result->column_names[col] : "unknown";
-                                
-                                // Check for NULL value
-                                if (row_data[col] == NULL) {
-                                    snprintf(col_json, sizeof(col_json), "\"%s\":null", col_name);
-                                } else {
-                                    // Escape the data for JSON
-                                    char escaped_data[512] = {0};
-                                    mysql_json_escape_string(row_data[col], escaped_data, sizeof(escaped_data));
-                                    snprintf(col_json, sizeof(col_json), "\"%s\":\"%s\"", col_name, escaped_data);
+                                // Get column type to determine if we should quote the value
+                                bool is_numeric = false;
+                                if (fields && mysql_fetch_fields_ptr) {
+                                    is_numeric = mysql_is_numeric_type(fields[col].type);
                                 }
                                 
-                                strcat(db_result->data_json, col_json);
+                                const char* col_name = db_result->column_names ? db_result->column_names[col] : "unknown";
+                                const char* value = row_data[col];
+                                
+                                // Calculate needed size for this column (name + value + escaping overhead)
+                                size_t value_len = value ? strlen(value) : 0;
+                                size_t needed_size = strlen(col_name) + (value_len * 2) + 20; // Extra for escaping
+                                
+                                // Ensure buffer has enough space
+                                size_t current_len = strlen(db_result->data_json);
+                                if (current_len + needed_size > json_size) {
+                                    json_size = (current_len + needed_size) * 2;
+                                    char* new_json = realloc(db_result->data_json, json_size);
+                                    if (!new_json) continue; // Skip column on allocation failure
+                                    db_result->data_json = new_json;
+                                }
+                                
+                                // Append column to JSON
+                                char* append_pos = db_result->data_json + current_len;
+                                
+                                if (value == NULL) {
+                                    // NULL value
+                                    sprintf(append_pos, "\"%s\":null", col_name);
+                                } else if (is_numeric && strlen(value) > 0) {
+                                    // Numeric type - no quotes around value
+                                    sprintf(append_pos, "\"%s\":%s", col_name, value);
+                                } else {
+                                    // String type - escape and quote
+                                    sprintf(append_pos, "\"%s\":\"", col_name);
+                                    char* dst = append_pos + strlen(append_pos);
+                                    const char* src = value;
+                                    while (*src) {
+                                        if (*src == '"' || *src == '\\') {
+                                            *dst++ = '\\';
+                                            *dst++ = *src++;
+                                        } else if (*src == '\n') {
+                                            *dst++ = '\\';
+                                            *dst++ = 'n';
+                                            src++;
+                                        } else if (*src == '\r') {
+                                            *dst++ = '\\';
+                                            *dst++ = 'r';
+                                            src++;
+                                        } else if (*src == '\t') {
+                                            *dst++ = '\\';
+                                            *dst++ = 't';
+                                            src++;
+                                        } else {
+                                            *dst++ = *src++;
+                                        }
+                                    }
+                                    *dst++ = '"';
+                                    *dst = '\0';
+                                }
                             }
                             strcat(db_result->data_json, "}");
+                            
+                            // Debug: Log first row JSON for diagnosis
+                            if (row == 0) {
+                                size_t row_len = strlen(db_result->data_json) - row_start_pos;
+                                char* row_json = strndup(db_result->data_json + row_start_pos, row_len);
+                                if (row_json) {
+                                    log_this(designator, "MySQL first row JSON: %s", LOG_LEVEL_DEBUG, 1, row_json);
+                                    free(row_json);
+                                }
+                            }
                         }
                     }
                     strcat(db_result->data_json, "]");
@@ -231,7 +292,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
 
     *result = db_result;
 
-    log_this(designator, "MySQL execute_query: Query completed successfully", LOG_LEVEL_TRACE, 0);
+    log_this(designator, "MySQL execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -326,46 +387,49 @@ bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
         }
         db_result->column_count = (size_t)column_count;
 
+        // Complete MYSQL_FIELD structure definition to match libmysqlclient
+        // This ensures correct memory alignment and array indexing
+        typedef struct {
+            char *name;                  /* Name of column */
+            char *org_name;              /* Original column name, if an alias */
+            char *table;                 /* Table of column if column was a field */
+            char *org_table;             /* Org table name, if table was an alias */
+            char *db;                    /* Database for table */
+            char *catalog;               /* Catalog for table */
+            char *def;                   /* Default value (set by mysql_list_fields) */
+            unsigned long length;        /* Width of column (create length) */
+            unsigned long max_length;    /* Max width for selected set */
+            unsigned int name_length;
+            unsigned int org_name_length;
+            unsigned int table_length;
+            unsigned int org_table_length;
+            unsigned int db_length;
+            unsigned int catalog_length;
+            unsigned int def_length;
+            unsigned int flags;          /* Div flags */
+            unsigned int decimals;       /* Number of decimals in field */
+            unsigned int charsetnr;      /* Character set */
+            unsigned int type;           /* Type of field */
+            void *extension;
+        } MYSQL_FIELD_COMPLETE;
+        
+        // Get fields for type checking (declared at broader scope for use in row loop)
+        const MYSQL_FIELD_COMPLETE* fields = NULL;
+        if (mysql_fetch_fields_ptr) {
+            fields = (const MYSQL_FIELD_COMPLETE*)mysql_fetch_fields_ptr(mysql_result);
+        }
+
         // Extract column names
-        if (column_count > 0 && mysql_fetch_fields_ptr) {
-            // Complete MYSQL_FIELD structure definition to match libmysqlclient
-            // This ensures correct memory alignment and array indexing
-            typedef struct {
-                char *name;                  /* Name of column */
-                char *org_name;              /* Original column name, if an alias */
-                char *table;                 /* Table of column if column was a field */
-                char *org_table;             /* Org table name, if table was an alias */
-                char *db;                    /* Database for table */
-                char *catalog;               /* Catalog for table */
-                char *def;                   /* Default value (set by mysql_list_fields) */
-                unsigned long length;        /* Width of column (create length) */
-                unsigned long max_length;    /* Max width for selected set */
-                unsigned int name_length;
-                unsigned int org_name_length;
-                unsigned int table_length;
-                unsigned int org_table_length;
-                unsigned int db_length;
-                unsigned int catalog_length;
-                unsigned int def_length;
-                unsigned int flags;          /* Div flags */
-                unsigned int decimals;       /* Number of decimals in field */
-                unsigned int charsetnr;      /* Character set */
-                unsigned int type;           /* Type of field */
-                void *extension;
-            } MYSQL_FIELD_COMPLETE;
-            
-            const MYSQL_FIELD_COMPLETE* fields = (const MYSQL_FIELD_COMPLETE*)mysql_fetch_fields_ptr(mysql_result);
-            if (fields) {
-                db_result->column_names = calloc(db_result->column_count, sizeof(char*));
-                if (db_result->column_names) {
-                    for (size_t i = 0; i < db_result->column_count; i++) {
-                        if (fields[i].name) {
-                            db_result->column_names[i] = strdup(fields[i].name);
-                        } else {
-                            char col_name[32];
-                            snprintf(col_name, sizeof(col_name), "col_%zu", i);
-                            db_result->column_names[i] = strdup(col_name);
-                        }
+        if (column_count > 0 && fields) {
+            db_result->column_names = calloc(db_result->column_count, sizeof(char*));
+            if (db_result->column_names) {
+                for (size_t i = 0; i < db_result->column_count; i++) {
+                    if (fields[i].name) {
+                        db_result->column_names[i] = strdup(fields[i].name);
+                    } else {
+                        char col_name[32];
+                        snprintf(col_name, sizeof(col_name), "col_%zu", i);
+                        db_result->column_names[i] = strdup(col_name);
                     }
                 }
             }
@@ -461,7 +525,7 @@ bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
         }
 
         // Fetch all rows into JSON
-        size_t json_size = 8192;
+        size_t json_size = 16384; // Larger initial size for query templates
         db_result->data_json = calloc(1, json_size);
         if (db_result->data_json) {
             strcpy(db_result->data_json, "[");
@@ -470,30 +534,68 @@ bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
             while (mysql_stmt_fetch_ptr && mysql_stmt_fetch_ptr(stmt_handle) == 0) {
                 if (row_count > 0) strcat(db_result->data_json, ",");
 
-                // Expand JSON buffer if needed
-                if (strlen(db_result->data_json) + 4096 > json_size) {
-                    json_size *= 2;
-                    char* new_json = realloc(db_result->data_json, json_size);
-                    if (!new_json) break;
-                    db_result->data_json = new_json;
-                }
-
                 strcat(db_result->data_json, "{");
                 for (size_t col = 0; col < column_count; col++) {
                     if (col > 0) strcat(db_result->data_json, ",");
                     
-                    char col_json[MAX_COL_SIZE + 256];
-                    const char* col_name = db_result->column_names ? db_result->column_names[col] : "unknown";
-                    
-                    if (col_is_null[col]) {
-                        snprintf(col_json, sizeof(col_json), "\"%s\":null", col_name);
-                    } else {
-                        char escaped_data[MAX_COL_SIZE];
-                        mysql_json_escape_string(col_buffers[col], escaped_data, sizeof(escaped_data));
-                        snprintf(col_json, sizeof(col_json), "\"%s\":\"%s\"", col_name, escaped_data);
+                    // Get column type to determine if we should quote the value
+                    bool is_numeric = false;
+                    if (fields && mysql_fetch_fields_ptr) {
+                        is_numeric = mysql_is_numeric_type(fields[col].type);
                     }
                     
-                    strcat(db_result->data_json, col_json);
+                    const char* col_name = db_result->column_names ? db_result->column_names[col] : "unknown";
+                    const char* value = col_buffers[col];
+                    
+                    // Calculate needed size for this column (name + value + escaping overhead)
+                    size_t value_len = col_is_null[col] ? 0 : strlen(value);
+                    size_t needed_size = strlen(col_name) + (value_len * 2) + 20;
+                    
+                    // Ensure buffer has enough space
+                    size_t current_len = strlen(db_result->data_json);
+                    if (current_len + needed_size > json_size) {
+                        json_size = (current_len + needed_size) * 2;
+                        char* new_json = realloc(db_result->data_json, json_size);
+                        if (!new_json) break;
+                        db_result->data_json = new_json;
+                    }
+                    
+                    // Append column to JSON
+                    char* append_pos = db_result->data_json + current_len;
+                    
+                    if (col_is_null[col]) {
+                        sprintf(append_pos, "\"%s\":null", col_name);
+                    } else if (is_numeric && strlen(value) > 0) {
+                        // Numeric type - no quotes around value
+                        sprintf(append_pos, "\"%s\":%s", col_name, value);
+                    } else {
+                        // String type - escape and quote
+                        sprintf(append_pos, "\"%s\":\"", col_name);
+                        char* dst = append_pos + strlen(append_pos);
+                        const char* src = value;
+                        while (*src) {
+                            if (*src == '"' || *src == '\\') {
+                                *dst++ = '\\';
+                                *dst++ = *src++;
+                            } else if (*src == '\n') {
+                                *dst++ = '\\';
+                                *dst++ = 'n';
+                                src++;
+                            } else if (*src == '\r') {
+                                *dst++ = '\\';
+                                *dst++ = 'r';
+                                src++;
+                            } else if (*src == '\t') {
+                                *dst++ = '\\';
+                                *dst++ = 't';
+                                src++;
+                            } else {
+                                *dst++ = *src++;
+                            }
+                        }
+                        *dst++ = '"';
+                        *dst = '\0';
+                    }
                 }
                 strcat(db_result->data_json, "}");
                 row_count++;
