@@ -12,6 +12,23 @@
 #include <stddef.h>
 
 /**
+ * Check if SQLite type is numeric
+ *
+ * @param type SQLite column type (SQLITE_INTEGER, SQLITE_FLOAT, etc.)
+ * @return true if type is numeric, false otherwise
+ */
+bool sqlite_is_numeric_type(int type);
+
+/**
+ * Check if a string value represents a valid number
+ * This handles SQLite's dynamic typing where numbers might be stored as text
+ *
+ * @param value The string value to check
+ * @return true if the value represents a valid number, false otherwise
+ */
+bool sqlite_is_numeric_value(const char* value);
+
+/**
  * Ensure JSON buffer has enough capacity, reallocating if necessary
  *
  * @param buffer Pointer to buffer pointer (may be reallocated)
@@ -20,7 +37,7 @@
  * @param needed_size Minimum capacity needed
  * @return true if buffer has enough capacity (possibly after reallocation), false on allocation failure
  */
-bool sqlite_ensure_json_buffer_capacity(char** buffer, size_t current_size, 
+bool sqlite_ensure_json_buffer_capacity(char** buffer, size_t current_size,
                                         size_t* capacity, size_t needed_size);
 
 /**

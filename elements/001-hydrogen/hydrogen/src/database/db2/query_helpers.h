@@ -43,4 +43,22 @@ bool db2_ensure_json_buffer_capacity(char** buffer, size_t current_size,
  */
 int db2_json_escape_string(const char* input, char* output, size_t output_size);
 
+/**
+ * Get the SQL data type for a column
+ *
+ * @param stmt_handle DB2 statement handle
+ * @param col_index Column index (0-based)
+ * @param sql_type Output buffer for SQL data type
+ * @return true if successful, false otherwise
+ */
+bool db2_get_column_type(void* stmt_handle, int col_index, int* sql_type);
+
+/**
+ * Check if SQL type is numeric (should not be quoted in JSON)
+ *
+ * @param sql_type SQL data type code
+ * @return true if numeric type, false otherwise
+ */
+bool db2_is_numeric_type(int sql_type);
+
 #endif // DATABASE_ENGINE_DB2_QUERY_HELPERS_H

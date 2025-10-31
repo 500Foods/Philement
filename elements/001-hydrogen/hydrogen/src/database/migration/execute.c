@@ -216,7 +216,7 @@ bool execute_migration_files(DatabaseHandle* connection, char** migration_files,
  * This generates and executes SQL to populate the Queries table with migration information
  *
  * NOTE: This function currently does both LOAD and APPLY phases.
- * For proper separation, LOAD phase should only populate metadata (type_lua_28 = 1000)
+ * For proper separation, LOAD phase should only populate metadata (type = 1000)
  * and APPLY phase should execute the stored queries through normal pipeline.
  */
 bool execute_auto(DatabaseQueue* db_queue, DatabaseHandle* connection) {
@@ -315,7 +315,7 @@ bool execute_auto(DatabaseQueue* db_queue, DatabaseHandle* connection) {
 
 /*
  * Execute LOAD phase migrations for the given database connection
- * This generates SQL to populate the Queries table with migration metadata (type_lua_28 = 1000)
+ * This generates SQL to populate the Queries table with migration metadata (type = 1000)
  * NO database schema changes occur in this phase
  */
 bool execute_load_migrations(DatabaseQueue* db_queue, DatabaseHandle* connection) {
@@ -392,7 +392,7 @@ bool execute_load_migrations(DatabaseQueue* db_queue, DatabaseHandle* connection
     log_this(dqm_label, "Found %'zu migration files for LOAD phase", LOG_LEVEL_TRACE, 1, migration_count);
 
     // LOAD PHASE: Execute each migration file to populate Queries table metadata
-    // This should generate INSERT statements for the Queries table with type_lua_28 = 1000
+    // This should generate INSERT statements for the Queries table with type = 1000
     bool all_success = execute_migration_files_load_only(connection, migration_files, migration_count,
                                                         engine_name, migration_name, schema_name, dqm_label);
 
@@ -414,7 +414,7 @@ bool execute_load_migrations(DatabaseQueue* db_queue, DatabaseHandle* connection
 
 /*
  * Execute LOAD phase for a list of migration files
- * This generates INSERT statements for the Queries table (type_lua_28 = 1000) only
+ * This generates INSERT statements for the Queries table (type = 1000) only
  * NO schema changes are executed in this phase
  */
 bool execute_migration_files_load_only(DatabaseHandle* connection, char** migration_files,
@@ -442,7 +442,7 @@ bool execute_migration_files_load_only(DatabaseHandle* connection, char** migrat
 
 /*
  * Execute LOAD phase for a single migration file
- * This generates INSERT statements for the Queries table (type_lua_28 = 1000) only
+ * This generates INSERT statements for the Queries table (type = 1000) only
  * NO schema changes are executed in this phase
  */
 bool execute_single_migration_load_only(DatabaseHandle* connection, const char* migration_file,
@@ -501,7 +501,7 @@ bool execute_single_migration_load_only(DatabaseHandle* connection, const char* 
     }
 
     // LOAD PHASE: Generate metadata INSERT statements for Queries table
-    // This should create INSERT statements with type_lua_28 = 1000 (loaded status)
+    // This should create INSERT statements with type = 1000 (loaded status)
     size_t sql_length = 0;
     const char* sql_result = NULL;
     if (!lua_execute_load_metadata(L, engine_name, migration_name, schema_name,

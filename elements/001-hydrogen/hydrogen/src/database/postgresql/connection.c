@@ -27,6 +27,7 @@ typedef void (*PQclear_t)(void* res);
 typedef int (*PQntuples_t)(void* res);
 typedef int (*PQnfields_t)(void* res);
 typedef char* (*PQfname_t)(void* res, int column_number);
+typedef int (*PQftype_t)(void* res, int column_number);
 typedef char* (*PQgetvalue_t)(void* res, int row_number, int column_number);
 typedef char* (*PQcmdTuples_t)(void* res);
 typedef void (*PQreset_t)(void* conn);
@@ -50,6 +51,7 @@ PQnfields_t PQnfields_ptr = mock_PQnfields;
 PQfname_t PQfname_ptr = mock_PQfname;
 PQgetvalue_t PQgetvalue_ptr = mock_PQgetvalue;
 PQcmdTuples_t PQcmdTuples_ptr = mock_PQcmdTuples;
+PQftype_t PQftype_ptr = NULL;  // No mock for PQftype yet
 PQreset_t PQreset_ptr = mock_PQreset;
 PQprepare_t PQprepare_ptr = mock_PQprepare;
 PQexecPrepared_t PQexecPrepared_ptr = NULL;  // No mock for PQexecPrepared yet
@@ -68,6 +70,7 @@ PQnfields_t PQnfields_ptr = NULL;
 PQfname_t PQfname_ptr = NULL;
 PQgetvalue_t PQgetvalue_ptr = NULL;
 PQcmdTuples_t PQcmdTuples_ptr = NULL;
+PQftype_t PQftype_ptr = NULL;
 PQreset_t PQreset_ptr = NULL;
 PQprepare_t PQprepare_ptr = NULL;
 PQexecPrepared_t PQexecPrepared_ptr = NULL;
@@ -164,6 +167,7 @@ bool load_libpq_functions(const char* designator __attribute__((unused))) {
     PQfname_ptr = (PQfname_t)dlsym(libpq_handle, "PQfname");
     PQgetvalue_ptr = (PQgetvalue_t)dlsym(libpq_handle, "PQgetvalue");
     PQcmdTuples_ptr = (PQcmdTuples_t)dlsym(libpq_handle, "PQcmdTuples");
+    PQftype_ptr = (PQftype_t)dlsym(libpq_handle, "PQftype");
     PQreset_ptr = (PQreset_t)dlsym(libpq_handle, "PQreset");
     PQprepare_ptr = (PQprepare_t)dlsym(libpq_handle, "PQprepare");
     PQexecPrepared_ptr = (PQexecPrepared_t)dlsym(libpq_handle, "PQexecPrepared");

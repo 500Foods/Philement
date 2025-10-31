@@ -38,6 +38,42 @@ bool db2_get_column_name(void* stmt_handle, int col_index, char** column_name) {
     return (*column_name != NULL);
 }
 
+bool db2_get_column_type(void* stmt_handle, int col_index, int* sql_type) {
+    if (!stmt_handle || !sql_type) {
+        return false;
+    }
+
+    // SQLDescribeCol parameters: handle, column, name, name_length, name_length_ptr,
+    //                            data_type, column_size, decimal_digits, nullable
+    int data_type = 0;
+    int desc_result = SQLDescribeCol_ptr ?
+        SQLDescribeCol_ptr(stmt_handle, col_index + 1, NULL, 0, NULL,
+                          &data_type, NULL, NULL, NULL) : -1;
+
+    if (desc_result == SQL_SUCCESS || desc_result == SQL_SUCCESS_WITH_INFO) {
+        *sql_type = data_type;
+        return true;
+    }
+
+    return false;
+}
+
+bool db2_is_numeric_type(int sql_type) {
+    switch (sql_type) {
+        case SQL_INTEGER:
+        case SQL_SMALLINT:
+        case SQL_BIGINT:
+        case SQL_DECIMAL:
+        case SQL_NUMERIC:
+        case SQL_REAL:
+        case SQL_FLOAT:
+        case SQL_DOUBLE:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool db2_ensure_json_buffer_capacity(char** buffer, size_t current_size,
                                      size_t* capacity, size_t needed_size) {
     if (!buffer || !capacity) {
