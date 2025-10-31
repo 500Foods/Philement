@@ -1,4 +1,3 @@
 [sqruff]
 dialect = ansi
-
-exclude_rules = LT01,LT02,LT05,LT06,LT12,CP02
+exclude_rules = AL02,LT01,LT02,LT05,LT06,LT08,LT12,CP02
