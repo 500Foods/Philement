@@ -386,7 +386,7 @@ void test_query_execution_failure(void) {
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_EQUAL(0, queue->latest_available_migration);
     // cppcheck-suppress nullPointerOutOfMemory
-    TEST_ASSERT_EQUAL(0, queue->latest_installed_migration);
+    TEST_ASSERT_EQUAL(0, queue->latest_applied_migration);
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_TRUE(queue->bootstrap_completed);
     
@@ -450,7 +450,7 @@ void test_successful_execution_no_qtc(void) {
     // Verify migration tracking
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_EQUAL(5, queue->latest_available_migration);
-    TEST_ASSERT_EQUAL(3, queue->latest_installed_migration);
+    TEST_ASSERT_EQUAL(3, queue->latest_applied_migration);
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_FALSE(queue->empty_database);
     TEST_ASSERT_NULL(queue->query_cache);
@@ -520,7 +520,7 @@ void test_successful_execution_with_qtc(void) {
     // Verify migration
     TEST_ASSERT_EQUAL(10, queue->latest_available_migration);
     // cppcheck-suppress nullPointerOutOfMemory
-    TEST_ASSERT_EQUAL(0, queue->latest_installed_migration);
+    TEST_ASSERT_EQUAL(0, queue->latest_applied_migration);
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_FALSE(queue->empty_database);
     // cppcheck-suppress nullPointerOutOfMemory
@@ -615,7 +615,7 @@ void test_migration_tracking_available(void) {
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_EQUAL(5, queue->latest_available_migration);  // Max of 1,5,3
     // cppcheck-suppress nullPointerOutOfMemory
-    TEST_ASSERT_EQUAL(0, queue->latest_installed_migration);
+    TEST_ASSERT_EQUAL(0, queue->latest_applied_migration);
 
     free(queue->database_name);
     // cppcheck-suppress nullPointerOutOfMemory
@@ -673,7 +673,7 @@ void test_migration_tracking_installed(void) {
     database_queue_execute_bootstrap_query_full(queue, false);
 
     TEST_ASSERT_EQUAL(0, queue->latest_available_migration);
-    TEST_ASSERT_EQUAL(7, queue->latest_installed_migration);  // Max of 2,7,4
+    TEST_ASSERT_EQUAL(7, queue->latest_applied_migration);  // Max of 2,7,4
 
     free(queue->database_name);
     // cppcheck-suppress nullPointerOutOfMemory
@@ -732,7 +732,7 @@ void test_migration_tracking_mixed(void) {
     database_queue_execute_bootstrap_query_full(queue, false);
 
     TEST_ASSERT_EQUAL(8, queue->latest_available_migration);  // Max 1000: 6,8
-    TEST_ASSERT_EQUAL(9, queue->latest_installed_migration);  // Max 1003: 4,9
+    TEST_ASSERT_EQUAL(9, queue->latest_applied_migration);  // Max 1003: 4,9
 
     free(queue->database_name);
     // cppcheck-suppress nullPointerOutOfMemory

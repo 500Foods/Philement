@@ -137,7 +137,7 @@ bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseH
 
     // Perform health check on the newly established connection
     char* health_check_label = database_queue_generate_label(db_queue);
-    log_this(health_check_label, "About to perform health check on newly established connection", LOG_LEVEL_TRACE, 0);
+    // log_this(health_check_label, "About to perform health check on newly established connection", LOG_LEVEL_TRACE, 0);
     bool health_check_passed = database_engine_health_check(db_handle);
     log_this(health_check_label, "Health check completed, result: %s", LOG_LEVEL_DEBUG, 1, health_check_passed ? "PASSED" : "FAILED");
 
@@ -160,10 +160,14 @@ bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseH
 
     free(health_check_label);
 
-    // Execute bootstrap query if configured (only for Lead queues)
-    if (db_queue->is_lead_queue) {
+    // Execute bootstrap query if configured (only for Lead queues on reconnection)
+    // For initial connection, skip bootstrap here - it will be run by the Lead DQM conductor
+    // after migration validation sets latest_available_migration correctly
+    if (db_queue->is_lead_queue && db_queue->bootstrap_completed) {
+        // This is a reconnection - re-run bootstrap query
         database_queue_execute_bootstrap_query(db_queue);
     }
+    // For initial connection, bootstrap_completed is false, so skip - the conductor will handle it
 
     free(dqm_designator);
     return true;

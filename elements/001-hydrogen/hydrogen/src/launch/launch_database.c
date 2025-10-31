@@ -710,7 +710,7 @@ int launch_database_subsystem(void) {
 
     // Get database configuration for logging
     const DatabaseConfig* db_config = &app_config->databases;
-    log_this(SR_DATABASE, SR_DATABASE " connections configured:", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, SR_DATABASE " connections configured", LOG_LEVEL_DEBUG, 0);
 
     // Log each configured database with name and engine type
     for (int i = 0; i < db_config->connection_count; i++) {

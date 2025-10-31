@@ -85,12 +85,12 @@ local database = {
 
     -- This is the default for nearly every table created
     common_insert = [[
-                        NULL,       -- valid_after
-                        NULL,       -- valid_until
-                        0,          -- created_id
-                        ${NOW},     -- created_at
-                        0,          -- updated_id
-                        ${NOW}      -- updated_at
+                        NULL        AS valid_after,
+                        NULL        AS valid_until,
+                        0           AS created_id,
+                        ${NOW}      AS created_at,
+                        0           AS updated_id,
+                        ${NOW}      AS updated_at
                     ]],
 
     common_create = [[

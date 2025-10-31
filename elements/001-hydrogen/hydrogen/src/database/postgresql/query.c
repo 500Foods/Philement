@@ -15,16 +15,42 @@
 #include "query.h"
 
 // External declarations for libpq function pointers (defined in connection.c)
+typedef int (*PQftype_t)(void* res, int column_number);
+
 extern PQexec_t PQexec_ptr;
 extern PQresultStatus_t PQresultStatus_ptr;
 extern PQclear_t PQclear_ptr;
 extern PQntuples_t PQntuples_ptr;
 extern PQnfields_t PQnfields_ptr;
 extern PQfname_t PQfname_ptr;
+extern PQftype_t PQftype_ptr;
 extern PQgetvalue_t PQgetvalue_ptr;
 extern PQcmdTuples_t PQcmdTuples_ptr;
 extern PQerrorMessage_t PQerrorMessage_ptr;
 extern PQexecPrepared_t PQexecPrepared_ptr;
+
+// PostgreSQL type OIDs for common numeric types
+#define POSTGRES_INT2OID 21    // smallint
+#define POSTGRES_INT4OID 23    // integer
+#define POSTGRES_INT8OID 20    // bigint
+#define POSTGRES_FLOAT4OID 700  // real
+#define POSTGRES_FLOAT8OID 701  // double precision
+#define POSTGRES_NUMERICOID 1700 // numeric/decimal
+
+// Helper function to check if PostgreSQL type is numeric
+static bool postgresql_is_numeric_type(int oid) {
+    switch (oid) {
+        case POSTGRES_INT2OID:
+        case POSTGRES_INT4OID:
+        case POSTGRES_INT8OID:
+        case POSTGRES_FLOAT4OID:
+        case POSTGRES_FLOAT8OID:
+        case POSTGRES_NUMERICOID:
+            return true;
+        default:
+            return false;
+    }
+}
 
 // External declarations for constants (defined in connection.c)
 extern bool check_timeout_expired(time_t start_time, int timeout_seconds);
@@ -91,10 +117,10 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
     // log_this(designator, "PostgreSQL execute_query: Result status: %d", LOG_LEVEL_DEBUG, 1, result_status);
 
     if (result_status != PGRES_TUPLES_OK && result_status != PGRES_COMMAND_OK) {
-        log_this(designator, "PostgreSQL query execution failed - status: %d", LOG_LEVEL_ERROR, 1, result_status);
+        log_this(designator, "PostgreSQL query execution failed - status: %d", LOG_LEVEL_TRACE, 1, result_status);
         char* error_msg = PQerrorMessage_ptr(pg_conn->connection);
         if (error_msg && strlen(error_msg) > 0) {
-            log_this(designator, "PostgreSQL query error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+            log_this(designator, "PostgreSQL query error: %s", LOG_LEVEL_TRACE, 1, error_msg);
         }
         PQclear_ptr(pg_result);
         return false;
@@ -140,7 +166,8 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
     // Convert result to JSON
     if (db_result->row_count > 0 && db_result->column_count > 0) {
         // Simple JSON array of objects
-        size_t json_size = 1024 * db_result->row_count; // Estimate size
+        // Increase buffer size to handle large query templates (migration SQL can be 10KB+)
+        size_t json_size = 16384 * db_result->row_count; // Larger estimate for query templates
         db_result->data_json = calloc(1, json_size);
         if (!db_result->data_json) {
             // Cleanup
@@ -156,15 +183,72 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
         strcpy(db_result->data_json, "[");
         for (size_t row = 0; row < db_result->row_count; row++) {
             if (row > 0) strcat(db_result->data_json, ",");
+            
+            // Track start of this row for debug logging
+            size_t row_start_pos = strlen(db_result->data_json);
+            
             strcat(db_result->data_json, "{");
 
             for (size_t col = 0; col < db_result->column_count; col++) {
                 if (col > 0) strcat(db_result->data_json, ",");
+                
+                // Get column type to determine if we should quote the value
+                int col_type_oid = PQftype_ptr ? PQftype_ptr(pg_result, (int)col) : 0;
+                bool is_numeric = postgresql_is_numeric_type(col_type_oid);
+                
                 const char* value = PQgetvalue_ptr(pg_result, (int)row, (int)col);
-                char buffer[256];
-                snprintf(buffer, sizeof(buffer), "\"%s\":\"%s\"",
-                        db_result->column_names[col], value ? value : "");
-                strcat(db_result->data_json, buffer);
+                const char* col_name = db_result->column_names[col];
+                
+                // Calculate needed size for this column (name + value + escaping overhead)
+                size_t value_len = value ? strlen(value) : 0;
+                size_t needed_size = strlen(col_name) + (value_len * 2) + 20; // Extra for escaping
+                
+                // Ensure buffer has enough space
+                size_t current_len = strlen(db_result->data_json);
+                if (current_len + needed_size > json_size) {
+                    json_size = (current_len + needed_size) * 2;
+                    char* new_json = realloc(db_result->data_json, json_size);
+                    if (!new_json) continue; // Skip column on allocation failure
+                    db_result->data_json = new_json;
+                }
+                
+                // Append column to JSON
+                char* append_pos = db_result->data_json + current_len;
+                
+                if (is_numeric && value && strlen(value) > 0) {
+                    // Numeric type - no quotes around value
+                    sprintf(append_pos, "\"%s\":%s", col_name, value);
+                } else if (value) {
+                    // String type - escape and quote
+                    sprintf(append_pos, "\"%s\":\"", col_name);
+                    char* dst = append_pos + strlen(append_pos);
+                    const char* src = value;
+                    while (*src) {
+                        if (*src == '"' || *src == '\\') {
+                            *dst++ = '\\';
+                            *dst++ = *src++;
+                        } else if (*src == '\n') {
+                            *dst++ = '\\';
+                            *dst++ = 'n';
+                            src++;
+                        } else if (*src == '\r') {
+                            *dst++ = '\\';
+                            *dst++ = 'r';
+                            src++;
+                        } else if (*src == '\t') {
+                            *dst++ = '\\';
+                            *dst++ = 't';
+                            src++;
+                        } else {
+                            *dst++ = *src++;
+                        }
+                    }
+                    *dst++ = '"';
+                    *dst = '\0';
+                } else {
+                    // NULL value
+                    sprintf(append_pos, "\"%s\":null", col_name);
+                }
 
                 // Log the actual data values for debugging
                 // log_this(designator, "PostgreSQL execute_query: Row %zu, Column %zu (%s,4,3,2,1,0): %s", LOG_LEVEL_TRACE, 4,
@@ -174,18 +258,28 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
                 //     value ? value : "NULL");
             }
             strcat(db_result->data_json, "}");
+            
+            // Debug: Log first row JSON for diagnosis
+            if (row == 0) {
+                size_t row_len = strlen(db_result->data_json) - row_start_pos;
+                char* row_json = strndup(db_result->data_json + row_start_pos, row_len);
+                if (row_json) {
+                    log_this(designator, "PostgreSQL first row JSON: %s", LOG_LEVEL_DEBUG, 1, row_json);
+                    free(row_json);
+                }
+            }
         }
         strcat(db_result->data_json, "]");
 
         // log_this(designator, "PostgreSQL execute_query: Complete result JSON: %s", LOG_LEVEL_DEBUG, 1, db_result->data_json);
     } else {
-        log_this(designator, "PostgreSQL execute_query: Query returned no data (0 rows or 0 columns)", LOG_LEVEL_TRACE, 0);
+        log_this(designator, "PostgreSQL execute_query: Query returned no data (0 rows or 0 columns)", LOG_LEVEL_DEBUG, 0);
     }
 
     PQclear_ptr(pg_result);
     *result = db_result;
 
-    // log_this(SR_DATABASE, "PostgreSQL query executed successfully", LOG_LEVEL_TRACE, 0);
+    log_this(SR_DATABASE, "PostgreSQL query executed successfully", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 

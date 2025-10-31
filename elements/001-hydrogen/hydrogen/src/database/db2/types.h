@@ -66,6 +66,18 @@ extern SQLSetConnectAttr_t SQLSetConnectAttr_ptr;
 #define SQL_NTS -3
 #define SQL_NULL_DATA -1
 #define SQL_C_CHAR 1
+// SQL data types for column type detection
+#define SQL_INTEGER 4
+#define SQL_SMALLINT 5
+#define SQL_BIGINT -5
+#define SQL_DECIMAL 3
+#define SQL_NUMERIC 2
+#define SQL_REAL 7
+#define SQL_FLOAT 6
+#define SQL_DOUBLE 8
+#define SQL_CHAR 1
+#define SQL_VARCHAR 12
+#define SQL_LONGVARCHAR -1
 // Auto-commit control
 #define SQL_ATTR_AUTOCOMMIT 102
 #define SQL_AUTOCOMMIT_OFF 0
