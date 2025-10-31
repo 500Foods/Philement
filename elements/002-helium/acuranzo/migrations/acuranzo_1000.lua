@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 3.0.0 - 2025-10-30 - Another overhaul (thanks, MySQL) to have an alternate increment mechanism
 -- 2.0.0 - 2025-10-18 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
 -- 1.0.0 - 2025-09-13 - Initial creation for queries table with SQLite, PostgreSQL, MySQL, DB2 support.
@@ -90,7 +91,7 @@ table.insert(queries,{sql=[[
             in its config (this is the default if not supplied).
         ]=]
                                                                             AS summary,
-        NULL                                                                AS collection,
+        ''                                                                  AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;
 
@@ -125,7 +126,7 @@ table.insert(queries,{sql=[[
             to ensure that forward and reverse migrations are complete.
         ]=]
                                                                             AS summary,
-        NULL                                                                AS collection,
+        ''                                                                  AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;
 
