@@ -66,7 +66,7 @@ void log_landing_readiness_messages(const LaunchReadiness* readiness) {
         
         // Use appropriate log level based on the message content
         if (strstr(readiness->messages[i], "No-Go") != NULL) {
-            level = LOG_LEVEL_ALERT;
+            level = LOG_LEVEL_DEBUG;
         }
         
         // Print the message directly (formatting is already in the message)

@@ -32,13 +32,13 @@ void close_mdns_server_interfaces(mdns_server_t *mdns_server_instance) {
 
         // Close sockets first
         if (iface->sockfd_v4 >= 0) {
-            log_this(SR_MDNS_SERVER, "Closing IPv4 socket on interface %s", LOG_LEVEL_STATE, 1, iface->if_name);
+            log_this(SR_MDNS_SERVER, "Closing IPv4 socket on interface %s", LOG_LEVEL_DEBUG, 1, iface->if_name);
             close(iface->sockfd_v4);
             iface->sockfd_v4 = -1;
         }
 
         if (iface->sockfd_v6 >= 0) {
-            log_this(SR_MDNS_SERVER, "Closing IPv6 socket on interface %s", LOG_LEVEL_STATE, 1, iface->if_name);
+            log_this(SR_MDNS_SERVER, "Closing IPv6 socket on interface %s", LOG_LEVEL_DEBUG, 1, iface->if_name);
             close(iface->sockfd_v6);
             iface->sockfd_v6 = -1;
         }
@@ -48,7 +48,7 @@ void close_mdns_server_interfaces(mdns_server_t *mdns_server_instance) {
 void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
     if (!mdns_server_instance) return;
 
-    log_this(SR_MDNS_SERVER, "Shutdown: Initiating mDNS Server shutdown", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_SERVER, "Shutdown: Initiating mDNS Server shutdown", LOG_LEVEL_DEBUG, 0);
 
     // Wait for any active threads to notice the shutdown flag
     // This ensures they don't access mdns_server after we free it
@@ -56,7 +56,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
 
     // Check for active threads before proceeding
     if (mdns_server_threads.thread_count > 0) {
-        log_this(SR_MDNS_SERVER, "Waiting for %d mDNS Server threads to exit", LOG_LEVEL_STATE, 1, mdns_server_threads.thread_count);
+        log_this(SR_MDNS_SERVER, "Waiting for %d mDNS Server threads to exit", LOG_LEVEL_DEBUG, 1, mdns_server_threads.thread_count);
 
         // Wait with timeout for threads to exit
         for (int i = 0; i < 10 && mdns_server_threads.thread_count > 0; i++) {
@@ -65,7 +65,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
         }
 
         if (mdns_server_threads.thread_count > 0) {
-            log_this(SR_MDNS_SERVER, "Warning: %d mDNS Server threads still active", LOG_LEVEL_ALERT, 1, mdns_server_threads.thread_count);
+            log_this(SR_MDNS_SERVER, "Warning: %d mDNS Server threads still active", LOG_LEVEL_DEBUG, 1, mdns_server_threads.thread_count);
         }
     }
 
@@ -100,14 +100,14 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
                     if (sendto(iface->sockfd_v4, packet, packet_len, 0, (struct sockaddr *)&addr_v4, sizeof(addr_v4)) < 0) {
                         log_this(SR_MDNS_SERVER, "Failed to send IPv4 goodbye on %s: %s", LOG_LEVEL_ALERT, 2, iface->if_name, strerror(errno));
                     } else {
-                        log_this(SR_MDNS_SERVER, "Sent IPv4 goodbye packet %d/3 on %s", LOG_LEVEL_STATE, 2, i+1, iface->if_name);
+                        log_this(SR_MDNS_SERVER, "Sent IPv4 goodbye packet %d/3 on %s", LOG_LEVEL_DEBUG, 2, i+1, iface->if_name);
                     }
                 }
                 if (iface->sockfd_v6 >= 0) {
                     if (sendto(iface->sockfd_v6, packet, packet_len, 0, (struct sockaddr *)&addr_v6, sizeof(addr_v6)) < 0) {
                         log_this(SR_MDNS_SERVER, "Failed to send IPv6 goodbye on %s: %s", LOG_LEVEL_ALERT, 2, iface->if_name, strerror(errno));
                     } else {
-                        log_this(SR_MDNS_SERVER, "Sent IPv6 goodbye packet %d/3 on %s", LOG_LEVEL_STATE, 2, i+1, iface->if_name);
+                        log_this(SR_MDNS_SERVER, "Sent IPv6 goodbye packet %d/3 on %s", LOG_LEVEL_DEBUG, 2, i+1, iface->if_name);
                     }
                 }
                 usleep(250000); // 250ms per RFC 6762
@@ -120,7 +120,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
     }
 
     // Close all sockets before freeing memory
-    log_this(SR_MDNS_SERVER, "Closing mDNS Server sockets", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_SERVER, "Closing mDNS Server sockets", LOG_LEVEL_DEBUG, 0);
     close_mdns_server_interfaces(mdns_server_instance);
 
     // Final check for active threads
@@ -131,7 +131,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
 
     // Brief delay to ensure no threads are accessing resources
     usleep(100000);  // 200ms delay
-    log_this(SR_MDNS_SERVER, "Freeing mDNS Server resources", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_SERVER, "Freeing mDNS Server resources", LOG_LEVEL_DEBUG, 0);
 
     // Free interfaces
     if (mdns_server_instance->interfaces) {
@@ -175,5 +175,5 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
     // Finally free the server structure
     free(mdns_server_instance);
 
-    log_this(SR_MDNS_SERVER, "Shutdown: mDNS Server shutdown complete", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_SERVER, "Shutdown: mDNS Server shutdown complete", LOG_LEVEL_DEBUG, 0);
 }

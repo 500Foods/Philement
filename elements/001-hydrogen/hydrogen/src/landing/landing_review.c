@@ -43,7 +43,7 @@ void report_thread_cleanup_status(void) {
     
     // Log thread status
     if (active_threads > 0) {
-        log_this(SR_LANDING, "Warning: %d active threads remain", LOG_LEVEL_ALERT, 1, active_threads);
+        log_this(SR_LANDING, "Warning: %d active threads remain", LOG_LEVEL_DEBUG, 1, active_threads);
     } else {
         log_this(SR_LANDING, "All threads cleaned up successfully", LOG_LEVEL_DEBUG, 0);
     }
@@ -114,11 +114,11 @@ void handle_landing_review(const ReadinessResults* results, time_t start_time) {
      * Phase 1: Timing Assessment
      * Calculate and report landing duration
      */
-    time_t current_time = time(NULL);
-    double elapsed_time = difftime(current_time, start_time);
+     time_t current_time = time(NULL);
+     double elapsed_time = difftime(current_time, start_time);
     
     // Log landing timing
-    log_this(SR_LANDING, "Shutdown elapsed time: %.3fs", LOG_LEVEL_STATE, 1, elapsed_time);
+    log_this(SR_LANDING, "Landing elapsed time: %.3fs", LOG_LEVEL_DEBUG, 1, elapsed_time);
     
     /*
      * Phase 2: Thread Analysis

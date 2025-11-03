@@ -62,7 +62,7 @@ void *mdns_server_announce_loop(void *arg) {
     mdns_server_t *mdns_server_instance = thread_arg->mdns_server;
     add_service_thread(&mdns_server_threads, pthread_self());
 
-    log_this(SR_MDNS_SERVER, "mDNS Server announce loop started", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_SERVER, "mDNS Server announce loop started", LOG_LEVEL_DEBUG, 0);
 
     int initial_announcements = 3; // Initial burst
     unsigned int interval = 1; // Start with 1-second intervals
@@ -89,7 +89,7 @@ void *mdns_server_announce_loop(void *arg) {
         }
     }
 
-    log_this(SR_MDNS_SERVER, "Shutdown: mDNS Server announce loop exiting", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_SERVER, "Shutdown: mDNS Server announce loop exiting", LOG_LEVEL_DEBUG, 0);
     remove_service_thread(&mdns_server_threads, pthread_self());
     // Note: thread_arg is not freed here as it may be stack-allocated by the caller
     return NULL;
@@ -169,7 +169,7 @@ void *mdns_server_responder_loop(void *arg) {
     uint8_t buffer[MDNS_MAX_PACKET_SIZE];
 
     add_service_thread(&mdns_server_threads, pthread_self());
-    log_this(SR_MDNS_SERVER, "mDNS Server responder loop started", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_SERVER, "mDNS Server responder loop started", LOG_LEVEL_DEBUG, 0);
 
     // Create pollfd array for all interface sockets
     size_t num_sockets = mdns_server_instance->num_interfaces * 2U; // 2 sockets per interface (v4/v6)
@@ -241,7 +241,7 @@ void *mdns_server_responder_loop(void *arg) {
         }
     }
 
-    log_this(SR_MDNS_SERVER, "Shutdown: mDNS Server responder loop exiting", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_SERVER, "Shutdown: mDNS Server responder loop exiting", LOG_LEVEL_DEBUG, 0);
     remove_service_thread(&mdns_server_threads, pthread_self());
     // Note: thread_arg is not freed here as it may be stack-allocated by the caller
     return NULL;

@@ -86,15 +86,15 @@ LaunchReadiness check_mdns_server_landing_readiness(void) {
 
 // Land the mDNS server subsystem
 int land_mdns_server_subsystem(void) {
-    log_this(SR_MDNS_SERVER, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_MDNS_SERVER, "LANDING: mDNS SERVER", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_SERVER, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_MDNS_SERVER, "LANDING: " SR_MDNS_SERVER, LOG_LEVEL_DEBUG, 0);
 
     // Signal thread shutdown
     mdns_server_system_shutdown = 1;
-    log_this(SR_MDNS_SERVER, "Signaled mDNS Server threads to stop", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_SERVER, "Signaled mDNS Server threads to stop", LOG_LEVEL_DEBUG, 0);
     
     // Log thread count before cleanup
-    log_this(SR_MDNS_SERVER, "Cleaning up %d mDNS Server threads", LOG_LEVEL_STATE, 1, mdns_server_threads.thread_count);
+    log_this(SR_MDNS_SERVER, "Cleaning up %d mDNS Server threads", LOG_LEVEL_DEBUG, 1, mdns_server_threads.thread_count);
     
     // Remove all mDNS server threads from tracking
     for (int i = 0; i < mdns_server_threads.thread_count; i++) {
@@ -104,6 +104,7 @@ int land_mdns_server_subsystem(void) {
     // Reinitialize thread structure
     init_service_threads(&mdns_server_threads, SR_MDNS_SERVER);
     
-    log_this(SR_MDNS_SERVER, "mDNS Server shutdown complete", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_SERVER, "LANDING: " SR_MDNS_SERVER " COMPLETE", LOG_LEVEL_DEBUG, 0);
+    
     return 1; // Success
 }
