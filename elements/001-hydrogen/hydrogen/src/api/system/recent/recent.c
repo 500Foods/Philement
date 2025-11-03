@@ -99,7 +99,7 @@ char* build_reverse_log_text(char **lines, size_t line_count) {
 // Success: 200 OK with plain text response
 // Error: 500 Internal Server Error with error details
 enum MHD_Result handle_system_recent_request(struct MHD_Connection *connection) {
-    log_this(SR_API, "Handling recent logs request", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "Handling recent logs request", LOG_LEVEL_DEBUG, 0);
 
     // Get all available messages from the rolling buffer
 #ifdef UNITY_TEST_MODE

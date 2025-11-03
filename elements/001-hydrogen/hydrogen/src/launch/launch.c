@@ -206,8 +206,7 @@ void log_early_info(void) {
     log_this(SR_STARTUP, "― Build:    %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
     log_this(SR_STARTUP, "― Size:     %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
     log_this(SR_STARTUP, "― Logging:  %s", LOG_LEVEL_STATE, 1, DEFAULT_PRIORITY_LEVELS[startup_log_level].label);
-    log_this(SR_STARTUP, "― PID:       %d", LOG_LEVEL_STATE, 1, getpid());
-    log_this(SR_STARTUP, "HYDROGEN RUNNING", LOG_LEVEL_STATE, 0);
+    log_this(SR_STARTUP, "― PID:      %d", LOG_LEVEL_STATE, 1, getpid());
 }
 
 // Check readiness of all subsystems and coordinate launch

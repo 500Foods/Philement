@@ -35,7 +35,7 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
                                          size_t *upload_data_size,
                                          void **con_cls) {
     (void)upload_data; // Mark parameter as intentionally unused
-    log_this(SR_API, "Handling test endpoint request", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "Handling test endpoint request", LOG_LEVEL_DEBUG, 0);
     
     // Start timing for performance metrics
 #ifdef UNITY_TEST_MODE
