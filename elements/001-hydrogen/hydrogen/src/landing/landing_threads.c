@@ -96,44 +96,45 @@ LaunchReadiness check_threads_landing_readiness(void) {
  */
 void free_thread_resources(void) {
     // Begin resource cleanup section
-    log_this(SR_THREADS, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_THREADS, "LANDING: THREADS", LOG_LEVEL_STATE, 0);
+    // log_this(SR_THREADS, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    // log_this(SR_THREADS, "LANDING: " SR_THREADS, LOG_LEVEL_DEBUG, 0);
     
     // Step 1: Remove individual threads first
     if (webserver_threads.thread_count > 0) {
-        log_this(SR_THREADS, "  Step 1a: Removing web threads (%d remaining)", LOG_LEVEL_STATE, 1, webserver_threads.thread_count);
+        log_this(SR_THREADS, "Removing web threads (%d remaining)", LOG_LEVEL_DEBUG, 1, webserver_threads.thread_count);
         for (int i = 0; i < webserver_threads.thread_count; i++) {
             remove_service_thread(&webserver_threads, webserver_threads.thread_ids[i]);
         }
     }
     
     if (websocket_threads.thread_count > 0) {
-        log_this(SR_THREADS, "  Step 1b: Removing websocket threads (%d remaining)", LOG_LEVEL_STATE, 1, websocket_threads.thread_count);
+        log_this(SR_THREADS, "Removing websocket threads (%d remaining)", LOG_LEVEL_DEBUG, 1, websocket_threads.thread_count);
         for (int i = 0; i < websocket_threads.thread_count; i++) {
             remove_service_thread(&websocket_threads, websocket_threads.thread_ids[i]);
         }
     }
     
     if (mdns_server_threads.thread_count > 0) {
-        log_this(SR_THREADS, "  Step 1c: Removing mDNS server threads (%d remaining)", LOG_LEVEL_STATE, 1,  mdns_server_threads.thread_count);
+        log_this(SR_THREADS, "Removing mDNS server threads (%d remaining)", LOG_LEVEL_DEBUG, 1,  mdns_server_threads.thread_count);
         for (int i = 0; i < mdns_server_threads.thread_count; i++) {
             remove_service_thread(&mdns_server_threads, mdns_server_threads.thread_ids[i]);
         }
     }
     
     if (print_threads.thread_count > 0) {
-        log_this(SR_THREADS, "  Step 1d: Removing print threads (%d remaining)", LOG_LEVEL_STATE, 1, print_threads.thread_count);
+        log_this(SR_THREADS, "Removing print threads (%d remaining)", LOG_LEVEL_DEBUG, 1, print_threads.thread_count);
         for (int i = 0; i < print_threads.thread_count; i++) {
             remove_service_thread(&print_threads, print_threads.thread_ids[i]);
         }
     }
     
     // Step 2: Free all thread resources
-    log_this(SR_THREADS, "  Step 2: Freeing thread resources", LOG_LEVEL_STATE, 0);
+    log_this(SR_THREADS, "Freeing " SR_THREADS " resources", LOG_LEVEL_DEBUG, 0);
     free_threads_resources();
     
     // Note: Logging threads are handled last by the logging subsystem shutdown
-    log_this(SR_THREADS, "  Step 3: Resource cleanup complete", LOG_LEVEL_STATE, 0);
+    // log_this(SR_THREADS, "LANDING: " SR_THREADS " COMPLETE", LOG_LEVEL_DEBUG, 0);
+    
 }
 
 /**
@@ -146,19 +147,19 @@ void free_thread_resources(void) {
  */
 int land_threads_subsystem(void) {
     // Begin LANDING: THREADS section
-    log_this(SR_THREADS, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_THREADS, "LANDING: THREADS", LOG_LEVEL_STATE, 0);
+    log_this(SR_THREADS, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_THREADS, "LANDING: " SR_THREADS, LOG_LEVEL_DEBUG, 0);
     
     // Step 1: Get current subsystem state
     int subsys_id = get_thread_subsystem_id();
     if (subsys_id < 0 || !is_subsystem_running(subsys_id)) {
-        log_this(SR_THREADS, "Thread management not running, skipping shutdown", LOG_LEVEL_STATE, 0);
+        log_this(SR_THREADS, SR_THREADS " not running, skipping shutdown", LOG_LEVEL_DEBUG, 0);
         return 1;  // Success - nothing to do
     }
     
     // Step 2: Mark as stopping
     update_subsystem_state(subsys_id, SUBSYSTEM_STOPPING);
-    log_this(SR_THREADS, "Beginning thread management shutdown sequence", LOG_LEVEL_STATE, 0);
+    log_this(SR_THREADS, "Beginning thread management shutdown sequence", LOG_LEVEL_DEBUG, 0);
     
     // Step 3: Clean up resources
     free_thread_resources();
@@ -169,9 +170,9 @@ int land_threads_subsystem(void) {
     // Step 5: Verify final state for restart capability
     SubsystemState final_state = get_subsystem_state(subsys_id);
     if (final_state == SUBSYSTEM_INACTIVE) {
-        log_this(SR_THREADS, "LANDING: THREADS - Successfully landed and ready for future restart", LOG_LEVEL_STATE, 0);
+        log_this(SR_THREADS, "LANDING: " SR_THREADS " COMPLETE", LOG_LEVEL_DEBUG, 0);
     } else {
-        log_this(SR_THREADS, "LANDING: THREADS - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
+        log_this(SR_THREADS, "LANDING: " SR_THREADS " Warning: Unexpected final state: %s", LOG_LEVEL_DEBUG, 1, subsystem_state_to_string(final_state));
     }
     
     return 1;  // Success

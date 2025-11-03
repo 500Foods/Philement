@@ -141,8 +141,8 @@ int launch_mdns_client_subsystem(void) {
 
     mdns_client_system_shutdown = 0;
     
-    log_this(SR_MDNS_CLIENT, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_MDNS_CLIENT, "LAUNCH: " SR_MDNS_CLIENT, LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_CLIENT, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_MDNS_CLIENT, "LAUNCH: " SR_MDNS_CLIENT, LOG_LEVEL_DEBUG, 0);
 
     // Register with subsystem registry (from launch) - critical for dependencies to work
     if (mdns_client_subsystem_id < 0) {
@@ -151,8 +151,7 @@ int launch_mdns_client_subsystem(void) {
                                                                 (int (*)(void))launch_mdns_client_subsystem,
                                                                 NULL);  // Client has no shutdown function yet
         if (mdns_client_subsystem_id < 0) {
-            log_this(SR_MDNS_CLIENT, "Failed to register mDNS Client subsystem for launch", LOG_LEVEL_ERROR, 0);
-            log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT - Failed: Registration error", LOG_LEVEL_STATE, 0);
+            log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT - Failed: Registration error", LOG_LEVEL_DEBUG, 0);
             return 0;
         }
     }
@@ -161,46 +160,45 @@ int launch_mdns_client_subsystem(void) {
     // TODO: Add proper initialization when system is ready - for now just mark as successful
     // This will be implemented when the actual mDNS client functionality is added
 
-    log_this(SR_MDNS_CLIENT, "Initializing mDNS client system", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_CLIENT, "Initializing mDNS client system", LOG_LEVEL_DEBUG, 0);
 
     // Step 1: Verify system state
     if (server_stopping || server_starting != 1) {
-        log_this(SR_MDNS_CLIENT, "Cannot initialize mDNS client outside startup phase", LOG_LEVEL_STATE, 0);
-        log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT - Failed: Not in startup phase", LOG_LEVEL_STATE, 0);
+        log_this(SR_MDNS_CLIENT, "Cannot initialize mDNS client outside startup phase", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT - Failed: Not in startup phase", LOG_LEVEL_DEBUG, 0);
         return 0;
     }
 
     if (!app_config) {
-        log_this(SR_MDNS_CLIENT, "Configuration not loaded", LOG_LEVEL_ERROR, 0);
-        log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT - Failed: No configuration", LOG_LEVEL_STATE, 0);
+        log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT - Failed: No configuration", LOG_LEVEL_DEBUG, 0);
         return 0;
     }
 
     if (!app_config->mdns_client.enable_ipv4 && !app_config->mdns_client.enable_ipv6) {
-        log_this(SR_MDNS_CLIENT, "mDNS client disabled in configuration (no protocols enabled)", LOG_LEVEL_STATE, 0);
+        log_this(SR_MDNS_CLIENT, "mDNS client disabled in configuration (no protocols enabled)", LOG_LEVEL_DEBUG, 0);
         log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT - Disabled by configuration", LOG_LEVEL_STATE, 0);
         return 1; // Not an error if disabled
     }
 
     // Step 2: Initialize mDNS client
-    log_this(SR_MDNS_CLIENT, "Starting mDNS client service discovery", LOG_LEVEL_STATE, 0);
+    log_this(SR_MDNS_CLIENT, "Starting " SR_MDNS_CLIENT " service discovery", LOG_LEVEL_DEBUG, 0);
 
     // TODO: Implement actual mDNS client initialization when functionality is available
     // For now, just register success
 
     // Step 3: Update subsystem registry
+    log_this(SR_MDNS_CLIENT, "  Updating " SR_REGISTRY, LOG_LEVEL_DEBUG, 0);    
     update_subsystem_on_startup(SR_MDNS_CLIENT, true);
 
     // Step 4: Verify final state
     SubsystemState final_state = get_subsystem_state(mdns_client_subsystem_id);
 
-    log_this(SR_MDNS_CLIENT, "mDNS Client subsystem launched successfully (placeholder)", LOG_LEVEL_STATE, 0);
-
+    
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT - Successfully launched and running", LOG_LEVEL_STATE, 0);
+        log_this(SR_MDNS_CLIENT, "LAUNCH: " SR_MDNS_CLIENT " COMPLETE", LOG_LEVEL_DEBUG, 0);
         return 1;
     } else {
-        log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
+        log_this(SR_MDNS_CLIENT, "LAUNCH: " SR_MDNS_CLIENT " Warning: Unexpected final state: %s", LOG_LEVEL_DEBUG, 1, subsystem_state_to_string(final_state));
         return 0;
     }
 }

@@ -29,7 +29,7 @@ void report_registry_landing_status(void) {
     
     // Only report if there are active subsystems (potential issue)
     if (total_active > 0) {
-        log_this(SR_REGISTRY, "Warning: %d subsystems still active", LOG_LEVEL_ALERT, 1, total_active);
+        log_this(SR_REGISTRY, "Warning: %d subsystems still active", LOG_LEVEL_DEBUG, 1, total_active);
     }
 }
 
@@ -96,8 +96,8 @@ LaunchReadiness check_registry_landing_readiness(void) {
 // is_restart: true if this is part of a restart sequence
 int land_registry_subsystem(bool is_restart) {
 
-    log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_REGISTRY, "LANDING: REGISTRY", LOG_LEVEL_STATE, 0);
+    log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_REGISTRY, "LANDING: " SR_REGISTRY, LOG_LEVEL_DEBUG, 0);
 
     // Report final status
     report_registry_landing_status();
@@ -142,6 +142,9 @@ int land_registry_subsystem(bool is_restart) {
         // Reset registry state after freeing memory
         subsystem_registry.count = 0;
         subsystem_registry.capacity = 0;
+
+        log_this(SR_REGISTRY, "LANDING: " SR_REGISTRY " COMPLETE", LOG_LEVEL_DEBUG, 0);
+            
     }
     
     pthread_mutex_unlock(&subsystem_registry.mutex);

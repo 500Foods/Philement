@@ -78,17 +78,17 @@ LaunchReadiness check_terminal_landing_readiness(void) {
 
 // Land the terminal subsystem
 int land_terminal_subsystem(void) {
-    log_this(SR_TERMINAL, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_TERMINAL, "LANDING: TERMINAL", LOG_LEVEL_STATE, 0);
+    log_this(SR_TERMINAL, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_TERMINAL, "LANDING: " SR_TERMINAL, LOG_LEVEL_DEBUG, 0);
     
     // Signal shutdown
     terminal_system_shutdown = 1;
-    log_this(SR_TERMINAL, "Signaled Terminal to stop", LOG_LEVEL_STATE, 0);
+    log_this(SR_TERMINAL, "Signaled Terminal to stop", LOG_LEVEL_DEBUG, 0);
     
     // Cleanup resources
     // Additional cleanup will be added as needed
     
-    log_this(SR_TERMINAL, "Terminal shutdown complete", LOG_LEVEL_STATE, 0);
+    log_this(SR_TERMINAL, "LANDING: " SR_TERMINAL " COMPLETE", LOG_LEVEL_DEBUG, 0);
     
     return 1;  // Always successful
 }

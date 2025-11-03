@@ -387,13 +387,13 @@ int startup_hydrogen(const char* config_path) {
     // Final Startup Message
     log_group_begin();
 
-        log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-        log_this(SR_STARTUP, "STARTUP COMPLETE", LOG_LEVEL_ALERT, 0);
-        log_this(SR_STARTUP, "― Version:  %s", LOG_LEVEL_STATE, 1, VERSION);
-        log_this(SR_STARTUP, "― Release:  %s", LOG_LEVEL_STATE, 1, RELEASE);
-        log_this(SR_STARTUP, "― Build:    %s", LOG_LEVEL_STATE, 1, BUILD_TYPE);
-        log_this(SR_STARTUP, "― Size:     %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
-        log_this(SR_STARTUP, "― PID:      %d", LOG_LEVEL_STATE, 1, getpid());
+        log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+        log_this(SR_STARTUP, "STARTUP COMPLETE", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_STARTUP, "― Version:  %s", LOG_LEVEL_DEBUG, 1, VERSION);
+        log_this(SR_STARTUP, "― Release:  %s", LOG_LEVEL_DEBUG, 1, RELEASE);
+        log_this(SR_STARTUP, "― Build:    %s", LOG_LEVEL_DEBUG, 1, BUILD_TYPE);
+        log_this(SR_STARTUP, "― Size:     %'d bytes", LOG_LEVEL_DEBUG, 1, server_executable_size);
+        log_this(SR_STARTUP, "― PID:      %d", LOG_LEVEL_DEBUG, 1, getpid());
 
 
         // Log server URLs if subsystems are running

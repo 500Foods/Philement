@@ -78,8 +78,8 @@ LaunchReadiness check_print_landing_readiness(void) {
 
 // Land the print subsystem
 int land_print_subsystem(void) {
-    log_this(SR_PRINT, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_PRINT, "LANDING: " SR_PRINT, LOG_LEVEL_STATE, 0);
+    log_this(SR_PRINT, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_PRINT, "LANDING: " SR_PRINT, LOG_LEVEL_DEBUG, 0);
     
     // Set shutdown flag
     print_system_shutdown = 1;
@@ -91,6 +91,8 @@ int land_print_subsystem(void) {
     
     // Reset thread resources
     init_service_threads(&print_threads, SR_PRINT);
+    
+    log_this(SR_PRINT, "LANDING: " SR_PRINT " COMPLETE", LOG_LEVEL_DEBUG, 0);
     
     // Additional cleanup as needed
     return 1;  // Success

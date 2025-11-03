@@ -82,19 +82,19 @@ void free_payload_resources(void) {
  */
 int land_payload_subsystem(void) {
     // Begin LANDING: PAYLOAD section
-    log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
-    log_this(SR_LANDING, "LANDING: PAYLOAD", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_PAYLOAD, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_PAYLOAD, "LANDING: " SR_PAYLOAD, LOG_LEVEL_DEBUG, 0);
     
     // Get current subsystem state through registry
     int subsys_id = get_subsystem_id_by_name("Payload");
     if (subsys_id < 0 || !is_subsystem_running(subsys_id)) {
-        log_this(SR_LANDING, "Payload not running, skipping shutdown", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_PAYLOAD, "Payload not running, skipping shutdown", LOG_LEVEL_DEBUG, 0);
         return 1;  // Success - nothing to do
     }
     
     // Step 1: Mark as stopping
     update_subsystem_state(subsys_id, SUBSYSTEM_STOPPING);
-    log_this(SR_LANDING, "LANDING: PAYLOAD - Beginning shutdown sequence", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_PAYLOAD, "LANDING: " SR_PAYLOAD " Beginning shutdown sequence", LOG_LEVEL_DEBUG, 0);
     
     // Step 2: Free resources and mark as inactive
     free_payload_resources();
@@ -102,9 +102,9 @@ int land_payload_subsystem(void) {
     // Step 3: Verify final state for restart capability
     SubsystemState final_state = get_subsystem_state(subsys_id);
     if (final_state == SUBSYSTEM_INACTIVE) {
-        log_this(SR_LANDING, "LANDING: PAYLOAD - Successfully landed and ready for future restart", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_PAYLOAD, "LANDING: " SR_PAYLOAD " COMPLETE", LOG_LEVEL_DEBUG, 0);
     } else {
-        log_this(SR_LANDING, "LANDING: PAYLOAD - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
+        log_this(SR_PAYLOAD, "LANDING: " SR_PAYLOAD " Warning: Unexpected final state: %s", LOG_LEVEL_DEBUG, 1, subsystem_state_to_string(final_state));
     }
     return 1;  // Success
 }
