@@ -50,8 +50,8 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
                 con_info->original_filename = strdup(filename);
                 con_info->new_filename = strdup(temp_path);
 
-                log_this(SR_WEBSERVER, "Starting file upload", LOG_LEVEL_STATE, 0);
-                log_this(SR_WEBSERVER, filename, LOG_LEVEL_STATE, 0);
+                log_this(SR_WEBSERVER, "Starting file upload", LOG_LEVEL_DEBUG, 0);
+                log_this(SR_WEBSERVER, filename, LOG_LEVEL_DEBUG, 0);
             }
         }
 
@@ -94,7 +94,7 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
     } else if (0 == strcmp(key, "print")) {
         // Handle the 'print' field
         con_info->print_after_upload = (0 == strcmp(data, "true"));
-        log_this(SR_WEBSERVER, con_info->print_after_upload ? "Print after upload: enabled" : "Print after upload: disabled", LOG_LEVEL_STATE, 0);
+        log_this(SR_WEBSERVER, con_info->print_after_upload ? "Print after upload: enabled" : "Print after upload: disabled", LOG_LEVEL_DEBUG, 0);
     } else {
         // Log unknown keys
         char log_buffer[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
@@ -163,7 +163,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
 
             // Run beryllium analysis for .gcode files
             if (con_info->original_filename && strstr(con_info->original_filename, ".gcode")) {
-                log_this(SR_WEBSERVER, "Running beryllium analysis on uploaded G-code file", LOG_LEVEL_STATE, 0);
+                log_this(SR_WEBSERVER, "Running beryllium analysis on uploaded G-code file", LOG_LEVEL_DEBUG, 0);
                 json_t* gcode_info = extract_gcode_info(con_info->new_filename);
                 if (gcode_info) {
                     json_object_set_new(print_job, "gcode_info", gcode_info);
@@ -230,7 +230,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                         format_number_with_commas((size_t)stats.file_size, formatted_file_size, sizeof(formatted_file_size));
                         char file_info[80];
                         snprintf(file_info, sizeof(file_info), "- File: %s bytes", formatted_file_size);
-                        log_this(SR_WEBSERVER, file_info, LOG_LEVEL_STATE, 0);
+                        log_this(SR_WEBSERVER, file_info, LOG_LEVEL_DEBUG, 0);
                     }
 
                     {
@@ -238,7 +238,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                         format_number_with_commas((size_t)stats.gcode_lines, formatted_gcode_lines, sizeof(formatted_gcode_lines));
                         char lines_info[96];
                         snprintf(lines_info, sizeof(lines_info), "- Lines: %s", formatted_gcode_lines);
-                        log_this(SR_WEBSERVER, lines_info, LOG_LEVEL_STATE, 0);
+                        log_this(SR_WEBSERVER, lines_info, LOG_LEVEL_DEBUG, 0);
                     }
 
                     if (stats.layer_count_height > 0) {
@@ -254,7 +254,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                             format_number_with_commas((size_t)stats.layer_count_height, formatted_layer_count, sizeof(formatted_layer_count));
                             snprintf(layers_info, sizeof(layers_info), "- Layers: %s", formatted_layer_count);
                         }
-                        log_this(SR_WEBSERVER, layers_info, LOG_LEVEL_STATE, 0);
+                        log_this(SR_WEBSERVER, layers_info, LOG_LEVEL_DEBUG, 0);
                     }
 
                     if (hours > 0 || minutes > 0 || seconds > 0) {
@@ -266,7 +266,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                         } else {
                             snprintf(time_info, sizeof(time_info), "- Print Time: %ds", seconds);
                         }
-                        log_this(SR_WEBSERVER, time_info, LOG_LEVEL_STATE, 0);
+                        log_this(SR_WEBSERVER, time_info, LOG_LEVEL_DEBUG, 0);
                     }
 
                     if (stats.extrusion > 0.0) {
@@ -274,7 +274,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                         format_double_with_commas(stats.extrusion, 1, formatted_extrusion, sizeof(formatted_extrusion));
                         char filament_info[96];
                         snprintf(filament_info, sizeof(filament_info), "- Filament: %s mm", formatted_extrusion);
-                        log_this(SR_WEBSERVER, filament_info, LOG_LEVEL_STATE, 0);
+                        log_this(SR_WEBSERVER, filament_info, LOG_LEVEL_DEBUG, 0);
                     }
 
                     if (stats.filament_volume > 0.0 && stats.filament_weight > 0.0) {
@@ -284,7 +284,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                         char material_info[96];
                         snprintf(material_info, sizeof(material_info), "- Material: %s cm³ / %s g",
                                 formatted_volume, formatted_weight);
-                        log_this(SR_WEBSERVER, material_info, LOG_LEVEL_STATE, 0);
+                        log_this(SR_WEBSERVER, material_info, LOG_LEVEL_DEBUG, 0);
                     }
 
                     if (stats.num_objects > 0) {
@@ -292,10 +292,10 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                         format_number_with_commas((size_t)stats.num_objects, formatted_objects, sizeof(formatted_objects));
                         char objects_info[80];
                         snprintf(objects_info, sizeof(objects_info), "- Objects: %s", formatted_objects);
-                        log_this(SR_WEBSERVER, objects_info, LOG_LEVEL_STATE, 0);
+                        log_this(SR_WEBSERVER, objects_info, LOG_LEVEL_DEBUG, 0);
                     }
 
-                    log_this(SR_WEBSERVER, "Beryllium analysis completed successfully", LOG_LEVEL_STATE, 0);
+                    log_this(SR_WEBSERVER, "Beryllium analysis completed successfully", LOG_LEVEL_DEBUG, 0);
                 } else {
                     log_this(SR_WEBSERVER, "Beryllium analysis failed", LOG_LEVEL_ERROR, 0);
                 }
@@ -312,7 +312,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                 Queue* print_queue = queue_find("PrintQueue");
                 if (print_queue) {
                     queue_enqueue(print_queue, print_job_str, strlen(print_job_str), 0);
-                    log_this(SR_WEBSERVER, "Added print job to queue", LOG_LEVEL_STATE, 0);
+                    log_this(SR_WEBSERVER, "Added print job to queue", LOG_LEVEL_DEBUG, 0);
                 } else {
                     log_this(SR_WEBSERVER, "Failed to find PrintQueue", LOG_LEVEL_DEBUG, 0);
                 }
@@ -324,7 +324,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
 
             json_decref(print_job);
 
-            log_this(SR_WEBSERVER, "File upload completed:", LOG_LEVEL_STATE, 0);
+            log_this(SR_WEBSERVER, "File upload completed:", LOG_LEVEL_DEBUG, 0);
 
             char info_str[DEFAULT_LINE_BUFFER_SIZE];
             if (con_info->original_filename) {
@@ -332,13 +332,13 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             } else {
                 snprintf(info_str, sizeof(info_str), "Source: (no filename)");
             }
-            log_this(SR_WEBSERVER, info_str, LOG_LEVEL_STATE, 0);
+            log_this(SR_WEBSERVER, info_str, LOG_LEVEL_DEBUG, 0);
             snprintf(info_str, sizeof(info_str), "Local: %s", con_info->new_filename);
-            log_this(SR_WEBSERVER, info_str, LOG_LEVEL_STATE, 0);
+            log_this(SR_WEBSERVER, info_str, LOG_LEVEL_DEBUG, 0);
             snprintf(info_str, sizeof(info_str), "Size: %zu bytes", con_info->total_size);
-            log_this(SR_WEBSERVER, info_str, LOG_LEVEL_STATE, 0);
+            log_this(SR_WEBSERVER, info_str, LOG_LEVEL_DEBUG, 0);
             snprintf(info_str, sizeof(info_str), "Print: %s", con_info->print_after_upload ? "true" : "false");
-            log_this(SR_WEBSERVER, info_str, LOG_LEVEL_STATE, 0);
+            log_this(SR_WEBSERVER, info_str, LOG_LEVEL_DEBUG, 0);
 
             // Send response
             const char* filename_for_response = con_info->original_filename ? con_info->original_filename : "unknown";

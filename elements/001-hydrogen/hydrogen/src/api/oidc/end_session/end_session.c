@@ -33,7 +33,7 @@ enum MHD_Result handle_oidc_end_session_endpoint(struct MHD_Connection *connecti
     (void)upload_data_size;
     (void)con_cls;
     
-    log_this(SR_OIDC, "Handling end session endpoint request", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "Handling end session endpoint request", LOG_LEVEL_DEBUG, 0);
     
     // This is a stub implementation that always returns a "Not Implemented" response
     return send_oidc_json_response(connection, 

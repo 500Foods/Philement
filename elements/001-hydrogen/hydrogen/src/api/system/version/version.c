@@ -23,7 +23,7 @@
  * @return MHD_Result indicating success or failure
  */
 enum MHD_Result handle_version_request(struct MHD_Connection *connection) {
-    log_this(SR_API, "Handling version endpoint request", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "Handling version endpoint request", LOG_LEVEL_DEBUG, 0);
 
     // Create the response JSON object with version information
     json_t *response_obj = json_object();

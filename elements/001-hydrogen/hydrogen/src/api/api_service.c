@@ -31,7 +31,7 @@ enum MHD_Result handle_exact_api_version_request(void *cls, struct MHD_Connectio
     (void)cls; (void)url; (void)method; (void)version; (void)upload_data;
     (void)upload_data_size; (void)con_cls;  // Unused parameters
 
-    // log_this(SR_API, "Handling exact /api/version request", LOG_LEVEL_STATE, 0);
+    // log_this(SR_API, "Handling exact /api/version request", LOG_LEVEL_DEBUG, 0);
     return handle_version_request(connection);
 }
 
@@ -46,14 +46,14 @@ enum MHD_Result handle_exact_api_files_local_request(void *cls, struct MHD_Conne
                                                             const char *version, const char *upload_data,
                                                             size_t *upload_data_size, void **con_cls) {
     (void)cls; (void)url; (void)version; // Unused parameters
-    // log_this(SR_API, "Handling exact /api/files/local request", LOG_LEVEL_STATE, 0);
+    // log_this(SR_API, "Handling exact /api/files/local request", LOG_LEVEL_DEBUG, 0);
     // Delegate to the same handler as /api/system/upload
     return handle_system_upload_request(connection, method, upload_data,
                                       upload_data_size, con_cls);
 }
 
 bool init_api_endpoints(void) {
-    log_this(SR_API, "Initializing API endpoints", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "Initializing API endpoints", LOG_LEVEL_DEBUG, 0);
 
     // Register endpoints with the web server
     if (!register_api_endpoints()) {
@@ -61,16 +61,16 @@ bool init_api_endpoints(void) {
         return false;
     }
 
-    log_this(SR_API, "API endpoints initialized successfully", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "API endpoints initialized successfully", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
 void cleanup_api_endpoints(void) {
-    log_this(SR_API, "Cleaning up API endpoints", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "Cleaning up API endpoints", LOG_LEVEL_DEBUG, 0);
 
     if (app_config && app_config->api.prefix) {
         unregister_web_endpoint(app_config->api.prefix);
-        log_this(SR_API, "Unregistered API endpoints", LOG_LEVEL_STATE, 0);
+        log_this(SR_API, "Unregistered API endpoints", LOG_LEVEL_DEBUG, 0);
     }
 }
 
@@ -108,7 +108,7 @@ bool register_api_endpoints(void) {
         return false;
     }
 
-    log_this(SR_API, "Registered hardcoded endpoint: /api/version", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "Registered hardcoded endpoint: /api/version", LOG_LEVEL_DEBUG, 0);
 
     // Register hardcoded /api/files/local endpoint with high precedence SECOND
     WebServerEndpoint hardcoded_files_local_endpoint = {
@@ -123,7 +123,7 @@ bool register_api_endpoints(void) {
         return false;
     }
 
-    log_this(SR_API, "Registered hardcoded endpoint: /api/files/local", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "Registered hardcoded endpoint: /api/files/local", LOG_LEVEL_DEBUG, 0);
 
     // Create general API endpoint registration
     WebServerEndpoint api_endpoint = {
@@ -138,24 +138,24 @@ bool register_api_endpoints(void) {
         return false;
     }
 
-    log_this(SR_API, "Registered API endpoints with prefix: %s", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+    log_this(SR_API, "Registered API endpoints with prefix: %s", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
 
     // Log available endpoints
     log_group_begin();
-        log_this(SR_API, "Available endpoints:", LOG_LEVEL_STATE, 0);
-        log_this(SR_API, "  -> /api/version (hardcoded, high precedence)", LOG_LEVEL_STATE, 0);
-        log_this(SR_API, "  -> /api/files/local (hardcoded, high precedence - upload alias)", LOG_LEVEL_STATE, 0);
-        log_this(SR_API, "  -> %s/version", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/info", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/health", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/test", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/version", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/config", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/prometheus", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/appconfig", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/recent", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/system/upload", LOG_LEVEL_STATE, 1, app_config->api.prefix);
-        log_this(SR_API, "  -> %s/conduit/query", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_API, "Available endpoints:", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_API, "― /api/version (hardcoded, high precedence)", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_API, "― /api/files/local (hardcoded, high precedence - upload alias)", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_API, "― %s/version", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/system/info", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/system/health", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/system/test", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/system/version", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/system/config", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/system/prometheus", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/system/appconfig", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/system/recent", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/system/upload", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/query", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
     log_group_end();
     
     return true;

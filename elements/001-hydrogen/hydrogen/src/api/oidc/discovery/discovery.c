@@ -19,7 +19,7 @@
  * @return MHD_Result indicating success or failure
  */
 enum MHD_Result handle_oidc_discovery_endpoint(struct MHD_Connection *connection) {
-    log_this(SR_OIDC, "Handling discovery endpoint request", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "Handling discovery endpoint request", LOG_LEVEL_DEBUG, 0);
     
     // Create a minimal discovery document
     const char *discovery_json = "{"

@@ -23,7 +23,7 @@ static OIDCContext *g_oidc_context = NULL;
  * @return true if initialization successful, false otherwise
  */
 bool init_oidc_endpoints(OIDCContext *oidc_context) {
-    log_this(SR_OIDC, "Initializing OIDC endpoints", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "Initializing OIDC endpoints", LOG_LEVEL_DEBUG, 0);
     
     if (!oidc_context) {
         log_this(SR_OIDC, "Invalid OIDC context", LOG_LEVEL_ERROR, 0);
@@ -35,7 +35,7 @@ bool init_oidc_endpoints(OIDCContext *oidc_context) {
     // Register endpoints with the web server
     register_oidc_endpoints();
     
-    log_this(SR_OIDC, "OIDC endpoints initialized successfully", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "OIDC endpoints initialized successfully", LOG_LEVEL_DEBUG, 0);
     return true;
 }
 
@@ -43,12 +43,12 @@ bool init_oidc_endpoints(OIDCContext *oidc_context) {
  * Clean up OIDC API endpoints
  */
 void cleanup_oidc_endpoints(void) {
-    log_this(SR_OIDC, "Cleaning up OIDC endpoints", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "Cleaning up OIDC endpoints", LOG_LEVEL_DEBUG, 0);
     
     // Reset the global context
     g_oidc_context = NULL;
     
-    log_this(SR_OIDC, "OIDC endpoints cleanup completed", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "OIDC endpoints cleanup completed", LOG_LEVEL_DEBUG, 0);
 }
 
 /**
@@ -57,7 +57,7 @@ void cleanup_oidc_endpoints(void) {
  * @return true if registration successful, false otherwise
  */
 bool register_oidc_endpoints(void) {
-    log_this(SR_OIDC, "Registering OIDC endpoints with web server", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "Registering OIDC endpoints with web server", LOG_LEVEL_DEBUG, 0);
     
     // Stub implementation that pretends to register endpoints
     // In a real implementation, this would call web_server_register_handler
@@ -112,7 +112,7 @@ enum MHD_Result handle_oidc_request(struct MHD_Connection *connection,
     /* Mark unused parameters */
     (void)version;
     
-    log_this(SR_OIDC, "Handling OIDC request", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "Handling OIDC request", LOG_LEVEL_DEBUG, 0);
     
     if (!g_oidc_context) {
         log_this(SR_OIDC, "OIDC context not initialized", LOG_LEVEL_ERROR, 0);

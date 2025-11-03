@@ -52,7 +52,7 @@ enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_p
     // If serving a .br file, add the Content-Encoding header
     if (use_br_file) {
         add_brotli_header(response);
-        log_this(SR_WEBSERVER, "Serving pre-compressed Brotli file: %s", LOG_LEVEL_STATE, 1, br_file_path);
+        log_this(SR_WEBSERVER, "Serving pre-compressed Brotli file: %s", LOG_LEVEL_DEBUG, 1, br_file_path);
     }
     
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
@@ -71,7 +71,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         add_service_thread(&webserver_threads, pthread_self());
         char msg[128];
         snprintf(msg, sizeof(msg), "New connection thread for %s %s", method, url);
-        log_this(SR_WEBSERVER, msg, LOG_LEVEL_STATE, 0);
+        log_this(SR_WEBSERVER, msg, LOG_LEVEL_DEBUG, 0);
     
 
         /*
@@ -89,7 +89,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         if (is_api_endpoint(url, service, endpoint)) {
             char detail[128];
             snprintf(detail, sizeof(detail), "%sService/%s", service, endpoint);
-            log_this(SR_API, detail, LOG_LEVEL_STATE, 0);
+            log_this(SR_API, detail, LOG_LEVEL_DEBUG, 0);
         }
     }
 
@@ -148,7 +148,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
 
         // Serve up the requested file
         if (access(file_path, F_OK) != -1) {
-            log_this(SR_WEBSERVER, "Served File: %s", LOG_LEVEL_STATE, 1, file_path);
+            log_this(SR_WEBSERVER, "Served File: %s", LOG_LEVEL_DEBUG, 1, file_path);
             return serve_file(connection, file_path);
         }
 
@@ -204,5 +204,5 @@ void request_completed(void *cls, struct MHD_Connection *connection,
 
     // Remove connection thread from tracking after cleanup
     remove_service_thread(&webserver_threads, pthread_self());
-    log_this(SR_WEBSERVER, "Connection thread completed", LOG_LEVEL_STATE, 0);
+    log_this(SR_WEBSERVER, "Connection thread completed", LOG_LEVEL_TRACE, 0);
 }
