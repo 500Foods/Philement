@@ -88,19 +88,19 @@ void free_notify_resources(void) {
  */
 int land_notify_subsystem(void) {
     // Begin LANDING: NOTIFY section
-    log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
-    log_this(SR_LANDING, "LANDING: NOTIFY", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_NOTIFY, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_NOTIFY, "LANDING: " SR_NOTIFY, LOG_LEVEL_DEBUG, 0);
 
     // Get current subsystem state through registry
     int subsys_id = get_subsystem_id_by_name("Notify");
     if (subsys_id < 0 || !is_subsystem_running(subsys_id)) {
-        log_this(SR_LANDING, "Notify not running, skipping shutdown", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_NOTIFY, SR_NOTIFY " not running, skipping shutdown", LOG_LEVEL_DEBUG, 0);
         return 1;  // Success - nothing to do
     }
 
     // Step 1: Mark as stopping
     update_subsystem_state(subsys_id, SUBSYSTEM_STOPPING);
-    log_this(SR_LANDING, "LANDING: NOTIFY - Beginning shutdown sequence", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_NOTIFY, "LANDING: " SR_NOTIFY " Beginning shutdown sequence", LOG_LEVEL_DEBUG, 0);
 
     // Step 2: Free resources and mark as inactive
     free_notify_resources();
@@ -108,9 +108,9 @@ int land_notify_subsystem(void) {
     // Step 3: Verify final state for restart capability
     SubsystemState final_state = get_subsystem_state(subsys_id);
     if (final_state == SUBSYSTEM_INACTIVE) {
-        log_this(SR_LANDING, "LANDING: NOTIFY - Successfully landed and ready for future restart", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_NOTIFY, "LANDING: " SR_NOTIFY " COMPLETE", LOG_LEVEL_DEBUG, 0);
     } else {
-        log_this(SR_LANDING, "LANDING: NOTIFY - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
+        log_this(SR_NOTIFY, "LANDING: " SR_NOTIFY " Warning: Unexpected final state: %s", LOG_LEVEL_ALERT, 1, subsystem_state_to_string(final_state));
     }
 
     return 1;  // Success

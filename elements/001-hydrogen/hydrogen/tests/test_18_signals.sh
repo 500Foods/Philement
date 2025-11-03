@@ -445,7 +445,7 @@ display_sighup_single_log() {
 
     # SIGTERM SIGNAL RECEPTION SECTION
     local sigterm_line
-    sigterm_line=$(grep -n "SIGTERM received, initiating rapid shutdown" "${log_file}" 2>/dev/null | head -n 1 | cut -d: -f1 || echo "0")
+    sigterm_line=$(grep -n "SIGTERM received, initiating shutdown" "${log_file}" 2>/dev/null | head -n 1 | cut -d: -f1 || echo "0")
 
     if [[ "${sigterm_line}" != "0" ]]; then
         local sigterm_start=$((sigterm_line - 1))  # Start 1 line before
@@ -546,7 +546,7 @@ display_sigterm_log() {
 
     # SIGTERM SIGNAL RECEPTION SECTION
     local sigterm_line
-    sigterm_line=$(grep -n "SIGTERM received, initiating rapid shutdown" "${log_file}" 2>/dev/null | head -n 1 | cut -d: -f1 || echo "0")
+    sigterm_line=$(grep -n "SIGTERM received, initiating shutdown" "${log_file}" 2>/dev/null | head -n 1 | cut -d: -f1 || echo "0")
 
     if [[ "${sigterm_line}" != "0" ]]; then
         local sigterm_start=$((sigterm_line - 1))  # Start 1 line before
@@ -591,7 +591,7 @@ display_sigint_log() {
 
     # SIGINT SIGNAL RECEPTION SECTION (similar to SIGTERM)
     local sigint_line
-    sigint_line=$(grep -n "SIGINT received, initiating rapid shutdown" "${log_file}" 2>/dev/null | head -n 1 | cut -d: -f1 || echo "0")
+    sigint_line=$(grep -n "SIGINT received, initiating shutdown" "${log_file}" 2>/dev/null | head -n 1 | cut -d: -f1 || echo "0")
 
     if [[ "${sigint_line}" != "0" ]]; then
         local sigint_start=$((sigint_line - 1))  # Start 1 line before

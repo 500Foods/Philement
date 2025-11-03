@@ -344,7 +344,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     }
 
     // Success
-    log_this(SR_MDNS_SERVER, "mDNS Server initialized with hostname: %s", LOG_LEVEL_STATE, 1, server->hostname);
+    log_this(SR_MDNS_SERVER, "mDNS Server initialized with hostname: %s", LOG_LEVEL_DEBUG, 1, server->hostname);
     free_network_info(net_info_instance);
     return server;
 }

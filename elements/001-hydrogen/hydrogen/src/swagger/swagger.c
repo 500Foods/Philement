@@ -80,21 +80,21 @@ bool init_swagger_support_from_payload(SwaggerConfig *config, PayloadFile *paylo
 
     // Prevent initialization during shutdown
     if (server_stopping || web_server_shutdown) {
-        log_this(SR_SWAGGER, "Cannot initialize Swagger UI during shutdown", LOG_LEVEL_STATE, 0);
+        log_this(SR_SWAGGER, "Cannot initialize Swagger UI during shutdown", LOG_LEVEL_DEBUG, 0);
         swagger_initialized = false;
         return false;
     }
 
     // Only proceed if we're in startup phase
     if (!server_starting || server_stopping || web_server_shutdown) {
-        log_this(SR_SWAGGER, "Cannot initialize - invalid system state", LOG_LEVEL_STATE, 0);
+        log_this(SR_SWAGGER, "Cannot initialize - invalid system state", LOG_LEVEL_DEBUG, 0);
         return false;
     }
 
     // Skip if already initialized or disabled
     if (swagger_initialized || !config->enabled) {
         if (swagger_initialized) {
-            log_this(SR_SWAGGER, "Already initialized", LOG_LEVEL_STATE, 0);
+            log_this(SR_SWAGGER, "Already initialized", LOG_LEVEL_DEBUG, 0);
         }
         return swagger_initialized;
     }
@@ -137,7 +137,7 @@ bool init_swagger_support_from_payload(SwaggerConfig *config, PayloadFile *paylo
     config->payload_available = true;
     swagger_initialized = true;
 
-    log_this(SR_SWAGGER, "Loaded %zu swagger files from payload cache", LOG_LEVEL_STATE, 1, num_swagger_files);
+    log_this(SR_SWAGGER, "Loaded %zu swagger files from payload cache", LOG_LEVEL_DEBUG, 1, num_swagger_files);
 
     return true;
 }
@@ -180,7 +180,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     if (strcmp(url, config->prefix) == 0) {
         char *redirect_url;
         if (asprintf(&redirect_url, "%s/", url) != -1) {
-            log_this(SR_SWAGGER, "Redirecting %s to %s for proper relative path resolution", LOG_LEVEL_STATE, 2, url, redirect_url);
+            log_this(SR_SWAGGER, "Redirecting %s to %s for proper relative path resolution", LOG_LEVEL_DEBUG, 2, url, redirect_url);
                     
             struct MHD_Response *response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
             MHD_add_response_header(response, "Location", redirect_url);
@@ -204,7 +204,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     }
     
     // Log the URL processing for debugging
-    log_this(SR_SWAGGER, "Request: Original URL: %s, Processed path: %s", LOG_LEVEL_STATE, 2, url, url_path);
+    log_this(SR_SWAGGER, "Request: Original URL: %s, Processed path: %s", LOG_LEVEL_DEBUG, 2, url, url_path);
 
     // Try to find the requested file - prioritize uncompressed versions for browser compatibility
     SwaggerFile *file = NULL;
@@ -213,9 +213,9 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     // Debug logging for troubleshooting
     const char *accept_encoding = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Accept-Encoding");
     if (accept_encoding) {
-        log_this(SR_SWAGGER, "Client Accept-Encoding: %s", LOG_LEVEL_STATE, 1, accept_encoding);
+        log_this(SR_SWAGGER, "Client Accept-Encoding: %s", LOG_LEVEL_DEBUG, 1, accept_encoding);
     } else {
-        log_this(SR_SWAGGER, "No Accept-Encoding header from client", LOG_LEVEL_STATE, 0);
+        log_this(SR_SWAGGER, "No Accept-Encoding header from client", LOG_LEVEL_DEBUG, 0);
     }
 
     // First try to find an exact match (handles direct .br requests)
@@ -223,7 +223,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         if (strcmp(swagger_files[i].name, url_path) == 0) {
             file = &swagger_files[i];
             const char *file_type = file->is_compressed ? "compressed" : "uncompressed";
-            log_this(SR_SWAGGER, "Found exact match for %s (%s)", LOG_LEVEL_STATE, 2, url_path, file_type);
+            log_this(SR_SWAGGER, "Found exact match for %s (%s)", LOG_LEVEL_DEBUG, 2, url_path, file_type);
             break;
         }
     }
@@ -251,13 +251,13 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         // Prefer uncompressed file for browser compatibility, fallback to compressed
         if (uncompressed_file) {
             file = uncompressed_file;
-            log_this(SR_SWAGGER, "Using uncompressed version of %s", LOG_LEVEL_STATE, 1, url_path);
+            log_this(SR_SWAGGER, "Using uncompressed version of %s", LOG_LEVEL_DEBUG, 1, url_path);
         } else if (compressed_file && client_accepts_br) {
             file = compressed_file;
-            log_this(SR_SWAGGER, "Using compressed version of %s (client supports brotli)", LOG_LEVEL_STATE, 1, url_path);
+            log_this(SR_SWAGGER, "Using compressed version of %s (client supports brotli)", LOG_LEVEL_DEBUG, 1, url_path);
         } else if (compressed_file) {
             file = compressed_file;
-            log_this(SR_SWAGGER, "Using compressed version of %s (forcing header for client compatibility)", LOG_LEVEL_STATE, 1, url_path);
+            log_this(SR_SWAGGER, "Using compressed version of %s (forcing header for client compatibility)", LOG_LEVEL_DEBUG, 1, url_path);
         } else {
             log_this(SR_SWAGGER, "No version found for %s", LOG_LEVEL_ERROR, 1, url_path);
         }
@@ -384,7 +384,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         free(full_url);
 
         // Log the server URL for debugging
-        log_this(SR_SWAGGER, "Updated swagger.json with API prefix: %s", LOG_LEVEL_STATE, 1, app_config->api.prefix);
+        log_this(SR_SWAGGER, "Updated swagger.json with API prefix: %s", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
 
         // Convert the modified spec back to JSON
         dynamic_content = json_dumps(spec, JSON_INDENT(2));
@@ -477,10 +477,10 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     // Add compression header if serving compressed content
     // IMPORTANT: Always add header when serving compressed data, regardless of client support
     if (file->is_compressed) {
-        log_this(SR_SWAGGER, "Serving compressed file: %s (Content-Encoding: br)", LOG_LEVEL_STATE, 1, url_path);
+        log_this(SR_SWAGGER, "Serving compressed file: %s (Content-Encoding: br)", LOG_LEVEL_DEBUG, 1, url_path);
         add_brotli_header(response);
     } else {
-        log_this(SR_SWAGGER, "Serving uncompressed file: %s", LOG_LEVEL_STATE, 1, url_path);
+        log_this(SR_SWAGGER, "Serving uncompressed file: %s", LOG_LEVEL_DEBUG, 1, url_path);
     }
 
     // Add CORS headers

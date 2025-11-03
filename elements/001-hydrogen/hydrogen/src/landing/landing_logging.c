@@ -103,23 +103,23 @@ LaunchReadiness check_logging_landing_readiness(void) {
 
 // Land the logging subsystem
 int land_logging_subsystem(void) {
-    log_this(SR_LOGGING, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_LOGGING, "LANDING: " SR_LOGGING, LOG_LEVEL_STATE, 0);
+    log_this(SR_LOGGING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_LOGGING, "LANDING: " SR_LOGGING, LOG_LEVEL_DEBUG, 0);
     
     bool success = true;
     
     // Signal thread shutdown
     log_queue_shutdown = 1;
-    log_this(SR_LOGGING, "Signaled " SR_LOGGING " thread to stop", LOG_LEVEL_STATE, 0);
+    log_this(SR_LOGGING, "Signaled " SR_LOGGING " thread to stop", LOG_LEVEL_TRACE, 0);
     
     // Wait for thread to complete
     if (log_thread) {
-        log_this(SR_LOGGING, "Waiting for " SR_LOGGING " thread to complete", LOG_LEVEL_STATE, 0);
+        log_this(SR_LOGGING, "Waiting for " SR_LOGGING " thread to complete", LOG_LEVEL_TRACE, 0);
         if (pthread_join(log_thread, NULL) != 0) {
             log_this(SR_LOGGING, "Error waiting for " SR_LOGGING " thread", LOG_LEVEL_ERROR, 0);
             success = false;
         } else {
-            log_this(SR_LOGGING, SR_LOGGING " thread completed", LOG_LEVEL_STATE, 0);
+            log_this(SR_LOGGING, SR_LOGGING " thread completed", LOG_LEVEL_TRACE, 0);
         }
     }
     
@@ -131,15 +131,15 @@ int land_logging_subsystem(void) {
     
     // Clean up logging configuration
     if (app_config) {
-        log_this(SR_LOGGING, "Cleaning up " SR_LOGGING " configuration", LOG_LEVEL_STATE, 0);
+        log_this(SR_LOGGING, "Cleaning up " SR_LOGGING " configuration", LOG_LEVEL_DEBUG, 0);
         
         // Clean up logging config - handles all components including file logging
         cleanup_logging_config(&app_config->logging);
     } else {
-        log_this(SR_LOGGING, "Warning: app_config is NULL during " SR_LOGGING " cleanup", LOG_LEVEL_ALERT, 0);
+        log_this(SR_LOGGING, "Warning: app_config is NULL during " SR_LOGGING " cleanup", LOG_LEVEL_DEBUG, 0);
     }
     
-    log_this(SR_LOGGING, SR_LOGGING " shutdown complete", LOG_LEVEL_STATE, 0);
+    log_this(SR_LOGGING, "LANDING: " SR_LOGGING " COMPLETE", LOG_LEVEL_DEBUG, 0);
     
     return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }

@@ -25,7 +25,7 @@ extern ServiceThreads database_threads;
 void shutdown_database(void) {
     // if (!database_stopping) {
     //     database_stopping = 1;
-    //     log_this(SR_DATABASE, "Database subsystem shutting down", LOG_LEVEL_STATE, 0);
+    //     log_this(SR_DATABASE, "Database subsystem shutting down", LOG_LEVEL_DEBUG, 0);
     // }
 }
 
@@ -100,19 +100,19 @@ LaunchReadiness check_database_landing_readiness(void) {
 
 // Land the database subsystem
 int land_database_subsystem(void) {
-    log_this(SR_DATABASE, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_DATABASE, "LANDING: DATABASE", LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_DATABASE, "LANDING: " SR_DATABASE, LOG_LEVEL_DEBUG, 0);
 
     // Shut down all database queues and threads
     if (global_queue_manager) {
-        log_this(SR_DATABASE, "Shutting down database queues", LOG_LEVEL_STATE, 0);
+        log_this(SR_DATABASE, "Shutting down database queues", LOG_LEVEL_DEBUG, 0);
 
         // Iterate through all databases and shut down their child queues, then destroy the Lead queues
         for (size_t i = 0; i < global_queue_manager->database_count; i++) {
             DatabaseQueue* db_queue = global_queue_manager->databases[i];
             if (db_queue && db_queue->is_lead_queue) {
                 char* dqm_label = database_queue_generate_label(db_queue);
-                log_this(dqm_label, "Shutting down child queues", LOG_LEVEL_STATE, 0);
+                log_this(dqm_label, "Shutting down child queues", LOG_LEVEL_DEBUG, 0);
 
                 // Shut down all child queues for this database
                 // We need to collect the queue types first since shutdown modifies the array
@@ -142,12 +142,12 @@ int land_database_subsystem(void) {
 
                 // Now shut down each unique queue type
                 for (int j = 0; j < shutdown_count; j++) {
-                    log_this(dqm_label, "Shutting down %s queue", LOG_LEVEL_STATE, 1, queue_types_to_shutdown[j]);
+                    log_this(dqm_label, "Shutting down %s queue", LOG_LEVEL_DEBUG, 1, queue_types_to_shutdown[j]);
                     database_queue_shutdown_child_queue(db_queue, queue_types_to_shutdown[j]);
                     free(queue_types_to_shutdown[j]);
                 }
 
-                log_this(dqm_label, "All child queues shut down", LOG_LEVEL_STATE, 0);
+                log_this(dqm_label, "All child queues shut down", LOG_LEVEL_DEBUG, 0);
 
                 // Clear the child queues array to prevent double destruction
                 MutexResult clear_lock = MUTEX_LOCK(&db_queue->children_lock, dqm_label);
@@ -181,15 +181,15 @@ int land_database_subsystem(void) {
             global_queue_manager = NULL;
         }
 
-        log_this(SR_DATABASE, "Database queue system destroyed", LOG_LEVEL_STATE, 0);
+        log_this(SR_DATABASE, "Database queue system destroyed", LOG_LEVEL_DEBUG, 0);
     } else {
-        log_this(SR_DATABASE, "No database queue manager to shut down", LOG_LEVEL_STATE, 0);
+        log_this(SR_DATABASE, "No database queue manager to shut down", LOG_LEVEL_DEBUG, 0);
     }
 
     // Clean up database configuration
-    log_this(SR_DATABASE, "Cleaning up database configuration", LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, "Cleaning up database configuration", LOG_LEVEL_DEBUG, 0);
 
-    log_this(SR_DATABASE, "Database shutdown complete", LOG_LEVEL_STATE, 0);
+    log_this(SR_DATABASE, "LANDING: " SR_DATABASE " COMPLETE", LOG_LEVEL_DEBUG, 0);
 
     return 1;  // Return success
 }

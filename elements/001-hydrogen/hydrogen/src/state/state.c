@@ -94,7 +94,7 @@ void signal_handler(int sig) {
             // Record shutdown start time immediately when signal received
             record_shutdown_start_time();
             
-            log_this(SR_SHUTDOWN, "%s received, initiating rapid shutdown", LOG_LEVEL_STATE, 1, sig == SIGINT ? "SIGINT" : "SIGTERM");
+            log_this(SR_SHUTDOWN, "%s received, initiating shutdown", LOG_LEVEL_STATE, 1, sig == SIGINT ? "SIGINT" : "SIGTERM");
             
             // Set signal-based shutdown flag for rapid exit
             __sync_bool_compare_and_swap(&signal_based_shutdown, 0, 1);

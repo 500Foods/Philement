@@ -65,16 +65,17 @@ LaunchReadiness check_swagger_landing_readiness(void) {
 
 // Land the swagger subsystem
 int land_swagger_subsystem(void) {
-    log_this(SR_SWAGGER, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
-    log_this(SR_SWAGGER, "LANDING: SWAGGER", LOG_LEVEL_STATE, 0);
+    log_this(SR_SWAGGER, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+    log_this(SR_SWAGGER, "LANDING: " SR_SWAGGER, LOG_LEVEL_DEBUG, 0);
     
     // Signal shutdown
     swagger_system_shutdown = 1;
-    log_this(SR_SWAGGER, "Signaled Swagger system to stop", LOG_LEVEL_STATE, 0);
+    log_this(SR_SWAGGER, "Signaled Swagger system to stop", LOG_LEVEL_DEBUG, 0);
     
     // Cleanup resources
     // Additional cleanup will be added as needed
     
-    log_this(SR_SWAGGER, "Swagger shutdown complete", LOG_LEVEL_STATE, 0);
+    log_this(SR_SWAGGER, "LANDING: " SR_SWAGGER " COMPLETE", LOG_LEVEL_DEBUG, 0);
+    
     return 1; // Success
 }

@@ -90,7 +90,7 @@ run_upload_test_parallel() {
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if wait_for_server_ready "${base_url}"; then
             # Additional check: verify webserver actually initialized successfully
-            if "${GREP}" -q "WebServer.*Successfully launched and running" "${log_file}" 2>/dev/null; then
+            if "${GREP}" -q "WebServer.*COMPLETE" "${log_file}" 2>/dev/null; then
                 echo "WEBSERVER_READY" >> "${result_file}"
                 echo "SERVER_READY" >> "${result_file}"
             else
@@ -489,13 +489,16 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
         # Display full server log section for this test
         log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
+        result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
         if [[ -f "${log_file}" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Server Log: ${log_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Result Log: ${result_file}"
+
             # Extract the full server runtime log section (from 2 lines after "Press Ctrl+C to exit (SIGINT)" to 1 line before "SIGINT received")
             full_log_section=$("${GREP}" -A 10000 "Press Ctrl+C to exit (SIGINT)" "${log_file}" 2>/dev/null | tail -n +2 | "${GREP}" -B 10000 -A 3 "SIGINT received" | head -n -1 2>/dev/null || true)
             # Filter out low-level TRACE lines from the displayed log
             full_log_section=$(echo "${full_log_section}" | "${GREP}" -v "\[ TRACE \]" || true)
             if [[ -n "${full_log_section}" ]]; then
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Server Log: ..${log_file}"
                 # Process each line following Test 15 pattern for consistent log formatting
                 while IFS= read -r line; do
                     output_line=$([[ "${line}" == \[* ]] && echo "${line:39}" || echo "${line}")

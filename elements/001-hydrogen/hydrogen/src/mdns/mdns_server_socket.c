@@ -121,6 +121,6 @@ int create_multicast_socket(int family, const char *group, const char *if_name) 
         }
     }
 
-    log_this(SR_MDNS_SERVER, "Created multicast socket on interface %s", LOG_LEVEL_STATE, 1, if_name);
+    log_this(SR_MDNS_SERVER, "Created multicast socket on interface %s", LOG_LEVEL_DEBUG, 1, if_name);
     return sockfd;
 }
