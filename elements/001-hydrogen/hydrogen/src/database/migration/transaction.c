@@ -517,7 +517,7 @@ bool execute_transaction(DatabaseHandle* connection, const char* sql_result,
     if (!success) {
         log_this(dqm_label, "Migration %s failed - transaction rolled back", LOG_LEVEL_TRACE, 1, migration_file);
     } else {
-        log_this(dqm_label, "Migration %s imported successfully", LOG_LEVEL_STATE, 1, migration_file);
+        log_this(dqm_label, "Migration %s LOAD was successful", LOG_LEVEL_STATE, 1, migration_file);
     }
 
     return success;
