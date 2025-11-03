@@ -18,7 +18,7 @@
 // Success: 200 OK with plain text response
 // Error: 500 Internal Server Error with error details
 enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connection) {
-    log_this(SR_API, "Handling appconfig endpoint request", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "Handling appconfig endpoint request", LOG_LEVEL_DEBUG, 0);
 
     // Get current configuration
     if (!app_config) {

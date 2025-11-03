@@ -33,7 +33,7 @@ enum MHD_Result handle_oidc_authorization_endpoint(struct MHD_Connection *connec
     (void)upload_data_size;
     (void)con_cls;
     
-    log_this(SR_OIDC, "Handling authorization endpoint request", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "Handling authorization endpoint request", LOG_LEVEL_DEBUG, 0);
     
     // Extract and validate OAuth parameters
     char *client_id = NULL;

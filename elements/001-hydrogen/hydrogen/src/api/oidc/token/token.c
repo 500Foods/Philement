@@ -30,7 +30,7 @@ enum MHD_Result handle_oidc_token_endpoint(struct MHD_Connection *connection,
     /* Mark unused parameters */
     (void)con_cls;
     
-    log_this(SR_OIDC, "Handling token endpoint request", LOG_LEVEL_STATE, 0);
+    log_this(SR_OIDC, "Handling token endpoint request", LOG_LEVEL_DEBUG, 0);
     
     // Only POST is allowed for token endpoint
     if (strcmp(method, "POST") != 0) {

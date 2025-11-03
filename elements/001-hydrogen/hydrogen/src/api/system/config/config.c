@@ -22,7 +22,7 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
     (void)upload_data;      // Unused
     (void)upload_data_size; // Unused
     
-    log_this(SR_API, "Handling config endpoint request", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "Handling config endpoint request", LOG_LEVEL_DEBUG, 0);
     
     // Start timing
     struct timespec start_time;

@@ -52,7 +52,7 @@ void extract_websocket_metrics_prometheus(WebSocketMetrics *metrics) {
 // Includes CORS headers for cross-origin access
 enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connection)
 {
-    log_this(SR_API, "Handling prometheus endpoint request", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "Handling prometheus endpoint request", LOG_LEVEL_DEBUG, 0);
 
     WebSocketMetrics metrics = {0};
 

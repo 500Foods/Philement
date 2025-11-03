@@ -50,7 +50,7 @@ void extract_websocket_metrics(WebSocketMetrics *metrics) {
 // Includes CORS headers for cross-origin access
 enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
 {
-    log_this(SR_API, "Handling info endpoint request", LOG_LEVEL_STATE, 0);
+    log_this(SR_API, "Handling info endpoint request", LOG_LEVEL_DEBUG, 0);
 
     json_t *root = NULL;
     WebSocketMetrics metrics = {0};
