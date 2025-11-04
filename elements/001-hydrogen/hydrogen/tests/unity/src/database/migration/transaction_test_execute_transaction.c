@@ -84,7 +84,7 @@ void test_parse_sql_statements_success(void) {
     size_t statement_count = 0;
     size_t statements_capacity = 0;
 
-    bool result = parse_sql_statements(sql, strlen(sql), &statements, &statement_count, &statements_capacity, "test");
+    bool result = parse_sql_statements(sql, strlen(sql), &statements, &statement_count, &statements_capacity, "-- QUERY DELIMITER\n", "test");
 
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_EQUAL(3, statement_count);
@@ -105,7 +105,7 @@ void test_parse_sql_statements_null_input(void) {
     size_t statement_count = 0;
     size_t statements_capacity = 0;
 
-    bool result = parse_sql_statements(NULL, 10, &statements, &statement_count, &statements_capacity, "test");
+    bool result = parse_sql_statements(NULL, 10, &statements, &statement_count, &statements_capacity, "-- QUERY DELIMITER\n", "test");
 
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(statements);
@@ -118,7 +118,7 @@ void test_parse_sql_statements_empty_statements(void) {
     size_t statement_count = 0;
     size_t statements_capacity = 0;
 
-    bool result = parse_sql_statements(sql, strlen(sql), &statements, &statement_count, &statements_capacity, "test");
+    bool result = parse_sql_statements(sql, strlen(sql), &statements, &statement_count, &statements_capacity, "-- QUERY DELIMITER\n", "test");
 
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_EQUAL(2, statement_count);
@@ -138,7 +138,7 @@ void test_parse_sql_statements_empty_input(void) {
     size_t statement_count = 0;
     size_t statements_capacity = 0;
 
-    bool result = parse_sql_statements("", 0, &statements, &statement_count, &statements_capacity, "test");
+    bool result = parse_sql_statements("", 0, &statements, &statement_count, &statements_capacity, "-- QUERY DELIMITER\n", "test");
 
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(statements);
@@ -163,7 +163,7 @@ void test_parse_sql_statements_single_no_delimiter(void) {
     size_t statement_count = 0;
     size_t statements_capacity = 0;
 
-    bool result = parse_sql_statements(sql, strlen(sql), &statements, &statement_count, &statements_capacity, "test");
+    bool result = parse_sql_statements(sql, strlen(sql), &statements, &statement_count, &statements_capacity, "-- QUERY DELIMITER\n", "test");
 
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_EQUAL(1, statement_count);

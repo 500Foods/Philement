@@ -13,7 +13,8 @@
 
 // Query cache entry structure
 typedef struct QueryCacheEntry {
-    int query_ref;                 // Unique query identifier
+    int query_ref;                 // Unique query identifier (same as ref in database)
+    int query_type;                // Query type: 1000=loaded migration, 1003=applied migration, 999=regular query
     char* sql_template;            // SQL with named parameters (e.g., :userId)
     char* description;             // Human-readable description for logging
     char* queue_type;              // Recommended queue: "slow", "medium", "fast", "cache"
@@ -35,14 +36,16 @@ typedef struct QueryTableCache {
 // Create and destroy cache
 QueryTableCache* query_cache_create(void);
 void query_cache_destroy(QueryTableCache* cache);
+void query_cache_clear(QueryTableCache* cache);
 
 // Entry management
 bool query_cache_add_entry(QueryTableCache* cache, QueryCacheEntry* entry);
 QueryCacheEntry* query_cache_lookup(QueryTableCache* cache, int query_ref);
+QueryCacheEntry* query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int query_ref, int query_type);
 void query_cache_update_usage(QueryTableCache* cache, int query_ref);
 
 // Entry creation and cleanup
-QueryCacheEntry* query_cache_entry_create(int query_ref, const char* sql_template,
+QueryCacheEntry* query_cache_entry_create(int query_ref, int query_type, const char* sql_template,
                                          const char* description, const char* queue_type,
                                          int timeout_seconds);
 void query_cache_entry_destroy(QueryCacheEntry* entry);

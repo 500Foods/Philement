@@ -20,6 +20,7 @@ char* db2_get_connection_string(const ConnectionConfig* config) {
     } else {
         // DB2 ODBC connection string format with DRIVER specification
         // Format: DRIVER={IBM DB2 ODBC DRIVER};DATABASE=database;HOSTNAME=host;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;
+        // Note: Do NOT duplicate DATABASE= in the connection string - this causes the "DRIVER={IBM DB2 ODBC DRIVER}" to be interpreted as the database name
         snprintf(conn_str, 1024,
                  "DRIVER={IBM DB2 ODBC DRIVER};DATABASE=%s;HOSTNAME=%s;PORT=%d;PROTOCOL=TCPIP;UID=%s;PWD=%s;",
                  config->database ? config->database : "",

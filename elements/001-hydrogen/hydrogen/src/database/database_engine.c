@@ -654,9 +654,9 @@ PreparedStatement* find_prepared_statement(DatabaseHandle* connection, const cha
     }
 
     for (size_t i = 0; i < connection->prepared_statement_count; i++) {
-        if (connection->prepared_statements[i] &&
-            strcmp(connection->prepared_statements[i]->name, name) == 0) {
-            return connection->prepared_statements[i];
+        PreparedStatement* stmt = connection->prepared_statements[i];
+        if (stmt && stmt->name && strcmp(stmt->name, name) == 0) {
+            return stmt;
         }
     }
 

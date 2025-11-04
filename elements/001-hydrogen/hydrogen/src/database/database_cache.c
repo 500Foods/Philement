@@ -79,8 +79,35 @@ void query_cache_destroy(QueryTableCache* cache) {
     log_this("DATABASE", "Query cache destroyed", LOG_LEVEL_DEBUG, 0);
 }
 
+// Clear all entries from cache (but keep cache structure)
+void query_cache_clear(QueryTableCache* cache) {
+    if (!cache) return;
+
+    // Acquire write lock
+    if (pthread_rwlock_wrlock(&cache->cache_lock) != 0) {
+        log_this("DATABASE", "Failed to acquire write lock for cache clear", LOG_LEVEL_ERROR, 0);
+        return;
+    }
+
+    // Free all entries
+    for (size_t i = 0; i < cache->entry_count; i++) {
+        if (cache->entries[i]) {
+            query_cache_entry_destroy(cache->entries[i]);
+            cache->entries[i] = NULL;
+        }
+    }
+
+    // Reset count but keep capacity
+    cache->entry_count = 0;
+
+    // Release write lock
+    pthread_rwlock_unlock(&cache->cache_lock);
+
+    log_this("DATABASE", "Query cache cleared", LOG_LEVEL_DEBUG, 0);
+}
+
 // Create a new cache entry
-QueryCacheEntry* query_cache_entry_create(int query_ref, const char* sql_template,
+QueryCacheEntry* query_cache_entry_create(int query_ref, int query_type, const char* sql_template,
                                          const char* description, const char* queue_type,
                                          int timeout_seconds) {
     QueryCacheEntry* entry = (QueryCacheEntry*)malloc(sizeof(QueryCacheEntry));
@@ -91,6 +118,7 @@ QueryCacheEntry* query_cache_entry_create(int query_ref, const char* sql_templat
 
     // Initialize structure
     entry->query_ref = query_ref;
+    entry->query_type = query_type;
     entry->timeout_seconds = timeout_seconds;
     entry->last_used = time(NULL);
     entry->usage_count = 0;
@@ -188,6 +216,42 @@ QueryCacheEntry* query_cache_lookup(QueryTableCache* cache, int query_ref) {
     // Linear search (could be optimized with hash map if needed)
     for (size_t i = 0; i < cache->entry_count; i++) {
         if (cache->entries[i] && cache->entries[i]->query_ref == query_ref) {
+            result = cache->entries[i];
+            break;
+        }
+    }
+
+    // Release read lock
+    pthread_rwlock_unlock(&cache->cache_lock);
+
+    if (result) {
+        // Update usage statistics (this is a race condition but acceptable for stats)
+        result->last_used = time(NULL);
+        __sync_fetch_and_add(&result->usage_count, 1);
+    }
+
+    return result;
+}
+
+// Lookup entry by query_ref AND query_type (read lock)
+// This is needed for migrations where multiple entries may have same ref but different types
+// (e.g., ref=1001 could be type=1000 forward migration, type=1001 reverse, type=1002 diagram)
+QueryCacheEntry* query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int query_ref, int query_type) {
+    if (!cache) return NULL;
+
+    // Acquire read lock
+    if (pthread_rwlock_rdlock(&cache->cache_lock) != 0) {
+        log_this("DATABASE", "Failed to acquire read lock for cache lookup", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
+    QueryCacheEntry* result = NULL;
+
+    // Linear search for matching ref AND type
+    for (size_t i = 0; i < cache->entry_count; i++) {
+        if (cache->entries[i] &&
+            cache->entries[i]->query_ref == query_ref &&
+            cache->entries[i]->query_type == query_type) {
             result = cache->entries[i];
             break;
         }

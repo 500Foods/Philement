@@ -48,7 +48,7 @@ void test_query_cache_create_destroy(void) {
 // Test entry creation
 void test_query_cache_entry_create(void) {
     QueryCacheEntry* entry = query_cache_entry_create(
-        123, "SELECT * FROM users WHERE id = :userId", "Get user by ID", "fast", 30);
+        123, 999, "SELECT * FROM users WHERE id = :userId", "Get user by ID", "fast", 30);
 
     TEST_ASSERT_NOT_NULL(entry);
     TEST_ASSERT_EQUAL(123, entry->query_ref);
@@ -63,7 +63,7 @@ void test_query_cache_entry_create(void) {
 
 // Test entry creation with NULL strings
 void test_query_cache_entry_create_null_strings(void) {
-    QueryCacheEntry* entry = query_cache_entry_create(456, NULL, NULL, NULL, 10);
+    QueryCacheEntry* entry = query_cache_entry_create(456, 999, NULL, NULL, NULL, 10);
 
     TEST_ASSERT_NOT_NULL(entry);
     TEST_ASSERT_EQUAL(456, entry->query_ref);
@@ -78,7 +78,7 @@ void test_query_cache_entry_create_null_strings(void) {
 // Test adding entries to cache
 void test_query_cache_add_entry(void) {
     QueryCacheEntry* entry = query_cache_entry_create(
-        789, "SELECT * FROM products", "Get all products", "medium", 60);
+        789, 999, "SELECT * FROM products", "Get all products", "medium", 60);
 
     TEST_ASSERT_TRUE(query_cache_add_entry(test_cache, entry));
     TEST_ASSERT_EQUAL(1, query_cache_get_entry_count(test_cache));
@@ -99,7 +99,7 @@ void test_query_cache_lookup_not_found(void) {
 // Test usage statistics update
 void test_query_cache_usage_update(void) {
     QueryCacheEntry* entry = query_cache_entry_create(
-        111, "SELECT COUNT(*) FROM users", "Count users", "fast", 5);
+        111, 999, "SELECT COUNT(*) FROM users", "Count users", "fast", 5);
 
     TEST_ASSERT_TRUE(query_cache_add_entry(test_cache, entry));
 
@@ -120,8 +120,8 @@ void test_query_cache_usage_update(void) {
 // Test cache statistics
 void test_query_cache_stats(void) {
     // Add a few entries
-    QueryCacheEntry* entry1 = query_cache_entry_create(1, "SELECT 1", "Test 1", "fast", 10);
-    QueryCacheEntry* entry2 = query_cache_entry_create(2, "SELECT 2", "Test 2", "slow", 20);
+    QueryCacheEntry* entry1 = query_cache_entry_create(1, 999, "SELECT 1", "Test 1", "fast", 10);
+    QueryCacheEntry* entry2 = query_cache_entry_create(2, 999, "SELECT 2", "Test 2", "slow", 20);
 
     TEST_ASSERT_TRUE(query_cache_add_entry(test_cache, entry1));
     TEST_ASSERT_TRUE(query_cache_add_entry(test_cache, entry2));
@@ -150,7 +150,7 @@ void test_query_cache_resize(void) {
         snprintf(sql, sizeof(sql), "SELECT %d", i);
         snprintf(desc, sizeof(desc), "Query %d", i);
 
-        QueryCacheEntry* entry = query_cache_entry_create(i, sql, desc, "fast", 30);
+        QueryCacheEntry* entry = query_cache_entry_create(i, 999, sql, desc, "fast", 30);
         TEST_ASSERT_TRUE(query_cache_add_entry(test_cache, entry));
     }
 
@@ -167,7 +167,7 @@ void test_query_cache_resize(void) {
 // Test concurrent access (basic smoke test)
 void test_query_cache_concurrent_access(void) {
     // This is a basic test - full concurrency testing would require threads
-    QueryCacheEntry* entry = query_cache_entry_create(999, "SELECT 1", "Concurrent test", "fast", 1);
+    QueryCacheEntry* entry = query_cache_entry_create(999, 999, "SELECT 1", "Concurrent test", "fast", 1);
     TEST_ASSERT_TRUE(query_cache_add_entry(test_cache, entry));
 
     // Multiple lookups (simulating concurrent reads)
