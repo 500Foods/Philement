@@ -104,7 +104,7 @@ void database_queue_signal_initial_connection_complete(DatabaseQueue* db_queue) 
 /*
  * Handle connection success - store connection and perform health check
  */
-bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseHandle* db_handle, ConnectionConfig* config) {
+bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseHandle* db_handle) {
     char* dqm_designator = database_queue_generate_label(db_queue);
 
     // Store the persistent connection
@@ -153,7 +153,6 @@ bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseH
         free(health_check_label);
         db_queue->last_connection_attempt = time(NULL);
         database_queue_signal_initial_connection_complete(db_queue);
-        free_connection_config(config);
         free(dqm_designator);
         return false;
     }
@@ -197,7 +196,7 @@ bool database_queue_perform_connection_attempt(DatabaseQueue* db_queue, Connecti
 
     if (connection_success && db_handle) {
         log_this(dqm_label_conn, "Database connection established successfully", LOG_LEVEL_DEBUG, 0);
-        bool success = database_queue_handle_connection_success(db_queue, db_handle, config);
+        bool success = database_queue_handle_connection_success(db_queue, db_handle);
         free(dqm_label_conn);
         free(dqm_designator);
         return success;

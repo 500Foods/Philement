@@ -23,7 +23,7 @@ void setUp(void) {
     g_cache = query_cache_create();
     TEST_ASSERT_NOT_NULL(g_cache);
 
-    g_entry = query_cache_entry_create(1, "SELECT 1", "test description", "select", 30);
+    g_entry = query_cache_entry_create(1, 999, "SELECT 1", "test description", "select", 30);
     TEST_ASSERT_NOT_NULL(g_entry);
 
     bool added = query_cache_add_entry(g_cache, g_entry);

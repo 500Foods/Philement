@@ -215,14 +215,14 @@ bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue);
 bool database_queue_lead_is_auto_migration_enabled(const DatabaseQueue* lead_queue);
 bool database_queue_lead_acquire_migration_connection(DatabaseQueue* lead_queue, char* dqm_label);
 void database_queue_lead_release_migration_connection(DatabaseQueue* lead_queue);
-bool database_queue_lead_execute_migration_cycle(DatabaseQueue* lead_queue, char* dqm_label);
+bool database_queue_lead_execute_migration_process(DatabaseQueue* lead_queue, char* dqm_label);
 
 // Query serialization functions (formerly static in submit.c)
 char* serialize_query_to_json(DatabaseQuery* query);
 DatabaseQuery* deserialize_query_from_json(const char* json);
 
 // Connection management helper functions (formerly static in heartbeat.c)
-bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseHandle* db_handle, ConnectionConfig* config);
+bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseHandle* db_handle);
 bool database_queue_perform_connection_attempt(DatabaseQueue* db_queue, ConnectionConfig* config, DatabaseEngine engine_type);
 
 // Statistics and monitoring

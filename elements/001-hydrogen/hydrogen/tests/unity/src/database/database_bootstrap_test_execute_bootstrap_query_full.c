@@ -1,6 +1,6 @@
 /*
- * Unity Test File: database_bootstrap_test_execute_bootstrap_query_full
- * This file contains unit tests for database_queue_execute_bootstrap_query_full function
+ * Unity Test File: database_bootstrap_test_execute_bootstrap_query
+ * This file contains unit tests for database_queue_execute_bootstrap_query function
  * from src/database/database_bootstrap.c
  */
 
@@ -30,9 +30,10 @@ extern MutexResult mutex_lock(pthread_mutex_t* mutex, const char* label);
 extern MutexResult mutex_unlock(pthread_mutex_t* mutex);
 extern struct QueryTableCache* query_cache_create(void);
 extern bool query_cache_add_entry(struct QueryTableCache* cache, struct QueryCacheEntry* entry);
-extern struct QueryCacheEntry* query_cache_entry_create(int query_ref, const char* sql_template, const char* description, const char* queue_type, int timeout_seconds);
+extern struct QueryCacheEntry* query_cache_entry_create(int query_ref, int query_type, const char* sql_template, const char* description, const char* queue_type, int timeout_seconds);
 extern void query_cache_entry_destroy(struct QueryCacheEntry* entry);
 extern size_t query_cache_get_entry_count(struct QueryTableCache* cache);
+extern void query_cache_clear(struct QueryTableCache* cache);
 extern struct QueryCacheEntry* query_cache_lookup(struct QueryTableCache* cache, int query_ref);
 extern void database_engine_cleanup_result(QueryResult* result);
 
@@ -76,8 +77,7 @@ void tearDown(void) {
 
 // Test: NULL db_queue parameter handling (line 33)
 void test_null_db_queue(void) {
-    database_queue_execute_bootstrap_query_full(NULL, false);
-    database_queue_execute_bootstrap_query_full(NULL, true);
+    database_queue_execute_bootstrap_query(NULL);
     // Should not crash - success if no segfault
 }
 
@@ -88,7 +88,7 @@ void test_non_lead_queue(void) {
     queue->is_lead_queue = false;
     queue->database_name = strdup("test_non_lead");
 
-    database_queue_execute_bootstrap_query_full(queue, true);
+    database_queue_execute_bootstrap_query(queue);
 
     free(queue->database_name);
     free(queue);
@@ -114,7 +114,7 @@ void test_lead_queue_no_connection(void) {
     // cppcheck-suppress nullPointerOutOfMemory
     pthread_cond_init(&queue->bootstrap_cond, NULL);
 
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
 
     // Without a connection, bootstrap_completed won't be set (it's only set inside the connection block)
     // cppcheck-suppress nullPointerOutOfMemory
@@ -169,7 +169,7 @@ void test_request_allocation_failure(void) {
 
     mock_database_engine_set_execute_result(true);
 
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
 
     // Should handle allocation failure gracefully
     // cppcheck-suppress nullPointerOutOfMemory
@@ -222,7 +222,7 @@ void test_query_id_allocation_failure(void) {
     // cppcheck-suppress nullPointerOutOfMemory
     queue->is_connected = true;
     
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
     
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_TRUE(queue->bootstrap_completed);
@@ -277,7 +277,7 @@ void test_sql_template_allocation_failure(void) {
     
     mock_system_set_malloc_failure(1);  // Fail strdup for sql_template
     
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
     
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_TRUE(queue->bootstrap_completed);
@@ -327,7 +327,7 @@ void test_parameters_json_allocation_failure(void) {
     
     mock_system_set_malloc_failure(1);  // Fail strdup("{}") for parameters_json
     
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
     
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_TRUE(queue->bootstrap_completed);
@@ -378,7 +378,7 @@ void test_query_execution_failure(void) {
     mock_database_engine_set_execute_result(false);
     mock_database_engine_set_execute_json_data("[]");  // Empty result
     
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
     
     // Should detect empty database
     // cppcheck-suppress nullPointerOutOfMemory
@@ -405,7 +405,7 @@ void test_query_execution_failure(void) {
     database_subsystem_shutdown();
 }
 
-// Test: Successful execution without QTC population (lines 98-103, 177-188, 212-223)
+// Test: Successful execution (bootstrap ALWAYS populates QTC now)
 void test_successful_execution_no_qtc(void) {
     database_subsystem_init();
     
@@ -445,7 +445,7 @@ void test_successful_execution_no_qtc(void) {
     mock_database_engine_set_execute_json_data(json_data);
     mock_database_engine_set_execute_result(true);
 
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
 
     // Verify migration tracking
     // cppcheck-suppress nullPointerOutOfMemory
@@ -453,9 +453,14 @@ void test_successful_execution_no_qtc(void) {
     TEST_ASSERT_EQUAL(3, queue->latest_applied_migration);
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_FALSE(queue->empty_database);
-    TEST_ASSERT_NULL(queue->query_cache);
+    // Bootstrap now ALWAYS populates QTC, but with no QTC data in JSON, cache will be created but empty
+    TEST_ASSERT_NOT_NULL(queue->query_cache);
+    TEST_ASSERT_EQUAL(0, query_cache_get_entry_count(queue->query_cache));
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_TRUE(queue->bootstrap_completed);
+    
+    // Cleanup QTC
+    query_cache_destroy(queue->query_cache);
 
     // Cleanup
     free(queue->database_name);
@@ -511,7 +516,7 @@ void test_successful_execution_with_qtc(void) {
     mock_database_engine_set_execute_json_data(json_data);
     mock_database_engine_set_execute_result(true);
 
-    database_queue_execute_bootstrap_query_full(queue, true);
+    database_queue_execute_bootstrap_query(queue);
 
     // Verify QTC created and populated
     TEST_ASSERT_NOT_NULL(queue->query_cache);
@@ -610,7 +615,7 @@ void test_migration_tracking_available(void) {
     mock_database_engine_set_execute_json_data(json_data);
     mock_database_engine_set_execute_result(true);
 
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
 
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_EQUAL(5, queue->latest_available_migration);  // Max of 1,5,3
@@ -670,7 +675,7 @@ void test_migration_tracking_installed(void) {
     mock_database_engine_set_execute_json_data(json_data);
     mock_database_engine_set_execute_result(true);
 
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
 
     TEST_ASSERT_EQUAL(0, queue->latest_available_migration);
     TEST_ASSERT_EQUAL(7, queue->latest_applied_migration);  // Max of 2,7,4
@@ -729,7 +734,7 @@ void test_migration_tracking_mixed(void) {
     mock_database_engine_set_execute_json_data(json_data);
     mock_database_engine_set_execute_result(true);
 
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
 
     TEST_ASSERT_EQUAL(8, queue->latest_available_migration);  // Max 1000: 6,8
     TEST_ASSERT_EQUAL(9, queue->latest_applied_migration);  // Max 1003: 4,9
@@ -782,7 +787,7 @@ void test_bootstrap_completion_signaling(void) {
 
     mock_database_engine_set_execute_result(true);
 
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
 
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_TRUE(queue->bootstrap_completed);
@@ -837,7 +842,7 @@ void test_empty_database_detection(void) {
     mock_database_engine_set_execute_json_data("[]");
     mock_database_engine_set_execute_result(true);
 
-    database_queue_execute_bootstrap_query_full(queue, false);
+    database_queue_execute_bootstrap_query(queue);
 
     TEST_ASSERT_TRUE(queue->empty_database);
 

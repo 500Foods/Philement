@@ -38,7 +38,7 @@
  */
 bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** statements,
                          size_t* statement_count, size_t* statements_capacity,
-                         const char* dqm_label) {
+                         const char* delimiter, const char* dqm_label) {
     (void)sql_length; // Suppress unused parameter warning
 
     if (!sql_result || sql_length == 0) {
@@ -46,15 +46,19 @@ bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** sta
         return false;
     }
 
-    // Parse the SQL into individual statements using the -- QUERY DELIMITER
+    if (!delimiter) {
+        log_this(dqm_label, "Delimiter is NULL", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    // Parse the SQL into individual statements using the specified delimiter
     char* sql_copy = strdup(sql_result);
     if (!sql_copy) {
         log_this(dqm_label, "Failed to allocate memory for SQL parsing", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    // Split on "-- QUERY DELIMITER\n" manually (strtok doesn't work well with multi-char delimiters)
-    const char* delimiter = "-- QUERY DELIMITER\n";
+    // Split on the specified delimiter manually (strtok doesn't work well with multi-char delimiters)
     size_t delimiter_len = strlen(delimiter);
     char* sql_ptr = sql_copy;
     bool parse_success = true;
@@ -474,7 +478,7 @@ bool execute_transaction(DatabaseHandle* connection, const char* sql_result,
     size_t statement_count = 0;
     size_t statements_capacity = 0;
 
-    if (!parse_sql_statements(sql_result, sql_length, &statements, &statement_count, &statements_capacity, dqm_label)) {
+    if (!parse_sql_statements(sql_result, sql_length, &statements, &statement_count, &statements_capacity, "-- QUERY DELIMITER\n", dqm_label)) {
         return false;
     }
 

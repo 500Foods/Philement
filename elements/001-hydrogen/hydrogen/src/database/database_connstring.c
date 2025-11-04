@@ -1,382 +1,563 @@
-/*
- * Database Connection String Parsing Implementation
- *
- * Implements parsing and management of database connection strings
- * for different database engines (PostgreSQL, MySQL, SQLite, DB2).
- */
+// Database Connection String Management Implementation
+// Connection pooling infrastructure for database subsystem
 
 #include <src/hydrogen.h>
-#include <assert.h>
+#include <src/database/database_connstring.h>
+#include <src/database/database_engine.h>
+#include <src/database/database.h>
+#include <src/mutex/mutex.h>
 
-// Local includes
-#include "database.h"
-#include "database_connstring.h"
+// Global connection pool manager instance
+static ConnectionPoolManager* global_connection_pool_manager = NULL;
+static pthread_mutex_t global_pool_manager_lock = PTHREAD_MUTEX_INITIALIZER;
 
-// Test database connectivity
-bool database_test_connection(const char* database_name) {
-    if (!database_subsystem || !database_name) {
-        return false;
+/*
+ * Create a connection pool manager
+ */
+ConnectionPoolManager* connection_pool_manager_create(size_t max_pools) {
+    ConnectionPoolManager* manager = calloc(1, sizeof(ConnectionPoolManager));
+    if (!manager) {
+        return NULL;
     }
 
-    // Find the database queue for this database
-    if (!global_queue_manager) {
-        log_this(SR_DATABASE, "Queue manager not initialized", LOG_LEVEL_ERROR, 0);
-        return false;
+    manager->pools = calloc(max_pools, sizeof(ConnectionPool*));
+    if (!manager->pools) {
+        free(manager);
+        return NULL;
     }
 
-    MutexResult lock_result = MUTEX_LOCK(&global_queue_manager->manager_lock, SR_DATABASE);
+    manager->max_pools = max_pools;
+    manager->pool_count = 0;
+
+    if (pthread_mutex_init(&manager->manager_lock, NULL) != 0) {
+        free(manager->pools);
+        free(manager);
+        return NULL;
+    }
+
+    manager->initialized = true;
+    return manager;
+}
+
+/*
+ * Destroy a connection pool manager
+ */
+void connection_pool_manager_destroy(ConnectionPoolManager* manager) {
+    if (!manager) return;
+
+    MutexResult lock_result = MUTEX_LOCK(&manager->manager_lock, SR_DATABASE);
+    if (lock_result == MUTEX_SUCCESS) {
+        for (size_t i = 0; i < manager->pool_count; i++) {
+            if (manager->pools[i]) {
+                connection_pool_destroy(manager->pools[i]);
+            }
+        }
+        free(manager->pools);
+        mutex_unlock(&manager->manager_lock);
+    }
+
+    pthread_mutex_destroy(&manager->manager_lock);
+    free(manager);
+}
+
+/*
+ * Add a connection pool to the manager
+ */
+bool connection_pool_manager_add_pool(ConnectionPoolManager* manager, ConnectionPool* pool) {
+    if (!manager || !pool) return false;
+
+    MutexResult lock_result = MUTEX_LOCK(&manager->manager_lock, SR_DATABASE);
     if (lock_result != MUTEX_SUCCESS) {
         return false;
     }
 
-    const DatabaseQueue* db_queue = NULL;
-    for (size_t i = 0; i < global_queue_manager->database_count; i++) {
-        if (global_queue_manager->databases[i] &&
-            strcmp(global_queue_manager->databases[i]->database_name, database_name) == 0) {
-            db_queue = global_queue_manager->databases[i];
+    if (manager->pool_count >= manager->max_pools) {
+        mutex_unlock(&manager->manager_lock);
+        return false;
+    }
+
+    manager->pools[manager->pool_count] = pool;
+    manager->pool_count++;
+
+    mutex_unlock(&manager->manager_lock);
+    return true;
+}
+
+/*
+ * Get a connection pool by database name
+ */
+ConnectionPool* connection_pool_manager_get_pool(ConnectionPoolManager* manager, const char* database_name) {
+    if (!manager || !database_name) return NULL;
+
+    MutexResult lock_result = MUTEX_LOCK(&manager->manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return NULL;
+    }
+
+    ConnectionPool* found_pool = NULL;
+    for (size_t i = 0; i < manager->pool_count; i++) {
+        if (manager->pools[i] && strcmp(manager->pools[i]->database_name, database_name) == 0) {
+            found_pool = manager->pools[i];
             break;
         }
     }
 
-    mutex_unlock(&global_queue_manager->manager_lock);
-
-    if (!db_queue) {
-        log_this(SR_DATABASE, "Database not found: %s", LOG_LEVEL_ERROR, 1, database_name);
-        return false;
-    }
-
-    // Test if the database is connected and can perform operations
-    return db_queue->is_connected && !db_queue->shutdown_requested;
+    mutex_unlock(&manager->manager_lock);
+    return found_pool;
 }
 
 /*
- * Parse connection string into ConnectionConfig
- * Supports formats like: postgresql://user:pass@host:port/database
+ * Create a connection pool for a database
  */
-ConnectionConfig* parse_connection_string(const char* conn_string) {
-    if (!conn_string) return NULL;
+ConnectionPool* connection_pool_create(const char* database_name, DatabaseEngine engine_type, size_t max_pool_size) {
+    ConnectionPool* pool = calloc(1, sizeof(ConnectionPool));
+    if (!pool) return NULL;
+
+    pool->database_name = strdup(database_name);
+    if (!pool->database_name) {
+        free(pool);
+        return NULL;
+    }
+
+    pool->engine_type = engine_type;
+    pool->max_pool_size = max_pool_size;
+    pool->pool_size = 0;
+    pool->active_connections = 0;
+
+    pool->connections = calloc(max_pool_size, sizeof(ConnectionPoolEntry*));
+    if (!pool->connections) {
+        free(pool->database_name);
+        free(pool);
+        return NULL;
+    }
+
+    if (pthread_mutex_init(&pool->pool_lock, NULL) != 0) {
+        free(pool->connections);
+        free(pool->database_name);
+        free(pool);
+        return NULL;
+    }
+
+    pool->initialized = true;
+    return pool;
+}
+
+/*
+ * Destroy a connection pool
+ */
+void connection_pool_destroy(ConnectionPool* pool) {
+    if (!pool) return;
+
+    MutexResult lock_result = MUTEX_LOCK(&pool->pool_lock, SR_DATABASE);
+    if (lock_result == MUTEX_SUCCESS) {
+        for (size_t i = 0; i < pool->pool_size; i++) {
+            if (pool->connections[i]) {
+                if (pool->connections[i]->connection) {
+                    database_engine_cleanup_connection(pool->connections[i]->connection);
+                }
+                free(pool->connections[i]->connection_string_hash);
+                free(pool->connections[i]);
+            }
+        }
+        free(pool->connections);
+        mutex_unlock(&pool->pool_lock);
+    }
+
+    pthread_mutex_destroy(&pool->pool_lock);
+    free(pool->database_name);
+    free(pool);
+}
+
+/*
+ * Acquire a connection from the pool
+ */
+DatabaseHandle* connection_pool_acquire_connection(ConnectionPool* pool, const char* connection_string) {
+    if (!pool || !connection_string) return NULL;
+
+    // Generate hash of connection string for validation
+    char conn_hash[64];
+    get_stmt_hash("CONN", connection_string, strlen(connection_string), conn_hash);
+
+    MutexResult lock_result = MUTEX_LOCK(&pool->pool_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return NULL;
+    }
+
+    // First, try to find an available connection
+    for (size_t i = 0; i < pool->pool_size; i++) {
+        ConnectionPoolEntry* entry = pool->connections[i];
+        if (entry && !entry->in_use && strcmp(entry->connection_string_hash, conn_hash) == 0) {
+            entry->in_use = true;
+            entry->last_used = time(NULL);
+            pool->active_connections++;
+            mutex_unlock(&pool->pool_lock);
+            return entry->connection;
+        }
+    }
+
+    // No available connection found, try to create a new one if under limit
+    if (pool->pool_size < pool->max_pool_size) {
+        ConnectionPoolEntry* new_entry = calloc(1, sizeof(ConnectionPoolEntry));
+        if (new_entry) {
+            new_entry->connection_string_hash = strdup(conn_hash);
+            if (new_entry->connection_string_hash) {
+                // Create new connection
+                ConnectionConfig* temp_config = parse_connection_string(connection_string);
+                DatabaseHandle* new_conn = NULL;
+                if (temp_config) {
+                    database_engine_connect_with_designator(pool->engine_type, temp_config, &new_conn, SR_DATABASE);
+                    free_connection_config(temp_config);
+                }
+                if (new_conn) {
+                    new_entry->connection = new_conn;
+                    new_entry->in_use = true;
+                    new_entry->created_at = time(NULL);
+                    new_entry->last_used = time(NULL);
+
+                    pool->connections[pool->pool_size] = new_entry;
+                    pool->pool_size++;
+                    pool->active_connections++;
+
+                    mutex_unlock(&pool->pool_lock);
+                    return new_conn;
+                }
+                free(new_entry->connection_string_hash);
+            }
+            free(new_entry);
+        }
+    }
+
+    mutex_unlock(&pool->pool_lock);
+    return NULL; // Pool exhausted or creation failed
+}
+
+/*
+ * Release a connection back to the pool
+ */
+bool connection_pool_release_connection(ConnectionPool* pool, const DatabaseHandle* connection) {
+    if (!pool || !connection) return false;
+
+    MutexResult lock_result = MUTEX_LOCK(&pool->pool_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return false;
+    }
+
+    // Find the connection in the pool
+    for (size_t i = 0; i < pool->pool_size; i++) {
+        ConnectionPoolEntry* entry = pool->connections[i];
+        if (entry && entry->connection == connection && entry->in_use) {
+            entry->in_use = false;
+            entry->last_used = time(NULL);
+            pool->active_connections--;
+            mutex_unlock(&pool->pool_lock);
+            return true;
+        }
+    }
+
+    mutex_unlock(&pool->pool_lock);
+    return false; // Connection not found in pool
+}
+
+/*
+ * Clean up idle connections in the pool
+ */
+void connection_pool_cleanup_idle(ConnectionPool* pool, time_t max_idle_seconds) {
+    if (!pool) return;
+
+    time_t now = time(NULL);
+
+    MutexResult lock_result = MUTEX_LOCK(&pool->pool_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return;
+    }
+
+    // Iterate backwards to safely remove entries
+    for (size_t i = pool->pool_size; i > 0; i--) {
+        size_t index = i - 1;
+        ConnectionPoolEntry* entry = pool->connections[index];
+        if (entry && !entry->in_use && (now - entry->last_used) > max_idle_seconds) {
+            // Close and remove idle connection
+            if (entry->connection) {
+                database_engine_cleanup_connection(entry->connection);
+            }
+            free(entry->connection_string_hash);
+            free(entry);
+
+            // Compact the array
+            for (size_t j = index; j < pool->pool_size - 1; j++) {
+                pool->connections[j] = pool->connections[j + 1];
+            }
+            pool->connections[pool->pool_size - 1] = NULL;
+            pool->pool_size--;
+        }
+    }
+
+    mutex_unlock(&pool->pool_lock);
+}
+
+/*
+ * Initialize global connection pool manager
+ */
+bool connection_pool_system_init(size_t max_pools) {
+    MutexResult lock_result = MUTEX_LOCK(&global_pool_manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return false;
+    }
+
+    if (global_connection_pool_manager) {
+        mutex_unlock(&global_pool_manager_lock);
+        return true; // Already initialized
+    }
+
+    global_connection_pool_manager = connection_pool_manager_create(max_pools);
+    if (!global_connection_pool_manager) {
+        mutex_unlock(&global_pool_manager_lock);
+        return false;
+    }
+
+    mutex_unlock(&global_pool_manager_lock);
+    return true;
+}
+
+/*
+ * Get global connection pool manager
+ */
+ConnectionPoolManager* connection_pool_get_global_manager(void) {
+    MutexResult lock_result = MUTEX_LOCK(&global_pool_manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return NULL;
+    }
+
+    ConnectionPoolManager* manager = global_connection_pool_manager;
+    mutex_unlock(&global_pool_manager_lock);
+    return manager;
+}
+
+/*
+ * Parse a connection string into ConnectionConfig
+ * Supports PostgreSQL, MySQL, SQLite, and DB2 connection string formats
+ */
+ConnectionConfig* parse_connection_string(const char* connection_string) {
+    if (!connection_string) return NULL;
 
     ConnectionConfig* config = calloc(1, sizeof(ConnectionConfig));
     if (!config) return NULL;
 
-    // Copy the connection string
-    config->connection_string = strdup(conn_string);
-    if (!config->connection_string) {
-        free(config);
-        return NULL;
-    }
+    // Default values
+    config->port = 0;  // Engine-specific defaults will be set
 
-    // Parse PostgreSQL connection string format: postgresql://user:pass@host:port/database
-    if (strncmp(conn_string, "postgresql://", 13) == 0) {
-        const char* after_proto = conn_string + 13; // Skip "postgresql://"
+    // Parse based on connection string format
+    if (strstr(connection_string, "postgresql://") == connection_string) {
+        // PostgreSQL format: postgresql://user:password@host:port/database?sslmode=require
+        config->port = 5432;  // PostgreSQL default
 
-        // Find @ symbol to separate user:pass from host:port/database
-        const char* at_pos = strchr(after_proto, '@');
+        // Basic parsing - extract host, port, database
+        char* temp = strdup(connection_string + 13);  // Skip "postgresql://"
+        if (!temp) {
+            free(config);
+            return NULL;
+        }
+
+        char* at_pos = strchr(temp, '@');
         if (at_pos) {
-            // Parse user:pass part
-            char user_pass[256] = {0};
-            size_t user_pass_len = (size_t)(at_pos - after_proto);
-            if (user_pass_len < sizeof(user_pass) && user_pass_len > 0) {
-                strncpy(user_pass, after_proto, user_pass_len);
-                user_pass[user_pass_len] = '\0';
+            *at_pos = '\0';
+            // Parse user:password (we'll skip detailed parsing for now)
+            config->username = strdup(temp);
 
-                // Split user:pass
-                char* colon_pos = strchr(user_pass, ':');
+            char* host_start = at_pos + 1;
+            char* slash_pos = strchr(host_start, '/');
+            if (slash_pos) {
+                *slash_pos = '\0';
+                config->database = strdup(slash_pos + 1);
+
+                // Parse host:port
+                char* colon_pos = strchr(host_start, ':');
                 if (colon_pos) {
                     *colon_pos = '\0';
-                    config->username = strdup(user_pass);
-                    if (!config->username) goto cleanup;
-                    config->password = strdup(colon_pos + 1);
-                    if (!config->password) goto cleanup;
+                    config->host = strdup(host_start);
+                    config->port = atoi(colon_pos + 1);
                 } else {
-                    config->username = strdup(user_pass);
-                    if (!config->username) goto cleanup;
+                    config->host = strdup(host_start);
                 }
-            }
-
-            // Parse host:port/database part
-            const char* host_start = at_pos + 1;
-            const char* slash_pos = strchr(host_start, '/');
-            if (slash_pos) {
-                // Parse host:port
-                char host_port[256] = {0};
-                size_t host_port_len = (size_t)(slash_pos - host_start);
-                if (host_port_len < sizeof(host_port) && host_port_len > 0) {
-                    strncpy(host_port, host_start, host_port_len);
-                    host_port[host_port_len] = '\0';
-
-                    // Split host:port
-                    char* colon_pos = strchr(host_port, ':');
-                    if (colon_pos) {
-                        *colon_pos = '\0';
-                        config->host = strdup(host_port);
-                        if (!config->host) goto cleanup;
-                        config->port = atoi(colon_pos + 1);
-                    } else {
-                        config->host = strdup(host_port);
-                        if (!config->host) goto cleanup;
-                        config->port = 5432; // Default PostgreSQL port
-                    }
-                }
-
-                // Parse database
-                config->database = strdup(slash_pos + 1);
-                if (!config->database) goto cleanup;
             }
         }
-    }
-    // Parse MySQL connection string format: mysql://user:pass@host:port/database
-    else if (strncmp(conn_string, "mysql://", 8) == 0) {
-        const char* after_proto = conn_string + 8; // Skip "mysql://"
+        free(temp);
 
-        // Find @ symbol to separate user:pass from host:port/database
-        const char* at_pos = strchr(after_proto, '@');
+    } else if (strstr(connection_string, "mysql://") == connection_string) {
+        // MySQL format: mysql://user:password@host:port/database
+        config->port = 3306;  // MySQL default
+
+        // Similar parsing logic as PostgreSQL
+        char* temp = strdup(connection_string + 8);  // Skip "mysql://"
+        if (!temp) {
+            free(config);
+            return NULL;
+        }
+
+        char* at_pos = strchr(temp, '@');
         if (at_pos) {
-            // Parse user:pass part
-            char user_pass[256] = {0};
-            size_t user_pass_len = (size_t)(at_pos - after_proto);
-            if (user_pass_len < sizeof(user_pass) && user_pass_len > 0) {
-                strncpy(user_pass, after_proto, user_pass_len);
-                user_pass[user_pass_len] = '\0';
+            *at_pos = '\0';
+            config->username = strdup(temp);
 
-                // Split user:pass
-                char* colon_pos = strchr(user_pass, ':');
+            char* host_start = at_pos + 1;
+            char* slash_pos = strchr(host_start, '/');
+            if (slash_pos) {
+                *slash_pos = '\0';
+                config->database = strdup(slash_pos + 1);
+
+                char* colon_pos = strchr(host_start, ':');
                 if (colon_pos) {
                     *colon_pos = '\0';
-                    config->username = strdup(user_pass);
-                    if (!config->username) goto cleanup;
-                    config->password = strdup(colon_pos + 1);
-                    if (!config->password) goto cleanup;
+                    config->host = strdup(host_start);
+                    config->port = atoi(colon_pos + 1);
                 } else {
-                    config->username = strdup(user_pass);
-                    if (!config->username) goto cleanup;
+                    config->host = strdup(host_start);
                 }
             }
+        }
+        free(temp);
 
-            // Parse host:port/database part
-            const char* host_start = at_pos + 1;
-            const char* slash_pos = strchr(host_start, '/');
-            if (slash_pos) {
-                // Parse host:port
-                char host_port[256] = {0};
-                size_t host_port_len = (size_t)(slash_pos - host_start);
-                if (host_port_len < sizeof(host_port) && host_port_len > 0) {
-                    strncpy(host_port, host_start, host_port_len);
-                    host_port[host_port_len] = '\0';
+    } else if (strstr(connection_string, ".db") || strcmp(connection_string, ":memory:") == 0) {
+        // SQLite format: /path/to/database.db or :memory:
+        config->database = strdup(connection_string);
 
-                    // Split host:port
-                    char* colon_pos = strchr(host_port, ':');
-                    if (colon_pos) {
-                        *colon_pos = '\0';
-                        config->host = strdup(host_port);
-                        if (!config->host) goto cleanup;
-                        config->port = atoi(colon_pos + 1);
-                    } else {
-                        config->host = strdup(host_port);
-                        if (!config->host) goto cleanup;
-                        config->port = 3306; // Default MySQL port
-                    }
+    } else if (strstr(connection_string, "DRIVER={IBM DB2 ODBC DRIVER}") == connection_string) {
+        // DB2 ODBC format: DRIVER={IBM DB2 ODBC DRIVER};DATABASE=database;HOSTNAME=host;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;
+        // Store the entire connection string as-is for DB2
+        config->connection_string = strdup(connection_string);
+        // Parse key components for convenience
+        char* db_pos = strstr(connection_string, "DATABASE=");
+        if (db_pos) {
+            db_pos += 9; // Skip "DATABASE="
+            const char* end_pos = strchr(db_pos, ';');
+            if (end_pos) {
+                size_t len = (size_t)(end_pos - db_pos);
+                config->database = calloc(1, len + 1);
+                if (config->database) {
+                    strncpy(config->database, db_pos, len);
                 }
-
-                // Parse database
-                config->database = strdup(slash_pos + 1);
-                if (!config->database) goto cleanup;
+            } else {
+                config->database = strdup(db_pos);
             }
         }
-    }
-    // Parse DB2 ODBC connection string format: DRIVER={...};DATABASE=...;HOSTNAME=...;PORT=...;PROTOCOL=...;UID=...;PWD=...
-    else if (strstr(conn_string, "DRIVER=") != NULL && strstr(conn_string, "DATABASE=") != NULL) {
-        // Parse key=value pairs separated by semicolons
-        char* conn_str_copy = strdup(conn_string);
-        if (!conn_str_copy) goto cleanup;
-
-        char* token = strtok(conn_str_copy, ";");
-        while (token != NULL) {
-            // Skip whitespace
-            while (*token == ' ') token++;
-
-            // Find the = separator
-            char* equals_pos = strchr(token, '=');
-            if (equals_pos) {
-                *equals_pos = '\0';
-                const char* key = token;
-                const char* value = equals_pos + 1;
-
-                // Remove quotes around values if present
-                if (*value == '{' && value[strlen(value) - 1] == '}') {
-                    // Handle {value} format for DRIVER
-                    value++;
-                    char* end_quote = strrchr((char*)value, '}');
-                    if (end_quote) *end_quote = '\0';
-                } else if (*value == '"' && value[strlen(value) - 1] == '"') {
-                    // Handle "value" format
-                    value++;
-                    char* end_quote = strrchr((char*)value, '"');
-                    if (end_quote) *end_quote = '\0';
+        const char* host_pos = strstr(connection_string, "HOSTNAME=");
+        if (host_pos) {
+            host_pos += 9; // Skip "HOSTNAME="
+            const char* end_pos = strchr(host_pos, ';');
+            if (end_pos) {
+                size_t len = (size_t)(end_pos - host_pos);
+                config->host = calloc(1, len + 1);
+                if (config->host) {
+                    strncpy(config->host, host_pos, len);
                 }
-
-                if (strcmp(key, "DATABASE") == 0) {
-                    config->database = strdup(value);
-                    if (!config->database) {
-                        free(conn_str_copy);
-                        goto cleanup;
-                    }
-                } else if (strcmp(key, "HOSTNAME") == 0) {
-                    config->host = strdup(value);
-                    if (!config->host) {
-                        free(conn_str_copy);
-                        goto cleanup;
-                    }
-                } else if (strcmp(key, "PORT") == 0) {
-                    config->port = atoi(value);
-                } else if (strcmp(key, "UID") == 0) {
-                    config->username = strdup(value);
-                    if (!config->username) {
-                        free(conn_str_copy);
-                        goto cleanup;
-                    }
-                } else if (strcmp(key, "PWD") == 0) {
-                    config->password = strdup(value);
-                    if (!config->password) {
-                        free(conn_str_copy);
-                        goto cleanup;
-                    }
-                }
+            } else {
+                config->host = strdup(host_pos);
             }
-            token = strtok(NULL, ";");
         }
-        free(conn_str_copy);
-    }
-
-    // Set defaults if not specified - with proper error handling
-    if (!config->host) {
-        config->host = strdup("localhost");
-        if (!config->host) goto cleanup;
-    }
-    if (!config->port) config->port = 5432;
-
-    // Handle database field based on connection string format
-    if (!config->database) {
-        // Check if this is a SQLite file path (doesn't match PostgreSQL or DB2 formats)
-        if (conn_string && strncmp(conn_string, "postgresql://", 13) != 0 &&
-            !strstr(conn_string, "DATABASE=")) {
-            // This is likely a SQLite file path - use it as the database
-            config->database = strdup(conn_string);
-            if (!config->database) goto cleanup;
-        } else {
-            // Default to postgres for PostgreSQL connections
-            config->database = strdup("postgres");
-            if (!config->database) goto cleanup;
+        char* port_pos = strstr(connection_string, "PORT=");
+        if (port_pos) {
+            port_pos += 5; // Skip "PORT="
+            char* end_pos = strchr(port_pos, ';');
+            if (end_pos) {
+                *end_pos = '\0';
+                config->port = atoi(port_pos);
+                *end_pos = ';'; // Restore
+            } else {
+                config->port = atoi(port_pos);
+            }
         }
+        const char* uid_pos = strstr(connection_string, "UID=");
+        if (uid_pos) {
+            uid_pos += 4; // Skip "UID="
+            const char* end_pos = strchr(uid_pos, ';');
+            if (end_pos) {
+                size_t len = (size_t)(end_pos - uid_pos);
+                config->username = calloc(1, len + 1);
+                if (config->username) {
+                    strncpy(config->username, uid_pos, len);
+                }
+            } else {
+                config->username = strdup(uid_pos);
+            }
+        }
+        const char* pwd_pos = strstr(connection_string, "PWD=");
+        if (pwd_pos) {
+            pwd_pos += 4; // Skip "PWD="
+            const char* end_pos = strchr(pwd_pos, ';');
+            if (end_pos) {
+                size_t len = (size_t)(end_pos - pwd_pos);
+                config->password = calloc(1, len + 1);
+                if (config->password) {
+                    strncpy(config->password, pwd_pos, len);
+                }
+            } else {
+                config->password = strdup(pwd_pos);
+            }
+        }
+    } else {
+        // Assume other format - store as-is
+        config->database = strdup(connection_string);
     }
-    if (!config->username) {
-        config->username = strdup("");
-        if (!config->username) goto cleanup;
-    }
-    if (!config->password) {
-        config->password = strdup("");
-        if (!config->password) goto cleanup;
-    }
-
-    config->timeout_seconds = 30; // Default timeout
-    config->ssl_enabled = false;  // Default SSL setting
 
     return config;
-
-cleanup:
-    // Clean up any allocated memory on failure
-    if (config->host) free(config->host);
-    if (config->database) free(config->database);
-    if (config->username) free(config->username);
-    if (config->password) free(config->password);
-    if (config->connection_string) free(config->connection_string);
-    free(config);
-    return NULL;
 }
 
 /*
- * Build connection string for database
+ * Build connection string from engine and config
  */
 char* database_build_connection_string(const char* engine, const DatabaseConnection* conn_config) {
     if (!engine || !conn_config) return NULL;
 
+    // Get engine interface to build connection string
     DatabaseEngineInterface* engine_interface = database_get_engine_interface(engine);
-    if (!engine_interface) return NULL;
-
-    if (engine_interface->get_connection_string) {
-        // Use the engine's connection string builder with engine-specific defaults
-        int default_port = 5432; // PostgreSQL default
-        if (strcmp(engine, "mysql") == 0) {
-            default_port = 3306;
-        } else if (strcmp(engine, "db2") == 0) {
-            default_port = 50000; // DB2 default port
-        }
-
-        ConnectionConfig temp_config = {
-            .host = conn_config->host,
-            .port = conn_config->port ? atoi(conn_config->port) : default_port,
-            .database = conn_config->database,
-            .username = conn_config->user,
-            .password = conn_config->pass,
-            .connection_string = NULL,  // Not available in DatabaseConnection
-            .timeout_seconds = 30
-        };
-
-        return engine_interface->get_connection_string(&temp_config);
-    } else {
-        // Fallback connection string building
-        if (strcmp(engine, "sqlite") == 0) {
-            // For SQLite, use the database path directly
-            return strdup(conn_config->database ? conn_config->database : ":memory:");
-        } else {
-            // For other engines, build connection string from config
-            size_t conn_str_len = 256;
-            char* conn_str = malloc(conn_str_len);
-            if (conn_str) {
-                if (strcmp(engine, "mysql") == 0) {
-                    snprintf(conn_str, conn_str_len, "mysql://%s:%s@%s:%s/%s",
-                            conn_config->user ? conn_config->user : "",
-                            conn_config->pass ? conn_config->pass : "",
-                            conn_config->host ? conn_config->host : "localhost",
-                            conn_config->port ? conn_config->port : "3306",
-                            conn_config->database ? conn_config->database : "");
-                } else if (strcmp(engine, "db2") == 0) {
-                    // DB2 uses database name as DSN
-                    free(conn_str); // Free the previously allocated buffer
-                    conn_str = strdup(conn_config->database ? conn_config->database : "SAMPLE");
-                } else {
-                    // Default PostgreSQL-style
-                    snprintf(conn_str, conn_str_len, "%s://%s:%s@%s:%s/%s",
-                            engine,
-                            conn_config->user ? conn_config->user : "",
-                            conn_config->pass ? conn_config->pass : "",
-                            conn_config->host ? conn_config->host : "localhost",
-                            conn_config->port ? conn_config->port : "5432",
-                            conn_config->database ? conn_config->database : "test");
-                }
-            }
-            return conn_str;
-        }
+    if (!engine_interface) {
+        return NULL;
     }
+
+    // Create ConnectionConfig from DatabaseConnection
+    ConnectionConfig config = {
+        .host = conn_config->host ? strdup(conn_config->host) : NULL,
+        .port = conn_config->port ? atoi(conn_config->port) : 0,
+        .database = conn_config->database ? strdup(conn_config->database) : NULL,
+        .username = conn_config->user ? strdup(conn_config->user) : NULL,
+        .password = conn_config->pass ? strdup(conn_config->pass) : NULL,
+        .connection_string = NULL,  // Will be built by engine
+        .timeout_seconds = 30,  // Default timeout
+        .ssl_enabled = false,   // Default SSL disabled
+        .ssl_cert_path = NULL,
+        .ssl_key_path = NULL,
+        .ssl_ca_path = NULL,
+        .prepared_statement_cache_size = conn_config->prepared_statement_cache_size
+    };
+
+    // Use engine to build connection string
+    char* conn_str = engine_interface->get_connection_string(&config);
+
+    // Clean up temporary config
+    free(config.host);
+    free(config.database);
+    free(config.username);
+    free(config.password);
+    free(config.ssl_cert_path);
+    free(config.ssl_key_path);
+    free(config.ssl_ca_path);
+
+    return conn_str;
 }
 
 /*
- * Free ConnectionConfig and all its allocated strings
+ * Free a ConnectionConfig structure
  */
 void free_connection_config(ConnectionConfig* config) {
     if (!config) return;
 
-    // Only free allocated string fields with additional safety checks
-    if (config->host && (uintptr_t)config->host > 0x1000) free(config->host);
-    if (config->database && (uintptr_t)config->database > 0x1000) free(config->database);
-    if (config->username && (uintptr_t)config->username > 0x1000) free(config->username);
-    if (config->password && (uintptr_t)config->password > 0x1000) free(config->password);
-    if (config->connection_string && (uintptr_t)config->connection_string > 0x1000) free(config->connection_string);
-
-    // SSL fields are not allocated in parse_connection_string, so don't free them
-    // if (config->ssl_cert_path) free(config->ssl_cert_path);
-    // if (config->ssl_key_path) free(config->ssl_key_path);
-    // if (config->ssl_ca_path) free(config->ssl_ca_path);
-
+    free(config->host);
+    free(config->database);
+    free(config->username);
+    free(config->password);
+    free(config->connection_string);
+    free(config->ssl_cert_path);
+    free(config->ssl_key_path);
+    free(config->ssl_ca_path);
     free(config);
 }

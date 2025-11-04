@@ -67,7 +67,7 @@ bool execute_transaction(DatabaseHandle* connection, const char* sql_result,
 // Internal transaction functions (exposed for unit testing)
 bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** statements,
                          size_t* statement_count, size_t* statements_capacity,
-                         const char* dqm_label);
+                         const char* delimiter, const char* dqm_label);
 bool execute_db2_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
                          const char* migration_file, const char* dqm_label);
 bool execute_postgresql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,

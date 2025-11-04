@@ -46,6 +46,13 @@ table.insert(queries,{sql=[[
                 ${COMMON_CREATE}
                 ${PRIMARY}(account_id, role_id, system_id)
             );
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
         ]=]
                                                                             AS code,
         'Create ${TABLE} Table'                                             AS name,

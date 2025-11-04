@@ -100,33 +100,75 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
         bool got_type = db2_get_column_type(stmt_handle, col, &sql_type);
         bool is_numeric = got_type && db2_is_numeric_type(sql_type);
 
-        // Get column data
-        char col_data[256] = {0};
+        // Get column data - use dynamic allocation for large columns (like migration SQL)
         int data_len = 0;
-        int fetch_result = SQLGetData_ptr ? SQLGetData_ptr(stmt_handle, col + 1, SQL_C_CHAR, col_data, sizeof(col_data), &data_len) : -1;
-
-        if (fetch_result == SQL_SUCCESS || fetch_result == SQL_SUCCESS_WITH_INFO) {
-            // Add column to JSON
-            char col_json[1024];
-            if (data_len == SQL_NULL_DATA) {
-                snprintf(col_json, sizeof(col_json), "\"%s\":null", column_names[col]);
-            } else if (is_numeric) {
-                // Numeric types - no quotes around value
-                snprintf(col_json, sizeof(col_json), "\"%s\":%s", column_names[col], col_data);
-            } else {
-                // String types - quote and escape the value
-                char escaped_data[512] = {0};
-                db2_json_escape_string(col_data, escaped_data, sizeof(escaped_data));
-                snprintf(col_json, sizeof(col_json), "\"%s\":\"%s\"", column_names[col], escaped_data);
-            }
-
-            size_t col_json_len = strlen(col_json);
-            if (!db2_ensure_json_buffer_capacity(json_buffer, *json_buffer_size, json_buffer_capacity, col_json_len + 1)) {
+        
+        // First call to get the actual data length
+        (void)SQLGetData_ptr (stmt_handle, col + 1, SQL_C_CHAR, NULL, 0, &data_len);
+        
+        char* col_data = NULL;
+        int fetch_result = -1;
+        
+        if (data_len == SQL_NULL_DATA) {
+            // Data is NULL - handle it directly
+            fetch_result = SQL_SUCCESS;
+        } else if (data_len > 0) {
+            // Allocate buffer for actual data length + null terminator
+            col_data = calloc(1, (size_t)data_len + 1);
+            if (!col_data) {
                 return false;
             }
-            strcat(*json_buffer, col_json);
-            *json_buffer_size += col_json_len;
+            
+            // Second call to get the actual data
+            fetch_result = SQLGetData_ptr(stmt_handle, col + 1, SQL_C_CHAR, col_data, data_len + 1, &data_len);
+        } else {
+            // Fallback for empty or small data
+            col_data = calloc(1, 256);
+            if (!col_data) {
+                return false;
+            }
+            fetch_result = SQLGetData_ptr ? SQLGetData_ptr(stmt_handle, col + 1, SQL_C_CHAR, col_data, 256, &data_len) : -1;
         }
+
+        if (fetch_result == SQL_SUCCESS || fetch_result == SQL_SUCCESS_WITH_INFO) {
+            // Calculate needed space for JSON (column name + value + quotes + escaping)
+            size_t needed_json_space = strlen(column_names[col]) + (col_data ? (size_t)data_len * 2 : 10) + 20;
+            
+            // Ensure we have enough capacity
+            if (!db2_ensure_json_buffer_capacity(json_buffer, *json_buffer_size, json_buffer_capacity, needed_json_space)) {
+                free(col_data);
+                return false;
+            }
+            
+            // Build JSON for this column
+            char* current_pos = *json_buffer + *json_buffer_size;
+            
+            if (data_len == SQL_NULL_DATA) {
+                int written = snprintf(current_pos, needed_json_space, "\"%s\":null", column_names[col]);
+                *json_buffer_size += (size_t)written;
+            } else if (is_numeric) {
+                // Numeric types - no quotes around value
+                int written = snprintf(current_pos, needed_json_space, "\"%s\":%s", column_names[col], col_data);
+                *json_buffer_size += (size_t)written;
+            } else {
+                // String types - quote and escape the value
+                // For large strings (like migration SQL), use dynamic allocation for escaped data
+                size_t escaped_size = (col_data ? strlen(col_data) * 2 : 0) + 1;
+                char* escaped_data = calloc(1, escaped_size);
+                if (!escaped_data) {
+                    free(col_data);
+                    return false;
+                }
+                
+                db2_json_escape_string(col_data, escaped_data, escaped_size);
+                int written = snprintf(current_pos, needed_json_space, "\"%s\":\"%s\"", column_names[col], escaped_data);
+                *json_buffer_size += (size_t)written;
+                
+                free(escaped_data);
+            }
+        }
+        
+        free(col_data);
     }
 
     // End JSON object for this row

@@ -13,4 +13,7 @@ bool database_add_database(const char* name, const char* engine, const char* con
 // Remove a database
 bool database_remove_database(const char* name);
 
+// Test database connectivity
+bool database_test_connection(const char* database_name);
+
 #endif // DATABASE_MANAGE_H

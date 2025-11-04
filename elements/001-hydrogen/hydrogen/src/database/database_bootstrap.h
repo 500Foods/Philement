@@ -15,20 +15,20 @@ typedef struct DatabaseQueue DatabaseQueue;
 
 /*
  * Execute bootstrap query after successful Lead DQM connection
- * This loads migration information and optionally populates QTC based on populate_qtc flag
- */
-void database_queue_execute_bootstrap_query_full(DatabaseQueue* db_queue, bool populate_qtc);
-
-/*
- * Execute bootstrap query after successful Lead DQM connection
- * This loads migration information only (QTC population controlled separately)
+ * This ALWAYS loads migration information (AVAIL/LOAD/APPLY)
+ * This ALWAYS populates QTC with query templates for Conduit and migrations
+ *
+ * @param db_queue The database queue to execute bootstrap on
  */
 void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue);
 
 /*
- * Execute bootstrap query and populate QTC
- * This loads both migration information and populates the Query Table Cache
+ * Populate QTC from bootstrap query results
+ * Called separately when QTC needs to be refreshed without re-running bootstrap query
+ * Note: This is currently not implemented as bootstrap query always populates QTC
+ *
+ * @param db_queue The database queue with bootstrap data to populate QTC from
  */
-void database_queue_execute_bootstrap_query_with_qtc(DatabaseQueue* db_queue);
+void database_queue_populate_qtc_from_bootstrap(DatabaseQueue* db_queue);
 
 #endif // DATABASE_BOOTSTRAP_H

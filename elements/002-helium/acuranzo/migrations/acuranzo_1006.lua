@@ -50,6 +50,13 @@ table.insert(queries,{sql=[[
                 created_at              ${TIMESTAMP_TZ}             ,
                 ${PRIMARY}(action_id)
             );
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
         ]=]
                                                                             AS code,
         'Create ${TABLE} Table'                                             AS name,
