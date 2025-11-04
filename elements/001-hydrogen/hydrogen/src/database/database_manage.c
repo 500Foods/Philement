@@ -13,6 +13,7 @@
 #include "database.h"
 #include "dbqueue/dbqueue.h"
 #include "database_connstring.h"
+#include "database_engine.h"
 
 // Engine description function declarations
 const char* postgresql_engine_get_description(void);
@@ -228,4 +229,43 @@ bool database_remove_database(const char* name) {
     // TODO: Implement database removal logic
     log_this(SR_DATABASE, "Database removal not yet implemented", LOG_LEVEL_TRACE, 0);
     return false;
+}
+
+// Test database connectivity
+bool database_test_connection(const char* database_name) {
+    if (!database_subsystem || !database_name) {
+        return false;
+    }
+
+    if (!global_queue_manager) {
+        return false;
+    }
+
+    // Find the database queue
+    MutexResult lock_result = MUTEX_LOCK(&global_queue_manager->manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return false;
+    }
+
+    DatabaseQueue* db_queue = NULL;
+    for (size_t i = 0; i < global_queue_manager->database_count; i++) {
+        if (global_queue_manager->databases[i] &&
+            strcmp(global_queue_manager->databases[i]->database_name, database_name) == 0) {
+            db_queue = global_queue_manager->databases[i];
+            break;
+        }
+    }
+
+    bool is_connected = false;
+    if (db_queue && !db_queue->shutdown_requested) {
+        // Check connection status
+        MutexResult queue_lock_result = MUTEX_LOCK(&db_queue->connection_lock, SR_DATABASE);
+        if (queue_lock_result == MUTEX_SUCCESS) {
+            is_connected = db_queue->is_connected;
+            mutex_unlock(&db_queue->connection_lock);
+        }
+    }
+
+    mutex_unlock(&global_queue_manager->manager_lock);
+    return is_connected;
 }
