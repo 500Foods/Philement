@@ -573,7 +573,7 @@ long long database_queue_find_next_migration_to_apply(DatabaseQueue* lead_queue)
     // Multiple entries may share same ref but different types (1000=forward, 1001=reverse, 1002=diagram, 1003=applied)
     if (lead_queue->query_cache) {
         const QueryCacheEntry* entry = query_cache_lookup_by_ref_and_type(
-            lead_queue->query_cache, (int)next_migration_id, 1000);
+            lead_queue->query_cache, (int)next_migration_id, 1000, dqm_label);
         
         if (entry && entry->sql_template) {
             log_this(dqm_label, "Found next migration to apply: ref=%lld, type=1000 (from QTC)",
@@ -606,7 +606,7 @@ bool database_queue_apply_single_migration(DatabaseQueue* lead_queue, long long 
     char* migration_sql = NULL;
 
     if (lead_queue->query_cache) {
-        const QueryCacheEntry* entry = query_cache_lookup_by_ref_and_type(lead_queue->query_cache, (int)migration_id, 1000);
+        const QueryCacheEntry* entry = query_cache_lookup_by_ref_and_type(lead_queue->query_cache, (int)migration_id, 1000, dqm_label);
         if (entry && entry->sql_template) {
             migration_sql = strdup(entry->sql_template);
             if (!migration_sql) {

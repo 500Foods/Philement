@@ -53,7 +53,7 @@ void setUp(void) {
 
 void tearDown(void) {
     // Clean up any expired pendings
-    pending_result_cleanup_expired(get_pending_result_manager());
+    pending_result_cleanup_expired(get_pending_result_manager(), NULL);
 }
 
 // Test with NULL pending
@@ -70,7 +70,7 @@ static void test_wait_for_query_result_wait_failure(void) {
     char* query_id = strdup("test_wait_failure");
     TEST_ASSERT_NOT_NULL(query_id);
 
-    PendingQueryResult* pending = pending_result_register(get_pending_result_manager(), query_id, 0);
+    PendingQueryResult* pending = pending_result_register(get_pending_result_manager(), query_id, 0, NULL);
     TEST_ASSERT_NOT_NULL(pending);
 
     const QueryResult* result = wait_for_query_result(pending);
@@ -87,7 +87,7 @@ static void test_wait_for_query_result_success(void) {
     char* query_id = strdup("test_success");
     TEST_ASSERT_NOT_NULL(query_id);
 
-    PendingQueryResult* pending = pending_result_register(get_pending_result_manager(), query_id, 30);
+    PendingQueryResult* pending = pending_result_register(get_pending_result_manager(), query_id, 30, NULL);
     TEST_ASSERT_NOT_NULL(pending);
 
     // Create dummy result
@@ -97,7 +97,7 @@ static void test_wait_for_query_result_success(void) {
     dummy_result->row_count = 1;
 
     // Signal ready
-    bool signaled = pending_result_signal_ready(get_pending_result_manager(), query_id, dummy_result);
+    bool signaled = pending_result_signal_ready(get_pending_result_manager(), query_id, dummy_result, NULL);
     TEST_ASSERT_TRUE(signaled);
 
     const QueryResult* result = wait_for_query_result(pending);
@@ -115,11 +115,11 @@ static void test_wait_for_query_result_get_null(void) {
     char* query_id = strdup("test_get_null");
     TEST_ASSERT_NOT_NULL(query_id);
 
-    PendingQueryResult* pending = pending_result_register(get_pending_result_manager(), query_id, 30);
+    PendingQueryResult* pending = pending_result_register(get_pending_result_manager(), query_id, 30, NULL);
     TEST_ASSERT_NOT_NULL(pending);
 
     // Signal ready with NULL result
-    bool signaled = pending_result_signal_ready(get_pending_result_manager(), query_id, NULL);
+    bool signaled = pending_result_signal_ready(get_pending_result_manager(), query_id, NULL, NULL);
     TEST_ASSERT_TRUE(signaled);
 
     const QueryResult* result = wait_for_query_result(pending);

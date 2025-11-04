@@ -45,7 +45,7 @@ typedef struct ParameterList {
 // Function prototypes
 
 // Parse typed JSON parameters into parameter list
-ParameterList* parse_typed_parameters(const char* json_params);
+ParameterList* parse_typed_parameters(const char* json_params, const char* dqm_label);
 
 // Convert SQL template from named to positional parameters
 // Returns modified SQL and ordered parameter array
@@ -54,7 +54,8 @@ char* convert_named_to_positional(
     ParameterList* params,
     DatabaseEngineType engine_type,
     TypedParameter*** ordered_params,
-    size_t* param_count
+    size_t* param_count,
+    const char* dqm_label
 );
 
 // Build parameter array in correct order for database execution
@@ -62,7 +63,8 @@ bool build_parameter_array(
     const char* sql_template,
     ParameterList* params,
     TypedParameter*** ordered_params,
-    size_t* param_count
+    size_t* param_count,
+    const char* dqm_label
 );
 
 // Cleanup functions
