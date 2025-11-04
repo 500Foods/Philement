@@ -34,20 +34,20 @@ typedef struct QueryTableCache {
 // Function prototypes
 
 // Create and destroy cache
-QueryTableCache* query_cache_create(void);
-void query_cache_destroy(QueryTableCache* cache);
-void query_cache_clear(QueryTableCache* cache);
+QueryTableCache* query_cache_create(const char* dqm_label);
+void query_cache_destroy(QueryTableCache* cache, const char* dqm_label);
+void query_cache_clear(QueryTableCache* cache, const char* dqm_label);
 
 // Entry management
-bool query_cache_add_entry(QueryTableCache* cache, QueryCacheEntry* entry);
-QueryCacheEntry* query_cache_lookup(QueryTableCache* cache, int query_ref);
-QueryCacheEntry* query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int query_ref, int query_type);
-void query_cache_update_usage(QueryTableCache* cache, int query_ref);
+bool query_cache_add_entry(QueryTableCache* cache, QueryCacheEntry* entry, const char* dqm_label);
+QueryCacheEntry* query_cache_lookup(QueryTableCache* cache, int query_ref, const char* dqm_label);
+QueryCacheEntry* query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int query_ref, int query_type, const char* dqm_label);
+void query_cache_update_usage(QueryTableCache* cache, int query_ref, const char* dqm_label);
 
 // Entry creation and cleanup
 QueryCacheEntry* query_cache_entry_create(int query_ref, int query_type, const char* sql_template,
                                          const char* description, const char* queue_type,
-                                         int timeout_seconds);
+                                         int timeout_seconds, const char* dqm_label);
 void query_cache_entry_destroy(QueryCacheEntry* entry);
 
 // Statistics and monitoring

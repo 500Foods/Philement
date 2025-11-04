@@ -70,6 +70,7 @@
 #include <locale.h>         // Locale settings 
 #include <math.h>           // Mathematical functions (e.g., sin, cos, sqrt)
 #include <mntent.h>         // Filesystem mount points (e.g., getmntent; POSIX)
+#include <regex.h>          // Regular expression handling
 #include <semaphore.h>      // Mutex lock handling
 #include <signal.h>         // Signal handling (e.g., signal, sigaction)
 #include <stdarg.h>         // Variable argument lists (e.g., va_list, va_start for variadic functions)

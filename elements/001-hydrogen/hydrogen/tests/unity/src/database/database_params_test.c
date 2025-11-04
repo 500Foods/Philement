@@ -59,12 +59,12 @@ void test_string_to_parameter_type(void) {
 
 // Test parsing empty/null parameters
 void test_parse_typed_parameters_null_input(void) {
-    ParameterList* result = parse_typed_parameters(NULL);
+    ParameterList* result = parse_typed_parameters(NULL, NULL);
     TEST_ASSERT_NULL(result);
 }
 
 void test_parse_typed_parameters_empty_json(void) {
-    ParameterList* result = parse_typed_parameters("{}");
+    ParameterList* result = parse_typed_parameters("{}", NULL);
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL(0, result->count);
     TEST_ASSERT_NULL(result->params);
@@ -72,14 +72,14 @@ void test_parse_typed_parameters_empty_json(void) {
 }
 
 void test_parse_typed_parameters_invalid_json(void) {
-    ParameterList* result = parse_typed_parameters("{invalid json");
+    ParameterList* result = parse_typed_parameters("{invalid json", NULL);
     TEST_ASSERT_NULL(result);
 }
 
 // Test parsing valid parameters
 void test_parse_typed_parameters_integer_only(void) {
     const char* json = "{\"INTEGER\":{\"userId\":123,\"quantity\":50}}";
-    ParameterList* result = parse_typed_parameters(json);
+    ParameterList* result = parse_typed_parameters(json, NULL);
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL(2, result->count);
 
@@ -98,7 +98,7 @@ void test_parse_typed_parameters_integer_only(void) {
 
 void test_parse_typed_parameters_string_only(void) {
     const char* json = "{\"STRING\":{\"username\":\"johndoe\",\"email\":\"john@example.com\"}}";
-    ParameterList* result = parse_typed_parameters(json);
+    ParameterList* result = parse_typed_parameters(json, NULL);
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL(2, result->count);
 
@@ -117,7 +117,7 @@ void test_parse_typed_parameters_string_only(void) {
 
 void test_parse_typed_parameters_boolean_only(void) {
     const char* json = "{\"BOOLEAN\":{\"isActive\":true,\"isAdmin\":false}}";
-    ParameterList* result = parse_typed_parameters(json);
+    ParameterList* result = parse_typed_parameters(json, NULL);
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL(2, result->count);
 
@@ -136,7 +136,7 @@ void test_parse_typed_parameters_boolean_only(void) {
 
 void test_parse_typed_parameters_float_only(void) {
     const char* json = "{\"FLOAT\":{\"temperature\":22.5,\"discount\":0.15}}";
-    ParameterList* result = parse_typed_parameters(json);
+    ParameterList* result = parse_typed_parameters(json, NULL);
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL(2, result->count);
 
@@ -155,7 +155,7 @@ void test_parse_typed_parameters_float_only(void) {
 
 void test_parse_typed_parameters_mixed_types(void) {
     const char* json = "{\"INTEGER\":{\"userId\":123},\"STRING\":{\"username\":\"johndoe\"},\"BOOLEAN\":{\"isActive\":true},\"FLOAT\":{\"balance\":99.99}}";
-    ParameterList* result = parse_typed_parameters(json);
+    ParameterList* result = parse_typed_parameters(json, NULL);
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL(4, result->count);
 
@@ -259,7 +259,7 @@ void test_convert_named_to_positional_postgresql(void) {
     TypedParameter** ordered_params = NULL;
     size_t param_count = 0;
 
-    char* result = convert_named_to_positional(sql_template, params, DB_ENGINE_POSTGRESQL, &ordered_params, &param_count);
+    char* result = convert_named_to_positional(sql_template, params, DB_ENGINE_POSTGRESQL, &ordered_params, &param_count, NULL);
 
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL_STRING("SELECT * FROM users WHERE user_id = $1 AND username = $2", result);
@@ -318,7 +318,7 @@ void test_convert_named_to_positional_mysql(void) {
     TypedParameter** ordered_params = NULL;
     size_t param_count = 0;
 
-    char* result = convert_named_to_positional(sql_template, params, DB_ENGINE_MYSQL, &ordered_params, &param_count);
+    char* result = convert_named_to_positional(sql_template, params, DB_ENGINE_MYSQL, &ordered_params, &param_count, NULL);
 
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL_STRING("SELECT * FROM users WHERE email = ?", result);
@@ -342,7 +342,7 @@ void test_convert_named_to_positional_no_parameters(void) {
     TypedParameter** ordered_params = NULL;
     size_t param_count = 0;
 
-    char* result = convert_named_to_positional(sql_template, params, DB_ENGINE_SQLITE, &ordered_params, &param_count);
+    char* result = convert_named_to_positional(sql_template, params, DB_ENGINE_SQLITE, &ordered_params, &param_count, NULL);
 
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL_STRING("SELECT * FROM users", result);
@@ -390,7 +390,7 @@ void test_convert_named_to_positional_parameter_not_found(void) {
     TypedParameter** ordered_params = NULL;
     size_t param_count = 0;
 
-    char* result = convert_named_to_positional(sql_template, params, DB_ENGINE_SQLITE, &ordered_params, &param_count);
+    char* result = convert_named_to_positional(sql_template, params, DB_ENGINE_SQLITE, &ordered_params, &param_count, NULL);
 
     TEST_ASSERT_NULL(result); // Should fail due to missing parameter
 
@@ -439,7 +439,7 @@ void test_build_parameter_array_no_matches(void) {
     TypedParameter** ordered_params = NULL;
     size_t param_count = 0;
 
-    bool result = build_parameter_array(sql_template, params, &ordered_params, &param_count);
+    bool result = build_parameter_array(sql_template, params, &ordered_params, &param_count, NULL);
 
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_EQUAL(0, param_count);

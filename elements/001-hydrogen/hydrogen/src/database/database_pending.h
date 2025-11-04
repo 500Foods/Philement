@@ -49,14 +49,14 @@ typedef struct PendingResultManager {
  *
  * @return Pointer to initialized manager, or NULL on failure
  */
-PendingResultManager* pending_result_manager_create(void);
+PendingResultManager* pending_result_manager_create(const char* dqm_label);
 
 /**
  * @brief Destroy the pending result manager and all pending results
  *
  * @param manager Manager to destroy
  */
-void pending_result_manager_destroy(PendingResultManager* manager);
+void pending_result_manager_destroy(PendingResultManager* manager, const char* dqm_label);
 
 /**
  * @brief Register a new pending result
@@ -71,7 +71,8 @@ void pending_result_manager_destroy(PendingResultManager* manager);
 PendingQueryResult* pending_result_register(
     PendingResultManager* manager,
     const char* query_id,
-    int timeout_seconds
+    int timeout_seconds,
+    const char* dqm_label
 );
 
 /**
@@ -82,7 +83,7 @@ PendingQueryResult* pending_result_register(
  * @param pending The pending result to wait for
  * @return 0 on success, -1 on timeout or error
  */
-int pending_result_wait(PendingQueryResult* pending);
+int pending_result_wait(PendingQueryResult* pending, const char* dqm_label);
 
 /**
  * @brief Signal that a query result is ready
@@ -97,7 +98,8 @@ int pending_result_wait(PendingQueryResult* pending);
 bool pending_result_signal_ready(
     PendingResultManager* manager,
     const char* query_id,
-    QueryResult* result
+    QueryResult* result,
+    const char* dqm_label
 );
 
 /**
@@ -134,7 +136,7 @@ bool pending_result_is_timed_out(const PendingQueryResult* pending);
  * @param manager The pending result manager
  * @return Number of results cleaned up
  */
-size_t pending_result_cleanup_expired(PendingResultManager* manager);
+size_t pending_result_cleanup_expired(PendingResultManager* manager, const char* dqm_label);
 
 /**
  * @brief Get the global pending result manager instance

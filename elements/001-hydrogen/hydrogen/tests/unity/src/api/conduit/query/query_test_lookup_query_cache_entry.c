@@ -20,13 +20,13 @@ static QueryCacheEntry* g_entry = NULL;
 
 void setUp(void) {
     // Create test fixtures
-    g_cache = query_cache_create();
+    g_cache = query_cache_create(NULL);
     TEST_ASSERT_NOT_NULL(g_cache);
 
-    g_entry = query_cache_entry_create(1, 999, "SELECT 1", "test description", "select", 30);
+    g_entry = query_cache_entry_create(1, 999, "SELECT 1", "test description", "select", 30, NULL);
     TEST_ASSERT_NOT_NULL(g_entry);
 
-    bool added = query_cache_add_entry(g_cache, g_entry);
+    bool added = query_cache_add_entry(g_cache, g_entry, NULL);
     TEST_ASSERT_TRUE(added);
 
     g_db_queue = malloc(sizeof(DatabaseQueue));
@@ -37,7 +37,7 @@ void setUp(void) {
 
 void tearDown(void) {
     if (g_cache) {
-        query_cache_destroy(g_cache);
+        query_cache_destroy(g_cache, NULL);
         g_cache = NULL;
     }
     if (g_db_queue) {

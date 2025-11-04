@@ -107,13 +107,13 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 
             // Initialize QTC if not already done, or clear it if it exists
             if (!db_queue->query_cache) {
-                db_queue->query_cache = query_cache_create();
+                db_queue->query_cache = query_cache_create(dqm_label);
                 if (!db_queue->query_cache) {
                     log_this(dqm_label, "Failed to create query cache", LOG_LEVEL_ERROR, 0);
                 }
             } else {
                 // Clear existing QTC before repopulating from fresh bootstrap results
-                query_cache_clear(db_queue->query_cache);
+                query_cache_clear(db_queue->query_cache, dqm_label);
             }
 
             // Parse bootstrap query results for migration information and QTC
@@ -200,10 +200,10 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 
                                      // Create and add QTC entry with type field
                                      QueryCacheEntry* entry = query_cache_entry_create(
-                                         query_ref, query_type, sql_template, description, queue_type_str, timeout_seconds);
+                                         query_ref, query_type, sql_template, description, queue_type_str, timeout_seconds, dqm_label);
 
                                      if (entry && db_queue->query_cache) {
-                                         if (query_cache_add_entry(db_queue->query_cache, entry)) {
+                                         if (query_cache_add_entry(db_queue->query_cache, entry, dqm_label)) {
                                              log_this(dqm_label, "Added QTC entry: ref=%d, type=%d, queue=%s",
                                                      LOG_LEVEL_DEBUG, 3, query_ref, query_type, queue_type_str);
                                          } else {
