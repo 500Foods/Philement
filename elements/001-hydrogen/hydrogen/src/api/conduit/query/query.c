@@ -138,7 +138,7 @@ QueryCacheEntry* lookup_query_cache_entry(DatabaseQueue* db_queue, int query_ref
     if (!db_queue || !db_queue->query_cache) {
         return NULL;
     }
-    return query_cache_lookup(db_queue->query_cache, query_ref);
+    return query_cache_lookup(db_queue->query_cache, query_ref, NULL);
 }
 
 // Lookup database queue and query cache entry
@@ -173,7 +173,7 @@ bool process_parameters(json_t* params_json, ParameterList** param_list,
     if (params_json && json_is_object(params_json)) {
         char* params_str = json_dumps(params_json, JSON_COMPACT);
         if (params_str) {
-            *param_list = parse_typed_parameters(params_str);
+            *param_list = parse_typed_parameters(params_str, NULL);
             free(params_str);
         }
     }
@@ -192,7 +192,8 @@ bool process_parameters(json_t* params_json, ParameterList** param_list,
         *param_list,
         engine_type,
         ordered_params,
-        param_count
+        param_count,
+        NULL
     );
 
     return (*converted_sql != NULL);
@@ -256,7 +257,7 @@ bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_i
 
 // Wait for query result
 const QueryResult* wait_for_query_result(PendingQueryResult* pending) {
-    int wait_result = pending_result_wait(pending);
+    int wait_result = pending_result_wait(pending, NULL);
     if (wait_result != 0) {
         return NULL; // Wait failed
     }
@@ -518,7 +519,7 @@ enum MHD_Result handle_pending_registration(struct MHD_Connection *connection, c
                                             char* converted_sql, TypedParameter** ordered_params,
                                             const QueryCacheEntry* cache_entry, PendingQueryResult** pending) {
     PendingResultManager* pending_mgr = get_pending_result_manager();
-    *pending = pending_result_register(pending_mgr, query_id, cache_entry->timeout_seconds);
+    *pending = pending_result_register(pending_mgr, query_id, cache_entry->timeout_seconds, NULL);
     if (!*pending) {
         free(query_id);
         free(converted_sql);

@@ -4,19 +4,20 @@
  * Thread-safe in-memory cache for storing query templates loaded during bootstrap.
  */
 
+// Project includes
+#include <hydrogen.h>
+
+// Local includes
 #include "database_cache.h"
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
 // Initial capacity for cache entries array
-#define INITIAL_CACHE_CAPACITY 64
+#define INITIAL_CACHE_CAPACITY 256
 
 // Create a new query cache
-QueryTableCache* query_cache_create(void) {
+QueryTableCache* query_cache_create(const char* dqm_label) {
     QueryTableCache* cache = (QueryTableCache*)malloc(sizeof(QueryTableCache));
     if (!cache) {
-        log_this("DATABASE", "Failed to allocate memory for query cache", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to allocate memory for query cache", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -27,7 +28,7 @@ QueryTableCache* query_cache_create(void) {
 
     // Initialize reader-writer lock
     if (pthread_rwlock_init(&cache->cache_lock, NULL) != 0) {
-        log_this("DATABASE", "Failed to initialize cache lock", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to initialize cache lock", LOG_LEVEL_ERROR, 0);
         free(cache);
         return NULL;
     }
@@ -35,7 +36,7 @@ QueryTableCache* query_cache_create(void) {
     // Allocate initial entries array
     cache->entries = (QueryCacheEntry**)malloc(INITIAL_CACHE_CAPACITY * sizeof(QueryCacheEntry*));
     if (!cache->entries) {
-        log_this("DATABASE", "Failed to allocate memory for cache entries", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to allocate memory for cache entries", LOG_LEVEL_ERROR, 0);
         pthread_rwlock_destroy(&cache->cache_lock);
         free(cache);
         return NULL;
@@ -46,12 +47,12 @@ QueryTableCache* query_cache_create(void) {
     // Initialize all entries to NULL
     memset(cache->entries, 0, INITIAL_CACHE_CAPACITY * sizeof(QueryCacheEntry*));
 
-    log_this("DATABASE", "Query cache created successfully", LOG_LEVEL_DEBUG, 0);
+    log_this(dqm_label ? dqm_label : SR_DATABASE, "Query cache created successfully", LOG_LEVEL_DEBUG, 0);
     return cache;
 }
 
 // Destroy query cache and all entries
-void query_cache_destroy(QueryTableCache* cache) {
+void query_cache_destroy(QueryTableCache* cache, const char* dqm_label) {
     if (!cache) return;
 
     // Acquire write lock for destruction
@@ -76,16 +77,16 @@ void query_cache_destroy(QueryTableCache* cache) {
     // Free cache structure
     free(cache);
 
-    log_this("DATABASE", "Query cache destroyed", LOG_LEVEL_DEBUG, 0);
+    log_this(dqm_label ? dqm_label : SR_DATABASE, "Query cache destroyed", LOG_LEVEL_DEBUG, 0);
 }
 
 // Clear all entries from cache (but keep cache structure)
-void query_cache_clear(QueryTableCache* cache) {
+void query_cache_clear(QueryTableCache* cache, const char* dqm_label) {
     if (!cache) return;
 
     // Acquire write lock
     if (pthread_rwlock_wrlock(&cache->cache_lock) != 0) {
-        log_this("DATABASE", "Failed to acquire write lock for cache clear", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to acquire write lock for cache clear", LOG_LEVEL_ERROR, 0);
         return;
     }
 
@@ -103,16 +104,16 @@ void query_cache_clear(QueryTableCache* cache) {
     // Release write lock
     pthread_rwlock_unlock(&cache->cache_lock);
 
-    log_this("DATABASE", "Query cache cleared", LOG_LEVEL_DEBUG, 0);
+    log_this(dqm_label ? dqm_label : SR_DATABASE, "Query cache cleared", LOG_LEVEL_DEBUG, 0);
 }
 
 // Create a new cache entry
 QueryCacheEntry* query_cache_entry_create(int query_ref, int query_type, const char* sql_template,
                                          const char* description, const char* queue_type,
-                                         int timeout_seconds) {
+                                         int timeout_seconds, const char* dqm_label) {
     QueryCacheEntry* entry = (QueryCacheEntry*)malloc(sizeof(QueryCacheEntry));
     if (!entry) {
-        log_this("DATABASE", "Failed to allocate memory for cache entry", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to allocate memory for cache entry", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -132,7 +133,7 @@ QueryCacheEntry* query_cache_entry_create(int query_ref, int query_type, const c
     if ((sql_template && !entry->sql_template) ||
         (description && !entry->description) ||
         (queue_type && !entry->queue_type)) {
-        log_this("DATABASE", "Failed to allocate memory for cache entry strings", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to allocate memory for cache entry strings", LOG_LEVEL_ERROR, 0);
         query_cache_entry_destroy(entry);
         return NULL;
     }
@@ -151,14 +152,14 @@ void query_cache_entry_destroy(QueryCacheEntry* entry) {
 }
 
 // Add entry to cache (assumes write lock is held)
-static bool query_cache_add_entry_locked(QueryTableCache* cache, QueryCacheEntry* entry) {
+static bool query_cache_add_entry_locked(QueryTableCache* cache, QueryCacheEntry* entry, const char* dqm_label) {
     // Check if we need to resize
     if (cache->entry_count >= cache->capacity) {
         size_t new_capacity = cache->capacity * 2;
         QueryCacheEntry** new_entries = (QueryCacheEntry**)realloc(cache->entries,
-                                                                   new_capacity * sizeof(QueryCacheEntry*));
+                                                                    new_capacity * sizeof(QueryCacheEntry*));
         if (!new_entries) {
-            log_this("DATABASE", "Failed to resize cache entries array", LOG_LEVEL_ERROR, 0);
+            log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to resize cache entries array", LOG_LEVEL_ERROR, 0);
             return false;
         }
 
@@ -177,37 +178,37 @@ static bool query_cache_add_entry_locked(QueryTableCache* cache, QueryCacheEntry
 }
 
 // Add entry to cache with proper locking
-bool query_cache_add_entry(QueryTableCache* cache, QueryCacheEntry* entry) {
+bool query_cache_add_entry(QueryTableCache* cache, QueryCacheEntry* entry, const char* dqm_label) {
     if (!cache || !entry) {
-        log_this("DATABASE", "Invalid parameters for cache add entry", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Invalid parameters for cache add entry", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
     // Acquire write lock
     if (pthread_rwlock_wrlock(&cache->cache_lock) != 0) {
-        log_this("DATABASE", "Failed to acquire write lock for cache", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to acquire write lock for cache", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    bool result = query_cache_add_entry_locked(cache, entry);
+    bool result = query_cache_add_entry_locked(cache, entry, dqm_label);
 
     // Release write lock
     pthread_rwlock_unlock(&cache->cache_lock);
 
     if (result) {
-        log_this("DATABASE", "Added query entry to cache", LOG_LEVEL_DEBUG, 0);
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Added query entry to cache", LOG_LEVEL_DEBUG, 0);
     }
 
     return result;
 }
 
 // Lookup entry by query_ref (read lock)
-QueryCacheEntry* query_cache_lookup(QueryTableCache* cache, int query_ref) {
+QueryCacheEntry* query_cache_lookup(QueryTableCache* cache, int query_ref, const char* dqm_label) {
     if (!cache) return NULL;
 
     // Acquire read lock
     if (pthread_rwlock_rdlock(&cache->cache_lock) != 0) {
-        log_this("DATABASE", "Failed to acquire read lock for cache lookup", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to acquire read lock for cache lookup", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -236,12 +237,12 @@ QueryCacheEntry* query_cache_lookup(QueryTableCache* cache, int query_ref) {
 // Lookup entry by query_ref AND query_type (read lock)
 // This is needed for migrations where multiple entries may have same ref but different types
 // (e.g., ref=1001 could be type=1000 forward migration, type=1001 reverse, type=1002 diagram)
-QueryCacheEntry* query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int query_ref, int query_type) {
+QueryCacheEntry* query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int query_ref, int query_type, const char* dqm_label) {
     if (!cache) return NULL;
 
     // Acquire read lock
     if (pthread_rwlock_rdlock(&cache->cache_lock) != 0) {
-        log_this("DATABASE", "Failed to acquire read lock for cache lookup", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to acquire read lock for cache lookup", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -270,8 +271,8 @@ QueryCacheEntry* query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int 
 }
 
 // Update usage statistics for a query
-void query_cache_update_usage(QueryTableCache* cache, int query_ref) {
-    QueryCacheEntry* entry = query_cache_lookup(cache, query_ref);
+void query_cache_update_usage(QueryTableCache* cache, int query_ref, const char* dqm_label) {
+    QueryCacheEntry* entry = query_cache_lookup(cache, query_ref, dqm_label);
     if (entry) {
         entry->last_used = time(NULL);
         __sync_fetch_and_add(&entry->usage_count, 1);

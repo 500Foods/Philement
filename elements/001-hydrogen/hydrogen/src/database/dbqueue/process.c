@@ -93,7 +93,7 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
                 if (query->query_id) {
                     PendingResultManager* pending_mgr = get_pending_result_manager();
                     if (pending_mgr) {
-                        pending_result_signal_ready(pending_mgr, query->query_id, result);
+                        pending_result_signal_ready(pending_mgr, query->query_id, result, dqm_label_exec);
                         result = NULL; // Ownership transferred to pending result
                     }
                 }
@@ -116,7 +116,7 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
                 if (query->query_id) {
                     PendingResultManager* pending_mgr = get_pending_result_manager();
                     if (pending_mgr) {
-                        pending_result_signal_ready(pending_mgr, query->query_id, NULL);
+                        pending_result_signal_ready(pending_mgr, query->query_id, NULL, dqm_label_exec);
                     }
                 }
 

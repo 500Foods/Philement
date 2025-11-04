@@ -10,12 +10,12 @@
  * Note: Shutdown functionality has been moved to landing/landing_payload.c
  */
 
-// Global includes
+// Project includes
 #include <src/hydrogen.h>
+#include <src/payload/payload_cache.h>
 
 // Local includes
 #include "launch.h"
-#include <src/payload/payload_cache.h>
  
  /**
   * Check if the payload subsystem is ready to launch

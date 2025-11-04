@@ -13,6 +13,9 @@ Review docs/plans/DATABASE_PLAN.md
 
 This TODO.md file serves as a central location to track plenty of incomplete items in the Hydrogen project. Use this file to prioritize and manage development tasks as they are identified and addressed.
 
+NOTE: There is also a [TODO TESTS](TODO_TESTS.md) file that covers specifically Unity Framework unit tests that have been commented out due to either a FAIL result or a segfault.
+These aren't critical to warrant express attention, but are important enough to track and resolve when time and resources permit.
+
 ### API Folder (2 TODOs)
 
 | # | Status | File | Description |

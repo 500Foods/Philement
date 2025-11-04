@@ -28,13 +28,13 @@ struct QueryCacheEntry;
 extern char* database_queue_generate_label(DatabaseQueue* db_queue);
 extern MutexResult mutex_lock(pthread_mutex_t* mutex, const char* label);
 extern MutexResult mutex_unlock(pthread_mutex_t* mutex);
-extern struct QueryTableCache* query_cache_create(void);
-extern bool query_cache_add_entry(struct QueryTableCache* cache, struct QueryCacheEntry* entry);
-extern struct QueryCacheEntry* query_cache_entry_create(int query_ref, int query_type, const char* sql_template, const char* description, const char* queue_type, int timeout_seconds);
+extern struct QueryTableCache* query_cache_create(const char* dqm_label);
+extern bool query_cache_add_entry(struct QueryTableCache* cache, struct QueryCacheEntry* entry, const char* dqm_label);
+extern struct QueryCacheEntry* query_cache_entry_create(int query_ref, int query_type, const char* sql_template, const char* description, const char* queue_type, int timeout_seconds, const char* dqm_label);
 extern void query_cache_entry_destroy(struct QueryCacheEntry* entry);
 extern size_t query_cache_get_entry_count(struct QueryTableCache* cache);
-extern void query_cache_clear(struct QueryTableCache* cache);
-extern struct QueryCacheEntry* query_cache_lookup(struct QueryTableCache* cache, int query_ref);
+extern void query_cache_clear(struct QueryTableCache* cache, const char* dqm_label);
+extern struct QueryCacheEntry* query_cache_lookup(struct QueryTableCache* cache, int query_ref, const char* dqm_label);
 extern void database_engine_cleanup_result(QueryResult* result);
 
 // Test function prototypes
@@ -460,7 +460,7 @@ void test_successful_execution_no_qtc(void) {
     TEST_ASSERT_TRUE(queue->bootstrap_completed);
     
     // Cleanup QTC
-    query_cache_destroy(queue->query_cache);
+    query_cache_destroy(queue->query_cache, NULL);
 
     // Cleanup
     free(queue->database_name);
@@ -532,7 +532,7 @@ void test_successful_execution_with_qtc(void) {
     TEST_ASSERT_TRUE(queue->bootstrap_completed);
 
     // Cleanup QTC
-    query_cache_destroy(queue->query_cache);
+    query_cache_destroy(queue->query_cache, NULL);
 
     free(queue->database_name);
     // cppcheck-suppress nullPointerOutOfMemory

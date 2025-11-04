@@ -38,20 +38,20 @@ void tearDown(void) {
 
 // Test manager creation and destruction
 void test_pending_result_manager_create_destroy(void) {
-    PendingResultManager* manager = pending_result_manager_create();
+    PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
     TEST_ASSERT_EQUAL(0, manager->count);
     TEST_ASSERT_TRUE(manager->capacity > 0);
 
-    pending_result_manager_destroy(manager);
+    pending_result_manager_destroy(manager, NULL);
 }
 
 // Test registering a pending result
 void test_pending_result_register(void) {
-    PendingResultManager* manager = pending_result_manager_create();
+    PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
 
-    PendingQueryResult* pending = pending_result_register(manager, "test_query_123", 30);
+    PendingQueryResult* pending = pending_result_register(manager, "test_query_123", 30, NULL);
     TEST_ASSERT_NOT_NULL(pending);
     TEST_ASSERT_EQUAL_STRING("test_query_123", pending->query_id);
     TEST_ASSERT_EQUAL(30, pending->timeout_seconds);
@@ -62,17 +62,17 @@ void test_pending_result_register(void) {
 
     TEST_ASSERT_EQUAL(1, manager->count);
 
-    pending_result_manager_destroy(manager);
+    pending_result_manager_destroy(manager, NULL);
 }
 
 // Test registering multiple pending results
 void test_pending_result_register_multiple(void) {
-    PendingResultManager* manager = pending_result_manager_create();
+    PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
 
-    PendingQueryResult* pending1 = pending_result_register(manager, "query1", 10);
-    PendingQueryResult* pending2 = pending_result_register(manager, "query2", 20);
-    PendingQueryResult* pending3 = pending_result_register(manager, "query3", 30);
+    PendingQueryResult* pending1 = pending_result_register(manager, "query1", 10, NULL);
+    PendingQueryResult* pending2 = pending_result_register(manager, "query2", 20, NULL);
+    PendingQueryResult* pending3 = pending_result_register(manager, "query3", 30, NULL);
 
     TEST_ASSERT_NOT_NULL(pending1);
     TEST_ASSERT_NOT_NULL(pending2);
@@ -83,16 +83,16 @@ void test_pending_result_register_multiple(void) {
     TEST_ASSERT_EQUAL_STRING("query2", pending2->query_id);
     TEST_ASSERT_EQUAL_STRING("query3", pending3->query_id);
 
-    pending_result_manager_destroy(manager);
+    pending_result_manager_destroy(manager, NULL);
 }
 
 // Test signaling result ready
 void test_pending_result_signal_ready(void) {
-    PendingResultManager* manager = pending_result_manager_create();
+    PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
 
     // Register a pending result
-    PendingQueryResult* pending = pending_result_register(manager, "test_signal", 30);
+    PendingQueryResult* pending = pending_result_register(manager, "test_signal", 30, NULL);
     TEST_ASSERT_NOT_NULL(pending);
 
     // Create a mock result - use heap allocation to avoid double-free issues
@@ -108,7 +108,7 @@ void test_pending_result_signal_ready(void) {
     mock_result->affected_rows = 0;
 
     // Signal that result is ready
-    bool signaled = pending_result_signal_ready(manager, "test_signal", mock_result);
+    bool signaled = pending_result_signal_ready(manager, "test_signal", mock_result, NULL);
     TEST_ASSERT_TRUE(signaled);
 
     // Check that the result was stored
@@ -121,12 +121,12 @@ void test_pending_result_signal_ready(void) {
     TEST_ASSERT_EQUAL(2, retrieved->column_count);
     // Note: data_json is NULL in the mock result, so we don't test it
 
-    pending_result_manager_destroy(manager);
+    pending_result_manager_destroy(manager, NULL);
 }
 
 // Test signaling result ready for non-existent query
 void test_pending_result_signal_ready_not_found(void) {
-    PendingResultManager* manager = pending_result_manager_create();
+    PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
 
     // Create a mock result - use heap allocation to avoid issues
@@ -142,50 +142,50 @@ void test_pending_result_signal_ready_not_found(void) {
     mock_result->affected_rows = 0;
 
     // Try to signal a non-existent query
-    bool signaled = pending_result_signal_ready(manager, "non_existent", mock_result);
+    bool signaled = pending_result_signal_ready(manager, "non_existent", mock_result, NULL);
     TEST_ASSERT_FALSE(signaled);
 
     // Clean up the result since it wasn't claimed
     free(mock_result);
 
-    pending_result_manager_destroy(manager);
+    pending_result_manager_destroy(manager, NULL);
 }
 
 // Test cleanup of expired results
 void test_pending_result_cleanup_expired(void) {
-    PendingResultManager* manager = pending_result_manager_create();
+    PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
 
     // Register a pending result with short timeout
-    PendingQueryResult* pending = pending_result_register(manager, "expired_test", 1);
+    PendingQueryResult* pending = pending_result_register(manager, "expired_test", 1, NULL);
     TEST_ASSERT_NOT_NULL(pending);
 
     // Manually set submitted time to past
     pending->submitted_at = time(NULL) - 5; // 5 seconds ago
 
     // Run cleanup
-    size_t cleaned = pending_result_cleanup_expired(manager);
+    size_t cleaned = pending_result_cleanup_expired(manager, NULL);
     TEST_ASSERT_EQUAL(1, cleaned);
     TEST_ASSERT_EQUAL(0, manager->count);
 
-    pending_result_manager_destroy(manager);
+    pending_result_manager_destroy(manager, NULL);
 }
 
 // Test that non-expired results are not cleaned up
 void test_pending_result_cleanup_not_expired(void) {
-    PendingResultManager* manager = pending_result_manager_create();
+    PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
 
     // Register a pending result with long timeout
-    PendingQueryResult* pending = pending_result_register(manager, "not_expired", 300);
+    PendingQueryResult* pending = pending_result_register(manager, "not_expired", 300, NULL);
     TEST_ASSERT_NOT_NULL(pending);
 
     // Run cleanup
-    size_t cleaned = pending_result_cleanup_expired(manager);
+    size_t cleaned = pending_result_cleanup_expired(manager, NULL);
     TEST_ASSERT_EQUAL(0, cleaned);
     TEST_ASSERT_EQUAL(1, manager->count);
 
-    pending_result_manager_destroy(manager);
+    pending_result_manager_destroy(manager, NULL);
 }
 
 // Test global manager access
@@ -201,7 +201,7 @@ void test_get_pending_result_manager(void) {
 
 // Test manager expansion when capacity exceeded
 void test_pending_result_manager_expansion(void) {
-    PendingResultManager* manager = pending_result_manager_create();
+    PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
 
     size_t initial_capacity = manager->capacity;
@@ -210,53 +210,53 @@ void test_pending_result_manager_expansion(void) {
     for (size_t i = 0; i < initial_capacity; i++) {
         char query_id[32];
         snprintf(query_id, sizeof(query_id), "query_%zu", i);
-        PendingQueryResult* pending = pending_result_register(manager, query_id, 30);
+        PendingQueryResult* pending = pending_result_register(manager, query_id, 30, NULL);
         TEST_ASSERT_NOT_NULL(pending);
     }
 
     TEST_ASSERT_EQUAL(initial_capacity, manager->count);
 
     // Add one more to trigger expansion
-    PendingQueryResult* extra_pending = pending_result_register(manager, "extra_query", 30);
+    PendingQueryResult* extra_pending = pending_result_register(manager, "extra_query", 30, NULL);
     TEST_ASSERT_NOT_NULL(extra_pending);
 
     TEST_ASSERT_TRUE(manager->capacity > initial_capacity);
     TEST_ASSERT_EQUAL(initial_capacity + 1, manager->count);
 
-    pending_result_manager_destroy(manager);
+    pending_result_manager_destroy(manager, NULL);
 }
 
 // Test NULL parameter handling
 void test_pending_result_null_parameters(void) {
     // Test manager creation with NULL
-    pending_result_manager_destroy(NULL); // Should not crash
+    pending_result_manager_destroy(NULL, NULL); // Should not crash
 
     // Test registration with NULL parameters
-    PendingResultManager* manager = pending_result_manager_create();
+    PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
 
-    PendingQueryResult* pending1 = pending_result_register(NULL, "test", 30);
+    PendingQueryResult* pending1 = pending_result_register(NULL, "test", 30, NULL);
     TEST_ASSERT_NULL(pending1);
 
-    PendingQueryResult* pending2 = pending_result_register(manager, NULL, 30);
+    PendingQueryResult* pending2 = pending_result_register(manager, NULL, 30, NULL);
     TEST_ASSERT_NULL(pending2);
 
-    pending_result_manager_destroy(manager);
+    pending_result_manager_destroy(manager, NULL);
 
     // Test signaling with NULL parameters
-    bool signaled1 = pending_result_signal_ready(NULL, "test", NULL);
+    bool signaled1 = pending_result_signal_ready(NULL, "test", NULL, NULL);
     TEST_ASSERT_FALSE(signaled1);
 
-    bool signaled2 = pending_result_signal_ready(manager, NULL, NULL);
+    bool signaled2 = pending_result_signal_ready(manager, NULL, NULL, NULL);
     TEST_ASSERT_FALSE(signaled2);
 }
 
 // Test result state checks
 void test_pending_result_state_checks(void) {
-    PendingResultManager* manager = pending_result_manager_create();
+    PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
 
-    PendingQueryResult* pending = pending_result_register(manager, "state_test", 30);
+    PendingQueryResult* pending = pending_result_register(manager, "state_test", 30, NULL);
     TEST_ASSERT_NOT_NULL(pending);
 
     // Initially not completed or timed out
@@ -278,14 +278,14 @@ void test_pending_result_state_checks(void) {
     mock_result->execution_time_ms = 75;
     mock_result->affected_rows = 0;
 
-    bool signaled = pending_result_signal_ready(manager, "state_test", mock_result);
+    bool signaled = pending_result_signal_ready(manager, "state_test", mock_result, NULL);
     TEST_ASSERT_TRUE(signaled);
 
     // Now should be completed
     TEST_ASSERT_TRUE(pending_result_is_completed(pending));
     TEST_ASSERT_FALSE(pending_result_is_timed_out(pending));
 
-    pending_result_manager_destroy(manager);
+    pending_result_manager_destroy(manager, NULL);
 }
 
 int main(void) {
