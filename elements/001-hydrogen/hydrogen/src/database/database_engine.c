@@ -278,41 +278,12 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     // CRITICAL: Validate mutex before attempting to lock
     // log_this(SR_DATABASE, "database_engine_execute: Validating connection mutex", LOG_LEVEL_ERROR, 0);
 
-    // Check if the mutex pointer looks valid
-    pthread_mutex_t* mutex_ptr = &connection->connection_lock;
-    uintptr_t mutex_addr = (uintptr_t)mutex_ptr;
-    // uintptr_t conn_addr = (uintptr_t)connection;
-
-    // Log with consistent format and same log level to compare
-    // log_this(SR_DATABASE, "MUTEX_CHECK: mutex_ptr=%p, connection=%p, engine_type=%d", LOG_LEVEL_ERROR, 3,
-    //     (void*)mutex_ptr, 
-    //     (void*)connection, 
-    //     connection->engine_type);
-
-    // Store values to check for changes
-    uintptr_t saved_mutex_addr = mutex_addr;
-    // uintptr_t saved_conn_addr = conn_addr;
-
-    // Check if values changed between logging calls
-    uintptr_t current_mutex_addr = (uintptr_t)&connection->connection_lock;
-    // uintptr_t current_conn_addr = (uintptr_t)connection;
-
-    if (saved_mutex_addr != current_mutex_addr) {
-        log_this(SR_DATABASE, "MUTEX_ADDRESS_CHANGED: Was %p, now %p - this explains the discrepancy!", LOG_LEVEL_ERROR, 2, 
-            (void*)saved_mutex_addr, 
-            (void*)current_mutex_addr);
-    }
-
-    // CRITICAL: Check for memory corruption in mutex structure
-    if ((uintptr_t)mutex_ptr < 0x1000) {
-        log_this(SR_DATABASE, "CRITICAL ERROR: Connection mutex pointer is corrupted! Address: %p", LOG_LEVEL_ERROR, 1, (void*)mutex_ptr);
-        log_this(SR_DATABASE, "This indicates memory corruption in the DatabaseHandle structure", LOG_LEVEL_ERROR, 0);
-        log_this(SR_DATABASE, "The connection object itself may be corrupted or double-freed", LOG_LEVEL_ERROR, 0);
-        return false;
-    }
+    // Connection mutex validation removed - each thread owns its connection exclusively
+    // No other thread accesses this connection's state, so no mutex needed
     
     // Skip connection lock - each thread owns its connection exclusively
     // No other thread accesses this connection's state
+    // The connection and its prepared statements are thread-local to this DQM
 
     // log_this(SR_DATABASE, "database_engine_execute: Mutex locked successfully", LOG_LEVEL_ERROR, 0);
 
@@ -329,56 +300,16 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
         return false;
     }
 
-    // Check if pointer is valid before dereferencing
-    if ((uintptr_t)connection == 0x1) {
-        log_this(designator, "CONNECTION IS THE CORRUPTED 0x1 VALUE - ABORTING", LOG_LEVEL_ERROR, 0);
-        mutex_unlock(&connection->connection_lock);
-        return false;
-    }
-    
-    // Dump connection contents safely with memory barriers
-    // log_this(designator, "About to read engine_type field", LOG_LEVEL_ERROR, 0);
-    
-    // Force compiler to not optimize this access
-    const volatile DatabaseEngine* volatile_engine_ptr = &connection->engine_type;
-    DatabaseEngine captured_engine_type = *volatile_engine_ptr;
-
-    // log_this(designator, "Successfully read engine_type: %d", LOG_LEVEL_ERROR, 1, (int)captured_engine_type);
-
-    // Also try direct access without volatile
-    DatabaseEngine direct_engine_type = connection->engine_type;
-    // log_this(designator, "Direct engine_type read: %d", LOG_LEVEL_ERROR, 1, (int)direct_engine_type);
-
-    // CRITICAL: Check for engine type corruption
-    if (captured_engine_type != direct_engine_type) {
-        log_this(designator, "CRITICAL ERROR: Engine type corruption detected! Volatile read: %d, Direct read: %d", LOG_LEVEL_ERROR, 2,
-            (int)captured_engine_type, 
-            (int)direct_engine_type);
-        log_this(designator, "This indicates severe memory corruption in the connection structure", LOG_LEVEL_ERROR, 0);
-    }
-
-    // Log engine type for debugging (no longer assume PostgreSQL is expected)
-    if (captured_engine_type != direct_engine_type) {
-        log_this(designator, "DEBUG: Engine type mismatch detected: volatile=%d, direct=%d", LOG_LEVEL_DEBUG, 2,
-            (int)captured_engine_type,
-            (int)direct_engine_type);
-    }
-    
-    // Compare the connection pointer values
-    // log_this(designator, "Connection address in engine_type access: %p", LOG_LEVEL_ERROR, 1, (void*)connection);
-
-    // CRITICAL: Check for connection pointer corruption
+    // Basic connection validation - connection is thread-local to DQM
     if ((uintptr_t)connection < 0x1000) {
-        log_this(designator, "CRITICAL ERROR: Connection pointer itself is corrupted! Value: %p", LOG_LEVEL_ERROR, 1, (void*)connection);
-        log_this(designator, "This indicates the entire connection structure has been corrupted", LOG_LEVEL_ERROR, 0);
+        log_this(designator, "CRITICAL ERROR: Connection pointer corrupted! Value: %p", LOG_LEVEL_ERROR, 1, (void*)connection);
         return false;
     }
 
-    // Validate expected engine type for this connection
-    if (captured_engine_type >= DB_ENGINE_MAX || captured_engine_type < 0) {
-        log_this(designator, "CRITICAL ERROR: Connection engine_type corrupted! Invalid value %d (must be 0-%d)", LOG_LEVEL_ERROR, 2, (int)captured_engine_type, DB_ENGINE_MAX-1);
-        log_this(designator, "This should have returned false but continuing for debugging", LOG_LEVEL_ERROR, 0);
-        // Don't return false yet - let's see what happens
+    DatabaseEngine engine_type = connection->engine_type;
+    if (engine_type >= DB_ENGINE_MAX || engine_type < 0) {
+        log_this(designator, "CRITICAL ERROR: Invalid engine_type %d (must be 0-%d)", LOG_LEVEL_ERROR, 2, (int)engine_type, DB_ENGINE_MAX-1);
+        return false;
     }
     
     // log_this(designator, "About to call database_engine_get with engine_type=%d", LOG_LEVEL_TRACE, 1, connection->engine_type);
@@ -407,7 +338,6 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
     if (!engine->execute_query) {
         log_this(designator, "CRITICAL ERROR: Engine execute_query function pointer is NULL!", LOG_LEVEL_ERROR, 0);
-        mutex_unlock(&connection->connection_lock);
         return false;
     }
 
@@ -448,7 +378,6 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
             log_this(designator, "database_engine_execute: Executing prepared statement: %s", LOG_LEVEL_TRACE, 1,
                      request->prepared_statement_name);
             // log_this(designator, "database_engine_execute: Calling execute_prepared", LOG_LEVEL_TRACE, 0);
-            mutex_unlock(&connection->connection_lock);
             return engine->execute_prepared(connection, stmt, request, result);
         } else {
             log_this(designator, "database_engine_execute: Prepared statement not available, falling back to direct execution", LOG_LEVEL_TRACE, 0);
