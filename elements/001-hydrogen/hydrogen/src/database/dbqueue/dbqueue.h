@@ -260,6 +260,9 @@ bool database_queue_wait_for_initial_connection(DatabaseQueue* db_queue, int tim
 // Migration helper functions
 long long database_queue_find_next_migration_to_apply(DatabaseQueue* lead_queue);
 bool database_queue_apply_single_migration(DatabaseQueue* lead_queue, long long migration_id, const char* dqm_label);
+long long database_queue_find_next_reverse_migration_to_apply(DatabaseQueue* lead_queue);
+bool database_queue_apply_single_reverse_migration(DatabaseQueue* lead_queue, long long migration_id, const char* dqm_label);
+bool database_queue_lead_execute_migration_test_process(DatabaseQueue* lead_queue, char* dqm_label);
 
 
 // Debug functions
