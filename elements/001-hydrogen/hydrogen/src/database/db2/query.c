@@ -214,35 +214,47 @@ bool db2_process_query_results(void* stmt_handle, const char* designator, struct
         db_result->affected_rows = (size_t)sql_row_count;
     }
 
-    // Fetch all result rows
+    // Fetch all result rows - only if there are result columns
     size_t row_count = 0;
     char* json_buffer = NULL;
     size_t json_buffer_size = 0;
     size_t json_buffer_capacity = 1024;
 
-    json_buffer = calloc(1, json_buffer_capacity);
-    if (!json_buffer) {
-        // Cleanup column names using helper
-        db2_cleanup_column_names(column_names, column_count);
-        free(db_result);
-        return false;
-    }
-
-    // Start JSON array
-    strcpy(json_buffer, "[");
-    json_buffer_size = 1;
-
-    // Fetch rows using helper function
-    while (SQLFetch_ptr && SQLFetch_ptr(stmt_handle) == SQL_SUCCESS) {
-        bool first_row = (row_count == 0);
-        if (!db2_fetch_row_data(stmt_handle, column_names, column_count,
-                                &json_buffer, &json_buffer_size, &json_buffer_capacity, first_row)) {
-            free(json_buffer);
+    // Check if this statement returns result columns (not DDL statements)
+    if (column_count > 0) {
+        json_buffer = calloc(1, json_buffer_capacity);
+        if (!json_buffer) {
+            // Cleanup column names using helper
             db2_cleanup_column_names(column_names, column_count);
             free(db_result);
             return false;
         }
-        row_count++;
+
+        // Start JSON array
+        strcpy(json_buffer, "[");
+        json_buffer_size = 1;
+
+        // Fetch rows using helper function
+        while (SQLFetch_ptr && SQLFetch_ptr(stmt_handle) == SQL_SUCCESS) {
+            bool first_row = (row_count == 0);
+            if (!db2_fetch_row_data(stmt_handle, column_names, column_count,
+                                    &json_buffer, &json_buffer_size, &json_buffer_capacity, first_row)) {
+                free(json_buffer);
+                db2_cleanup_column_names(column_names, column_count);
+                free(db_result);
+                return false;
+            }
+            row_count++;
+        }
+    } else {
+        // DDL statement or statement with no result columns - create empty JSON array
+        json_buffer = strdup("[]");
+        if (!json_buffer) {
+            db2_cleanup_column_names(column_names, column_count);
+            free(db_result);
+            return false;
+        }
+        json_buffer_size = 2; // Length of "[]"
     }
 
     // End JSON array
