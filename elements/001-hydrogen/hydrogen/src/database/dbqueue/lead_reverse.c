@@ -200,6 +200,10 @@ bool database_queue_apply_single_reverse_migration(DatabaseQueue* lead_queue, lo
     // Clean up transaction structure
     database_engine_cleanup_transaction(migration_transaction);
 
+    // NOTE: We do NOT clear prepared statements here
+    // The defensive checks in find_prepared_statement() handle corrupted entries gracefully
+    // Clearing them during execution causes more problems than it solves
+
     // Reverse migration has been successfully applied through the normal query pipeline
     if (success) {
         log_this(dqm_label, "Reverse migration %lld successfully applied through query pipeline", LOG_LEVEL_DEBUG, 1, migration_id);
