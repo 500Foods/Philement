@@ -287,22 +287,16 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
     // log_this(SR_DATABASE, "database_engine_execute: Mutex locked successfully", LOG_LEVEL_ERROR, 0);
 
-    // Use connection's designator for subsequent operations
-    const char* designator = connection && connection->designator ? connection->designator : SR_DATABASE;
+    // Use connection's designator for subsequent operations (connection already validated above)
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
    
     // log_this(designator, "database_engine_execute: Starting execution with connection lock held", LOG_LEVEL_DEBUG, 0);
 
-    if (!connection || !request || !result) {
-        log_this(designator, "database_engine_execute: Invalid parameters - connection=%p, request=%p, result=%p", LOG_LEVEL_ERROR, 3,
-            (void*)connection,
+    // Validate remaining parameters (connection already validated at function entry)
+    if (!request || !result) {
+        log_this(designator, "database_engine_execute: Invalid parameters - request=%p, result=%p", LOG_LEVEL_ERROR, 2,
             (void*)request,
             (void*)result);
-        return false;
-    }
-
-    // Basic connection validation - connection is thread-local to DQM
-    if ((uintptr_t)connection < 0x1000) {
-        log_this(designator, "CRITICAL ERROR: Connection pointer corrupted! Value: %p", LOG_LEVEL_ERROR, 1, (void*)connection);
         return false;
     }
 

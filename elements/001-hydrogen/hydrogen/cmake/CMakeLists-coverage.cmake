@@ -69,7 +69,7 @@ add_custom_target(hydrogen_coverage_objects DEPENDS ${HYDROGEN_COVERAGE_OBJECT_F
 add_executable(hydrogen_coverage ${HYDROGEN_COVERAGE_OBJECT_FILES})
 add_dependencies(hydrogen_coverage hydrogen_coverage_objects)
 target_link_libraries(hydrogen_coverage PRIVATE ${HYDROGEN_BASE_LIBS})
-target_link_options(hydrogen_coverage PRIVATE --coverage -lgcov -no-pie)
+target_link_options(hydrogen_coverage PRIVATE --coverage -lgcov -rdynamic)
 set_target_properties(hydrogen_coverage PROPERTIES
     OUTPUT_NAME hydrogen_coverage
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..

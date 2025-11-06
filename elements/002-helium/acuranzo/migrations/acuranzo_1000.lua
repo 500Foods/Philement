@@ -116,13 +116,6 @@ table.insert(queries,{sql=[[
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             DROP TABLE ${SCHEMA}${TABLE};
-
-            ${SUBQUERY_DELIMITER}
-
-            UPDATE ${SCHEMA}${QUERIES}
-              SET query_type_a28 = ${TYPE_FORWARD_MIGRATION}
-            WHERE query_ref = ${MIGRATION}
-              and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
         ]=]
                                                                             AS code,
         'Drop ${TABLE} Table'                                               AS name,
