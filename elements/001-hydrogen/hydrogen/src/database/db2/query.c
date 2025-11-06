@@ -132,7 +132,10 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
 
         if (fetch_result == SQL_SUCCESS || fetch_result == SQL_SUCCESS_WITH_INFO) {
             // Calculate needed space for JSON (column name + value + quotes + escaping)
-            size_t needed_json_space = strlen(column_names[col]) + (col_data ? (size_t)data_len * 2 : 10) + 20;
+            // Use strlen(col_data) only if data_len indicates valid data (> 0)
+            // Don't trust data_len if it's negative or zero as it's an SQL indicator
+            size_t actual_data_len = (col_data && data_len > 0) ? strlen(col_data) : 0;
+            size_t needed_json_space = strlen(column_names[col]) + (actual_data_len * 2) + 20;
             
             // Ensure we have enough capacity
             if (!db2_ensure_json_buffer_capacity(json_buffer, *json_buffer_size, json_buffer_capacity, needed_json_space)) {
@@ -145,10 +148,18 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
             
             if (data_len == SQL_NULL_DATA) {
                 int written = snprintf(current_pos, needed_json_space, "\"%s\":null", column_names[col]);
+                // Check for truncation - snprintf returns what WOULD be written, not what WAS written
+                if (written >= (int)needed_json_space) {
+                    written = (int)needed_json_space - 1; // Actual bytes written (excluding null terminator)
+                }
                 *json_buffer_size += (size_t)written;
             } else if (is_numeric) {
                 // Numeric types - no quotes around value
                 int written = snprintf(current_pos, needed_json_space, "\"%s\":%s", column_names[col], col_data);
+                // Check for truncation - snprintf returns what WOULD be written, not what WAS written
+                if (written >= (int)needed_json_space) {
+                    written = (int)needed_json_space - 1; // Actual bytes written (excluding null terminator)
+                }
                 *json_buffer_size += (size_t)written;
             } else {
                 // String types - quote and escape the value
@@ -162,6 +173,10 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
                 
                 db2_json_escape_string(col_data, escaped_data, escaped_size);
                 int written = snprintf(current_pos, needed_json_space, "\"%s\":\"%s\"", column_names[col], escaped_data);
+                // Check for truncation - snprintf returns what WOULD be written, not what WAS written
+                if (written >= (int)needed_json_space) {
+                    written = (int)needed_json_space - 1; // Actual bytes written (excluding null terminator)
+                }
                 *json_buffer_size += (size_t)written;
                 
                 free(escaped_data);

@@ -85,6 +85,10 @@ bool execute_migration_files_load_only(DatabaseHandle* connection, char** migrat
 bool execute_single_migration_load_only(DatabaseHandle* connection, const char* migration_file,
                                        const char* engine_name, const char* migration_name,
                                        const char* schema_name, const char* dqm_label);
+bool execute_single_migration_load_only_with_state(DatabaseHandle* connection, const char* migration_file,
+                                                   const char* engine_name, const char* migration_name,
+                                                   const char* schema_name, const char* dqm_label,
+                                                   lua_State* L, PayloadFile* payload_files, size_t payload_count);
 
 // Lua integration functions
 lua_State* lua_setup(const char* dqm_label);

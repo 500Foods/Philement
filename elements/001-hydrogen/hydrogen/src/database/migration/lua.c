@@ -93,6 +93,10 @@ bool lua_load_engine_module(lua_State* L, const char* migration_name,
     snprintf(module_name, sizeof(module_name), "database_%s", engine_name);
     lua_setfield(L, -2, module_name);
     lua_pop(L, 2);  // Pop package.loaded and package
+    
+    // CRITICAL: Pop the engine module from stack after storing in package.loaded
+    // Without this, modules accumulate on stack causing corruption during lua_close()
+    lua_pop(L, 1);  // Pop the database engine table
 
     return true;
 }

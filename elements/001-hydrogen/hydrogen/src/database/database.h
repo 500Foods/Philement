@@ -318,6 +318,7 @@ bool database_engine_validate_connection_string(DatabaseEngine engine_type, cons
 void database_engine_cleanup_connection(DatabaseHandle* connection);
 void database_engine_cleanup_result(QueryResult* result);
 void database_engine_cleanup_transaction(Transaction* transaction);
+void database_engine_clear_prepared_statements(DatabaseHandle* connection);
 
 // Prepared statement management helper functions (formerly static in database_engine.c)
 PreparedStatement* find_prepared_statement(DatabaseHandle* connection, const char* name);

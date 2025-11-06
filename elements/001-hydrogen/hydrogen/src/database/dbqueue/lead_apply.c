@@ -203,6 +203,10 @@ bool database_queue_apply_single_migration(DatabaseQueue* lead_queue, long long 
     // Clean up transaction structure
     database_engine_cleanup_transaction(migration_transaction);
 
+    // NOTE: We do NOT clear prepared statements here
+    // The defensive checks in find_prepared_statement() handle corrupted entries gracefully
+    // Clearing them during execution causes more problems than it solves
+    
     // Migration has been successfully applied through the normal query pipeline
     // The migration SQL itself should have updated its own status to applied (1003)
     // No additional status update is needed here
