@@ -89,6 +89,15 @@ void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     snprintf(core_name, sizeof(core_name), "%.*s.core.%d", (int)(sizeof(core_name) - 20), exe_path, pid);
 
     log_this(SR_CRASH, "Signal %d received (cause: %d), generating core dump at %s", LOG_LEVEL_ERROR, 3, sig, info->si_code, core_name);
+    
+    // Get config file path from stored program arguments (if any)
+    char** program_args = get_program_args();
+    const char* config_path = (program_args && program_args[1]) ? program_args[1] : "";
+    
+    // Output GDB commands IMMEDIATELY for debugging (before core dump generation)
+    log_this(SR_CRASH, "Automated analysis: gdb -batch -ex \"set pagination off\" -ex \"info sharedlibrary\" -ex \"thread apply all bt full\" -ex \"info registers\" %s %s", LOG_LEVEL_ERROR, 2, exe_path, core_name);
+    log_this(SR_CRASH, "Interactive debug: gdb -q -ex \"thread apply all bt\" -ex \"info sharedlibrary\" -ex \"info locals\" %s %s", LOG_LEVEL_ERROR, 2, exe_path, core_name);
+    log_this(SR_CRASH, "Independent run: gdb -ex \"set environment MALLOC_CHECK_=3\" -ex \"catch syscall abort\" -ex \"run\" --args %s %s", LOG_LEVEL_ERROR, 2, exe_path, config_path);
 
     FILE *out = fopen(core_name, "w");
     if (!out) {
@@ -275,8 +284,6 @@ void crash_handler(int sig, siginfo_t *info, void *ucontext) {
 
     fclose(mem);
     fclose(out);
-
-    log_this(SR_CRASH, "Run: gdb -q %s %s", LOG_LEVEL_ERROR, 2, exe_path, core_name);
 
 #ifdef HYDROGEN_COVERAGE_BUILD
     __gcov_dump();

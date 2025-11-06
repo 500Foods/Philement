@@ -135,11 +135,11 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
     prepared_stmt->usage_count = 0;
     prepared_stmt->engine_specific_handle = stmt_handle;  // Store the DB2 statement handle
 
-    // Add to connection's prepared statement array with LRU tracking
+    // Add to connection's prepared statement array
     // Since each thread owns its connection exclusively, no mutex needed
 
-    // Get cache size from database configuration (default to 1000 if not set)
-    size_t cache_size = 1000; // Default value
+    // Get cache size from database configuration (default to 100 if not set)
+    size_t cache_size = 100; // Reduced default for safety
     if (connection->config && connection->config->prepared_statement_cache_size > 0) {
         cache_size = (size_t)connection->config->prepared_statement_cache_size;
     }
@@ -155,54 +155,19 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
             return false;
         }
         connection->prepared_statement_count = 0;
-        // Initialize LRU counter
-        if (!connection->prepared_statement_lru_counter) {
-            connection->prepared_statement_lru_counter = calloc(cache_size, sizeof(uint64_t));
-        }
     }
 
-    // Check if cache is full - implement LRU eviction
+    // Simple cache management - just add to end, no LRU for now to avoid complexity
     if (connection->prepared_statement_count >= cache_size) {
-        // Find least recently used prepared statement (lowest LRU counter)
-        size_t lru_index = 0;
-        uint64_t min_lru_value = UINT64_MAX;
-
-        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
-            if (connection->prepared_statement_lru_counter[i] < min_lru_value) {
-                min_lru_value = connection->prepared_statement_lru_counter[i];
-                lru_index = i;
-            }
-        }
-
-        // Evict the LRU prepared statement
-        PreparedStatement* evicted_stmt = connection->prepared_statements[lru_index];
-        if (evicted_stmt) {
-            // Clean up the evicted statement
-            if (SQLFreeHandle_ptr && evicted_stmt->engine_specific_handle) {
-                SQLFreeHandle_ptr(SQL_HANDLE_STMT, evicted_stmt->engine_specific_handle);
-            }
-            free(evicted_stmt->name);
-            free(evicted_stmt->sql_template);
-            free(evicted_stmt);
-        }
-
-        // Shift remaining elements to fill the gap
-        for (size_t i = lru_index; i < connection->prepared_statement_count - 1; i++) {
-            connection->prepared_statements[i] = connection->prepared_statements[i + 1];
-            connection->prepared_statement_lru_counter[i] = connection->prepared_statement_lru_counter[i + 1];
-        }
-
-        connection->prepared_statement_count--;
-        log_this(SR_DATABASE, "Evicted LRU prepared statement to make room for: %s", LOG_LEVEL_TRACE, 1, name);
+        // For now, just don't cache if full - avoid complex eviction logic
+        log_this(SR_DATABASE, "Prepared statement cache full, not storing: %s", LOG_LEVEL_ALERT, 1, name);
+        // Still return the prepared statement - it can be used even if not cached
+        *stmt = prepared_stmt;
+        return true;
     }
 
     // Store the new prepared statement at the end
-    size_t new_index = connection->prepared_statement_count;
-    connection->prepared_statements[new_index] = prepared_stmt;
-
-    // Update LRU counter for this statement (global counter for recency tracking)
-    static uint64_t global_lru_counter = 0;
-    connection->prepared_statement_lru_counter[new_index] = ++global_lru_counter;
+    connection->prepared_statements[connection->prepared_statement_count] = prepared_stmt;
     connection->prepared_statement_count++;
 
     *stmt = prepared_stmt;
@@ -223,30 +188,8 @@ bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt
         return false;
     }
 
-    // Check if prepared statement functions are available
-    if (!SQLFreeHandle_ptr) {
-        log_this(SR_DATABASE, "DB2 prepared statement functions not available for cleanup", LOG_LEVEL_TRACE, 0);
-        // Clean up our tracking structures
-        // Since each thread owns its connection exclusively, no mutex needed
-        // Find and remove from connection's array
-        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
-            if (connection->prepared_statements[i] == stmt) {
-                // Shift remaining elements
-                for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
-                    connection->prepared_statements[j] = connection->prepared_statements[j + 1];
-                }
-                connection->prepared_statement_count--;
-                break;
-            }
-        }
-        free(stmt->name);
-        free(stmt->sql_template);
-        free(stmt);
-        return true;
-    }
-
     // Free the DB2 statement handle if it exists
-    if (stmt->engine_specific_handle) {
+    if (SQLFreeHandle_ptr && stmt->engine_specific_handle) {
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt->engine_specific_handle);
     }
 
@@ -254,10 +197,11 @@ bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt
     // Since each thread owns its connection exclusively, no mutex needed
     for (size_t i = 0; i < connection->prepared_statement_count; i++) {
         if (connection->prepared_statements[i] == stmt) {
-            // Shift remaining elements
+            // Shift remaining elements to fill the gap
             for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
                 connection->prepared_statements[j] = connection->prepared_statements[j + 1];
             }
+            connection->prepared_statements[connection->prepared_statement_count - 1] = NULL; // Clear last element
             connection->prepared_statement_count--;
             break;
         }
