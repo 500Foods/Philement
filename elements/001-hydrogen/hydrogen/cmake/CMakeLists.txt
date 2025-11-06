@@ -36,6 +36,7 @@
 # cmake --build . --target ccache_stats      : Show ccache statistics and performance metrics
 
 # CHANGELOG
+# 2025-11-05: Fixed coverage build GDB debugging: replaced -no-pie with -rdynamic to export dynamic symbols for proper crash dump analysis
 # 2025-10-10: Updated target_include_directories so we can use <src/...> and <unity...> instead of things like "../../../../src/hydrogen.h"
 # 2025-09-22: Major refactor: split into more than a dozen separate .cmake files
 # 2025-09-21: Added mock libraries to unity build profile, including mock_system, mock_threads, and mock_network, joining mock_info, mock_launch, mock_landing, mock_libmicrohttpd, mock_libwebsockets and mock_status

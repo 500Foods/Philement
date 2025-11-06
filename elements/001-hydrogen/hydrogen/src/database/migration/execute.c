@@ -70,9 +70,23 @@ const char* extract_migration_name(const char* migrations_config, char** path_co
  */
 void free_payload_files(PayloadFile* payload_files, size_t payload_count) {
     if (payload_files) {
+        // Defensive check for obviously corrupted payload_count
+        if (payload_count > 10000) {
+            log_this("Migration", "WARNING: Suspiciously large payload_count=%zu - possible heap corruption", LOG_LEVEL_ERROR, 1, payload_count);
+            return; // Don't attempt to free if count is corrupted
+        }
+        
         for (size_t j = 0; j < payload_count; j++) {
-            free(payload_files[j].name);
-            free(payload_files[j].data);
+            // Free name if allocated and validate pointer
+            if (payload_files[j].name) {
+                free(payload_files[j].name);
+                payload_files[j].name = NULL;
+            }
+            // Free data if allocated and validate pointer
+            if (payload_files[j].data) {
+                free(payload_files[j].data);
+                payload_files[j].data = NULL;
+            }
         }
         free(payload_files);
     }
@@ -176,11 +190,13 @@ bool execute_single_migration(DatabaseHandle* connection, const char* migration_
         success = false;
     }
 
-    // Free payload files
-    free_payload_files(payload_files, payload_count);
-
-    // Clean up Lua state
+    // CRITICAL: Clean up Lua state BEFORE freeing payload files
+    // Lua holds internal references to payload data (bytecode from luaL_loadbuffer)
+    // Freeing payload files first causes double-free when Lua tries to clean up
     lua_cleanup(L);
+
+    // Free payload files after Lua cleanup
+    free_payload_files(payload_files, payload_count);
 
     return success;
 }
@@ -532,11 +548,13 @@ bool execute_single_migration_load_only(DatabaseHandle* connection, const char* 
         success = false;
     }
 
-    // Free payload files
-    free_payload_files(payload_files, payload_count);
-
-    // Clean up Lua state
+    // CRITICAL: Clean up Lua state BEFORE freeing payload files
+    // Lua holds internal references to payload data (bytecode from luaL_loadbuffer)
+    // Freeing payload files first causes double-free when Lua tries to clean up
     lua_cleanup(L);
+
+    // Free payload files after Lua cleanup
+    free_payload_files(payload_files, payload_count);
 
     return success;
 }
