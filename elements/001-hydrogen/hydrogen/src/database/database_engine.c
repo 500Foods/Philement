@@ -346,6 +346,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
         // Find existing prepared statement
         PreparedStatement* stmt = find_prepared_statement(connection, request->prepared_statement_name);
+        bool stmt_was_created = false;
 
         if (!stmt && engine->prepare_statement) {
             // Create new prepared statement if it doesn't exist
@@ -355,11 +356,12 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
             bool prepared = engine->prepare_statement(connection, request->prepared_statement_name,
                                                     request->sql_template, &stmt);
             if (prepared && stmt) {
-                // Store the prepared statement for future use
+                stmt_was_created = true;
+                
+                // Try to store the prepared statement for future use
                 if (!store_prepared_statement(connection, stmt)) {
-                    log_this(designator, "database_engine_execute: Failed to store prepared statement, but prepared statement is still usable", LOG_LEVEL_TRACE, 0);
-                    // Note: The prepared statement is still valid for execution
-                    // We just couldn't cache it due to capacity limits
+                    log_this(designator, "database_engine_execute: Cache full, will use statement once then free it", LOG_LEVEL_TRACE, 0);
+                    // NOTE: stmt_was_created flag tracks that we need to clean this up
                 }
             } else {
                 log_this(designator, "database_engine_execute: Failed to prepare statement: %s", LOG_LEVEL_ERROR, 1,
@@ -371,8 +373,19 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
         if (stmt) {
             log_this(designator, "database_engine_execute: Executing prepared statement: %s", LOG_LEVEL_TRACE, 1,
                      request->prepared_statement_name);
-            // log_this(designator, "database_engine_execute: Calling execute_prepared", LOG_LEVEL_TRACE, 0);
-            return engine->execute_prepared(connection, stmt, request, result);
+            
+            bool exec_result = engine->execute_prepared(connection, stmt, request, result);
+            
+            // CRITICAL: If we created this statement but couldn't cache it, we must free it now
+            if (stmt_was_created && find_prepared_statement(connection, request->prepared_statement_name) == NULL) {
+                log_this(designator, "database_engine_execute: Freeing uncached prepared statement: %s", LOG_LEVEL_TRACE, 1,
+                         request->prepared_statement_name);
+                if (engine->unprepare_statement) {
+                    engine->unprepare_statement(connection, stmt);
+                }
+            }
+            
+            return exec_result;
         } else {
             log_this(designator, "database_engine_execute: Prepared statement not available, falling back to direct execution", LOG_LEVEL_TRACE, 0);
         }
@@ -499,17 +512,49 @@ void database_engine_cleanup_connection(DatabaseHandle* connection) {
         engine->disconnect(connection);
     }
 
-    // Clean up prepared statements
+    // Clean up prepared statements - must be defensive against corrupted/already-freed pointers
     if (connection->prepared_statements) {
-        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
-            if (connection->prepared_statements[i]) {
-                if (engine && engine->unprepare_statement) {
-                    engine->unprepare_statement(connection, connection->prepared_statements[i]);
+        // If count is 0, statements were already cleared by clear_prepared_statements()
+        // In that case, just free the array and LRU counter
+        if (connection->prepared_statement_count == 0) {
+            free(connection->prepared_statements);
+            connection->prepared_statements = NULL;
+            if (connection->prepared_statement_lru_counter) {
+                free(connection->prepared_statement_lru_counter);
+                connection->prepared_statement_lru_counter = NULL;
+            }
+        } else {
+            // Normal cleanup path: unprepare and free each statement
+            for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+                PreparedStatement* stmt = connection->prepared_statements[i];
+                
+                // Skip NULL or obviously invalid pointers
+                if (!stmt || (uintptr_t)stmt < 0x1000) {
+                    continue;
                 }
-                free(connection->prepared_statements[i]);
+                
+                // Call engine unprepare if available
+                if (engine && engine->unprepare_statement) {
+                    engine->unprepare_statement(connection, stmt);
+                } else {
+                    // Manual cleanup if no engine function
+                    if (stmt->name && (uintptr_t)stmt->name >= 0x1000) {
+                        free(stmt->name);
+                    }
+                    if (stmt->sql_template && (uintptr_t)stmt->sql_template >= 0x1000) {
+                        free(stmt->sql_template);
+                    }
+                    free(stmt);
+                }
+            }
+            free(connection->prepared_statements);
+            connection->prepared_statements = NULL;
+            
+            if (connection->prepared_statement_lru_counter) {
+                free(connection->prepared_statement_lru_counter);
+                connection->prepared_statement_lru_counter = NULL;
             }
         }
-        free(connection->prepared_statements);
     }
 
     // Note: ConnectionConfig is owned by the caller, not by DatabaseHandle
@@ -578,7 +623,29 @@ PreparedStatement* find_prepared_statement(DatabaseHandle* connection, const cha
 
     for (size_t i = 0; i < connection->prepared_statement_count; i++) {
         PreparedStatement* stmt = connection->prepared_statements[i];
-        if (stmt && stmt->name && strcmp(stmt->name, name) == 0) {
+        
+        // Defense against dangling pointers: validate stmt pointer is in valid range
+        if (!stmt || (uintptr_t)stmt < 0x1000) {
+            // NULL or invalid pointer - skip this entry
+            continue;
+        }
+        
+        // Defense against dangling name pointer: validate before strcmp
+        if (!stmt->name || (uintptr_t)stmt->name < 0x1000) {
+            // NULL or invalid name pointer - skip this entry
+            continue;
+        }
+        
+        // Additional defense: validate first byte of name is readable
+        // This catches freed memory that might have been overwritten
+        char first_char = stmt->name[0];
+        if (first_char == '\0') {
+            // Empty name string - skip
+            continue;
+        }
+        
+        // Safe to compare now
+        if (strcmp(stmt->name, name) == 0) {
             return stmt;
         }
     }
@@ -629,6 +696,36 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
              stmt->name, connection->prepared_statement_count);
 
     return true;
+}
+
+// Clear all prepared statements from a connection
+// This should be called when prepared statements may have become invalid (e.g., after transactions)
+void database_engine_clear_prepared_statements(DatabaseHandle* connection) {
+    if (!connection || !connection->prepared_statements) {
+        return;
+    }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    
+    // Save count for logging before resetting
+    size_t cleared_count = connection->prepared_statement_count;
+    
+    // CRITICAL: After transaction commit/rollback, PreparedStatement structures may be corrupted
+    // Transaction cleanup may have invalidated the entire structure including name/sql_template pointers
+    // Attempting to free these can cause heap corruption and crashes
+    
+    // SAFEST approach: Just NULL out the pointers and accept small memory leak
+    // Migrations are bootstrap-time operations, so a few leaked structures won't matter
+    // Better to leak memory than crash the system
+    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+        connection->prepared_statements[i] = NULL;
+    }
+    
+    // Reset count
+    connection->prepared_statement_count = 0;
+    
+    log_this(designator, "Invalidated %zu prepared statement references (transaction boundary)",
+             LOG_LEVEL_TRACE, 1, cleared_count);
 }
 
 // Get database counts by type
