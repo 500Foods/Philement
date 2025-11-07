@@ -101,9 +101,10 @@ bool discover_payload_migration_files(const char* migration_name, char*** migrat
             }
         }
 
-        // Cleanup payload files
+        // Cleanup payload files (including data field)
         for (size_t i = 0; i < payload_count; i++) {
             free(payload_files[i].name);
+            free(payload_files[i].data);
         }
         free(payload_files);
         return true;

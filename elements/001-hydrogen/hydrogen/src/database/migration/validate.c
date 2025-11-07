@@ -74,6 +74,7 @@ bool validate_payload_migrations(const DatabaseConnection* conn_config, const ch
         // Cleanup
         for (size_t i = 0; i < num_files; i++) {
             free(files[i].name);
+            free(files[i].data);
         }
         free(files);
 
@@ -326,6 +327,7 @@ long long find_latest_available_migration(const DatabaseQueue* db_queue) {
         // Cleanup
         for (size_t i = 0; i < num_files; i++) {
             free(files[i].name);
+            free(files[i].data);
         }
         free(files);
     }
