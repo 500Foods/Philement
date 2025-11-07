@@ -188,6 +188,12 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
             add_launch_message(messages, count, capacity, total_msg);
         }
     }
+
+    // Free allocated name strings
+    free(postgres_names);
+    free(mysql_names);
+    free(sqlite_names);
+    free(db2_names);
 }
 
 // Check library dependencies for database engines

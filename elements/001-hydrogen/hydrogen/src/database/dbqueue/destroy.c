@@ -68,8 +68,17 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
     // Free strings
     free(db_queue->database_name);
     free(db_queue->connection_string);
+    free(db_queue->bootstrap_query);
     free(db_queue->queue_type);
     free(db_queue->tags);
+
+    // Clean up query cache if present
+    if (db_queue->query_cache) {
+        char* cache_label = database_queue_generate_label(db_queue);
+        query_cache_destroy(db_queue->query_cache, cache_label);
+        free(cache_label);
+        db_queue->query_cache = NULL;
+    }
 
     // Track memory deallocation for the database queue
     track_queue_deallocation(&database_queue_memory, sizeof(DatabaseQueue));
