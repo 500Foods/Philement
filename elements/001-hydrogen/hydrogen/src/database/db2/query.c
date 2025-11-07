@@ -270,16 +270,20 @@ bool db2_process_query_results(void* stmt_handle, const char* designator, struct
             return false;
         }
         json_buffer_size = 2; // Length of "[]"
+        json_buffer_capacity = 3; // CRITICAL FIX: Update capacity to match actual allocation (2 chars + null terminator)
     }
 
-    // End JSON array
-    if (!db2_ensure_json_buffer_capacity(&json_buffer, json_buffer_size, &json_buffer_capacity, 2)) {
-        free(json_buffer);
-        db2_cleanup_column_names(column_names, column_count);
-        free(db_result);
-        return false;
+    // End JSON array - only for queries with result columns
+    // For DDL statements, "[]" is already complete, don't append anything
+    if (column_count > 0) {
+        if (!db2_ensure_json_buffer_capacity(&json_buffer, json_buffer_size, &json_buffer_capacity, 2)) {
+            free(json_buffer);
+            db2_cleanup_column_names(column_names, column_count);
+            free(db_result);
+            return false;
+        }
+        strcat(json_buffer, "]");
     }
-    strcat(json_buffer, "]");
 
     db_result->row_count = row_count;
     db_result->data_json = json_buffer;

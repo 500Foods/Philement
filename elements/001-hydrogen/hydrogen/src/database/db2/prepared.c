@@ -138,8 +138,9 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
     // Add to connection's prepared statement array
     // Since each thread owns its connection exclusively, no mutex needed
 
-    // Get cache size from database configuration (default to 100 if not set)
-    size_t cache_size = 100; // Reduced default for safety
+    // Get cache size from database configuration (default to 1000 to match database_engine.c)
+    // CRITICAL: This default MUST match the default in database_engine.c:store_prepared_statement
+    size_t cache_size = 1000;
     if (connection->config && connection->config->prepared_statement_cache_size > 0) {
         cache_size = (size_t)connection->config->prepared_statement_cache_size;
     }

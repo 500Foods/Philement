@@ -7,6 +7,7 @@
 
 #include <src/hydrogen.h>
 #include "database.h"
+#include "database_connstring.h"
 #include "dbqueue/dbqueue.h"
 
 // Forward declarations for database engines
@@ -557,11 +558,11 @@ void database_engine_cleanup_connection(DatabaseHandle* connection) {
         }
     }
 
-    // Note: ConnectionConfig is owned by the caller, not by DatabaseHandle
-    // Do NOT free connection->config here to avoid double-free
-    // The caller (e.g., database_queue_check_connection) is responsible for freeing it
+    // CRITICAL: Free the ConnectionConfig - the DatabaseHandle owns it after successful connection
+    // The config was transferred to the handle by the engine's connect function
     if (connection->config) {
-        log_this(SR_DATABASE, "database_engine_cleanup_connection: NOT freeing connection config (owned by caller)", LOG_LEVEL_TRACE, 0);
+        free_connection_config(connection->config);
+        connection->config = NULL;
     }
 
     // Clean up designator
@@ -678,7 +679,8 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
         }
     }
 
-    // Check if we need to expand the array
+    // Check if we can store another statement (need strict < not <=)
+    // Array indices are 0 to (cache_size - 1), so count must be < cache_size
     if (connection->prepared_statement_count >= cache_size) {
         // For now, just don't store if we exceed capacity
         // TODO: Implement dynamic resizing
@@ -687,8 +689,21 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
         return false;
     }
 
+    // cppcheck-suppress knownConditionTrueFalse
+    // Justification: Defensive check to detect corruption - intentionally redundant for safety
+    // Paranoid check: Ensure we're not about to write beyond the array
+    // This should never trigger if the above check is correct, but prevents corruption
+    size_t next_index = connection->prepared_statement_count;
+    // cppcheck-suppress knownConditionTrueFalse
+    if (next_index >= cache_size) {
+        log_this(connection->designator ? connection->designator : SR_DATABASE,
+                 "CRITICAL: prepared_statement_count corruption detected (%zu >= %zu)", LOG_LEVEL_ERROR, 2,
+                 next_index, cache_size);
+        return false;
+    }
+
     // Store the statement
-    connection->prepared_statements[connection->prepared_statement_count] = stmt;
+    connection->prepared_statements[next_index] = stmt;
     connection->prepared_statement_count++;
 
     log_this(connection->designator ? connection->designator : SR_DATABASE,

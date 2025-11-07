@@ -128,7 +128,7 @@ bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseH
             return false;
         }
     } else {
-        // Clean up the handle since we can't store it
+        // CRITICAL: Clean up the handle - this will also free the config it owns
         database_engine_cleanup_connection(db_handle);
         db_queue->is_connected = false;
         free(dqm_designator);
@@ -146,7 +146,7 @@ bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseH
         // Add diagnostic information about the connection before cleanup
         log_this(health_check_label, "Connection diagnostics: engine_type=%d, status=%d, connected_since=%ld",
                 LOG_LEVEL_TRACE, 3, db_handle->engine_type, db_handle->status, (long)db_handle->connected_since);
-        // Clean up the connection since health check failed
+        // CRITICAL: Clean up the connection handle - this will also free the config it owns
         database_engine_cleanup_connection(db_handle);
         db_queue->is_connected = false;
         mutex_unlock(&db_queue->connection_lock);
@@ -288,8 +288,12 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
 
     db_queue->last_connection_attempt = time(NULL);
 
-    // Clean up config
-    free_connection_config(config);
+    // CRITICAL: Do NOT free config here - if connection succeeded, the DatabaseHandle owns it now
+    // It will be freed when the connection is cleaned up via database_engine_cleanup_connection()
+    // Only free config if connection FAILED
+    if (!success) {
+        free_connection_config(config);
+    }
 
     // Signal that initial connection attempt is complete (for Lead queues)
     database_queue_signal_initial_connection_complete(db_queue);
@@ -332,7 +336,7 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
                 log_this(dqm_label, "CRITICAL ERROR: Persistent connection has corrupted mutex! Address: %p", LOG_LEVEL_ERROR, 1, (void*)&db_queue->persistent_connection->connection_lock);
                 log_this(dqm_label, "Discarding corrupted connection and attempting reconnection", LOG_LEVEL_ERROR, 0);
 
-                // Clean up corrupted connection
+                // CRITICAL: Clean up corrupted connection - this will free the config it owns
                 database_engine_cleanup_connection(db_queue->persistent_connection);
                 db_queue->persistent_connection = NULL;
 
