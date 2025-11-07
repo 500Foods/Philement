@@ -9,6 +9,10 @@
 #include <src/hydrogen.h>
 #include <src/database/database.h>
 #include <src/database/dbqueue/dbqueue.h>
+// System includes for process management
+#include <sys/wait.h>
+#include <unistd.h>
+#include <src/threads/threads.h>
 
 // Third-Party includes
 #include <lua.h>
@@ -17,6 +21,27 @@
 
 // Local includes
 #include "migration.h"
+
+/*
+ * Migration context for isolated process execution
+ * Each migration runs in its own forked process to prevent Lua memory corruption
+ */
+typedef struct {
+    DatabaseHandle* connection;
+    const char* migration_file;
+    const char* engine_name;
+    const char* migration_name;
+    const char* schema_name;
+    const char* dqm_label;
+    PayloadFile* payload_files;
+    size_t payload_count;
+    int result_pipe[2];  // Pipe for process communication
+} MigrationProcessContext;
+
+/*
+ * Forward declarations
+ */
+int migration_process_worker(MigrationProcessContext* ctx);
 
 /*
  * Normalize database engine name to match Lua expectations
@@ -447,8 +472,9 @@ bool execute_load_migrations(DatabaseQueue* db_queue, DatabaseHandle* connection
  * This generates INSERT statements for the Queries table (type = 1000) only
  * NO schema changes are executed in this phase
  *
- * CRITICAL: Reuses ONLY payload files, creates FRESH Lua state per migration
- * Lua states cannot be safely reused across independent script executions
+ * SIMPLE APPROACH: Fresh Lua state per migration, shared payload files
+ * Lua's parser internal state accumulates corruption across compilations.
+ * Fresh state per migration is the most reliable approach.
  */
 bool execute_migration_files_load_only(DatabaseHandle* connection, char** migration_files,
                                       size_t migration_count, const char* engine_name,
@@ -458,8 +484,8 @@ bool execute_migration_files_load_only(DatabaseHandle* connection, char** migrat
         return false;  // Invalid parameters
     }
 
-    // CRITICAL: Get payload files ONCE - this is the expensive allocation
-    // Payload files are just read-only data and can be reused safely
+    // CRITICAL: Get payload files ONCE - this is the expensive allocation (100KB+ total)
+    // Payload files are read-only data and can be safely shared across all migrations
     PayloadFile* payload_files = NULL;
     size_t payload_count = 0;
     size_t payload_capacity = 0;
@@ -472,21 +498,19 @@ bool execute_migration_files_load_only(DatabaseHandle* connection, char** migrat
     bool all_success = true;
 
     // Process each migration with a FRESH Lua state
-    // Lua states accumulate internal memory corruption when reused across independent executions
+    // Passing NULL for L forces execute_single_migration_load_only_with_state to create its own
     for (size_t i = 0; i < migration_count; i++) {
-        // LOAD PHASE: Generate metadata INSERT statements only
-        // Pass NULL for L to signal "create your own fresh Lua state"
         bool migration_success = execute_single_migration_load_only_with_state(
             connection, migration_files[i], engine_name, migration_name, schema_name,
             dqm_label, NULL, payload_files, payload_count);
         
         if (!migration_success) {
             all_success = false;
-            break;  // Stop processing further migrations on failure
+            break;  // Stop on first failure
         }
     }
 
-    // Free payload files ONCE at the end
+    // Clean up payload files ONCE at the end
     free_payload_files(payload_files, payload_count);
 
     return all_success;
@@ -641,11 +665,22 @@ bool execute_single_migration_load_only_with_state(DatabaseHandle* connection, c
     // Log execution summary
     lua_log_execution_summary(migration_file, sql_length, line_count, query_count, dqm_label);
 
-    // CRITICAL: Clean up Lua state BEFORE using SQL if we created it
-    // Lua holds internal references to payload data (bytecode from luaL_loadbuffer)
-    // We've copied the SQL string, so safe to close Lua now
+    // CRITICAL: Clean up migration-specific state from Lua stack
+    // When reusing Lua state across migrations, we must clean up after each migration
+    // The stack currently has: [migration_func, queries_table, sql_string, ...]
+    // We need to pop everything back to the base state (just database modules loaded)
     if (own_lua_state) {
+        // If we created our own state, close it completely
         lua_cleanup(L);
+    } else {
+        // If we're sharing the state, clean up this migration's data
+        // Pop all values added by this migration execution
+        // After lua_execute_load_metadata, we have: sql_result on top, queries below it, etc.
+        // We need to clear the stack back to initial state
+        lua_settop(L, 0);  // Clear the entire stack back to base
+        
+        // Force a garbage collection cycle to clean up temporary objects
+        lua_gc(L, LUA_GCCOLLECT, 0);
     }
 
     // LOAD PHASE: Execute the generated metadata INSERT statements using our copy

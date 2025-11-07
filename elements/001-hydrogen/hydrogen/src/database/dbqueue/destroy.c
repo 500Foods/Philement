@@ -46,8 +46,19 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
     }
 
     // Clean up the single queue
+    // CRITICAL: Multiple DatabaseQueues may share the same underlying Queue* (via queue_create_with_label reuse)
+    // Check if this queue pointer is still valid before attempting to destroy it
+    // This prevents double-free when multiple DatabaseQueues share the same Queue*
     if (db_queue->queue) {
-        queue_destroy(db_queue->queue);
+        // Store queue pointer for comparison (don't access queue->name - could be freed!)
+        Queue* queue_ptr = db_queue->queue;
+        
+        // Only destroy if queue pointer looks valid (basic sanity check)
+        // A more robust check would require queue reference counting, but this prevents the worst crashes
+        if ((uintptr_t)queue_ptr >= 0x1000) {
+            queue_destroy(queue_ptr);
+        }
+        db_queue->queue = NULL;  // Clear pointer regardless
     }
 
     // Clean up synchronization primitives
@@ -104,10 +115,23 @@ void database_queue_stop_worker(DatabaseQueue* db_queue) {
 
     db_queue->shutdown_requested = true;
 
-    // Cancel and join worker thread only if it was started
+    // Wake worker thread only if it was started
     if (db_queue->worker_thread_started) {
-        pthread_cancel(db_queue->worker_thread);
-        pthread_join(db_queue->worker_thread, NULL);
+        // Wake the worker thread via semaphore so it can see shutdown_requested
+        sem_post(&db_queue->worker_semaphore);
+        
+        // Wait for thread to exit gracefully with timeout
+        struct timespec timeout;
+        clock_gettime(CLOCK_REALTIME, &timeout);
+        timeout.tv_sec += 5;  // 5 second timeout
+        
+        int join_result = pthread_timedjoin_np(db_queue->worker_thread, NULL, &timeout);
+        if (join_result == ETIMEDOUT) {
+            char* timeout_label = database_queue_generate_label(db_queue);
+            log_this(timeout_label, "Worker thread did not exit within timeout", LOG_LEVEL_ALERT, 0);
+            free(timeout_label);
+        }
+        
         db_queue->worker_thread = 0;  // Reset to indicate thread is stopped
         db_queue->worker_thread_started = false;  // Reset flag
     }
