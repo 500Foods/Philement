@@ -107,79 +107,32 @@ int land_database_subsystem(void) {
     if (global_queue_manager) {
         log_this(SR_DATABASE, "Shutting down database queues", LOG_LEVEL_DEBUG, 0);
 
-        // Iterate through all databases and shut down their child queues, then destroy the Lead queues
+        // Iterate through all databases and destroy them
+        // database_queue_destroy() handles child queue shutdown internally
         for (size_t i = 0; i < global_queue_manager->database_count; i++) {
             DatabaseQueue* db_queue = global_queue_manager->databases[i];
-            if (db_queue && db_queue->is_lead_queue) {
+            if (db_queue) {
                 char* dqm_label = database_queue_generate_label(db_queue);
-                log_this(dqm_label, "Shutting down child queues", LOG_LEVEL_DEBUG, 0);
-
-                // Shut down all child queues for this database
-                // We need to collect the queue types first since shutdown modifies the array
-                char* queue_types_to_shutdown[20]; // Max child queues
-                int shutdown_count = 0;
-
-                // Lock to safely access child queues and collect unique queue types
-                MutexResult lock_result = MUTEX_LOCK(&db_queue->children_lock, dqm_label);
-                if (lock_result == MUTEX_SUCCESS) {
-                    for (int j = 0; j < db_queue->child_queue_count && shutdown_count < 20; j++) {
-                        if (db_queue->child_queues[j] && db_queue->child_queues[j]->queue_type) {
-                            // Check if we already have this queue type
-                            bool already_collected = false;
-                            for (int k = 0; k < shutdown_count; k++) {
-                                if (strcmp(queue_types_to_shutdown[k], db_queue->child_queues[j]->queue_type) == 0) {
-                                    already_collected = true;
-                                    break;
-                                }
-                            }
-                            if (!already_collected) {
-                                queue_types_to_shutdown[shutdown_count++] = strdup(db_queue->child_queues[j]->queue_type);
-                            }
-                        }
-                    }
-                    mutex_unlock(&db_queue->children_lock);
-                }
-
-                // Now shut down each unique queue type
-                for (int j = 0; j < shutdown_count; j++) {
-                    log_this(dqm_label, "Shutting down %s queue", LOG_LEVEL_DEBUG, 1, queue_types_to_shutdown[j]);
-                    database_queue_shutdown_child_queue(db_queue, queue_types_to_shutdown[j]);
-                    free(queue_types_to_shutdown[j]);
-                }
-
-                log_this(dqm_label, "All child queues shut down", LOG_LEVEL_DEBUG, 0);
-
-                // Clear the child queues array to prevent double destruction
-                MutexResult clear_lock = MUTEX_LOCK(&db_queue->children_lock, dqm_label);
-                if (clear_lock == MUTEX_SUCCESS) {
-                    for (int j = 0; j < db_queue->child_queue_count; j++) {
-                        db_queue->child_queues[j] = NULL;
-                    }
-                    db_queue->child_queue_count = 0;
-                    mutex_unlock(&db_queue->children_lock);
-                }
-
+                log_this(dqm_label, "Destroying queue", LOG_LEVEL_TRACE, 0);
                 free(dqm_label);
-
-                // Now destroy the Lead queue itself (after its children are gone)
+                
                 database_queue_destroy(db_queue);
-                global_queue_manager->databases[i] = NULL; // Mark as destroyed
+                global_queue_manager->databases[i] = NULL;
             }
         }
 
         // Clean up the queue manager structure (but don't destroy the databases again)
-        if (global_queue_manager) {
-            MutexResult lock_result = MUTEX_LOCK(&global_queue_manager->manager_lock, SR_DATABASE);
-            if (lock_result == MUTEX_SUCCESS) {
-                free(global_queue_manager->databases);
-                global_queue_manager->databases = NULL;
-                global_queue_manager->database_count = 0;
-                mutex_unlock(&global_queue_manager->manager_lock);
-            }
-            pthread_mutex_destroy(&global_queue_manager->manager_lock);
-            free(global_queue_manager);
-            global_queue_manager = NULL;
+        // No need to check global_queue_manager again - we're already inside its if block
+        MutexResult lock_result = MUTEX_LOCK(&global_queue_manager->manager_lock, SR_DATABASE);
+        if (lock_result == MUTEX_SUCCESS) {
+            free(global_queue_manager->databases);
+            global_queue_manager->databases = NULL;
+            global_queue_manager->database_count = 0;
+            mutex_unlock(&global_queue_manager->manager_lock);
         }
+        pthread_mutex_destroy(&global_queue_manager->manager_lock);
+        free(global_queue_manager);
+        global_queue_manager = NULL;
 
         log_this(SR_DATABASE, "Database queue system destroyed", LOG_LEVEL_DEBUG, 0);
     } else {

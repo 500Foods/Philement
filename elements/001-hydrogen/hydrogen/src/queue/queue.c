@@ -222,21 +222,31 @@ void queue_destroy(Queue* queue) {
         return;
     }
 
-    // Remove from hash table first to prevent race conditions
-    if (queue->name) {
-        unsigned int index = queue_hash(queue->name);
-        MutexResult hash_lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
-        if (hash_lock_result == MUTEX_SUCCESS) {
-            Queue** current = &queue_system.queues[index];
+    // CRITICAL: Detect double-free by checking if queue is still in hash table
+    // If queue was already destroyed, it won't be in the hash table and we should skip destruction
+    // Search ALL hash buckets by queue pointer (not by name, which might be freed already)
+    bool found_in_hash = false;
+    
+    MutexResult hash_lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
+    if (hash_lock_result == MUTEX_SUCCESS) {
+        // Search all buckets for this queue pointer (don't rely on potentially-freed name)
+        for (int i = 0; i < QUEUE_HASH_SIZE && !found_in_hash; i++) {
+            Queue** current = &queue_system.queues[i];
             while (*current) {
                 if (*current == queue) {
                     *current = queue->hash_next;  // Remove from linked list
+                    found_in_hash = true;
                     break;
                 }
                 current = &(*current)->hash_next;
             }
-            mutex_unlock(&queue_system.mutex);
         }
+        mutex_unlock(&queue_system.mutex);
+    }
+    
+    // If queue wasn't in hash table, it was already destroyed - skip cleanup to prevent double-free
+    if (!found_in_hash) {
+        return;
     }
 
     MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
@@ -254,7 +264,10 @@ void queue_destroy(Queue* queue) {
     pthread_cond_destroy(&queue->not_empty);
     pthread_cond_destroy(&queue->not_full);
 
-    free(queue->name);
+    // Defensive: Only free name if pointer looks valid (not obviously corrupted)
+    if (queue->name && (uintptr_t)queue->name >= 0x1000) {
+        free(queue->name);
+    }
     free(queue);
 }
 

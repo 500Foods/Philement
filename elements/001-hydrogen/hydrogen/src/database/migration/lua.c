@@ -17,12 +17,18 @@
 // Local includes
 #include "migration.h"
 
+// Forward declaration of custom allocator
+void* lua_mmap_alloc(void* ud, void* ptr, size_t osize, size_t nsize);
+
 /*
  * Set up Lua state for migration execution
+ * Uses custom mmap-based allocator to completely bypass malloc/free
+ * This prevents Lua's internal corruption from affecting the process heap
  */
 lua_State* lua_setup(const char* dqm_label) {
-    // Create a new Lua state for this migration
-    lua_State* L = luaL_newstate();
+    // Create a new Lua state using our custom allocator
+    // This bypasses malloc entirely and uses mmap/munmap
+    lua_State* L = lua_newstate(lua_mmap_alloc, NULL);
     if (!L) {
         log_this(dqm_label, "Failed to create Lua state for migration", LOG_LEVEL_ERROR, 0);
         return NULL;
