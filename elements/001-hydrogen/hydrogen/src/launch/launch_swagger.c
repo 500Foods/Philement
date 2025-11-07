@@ -281,11 +281,18 @@ int launch_swagger_subsystem(void) {
     if (!init_swagger_support_from_payload(&app_config->swagger, local_swagger_files, local_num_swagger_files)) {
         log_this(SR_SWAGGER, "    Failed to load swagger files into memory", LOG_LEVEL_ERROR, 0);
         log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: File loading failed", LOG_LEVEL_DEBUG, 0);
+        // Free the allocated names before returning
+        for (size_t i = 0; i < local_num_swagger_files; i++) {
+            free(local_swagger_files[i].name);
+        }
         free(local_swagger_files);
         return 0;
     }
 
-    // Free the retrieved files array (but not individual data - owned by swagger now)
+    // Free the retrieved files array including names (data is owned by swagger now)
+    for (size_t i = 0; i < local_num_swagger_files; i++) {
+        free(local_swagger_files[i].name);
+    }
     free(local_swagger_files);
     log_this(SR_SWAGGER, "    All dependencies verified", LOG_LEVEL_DEBUG, 0);
 

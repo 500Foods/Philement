@@ -19,7 +19,6 @@
 #include <unity/mocks/mock_libdb2.h>
 #endif
 
-
 // ODBC type definitions for DB2
 typedef signed short SQLSMALLINT;
 typedef long SQLINTEGER;
@@ -224,6 +223,7 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     void* conn_handle = NULL;
     if (SQLAllocHandle_ptr(SQL_HANDLE_DBC, env_handle, &conn_handle) != SQL_SUCCESS) {
         log_this(log_subsystem, "DB2 connection failed: Connection handle allocation failed", LOG_LEVEL_ERROR, 0);
+        SQLFreeHandle_ptr(SQL_HANDLE_ENV, env_handle);
         return false;
     }
 
@@ -240,6 +240,8 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
 
     if (!conn_string) {
         log_this(log_subsystem, "DB2 connection failed: Unable to get connection string", LOG_LEVEL_ERROR, 0);
+        SQLFreeHandle_ptr(SQL_HANDLE_DBC, conn_handle);
+        SQLFreeHandle_ptr(SQL_HANDLE_ENV, env_handle);
         return false;
     }
 
@@ -335,6 +337,8 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     // Create database handle
     DatabaseHandle* db_handle = calloc(1, sizeof(DatabaseHandle));
     if (!db_handle) {
+        SQLFreeHandle_ptr(SQL_HANDLE_DBC, conn_handle);
+        SQLFreeHandle_ptr(SQL_HANDLE_ENV, env_handle);
         return false;
     }
 
@@ -342,6 +346,8 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     DB2Connection* db2_wrapper = calloc(1, sizeof(DB2Connection));
     if (!db2_wrapper) {
         free(db_handle);
+        SQLFreeHandle_ptr(SQL_HANDLE_DBC, conn_handle);
+        SQLFreeHandle_ptr(SQL_HANDLE_ENV, env_handle);
         return false;
     }
 
@@ -351,6 +357,8 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     if (!db2_wrapper->prepared_statements) {
         free(db2_wrapper);
         free(db_handle);
+        SQLFreeHandle_ptr(SQL_HANDLE_DBC, conn_handle);
+        SQLFreeHandle_ptr(SQL_HANDLE_ENV, env_handle);
         return false;
     }
 
@@ -395,6 +403,19 @@ bool db2_disconnect(DatabaseHandle* connection) {
     // Use stored designator for logging if available
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
     log_this(log_subsystem, "DB2 connection closed", LOG_LEVEL_TRACE, 0);
+    
+    // Free the designator string that was strdup'd during connection
+    if (connection->designator) {
+        free((char*)connection->designator);
+        connection->designator = NULL;
+    }
+    
+    // Destroy the connection lock
+    pthread_mutex_destroy(&connection->connection_lock);
+    
+    // Free the DatabaseHandle itself
+    free(connection);
+    
     return true;
 }
 
