@@ -67,30 +67,30 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-11-06 01:53:09 UTC
+Last updated at 2025-11-06 22:30:32 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                            82             40              0         139608
-C                              820          32507          31181         115417
-SVG                             93            180           2098          77292
+JSON                            83             41              0         143606
+C                              820          32540          31251         115543
+SVG                             93            180           2098          77311
 Markdown                       380          10464             62          31433
-Bourne Shell                    86           4007          63550          18413
-Text                            38             37              0          12607
+Bourne Shell                    86           4007          63562          18413
+Text                            39             38              0          12965
 Lua                             57            773            782          10484
-C/C++ Header                   181           1985           5202           5730
+C/C++ Header                   181           1985           5202           5735
 CMake                           17            171            316           1039
 HTML                             8            138             23            882
 JavaScript                       2            132            198            456
-SQL                              9              7              1            197
 Python                           1             36              9            195
+SQL                              8              6              1            178
 CSS                              3             14              7             80
 make                             4             41             16             80
 Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 -------------------------------------------------------------------------------
-SUM:                          1789          50575         103489         414088
+SUM:                          1790          50609         103571         418575
 -------------------------------------------------------------------------------
 60 Files were skipped (duplicate, binary, or without source code):
   lua: 12
