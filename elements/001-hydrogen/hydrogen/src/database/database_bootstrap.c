@@ -256,7 +256,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                      // Log QTC population completion
                      if (db_queue->query_cache) {
                          size_t qtc_count = query_cache_get_entry_count(db_queue->query_cache);
-                         log_this(dqm_label, "QTC population completed: %zu queries loaded", LOG_LEVEL_STATE, 1, qtc_count);
+                         log_this(dqm_label, "QTC population completed: %zu queries loaded", LOG_LEVEL_TRACE, 1, qtc_count);
                      }
                 }
             }

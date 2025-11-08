@@ -145,4 +145,12 @@ size_t pending_result_cleanup_expired(PendingResultManager* manager, const char*
  */
 PendingResultManager* get_pending_result_manager(void);
 
+/**
+ * @brief Cleanup the global pending result manager
+ * Should be called during database subsystem shutdown
+ *
+ * @param dqm_label Label for logging purposes
+ */
+void cleanup_global_pending_manager(const char* dqm_label);
+
 #endif // DATABASE_PENDING_H

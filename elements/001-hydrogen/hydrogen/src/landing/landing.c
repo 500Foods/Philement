@@ -46,12 +46,13 @@
  * - 01. Registry (first launched, last to land)
  */
 
-// Global includes 
+// Global includes
 #include <src/hydrogen.h>
 
 // Local includes
 #include "landing.h"
 #include <src/launch/launch.h>
+#include <src/payload/payload_cache.h>
 
 // External declarations for landing orchestration
 extern ReadinessResults handle_landing_readiness(void);
@@ -286,6 +287,12 @@ bool check_all_landing_readiness(void) {
         
         return true;
     } else {
+        // Land Registry as final step (must be done before other cleanups)
+        log_this(SR_LANDING, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
+        log_this(SR_LANDING, "LANDING: REGISTRY (Final Step)", LOG_LEVEL_DEBUG, 0);
+        bool registry_ok = land_registry_subsystem(false);  // false = not restart
+        landing_success &= registry_ok;
+        
         // Record shutdown end time
         record_shutdown_end_time();
         
@@ -306,8 +313,26 @@ bool check_all_landing_readiness(void) {
         log_this(SR_SHUTDOWN, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
         log_group_end();
         
-        // Clean up application config after all logging is complete
+        // Clean up the log buffer to prevent memory leaks
+        // This is a safety net to ensure cleanup happens even if
+        // the landing system didn't call land_logging_subsystem()
+        cleanup_log_buffer();
+        
+        // Clean up the payload cache to prevent memory leaks
+        // This frees all cached payload files extracted from the tar archive
+        // Safety net in case payload subsystem wasn't marked as "running"
+        cleanup_payload_cache();
+        
+        // Clean up application config (may log during cleanup)
         cleanup_application_config();
+        
+        // CRITICAL: Clean up mutex system LAST
+        // Must be called after all other cleanup functions that might log
+        // because logging uses mutexes which allocate TLS data
+        // Deleting TLS keys before cleanup would cause memory leaks
+        // DO NOT call cleanup_log_buffer() here - it uses mutexes which would
+        // allocate new TLS data after the mutex system's TLS keys are deleted
+        mutex_system_cleanup();
                
         exit(0);  // Exit process after clean shutdown
     }

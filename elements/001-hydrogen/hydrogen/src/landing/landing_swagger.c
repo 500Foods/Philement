@@ -10,11 +10,12 @@
  * - Must wait for WebServer subsystem to be ready for shutdown
  */
 
-// Global includes 
+// Global includes
 #include <src/hydrogen.h>
 
 // Local includes
 #include "landing.h"
+#include <src/swagger/swagger.h>
 
 // External declarations
 extern volatile sig_atomic_t swagger_system_shutdown;
@@ -72,8 +73,9 @@ int land_swagger_subsystem(void) {
     swagger_system_shutdown = 1;
     log_this(SR_SWAGGER, "Signaled Swagger system to stop", LOG_LEVEL_DEBUG, 0);
     
-    // Cleanup resources
-    // Additional cleanup will be added as needed
+    // Cleanup resources - free all swagger files and their data
+    cleanup_swagger_support();
+    log_this(SR_SWAGGER, "Swagger files cleaned up", LOG_LEVEL_DEBUG, 0);
     
     log_this(SR_SWAGGER, "LANDING: " SR_SWAGGER " COMPLETE", LOG_LEVEL_DEBUG, 0);
     

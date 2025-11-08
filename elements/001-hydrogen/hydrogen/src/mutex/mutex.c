@@ -266,6 +266,23 @@ MutexResult mutex_unlock(pthread_mutex_t* mutex) {
             log_this(op_id->subsystem, "MUTEX REL: %X as %s in %s()", LOG_LEVEL_TRACE, 3,
                      (unsigned int)(uintptr_t)mutex, op_id->name, op_id->function);
         }
+        
+        // Remove from locked_mutexes tracking array
+        if (deadlock_detection_enabled) {
+            pthread_mutex_lock(&deadlock_detection_mutex);
+            for (size_t i = 0; i < locked_mutex_count; i++) {
+                if (locked_mutexes[i].mutex_ptr == mutex &&
+                    pthread_equal(locked_mutexes[i].thread_id, pthread_self())) {
+                    // Shift remaining elements
+                    memmove(&locked_mutexes[i], &locked_mutexes[i + 1],
+                        (locked_mutex_count - i - 1) * sizeof(MutexLockAttempt));
+                    locked_mutex_count--;
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&deadlock_detection_mutex);
+        }
+        
         // Clear thread-local storage
         set_current_mutex_op_id(NULL);
         set_current_mutex_op_ptr(NULL);
@@ -293,6 +310,23 @@ MutexResult mutex_unlock_with_id(pthread_mutex_t* mutex, MutexId* id) {
             log_this(id->subsystem, "MUTEX REL: %X as %s in %s()", LOG_LEVEL_TRACE, 3,
                      (unsigned int)(uintptr_t)mutex, id->name, id->function);
         }
+        
+        // Remove from locked_mutexes tracking array
+        if (deadlock_detection_enabled) {
+            pthread_mutex_lock(&deadlock_detection_mutex);
+            for (size_t i = 0; i < locked_mutex_count; i++) {
+                if (locked_mutexes[i].mutex_ptr == mutex &&
+                    pthread_equal(locked_mutexes[i].thread_id, pthread_self())) {
+                    // Shift remaining elements
+                    memmove(&locked_mutexes[i], &locked_mutexes[i + 1],
+                        (locked_mutex_count - i - 1) * sizeof(MutexLockAttempt));
+                    locked_mutex_count--;
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&deadlock_detection_mutex);
+        }
+        
         return MUTEX_SUCCESS;
     } else {
         // This is a serious error - log it (only if not already in a logging operation to avoid circular dependency)
@@ -396,6 +430,10 @@ bool mutex_system_init(void) {
 }
 
 void mutex_system_cleanup(void) {
+    // CRITICAL: Log FIRST, before deleting TLS keys
+    // Logging after key deletion creates new TLS allocations that never get freed
+    log_this(SR_MUTEXES, "Mutex system cleanup started", LOG_LEVEL_TRACE, 0);
+    
     // Clean up deadlock detection structures
     pthread_mutex_lock(&deadlock_detection_mutex);
     free(active_lock_attempts);
@@ -407,11 +445,18 @@ void mutex_system_cleanup(void) {
     locked_mutexes = NULL;
     locked_mutex_count = 0;
     locked_mutex_capacity = 0;
-    // Clear thread-local storage (keys auto-free on delete)
+    
+    // CRITICAL: Clear current thread's TLS data BEFORE deleting keys
+    // pthread_key_delete() doesn't call destructors - we must free manually
+    set_current_mutex_op_id(NULL);  // Frees any MutexId stored for this thread
+    set_current_mutex_op_ptr(NULL);  // Clear mutex ptr (no allocation to free)
+    
+    // Now safe to delete the keys
     pthread_key_delete(mutex_op_id_key);
     pthread_key_delete(mutex_op_ptr_key);
     pthread_mutex_unlock(&deadlock_detection_mutex);
-    log_this(SR_MUTEXES, "Mutex system cleanup completed", LOG_LEVEL_TRACE, 0);
+    
+    // DO NOT log here - would create new TLS allocations after keys deleted
 }
 
 /*
