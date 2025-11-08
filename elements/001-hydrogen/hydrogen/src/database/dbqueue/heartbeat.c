@@ -122,6 +122,10 @@ bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseH
             mutex_unlock(&db_queue->connection_lock);
         } else {
             log_this(SR_DATABASE, "CRITICAL ERROR: Stored connection has corrupted mutex! Not unlocking queue mutex", LOG_LEVEL_ERROR, 0);
+            // CRITICAL: Clean up the handle we just stored - it's corrupted
+            database_engine_cleanup_connection(db_handle);
+            db_queue->persistent_connection = NULL;
+            db_queue->is_connected = false;
             // Don't unlock - this will cause the timeout detection to trigger
             database_queue_signal_initial_connection_complete(db_queue);
             free(dqm_designator);
@@ -146,10 +150,22 @@ bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseH
         // Add diagnostic information about the connection before cleanup
         log_this(health_check_label, "Connection diagnostics: engine_type=%d, status=%d, connected_since=%ld",
                 LOG_LEVEL_TRACE, 3, db_handle->engine_type, db_handle->status, (long)db_handle->connected_since);
-        // CRITICAL: Clean up the connection handle - this will also free the config it owns
-        database_engine_cleanup_connection(db_handle);
-        db_queue->is_connected = false;
-        mutex_unlock(&db_queue->connection_lock);
+        
+        // CRITICAL: Re-lock to safely clean up persistent_connection
+        MutexResult cleanup_lock_result = MUTEX_LOCK(&db_queue->connection_lock, health_check_label);
+        if (cleanup_lock_result == MUTEX_SUCCESS) {
+            // CRITICAL: Clean up the connection handle - this will also free the config it owns
+            database_engine_cleanup_connection(db_handle);
+            // CRITICAL: NULL out the persistent_connection pointer to prevent dangling pointer
+            db_queue->persistent_connection = NULL;
+            db_queue->is_connected = false;
+            mutex_unlock(&db_queue->connection_lock);
+        } else {
+            // If we can't lock, just clean up the handle without modifying queue state
+            database_engine_cleanup_connection(db_handle);
+            db_queue->is_connected = false;
+        }
+        
         free(health_check_label);
         db_queue->last_connection_attempt = time(NULL);
         database_queue_signal_initial_connection_complete(db_queue);

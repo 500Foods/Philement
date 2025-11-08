@@ -200,9 +200,9 @@ bool test_network_interfaces_quiet(network_info_t *info, bool quiet) {
 // Discover and analyze network interfaces with comprehensive enumeration
 
 network_info_t *get_network_info(void) {
-    network_info_t *info = malloc(sizeof(network_info_t));
+    network_info_t *info = calloc(1, sizeof(network_info_t));
     if (!info) {
-        perror("malloc");
+        perror("calloc");
         return NULL;
     }
 
@@ -307,7 +307,7 @@ network_info_t *filter_enabled_interfaces(const network_info_t *raw_net_info, co
         return NULL;
     }
 
-    network_info_t *filtered_info = malloc(sizeof(network_info_t));
+    network_info_t *filtered_info = calloc(1, sizeof(network_info_t));
     if (!filtered_info) {
         log_this(SR_NETWORK, "Failed to allocate filtered network info", LOG_LEVEL_DEBUG, 0);
         return NULL;

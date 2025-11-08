@@ -12,7 +12,7 @@
  * - Final shutdown must ensure no pending messages are lost
  */
 
-// Global includes 
+// Global includes
 #include <src/hydrogen.h>
 
 // Local includes

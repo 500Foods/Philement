@@ -61,24 +61,33 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
         db_queue->queue = NULL;  // Clear pointer regardless
     }
 
-    // Clean up synchronization primitives
-    pthread_mutex_destroy(&db_queue->queue_access_lock);
-    sem_destroy(&db_queue->worker_semaphore);
+    // Clean up persistent connection BEFORE freeing strings (needs labels for logging)
+    if (db_queue->persistent_connection) {
+        database_engine_cleanup_connection(db_queue->persistent_connection);
+        db_queue->persistent_connection = NULL;
+    }
 
-    // Free strings
-    free(db_queue->database_name);
-    free(db_queue->connection_string);
-    free(db_queue->bootstrap_query);
-    free(db_queue->queue_type);
-    free(db_queue->tags);
-
-    // Clean up query cache if present
+    // Clean up query cache if present (needs labels for logging)
     if (db_queue->query_cache) {
         char* cache_label = database_queue_generate_label(db_queue);
         query_cache_destroy(db_queue->query_cache, cache_label);
         free(cache_label);
         db_queue->query_cache = NULL;
     }
+
+    // Clean up synchronization primitives
+    pthread_mutex_destroy(&db_queue->queue_access_lock);
+    pthread_cond_destroy(&db_queue->initial_connection_cond);
+    pthread_mutex_destroy(&db_queue->initial_connection_lock);
+    pthread_mutex_destroy(&db_queue->connection_lock);
+    sem_destroy(&db_queue->worker_semaphore);
+
+    // Free strings AFTER all operations that might need them for labels
+    free(db_queue->database_name);
+    free(db_queue->connection_string);
+    free(db_queue->bootstrap_query);
+    free(db_queue->queue_type);
+    free(db_queue->tags);
 
     // Track memory deallocation for the database queue
     track_queue_deallocation(&database_queue_memory, sizeof(DatabaseQueue));

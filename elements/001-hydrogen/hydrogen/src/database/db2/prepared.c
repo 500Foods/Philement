@@ -92,16 +92,19 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
         return false;
     }
 
+    // Use connection's designator for consistent logging
+    const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
+
     // Check if prepared statement functions are available
     if (!SQLAllocHandle_ptr || !SQLPrepare_ptr || !SQLFreeHandle_ptr) {
-        log_this(SR_DATABASE, "DB2 prepared statement functions not available", LOG_LEVEL_TRACE, 0);
+        log_this(log_subsystem, "DB2 prepared statement functions not available", LOG_LEVEL_TRACE, 0);
         return false;
     }
 
     // Allocate statement handle
     void* stmt_handle = NULL;
     if (SQLAllocHandle_ptr(SQL_HANDLE_STMT, db2_conn->connection, &stmt_handle) != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 prepare_statement: Failed to allocate statement handle", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "DB2 prepare_statement: Failed to allocate statement handle", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
@@ -111,13 +114,13 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
     
     // Check if prepare took too long
     if (db2_check_timeout_expired(start_time, 15)) {
-        log_this(SR_DATABASE, "DB2 PREPARE execution time exceeded 15 seconds", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "DB2 PREPARE execution time exceeded 15 seconds", LOG_LEVEL_ERROR, 0);
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         return false;
     }
     
     if (result != SQL_SUCCESS) {
-        log_this(SR_DATABASE, "DB2 SQLPrepare failed", LOG_LEVEL_ERROR, 0);
+        log_this(log_subsystem, "DB2 SQLPrepare failed", LOG_LEVEL_ERROR, 0);
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         return false;
     }
@@ -161,7 +164,7 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
     // Simple cache management - just add to end, no LRU for now to avoid complexity
     if (connection->prepared_statement_count >= cache_size) {
         // For now, just don't cache if full - avoid complex eviction logic
-        log_this(SR_DATABASE, "Prepared statement cache full, not storing: %s", LOG_LEVEL_ALERT, 1, name);
+        log_this(log_subsystem, "Prepared statement cache full, not storing: %s", LOG_LEVEL_ALERT, 1, name);
         // Still return the prepared statement - it can be used even if not cached
         *stmt = prepared_stmt;
         return true;
@@ -173,7 +176,7 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
 
     *stmt = prepared_stmt;
 
-    log_this(SR_DATABASE, "DB2 prepared statement created and added to connection", LOG_LEVEL_TRACE, 0);
+    log_this(log_subsystem, "DB2 prepared statement created and added to connection", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -188,6 +191,9 @@ bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt
     if (!db2_conn || !db2_conn->connection) {
         return false;
     }
+
+    // Use connection's designator for consistent logging
+    const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
 
     // Free the DB2 statement handle if it exists
     if (SQLFreeHandle_ptr && stmt->engine_specific_handle) {
@@ -213,6 +219,6 @@ bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt
     free(stmt->sql_template);
     free(stmt);
 
-    log_this(SR_DATABASE, "DB2 prepared statement removed", LOG_LEVEL_TRACE, 0);
+    log_this(log_subsystem, "DB2 prepared statement removed", LOG_LEVEL_TRACE, 0);
     return true;
 }

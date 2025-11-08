@@ -509,11 +509,9 @@ void database_engine_cleanup_connection(DatabaseHandle* connection) {
 
     const char* designator = connection->designator ? connection->designator : SR_DATABASE;
     DatabaseEngineInterface* engine = database_engine_get_with_designator(connection->engine_type, designator);
-    if (engine && engine->disconnect) {
-        engine->disconnect(connection);
-    }
-
-    // Clean up prepared statements - must be defensive against corrupted/already-freed pointers
+    
+    // CRITICAL: Clean up prepared statements BEFORE disconnecting
+    // The statements need access to connection->connection_handle to unprepare properly
     if (connection->prepared_statements) {
         // If count is 0, statements were already cleared by clear_prepared_statements()
         // In that case, just free the array and LRU counter
@@ -557,6 +555,54 @@ void database_engine_cleanup_connection(DatabaseHandle* connection) {
             }
         }
     }
+    
+    // Now disconnect - this frees ODBC handles but NOT the engine-specific connection structure
+    if (engine && engine->disconnect) {
+        engine->disconnect(connection);
+    }
+    
+    // Free the engine-specific connection structure (e.g., DB2Connection)
+    // This must be done AFTER unpreparing statements but AFTER disconnect
+    if (connection->connection_handle) {
+        // For DB2, need to free the DB2Connection structure and its prepared_statements cache
+        if (connection->engine_type == DB_ENGINE_DB2) {
+            typedef struct {
+                void* environment;
+                void* connection;
+                void* prepared_statements; // PreparedStatementCache*
+            } DB2Connection;
+            
+            DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
+            if (db2_conn) {
+                // Free the prepared statement cache if it exists
+                if (db2_conn->prepared_statements) {
+                    // Need to call db2_destroy_prepared_statement_cache
+                    // But we can't include the header here, so just free it directly
+                    typedef struct {
+                        char** names;
+                        size_t count;
+                        size_t capacity;
+                        pthread_mutex_t lock;
+                    } PreparedStatementCache;
+                    
+                    PreparedStatementCache* cache = (PreparedStatementCache*)db2_conn->prepared_statements;
+                    if (cache) {
+                        pthread_mutex_lock(&cache->lock);
+                        for (size_t i = 0; i < cache->count; i++) {
+                            free(cache->names[i]);
+                        }
+                        free(cache->names);
+                        pthread_mutex_unlock(&cache->lock);
+                        pthread_mutex_destroy(&cache->lock);
+                        free(cache);
+                    }
+                }
+                free(db2_conn);
+            }
+        }
+        // Other engines free their structures in their disconnect functions
+        connection->connection_handle = NULL;
+    }
 
     // CRITICAL: Free the ConnectionConfig - the DatabaseHandle owns it after successful connection
     // The config was transferred to the handle by the engine's connect function
@@ -567,7 +613,7 @@ void database_engine_cleanup_connection(DatabaseHandle* connection) {
 
     // Clean up designator
     if (connection->designator) {
-        free(connection->designator);
+        free((char*)connection->designator);
     }
 
     pthread_mutex_destroy(&connection->connection_lock);
