@@ -331,6 +331,9 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
             log_this(log_subsystem, "DB2 diagnostic: No connection handle available for error retrieval", LOG_LEVEL_ERROR, 0);
         }
 
+        // Clean up ODBC handles before returning
+        SQLFreeHandle_ptr(SQL_HANDLE_DBC, conn_handle);
+        SQLFreeHandle_ptr(SQL_HANDLE_ENV, env_handle);
         return false;
     }
 
@@ -394,8 +397,21 @@ bool db2_disconnect(DatabaseHandle* connection) {
 
     DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
     if (db2_conn) {
-        db2_destroy_prepared_statement_cache(db2_conn->prepared_statements);
-        free(db2_conn);
+        // Disconnect from database and free ODBC handles
+        if (db2_conn->connection) {
+            if (SQLDisconnect_ptr) {
+                SQLDisconnect_ptr(db2_conn->connection);
+            }
+            SQLFreeHandle_ptr(SQL_HANDLE_DBC, db2_conn->connection);
+            db2_conn->connection = NULL; // Mark as disconnected
+        }
+        if (db2_conn->environment) {
+            SQLFreeHandle_ptr(SQL_HANDLE_ENV, db2_conn->environment);
+            db2_conn->environment = NULL; // Mark as freed
+        }
+        
+        // NOTE: Do NOT free db2_conn here - it's needed by database_engine_cleanup_connection()
+        // to unprepare statements. The DB2Connection structure will be freed there.
     }
 
     connection->status = DB_CONNECTION_DISCONNECTED;
@@ -404,17 +420,8 @@ bool db2_disconnect(DatabaseHandle* connection) {
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
     log_this(log_subsystem, "DB2 connection closed", LOG_LEVEL_TRACE, 0);
     
-    // Free the designator string that was strdup'd during connection
-    if (connection->designator) {
-        free((char*)connection->designator);
-        connection->designator = NULL;
-    }
-    
-    // Destroy the connection lock
-    pthread_mutex_destroy(&connection->connection_lock);
-    
-    // Free the DatabaseHandle itself
-    free(connection);
+    // NOTE: DatabaseHandle cleanup (designator, mutex, free) is done by database_engine_cleanup_connection()
+    // This function only handles DB2-specific ODBC cleanup (disconnect, free ODBC handles)
     
     return true;
 }
