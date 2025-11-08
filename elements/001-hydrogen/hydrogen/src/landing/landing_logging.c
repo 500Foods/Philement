@@ -48,7 +48,7 @@ LaunchReadiness check_logging_landing_readiness(void) {
     readiness.subsystem = SR_LOGGING;
     
     // Allocate space for messages (including NULL terminator)
-    readiness.messages = malloc(6 * sizeof(char*));
+    readiness.messages = malloc(4 * sizeof(char*));
     if (!readiness.messages) {
         readiness.ready = false;
         return readiness;
@@ -57,46 +57,13 @@ LaunchReadiness check_logging_landing_readiness(void) {
     // Add initial subsystem identifier
     readiness.messages[0] = strdup(SR_LOGGING);
     
-    // Check if logging is actually running
-    if (!is_subsystem_running_by_name(SR_LOGGING)) {
-        readiness.ready = false;
-        readiness.messages[1] = strdup("  No-Go:   Logging not running");
-        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Logging");
-        readiness.messages[3] = NULL;
-        return readiness;
-    }
-    
-    // Check if other subsystems are done
-    bool others_complete = check_other_subsystems_complete();
-    if (!others_complete) {
-        readiness.ready = false;
-        readiness.messages[1] = strdup("  No-Go:   Other subsystems still active");
-        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Logging");
-        readiness.messages[3] = NULL;
-        return readiness;
-    }
-    
-    // Check thread status
-    bool threads_ready = true;
-    if (log_thread && logging_threads.thread_count > 0) {
-        readiness.messages[1] = strdup("  Go:      Logging thread ready for shutdown");
-    } else {
-        threads_ready = false;
-        readiness.messages[1] = strdup("  No-Go:   Logging thread not accessible");
-    }
-    
-    // Final decision
-    if (threads_ready) {
-        readiness.ready = true;
-        readiness.messages[2] = strdup("  Go:      All other subsystems inactive");
-        readiness.messages[3] = strdup("  Go:      Ready for final cleanup");
-        readiness.messages[4] = strdup("  Decide:  Go For Landing of Logging");
-    } else {
-        readiness.ready = false;
-        readiness.messages[2] = strdup("  No-Go:   Resources not ready for cleanup");
-        readiness.messages[3] = strdup("  Decide:  No-Go For Landing of Logging");
-    }
-    readiness.messages[5] = NULL;
+    // ALWAYS allow logging to land to ensure buffer cleanup happens
+    // This is critical to prevent memory leaks in the log buffer even if
+    // logging subsystem never fully initialized
+    readiness.ready = true;
+    readiness.messages[1] = strdup("  Go:      Buffer cleanup required");
+    readiness.messages[2] = strdup("  Decide:  Go For Landing of Logging");
+    readiness.messages[3] = NULL;
     
     return readiness;
 }
@@ -138,6 +105,10 @@ int land_logging_subsystem(void) {
     } else {
         log_this(SR_LOGGING, "Warning: app_config is NULL during " SR_LOGGING " cleanup", LOG_LEVEL_DEBUG, 0);
     }
+    
+    // Clean up the log buffer to prevent memory leaks
+    log_this(SR_LOGGING, "Cleaning up " SR_LOGGING " buffer", LOG_LEVEL_DEBUG, 0);
+    cleanup_log_buffer();
     
     log_this(SR_LOGGING, "LANDING: " SR_LOGGING " COMPLETE", LOG_LEVEL_DEBUG, 0);
     

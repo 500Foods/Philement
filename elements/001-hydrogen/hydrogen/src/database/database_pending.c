@@ -332,3 +332,14 @@ PendingResultManager* get_pending_result_manager(void) {
     }
     return g_pending_manager;
 }
+
+/**
+ * @brief Cleanup the global pending result manager
+ * Should be called during database subsystem shutdown
+ */
+void cleanup_global_pending_manager(const char* dqm_label) {
+    if (g_pending_manager) {
+        pending_result_manager_destroy(g_pending_manager, dqm_label);
+        g_pending_manager = NULL;
+    }
+}

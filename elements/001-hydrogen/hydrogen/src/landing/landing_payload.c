@@ -3,11 +3,12 @@
  * @brief Payload subsystem landing (shutdown) implementation
  */
 
-// Global includes 
+// Global includes
 #include <src/hydrogen.h>
 
 // Local includes
 #include "landing.h"
+#include <src/payload/payload_cache.h>
 
 // External declarations
 extern AppConfig* app_config;
@@ -61,13 +62,17 @@ void free_payload_resources(void) {
     // Free any resources allocated during payload launch
     log_this(SR_LANDING, "  Step 1: Freeing payload resources", LOG_LEVEL_DEBUG, 0);
     
+    // Clean up the payload cache (frees all cached files and their data)
+    cleanup_payload_cache();
+    log_this(SR_LANDING, "  Step 2: Payload cache cleaned up", LOG_LEVEL_DEBUG, 0);
+    
     // Call the payload cleanup function for OpenSSL
     cleanup_openssl();
-    log_this(SR_LANDING, "  Step 2: OpenSSL resources cleaned up", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_LANDING, "  Step 3: OpenSSL resources cleaned up", LOG_LEVEL_DEBUG, 0);
     
     // Update the registry that payload has been shut down
     update_subsystem_after_shutdown("Payload");
-    log_this(SR_LANDING, "  Step 3: Payload subsystem marked as inactive", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_LANDING, "  Step 4: Payload subsystem marked as inactive", LOG_LEVEL_DEBUG, 0);
     
     log_this(SR_LANDING, "LANDING: PAYLOAD cleanup complete", LOG_LEVEL_DEBUG, 0);
 }

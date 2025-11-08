@@ -400,6 +400,10 @@ bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
  * Clean up the global payload cache
  */
 void cleanup_payload_cache(void) {
+    // CRITICAL: Log FIRST, before cleanup
+    // Logging after cleanup can create TLS allocations that never get freed
+    log_this(SR_PAYLOAD, "Payload cache cleanup started", LOG_LEVEL_DEBUG, 0);
+    
     if (global_payload_cache.files) {
         for (size_t i = 0; i < global_payload_cache.num_files; i++) {
             free(global_payload_cache.files[i].name);
@@ -411,5 +415,5 @@ void cleanup_payload_cache(void) {
     free(global_payload_cache.tar_data);
 
     memset(&global_payload_cache, 0, sizeof(PayloadCache));
-    log_this(SR_PAYLOAD, "Payload cache cleaned up", LOG_LEVEL_DEBUG, 0);
+    // DO NOT log here - would create new TLS allocations during final cleanup
 }

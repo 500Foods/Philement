@@ -502,8 +502,10 @@ void free_swagger_files(void) {
 
     for (size_t i = 0; i < num_swagger_files; i++) {
         free(swagger_files[i].name);
-        // Note: data pointers are references to payload data and should not be freed here
-        // They are owned by the payload cache system
+        // CRITICAL: These data pointers are COPIES not references!
+        // get_payload_files_by_prefix() allocates and copies the data
+        // so we MUST free it here to prevent memory leaks
+        free(swagger_files[i].data);
     }
 
     free(swagger_files);
