@@ -1,9 +1,45 @@
 /*
  * Hydrogen Server Logging System
+ *
+ * ==================================================================================
+ * CRITICAL: Mock System Integration Requirements
+ * ==================================================================================
+ *
+ * When adding NEW PUBLIC FUNCTIONS to this file, you MUST also update the mock system
+ * to prevent linker errors during Unity test builds. Follow these three steps:
+ *
+ * STEP 1: Update tests/unity/mocks/mock_logging.h
+ *   - In the USE_MOCK_LOGGING section, add two lines:
+ *     a) Undefine: undef your_function_name
+ *     b) Override: define your_function_name mock_your_function_name
+ *
+ * STEP 2: Update tests/unity/mocks/mock_logging.c
+ *   - Add mock implementation function: void mock_your_function_name(...)
+ *   - Add function prototype in the "Mock function prototypes" section
+ *
+ * STEP 3: Protect the REAL implementation in THIS FILE (logging.c)
+ *   - Before your function definition, add protection block (see lines 556-562):
+ *       ifdef your_function_name
+ *       undef your_function_name
+ *       // Need prototype after undef to satisfy -Werror=missing-prototypes
+ *       void your_function_name(...);
+ *       endif
+ *
+ * WHY: During Unity builds, the preprocessor tries to rename all logging functions
+ * via macros. Without Step 3, it would rename the real implementation causing
+ * duplicate symbol errors (real function renamed to mock name, but mock already exists).
+ *
+ * EXAMPLE: See cleanup_log_buffer() implementation at lines 556-575 in this file.
+ * ==================================================================================
  */
 
 // Global includes
 #include <src/hydrogen.h>
+
+// Prevent mock system from affecting this source file
+#ifdef USE_MOCK_LOGGING
+#undef USE_MOCK_LOGGING
+#endif
 
 // Local includes
 #include "logging.h"
@@ -409,6 +445,13 @@ void log_group_end(void) {
     MUTEX_UNLOCK(&log_group_mutex, SR_LOGGING);
 }
 
+// Protect from mock system renaming this function
+#ifdef log_this
+#undef log_this
+// Need prototype after undef to satisfy -Werror=missing-prototypes
+void log_this(const char* subsystem, const char* format, int priority, int num_args, ...);
+#endif
+
 void log_this(const char* subsystem, const char* format, int priority, int num_args, ...) {
 
     // NEW: Skip logging if in mutex operation to break recursion
@@ -542,4 +585,31 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
 
     // Restore the logging operation flag
     set_logging_operation_flag(was_in_logging);
+}
+
+// Protect from mock system renaming this function
+#ifdef cleanup_log_buffer
+#undef cleanup_log_buffer
+// Need prototype after undef to satisfy -Werror=missing-prototypes
+void cleanup_log_buffer(void);
+#endif
+
+// Cleanup function to free all log buffer message slots
+void cleanup_log_buffer(void) {
+    set_mutex_operation_flag(true);  // Mark mutex context
+    MutexResult lock_result = MUTEX_LOCK(&log_buffer.mutex, SR_LOGGING);
+    if (lock_result == MUTEX_SUCCESS) {
+        // Free all allocated message slots
+        for (size_t i = 0; i < LOG_BUFFER_SIZE; i++) {
+            if (log_buffer.messages[i] != NULL) {
+                free(log_buffer.messages[i]);
+                log_buffer.messages[i] = NULL;
+            }
+        }
+        // Reset buffer state
+        log_buffer.head = 0;
+        log_buffer.count = 0;
+        MUTEX_UNLOCK(&log_buffer.mutex, SR_LOGGING);
+    }
+    set_mutex_operation_flag(false);  // Clear mutex context
 }

@@ -3,6 +3,39 @@
  *
  * This file provides mock implementations of logging functions
  * to enable unit testing without system dependencies.
+ *
+ * ==================================================================================
+ * IMPORTANT: Adding New Mock Functions
+ * ==================================================================================
+ *
+ * When src/logging/logging.c adds a NEW PUBLIC FUNCTION, you must update this mock:
+ *
+ * STEP 1: Add Mock Implementation (in this file)
+ *   - Create a mock function: void mock_your_function_name(...)
+ *   - Keep it simple - usually just logs that it was called
+ *   - Add any state tracking if needed for tests
+ *
+ * STEP 2: Add Function Prototype (in this file)
+ *   - Below in the "Mock function prototypes" section around line 35
+ *   - Add: void mock_your_function_name(...);
+ *
+ * STEP 3: Update mock_logging.h
+ *   - In the USE_MOCK_LOGGING section, add:
+ *     a) undef your_function_name
+ *     b) define your_function_name mock_your_function_name
+ *   - In the "Mock function prototypes" section, add the prototype again
+ *
+ * STEP 4: Protect Real Implementation in src/logging/logging.c
+ *   - Before the real function, add an ifdef/undef block with prototype
+ *   - This prevents the preprocessor from renaming the real function
+ *   - See cleanup_log_buffer() in logging.c for the exact pattern
+ *
+ * WHY: The build system passes -Dlog_this=mock_log_this as compiler flags during
+ * Unity builds. Without proper protection, preprocessor would rename BOTH the mock
+ * and real implementations to the same name, causing duplicate symbol linker errors.
+ *
+ * EXAMPLE: See mock_cleanup_log_buffer() below at line 32 for reference.
+ * ==================================================================================
  */
 
 #include "mock_logging.h"
@@ -27,6 +60,12 @@ static char mock_last_subsystem[256] = {0};
 static char mock_last_message[1024] = {0};
 static int mock_last_priority = 0;
 static int mock_expected_calls = 0;
+
+// Mock implementation of cleanup_log_buffer
+void mock_cleanup_log_buffer(void) {
+    // Mock implementation does nothing - just tracks that it was called
+    fprintf(stderr, "MOCK_LOG_DEBUG: mock_cleanup_log_buffer() called\n");
+}
 
 // Mock implementation of log_this
 void mock_log_this(const char* subsystem, const char* format, int priority, int num_args, ...) {

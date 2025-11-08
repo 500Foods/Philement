@@ -13,11 +13,13 @@
 // Mock function declarations - these will override the real ones when USE_MOCK_LOGGING is defined
 #ifdef USE_MOCK_LOGGING
 
-// Undefine the function prototype from logging.h to prevent conflicts
+// Undefine the function prototypes from logging.h to prevent conflicts
 #undef log_this
+#undef cleanup_log_buffer
 
 // Override logging functions with our mocks
 #define log_this mock_log_this
+#define cleanup_log_buffer mock_cleanup_log_buffer
 
 // Debug output to verify the define is working
 // #pragma message("USE_MOCK_LOGGING is defined - mock logging is active")
@@ -30,6 +32,7 @@
 
 // Mock function prototypes (always available)
 void mock_log_this(const char* subsystem, const char* format, int priority, int num_args, ...);
+void mock_cleanup_log_buffer(void);
 
 // Mock control functions (always available)
 void mock_logging_reset_all(void);

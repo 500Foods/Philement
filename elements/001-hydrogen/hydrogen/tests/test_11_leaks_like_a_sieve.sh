@@ -14,6 +14,10 @@
 # 2.0.0 - 2025-06-17 - Major refactoring: improved modularity, reduced script size, enhanced comments
 # 1.0.0 - 2025-06-15 - Initial version with basic memory leak detection
 
+# Examples of running valgrind or gdb manually
+# valgrind --suppressions=.valgrind.supp --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --num-callers=20 --log-file=valgrind_%p.log ./hydrogen_coverage tests/configs/hydrogen_test_35_db2.json
+# gdb -ex "set confirm off" -ex "set environment MALLOC_CHECK_=3" -ex "catch syscall abort" -ex "handle SIGINT nostop noprint pass" -ex "run" --args /mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_coverage tests/configs/hydrogen_test_35_db2.json
+
 set -euo pipefail
 
 # Test configuration

@@ -119,4 +119,10 @@ bool* get_log_group_flag(void);
 void set_log_group_flag(bool val);
 void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count);
 
+/*
+ * Cleanup the log buffer by freeing all allocated message slots
+ * Should be called during logging subsystem shutdown
+ */
+void cleanup_log_buffer(void);
+
 #endif // LOGGING_H

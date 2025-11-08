@@ -189,7 +189,7 @@ bool database_queue_apply_single_migration(DatabaseQueue* lead_queue, long long 
             log_this(dqm_label, "Failed to commit migration %lld", LOG_LEVEL_ERROR, 1, migration_id);
             success = false;
         } else {
-            log_this(dqm_label, "Migration %lld committed successfully", LOG_LEVEL_TRACE, 1, migration_id);
+            log_this(dqm_label, "Migration %lld committed successfully", LOG_LEVEL_STATE, 1, migration_id);
         }
     } else {
         // Rollback the transaction

@@ -573,32 +573,28 @@ void database_engine_cleanup_connection(DatabaseHandle* connection) {
             } DB2Connection;
             
             DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
-            if (db2_conn) {
-                // Free the prepared statement cache if it exists
-                if (db2_conn->prepared_statements) {
-                    // Need to call db2_destroy_prepared_statement_cache
-                    // But we can't include the header here, so just free it directly
-                    typedef struct {
-                        char** names;
-                        size_t count;
-                        size_t capacity;
-                        pthread_mutex_t lock;
-                    } PreparedStatementCache;
-                    
-                    PreparedStatementCache* cache = (PreparedStatementCache*)db2_conn->prepared_statements;
-                    if (cache) {
-                        pthread_mutex_lock(&cache->lock);
-                        for (size_t i = 0; i < cache->count; i++) {
-                            free(cache->names[i]);
-                        }
-                        free(cache->names);
-                        pthread_mutex_unlock(&cache->lock);
-                        pthread_mutex_destroy(&cache->lock);
-                        free(cache);
-                    }
+            // Free the prepared statement cache if it exists
+            if (db2_conn->prepared_statements) {
+                // Need to call db2_destroy_prepared_statement_cache
+                // But we can't include the header here, so just free it directly
+                typedef struct {
+                    char** names;
+                    size_t count;
+                    size_t capacity;
+                    pthread_mutex_t lock;
+                } PreparedStatementCache;
+                
+                PreparedStatementCache* cache = (PreparedStatementCache*)db2_conn->prepared_statements;
+                pthread_mutex_lock(&cache->lock);
+                for (size_t i = 0; i < cache->count; i++) {
+                    free(cache->names[i]);
                 }
-                free(db2_conn);
+                free(cache->names);
+                pthread_mutex_unlock(&cache->lock);
+                pthread_mutex_destroy(&cache->lock);
+                free(cache);
             }
+            free(db2_conn);
         }
         // Other engines free their structures in their disconnect functions
         connection->connection_handle = NULL;

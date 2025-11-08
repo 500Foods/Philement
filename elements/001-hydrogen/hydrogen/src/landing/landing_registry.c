@@ -111,6 +111,13 @@ int land_registry_subsystem(bool is_restart) {
             SubsystemInfo* info = &subsystem_registry.subsystems[i];
             // Preserve the registry's state
             if (strcmp(info->name, SR_REGISTRY) != 0) {
+                // Free dependency strings before resetting
+                for (int j = 0; j < info->dependency_count; j++) {
+                    if (info->dependencies[j]) {
+                        free((char*)info->dependencies[j]);
+                        info->dependencies[j] = NULL;
+                    }
+                }
                 info->state = SUBSYSTEM_INACTIVE;
                 info->threads = NULL;  // Don't free - owned by subsystems
                 info->main_thread = NULL;
@@ -124,6 +131,21 @@ int land_registry_subsystem(bool is_restart) {
         // Full shutdown - reset everything
         for (int i = 0; i < subsystem_registry.count; i++) {
             SubsystemInfo* info = &subsystem_registry.subsystems[i];
+            
+            // CRITICAL: Free dependency strings before resetting count
+            for (int j = 0; j < info->dependency_count; j++) {
+                if (info->dependencies[j]) {
+                    free((char*)info->dependencies[j]);
+                    info->dependencies[j] = NULL;
+                }
+            }
+            
+            // Free the name string (allocated with strdup in register_subsystem)
+            if (info->name) {
+                free((char*)info->name);
+                info->name = NULL;
+            }
+            
             info->state = SUBSYSTEM_INACTIVE;
             info->threads = NULL;  // Don't free - owned by subsystems
             info->main_thread = NULL;

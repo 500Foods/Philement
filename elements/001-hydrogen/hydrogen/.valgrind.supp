@@ -1,0 +1,53 @@
+{
+   db2_1
+   Memcheck:Cond
+   fun:__intel_sse2_strrchr
+   fun:sqloppth
+   fun:sqledflt
+}
+
+{
+   db2_2
+   Memcheck:Cond
+   fun:__intel_sse2_strcpy
+   fun:sqloppth
+   fun:sqledflt
+}
+
+{
+   db2_3
+   Memcheck:Cond
+   fun:__intel_sse2_strchr
+   fun:sqloNormalizedLocaleDir
+   fun:sqloGetNormalizedEnvLang
+   fun:_Z10sqlnlscmsgPKcPP22SQLNLS_MSG_FILE_HEADERS0_PbPc
+   fun:sqlnlsMessage
+   fun:sqlnlsintp
+   fun:sqlaintp_cpcv
+   fun:_Z21CLI_errGetMessageTextP19CLI_ERRORHEADERINFOP13CLI_ERRORINFOPhPsshhs
+   fun:_Z14SQLGetDiagRec2P19CLI_ERRORHEADERINFOiPhPiS1_sPshhP17CLI_STATEMENTINFO
+   fun:SQLGetDiagRec
+   fun:db2_execute_query
+   fun:database_engine_execute
+}
+
+{
+   gcc_1
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:pool
+   fun:UnknownInlinedFun
+   fun:_GLOBAL__sub_I_eh_alloc.cc
+   fun:call_init
+   fun:call_init
+   fun:_dl_init
+   fun:_dl_catch_exception
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+   fun:_dl_catch_error
+   fun:_dlerror_run
+}
