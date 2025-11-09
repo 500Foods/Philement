@@ -40,6 +40,17 @@ static DatabaseQueue* create_mock_lead_queue(const char* db_name) {
     queue->max_child_queues = 10;
     queue->child_queue_count = 0;
     queue->child_queues = calloc((size_t)queue->max_child_queues, sizeof(DatabaseQueue*));
+    
+    // Initialize connection lock mutex
+    pthread_mutex_init(&queue->connection_lock, NULL);
+    
+    // Create a mock persistent connection for test migration
+    // This is needed for tests that enable test_migration
+    queue->persistent_connection = calloc(1, sizeof(DatabaseHandle));
+    if (queue->persistent_connection) {
+        queue->persistent_connection->engine_type = DB_ENGINE_SQLITE;
+        pthread_mutex_init(&queue->persistent_connection->connection_lock, NULL);
+    }
 
     return queue;
 }
@@ -52,6 +63,16 @@ static void destroy_mock_lead_queue(DatabaseQueue* queue) {
     free(queue->queue_type);
     free(queue->connection_string);
     free(queue->child_queues);
+    
+    // Clean up persistent connection
+    if (queue->persistent_connection) {
+        pthread_mutex_destroy(&queue->persistent_connection->connection_lock);
+        free(queue->persistent_connection);
+    }
+    
+    // Clean up connection lock
+    pthread_mutex_destroy(&queue->connection_lock);
+    
     free(queue);
 }
 

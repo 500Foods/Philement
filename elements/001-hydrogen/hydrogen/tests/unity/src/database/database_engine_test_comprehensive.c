@@ -515,6 +515,14 @@ void test_database_engine_cleanup_connection_basic(void) {
     // Allocate fresh strings for this test instance
     test_conn->designator = strdup("TEST-CONN-CLEANUP");
 
+    // CRITICAL: Set config to NULL to avoid freeing static mock_config
+    // The cleanup function expects to free the config, but we're using a static one
+    test_conn->config = NULL;
+    
+    // CRITICAL: Set prepared_statements to NULL to avoid issues with mock data
+    test_conn->prepared_statements = NULL;
+    test_conn->prepared_statement_count = 0;
+
     pthread_mutex_init(&test_conn->connection_lock, NULL);
 
     // Test cleanup (should not crash)

@@ -3,11 +3,11 @@
  * Comprehensive tests for db2_process_query_results helper function
  */
 
-// Standard project header plus Unity Framework header
+// Project headers
 #include <src/hydrogen.h>
 #include <unity.h>
 
-// Enable system mocks
+// Enable system mocks BEFORE including any project headers
 #define USE_MOCK_SYSTEM
 #include <unity/mocks/mock_system.h>
 
@@ -29,14 +29,7 @@ void test_db2_process_query_results_null_designator(void);
 void test_db2_process_query_results_null_result(void);
 void test_db2_process_query_results_result_alloc_failure(void);
 void test_db2_process_query_results_column_names_alloc_failure(void);
-void test_db2_process_query_results_column_name_retrieval_failure(void);
 void test_db2_process_query_results_json_buffer_alloc_failure(void);
-void test_db2_process_query_results_buffer_capacity_failure_comma(void);
-void test_db2_process_query_results_buffer_capacity_failure_object_start(void);
-void test_db2_process_query_results_buffer_capacity_failure_column_comma(void);
-void test_db2_process_query_results_buffer_capacity_failure_column_data(void);
-void test_db2_process_query_results_buffer_capacity_failure_object_end(void);
-void test_db2_process_query_results_buffer_capacity_failure_array_end(void);
 void test_db2_process_query_results_success_no_columns(void);
 void test_db2_process_query_results_success_no_rows(void);
 void test_db2_process_query_results_success_single_row_single_column(void);
@@ -133,43 +126,6 @@ void test_db2_process_query_results_json_buffer_alloc_failure(void) {
     mock_system_set_malloc_failure(3);
     
     TEST_ASSERT_FALSE(db2_process_query_results(stmt_handle, "test", start_time, &result));
-}
-
-void test_db2_process_query_results_column_name_retrieval_failure(void) {
-    // Column name retrieval failure is difficult to test with current mock setup
-    // because db2_get_column_name is a helper that may have its own error handling
-    // This scenario is indirectly covered by testing db2_execute_query and db2_execute_prepared
-    TEST_IGNORE_MESSAGE("Column name retrieval failure covered by integration tests");
-}
-
-// ============================================================================
-// Buffer capacity failure tests (testing all error paths)
-// ============================================================================
-
-void test_db2_process_query_results_buffer_capacity_failure_comma(void) {
-    // This test is complex to set up as it requires mocking realloc failure
-    // at a specific point during JSON building
-    TEST_IGNORE_MESSAGE("Buffer capacity failure tests require complex mock setup");
-}
-
-void test_db2_process_query_results_buffer_capacity_failure_object_start(void) {
-    TEST_IGNORE_MESSAGE("Buffer capacity failure tests require complex mock setup");
-}
-
-void test_db2_process_query_results_buffer_capacity_failure_column_comma(void) {
-    TEST_IGNORE_MESSAGE("Buffer capacity failure tests require complex mock setup");
-}
-
-void test_db2_process_query_results_buffer_capacity_failure_column_data(void) {
-    TEST_IGNORE_MESSAGE("Buffer capacity failure tests require complex mock setup");
-}
-
-void test_db2_process_query_results_buffer_capacity_failure_object_end(void) {
-    TEST_IGNORE_MESSAGE("Buffer capacity failure tests require complex mock setup");
-}
-
-void test_db2_process_query_results_buffer_capacity_failure_array_end(void) {
-    TEST_IGNORE_MESSAGE("Buffer capacity failure tests require complex mock setup");
 }
 
 // ============================================================================
@@ -392,19 +348,10 @@ int main(void) {
     RUN_TEST(test_db2_process_query_results_null_designator);
     RUN_TEST(test_db2_process_query_results_null_result);
     
-    // Memory allocation failures
-    if (0) RUN_TEST(test_db2_process_query_results_result_alloc_failure); // malloc mock unreliable
-    if (0) RUN_TEST(test_db2_process_query_results_column_names_alloc_failure); // malloc mock unreliable
-    if (0) RUN_TEST(test_db2_process_query_results_json_buffer_alloc_failure); // malloc mock unreliable
-    if (0) RUN_TEST(test_db2_process_query_results_column_name_retrieval_failure);
-    
-    // Buffer capacity failures (complex to test with current mock infrastructure)
-    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_comma);
-    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_object_start);
-    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_column_comma);
-    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_column_data);
-    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_object_end);
-    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_array_end);
+    // Memory allocation failures - now testable with USE_MOCK_SYSTEM in source compilation
+    RUN_TEST(test_db2_process_query_results_result_alloc_failure);
+    RUN_TEST(test_db2_process_query_results_column_names_alloc_failure);
+    RUN_TEST(test_db2_process_query_results_json_buffer_alloc_failure);
     
     // Success paths
     RUN_TEST(test_db2_process_query_results_success_no_columns);

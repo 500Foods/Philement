@@ -105,6 +105,36 @@ void mock_system_set_select_result(int result);
 void mock_system_set_sem_init_failure(int should_fail);
 void mock_system_reset_all(void);
 
+// Extern declarations for global mock state variables (defined in mock_system.c)
+extern int mock_malloc_should_fail;
+extern int mock_malloc_call_count;
+extern int mock_realloc_should_fail;
+extern int mock_realloc_call_count;
+extern int mock_calloc_should_fail;
+extern int mock_gethostname_should_fail;
+extern const char *mock_gethostname_result;
+extern int mock_nanosleep_should_fail;
+extern int mock_clock_gettime_should_fail;
+extern int mock_poll_should_fail;
+extern int mock_recvfrom_should_fail;
+extern void *mock_dlopen_result;
+extern int mock_dlopen_should_fail;
+extern const char *mock_dlerror_result;
+extern int mock_access_result;
+extern int mock_openpty_should_fail;
+extern int mock_fcntl_should_fail;
+extern pid_t mock_fork_result;
+extern int mock_ioctl_should_fail;
+extern ssize_t mock_read_result;
+extern int mock_read_should_fail;
+extern ssize_t mock_write_result;
+extern int mock_write_should_fail;
+extern pid_t mock_waitpid_result;
+extern int mock_waitpid_status;
+extern int mock_kill_should_fail;
+extern int mock_close_should_fail;
+extern int mock_sem_init_should_fail;
+
 #endif // USE_MOCK_SYSTEM
 
 #endif // MOCK_SYSTEM_H

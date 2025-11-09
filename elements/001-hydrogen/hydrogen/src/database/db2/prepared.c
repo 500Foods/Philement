@@ -161,17 +161,62 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
         connection->prepared_statement_count = 0;
     }
 
-    // Simple cache management - just add to end, no LRU for now to avoid complexity
-    if (connection->prepared_statement_count >= cache_size) {
-        // For now, just don't cache if full - avoid complex eviction logic
-        log_this(log_subsystem, "Prepared statement cache full, not storing: %s", LOG_LEVEL_ALERT, 1, name);
-        // Still return the prepared statement - it can be used even if not cached
-        *stmt = prepared_stmt;
-        return true;
+    // Initialize LRU counter array if needed
+    if (!connection->prepared_statement_lru_counter) {
+        connection->prepared_statement_lru_counter = calloc(cache_size, sizeof(uint64_t));
+        if (!connection->prepared_statement_lru_counter) {
+            free(prepared_stmt->name);
+            free(prepared_stmt->sql_template);
+            free(prepared_stmt);
+            SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+            return false;
+        }
     }
 
-    // Store the new prepared statement at the end
+    // Static global LRU counter (monotonically increasing)
+    static uint64_t global_lru_counter = 0;
+    
+    // LRU cache management - evict least recently used statement if cache is full
+    if (connection->prepared_statement_count >= cache_size) {
+        // Find the statement with the lowest LRU counter (least recently used)
+        size_t lru_index = 0;
+        uint64_t lowest_counter = connection->prepared_statement_lru_counter[0];
+        
+        for (size_t i = 1; i < connection->prepared_statement_count; i++) {
+            if (connection->prepared_statement_lru_counter[i] < lowest_counter) {
+                lowest_counter = connection->prepared_statement_lru_counter[i];
+                lru_index = i;
+            }
+        }
+        
+        // Evict the LRU statement
+        PreparedStatement* evicted_stmt = connection->prepared_statements[lru_index];
+        log_this(log_subsystem, "Evicting LRU prepared statement: %s", LOG_LEVEL_TRACE, 1,
+                 evicted_stmt->name ? evicted_stmt->name : "unknown");
+        
+        // Free the DB2 statement handle
+        if (SQLFreeHandle_ptr && evicted_stmt->engine_specific_handle) {
+            SQLFreeHandle_ptr(SQL_HANDLE_STMT, evicted_stmt->engine_specific_handle);
+        }
+        
+        // Free the statement structure
+        free(evicted_stmt->name);
+        free(evicted_stmt->sql_template);
+        free(evicted_stmt);
+        
+        // Shift remaining statements to fill the gap
+        for (size_t i = lru_index; i < connection->prepared_statement_count - 1; i++) {
+            connection->prepared_statements[i] = connection->prepared_statements[i + 1];
+            connection->prepared_statement_lru_counter[i] = connection->prepared_statement_lru_counter[i + 1];
+        }
+        
+        // Decrement count (we'll increment it back when adding the new statement)
+        connection->prepared_statement_count--;
+    }
+
+    // Store the new prepared statement at the end and assign LRU counter
     connection->prepared_statements[connection->prepared_statement_count] = prepared_stmt;
+    connection->prepared_statement_lru_counter[connection->prepared_statement_count] = ++global_lru_counter;
     connection->prepared_statement_count++;
 
     *stmt = prepared_stmt;

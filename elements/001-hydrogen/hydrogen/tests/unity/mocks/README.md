@@ -294,11 +294,20 @@ void test_websocket_message_handling(void) {
 - Terminal/PTY: `openpty()`, `ioctl()`
 - Synchronization: `sem_init()`
 
+**Critical Architecture Notes**:
+
+⚠️ **Global State Variables**: Mock state variables in `mock_system.c` are declared **without `static`** to ensure they are **shared across all object files**. This is essential for malloc mocking to work correctly when testing functions in separately compiled source files.
+
+⚠️ **CMake Integration**: The build system uses `-include mock_system.h` to force inclusion before source processing. CMake flags must be properly separated (list format, not single string) to ensure the `-include` directive works correctly.
+
+⚠️ **Memory Allocation Counter**: `malloc()`, `calloc()`, and `strdup()` **share the same call counter** since strdup internally uses malloc. When setting `mock_system_set_malloc_failure(N)`, it affects all three functions together.
+
 **Special Considerations**:
 
-- **Memory Allocation Testing**: Critical for testing out-of-memory conditions
+- **Memory Allocation Testing**: Critical for testing out-of-memory conditions across source file boundaries
 - **File Descriptor Management**: Important for testing I/O error scenarios
 - **Process Control**: Essential for testing child process management
+- **Shared Mock State**: All mock state variables are global to enable cross-compilation-unit testing
 
 **Usage Example**:
 
@@ -306,18 +315,45 @@ void test_websocket_message_handling(void) {
 #define USE_MOCK_SYSTEM
 #include <unity/mocks/mock_system.h>
 
-void test_memory_allocation_failure(void) {
-    mock_system_set_malloc_failure(1);  // Make malloc fail
-    void *ptr = malloc(100);
-    TEST_ASSERT_NULL(ptr);  // Should fail due to mock
+void setUp(void) {
+    mock_system_reset_all();  // Critical: reset shared state
 }
 
-void test_file_operations(void) {
-    mock_system_set_open_failure(1);  // Make open fail
-    int fd = open("test.txt", O_RDONLY);
-    TEST_ASSERT_EQUAL(-1, fd);  // Should fail
+void test_memory_allocation_failure(void) {
+    // Test first malloc/calloc failure
+    mock_system_set_malloc_failure(1);
+    void *ptr1 = calloc(1, 64);  // Call #1 - will fail
+    void *ptr2 = malloc(100);    // Call #2 - will succeed
+    TEST_ASSERT_NULL(ptr1);
+    TEST_ASSERT_NOT_NULL(ptr2);
+    free(ptr2);
+}
+
+void test_third_allocation_failure(void) {
+    // malloc, calloc, and strdup share the same counter
+    mock_system_set_malloc_failure(3);
+    void *p1 = malloc(100);      // Call #1 - succeed
+    void *p2 = calloc(1, 64);    // Call #2 - succeed
+    char *p3 = strdup("test");   // Call #3 - fail (shares counter!)
+    void *p4 = malloc(100);      // Call #4 - succeed
+    
+    TEST_ASSERT_NOT_NULL(p1);
+    TEST_ASSERT_NOT_NULL(p2);
+    TEST_ASSERT_NULL(p3);        // strdup uses malloc internally
+    TEST_ASSERT_NOT_NULL(p4);
+    
+    free(p1);
+    free(p2);
+    free(p4);
 }
 ```
+
+**Common Pitfalls**:
+
+1. **Forgetting strdup shares the malloc counter**: When testing malloc failures, account for strdup calls
+2. **Not resetting in setUp()**: Shared state from previous tests can cause failures
+3. **Assuming static variables**: The variables are global - changes persist across all object files
+4. **CMake configuration errors**: Improperly formatted `-include` flags prevent mock from working
 
 #### mock_threads
 
@@ -489,12 +525,21 @@ When additional library functions need mocking:
 ### Example: Adding New Function to mock_system
 
 ```c
-// In mock_system.h - Add new function
+// In mock_system.h - Add function prototype and control functions
+#ifdef USE_MOCK_SYSTEM
+#define chdir mock_chdir
+#endif
+
 int mock_chdir(const char *path);
+void mock_system_set_chdir_failure(int should_fail);
+
+// Add extern declaration for the state variable
+extern int mock_chdir_should_fail;
 
 // In mock_system.c - Add implementation
-static int mock_chdir_should_fail = 0;
-static const char *mock_chdir_result = NULL;
+// CRITICAL: Variables must be global (NOT static) to be shared across object files
+int mock_chdir_should_fail = 0;
+const char *mock_chdir_result = NULL;
 
 int mock_chdir(const char *path) {
     (void)path;
@@ -514,6 +559,8 @@ void mock_system_reset_all(void) {
     mock_chdir_result = NULL;
 }
 ```
+
+**Important**: State variables MUST be declared without `static` so they are visible and shared across all object files. This ensures that when a test sets a failure condition, the source code being tested sees the same state.
 
 ### Example: Creating a New Mock Library
 
