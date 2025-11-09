@@ -31,7 +31,9 @@
   "state.h": "c",
   "mock_database_engine.h": "c",
   "query.h": "c",
-  "mock_libmicrohttpd.h": "c"
+  "mock_libmicrohttpd.h": "c",
+  "database.h": "c",
+  "migration.h": "c"
 },
 "C_Cpp.default.compilerPath": "/usr/lib64/ccache/gcc",
 "C_Cpp.default.includePath": [

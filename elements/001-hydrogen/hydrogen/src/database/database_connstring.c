@@ -454,14 +454,18 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
                 config->host = strdup(host_pos);
             }
         }
-        char* port_pos = strstr(connection_string, "PORT=");
+        const char* port_pos = strstr(connection_string, "PORT=");
         if (port_pos) {
             port_pos += 5; // Skip "PORT="
-            char* end_pos = strchr(port_pos, ';');
+            const char* end_pos = strchr(port_pos, ';');
             if (end_pos) {
-                *end_pos = '\0';
-                config->port = atoi(port_pos);
-                *end_pos = ';'; // Restore
+                size_t len = (size_t)(end_pos - port_pos);
+                char* port_str = calloc(1, len + 1);
+                if (port_str) {
+                    strncpy(port_str, port_pos, len);
+                    config->port = atoi(port_str);
+                    free(port_str);
+                }
             } else {
                 config->port = atoi(port_pos);
             }
