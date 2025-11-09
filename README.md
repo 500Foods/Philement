@@ -67,13 +67,13 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-11-09 09:07:40 UTC
+Last updated at 2025-11-09 23:41:16 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                            86             44              0         155600
-C                              821          32528          31380         115552
-SVG                             93            180           2098          77328
+JSON                            86             44              0         155602
+C                              838          33190          31885         117427
+SVG                             93            180           2098          77324
 Markdown                       380          10466             62          31411
 Bourne Shell                    86           4008          63660          18413
 Text                            42             41              0          13789
@@ -90,7 +90,7 @@ Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 -------------------------------------------------------------------------------
-SUM:                          1797          50609         103809         431432
+SUM:                          1814          51271         104314         433305
 -------------------------------------------------------------------------------
 61 Files were skipped (duplicate, binary, or without source code):
   lua: 12
