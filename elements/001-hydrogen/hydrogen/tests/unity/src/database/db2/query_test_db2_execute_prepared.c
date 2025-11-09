@@ -22,6 +22,7 @@
 // Forward declarations
 bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result);
 bool load_libdb2_functions(const char* designator);
+extern SQLExecute_t SQLExecute_ptr;
 
 // Function prototypes
 void test_db2_execute_prepared_null_connection(void);
@@ -159,7 +160,6 @@ void test_db2_execute_prepared_null_sqlexecute_ptr(void) {
     QueryResult* result = NULL;
     
     // Manually set SQLExecute_ptr to NULL to test this error path
-    extern SQLExecute_t SQLExecute_ptr;
     SQLExecute_t saved_ptr = SQLExecute_ptr;
     SQLExecute_ptr = NULL;
     

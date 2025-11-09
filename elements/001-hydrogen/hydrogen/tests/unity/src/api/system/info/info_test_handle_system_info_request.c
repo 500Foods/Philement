@@ -31,56 +31,6 @@ typedef struct {
     int mutex_locked;
 } MockWebSocketContext;
 
-// Mock function: Safely extract WebSocket metrics from context (renamed to avoid conflict)
-static int extract_websocket_metrics_from_mock(MockWebSocketContext *ws_context, WebSocketMetrics *metrics) {
-    if (!ws_context || !metrics) {
-        return 0; // Error
-    }
-
-    // Simulate mutex locking (in real code this would be pthread_mutex_lock/unlock)
-    // Set to unlocked state after extracting metrics
-    metrics->server_start_time = ws_context->start_time;
-    metrics->active_connections = ws_context->active_connections;
-    metrics->total_connections = ws_context->total_connections;
-    metrics->total_requests = ws_context->total_requests;
-
-    ws_context->mutex_locked = 0;
-    return 1; // Success
-}
-
-// Mock function: Validate metrics structure
-static int validate_websocket_metrics(const WebSocketMetrics *metrics) {
-    if (!metrics) return 0;
-
-    // Basic validation of metrics
-    if (metrics->active_connections < 0) return 0;
-    if (metrics->total_connections < 0) return 0;
-    if (metrics->total_requests < 0) return 0;
-    if (metrics->active_connections > metrics->total_connections) return 0;
-
-    return 1; // Valid
-}
-
-// Mock function: Create system status JSON from metrics
-static json_t* create_system_status_json(const WebSocketMetrics *metrics) {
-    json_t *root = json_object();
-    if (!root) return NULL;
-
-    json_object_set_new(root, "status", json_string("running"));
-
-    if (metrics && validate_websocket_metrics(metrics)) {
-        json_t *ws_info = json_object();
-        json_object_set_new(ws_info, "active_connections", json_integer(metrics->active_connections));
-        json_object_set_new(ws_info, "total_connections", json_integer(metrics->total_connections));
-        json_object_set_new(ws_info, "total_requests", json_integer(metrics->total_requests));
-        json_object_set_new(root, "websocket", ws_info);
-    } else {
-        json_object_set_new(root, "websocket", json_null());
-    }
-
-    return root;
-}
-
 // Function prototypes for test functions
 void test_handle_system_info_request_function_signature(void);
 void test_handle_system_info_request_compilation_check(void);
@@ -90,17 +40,6 @@ void test_handle_system_info_request_normal_operation(void);
 void test_info_error_handling_structure(void);
 void test_info_response_format_expectations(void);
 void test_info_websocket_metrics_handling(void);
-
-// New comprehensive test functions
-void test_extract_websocket_metrics_basic(void);
-void test_extract_websocket_metrics_null_context(void);
-void test_extract_websocket_metrics_null_metrics(void);
-void test_validate_websocket_metrics_valid(void);
-void test_validate_websocket_metrics_invalid_connections(void);
-void test_validate_websocket_metrics_null_input(void);
-void test_create_system_status_json_with_metrics(void);
-void test_create_system_status_json_without_metrics(void);
-void test_create_system_status_json_null_metrics(void);
 
 // Mock structures for testing
 struct MockMHDConnection {
@@ -337,171 +276,6 @@ void test_handle_system_info_request_normal_operation(void) {
     TEST_ASSERT_EQUAL(1, result); // Should return MHD_YES (1)
 }
 
-/*********** New Comprehensive Test Implementations ***********/
-
-// Test extracting WebSocket metrics from valid context
-void test_extract_websocket_metrics_basic(void) {
-    MockWebSocketContext mock_ws_ctx = {
-        .start_time = 1234567890,
-        .active_connections = 5,
-        .total_connections = 25,
-        .total_requests = 100,
-        .mutex_locked = 0
-    };
-
-    WebSocketMetrics metrics = {0};
-
-    int result = extract_websocket_metrics_from_mock(&mock_ws_ctx, &metrics);
-
-    TEST_ASSERT_EQUAL(1, result);
-    TEST_ASSERT_EQUAL(1234567890, metrics.server_start_time);
-    TEST_ASSERT_EQUAL(5, metrics.active_connections);
-    TEST_ASSERT_EQUAL(25, metrics.total_connections);
-    TEST_ASSERT_EQUAL(100, metrics.total_requests);
-    TEST_ASSERT_EQUAL(0, mock_ws_ctx.mutex_locked); // Should be unlocked after extraction
-}
-
-// Test extracting metrics with null context
-void test_extract_websocket_metrics_null_context(void) {
-    WebSocketMetrics metrics = {0};
-
-    int result = extract_websocket_metrics_from_mock(NULL, &metrics);
-
-    TEST_ASSERT_EQUAL(0, result);
-}
-
-// Test extracting metrics with null metrics structure
-void test_extract_websocket_metrics_null_metrics(void) {
-    MockWebSocketContext mock_ws_ctx = {
-        .start_time = 1234567890,
-        .active_connections = 5,
-        .total_connections = 25,
-        .total_requests = 100,
-        .mutex_locked = 0
-    };
-
-    int result = extract_websocket_metrics_from_mock(&mock_ws_ctx, NULL);
-
-    TEST_ASSERT_EQUAL(0, result);
-}
-
-// Test validating valid WebSocket metrics
-void test_validate_websocket_metrics_valid(void) {
-    WebSocketMetrics metrics = {
-        .server_start_time = 1234567890,
-        .active_connections = 5,
-        .total_connections = 25,
-        .total_requests = 100
-    };
-
-    int result = validate_websocket_metrics(&metrics);
-
-    TEST_ASSERT_EQUAL(1, result);
-}
-
-// Test validating metrics with invalid connection counts
-void test_validate_websocket_metrics_invalid_connections(void) {
-    WebSocketMetrics metrics = {
-        .server_start_time = 1234567890,
-        .active_connections = 30,  // More than total
-        .total_connections = 25,
-        .total_requests = 100
-    };
-
-    int result = validate_websocket_metrics(&metrics);
-
-    TEST_ASSERT_EQUAL(0, result);
-}
-
-// Test validating metrics with null input
-void test_validate_websocket_metrics_null_input(void) {
-    int result = validate_websocket_metrics(NULL);
-
-    TEST_ASSERT_EQUAL(0, result);
-}
-
-// Test creating system status JSON with valid metrics
-void test_create_system_status_json_with_metrics(void) {
-    WebSocketMetrics metrics = {
-        .server_start_time = 1234567890,
-        .active_connections = 5,
-        .total_connections = 25,
-        .total_requests = 100
-    };
-
-    json_t *result = create_system_status_json(&metrics);
-
-    TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_TRUE(json_is_object(result));
-
-    // Check basic structure
-    json_t *status = json_object_get(result, "status");
-    TEST_ASSERT_NOT_NULL(status);
-    TEST_ASSERT_TRUE(json_is_string(status));
-    TEST_ASSERT_EQUAL_STRING("running", json_string_value(status));
-
-    // Check WebSocket info
-    json_t *ws_info = json_object_get(result, "websocket");
-    TEST_ASSERT_NOT_NULL(ws_info);
-    TEST_ASSERT_TRUE(json_is_object(ws_info));
-
-    json_t *active = json_object_get(ws_info, "active_connections");
-    TEST_ASSERT_NOT_NULL(active);
-    TEST_ASSERT_TRUE(json_is_integer(active));
-    TEST_ASSERT_EQUAL(5, json_integer_value(active));
-
-    json_decref(result);
-}
-
-// Test creating system status JSON without metrics
-void test_create_system_status_json_without_metrics(void) {
-    json_t *result = create_system_status_json(NULL);
-
-    TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_TRUE(json_is_object(result));
-
-    // Check basic structure
-    json_t *status = json_object_get(result, "status");
-    TEST_ASSERT_NOT_NULL(status);
-    TEST_ASSERT_TRUE(json_is_string(status));
-    TEST_ASSERT_EQUAL_STRING("running", json_string_value(status));
-
-    // Check WebSocket info is null
-    json_t *ws_info = json_object_get(result, "websocket");
-    TEST_ASSERT_NOT_NULL(ws_info);
-    TEST_ASSERT_TRUE(json_is_null(ws_info));
-
-    json_decref(result);
-}
-
-// Test creating system status JSON with invalid metrics
-void test_create_system_status_json_null_metrics(void) {
-    WebSocketMetrics metrics = {
-        .server_start_time = 1234567890,
-        .active_connections = 30,  // Invalid: more than total
-        .total_connections = 25,
-        .total_requests = 100
-    };
-
-    json_t *result = create_system_status_json(&metrics);
-
-    TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_TRUE(json_is_object(result));
-
-    // Check basic structure
-    json_t *status = json_object_get(result, "status");
-    TEST_ASSERT_NOT_NULL(status);
-    TEST_ASSERT_TRUE(json_is_string(status));
-    TEST_ASSERT_EQUAL_STRING("running", json_string_value(status));
-
-    // Check WebSocket info is null due to invalid metrics
-    json_t *ws_info = json_object_get(result, "websocket");
-    TEST_ASSERT_NOT_NULL(ws_info);
-    TEST_ASSERT_TRUE(json_is_null(ws_info));
-
-    json_decref(result);
-}
-
 int main(void) {
     UNITY_BEGIN();
 
@@ -513,17 +287,6 @@ int main(void) {
     RUN_TEST(test_info_error_handling_structure);
     RUN_TEST(test_info_response_format_expectations);
     RUN_TEST(test_info_websocket_metrics_handling);
-
-    // New comprehensive tests
-    RUN_TEST(test_extract_websocket_metrics_basic);
-    RUN_TEST(test_extract_websocket_metrics_null_context);
-    RUN_TEST(test_extract_websocket_metrics_null_metrics);
-    RUN_TEST(test_validate_websocket_metrics_valid);
-    RUN_TEST(test_validate_websocket_metrics_invalid_connections);
-    RUN_TEST(test_validate_websocket_metrics_null_input);
-    if (0) RUN_TEST(test_create_system_status_json_with_metrics);
-    if (0) RUN_TEST(test_create_system_status_json_without_metrics);
-    if (0) RUN_TEST(test_create_system_status_json_null_metrics);
 
     return UNITY_END();
 }

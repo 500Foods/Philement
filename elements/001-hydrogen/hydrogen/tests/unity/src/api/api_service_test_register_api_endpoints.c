@@ -167,7 +167,7 @@ int main(void) {
     
     RUN_TEST(test_register_api_endpoints_no_app_config);
     RUN_TEST(test_register_api_endpoints_no_prefix);
-    if (0) RUN_TEST(test_register_api_endpoints_empty_prefix); // Temporarily disabled due to webserver dependency
+    RUN_TEST(test_register_api_endpoints_empty_prefix);
     RUN_TEST(test_register_api_endpoints_valid_config);
     RUN_TEST(test_register_api_endpoints_custom_prefix);
     RUN_TEST(test_register_api_endpoints_multiple_calls);

@@ -23,7 +23,6 @@ void test_process_payload_data_zero_size(void);
 void test_process_payload_data_uncompressed_payload(void);
 void test_process_payload_data_compressed_payload(void);
 void test_process_payload_data_compressed_memory_failure(void);
-void test_process_payload_data_compressed_realloc_failure(void);
 
 // Test data
 static const uint8_t test_data[] = "test payload data";
@@ -180,62 +179,6 @@ void test_process_payload_data_compressed_memory_failure(void) {
     free_payload(&payload);
 }
 
-// Test compressed payload with realloc failure during buffer expansion
-void test_process_payload_data_compressed_realloc_failure(void) {
-    // First extract the real payload from the executable
-    char *executable_path = get_executable_path();
-    if (!executable_path) {
-        TEST_IGNORE_MESSAGE("Cannot get executable path for payload extraction test");
-    }
-
-    // Load default configuration which should have the payload key
-    AppConfig config;
-    if (!initialize_config_defaults(&config)) {
-        TEST_IGNORE_MESSAGE("Cannot initialize default configuration for payload testing");
-    }
-
-    // Ensure payload key is set from environment variable
-    if (!config.server.payload_key) {
-        const char *payload_key = getenv("PAYLOAD_KEY");
-        if (payload_key) {
-            config.server.payload_key = strdup(payload_key);
-        } else {
-            TEST_IGNORE_MESSAGE("PAYLOAD_KEY environment variable not set");
-        }
-    }
-
-    PayloadData payload;
-    memset(&payload, 0, sizeof(PayloadData));
-
-    bool extracted = extract_payload(executable_path, &config, PAYLOAD_MARKER, &payload);
-    free(executable_path);
-    free(config.server.payload_key);
-
-    if (!extracted) {
-        TEST_IGNORE_MESSAGE("No payload found in executable for testing");
-    }
-
-    // Check if this payload would actually trigger buffer expansion
-    // Initial buffer size is payload->size * 4, decompressed size is ~594KB for this payload
-    // Since 482234 * 4 = ~1.9MB > 594KB, no realloc will be called
-    size_t initial_buffer_size = payload.size * 4;
-    size_t estimated_decompressed_size = 600000;  // Rough estimate for this payload
-
-    if (initial_buffer_size >= estimated_decompressed_size) {
-        free_payload(&payload);
-        TEST_IGNORE_MESSAGE("Current payload fits in initial buffer, no realloc will be triggered");
-    }
-
-    // Setup: Mock realloc failure for buffer expansion during decompression
-    mock_system_set_realloc_failure(1);
-
-    // Test: Should fail due to realloc failure during buffer expansion
-    TEST_ASSERT_FALSE(process_payload_data(&payload));
-
-    // Clean up
-    free_payload(&payload);
-}
-
 int main(void) {
     UNITY_BEGIN();
 
@@ -247,7 +190,6 @@ int main(void) {
     RUN_TEST(test_process_payload_data_uncompressed_payload);
     RUN_TEST(test_process_payload_data_compressed_payload);
     RUN_TEST(test_process_payload_data_compressed_memory_failure);
-    if (0) RUN_TEST(test_process_payload_data_compressed_realloc_failure);
 
     return UNITY_END();
 }

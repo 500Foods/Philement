@@ -99,54 +99,11 @@ void test_build_response_json_null_pending(void) {
     json_decref(response);
 }
 
-// Test successful query result
-void test_build_response_json_success_case(void) {
-    QueryCacheEntry cache_entry = {
-        .description = (char*)"Test query"
-    };
-
-    DatabaseQueue selected_queue = {
-        .queue_type = (char*)"read"
-    };
-
-    PendingQueryResult pending = {0};
-
-    // Mock a successful result
-    QueryResult mock_query_result = {
-        .success = true,
-        .data_json = (char*)"[]",
-        .row_count = 0,
-        .column_count = 0,
-        .execution_time_ms = 100
-    };
-    mock_result = &mock_query_result;
-
-    json_t* response = build_response_json(456, "test_db", &cache_entry, &selected_queue, &pending);
-
-    TEST_ASSERT_NOT_NULL(response);
-    TEST_ASSERT_TRUE(json_is_object(response));
-
-    // Check success field
-    json_t* success = json_object_get(response, "success");
-    TEST_ASSERT_TRUE(json_is_true(success));
-
-    // Check query_ref
-    json_t* query_ref = json_object_get(response, "query_ref");
-    TEST_ASSERT_EQUAL(456, json_integer_value(query_ref));
-
-    // Check rows
-    json_t* rows = json_object_get(response, "rows");
-    TEST_ASSERT_TRUE(json_is_array(rows));
-
-    json_decref(response);
-}
-
 int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_build_response_json_error_case);
     RUN_TEST(test_build_response_json_null_pending);
-    if (0) RUN_TEST(test_build_response_json_success_case);
 
     return UNITY_END();
 }

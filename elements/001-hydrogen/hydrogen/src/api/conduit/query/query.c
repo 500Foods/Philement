@@ -354,7 +354,7 @@ json_t* create_processing_error_response(const char* error_msg, const char* data
     json_object_set_new(response, "success", json_false());
     json_object_set_new(response, "error", json_string(error_msg));
     json_object_set_new(response, "query_ref", json_integer(query_ref));
-    json_object_set_new(response, "database", json_string(database));
+    json_object_set_new(response, "database", json_string(database ? database : ""));
     return response;
 }
 

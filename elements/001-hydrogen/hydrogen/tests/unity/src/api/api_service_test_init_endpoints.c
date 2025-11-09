@@ -83,7 +83,7 @@ int main(void) {
 
     RUN_TEST(test_init_api_endpoints_null_config);
     RUN_TEST(test_init_api_endpoints_no_prefix);
-    if (0) RUN_TEST(test_init_api_endpoints_empty_prefix);
+    RUN_TEST(test_init_api_endpoints_empty_prefix);
     RUN_TEST(test_init_api_endpoints_success);
     RUN_TEST(test_init_api_endpoints_register_failure);
 

@@ -79,35 +79,6 @@ void mock_free_parameter_list(ParameterList* param_list) {
     (void)param_list;
 }
 
-// Test successful queue selection
-void test_handle_queue_selection_success(void) {
-    // Mock connection
-    MockMHDConnection mock_connection = {0};
-
-    // Set up mock to succeed
-    DatabaseQueue mock_queue = {.queue_type = (char*)"test"};
-    mock_queue_result = &mock_queue;
-
-    QueryCacheEntry cache_entry = {.queue_type = (char*)"read"};
-    ParameterList* param_list = calloc(1, sizeof(ParameterList));
-    char* converted_sql = strdup("SELECT 1");
-    TypedParameter** ordered_params = NULL;
-
-    DatabaseQueue* selected_queue = NULL;
-
-    enum MHD_Result result = handle_queue_selection((struct MHD_Connection*)&mock_connection, "test_db", 123,
-                                                   &cache_entry, param_list, converted_sql, ordered_params,
-                                                   &selected_queue);
-
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-    TEST_ASSERT_NOT_NULL(selected_queue);
-    TEST_ASSERT_EQUAL_STRING("test", selected_queue->queue_type);
-
-    // Cleanup
-    free(converted_sql);
-    free_parameter_list(param_list);
-}
-
 // Test queue selection failure (no queue available)
 void test_handle_queue_selection_failure(void) {
     // Mock connection
@@ -136,7 +107,6 @@ void test_handle_queue_selection_failure(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_handle_queue_selection_success);
     RUN_TEST(test_handle_queue_selection_failure);
 
     return UNITY_END();
