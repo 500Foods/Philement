@@ -368,24 +368,6 @@ file. The files are used primarily to group the tests and the dependencies. But 
 - tests/unity/src/database/sqlite/query_test_sqlite.c:787:    if (0) RUN_TEST(test_sqlite_execute_query_memory_allocation_failure);
 - tests/unity/src/database/sqlite/query_test_sqlite.c:809:    if (0) RUN_TEST(test_sqlite_execute_prepared_memory_allocation_failure);
 
-## Database/DB2
-
-- tests/unity/src/database/db2/prepared_test_memory_failures.c:251:    if (0) RUN_TEST(test_add_prepared_statement_realloc_failure);
-- tests/unity/src/database/db2/prepared_test_memory_failures.c:252:    if (0) RUN_TEST(test_add_prepared_statement_strdup_failure);
-- tests/unity/src/database/db2/transaction_test_db2.c:288:    if (0) RUN_TEST(test_db2_begin_transaction_success);
-- tests/unity/src/database/db2/query_test_db2.c:340:    if (0) RUN_TEST(test_db2_execute_query_memory_allocation_failure);
-- tests/unity/src/database/db2/query_test_db2.c:341:    if (0) RUN_TEST(test_db2_execute_query_column_allocation_failure);
-- tests/unity/src/database/db2/query_test_db2.c:342:    if (0) RUN_TEST(test_db2_execute_query_strdup_column_name_failure);
-- tests/unity/src/database/db2/query_test_db2.c:343:    if (0) RUN_TEST(test_db2_execute_query_json_buffer_allocation_failure);
-- tests/unity/src/database/db2/query_test_db2.c:344:    if (0) RUN_TEST(test_db2_execute_prepared_valid_parameters);
-- tests/unity/src/database/db2/query_test_db2_execute_query.c:304:    if (0) RUN_TEST(test_db2_execute_query_result_alloc_failure); // malloc mock unreliable
-- tests/unity/src/database/db2/query_test_db2_execute_query.c:305:    if (0) RUN_TEST(test_db2_execute_query_json_buffer_alloc_failure); // malloc mock unreliable
-- tests/unity/src/database/db2/query_test_db2_execute_prepared.c:332:    if (0) RUN_TEST(test_db2_execute_prepared_null_stmt_handle);
-- tests/unity/src/database/db2/query_test_db2_execute_prepared.c:333:    if (0) RUN_TEST(test_db2_execute_prepared_null_sqlexecute_ptr);
-- tests/unity/src/database/db2/query_test_db2_helpers.c:298:    if (0) RUN_TEST(test_db2_get_column_names_allocation_failure); // malloc mock unreliable
-- tests/unity/src/database/db2/query_helpers_test_comprehensive.c:323:    if (0) RUN_TEST(test_db2_get_column_name_strdup_failure);
-- tests/unity/src/database/db2/query_helpers_test_comprehensive.c:331:    if (0) RUN_TEST(test_db2_ensure_json_buffer_capacity_realloc_failure);
-
 ## Landing
 
 - tests/unity/src/landing/landing_api_test_readiness.c:100:    if (0) RUN_TEST(test_check_api_landing_readiness_both_running);

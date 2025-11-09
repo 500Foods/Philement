@@ -84,6 +84,7 @@ bool load_libdb2_functions(const char* designator __attribute__((unused))) {
     SQLFreeStmt_ptr = mock_SQLFreeStmt;
     SQLDescribeCol_ptr = mock_SQLDescribeCol;
     SQLGetDiagRec_ptr = mock_SQLGetDiagRec;
+    SQLSetConnectAttr_ptr = mock_SQLSetConnectAttr;
     return true;
 #else
     if (libdb2_handle) {

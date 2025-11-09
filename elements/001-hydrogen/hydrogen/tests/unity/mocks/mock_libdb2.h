@@ -34,7 +34,8 @@ int mock_SQLDescribeCol(void* statementHandle, int columnNumber, unsigned char* 
                        int bufferLength, short* nameLength, int* dataType, int* columnSize,
                        short* decimalDigits, short* nullable);
 int mock_SQLGetDiagRec(short handleType, void* handle, short recNumber, unsigned char* sqlState,
-                      long* nativeError, unsigned char* messageText, short bufferLength, short* textLength);
+                       long* nativeError, unsigned char* messageText, short bufferLength, short* textLength);
+int mock_SQLSetConnectAttr(void* connectionHandle, int attribute, long value, int stringLength);
 
 // Mock control functions for tests (always available)
 void mock_libdb2_set_SQLAllocHandle_result(int result);
@@ -54,6 +55,7 @@ void mock_libdb2_set_SQLGetDiagRec_error(const char* sqlstate, long native_error
 void mock_libdb2_set_fetch_row_count(int count);
 void mock_libdb2_set_SQLFreeHandle_result(int result);
 void mock_libdb2_set_SQLEndTran_result(int result);
+void mock_libdb2_set_SQLSetConnectAttr_result(int result);
 void mock_libdb2_reset_all(void);
 
 #endif // MOCK_LIBDB2_H
