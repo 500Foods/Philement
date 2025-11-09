@@ -69,7 +69,7 @@ int main(void) {
     RUN_TEST(test_mutex_enable_deadlock_detection_enable);
     RUN_TEST(test_mutex_enable_deadlock_detection_disable);
     RUN_TEST(test_mutex_is_deadlock_detection_enabled_default);
-    if (0) RUN_TEST(test_mutex_log_active_locks_empty);
+    RUN_TEST(test_mutex_log_active_locks_empty);
     RUN_TEST(test_mutex_enable_deadlock_detection_toggle);
 
     return UNITY_END();

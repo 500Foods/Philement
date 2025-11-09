@@ -100,16 +100,15 @@ void test_mysql_extract_column_names_success(void) {
 }
 
 void test_mysql_extract_column_names_allocation_failure(void) {
-    // Note: This test doesn't properly test allocation failure since the function uses direct calloc
-    // which is not mocked. For now, just test that the function doesn't crash with mock setup
+    // Test memory allocation failure - mock system correctly fails calloc
     mock_system_set_malloc_failure(1);
 
     char** result = mysql_extract_column_names((void*)0x12345678, 3);
-    // Since calloc is not mocked, we expect it to work normally
-    TEST_ASSERT_NOT_NULL(result);
-
-    // Cleanup
-    mysql_cleanup_column_names(result, 3);
+    
+    // Should return NULL when allocation fails
+    TEST_ASSERT_NULL(result);
+    
+    // No cleanup needed since allocation failed
 }
 
 // ============================================================================

@@ -113,37 +113,43 @@ void mock_system_set_kill_failure(int should_fail);
 void mock_system_set_close_failure(int should_fail);
 void mock_system_reset_all(void);
 
-// Static variables to store mock state
-static int mock_malloc_should_fail = 0;
-static int mock_calloc_should_fail = 0;
-static int mock_realloc_should_fail = 0;
-static int mock_gethostname_should_fail = 0;
-static const char *mock_gethostname_result = NULL;
-static int mock_nanosleep_should_fail = 0;
-static int mock_clock_gettime_should_fail = 0;
-static int mock_poll_should_fail = 0;
-static int mock_recvfrom_should_fail = 0;
-static void *mock_dlopen_result = NULL;
-static int mock_dlopen_should_fail = 0;
-static const char *mock_dlerror_result = NULL;
-static int mock_access_result = 0;
-static int mock_openpty_should_fail = 0;
-static int mock_fcntl_should_fail = 0;
-static pid_t mock_fork_result = 0;
-static int mock_ioctl_should_fail = 0;
-static ssize_t mock_read_result = 0;
-static int mock_read_should_fail = 0;
-static ssize_t mock_write_result = 0;
-static int mock_write_should_fail = 0;
-static pid_t mock_waitpid_result = 0;
-static int mock_waitpid_status = 0;
-static int mock_kill_should_fail = 0;
-static int mock_close_should_fail = 0;
-static int mock_sem_init_should_fail = 0;
+// Global variables to store mock state - shared across all object files
+// For malloc/calloc/realloc: 0 = never fail, N = fail on Nth call
+// malloc and calloc share the same counter since they're both memory allocation
+int mock_malloc_should_fail = 0;
+int mock_malloc_call_count = 0;
+int mock_realloc_should_fail = 0;
+int mock_realloc_call_count = 0;
+// calloc_should_fail is kept for backward compatibility but uses malloc counter
+int mock_calloc_should_fail = 0;
+int mock_gethostname_should_fail = 0;
+const char *mock_gethostname_result = NULL;
+int mock_nanosleep_should_fail = 0;
+int mock_clock_gettime_should_fail = 0;
+int mock_poll_should_fail = 0;
+int mock_recvfrom_should_fail = 0;
+void *mock_dlopen_result = NULL;
+int mock_dlopen_should_fail = 0;
+const char *mock_dlerror_result = NULL;
+int mock_access_result = 0;
+int mock_openpty_should_fail = 0;
+int mock_fcntl_should_fail = 0;
+pid_t mock_fork_result = 0;
+int mock_ioctl_should_fail = 0;
+ssize_t mock_read_result = 0;
+int mock_read_should_fail = 0;
+ssize_t mock_write_result = 0;
+int mock_write_should_fail = 0;
+pid_t mock_waitpid_result = 0;
+int mock_waitpid_status = 0;
+int mock_kill_should_fail = 0;
+int mock_close_should_fail = 0;
+int mock_sem_init_should_fail = 0;
 
 // Mock implementation of malloc
 void *mock_malloc(size_t size) {
-    if (mock_malloc_should_fail) {
+    mock_malloc_call_count++;
+    if (mock_malloc_should_fail > 0 && mock_malloc_call_count == mock_malloc_should_fail) {
         return NULL;
     }
     // Now we can call the real malloc since we undefined the macro
@@ -151,8 +157,12 @@ void *mock_malloc(size_t size) {
 }
 
 // Mock implementation of calloc
+// NOTE: calloc shares the malloc counter since both are memory allocation operations
 void *mock_calloc(size_t num, size_t size) {
-    if (mock_calloc_should_fail) {
+    mock_malloc_call_count++;
+    // Check both malloc and calloc failure flags
+    if ((mock_malloc_should_fail > 0 && mock_malloc_call_count == mock_malloc_should_fail) ||
+        (mock_calloc_should_fail > 0 && mock_malloc_call_count == mock_calloc_should_fail)) {
         return NULL;
     }
     // Now we can call the real calloc since we undefined the macro
@@ -161,7 +171,8 @@ void *mock_calloc(size_t num, size_t size) {
 
 // Mock implementation of realloc
 void *mock_realloc(void *ptr, size_t size) {
-    if (mock_realloc_should_fail) {
+    mock_realloc_call_count++;
+    if (mock_realloc_should_fail > 0 && mock_realloc_call_count == mock_realloc_should_fail) {
         return NULL;
     }
     // Now we can call the real realloc since we undefined the macro
@@ -175,8 +186,10 @@ void mock_free(void *ptr) {
 }
 
 // Mock implementation of strdup
+// NOTE: strdup uses malloc internally, so it shares the malloc counter
 char *mock_strdup(const char *s) {
-    if (mock_malloc_should_fail) {
+    mock_malloc_call_count++;
+    if (mock_malloc_should_fail > 0 && mock_malloc_call_count == mock_malloc_should_fail) {
         return NULL;
     }
     // Call the real strdup function
@@ -265,14 +278,17 @@ ssize_t mock_recvfrom(int sockfd, void *buf, size_t len, int flags, struct socka
 // Mock control functions
 void mock_system_set_malloc_failure(int should_fail) {
     mock_malloc_should_fail = should_fail;
+    mock_malloc_call_count = 0;  // Reset counter when setting new failure point
 }
 
 void mock_system_set_calloc_failure(int should_fail) {
     mock_calloc_should_fail = should_fail;
+    mock_malloc_call_count = 0;  // Reset counter (shared with malloc)
 }
 
 void mock_system_set_realloc_failure(int should_fail) {
     mock_realloc_should_fail = should_fail;
+    mock_realloc_call_count = 0;  // Reset counter when setting new failure point
 }
 
 void mock_system_set_gethostname_failure(int should_fail) {
@@ -369,8 +385,10 @@ void mock_system_set_sem_init_failure(int should_fail) {
 
 void mock_system_reset_all(void) {
     mock_malloc_should_fail = 0;
+    mock_malloc_call_count = 0;
     mock_calloc_should_fail = 0;
     mock_realloc_should_fail = 0;
+    mock_realloc_call_count = 0;
     mock_gethostname_should_fail = 0;
     mock_gethostname_result = NULL;
     mock_nanosleep_should_fail = 0;
