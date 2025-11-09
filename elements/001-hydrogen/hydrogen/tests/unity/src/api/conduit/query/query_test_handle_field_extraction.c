@@ -65,32 +65,6 @@ __attribute__((used)) static bool mock_extract_request_fields(json_t* request_js
     }
 }
 
-// Test successful field extraction
-void test_handle_field_extraction_success(void) {
-    // Mock connection
-    MockMHDConnection mock_connection = {0};
-
-    // Set up mock to succeed
-    mock_extract_result = true;
-
-    json_t* request_json = json_object();
-    int query_ref = 0;
-    const char* database = NULL;
-    json_t* params_json = NULL;
-
-    enum MHD_Result result = handle_field_extraction((struct MHD_Connection*)&mock_connection, request_json,
-                                                   &query_ref, &database, &params_json);
-
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-    TEST_ASSERT_EQUAL(123, query_ref);
-    TEST_ASSERT_EQUAL_STRING("test_db", database);
-    TEST_ASSERT_NOT_NULL(params_json);
-
-    // Cleanup
-    json_decref(request_json);
-    json_decref(params_json);
-}
-
 // Test field extraction failure
 void test_handle_field_extraction_failure(void) {
     // Mock connection
@@ -116,7 +90,6 @@ void test_handle_field_extraction_failure(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_handle_field_extraction_success);
     RUN_TEST(test_handle_field_extraction_failure);
 
     return UNITY_END();

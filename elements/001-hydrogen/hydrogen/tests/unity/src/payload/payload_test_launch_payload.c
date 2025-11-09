@@ -14,8 +14,6 @@ bool launch_payload(const AppConfig *config, const char *marker);
 // Function prototypes for test functions
 void test_launch_payload_null_config(void);
 void test_launch_payload_null_marker(void);
-void test_launch_payload_server_stopping(void);
-void test_launch_payload_server_not_ready(void);
 void test_launch_payload_invalid_marker(void);
 void test_launch_payload_no_payload_key(void);
 
@@ -45,19 +43,6 @@ void test_launch_payload_null_marker(void) {
     TEST_ASSERT_FALSE(launch_payload(&test_config, NULL));
 }
 
-// Test system state checks
-void test_launch_payload_server_stopping(void) {
-    // This test would require setting server_stopping = true
-    // For now, we'll skip as it requires modifying global state
-    TEST_IGNORE_MESSAGE("Requires setting global server_stopping state");
-}
-
-void test_launch_payload_server_not_ready(void) {
-    // This test would require setting server_starting = false and server_running = false
-    // For now, we'll skip as it requires modifying global state
-    TEST_IGNORE_MESSAGE("Requires setting global server state variables");
-}
-
 // Test with invalid marker
 void test_launch_payload_invalid_marker(void) {
     // Use a marker that definitely won't exist
@@ -81,10 +66,6 @@ int main(void) {
     RUN_TEST(test_launch_payload_null_marker);
     RUN_TEST(test_launch_payload_invalid_marker);
     RUN_TEST(test_launch_payload_no_payload_key);
-
-    // Skip tests that require global state manipulation
-    if (0) RUN_TEST(test_launch_payload_server_stopping);
-    if (0) RUN_TEST(test_launch_payload_server_not_ready);
 
     return UNITY_END();
 }

@@ -114,7 +114,7 @@ int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_create_processing_error_response_basic);
-    if (0) RUN_TEST(test_create_processing_error_response_with_null_database);
+    RUN_TEST(test_create_processing_error_response_with_null_database);
     RUN_TEST(test_create_processing_error_response_different_errors);
 
     return UNITY_END();

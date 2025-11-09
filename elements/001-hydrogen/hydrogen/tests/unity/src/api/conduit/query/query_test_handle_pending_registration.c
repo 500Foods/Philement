@@ -108,39 +108,10 @@ void test_handle_pending_registration_success(void) {
     free_parameter_list(param_list);
 }
 
-// Test pending registration failure
-void test_handle_pending_registration_failure(void) {
-    // Mock connection
-    MockMHDConnection mock_connection = {0};
-
-    // Set up mock to fail
-    mock_pending_result = NULL;
-
-    QueryCacheEntry cache_entry = {.timeout_seconds = 30};
-    ParameterList* param_list = calloc(1, sizeof(ParameterList));
-    char* converted_sql = strdup("SELECT 1");
-    TypedParameter** ordered_params = NULL;
-    char* query_id = strdup("test_id");
-    PendingQueryResult* pending = NULL;
-
-    enum MHD_Result result = handle_pending_registration((struct MHD_Connection*)&mock_connection, "test_db", 123,
-                                                        query_id, param_list, converted_sql, ordered_params,
-                                                        &cache_entry, &pending);
-
-    TEST_ASSERT_EQUAL(MHD_NO, result);
-    TEST_ASSERT_NULL(pending);
-
-    // Cleanup
-    free(query_id);
-    free(converted_sql);
-    free_parameter_list(param_list);
-}
-
 int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_handle_pending_registration_success);
-    if (0) RUN_TEST(test_handle_pending_registration_failure);
 
     return UNITY_END();
 }

@@ -92,6 +92,8 @@ char *api_url_encode(const char *src) {
  * Extract client IP address from a connection
  */
 char *api_get_client_ip(struct MHD_Connection *connection) {
+    if (!connection) return NULL;
+    
     char *ip_str = NULL;
     const union MHD_ConnectionInfo *info;
     struct sockaddr *addr;
