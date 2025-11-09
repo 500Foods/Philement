@@ -25,7 +25,7 @@
  * @return true if valid payload found, false otherwise
  */
 bool check_payload_exists(const char *marker, size_t *size) {
-    if (!marker || !size) return false;
+    if (!marker || !size || strlen(marker) == 0) return false;
     
     char *executable_path = get_executable_path();
     if (!executable_path) return false;

@@ -16,13 +16,8 @@ void test_check_payload_exists_null_marker(void);
 void test_check_payload_exists_null_size(void);
 void test_check_payload_exists_empty_marker(void);
 void test_check_payload_exists_no_executable_path(void);
-void test_check_payload_exists_invalid_executable(void);
 void test_check_payload_exists_marker_not_found(void);
 void test_check_payload_exists_marker_found_valid_size(void);
-void test_check_payload_exists_marker_found_invalid_size(void);
-void test_check_payload_exists_marker_found_zero_size(void);
-void test_check_payload_exists_marker_found_oversized(void);
-void test_check_payload_exists_marker_found_boundary_size(void);
 
 // Test helper function to create a temporary executable-like file
 int create_test_executable(const char *filename, const char *marker, size_t payload_size);
@@ -62,12 +57,6 @@ void test_check_payload_exists_no_executable_path(void) {
     TEST_PASS();
 }
 
-void test_check_payload_exists_invalid_executable(void) {
-    // This would require mocking get_executable_path to return an invalid path
-    // For now, we'll skip this as it requires more complex mocking setup
-    TEST_IGNORE_MESSAGE("Requires mocking of get_executable_path for invalid executable test");
-}
-
 void test_check_payload_exists_marker_not_found(void) {
     size_t size = 0;
     // Use a marker that definitely won't exist in the executable
@@ -86,47 +75,16 @@ void test_check_payload_exists_marker_found_valid_size(void) {
     }
 }
 
-void test_check_payload_exists_marker_found_invalid_size(void) {
-    // This would require creating a test executable with invalid size data
-    // For now, we'll skip this as it requires creating custom test executables
-    TEST_IGNORE_MESSAGE("Requires custom test executable with invalid size data");
-}
-
-void test_check_payload_exists_marker_found_zero_size(void) {
-    // This would require creating a test executable with zero size payload
-    // For now, we'll skip this as it requires creating custom test executables
-    TEST_IGNORE_MESSAGE("Requires custom test executable with zero size payload");
-}
-
-void test_check_payload_exists_marker_found_oversized(void) {
-    // This would require creating a test executable with oversized payload
-    // For now, we'll skip this as it requires creating custom test executables
-    TEST_IGNORE_MESSAGE("Requires custom test executable with oversized payload");
-}
-
-void test_check_payload_exists_marker_found_boundary_size(void) {
-    // This would require creating a test executable with boundary size payload
-    // For now, we'll skip this as it requires creating custom test executables
-    TEST_IGNORE_MESSAGE("Requires custom test executable with boundary size payload");
-}
-
 int main(void) {
     UNITY_BEGIN();
 
     // check_payload_exists tests
     RUN_TEST(test_check_payload_exists_null_marker);
     RUN_TEST(test_check_payload_exists_null_size);
-    if (0) RUN_TEST(test_check_payload_exists_empty_marker);
+    RUN_TEST(test_check_payload_exists_empty_marker);
     RUN_TEST(test_check_payload_exists_no_executable_path);
     RUN_TEST(test_check_payload_exists_marker_not_found);
     RUN_TEST(test_check_payload_exists_marker_found_valid_size);
-
-    // Skip complex tests that require custom executables for now
-    if (0) RUN_TEST(test_check_payload_exists_invalid_executable);
-    if (0) RUN_TEST(test_check_payload_exists_marker_found_invalid_size);
-    if (0) RUN_TEST(test_check_payload_exists_marker_found_zero_size);
-    if (0) RUN_TEST(test_check_payload_exists_marker_found_oversized);
-    if (0) RUN_TEST(test_check_payload_exists_marker_found_boundary_size);
 
     return UNITY_END();
 }

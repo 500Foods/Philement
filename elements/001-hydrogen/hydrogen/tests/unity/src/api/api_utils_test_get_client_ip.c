@@ -123,7 +123,7 @@ void test_api_get_client_ip_unsupported_family(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_api_get_client_ip_null_connection);
+    RUN_TEST(test_api_get_client_ip_null_connection);
     RUN_TEST(test_api_get_client_ip_no_connection_info);
     RUN_TEST(test_api_get_client_ip_ipv4);
     RUN_TEST(test_api_get_client_ip_ipv6);

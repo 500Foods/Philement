@@ -85,7 +85,7 @@ enum MHD_Result api_handler(void *cls, struct MHD_Connection *connection,
 }
 
 bool register_api_endpoints(void) {
-    if (!app_config || !app_config->api.prefix) {
+    if (!app_config || !app_config->api.prefix || !app_config->api.prefix[0]) {
         log_this(SR_API, "API configuration not available", LOG_LEVEL_ERROR, 0);
         return false;
     }

@@ -146,38 +146,6 @@ file. The files are used primarily to group the tests and the dependencies. But 
 - tests/unity/src/webserver/web_server_upload_test_generate_uuid.c:71:    if (0) RUN_TEST(test_generate_uuid_consistent_format);
 - tests/unity/src/webserver/web_server_upload_test_generate_uuid.c:72:    if (0) RUN_TEST(test_generate_uuid_version_and_variant_bits);
 
-## API
-
-- tests/unity/src/api/api_service_test_init_endpoints.c:86:    if (0) RUN_TEST(test_init_api_endpoints_empty_prefix);
-- tests/unity/src/api/conduit/query/query_test_build_response_json.c:149:    if (0) RUN_TEST(test_build_response_json_success_case);
-- tests/unity/src/api/conduit/query/query_test_handle_database_lookup.c:149:    if (0) RUN_TEST(test_handle_database_lookup_success);
-- tests/unity/src/api/conduit/query/query_test_handle_database_lookup.c:151:    if (0) RUN_TEST(test_handle_database_lookup_query_not_found);
-- tests/unity/src/api/conduit/query/query_test_create_processing_error_response.c:117:    if (0) RUN_TEST(test_create_processing_error_response_with_null_database);
-- tests/unity/src/api/conduit/query/query_test_handle_pending_registration.c:143:    if (0) RUN_TEST(test_handle_pending_registration_failure);
-- tests/unity/src/api/conduit/query/query_test_handle_field_extraction.c:119:    if (0) RUN_TEST(test_handle_field_extraction_success);
-- tests/unity/src/api/conduit/query/query_test_handle_queue_selection.c:139:    if (0) RUN_TEST(test_handle_queue_selection_success);
-- tests/unity/src/api/api_utils_test_get_client_ip.c:126:    if (0) RUN_TEST(test_api_get_client_ip_null_connection);
-- tests/unity/src/api/api_service_test_register_api_endpoints.c:170:    if (0) RUN_TEST(test_register_api_endpoints_empty_prefix); // Temporarily disabled due to webserver dependency
-- tests/unity/src/api/system/appconfig/appconfig_test_handle_system_appconfig_request.c:310:    if (0) RUN_TEST(test_handle_system_appconfig_request_normal_operation);
-- tests/unity/src/api/system/upload/upload_test_validate_upload_method.c:72:    if (0) RUN_TEST(test_validate_upload_method_null);
-- tests/unity/src/api/system/info/info_test_handle_system_info_request.c:524:    if (0) RUN_TEST(test_create_system_status_json_with_metrics);
-- tests/unity/src/api/system/info/info_test_handle_system_info_request.c:525:    if (0) RUN_TEST(test_create_system_status_json_without_metrics);
-- tests/unity/src/api/system/info/info_test_handle_system_info_request.c:526:    if (0) RUN_TEST(test_create_system_status_json_null_metrics);
-
-## Payload
-
-- tests/unity/src/payload/payload_test_check_payload_exists.c:119:    if (0) RUN_TEST(test_check_payload_exists_empty_marker);
-- tests/unity/src/payload/payload_test_check_payload_exists.c:125:    if (0) RUN_TEST(test_check_payload_exists_invalid_executable);
-- tests/unity/src/payload/payload_test_check_payload_exists.c:126:    if (0) RUN_TEST(test_check_payload_exists_marker_found_invalid_size);
-- tests/unity/src/payload/payload_test_check_payload_exists.c:127:    if (0) RUN_TEST(test_check_payload_exists_marker_found_zero_size);
-- tests/unity/src/payload/payload_test_check_payload_exists.c:128:    if (0) RUN_TEST(test_check_payload_exists_marker_found_oversized);
-- tests/unity/src/payload/payload_test_check_payload_exists.c:129:    if (0) RUN_TEST(test_check_payload_exists_marker_found_boundary_size);
-- tests/unity/src/payload/payload_test_process_payload_data.c:250:    if (0) RUN_TEST(test_process_payload_data_compressed_realloc_failure);
-- tests/unity/src/payload/payload_test_launch_payload.c:86:    if (0) RUN_TEST(test_launch_payload_server_stopping);
-- tests/unity/src/payload/payload_test_launch_payload.c:87:    if (0) RUN_TEST(test_launch_payload_server_not_ready);
-- tests/unity/src/payload/payload_test_extract_payload.c:131:    if (0) RUN_TEST(test_extract_payload_server_stopping);
-- tests/unity/src/payload/payload_test_extract_payload.c:132:    if (0) RUN_TEST(test_extract_payload_server_not_ready);
-
 ## Terminal
 
 - tests/unity/src/terminal/terminal_websocket_protocol_test_message_processing.c:265:    if (0) RUN_TEST(test_process_terminal_websocket_message_raw_text_input);

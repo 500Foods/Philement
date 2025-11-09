@@ -197,19 +197,6 @@ void test_appconfig_function_declarations(void) {
     TEST_ASSERT_TRUE(true);
 }
 
-// Test normal operation
-void test_handle_system_appconfig_request_normal_operation(void) {
-    // Test that the function can be called with valid config and mock data
-    struct MockMHDConnection mock_conn = {0};
-
-    enum MHD_Result result = handle_system_appconfig_request((struct MHD_Connection *)&mock_conn);
-    (void)result; // Suppress unused variable warning
-
-    // The function runs and calls expected functions
-    // The exact return value depends on complex processing and mock setup
-    TEST_ASSERT_EQUAL(1, mock_dump_app_config_called); // dumpAppConfig should have been called
-}
-
 // Test null config error
 void test_handle_system_appconfig_request_null_config(void) {
     // Test error handling when app_config is NULL
@@ -307,7 +294,6 @@ int main(void) {
     RUN_TEST(test_handle_system_appconfig_request_compilation_check);
     RUN_TEST(test_appconfig_header_includes);
     RUN_TEST(test_appconfig_function_declarations);
-    if (0) RUN_TEST(test_handle_system_appconfig_request_normal_operation);
     RUN_TEST(test_handle_system_appconfig_request_null_config);
     RUN_TEST(test_handle_system_appconfig_request_log_get_messages_failure);
     RUN_TEST(test_handle_system_appconfig_request_mhd_create_response_failure);

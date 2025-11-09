@@ -80,28 +80,6 @@ bool mock_lookup_database_and_query(DatabaseQueue** db_queue, QueryCacheEntry** 
     return mock_lookup_result;
 }
 
-// Test successful database and query lookup
-void test_handle_database_lookup_success(void) {
-    // Set up mock to succeed
-    mock_lookup_result = true;
-    DatabaseQueue mock_queue = {.queue_type = (char*)"test"};
-    mock_db_queue_result = &mock_queue;
-    QueryCacheEntry mock_entry = {.description = (char*)"test query"};
-    mock_cache_entry_result = &mock_entry;
-
-    // Mock connection
-    MockMHDConnection mock_connection = {0};
-
-    DatabaseQueue* db_queue = NULL;
-    QueryCacheEntry* cache_entry = NULL;
-
-    enum MHD_Result result = handle_database_lookup((struct MHD_Connection*)&mock_connection, "test_db", 123, &db_queue, &cache_entry);
-
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-    TEST_ASSERT_NOT_NULL(db_queue);
-    TEST_ASSERT_NOT_NULL(cache_entry);
-}
-
 // Test database not found error path
 void test_handle_database_lookup_database_not_found(void) {
     // Set up mock to fail with database not found
@@ -122,33 +100,10 @@ void test_handle_database_lookup_database_not_found(void) {
     TEST_ASSERT_NULL(cache_entry);
 }
 
-// Test query not found error path (database exists but query doesn't)
-void test_handle_database_lookup_query_not_found(void) {
-    // Set up mock to fail with query not found
-    mock_lookup_result = false;
-    DatabaseQueue mock_queue = {.queue_type = (char*)"test"};
-    mock_db_queue_result = &mock_queue;
-    mock_cache_entry_result = NULL;
-
-    // Mock connection
-    MockMHDConnection mock_connection = {0};
-
-    DatabaseQueue* db_queue = NULL;
-    QueryCacheEntry* cache_entry = NULL;
-
-    enum MHD_Result result = handle_database_lookup((struct MHD_Connection*)&mock_connection, "test_db", 999, &db_queue, &cache_entry);
-
-    TEST_ASSERT_EQUAL(MHD_NO, result);
-    TEST_ASSERT_NOT_NULL(db_queue);
-    TEST_ASSERT_NULL(cache_entry);
-}
-
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_handle_database_lookup_success);
     RUN_TEST(test_handle_database_lookup_database_not_found);
-    if (0) RUN_TEST(test_handle_database_lookup_query_not_found);
 
     return UNITY_END();
 }

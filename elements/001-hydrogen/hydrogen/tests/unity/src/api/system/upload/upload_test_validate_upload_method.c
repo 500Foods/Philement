@@ -69,7 +69,7 @@ int main(void) {
     RUN_TEST(test_validate_upload_method_get);
     RUN_TEST(test_validate_upload_method_put);
     RUN_TEST(test_validate_upload_method_delete);
-    if (0) RUN_TEST(test_validate_upload_method_null);
+    RUN_TEST(test_validate_upload_method_null);
     RUN_TEST(test_validate_upload_method_empty);
 
     return UNITY_END();

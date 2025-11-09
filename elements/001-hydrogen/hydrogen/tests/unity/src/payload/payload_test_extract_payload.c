@@ -17,8 +17,6 @@ void test_extract_payload_null_executable_path(void);
 void test_extract_payload_null_config(void);
 void test_extract_payload_null_marker(void);
 void test_extract_payload_null_payload(void);
-void test_extract_payload_server_stopping(void);
-void test_extract_payload_server_not_ready(void);
 void test_extract_payload_invalid_executable(void);
 void test_extract_payload_no_payload_key(void);
 void test_extract_payload_marker_not_found(void);
@@ -72,19 +70,6 @@ void test_extract_payload_null_payload(void) {
     TEST_ASSERT_FALSE(extract_payload("/bin/ls", &test_config, "TEST_MARKER", NULL));
 }
 
-// Test system state checks
-void test_extract_payload_server_stopping(void) {
-    // This test would require setting server_stopping = true
-    // For now, we'll skip as it requires modifying global state
-    TEST_IGNORE_MESSAGE("Requires setting global server_stopping state");
-}
-
-void test_extract_payload_server_not_ready(void) {
-    // This test would require setting server_starting = false and server_running = false
-    // For now, we'll skip as it requires modifying global state
-    TEST_IGNORE_MESSAGE("Requires setting global server state variables");
-}
-
 // Test with invalid executable path
 void test_extract_payload_invalid_executable(void) {
     PayloadData payload;
@@ -126,10 +111,6 @@ int main(void) {
     RUN_TEST(test_extract_payload_invalid_executable);
     RUN_TEST(test_extract_payload_no_payload_key);
     RUN_TEST(test_extract_payload_marker_not_found);
-
-    // Skip tests that require global state manipulation
-    if (0) RUN_TEST(test_extract_payload_server_stopping);
-    if (0) RUN_TEST(test_extract_payload_server_not_ready);
 
     return UNITY_END();
 }
