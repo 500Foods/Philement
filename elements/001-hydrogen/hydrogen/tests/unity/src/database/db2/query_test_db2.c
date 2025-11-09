@@ -305,17 +305,23 @@ void test_db2_execute_prepared_valid_parameters(void) {
     request.sql_template = (char*)"SELECT 1";
     QueryResult* result = NULL;
 
-    // Set up DB2 mocks to return success for connection operations
-    mock_libdb2_set_SQLAllocHandle_result(SQL_SUCCESS);
-    mock_libdb2_set_SQLExecDirect_result(SQL_SUCCESS);
-    mock_libdb2_set_SQLFreeHandle_result(SQL_SUCCESS);
+    // Set up DB2 mocks to return success for prepared statement execution
+    mock_libdb2_set_SQLExecute_result(SQL_SUCCESS);
+    mock_libdb2_set_fetch_row_count(0); // No rows
+    mock_libdb2_set_SQLNumResultCols_result(0, 1);
+    mock_libdb2_set_SQLDescribeCol_column_name("value");
+    mock_libdb2_set_SQLRowCount_result(0, 1);
 
-    // Should fall back to regular query execution for now
+    // Should succeed with improved mocks
     bool query_result = db2_execute_prepared(&connection, &stmt, &request, &result);
-    TEST_ASSERT_FALSE(query_result); // Will fail due to mocked DB operations
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_TRUE(query_result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_TRUE(result->success);
+    TEST_ASSERT_EQUAL(0, result->row_count);
 
     // Cleanup
+    free(result->data_json);
+    free(result);
     free(db2_conn);
 }
 
@@ -337,11 +343,11 @@ int main(void) {
 
     // Additional comprehensive tests
     RUN_TEST(test_db2_execute_query_invalid_connection_handle);
-    if (0) RUN_TEST(test_db2_execute_query_memory_allocation_failure);
-    if (0) RUN_TEST(test_db2_execute_query_column_allocation_failure);
-    if (0) RUN_TEST(test_db2_execute_query_strdup_column_name_failure);
-    if (0) RUN_TEST(test_db2_execute_query_json_buffer_allocation_failure);
-    if (0) RUN_TEST(test_db2_execute_prepared_valid_parameters);
+    RUN_TEST(test_db2_execute_query_memory_allocation_failure);
+    RUN_TEST(test_db2_execute_query_column_allocation_failure);
+    RUN_TEST(test_db2_execute_query_strdup_column_name_failure);
+    RUN_TEST(test_db2_execute_query_json_buffer_allocation_failure);
+    RUN_TEST(test_db2_execute_prepared_valid_parameters);
 
     return UNITY_END();
 }

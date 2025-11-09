@@ -88,6 +88,7 @@ static long mock_SQLGetDiagRec_native_error = 12345;
 static char mock_SQLGetDiagRec_message[1024] = "Mock error message";
 static int mock_SQLFreeHandle_result = 0; // 0 = SQL_SUCCESS
 static int mock_SQLEndTran_result = 0; // 0 = SQL_SUCCESS
+static int mock_SQLSetConnectAttr_result = 0; // 0 = SQL_SUCCESS
 
 // Mock implementations
 int mock_SQLAllocHandle(int handleType, void* inputHandle, void** outputHandle) {
@@ -283,6 +284,14 @@ int mock_SQLGetDiagRec(short handleType, void* handle, short recNumber, unsigned
     return 0; // SQL_SUCCESS
 }
 
+int mock_SQLSetConnectAttr(void* connectionHandle, int attribute, long value, int stringLength) {
+    (void)connectionHandle;
+    (void)attribute;
+    (void)value;
+    (void)stringLength;
+    return mock_SQLSetConnectAttr_result;
+}
+
 // Mock control functions
 void mock_libdb2_set_SQLAllocHandle_result(int result) {
     mock_SQLAllocHandle_result = result;
@@ -370,6 +379,10 @@ void mock_libdb2_set_SQLEndTran_result(int result) {
     mock_SQLEndTran_result = result;
 }
 
+void mock_libdb2_set_SQLSetConnectAttr_result(int result) {
+    mock_SQLSetConnectAttr_result = result;
+}
+
 void mock_libdb2_reset_all(void) {
     mock_SQLAllocHandle_result = 0;
     mock_SQLAllocHandle_output_handle = (void*)0x12345678;
@@ -394,4 +407,5 @@ void mock_libdb2_reset_all(void) {
     strncpy(mock_SQLGetDiagRec_message, "Mock error message", sizeof(mock_SQLGetDiagRec_message) - 1);
     mock_SQLFreeHandle_result = 0;
     mock_SQLEndTran_result = 0;
+    mock_SQLSetConnectAttr_result = 0;
 }

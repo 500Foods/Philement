@@ -6,6 +6,9 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
+// Define mock macros BEFORE any includes
+#define USE_MOCK_SYSTEM
+
 // Mock libdb2 and system functions
 #include <unity/mocks/mock_libdb2.h>
 #include <unity/mocks/mock_system.h>
@@ -36,6 +39,7 @@ void test_add_prepared_statement_strdup_failure(void);
 void setUp(void) {
     // Reset mocks before each test
     mock_libdb2_reset_all();
+    mock_system_reset_all();
 
     // Set function pointers to mock implementations
     SQLAllocHandle_ptr = mock_SQLAllocHandle;
@@ -46,6 +50,7 @@ void setUp(void) {
 void tearDown(void) {
     // Cleanup after each test
     mock_libdb2_reset_all();
+    mock_system_reset_all();
 }
 
 // Test: calloc failure when creating PreparedStatement structure
@@ -196,23 +201,25 @@ void test_prepare_statement_lru_counter_array_failure(void) {
 void test_add_prepared_statement_realloc_failure(void) {
     PreparedStatementCache cache = {0};
     cache.names = calloc(2, sizeof(char*)); // Small initial capacity
+    TEST_ASSERT_NOT_NULL(cache.names);
     cache.capacity = 2;
-    cache.count = 2; // Fill to capacity
+    cache.count = 0;
     pthread_mutex_init(&cache.lock, NULL);
 
-    // Add first statement to fill capacity
+    // Add two statements to fill capacity
     TEST_ASSERT_TRUE(db2_add_prepared_statement(&cache, "stmt_1"));
     TEST_ASSERT_TRUE(db2_add_prepared_statement(&cache, "stmt_2"));
     TEST_ASSERT_EQUAL(2, cache.count);
     TEST_ASSERT_EQUAL(2, cache.capacity);
 
-    // Note: We can't easily test realloc failure without proper mock setup
+    // Now set malloc to fail on next call (for realloc in db2_add_prepared_statement)
+    // The realloc will internally call malloc, so we make the next malloc fail
+    mock_system_set_malloc_failure(1);
 
-    // This should fail due to realloc failure
+    // This should fail due to realloc failure when trying to expand capacity
     bool result = db2_add_prepared_statement(&cache, "stmt_3");
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_EQUAL(2, cache.count); // Should remain unchanged
-    TEST_ASSERT_EQUAL(2, cache.capacity); // Should remain unchanged
 
     // Cleanup
     for (size_t i = 0; i < cache.count; i++) {
@@ -226,12 +233,15 @@ void test_add_prepared_statement_realloc_failure(void) {
 void test_add_prepared_statement_strdup_failure(void) {
     PreparedStatementCache cache = {0};
     cache.names = calloc(10, sizeof(char*));
+    TEST_ASSERT_NOT_NULL(cache.names);
     cache.capacity = 10;
     cache.count = 0;
     pthread_mutex_init(&cache.lock, NULL);
 
-    // Note: We can't easily test strdup failure without proper mock setup
+    // Make the first malloc/strdup fail (strdup uses malloc internally)
+    mock_system_set_malloc_failure(1);
 
+    // This should fail due to strdup failure
     bool result = db2_add_prepared_statement(&cache, "test_stmt");
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_EQUAL(0, cache.count); // Should remain unchanged
@@ -239,6 +249,7 @@ void test_add_prepared_statement_strdup_failure(void) {
     pthread_mutex_destroy(&cache.lock);
     free(cache.names);
 }
+
 
 int main(void) {
     UNITY_BEGIN();
@@ -248,8 +259,8 @@ int main(void) {
     RUN_TEST(test_prepare_statement_strdup_sql_failure);
     RUN_TEST(test_prepare_statement_prepared_statements_array_failure);
     RUN_TEST(test_prepare_statement_lru_counter_array_failure);
-    if (0) RUN_TEST(test_add_prepared_statement_realloc_failure);
-    if (0) RUN_TEST(test_add_prepared_statement_strdup_failure);
+    RUN_TEST(test_add_prepared_statement_realloc_failure);
+    RUN_TEST(test_add_prepared_statement_strdup_failure);
 
     return UNITY_END();
 }
