@@ -301,8 +301,8 @@ int main(void) {
     RUN_TEST(test_db2_execute_query_alloc_handle_failure);
     RUN_TEST(test_db2_execute_query_exec_failure);
     RUN_TEST(test_db2_execute_query_exec_failure_with_diag);
-    if (0) RUN_TEST(test_db2_execute_query_result_alloc_failure); // malloc mock unreliable
-    if (0) RUN_TEST(test_db2_execute_query_json_buffer_alloc_failure); // malloc mock unreliable
+    RUN_TEST(test_db2_execute_query_result_alloc_failure);
+    RUN_TEST(test_db2_execute_query_json_buffer_alloc_failure);
     
     // Success paths
     RUN_TEST(test_db2_execute_query_success_no_rows);

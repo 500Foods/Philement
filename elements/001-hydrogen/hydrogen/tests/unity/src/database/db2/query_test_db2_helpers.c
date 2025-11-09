@@ -117,8 +117,17 @@ void test_db2_get_column_names_success(void) {
 }
 
 void test_db2_get_column_names_allocation_failure(void) {
-    // Allocation failure test - requires malloc mocking
-    TEST_IGNORE_MESSAGE("malloc mocking not supported");
+    void* stmt_handle = (void*)0x1000;
+    
+    // Mock SQLDescribeCol for success
+    mock_libdb2_set_SQLDescribeCol_result(0);
+    mock_libdb2_set_SQLDescribeCol_column_name("test_column");
+    
+    // Make the first calloc fail (for column_names array allocation)
+    mock_system_set_malloc_failure(1);
+    
+    char** result = db2_get_column_names(stmt_handle, 2);
+    TEST_ASSERT_NULL(result); // Should fail due to calloc failure
 }
 
 // ============================================================================
@@ -295,7 +304,7 @@ int main(void) {
     RUN_TEST(test_db2_get_column_names_zero_count);
     RUN_TEST(test_db2_get_column_names_negative_count);
     RUN_TEST(test_db2_get_column_names_success);
-    if (0) RUN_TEST(test_db2_get_column_names_allocation_failure); // malloc mock unreliable
+    RUN_TEST(test_db2_get_column_names_allocation_failure);
     
     // db2_fetch_row_data tests
     RUN_TEST(test_db2_fetch_row_data_null_stmt_handle);

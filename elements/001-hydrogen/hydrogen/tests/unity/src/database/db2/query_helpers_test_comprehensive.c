@@ -136,10 +136,19 @@ void test_db2_get_column_name_multiple_columns(void) {
 }
 
 void test_db2_get_column_name_strdup_failure(void) {
-    // Note: Testing strdup/malloc failure across compilation units is unreliable
-    // The malloc happens in query_helpers.c, not in the test file
-    // This test is disabled as memory allocation mocks don't work across units
-    TEST_IGNORE_MESSAGE("Memory allocation failure testing across compilation units is not reliable");
+    void* stmt = (void*)0x1234;
+    char* column_name = NULL;
+    
+    // Mock SQLDescribeCol to succeed
+    mock_libdb2_set_SQLDescribeCol_result(0);
+    mock_libdb2_set_SQLDescribeCol_column_name("test_column");
+    
+    // Make strdup fail (uses malloc internally, and mock_system works across compilation units)
+    mock_system_set_malloc_failure(1);
+    
+    // Should fail due to strdup failure
+    TEST_ASSERT_FALSE(db2_get_column_name(stmt, 0, &column_name));
+    TEST_ASSERT_NULL(column_name);
 }
 
 // ============================================================================
@@ -194,10 +203,19 @@ void test_db2_ensure_json_buffer_capacity_need_more_than_double(void) {
 }
 
 void test_db2_ensure_json_buffer_capacity_realloc_failure(void) {
-    // Note: Testing realloc failure across compilation units is unreliable
-    // The actual realloc happens in query_helpers.c, not in the test file
-    // This test is disabled as memory allocation mocks don't work across units
-    TEST_IGNORE_MESSAGE("Memory allocation failure testing across compilation units is not reliable");
+    char* buffer = calloc(1, 1024);
+    TEST_ASSERT_NOT_NULL(buffer);
+    size_t capacity = 1024;
+    size_t current_size = 900;
+    
+    // Make realloc fail using the proper realloc mock function
+    mock_system_set_realloc_failure(1);
+    
+    // Should fail when trying to expand buffer
+    TEST_ASSERT_FALSE(db2_ensure_json_buffer_capacity(&buffer, current_size, &capacity, 200));
+    
+    // Original buffer should still be valid
+    free(buffer);
 }
 
 void test_db2_ensure_json_buffer_capacity_zero_needed(void) {
@@ -320,7 +338,7 @@ int main(void) {
     RUN_TEST(test_db2_get_column_name_success_from_describe);
     RUN_TEST(test_db2_get_column_name_fallback_on_describe_failure);
     RUN_TEST(test_db2_get_column_name_multiple_columns);
-    if (0) RUN_TEST(test_db2_get_column_name_strdup_failure);
+    RUN_TEST(test_db2_get_column_name_strdup_failure);
 
     // db2_ensure_json_buffer_capacity tests
     RUN_TEST(test_db2_ensure_json_buffer_capacity_null_buffer);
@@ -328,7 +346,7 @@ int main(void) {
     RUN_TEST(test_db2_ensure_json_buffer_capacity_sufficient);
     RUN_TEST(test_db2_ensure_json_buffer_capacity_need_double);
     RUN_TEST(test_db2_ensure_json_buffer_capacity_need_more_than_double);
-    if (0) RUN_TEST(test_db2_ensure_json_buffer_capacity_realloc_failure);
+    RUN_TEST(test_db2_ensure_json_buffer_capacity_realloc_failure);
     RUN_TEST(test_db2_ensure_json_buffer_capacity_zero_needed);
 
     // db2_json_escape_string tests

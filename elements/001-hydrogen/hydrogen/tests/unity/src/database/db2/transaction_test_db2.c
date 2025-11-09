@@ -150,6 +150,9 @@ void test_db2_begin_transaction_success(void) {
     DatabaseHandle* connection = create_test_database_handle();
     Transaction* transaction = NULL;
 
+    // Mock successful SQLSetConnectAttr (to disable autocommit)
+    mock_libdb2_set_SQLSetConnectAttr_result(SQL_SUCCESS);
+
     bool result = db2_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &transaction);
 
     TEST_ASSERT_TRUE(result);
@@ -285,7 +288,7 @@ int main(void) {
     RUN_TEST(test_db2_begin_transaction_null_connection);
     RUN_TEST(test_db2_begin_transaction_null_transaction_ptr);
     RUN_TEST(test_db2_begin_transaction_wrong_engine_type);
-    if (0) RUN_TEST(test_db2_begin_transaction_success);
+    RUN_TEST(test_db2_begin_transaction_success);
     RUN_TEST(test_db2_begin_transaction_null_connection_handle);
 
     // Test db2_commit_transaction
