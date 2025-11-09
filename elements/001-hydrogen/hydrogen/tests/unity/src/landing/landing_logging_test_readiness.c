@@ -106,8 +106,9 @@ void test_check_logging_landing_readiness_logging_not_running(void) {
     // Act: Call the function
     LaunchReadiness result = check_logging_landing_readiness();
 
-    // Assert: Should return not ready
-    TEST_ASSERT_FALSE(result.ready);
+    // Assert: Should ALWAYS return ready (even if logging not running)
+    // This ensures buffer cleanup happens to prevent memory leaks
+    TEST_ASSERT_TRUE(result.ready);
     TEST_ASSERT_EQUAL_STRING(SR_LOGGING, result.subsystem);
 
     // Clean up messages
@@ -123,8 +124,9 @@ void test_check_logging_landing_readiness_others_not_complete(void) {
     // Act: Call the function
     LaunchReadiness result = check_logging_landing_readiness();
 
-    // Assert: Should return not ready because other subsystems are not complete
-    TEST_ASSERT_FALSE(result.ready);
+    // Assert: Should ALWAYS return ready (even if other subsystems not complete)
+    // This ensures buffer cleanup happens to prevent memory leaks
+    TEST_ASSERT_TRUE(result.ready);
     TEST_ASSERT_EQUAL_STRING(SR_LOGGING, result.subsystem);
 
     // Clean up messages

@@ -51,10 +51,6 @@ file. The files are used primarily to group the tests and the dependencies. But 
 - Start again with the next test in the section being worked on
 - Stop when that section is complete
 
-## State
-
-- tests/unity/src/state/state_test_signal_handler.c:177:    if (0) RUN_TEST(test_signal_handler_flags_after_sighup);
-
 ## Status
 
 - tests/unity/src/status/status_system_test_collect_cpu_metrics.c:136:    if (0) RUN_TEST(test_collect_cpu_metrics_null_pointer);
@@ -181,10 +177,6 @@ file. The files are used primarily to group the tests and the dependencies. But 
 - tests/unity/src/payload/payload_test_launch_payload.c:87:    if (0) RUN_TEST(test_launch_payload_server_not_ready);
 - tests/unity/src/payload/payload_test_extract_payload.c:131:    if (0) RUN_TEST(test_extract_payload_server_stopping);
 - tests/unity/src/payload/payload_test_extract_payload.c:132:    if (0) RUN_TEST(test_extract_payload_server_not_ready);
-
-## Mutex
-
-- tests/unity/src/mutex/mutex_test_deadlock_detection.c:72:    if (0) RUN_TEST(test_mutex_log_active_locks_empty);
 
 ## Terminal
 
@@ -378,16 +370,6 @@ file. The files are used primarily to group the tests and the dependencies. But 
 
 ## Database/DB2
 
-- tests/unity/src/database/db2/query_test_db2_process_query_results.c:396:    if (0) RUN_TEST(test_db2_process_query_results_result_alloc_failure); // malloc mock unreliable
-- tests/unity/src/database/db2/query_test_db2_process_query_results.c:397:    if (0) RUN_TEST(test_db2_process_query_results_column_names_alloc_failure); // malloc mock unreliable
-- tests/unity/src/database/db2/query_test_db2_process_query_results.c:398:    if (0) RUN_TEST(test_db2_process_query_results_json_buffer_alloc_failure); // malloc mock unreliable
-- tests/unity/src/database/db2/query_test_db2_process_query_results.c:399:    if (0) RUN_TEST(test_db2_process_query_results_column_name_retrieval_failure);
-- tests/unity/src/database/db2/query_test_db2_process_query_results.c:402:    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_comma);
-- tests/unity/src/database/db2/query_test_db2_process_query_results.c:403:    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_object_start);
-- tests/unity/src/database/db2/query_test_db2_process_query_results.c:404:    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_column_comma);
-- tests/unity/src/database/db2/query_test_db2_process_query_results.c:405:    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_column_data);
-- tests/unity/src/database/db2/query_test_db2_process_query_results.c:406:    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_object_end);
-- tests/unity/src/database/db2/query_test_db2_process_query_results.c:407:    if (0) RUN_TEST(test_db2_process_query_results_buffer_capacity_failure_array_end);
 - tests/unity/src/database/db2/prepared_test_memory_failures.c:251:    if (0) RUN_TEST(test_add_prepared_statement_realloc_failure);
 - tests/unity/src/database/db2/prepared_test_memory_failures.c:252:    if (0) RUN_TEST(test_add_prepared_statement_strdup_failure);
 - tests/unity/src/database/db2/transaction_test_db2.c:288:    if (0) RUN_TEST(test_db2_begin_transaction_success);
