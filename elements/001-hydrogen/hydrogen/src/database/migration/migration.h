@@ -31,6 +31,20 @@ bool execute_test(struct DatabaseQueue* db_queue);
 // Utility functions for migration execution
 const char* normalize_engine_name(const char* engine_name);
 const char* extract_migration_name(const char* migrations_config, char** path_copy_out);
+
+// Helper functions for migration execution (exposed for testing)
+char* copy_sql_from_lua(const char* sql_result, size_t sql_length, const char* dqm_label);
+int count_sql_lines(const char* sql, size_t sql_length);
+bool execute_migration_sql(DatabaseHandle* connection, const char* sql_copy, size_t sql_length,
+                           const char* migration_file, const char* dqm_label);
+bool execute_copied_sql_and_cleanup(DatabaseHandle* connection, const char* migration_file,
+                                    char* sql_copy, size_t sql_length,
+                                    const char* dqm_label);
+bool finalize_migration_execution(DatabaseHandle* connection, const char* migration_file,
+                                  const char* sql_result, size_t sql_length, int query_count,
+                                  lua_State* L, PayloadFile* payload_files, size_t payload_count,
+                                  const char* dqm_label);
+
 bool execute_single_migration(DatabaseHandle* connection, const char* migration_file,
                              const char* engine_name, const char* migration_name,
                              const char* schema_name, const char* dqm_label);

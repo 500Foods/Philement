@@ -24,63 +24,62 @@ return {
     JSON_INGEST_START = "${SCHEMA}json_ingest (",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = [[
-        CREATE OR REPLACE FUNCTION ${SCHEMA}json_ingest(s text)
-        RETURNS jsonb
-        LANGUAGE plpgsql
-        STRICT
-        STABLE
-        AS $fn$
-        DECLARE
-          i      int := 1;
-          L      int := length(s);
-          ch     text;
-          out    text := '';
-          in_str boolean := false;  -- are we inside a "..." JSON string?
-          esc    boolean := false;  -- previous char was a backslash
+      CREATE OR REPLACE FUNCTION TEST.json_ingest(s text)
+      RETURNS jsonb
+      LANGUAGE plpgsql
+      STRICT
+      STABLE
+      AS $json_ingest_fn$
+      DECLARE
+        i      int := 1;
+        L      int := length(s);
+        ch     text;
+        out    text := '';
+        in_str boolean := false;
+        esc    boolean := false;
+      BEGIN
+        -- Fast path: already valid JSON
         BEGIN
-          -- Fast path: already valid JSON
-          BEGIN
-            RETURN s::jsonb;
-          EXCEPTION WHEN others THEN
-            -- fall through to fix-up pass
-          END;
+          RETURN s::jsonb;
+        EXCEPTION WHEN others THEN
+          -- fall through to fix-up pass
+        END;
 
-          -- Fix-up pass: escape only control chars *inside* JSON strings
-          WHILE i <= L LOOP
-            ch := substr(s, i, 1);
+        -- Fix-up pass: escape only control chars *inside* JSON strings
+        WHILE i <= L LOOP
+          ch := substr(s, i, 1);
 
-            IF esc THEN
-              -- we were in an escape sequence: keep this char verbatim
-              out := out || ch;
-              esc := false;
+          IF esc THEN
+            out := out || ch;
+            esc := false;
 
-            ELSIF ch = E'\\' THEN
-              out := out || ch;
-              esc := true;
+          ELSIF ch = E'\\' THEN
+            out := out || ch;
+            esc := true;
 
-            ELSIF ch = '"' THEN
-              out := out || ch;
-              in_str := NOT in_str;
+          ELSIF ch = '"' THEN
+            out := out || ch;
+            in_str := NOT in_str;
 
-            ELSIF in_str AND ch = E'\n' THEN
-              out := out || E'\\n';
+          ELSIF in_str AND ch = E'\n' THEN
+            out := out || E'\\n';
 
-            ELSIF in_str AND ch = E'\r' THEN
-              out := out || E'\\r';
+          ELSIF in_str AND ch = E'\r' THEN
+            out := out || E'\\r';
 
-            ELSIF in_str AND ch = E'\t' THEN
-              out := out || E'\\t';
+          ELSIF in_str AND ch = E'\t' THEN
+            out := out || E'\\t';
 
-            ELSE
-              out := out || ch;
-            END IF;
+          ELSE
+            out := out || ch;
+          END IF;
 
-            i := i + 1;
-          END LOOP;
+          i := i + 1;
+        END LOOP;
 
-          -- Parse after fix-ups
-          RETURN out::jsonb;
-        END
-        $fn$;
+        -- Parse after fix-ups
+        RETURN out::jsonb;
+      END
+      $json_ingest_fn$;  -- ← Tag matches exactly, semicolon attached
     ]]
 }
