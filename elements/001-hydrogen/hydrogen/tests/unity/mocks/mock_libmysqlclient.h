@@ -69,6 +69,7 @@ void mock_libmysqlclient_set_mysql_stmt_close_result(int result);
 void mock_libmysqlclient_reset_all(void);
 void mock_libmysqlclient_setup_fields(size_t num_fields, const char** column_names);
 void mock_libmysqlclient_setup_result_data(size_t num_rows, size_t num_fields, const char** column_names, char*** row_data);
+void mock_libmysqlclient_set_field_type(size_t field_index, unsigned int field_type);
 
 #ifdef USE_MOCK_LIBMYSQLCLIENT
 
