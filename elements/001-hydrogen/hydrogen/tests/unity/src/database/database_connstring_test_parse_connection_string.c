@@ -62,8 +62,8 @@ void test_parse_connection_string_postgresql_format(void) {
     TEST_ASSERT_EQUAL_STRING("host", config->host);
     TEST_ASSERT_EQUAL(5432, config->port);
     TEST_ASSERT_EQUAL_STRING("database", config->database);
-    TEST_ASSERT_EQUAL_STRING("user:password", config->username);  // Note: doesn't parse password separately
-    TEST_ASSERT_NULL(config->password);  // Password not parsed separately
+    TEST_ASSERT_EQUAL_STRING("user", config->username);  // Now properly split
+    TEST_ASSERT_EQUAL_STRING("password", config->password);  // Now properly extracted
     TEST_ASSERT_NULL(config->connection_string);  // Not set for PostgreSQL
 
     free_connection_config(config);
@@ -78,8 +78,8 @@ void test_parse_connection_string_mysql_format(void) {
     TEST_ASSERT_EQUAL_STRING("host", config->host);
     TEST_ASSERT_EQUAL(3306, config->port);
     TEST_ASSERT_EQUAL_STRING("database", config->database);
-    TEST_ASSERT_EQUAL_STRING("user:password", config->username);  // Note: doesn't parse password separately
-    TEST_ASSERT_NULL(config->password);  // Password not parsed separately
+    TEST_ASSERT_EQUAL_STRING("user", config->username);  // Now properly split
+    TEST_ASSERT_EQUAL_STRING("password", config->password);  // Now properly extracted
     TEST_ASSERT_NULL(config->connection_string);  // Not set for MySQL
 
     free_connection_config(config);
@@ -166,8 +166,8 @@ void test_parse_connection_string_mysql_no_username(void) {
     TEST_ASSERT_EQUAL_STRING("host", config->host);
     TEST_ASSERT_EQUAL(3306, config->port);
     TEST_ASSERT_EQUAL_STRING("database", config->database);
-    TEST_ASSERT_EQUAL_STRING(":password", config->username); // Includes colon and password
-    TEST_ASSERT_NULL(config->password);  // Not parsed separately
+    TEST_ASSERT_EQUAL_STRING("", config->username); // Empty username before colon
+    TEST_ASSERT_EQUAL_STRING("password", config->password);  // Password after colon
     TEST_ASSERT_NULL(config->connection_string);  // Not set for MySQL
 
     free_connection_config(config);
@@ -182,8 +182,8 @@ void test_parse_connection_string_mysql_no_port(void) {
     TEST_ASSERT_EQUAL_STRING("host", config->host);
     TEST_ASSERT_EQUAL(3306, config->port); // Default MySQL port
     TEST_ASSERT_EQUAL_STRING("database", config->database);
-    TEST_ASSERT_EQUAL_STRING("user:password", config->username);  // Includes password
-    TEST_ASSERT_NULL(config->password);  // Not parsed separately
+    TEST_ASSERT_EQUAL_STRING("user", config->username);  // Now properly split
+    TEST_ASSERT_EQUAL_STRING("password", config->password);  // Now properly extracted
     TEST_ASSERT_NULL(config->connection_string);  // Not set for MySQL
 
     free_connection_config(config);
@@ -278,8 +278,8 @@ void test_parse_connection_string_postgresql_no_port(void) {
     TEST_ASSERT_EQUAL_STRING("hostname", config->host);
     TEST_ASSERT_EQUAL(5432, config->port);  // Default PostgreSQL port
     TEST_ASSERT_EQUAL_STRING("database", config->database);
-    TEST_ASSERT_EQUAL_STRING("user:pass", config->username);
-    TEST_ASSERT_NULL(config->password);
+    TEST_ASSERT_EQUAL_STRING("user", config->username);  // Now properly split
+    TEST_ASSERT_EQUAL_STRING("pass", config->password);  // Now properly extracted
     TEST_ASSERT_NULL(config->connection_string);
 
     free_connection_config(config);

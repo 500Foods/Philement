@@ -451,6 +451,14 @@ void mock_libmysqlclient_setup_fields(size_t num_fields, const char** column_nam
         } else {
             mock_fields[i].name = NULL;
         }
+        // Default to VARCHAR/STRING type (253) for string escaping tests
+        mock_fields[i].type = 253;
+    }
+}
+
+void mock_libmysqlclient_set_field_type(size_t field_index, unsigned int field_type) {
+    if (field_index < 10) {
+        mock_fields[field_index].type = field_type;
     }
 }
 
