@@ -44,7 +44,7 @@ export COVERAGE_GUARD="true"
 #       then we'd need to add 4 to unity and 2 to coverage below to fix
 #
 DISCREPANCY_UNITY=238
-DISCREPANCY_COVERAGE=56
+DISCREPANCY_COVERAGE=57
 
 # Library metadata
 COVERAGE_NAME="Coverage Library"

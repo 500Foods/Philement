@@ -39,7 +39,7 @@ extract_uncovered "${b}" uncovered_b.txt
 # Find common line numbers
 sort uncovered_a.txt > sorted_a.txt
 sort uncovered_b.txt > sorted_b.txt
-common_lines=$(comm -12 sorted_a.txt sorted_b.txt | cut -d: -f1)
+common_lines=$(comm -12 sorted_a.txt sorted_b.txt | cut -d: -f1 | sort -n)
 
 if [[ -z "${common_lines}" ]]; then
     echo "No lines uncovered in both files—all lines are covered by at least one test suite."

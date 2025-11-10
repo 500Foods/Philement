@@ -361,8 +361,15 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
         char* at_pos = strchr(temp, '@');
         if (at_pos) {
             *at_pos = '\0';
-            // Parse user:password (we'll skip detailed parsing for now)
-            config->username = strdup(temp);
+            // Parse user:password - split by colon
+            char* colon_pos = strchr(temp, ':');
+            if (colon_pos) {
+                *colon_pos = '\0';
+                config->username = strdup(temp);
+                config->password = strdup(colon_pos + 1);
+            } else {
+                config->username = strdup(temp);
+            }
 
             char* host_start = at_pos + 1;
             char* slash_pos = strchr(host_start, '/');
@@ -371,11 +378,11 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
                 config->database = strdup(slash_pos + 1);
 
                 // Parse host:port
-                char* colon_pos = strchr(host_start, ':');
-                if (colon_pos) {
-                    *colon_pos = '\0';
+                char* port_colon = strchr(host_start, ':');
+                if (port_colon) {
+                    *port_colon = '\0';
                     config->host = strdup(host_start);
-                    config->port = atoi(colon_pos + 1);
+                    config->port = atoi(port_colon + 1);
                 } else {
                     config->host = strdup(host_start);
                 }
@@ -397,7 +404,15 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
         char* at_pos = strchr(temp, '@');
         if (at_pos) {
             *at_pos = '\0';
-            config->username = strdup(temp);
+            // Parse user:password - split by colon
+            char* colon_pos = strchr(temp, ':');
+            if (colon_pos) {
+                *colon_pos = '\0';
+                config->username = strdup(temp);
+                config->password = strdup(colon_pos + 1);
+            } else {
+                config->username = strdup(temp);
+            }
 
             char* host_start = at_pos + 1;
             char* slash_pos = strchr(host_start, '/');
@@ -405,11 +420,11 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
                 *slash_pos = '\0';
                 config->database = strdup(slash_pos + 1);
 
-                char* colon_pos = strchr(host_start, ':');
-                if (colon_pos) {
-                    *colon_pos = '\0';
+                char* port_colon = strchr(host_start, ':');
+                if (port_colon) {
+                    *port_colon = '\0';
                     config->host = strdup(host_start);
-                    config->port = atoi(colon_pos + 1);
+                    config->port = atoi(port_colon + 1);
                 } else {
                     config->host = strdup(host_start);
                 }
