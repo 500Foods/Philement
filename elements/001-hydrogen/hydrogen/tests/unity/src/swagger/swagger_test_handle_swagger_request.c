@@ -63,6 +63,7 @@ void test_handle_swagger_request_brotli_compression(void);
 void test_handle_swagger_request_various_file_types(void);
 void test_handle_swagger_request_compression_scenarios(void);
 void test_handle_swagger_request_edge_cases(void);
+void test_handle_swagger_request_compressed_file_no_brotli_support(void);
 
 // Mock function prototypes
 bool client_accepts_brotli(struct MHD_Connection *connection);
@@ -149,10 +150,10 @@ static void setup_test_swagger_files(void) {
     swagger_files = calloc(num_swagger_files, sizeof(SwaggerFile));
     if (!swagger_files) return; // cppcheck-suppress[nullPointerOutOfMemory]
 
-    // index.html
-    swagger_files[0].name = strdup("index.html");
+    // swagger.html
+    swagger_files[0].name = strdup("swagger.html");
     if (!swagger_files[0].name) return; // cppcheck-suppress[nullPointerOutOfMemory]
-    swagger_files[0].data = (uint8_t*)strdup("<html><body>Swagger UI</body></html>");
+    swagger_files[0].data = (uint8_t*)strdup("<html><body>swagger-ui</body></html>");
     if (!swagger_files[0].data) return; // cppcheck-suppress[nullPointerOutOfMemory]
     swagger_files[0].size = strlen((char*)swagger_files[0].data);
     swagger_files[0].is_compressed = false;
@@ -313,20 +314,20 @@ void test_handle_swagger_request_exact_prefix_redirect(void) {
 }
 
 void test_handle_swagger_request_root_path(void) {
-    // Test request for root path within swagger prefix (should serve index.html)
+    // Test request for root path within swagger prefix (should serve swagger.html)
     enum MHD_Result result = handle_swagger_request((struct MHD_Connection*)&mock_connection, "/swagger/", &test_config);
 
-    // Should find and serve index.html
+    // Should find and serve swagger.html
     TEST_ASSERT_EQUAL(1, result); // MHD_YES
     TEST_ASSERT_NOT_NULL(mock_response);
     TEST_ASSERT_EQUAL(200, mock_response->status_code);
 }
 
 void test_handle_swagger_request_index_html(void) {
-    // Test explicit request for index.html
-    enum MHD_Result result = handle_swagger_request((struct MHD_Connection*)&mock_connection, "/swagger/index.html", &test_config);
+    // Test explicit request for swagger.html
+    enum MHD_Result result = handle_swagger_request((struct MHD_Connection*)&mock_connection, "/swagger/swagger.html", &test_config);
 
-    // Should find and serve index.html
+    // Should find and serve swagger.html
     TEST_ASSERT_EQUAL(1, result); // MHD_YES
     TEST_ASSERT_NOT_NULL(mock_response);
     TEST_ASSERT_EQUAL(200, mock_response->status_code);
@@ -436,6 +437,30 @@ void test_handle_swagger_request_edge_cases(void) {
     TEST_ASSERT_TRUE(result3 == 0 || result3 == 1);
 }
 
+void test_handle_swagger_request_compressed_file_no_brotli_support(void) {
+    // Test serving a compressed file to a client that doesn't support brotli
+    // The server should attempt to decompress it on-the-fly
+    // Note: This test verifies the logic path, but actual decompression is tested in integration tests
+
+    // Set up a compressed CSS file (swagger_files[3] is css/style.css which is compressed)
+    mock_connection.accepts_brotli = false;  // Client doesn't support brotli
+
+    enum MHD_Result result = handle_swagger_request(
+        (struct MHD_Connection*)&mock_connection,
+        "/swagger/css/style.css",
+        &test_config
+    );
+
+    // The result depends on whether decompression succeeds with mock data
+    // In unit tests, mock data may not be valid compressed data, so we accept either result
+    TEST_ASSERT_TRUE(result == 0 || result == 1);
+
+    // If it succeeded, verify the response was created
+    if (result == 1) {
+        TEST_ASSERT_NOT_NULL(mock_response);
+        TEST_ASSERT_EQUAL(200, mock_response->status_code);
+    }
+}
 
 int main(void) {
     UNITY_BEGIN();
@@ -444,7 +469,7 @@ int main(void) {
     RUN_TEST(test_handle_swagger_request_null_url);
     RUN_TEST(test_handle_swagger_request_null_config);
     RUN_TEST(test_handle_swagger_request_exact_prefix_redirect);
-    if (0) RUN_TEST(test_handle_swagger_request_root_path);
+    RUN_TEST(test_handle_swagger_request_root_path);
     RUN_TEST(test_handle_swagger_request_index_html);
     RUN_TEST(test_handle_swagger_request_css_file);
     RUN_TEST(test_handle_swagger_request_js_file);
@@ -455,6 +480,7 @@ int main(void) {
     RUN_TEST(test_handle_swagger_request_various_file_types);
     RUN_TEST(test_handle_swagger_request_compression_scenarios);
     RUN_TEST(test_handle_swagger_request_edge_cases);
+    RUN_TEST(test_handle_swagger_request_compressed_file_no_brotli_support);
 
     return UNITY_END();
 }

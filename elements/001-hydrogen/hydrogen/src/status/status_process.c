@@ -230,6 +230,11 @@ void get_fd_info(int fd, FileDescriptorInfo *info) {
 
 // Collect file descriptor information
 bool collect_file_descriptors(FileDescriptorInfo **descriptors, int *count) {
+    if (!descriptors || !count) {
+        log_this(SR_STATUS, "NULL parameter passed to collect_file_descriptors", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
     DIR *dir = opendir("/proc/self/fd");
     if (!dir) {
         log_this(SR_STATUS, "Failed to open /proc/self/fd", LOG_LEVEL_ERROR, 0);

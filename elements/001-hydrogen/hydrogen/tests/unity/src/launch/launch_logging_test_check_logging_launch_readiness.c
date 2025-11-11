@@ -3,18 +3,17 @@
  * This file contains unit tests for check_logging_launch_readiness function
  */
 
-// Enable mocks before including headers
-#define USE_MOCK_LAUNCH
+// Mock includes MUST come before source headers (USE_MOCK_LAUNCH defined by CMake)
+#include <unity/mocks/mock_launch.h>
 
-// Standard project header plus Unity Framework header
-#include <src/hydrogen.h>
+// Unity Framework header
 #include <unity.h>
+
+// Standard project header
+#include <src/hydrogen.h>
 
 // Include necessary headers for the module being tested
 #include <src/launch/launch.h>
-
-// Mock includes
-#include <unity/mocks/mock_launch.h>
 
 // Include config headers for structure definitions
 #include <src/config/config_logging.h>
@@ -223,6 +222,16 @@ void test_check_logging_launch_readiness_file_disabled(void) {
     TEST_ASSERT_NOT_NULL(result.messages);
 }
 
+// NOTE: The following test expects ready=TRUE but gets FALSE
+// ISSUE: get_subsystem_id_by_name() is not being mocked properly
+// The function calls registry functions but the mock substitution doesn't work because:
+// 1. We can't force-include mock_launch.h for all launch source files (causes type conflicts)
+// 2. Launch source files don't naturally include the mock header
+// POTENTIAL FIXES:
+// 1. Refactor registry interaction to be more testable (e.g., dependency injection)
+// 2. Create a mock-friendly wrapper function in launch.c that can be overridden
+// 3. Investigate using weak symbols or linker tricks for better mock integration
+
 void test_check_logging_launch_readiness_no_destinations_enabled(void) {
     // Arrange
     test_app_config.logging.console.enabled = false;
@@ -262,6 +271,8 @@ void test_check_logging_launch_readiness_successful(void) {
     TEST_ASSERT_NOT_NULL(result.messages);
 }
 
+// NOTE: Same issue as above tests - mock registry interaction not working
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -272,11 +283,11 @@ int main(void) {
     RUN_TEST(test_check_logging_launch_readiness_invalid_log_level);
     RUN_TEST(test_check_logging_launch_readiness_invalid_console_level);
     RUN_TEST(test_check_logging_launch_readiness_invalid_file_level);
-    if (0) RUN_TEST(test_check_logging_launch_readiness_console_disabled);
-    if (0) RUN_TEST(test_check_logging_launch_readiness_file_disabled);
+    if (0) RUN_TEST(test_check_logging_launch_readiness_console_disabled);  // Disabled: Mock registry interaction not working
+    if (0) RUN_TEST(test_check_logging_launch_readiness_file_disabled);     // Disabled: Mock registry interaction not working
     RUN_TEST(test_check_logging_launch_readiness_no_destinations_enabled);
     RUN_TEST(test_check_logging_launch_readiness_subsystem_not_registered);
-    if (0) RUN_TEST(test_check_logging_launch_readiness_successful);
+    if (0) RUN_TEST(test_check_logging_launch_readiness_successful);        // Disabled: Mock registry interaction not working
 
     return UNITY_END();
 }

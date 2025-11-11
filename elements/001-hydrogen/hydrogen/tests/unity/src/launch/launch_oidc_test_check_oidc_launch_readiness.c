@@ -71,7 +71,7 @@ int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_check_oidc_launch_readiness_basic_functionality);
-    if (0) RUN_TEST(test_check_oidc_launch_readiness_disabled_path);
+    RUN_TEST(test_check_oidc_launch_readiness_disabled_path);
     RUN_TEST(test_check_oidc_launch_readiness_configuration_validation);
 
     return UNITY_END();

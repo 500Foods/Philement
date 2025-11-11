@@ -12,6 +12,33 @@ static ConnectionPoolManager* global_connection_pool_manager = NULL;
 static pthread_mutex_t global_pool_manager_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
+ * Helper function to extract DB2 parameter value and strip quotes
+ */
+static char* extract_db2_value(const char* connection_string, const char* key) {
+    char* pos = strstr(connection_string, key);
+    if (!pos) return NULL;
+
+    pos += strlen(key);
+
+    const char* end_pos = strchr(pos, ';');
+    const char* value_start = pos;
+    const char* value_end = end_pos ? end_pos : pos + strlen(pos);
+
+    // Strip leading quote
+    if (*value_start == '"') value_start++;
+
+    // Strip trailing quote
+    if (value_end > value_start && *(value_end-1) == '"') value_end--;
+
+    size_t len = (size_t)(value_end - value_start);
+    char* value = calloc(1, len + 1);
+    if (value) {
+        strncpy(value, value_start, len);
+    }
+    return value;
+}
+
+/*
  * Create a connection pool manager
  */
 ConnectionPoolManager* connection_pool_manager_create(size_t max_pools) {
@@ -376,19 +403,27 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
             if (slash_pos) {
                 *slash_pos = '\0';
                 config->database = strdup(slash_pos + 1);
+            }
 
-                // Parse host:port
-                char* port_colon = strchr(host_start, ':');
-                if (port_colon) {
-                    *port_colon = '\0';
-                    config->host = strdup(host_start);
-                    config->port = atoi(port_colon + 1);
-                } else {
-                    config->host = strdup(host_start);
-                }
+            // Parse host:port
+            char* port_colon = strchr(host_start, ':');
+            if (port_colon) {
+                *port_colon = '\0';
+                config->host = strdup(host_start);
+                config->port = atoi(port_colon + 1);
+            } else {
+                config->host = strdup(host_start);
             }
         }
         free(temp);
+
+        // Set defaults for PostgreSQL
+        if (at_pos) {
+            if (!config->database) {
+                config->database = strdup("postgres");
+            }
+        }
+        config->connection_string = strdup(connection_string);
 
     } else if (strstr(connection_string, "mysql://") == connection_string) {
         // MySQL format: mysql://user:password@host:port/database
@@ -419,103 +454,56 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
             if (slash_pos) {
                 *slash_pos = '\0';
                 config->database = strdup(slash_pos + 1);
+            }
 
-                char* port_colon = strchr(host_start, ':');
-                if (port_colon) {
-                    *port_colon = '\0';
-                    config->host = strdup(host_start);
-                    config->port = atoi(port_colon + 1);
-                } else {
-                    config->host = strdup(host_start);
-                }
+            char* port_colon = strchr(host_start, ':');
+            if (port_colon) {
+                *port_colon = '\0';
+                config->host = strdup(host_start);
+                config->port = atoi(port_colon + 1);
+            } else {
+                config->host = strdup(host_start);
             }
         }
         free(temp);
 
+        // Set defaults for MySQL
+        if (at_pos) {
+            if (!config->database) {
+                config->database = strdup("mysql");
+            }
+        }
+        config->connection_string = strdup(connection_string);
+
     } else if (strstr(connection_string, ".db") || strcmp(connection_string, ":memory:") == 0) {
         // SQLite format: /path/to/database.db or :memory:
         config->database = strdup(connection_string);
+        config->connection_string = strdup(connection_string);
 
-    } else if (strstr(connection_string, "DRIVER={IBM DB2 ODBC DRIVER}") == connection_string) {
+    } else if (strstr(connection_string, "DRIVER={") == connection_string) {
         // DB2 ODBC format: DRIVER={IBM DB2 ODBC DRIVER};DATABASE=database;HOSTNAME=host;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;
         // Store the entire connection string as-is for DB2
         config->connection_string = strdup(connection_string);
         // Parse key components for convenience
-        char* db_pos = strstr(connection_string, "DATABASE=");
-        if (db_pos) {
-            db_pos += 9; // Skip "DATABASE="
-            const char* end_pos = strchr(db_pos, ';');
-            if (end_pos) {
-                size_t len = (size_t)(end_pos - db_pos);
-                config->database = calloc(1, len + 1);
-                if (config->database) {
-                    strncpy(config->database, db_pos, len);
-                }
-            } else {
-                config->database = strdup(db_pos);
-            }
+        config->database = extract_db2_value(connection_string, "DATABASE=");
+        config->host = extract_db2_value(connection_string, "HOSTNAME=");
+        char* port_str = extract_db2_value(connection_string, "PORT=");
+        if (port_str) {
+            config->port = atoi(port_str);
+            free(port_str);
         }
-        const char* host_pos = strstr(connection_string, "HOSTNAME=");
-        if (host_pos) {
-            host_pos += 9; // Skip "HOSTNAME="
-            const char* end_pos = strchr(host_pos, ';');
-            if (end_pos) {
-                size_t len = (size_t)(end_pos - host_pos);
-                config->host = calloc(1, len + 1);
-                if (config->host) {
-                    strncpy(config->host, host_pos, len);
-                }
-            } else {
-                config->host = strdup(host_pos);
-            }
-        }
-        const char* port_pos = strstr(connection_string, "PORT=");
-        if (port_pos) {
-            port_pos += 5; // Skip "PORT="
-            const char* end_pos = strchr(port_pos, ';');
-            if (end_pos) {
-                size_t len = (size_t)(end_pos - port_pos);
-                char* port_str = calloc(1, len + 1);
-                if (port_str) {
-                    strncpy(port_str, port_pos, len);
-                    config->port = atoi(port_str);
-                    free(port_str);
-                }
-            } else {
-                config->port = atoi(port_pos);
-            }
-        }
-        const char* uid_pos = strstr(connection_string, "UID=");
-        if (uid_pos) {
-            uid_pos += 4; // Skip "UID="
-            const char* end_pos = strchr(uid_pos, ';');
-            if (end_pos) {
-                size_t len = (size_t)(end_pos - uid_pos);
-                config->username = calloc(1, len + 1);
-                if (config->username) {
-                    strncpy(config->username, uid_pos, len);
-                }
-            } else {
-                config->username = strdup(uid_pos);
-            }
-        }
-        const char* pwd_pos = strstr(connection_string, "PWD=");
-        if (pwd_pos) {
-            pwd_pos += 4; // Skip "PWD="
-            const char* end_pos = strchr(pwd_pos, ';');
-            if (end_pos) {
-                size_t len = (size_t)(end_pos - pwd_pos);
-                config->password = calloc(1, len + 1);
-                if (config->password) {
-                    strncpy(config->password, pwd_pos, len);
-                }
-            } else {
-                config->password = strdup(pwd_pos);
-            }
-        }
+        config->username = extract_db2_value(connection_string, "UID=");
+        config->password = extract_db2_value(connection_string, "PWD=");
+
+        // Set defaults for DB2
+        if (!config->host) config->host = strdup("localhost");
+        if (config->port == 0) config->port = 5432;
+        if (!config->username) config->username = strdup("");
+        if (!config->password) config->password = strdup("");
     } else {
         // Assume other format - store as-is
         config->database = strdup(connection_string);
+        config->connection_string = strdup(connection_string);
     }
 
     return config;

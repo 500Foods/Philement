@@ -658,10 +658,38 @@ To add a new mock library:
 3. **Update CMakeLists-unity.cmake**:
    Add the new mock source to `UNITY_MOCK_SOURCES`
 
+   **CRITICAL CMAKE CONFIGURATION**: If your mock needs to override functions in specific source files,
+   you MUST add detection logic in TWO places in CMakeLists-unity.cmake:
+
+   a. **Source file compilation** (around line 78-122): Add string detection and mock defines
+
+   ```cmake
+   string(FIND "${SOURCE_FILE}" "yourmodule" IS_YOURMODULE_SOURCE)
+   # Then in the conditional chain add:
+   elseif(IS_YOURMODULE_SOURCE GREATER -1)
+       set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+       set(MOCK_DEFINES "-DUSE_MOCK_YOURMODULE")
+   ```
+
+   b. **Test file compilation** (around line 260-304): Add string detection and mock defines
+
+   ```cmake
+   string(FIND "${TEST_SOURCE}" "yourmodule" IS_YOURMODULE_TEST)
+   # Then in the conditional chain add:
+   elseif(IS_YOURMODULE_TEST GREATER -1)
+       set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+       set(MOCK_DEFINES "-DUSE_MOCK_YOURMODULE -DUSE_MOCK_LOGGING -Dlog_this=mock_log_this")
+   ```
+
+   **IMPORTANT**: When CMake defines `USE_MOCK_*`, test files should NOT manually define it.
+   Remove any `#define USE_MOCK_*` lines and use a comment instead: `// USE_MOCK_* defined by CMake`
+
+   **Example**: See the `launch` test configuration added in CMakeLists-unity.cmake as a reference.
+
 4. **Update Test Files**:
 
    ```c
-   #define USE_MOCK_NEWFEATURE
+   // USE_MOCK_NEWFEATURE defined by CMake (don't define it manually)
    #include <unity/mocks/mock_newfeature.h>
    ```
 

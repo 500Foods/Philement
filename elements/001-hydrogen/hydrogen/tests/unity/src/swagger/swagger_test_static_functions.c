@@ -12,15 +12,10 @@
 #include <src/swagger/swagger.h>
 
 // Forward declarations for functions being tested
-bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size);
 char* get_server_url(struct MHD_Connection *connection, const SwaggerConfig *config);
 char* create_dynamic_initializer(const char *base_content, const char *server_url, const SwaggerConfig *config);
 
 // Function prototypes for test functions
-void test_load_swagger_files_from_tar_null_data(void);
-void test_load_swagger_files_from_tar_empty_data(void);
-void test_load_swagger_files_from_tar_invalid_tar(void);
-void test_load_swagger_files_from_tar_valid_empty_tar(void);
 void test_get_server_url_null_connection(void);
 void test_get_server_url_null_config(void);
 void test_get_server_url_with_host_header(void);
@@ -147,26 +142,6 @@ void tearDown(void) {
 
 
 // Test functions
-void test_load_swagger_files_from_tar_null_data(void) {
-    // Skip this test as it causes the function to hang on Brotli decompression
-    TEST_IGNORE_MESSAGE("Skipping tar loading tests to avoid hanging on decompression");
-}
-
-void test_load_swagger_files_from_tar_empty_data(void) {
-    // Skip this test as it causes the function to hang on Brotli decompression
-    TEST_IGNORE_MESSAGE("Skipping tar loading tests to avoid hanging on decompression");
-}
-
-void test_load_swagger_files_from_tar_invalid_tar(void) {
-    // Skip this test as it causes the function to hang on Brotli decompression
-    TEST_IGNORE_MESSAGE("Skipping tar loading tests to avoid hanging on decompression");
-}
-
-void test_load_swagger_files_from_tar_valid_empty_tar(void) {
-    // Skip this test as it causes the function to hang on Brotli decompression
-    TEST_IGNORE_MESSAGE("Skipping tar loading tests to avoid hanging on decompression");
-}
-
 void test_get_server_url_null_connection(void) {
     char *result = get_server_url(NULL, &test_config);
     // Function may not return NULL for null connection, just ensure it doesn't crash
@@ -210,8 +185,9 @@ void test_create_dynamic_initializer_null_server_url(void) {
 }
 
 void test_create_dynamic_initializer_null_config(void) {
-    // Skip this test as it causes segmentation fault - function doesn't properly check for NULL config
-    TEST_IGNORE_MESSAGE("Skipping null config test to avoid segmentation fault");
+    char *result = create_dynamic_initializer("{}", "http://localhost:8080", NULL);
+    // Function should handle NULL config gracefully and return NULL
+    TEST_ASSERT_NULL(result);
 }
 
 void test_create_dynamic_initializer_valid_inputs(void) {
@@ -236,12 +212,6 @@ void test_create_dynamic_initializer_with_api_config(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    // Test load_swagger_files_from_tar function
-    if (0) RUN_TEST(test_load_swagger_files_from_tar_null_data);
-    if (0) RUN_TEST(test_load_swagger_files_from_tar_empty_data);
-    if (0) RUN_TEST(test_load_swagger_files_from_tar_invalid_tar);
-    if (0) RUN_TEST(test_load_swagger_files_from_tar_valid_empty_tar);
-
     // Test get_server_url function
     RUN_TEST(test_get_server_url_null_connection);
     RUN_TEST(test_get_server_url_null_config);
@@ -251,7 +221,7 @@ int main(void) {
     // Test create_dynamic_initializer function
     RUN_TEST(test_create_dynamic_initializer_null_base_content);
     RUN_TEST(test_create_dynamic_initializer_null_server_url);
-    if (0) RUN_TEST(test_create_dynamic_initializer_null_config);
+    RUN_TEST(test_create_dynamic_initializer_null_config);
     RUN_TEST(test_create_dynamic_initializer_valid_inputs);
     RUN_TEST(test_create_dynamic_initializer_with_api_config);
 

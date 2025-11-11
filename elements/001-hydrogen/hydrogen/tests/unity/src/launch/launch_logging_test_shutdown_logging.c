@@ -14,7 +14,7 @@
 #include <unity/mocks/mock_launch.h>
 
 // Enable mocks
-#define USE_MOCK_LAUNCH
+// USE_MOCK_LAUNCH defined by CMake
 
 // Forward declarations for functions being tested
 void shutdown_logging(void);

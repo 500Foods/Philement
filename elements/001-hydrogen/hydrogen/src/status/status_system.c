@@ -21,6 +21,11 @@ void format_percentage(double value, char *buffer, size_t buffer_size) {
 
 // Collect CPU metrics from /proc/stat
 bool collect_cpu_metrics(CpuMetrics *cpu) {
+    if (!cpu) {
+        log_this(SR_STATUS, "NULL cpu parameter passed to collect_cpu_metrics", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
     FILE *stat = fopen("/proc/stat", "r");
     if (!stat) {
         log_this(SR_STATUS, "Failed to open /proc/stat", LOG_LEVEL_ERROR, 0);

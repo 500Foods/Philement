@@ -1,6 +1,9 @@
 // Global includes
 #include <src/hydrogen.h>
 
+// Third-party libraries
+#include <brotli/decode.h>
+
 // Local includes
 #include "swagger.h"
 #include <src/webserver/web_server_core.h>
@@ -62,6 +65,7 @@ void cleanup_swagger_support(void) {
 bool get_payload_files_by_prefix(const char *prefix, PayloadFile **files, size_t *num_files, size_t *capacity);
 char* get_server_url(struct MHD_Connection *connection, const SwaggerConfig *config);
 char* create_dynamic_initializer(const char *base_content, const char *server_url, const SwaggerConfig *config);
+bool decompress_brotli_data(const uint8_t *compressed_data, size_t compressed_size, uint8_t **decompressed_data, size_t *decompressed_size);
 
 /**
  * Initialize swagger support using payload cache files
@@ -139,6 +143,85 @@ bool init_swagger_support_from_payload(SwaggerConfig *config, PayloadFile *paylo
 
     log_this(SR_SWAGGER, "Loaded %zu swagger files from payload cache", LOG_LEVEL_DEBUG, 1, num_swagger_files);
 
+    return true;
+}
+
+/**
+ * Decompress Brotli-compressed data
+ *
+ * @param compressed_data The compressed data
+ * @param compressed_size Size of compressed data
+ * @param decompressed_data Output pointer for decompressed data (caller must free)
+ * @param decompressed_size Output size of decompressed data
+ * @return true if successful, false otherwise
+ */
+bool decompress_brotli_data(const uint8_t *compressed_data, size_t compressed_size,
+                           uint8_t **decompressed_data, size_t *decompressed_size) {
+    if (!compressed_data || !decompressed_data || !decompressed_size) {
+        return false;
+    }
+
+    // Create Brotli decoder
+    BrotliDecoderState* decoder = BrotliDecoderCreateInstance(NULL, NULL, NULL);
+    if (!decoder) {
+        log_this(SR_SWAGGER, "Failed to create Brotli decoder", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    // Start with 4x the compressed size
+    size_t buffer_size = compressed_size * 4;
+    uint8_t *output = malloc(buffer_size);
+    if (!output) {
+        log_this(SR_SWAGGER, "Failed to allocate decompression buffer", LOG_LEVEL_ERROR, 0);
+        BrotliDecoderDestroyInstance(decoder);
+        return false;
+    }
+
+    // Set up input/output parameters
+    const uint8_t *next_in = compressed_data;
+    size_t available_in = compressed_size;
+    uint8_t *next_out = output;
+    size_t available_out = buffer_size;
+    size_t total_out = 0;
+
+    // Decompress until done
+    BrotliDecoderResult result;
+    do {
+        result = BrotliDecoderDecompressStream(
+            decoder,
+            &available_in, &next_in,
+            &available_out, &next_out,
+            &total_out
+        );
+
+        if (result == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT) {
+            // Need more output space
+            size_t current_position = (size_t)(next_out - output);
+            buffer_size *= 2;
+            uint8_t *new_buffer = realloc(output, buffer_size);
+            if (!new_buffer) {
+                log_this(SR_SWAGGER, "Failed to resize decompression buffer", LOG_LEVEL_ERROR, 0);
+                free(output);
+                BrotliDecoderDestroyInstance(decoder);
+                return false;
+            }
+            
+            output = new_buffer;
+            next_out = output + current_position;
+            available_out = buffer_size - current_position;
+        } else if (result == BROTLI_DECODER_RESULT_ERROR) {
+            log_this(SR_SWAGGER, "Brotli decompression error: %s", LOG_LEVEL_ERROR, 1,
+                    BrotliDecoderErrorString(BrotliDecoderGetErrorCode(decoder)));
+            free(output);
+            BrotliDecoderDestroyInstance(decoder);
+            return false;
+        }
+    } while (result != BROTLI_DECODER_RESULT_SUCCESS);
+
+    BrotliDecoderDestroyInstance(decoder);
+
+    *decompressed_data = output;
+    *decompressed_size = total_out;
     return true;
 }
 
@@ -248,7 +331,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
             }
         }
 
-        // Prefer uncompressed file for browser compatibility, fallback to compressed
+        // Prefer uncompressed file for browser compatibility
         if (uncompressed_file) {
             file = uncompressed_file;
             log_this(SR_SWAGGER, "Using uncompressed version of %s", LOG_LEVEL_DEBUG, 1, url_path);
@@ -256,8 +339,10 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
             file = compressed_file;
             log_this(SR_SWAGGER, "Using compressed version of %s (client supports brotli)", LOG_LEVEL_DEBUG, 1, url_path);
         } else if (compressed_file) {
+            // Client doesn't support brotli but we only have compressed version
+            // We'll decompress it on-the-fly below
             file = compressed_file;
-            log_this(SR_SWAGGER, "Using compressed version of %s (forcing header for client compatibility)", LOG_LEVEL_DEBUG, 1, url_path);
+            log_this(SR_SWAGGER, "Will decompress %s for client compatibility", LOG_LEVEL_DEBUG, 1, url_path);
         } else {
             log_this(SR_SWAGGER, "No version found for %s", LOG_LEVEL_ERROR, 1, url_path);
         }
@@ -286,16 +371,30 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         return MHD_NO; // File not found
     }
 
-    // Note: serve_compressed variable removed as we now serve compressed content with headers always
+    // Handle decompression for clients that don't support brotli
+    uint8_t *decompressed_data = NULL;
+    size_t decompressed_size = 0;
+    bool needs_decompression = file->is_compressed && !client_accepts_br;
+    
+    if (needs_decompression) {
+        if (!decompress_brotli_data(file->data, file->size, &decompressed_data, &decompressed_size)) {
+            log_this(SR_SWAGGER, "Failed to decompress %s for client", LOG_LEVEL_ERROR, 1, url_path);
+            return MHD_NO;
+        }
+        log_this(SR_SWAGGER, "Decompressed %s: %zu -> %zu bytes", LOG_LEVEL_DEBUG, 3,
+                url_path, file->size, decompressed_size);
+    }
 
     // If this is swagger.json or swagger-initializer.js, we need to modify it
     struct MHD_Response *response;
     char *dynamic_content = NULL;
     
     if (strcmp(url_path, "swagger.json") == 0) {
-        // Parse the original swagger.json
+        // Parse the original swagger.json (use decompressed data if available)
         json_error_t error;
-        json_t *spec = json_loadb((const char*)file->data, file->size, 0, &error);
+        const char *json_data = needs_decompression ? (const char*)decompressed_data : (const char*)file->data;
+        size_t json_size = needs_decompression ? decompressed_size : file->size;
+        json_t *spec = json_loadb(json_data, json_size, 0, &error);
         if (!spec) {
             log_this(SR_SWAGGER, "Failed to parse swagger.json: %s", LOG_LEVEL_ERROR, 1, error.text);
             return MHD_NO;
@@ -405,11 +504,13 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         // Get the server's base URL
         char *server_url = get_server_url(connection, config);
         if (!server_url) {
+            free(decompressed_data);
             return MHD_NO;
         }
         
-        // Create dynamic content with the correct URL
-        dynamic_content = create_dynamic_initializer((const char*)file->data, server_url, config);
+        // Create dynamic content with the correct URL (use decompressed data if available)
+        const char *js_data = needs_decompression ? (const char*)decompressed_data : (const char*)file->data;
+        dynamic_content = create_dynamic_initializer(js_data, server_url, config);
         free(server_url);
         
         if (!dynamic_content) {
@@ -422,16 +523,26 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
             MHD_RESPMEM_MUST_FREE
         );
     } else {
-        // For all other files, serve directly from memory
-        response = MHD_create_response_from_buffer(
-            file->size,
-            (void*)file->data,
-            MHD_RESPMEM_PERSISTENT
-        );
+        // For all other files, serve directly from memory or decompressed data
+        if (needs_decompression) {
+            response = MHD_create_response_from_buffer(
+                decompressed_size,
+                (void*)decompressed_data,
+                MHD_RESPMEM_MUST_FREE  // MHD will free the decompressed data
+            );
+            decompressed_data = NULL;  // Transfer ownership to MHD
+        } else {
+            response = MHD_create_response_from_buffer(
+                file->size,
+                (void*)file->data,
+                MHD_RESPMEM_PERSISTENT
+            );
+        }
     }
 
     if (!response) {
         free(dynamic_content);
+        free(decompressed_data);  // In case it wasn't transferred to MHD
         return MHD_NO;
     }
 
@@ -474,11 +585,13 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     // Add content type header
     MHD_add_response_header(response, "Content-Type", content_type);
 
-    // Add compression header if serving compressed content
-    // IMPORTANT: Always add header when serving compressed data, regardless of client support
-    if (file->is_compressed) {
+    // Add compression header only if we're actually serving compressed content
+    // (i.e., file is compressed AND client supports brotli)
+    if (file->is_compressed && !needs_decompression) {
         log_this(SR_SWAGGER, "Serving compressed file: %s (Content-Encoding: br)", LOG_LEVEL_DEBUG, 1, url_path);
         add_brotli_header(response);
+    } else if (needs_decompression) {
+        log_this(SR_SWAGGER, "Serving decompressed file: %s", LOG_LEVEL_DEBUG, 1, url_path);
     } else {
         log_this(SR_SWAGGER, "Serving uncompressed file: %s", LOG_LEVEL_DEBUG, 1, url_path);
     }
@@ -564,6 +677,12 @@ char* get_server_url(struct MHD_Connection *connection,
 char* create_dynamic_initializer(const char *base_content __attribute__((unused)),
                                       const char *server_url,
                                       const SwaggerConfig *config) {
+    // Validate parameters
+    if (!config) {
+        log_this(SR_SWAGGER, "NULL config parameter passed to create_dynamic_initializer", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
     // Get the API prefix from the global config
     if (!app_config || !app_config->api.prefix) {
         log_this(SR_SWAGGER, "API configuration not available", LOG_LEVEL_ERROR, 0);
