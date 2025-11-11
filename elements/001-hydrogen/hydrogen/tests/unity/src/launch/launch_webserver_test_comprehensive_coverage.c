@@ -5,7 +5,7 @@
  */
 
 // Enable mocks BEFORE including ANY headers
-#define USE_MOCK_LAUNCH
+// USE_MOCK_LAUNCH defined by CMake
 #define USE_MOCK_SYSTEM
 #define USE_MOCK_PTHREAD
 

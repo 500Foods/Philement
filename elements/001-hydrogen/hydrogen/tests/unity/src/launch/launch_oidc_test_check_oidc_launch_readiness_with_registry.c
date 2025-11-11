@@ -5,7 +5,7 @@
  */
 
 // Enable mocks before any includes
-#define USE_MOCK_LAUNCH
+// USE_MOCK_LAUNCH defined by CMake
 #include <tests/unity/mocks/mock_launch.h>
 
 // Standard project header plus Unity Framework header
@@ -69,10 +69,15 @@ void test_check_oidc_launch_readiness_disabled_with_registry_mock(void) {
     TEST_ASSERT_NOT_NULL(result.messages);
 }
 
+// NOTE: Test disabled - Registry mock not working in source code
+// ISSUE: Mock works in test file but source code (launch_oidc.c) calls real is_subsystem_launchable_by_name()
+// The source file isn't compiled with mock enabled, so registry functions aren't mocked
+// Same architectural issue as launch_logging tests - can't force-include mock without type conflicts
+
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_check_oidc_launch_readiness_disabled_with_registry_mock);
+    if (0) RUN_TEST(test_check_oidc_launch_readiness_disabled_with_registry_mock);  // Disabled: Mock registry interaction not working
 
     return UNITY_END();
 }

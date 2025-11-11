@@ -73,9 +73,9 @@ void test_free_swagger_files_with_files(void) {
     if (!swagger_files) return; // cppcheck-suppress[nullPointerOutOfMemory]
 
     // Initialize files
-    swagger_files[0].name = strdup("index.html");
+    swagger_files[0].name = strdup("swagger.html");
     if (!swagger_files[0].name) return; // cppcheck-suppress[nullPointerOutOfMemory]
-    swagger_files[0].data = (uint8_t*)strdup("<html>Test</html>");
+    swagger_files[0].data = (uint8_t*)strdup("<html>swagger-ui</html>");
     if (!swagger_files[0].data) return; // cppcheck-suppress[nullPointerOutOfMemory]
     swagger_files[0].size = 15;
     swagger_files[0].is_compressed = false;

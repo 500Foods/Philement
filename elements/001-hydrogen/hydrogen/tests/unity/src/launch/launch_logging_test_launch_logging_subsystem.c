@@ -3,18 +3,17 @@
  * This file contains unit tests for launch_logging_subsystem function
  */
 
-// Enable mocks before including headers
-#define USE_MOCK_LAUNCH
+// Mock includes MUST come before source headers (USE_MOCK_LAUNCH defined by CMake)
+#include <unity/mocks/mock_launch.h>
 
-// Standard project header plus Unity Framework header
-#include <src/hydrogen.h>
+// Unity Framework header
 #include <unity.h>
+
+// Standard project header
+#include <src/hydrogen.h>
 
 // Include necessary headers for the module being tested
 #include <src/launch/launch.h>
-
-// Mock includes
-#include <unity/mocks/mock_launch.h>
 
 // Forward declarations for functions being tested
 int launch_logging_subsystem(void);
@@ -51,6 +50,12 @@ void test_launch_logging_subsystem_successful_launch(void) {
     TEST_ASSERT_EQUAL(0, logging_stopping);
 }
 
+// NOTE: Test disabled - Same registry mock integration issue as other launch tests
+// The get_subsystem_id_by_name() call isn't properly mocked because:
+// - Can't force-include mock_launch.h for all launch source files (type conflicts with function pointers)
+// - Launch source files don't include the mock header naturally
+// POTENTIAL FIX: Refactor registry interaction or use linker-based mocking approach
+
 void test_launch_logging_subsystem_failed_subsystem_lookup(void) {
     // Arrange: Mock failed subsystem lookup
     mock_launch_set_get_subsystem_id_result(-1);
@@ -66,7 +71,7 @@ void test_launch_logging_subsystem_failed_subsystem_lookup(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_launch_logging_subsystem_successful_launch);
+    if (0) RUN_TEST(test_launch_logging_subsystem_successful_launch);  // Disabled: Mock registry interaction not working
     RUN_TEST(test_launch_logging_subsystem_failed_subsystem_lookup);
 
     return UNITY_END();

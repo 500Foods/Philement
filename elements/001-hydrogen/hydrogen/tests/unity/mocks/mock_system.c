@@ -188,6 +188,11 @@ void mock_free(void *ptr) {
 // Mock implementation of strdup
 // NOTE: strdup uses malloc internally, so it shares the malloc counter
 char *mock_strdup(const char *s) {
+    // Handle NULL input gracefully - strdup(NULL) is undefined behavior
+    if (s == NULL) {
+        return NULL;
+    }
+    
     mock_malloc_call_count++;
     if (mock_malloc_should_fail > 0 && mock_malloc_call_count == mock_malloc_should_fail) {
         return NULL;

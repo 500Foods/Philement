@@ -36,6 +36,9 @@ void init_service_threads(ServiceThreads *threads, const char* subsystem_name) {
     MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
     if (lock_result == MUTEX_SUCCESS) {
         threads->thread_count = 0;
+        threads->virtual_memory = 0;
+        threads->resident_memory = 0;
+        threads->memory_percent = 0.0;
         memset(threads->thread_ids, 0, sizeof(pthread_t) * MAX_SERVICE_THREADS);
         memset(threads->thread_metrics, 0, sizeof(ThreadMemoryMetrics) * MAX_SERVICE_THREADS);
         memset(threads->thread_tids, 0, sizeof(pid_t) * MAX_SERVICE_THREADS);
@@ -278,24 +281,15 @@ void free_threads_resources(void) {
         // Set final shutdown mode to prevent excessive logging
         final_shutdown_mode = 1;
 
-        // Clean up logging threads
-        init_service_threads(&logging_threads, SR_LOGGING);
-
-        // Clean up web threads
-        init_service_threads(&webserver_threads, SR_WEBSERVER);
-
-        // Clean up websocket threads
-        init_service_threads(&websocket_threads, SR_WEBSOCKET);
-
-        // Clean up mdns server threads
-        init_service_threads(&mdns_server_threads, SR_MDNS_SERVER);
-
-        // Clean up print threads
-        init_service_threads(&print_threads, SR_PRINT);
-
-        // Clean up database threads
-        init_service_threads(&database_threads, SR_DATABASE);
-
         MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
     }
+
+    // Now reset all thread structures without holding the lock
+    // (init_service_threads acquires its own lock)
+    init_service_threads(&logging_threads, "Unknown");
+    init_service_threads(&webserver_threads, "Unknown");
+    init_service_threads(&websocket_threads, "Unknown");
+    init_service_threads(&mdns_server_threads, "Unknown");
+    init_service_threads(&print_threads, "Unknown");
+    init_service_threads(&database_threads, "Unknown");
 }

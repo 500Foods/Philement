@@ -51,18 +51,126 @@ file. The files are used primarily to group the tests and the dependencies. But 
 - Start again with the next test in the section being worked on
 - Stop when that section is complete
 
-## Status
+## Launch
 
-- tests/unity/src/status/status_system_test_collect_cpu_metrics.c:136:    if (0) RUN_TEST(test_collect_cpu_metrics_null_pointer);
-- tests/unity/src/status/status_process_test_collect_file_descriptors.c:169:    if (0) RUN_TEST(test_collect_file_descriptors_null_pointers);
-- tests/unity/src/status/status_process_test_collect_file_descriptors.c:171:    if (0) RUN_TEST(test_collect_file_descriptors_parameter_validation);
-- tests/unity/src/status/status_formatters_test_format_system_status_json.c:218:    if (0) RUN_TEST(test_format_system_status_json_null_metrics);
-- tests/unity/src/status/status_formatters_test_format_system_status_json.c:219:    if (0) RUN_TEST(test_format_system_status_json_minimal_metrics);
-- tests/unity/src/status/status_formatters_test_format_system_status_json.c:220:    if (0) RUN_TEST(test_format_system_status_json_return_type);
-- tests/unity/src/status/status_formatters_test_format_system_status_json.c:221:    if (0) RUN_TEST(test_format_system_status_json_memory_management);
-- tests/unity/src/status/status_formatters_test_format_system_status_json.c:222:    if (0) RUN_TEST(test_format_system_status_json_json_structure);
-- tests/unity/src/status/status_formatters_test_format_system_status_json.c:223:    if (0) RUN_TEST(test_format_system_status_json_with_version_info);
-- tests/unity/src/status/status_formatters_test_format_system_status_json.c:224:    if (0) RUN_TEST(test_format_system_status_json_with_system_info);
+NOTE: Launch tests require registry/subsystem mocking which has architectural limitations.
+Tests that verify readiness with mock registry state remain disabled until better mock integration is available.
+
+- tests/unity/src/launch/launch_logging_test_check_logging_launch_readiness.c:286:    if (0) RUN_TEST(test_check_logging_launch_readiness_console_disabled);  
+- tests/unity/src/launch/launch_logging_test_check_logging_launch_readiness.c:287:    if (0) RUN_TEST(test_check_logging_launch_readiness_file_disabled);
+- tests/unity/src/launch/launch_logging_test_check_logging_launch_readiness.c:290:    if (0) RUN_TEST(test_check_logging_launch_readiness_successful);
+- tests/unity/src/launch/launch_logging_test_launch_logging_subsystem.c:78:    if (0) RUN_TEST(test_launch_logging_subsystem_successful_launch);
+- tests/unity/src/launch/launch_oidc_test_check_oidc_launch_readiness_with_registry.c:80:    if (0) RUN_TEST(test_check_oidc_launch_readiness_disabled_with_registry_mock);
+- tests/unity/src/launch/launch_swagger_test_validation.c:358:    if (0) RUN_TEST(test_check_swagger_launch_readiness_valid_configuration);
+
+## Landing
+
+- tests/unity/src/landing/landing_api_test_readiness.c:100:    if (0) RUN_TEST(test_check_api_landing_readiness_both_running);
+- tests/unity/src/landing/landing_test_land_approved_subsystems.c:224:    if (0) RUN_TEST(test_land_approved_subsystems_single_ready_subsystem);
+- tests/unity/src/landing/landing_test_land_approved_subsystems.c:225:    if (0) RUN_TEST(test_land_approved_subsystems_multiple_ready_subsystems);
+- tests/unity/src/landing/landing_test_land_approved_subsystems.c:226:    if (0) RUN_TEST(test_land_approved_subsystems_registry_skipped);
+- tests/unity/src/landing/landing_test_land_approved_subsystems.c:227:    if (0) RUN_TEST(test_land_approved_subsystems_not_ready_subsystems_skipped);
+- tests/unity/src/landing/landing_test_land_approved_subsystems.c:228:    if (0) RUN_TEST(test_land_approved_subsystems_unknown_subsystem_skipped);
+- tests/unity/src/landing/landing_test_check_all_landing_readiness.c:238:    if (0) RUN_TEST(test_check_all_landing_readiness_shutdown_success);
+- tests/unity/src/landing/landing_test_check_all_landing_readiness.c:239:    if (0) RUN_TEST(test_check_all_landing_readiness_restart_success);
+- tests/unity/src/landing/landing_terminal_test_check_terminal_landing_readiness.c:180:    if (0) RUN_TEST(test_check_terminal_landing_readiness_malloc_failure);
+- tests/unity/src/landing/landing_swagger_test_check_swagger_landing_readiness.c:163:    if (0) RUN_TEST(test_check_swagger_landing_readiness_webserver_not_running);
+- tests/unity/src/landing/landing_payload_test_check_payload_landing_readiness.c:102:    if (0) RUN_TEST(test_check_payload_landing_readiness_memory_allocation_failure);
+- tests/unity/src/landing/landing_mdns_client_test_readiness.c:142:    if (0) RUN_TEST(test_check_mdns_client_landing_readiness_network_not_running);
+- tests/unity/src/landing/landing_mdns_client_test_readiness.c:143:    if (0) RUN_TEST(test_check_mdns_client_landing_readiness_logging_not_running);
+
+## Logging
+
+- tests/unity/src/logging/logging_test_basic.c:126:    if (0) RUN_TEST(test_count_format_specifiers_single_specifier);
+- tests/unity/src/logging/logging_test_basic.c:127:    if (0) RUN_TEST(test_count_format_specifiers_multiple_specifiers);
+- tests/unity/src/logging/logging_test_basic.c:129:    if (0) RUN_TEST(test_count_format_specifiers_mixed);
+- tests/unity/src/logging/logging_test_basic.c:132:    if (0) RUN_TEST(test_get_fallback_priority_label_valid_priorities);
+- tests/unity/src/logging/logging_test_basic.c:133:    if (0) RUN_TEST(test_get_fallback_priority_label_invalid_priority);
+
+## mDNS Server
+
+- tests/unity/src/mdns/mdns_server_init_test.c:814:    if (0) RUN_TEST(test_mdns_server_init_null_services_array); // Disabled due to double free issues - needs investigation
+- tests/unity/src/mdns/mdns_server_init_test.c:815:    if (0) RUN_TEST(test_mdns_server_init_network_failure);
+- tests/unity/src/mdns/mdns_server_init_test.c:816:    if (0) RUN_TEST(test_mdns_server_init_malloc_failure);
+- tests/unity/src/mdns/mdns_server_init_test.c:817:    if (0) RUN_TEST(test_mdns_server_init_socket_failure);
+- tests/unity/src/mdns/mdns_server_init_test.c:818:    if (0) RUN_TEST(test_mdns_server_init_hostname_failure);
+- tests/unity/src/mdns/mdns_server_init_test_setup_hostname.c:91:    if (0) RUN_TEST(test_mdns_server_setup_hostname_gethostname_failure);
+- tests/unity/src/mdns/mdns_server_init_test_setup_hostname.c:92:    if (0) RUN_TEST(test_mdns_server_setup_hostname_malloc_failure);
+- tests/unity/src/mdns/mdns_server_init_test_allocate.c:64:    if (0) RUN_TEST(test_mdns_server_allocate_malloc_failure);
+
+## Database_Engine
+
+- tests/unity/src/database/database_engine_test_comprehensive.c:685:    if (0) RUN_TEST(test_database_engine_register_basic);
+- tests/unity/src/database/database_engine_test_comprehensive.c:686:    if (0) RUN_TEST(test_database_engine_register_null_engine);
+- tests/unity/src/database/database_engine_test_comprehensive.c:687:    if (0) RUN_TEST(test_database_engine_register_invalid_type);
+- tests/unity/src/database/database_engine_test_comprehensive.c:688:    if (0) RUN_TEST(test_database_engine_register_already_registered);
+- tests/unity/src/database/database_engine_test_comprehensive.c:689:    if (0) RUN_TEST(test_database_engine_register_already_registered_independent);
+- tests/unity/src/database/database_engine_test_transaction.c:429:    if (0) RUN_TEST(test_database_engine_begin_transaction_no_engine);
+- tests/unity/src/database/database_engine_test_transaction.c:433:    if (0) RUN_TEST(test_database_engine_commit_transaction_null_transaction);
+- tests/unity/src/database/database_engine_test_transaction.c:434:    if (0) RUN_TEST(test_database_engine_commit_transaction_no_engine);
+- tests/unity/src/database/database_engine_test_transaction.c:436:    if (0) RUN_TEST(test_database_engine_rollback_transaction_basic);
+- tests/unity/src/database/database_engine_test_transaction.c:438:    if (0) RUN_TEST(test_database_engine_rollback_transaction_null_transaction);
+- tests/unity/src/database/database_engine_test_transaction.c:439:    if (0) RUN_TEST(test_database_engine_rollback_transaction_no_engine);
+- tests/unity/src/database/database_engine_test_connect.c:300:    if (0) RUN_TEST(test_database_engine_connect_with_designator_basic);
+- tests/unity/src/database/database_engine_test_connect.c:301:    if (0) RUN_TEST(test_database_engine_connect_with_designator_null_designator);
+
+## Database_Bootstrap
+
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query.c:72:    if (0) RUN_TEST(test_database_queue_execute_bootstrap_query_lead_queue_no_connection);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:867:    if (0) RUN_TEST(test_lead_queue_no_connection);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:869:    if (0) RUN_TEST(test_query_id_allocation_failure);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:870:    if (0) RUN_TEST(test_sql_template_allocation_failure);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:871:    if (0) RUN_TEST(test_parameters_json_allocation_failure);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:872:    if (0) RUN_TEST(test_query_execution_failure);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:873:    if (0) RUN_TEST(test_successful_execution_no_qtc);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:874:    if (0) RUN_TEST(test_successful_execution_with_qtc);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:875:    if (0) RUN_TEST(test_qtc_creation_failure);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:876:    if (0) RUN_TEST(test_qtc_entry_creation_failure);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:877:    if (0) RUN_TEST(test_migration_tracking_available);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:878:    if (0) RUN_TEST(test_migration_tracking_installed);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:879:    if (0) RUN_TEST(test_migration_tracking_mixed);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:880:    if (0) RUN_TEST(test_bootstrap_completion_signaling);
+- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:881:    if (0) RUN_TEST(test_empty_database_detection);
+
+## Database/DBQueue
+
+- tests/unity/src/database/dbqueue/process_test_missing_coverage.c:398:    if (0) RUN_TEST(test_database_queue_process_single_query_no_connection);
+- tests/unity/src/database/dbqueue/process_test_missing_coverage.c:400:    if (0) RUN_TEST(test_database_queue_manage_child_queues_scaling_down); // Disabled due to segfault in queue destruction
+- tests/unity/src/database/dbqueue/process_test_missing_coverage.c:404:    if (0) RUN_TEST(test_database_queue_worker_thread_main_loop_processing);
+- tests/unity/src/database/dbqueue/heartbeat_test_perform_heartbeat.c:118:    if (0) RUN_TEST(test_database_queue_perform_heartbeat_with_connection);
+- tests/unity/src/database/dbqueue/heartbeat_test_perform_heartbeat.c:119:    if (0) RUN_TEST(test_database_queue_perform_heartbeat_connection_states);
+- tests/unity/src/database/dbqueue/heartbeat_test_check_connection.c:144:    if (0) RUN_TEST(test_database_queue_check_connection_sqlite_format);
+
+## Database/Migration
+
+- tests/unity/src/database/migration/transaction_test_execute_transaction.c:495:    if (0) RUN_TEST(test_parse_sql_statements_strdup_failure);  // Disabled: malloc mocking not supported
+- tests/unity/src/database/migration/transaction_test_execute_transaction.c:496:    if (0) RUN_TEST(test_parse_sql_statements_realloc_failure);  // Disabled: malloc mocking not supported
+- tests/unity/src/database/migration/transaction_test_execute_transaction.c:503:    if (0) RUN_TEST(test_execute_db2_migration_calloc_failure);  // Disabled: malloc mocking not supported
+- tests/unity/src/database/migration/transaction_test_execute_transaction.c:508:    if (0) RUN_TEST(test_execute_postgresql_migration_calloc_failure);  // Disabled: malloc mocking not supported
+- tests/unity/src/database/migration/transaction_test_execute_transaction.c:529:    if (0) RUN_TEST(test_database_migrations_execute_transaction_parse_failure);  // Disabled: malloc mocking not supported
+- tests/unity/src/database/migration/lua_test_load_database_module.c:669:    if (0) RUN_TEST(test_database_migrations_lua_extract_queries_table_success);
+- tests/unity/src/database/migration/lua_test_load_database_module.c:679:    if (0) RUN_TEST(test_database_migrations_lua_execute_run_migration_success);
+- tests/unity/src/database/migration/execute_test_execute_auto.c:553:    if (0) RUN_TEST(test_database_migrations_execute_single_migration_with_mocks);
+
+## Database/MySQL
+
+- tests/unity/src/database/mysql/query_test_coverage_mysql.c:509:    if (0) RUN_TEST(test_mysql_execute_query_memory_allocation_failure); // Skipped - requires mock_system
+- tests/unity/src/database/mysql/query_test_coverage_mysql.c:516:    if (0) RUN_TEST(test_mysql_execute_prepared_affected_rows_fallback); // Targets line 520
+- tests/unity/src/database/mysql/query_test_coverage_mysql.c:518:    if (0) RUN_TEST(test_mysql_execute_prepared_stmt_execute_unavailable); // Skipped - mock limitation
+- tests/unity/src/database/mysql/query_test_coverage_mysql.c:519:    if (0) RUN_TEST(test_mysql_execute_prepared_memory_allocation_failure); // Skipped - requires mock_system
+- tests/unity/src/database/mysql/query_test_coverage_mysql.c:520:    if (0) RUN_TEST(test_mysql_execute_prepared_with_result_set); // Skipped - mock limitation
+- tests/unity/src/database/mysql/query_test_edge_cases_mysql.c:415:    if (0) RUN_TEST(test_mysql_execute_prepared_execution_failure);
+- tests/unity/src/database/mysql/query_test_edge_cases_mysql.c:418:    if (0) RUN_TEST(test_mysql_execute_prepared_null_column_data);
+
+## Database/PostgreSQL
+
+- tests/unity/src/database/postgresql/prepared_test_postgresql_force_failures.c:218:    if (0) RUN_TEST(test_force_cache_initialization_failure);
+- tests/unity/src/database/postgresql/prepared_test_postgresql_force_failures.c:219:    if (0) RUN_TEST(test_force_lru_eviction_failure);
+
+## Database/SQLite
+
+- tests/unity/src/database/sqlite/query_test_sqlite.c:787:    if (0) RUN_TEST(test_sqlite_execute_query_memory_allocation_failure);
+- tests/unity/src/database/sqlite/query_test_sqlite.c:809:    if (0) RUN_TEST(test_sqlite_execute_prepared_memory_allocation_failure);
 
 ## WebServer
 
@@ -146,6 +254,26 @@ file. The files are used primarily to group the tests and the dependencies. But 
 - tests/unity/src/webserver/web_server_upload_test_generate_uuid.c:71:    if (0) RUN_TEST(test_generate_uuid_consistent_format);
 - tests/unity/src/webserver/web_server_upload_test_generate_uuid.c:72:    if (0) RUN_TEST(test_generate_uuid_version_and_variant_bits);
 
+## WebSocket
+
+- tests/unity/src/websocket/websocket_server_test_coverage_gaps.c:633:    if (0) RUN_TEST(test_start_websocket_server_pthread_create_failure);
+- tests/unity/src/websocket/websocket_server_message_test_handle_message_type.c:303:    if (0) RUN_TEST(test_handle_message_type_terminal_message_processing);
+- tests/unity/src/websocket/websocket_server_test_run_helpers.c:285:    if (0) RUN_TEST(test_run_service_loop_success);
+- tests/unity/src/websocket/websocket_server_test_run_helpers.c:286:    if (0) RUN_TEST(test_run_service_loop_service_error);
+- tests/unity/src/websocket/websocket_server_test_run_helpers.c:287:    if (0) RUN_TEST(test_run_service_loop_shutdown);
+- tests/unity/src/websocket/websocket_server_test_run_helpers.c:291:    if (0) RUN_TEST(test_handle_shutdown_timeout_with_connections);
+- tests/unity/src/websocket/websocket_server_test_run_helpers.c:292:    if (0) RUN_TEST(test_handle_shutdown_timeout_mutex_lock_failure);
+- tests/unity/src/websocket/websocket_server_message_test_comprehensive.c:485:    if (0) RUN_TEST(test_ws_handle_receive_message_too_large);
+- tests/unity/src/websocket/websocket_server_auth_test.c:452:    if (0) RUN_TEST(test_authentication_edge_cases);
+- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:134:    if (0) RUN_TEST(test_find_or_create_terminal_session_null_wsi);
+- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:135:    if (0) RUN_TEST(test_find_or_create_terminal_session_null_context);
+- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:136:    if (0) RUN_TEST(test_find_or_create_terminal_session_terminal_disabled);
+- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:137:    if (0) RUN_TEST(test_find_or_create_terminal_session_reuse_existing);
+- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:138:    if (0) RUN_TEST(test_find_or_create_terminal_session_create_new);
+- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:139:    if (0) RUN_TEST(test_find_or_create_terminal_session_inactive_existing);
+- tests/unity/src/websocket/websocket_server_test_start_server_error_paths.c:138:    if (0) RUN_TEST(test_start_websocket_server_successful_start);
+- tests/unity/src/websocket/websocket_server_pty_test_pty_bridge.c:238:    if (0) RUN_TEST(test_setup_pty_select_valid_fd); // Temporarily disabled due to test environment limitations
+
 ## Terminal
 
 - tests/unity/src/terminal/terminal_websocket_protocol_test_message_processing.c:265:    if (0) RUN_TEST(test_process_terminal_websocket_message_raw_text_input);
@@ -172,196 +300,3 @@ file. The files are used primarily to group the tests and the dependencies. But 
 - tests/unity/src/terminal/terminal_test_url_validation.c:55:    if (0) RUN_TEST(test_terminal_url_validator_disabled);
 - tests/unity/src/terminal/terminal_test_request_handling.c:59:    if (0) RUN_TEST(test_handle_terminal_request_index_page);
 - tests/unity/src/terminal/terminal_test_request_handling.c:71:    if (0) RUN_TEST(test_cleanup_terminal_support_success);
-
-## Launch
-
-- tests/unity/src/launch/launch_oidc_test_check_oidc_launch_readiness.c:74:    if (0) RUN_TEST(test_check_oidc_launch_readiness_disabled_path);
-- tests/unity/src/launch/launch_logging_test_check_logging_launch_readiness.c:275:    if (0) RUN_TEST(test_check_logging_launch_readiness_console_disabled);
-- tests/unity/src/launch/launch_logging_test_check_logging_launch_readiness.c:276:    if (0) RUN_TEST(test_check_logging_launch_readiness_file_disabled);
-- tests/unity/src/launch/launch_logging_test_check_logging_launch_readiness.c:279:    if (0) RUN_TEST(test_check_logging_launch_readiness_successful);
-- tests/unity/src/launch/launch_notify_test_coverage_enhancement.c:191:    if (0) RUN_TEST(test_check_notify_null_config_scenario);
-- tests/unity/src/launch/launch_notify_test_check_notify_launch_readiness.c:91:    if (0) RUN_TEST(test_check_notify_launch_readiness_disabled_path);
-- tests/unity/src/launch/launch_logging_test_launch_logging_subsystem.c:69:    if (0) RUN_TEST(test_launch_logging_subsystem_successful_launch);
-- tests/unity/src/launch/launch_database_test_launch_subsystem.c:168:    if (0) RUN_TEST(test_launch_database_subsystem_basic_functionality);
-- tests/unity/src/launch/launch_database_test_launch_subsystem.c:172:    if (0) RUN_TEST(test_launch_database_subsystem_null_config);
-- tests/unity/src/launch/launch_oidc_test_check_oidc_launch_readiness_with_registry.c:80:    if (0) RUN_TEST(test_check_oidc_launch_readiness_disabled_with_registry_mock);
-- tests/unity/src/launch/launch_swagger_test_validation.c:353:    if (0) RUN_TEST(test_check_swagger_launch_readiness_valid_configuration);
-
-## WebSocket
-
-- tests/unity/src/websocket/websocket_server_test_coverage_gaps.c:633:    if (0) RUN_TEST(test_start_websocket_server_pthread_create_failure);
-- tests/unity/src/websocket/websocket_server_message_test_handle_message_type.c:303:    if (0) RUN_TEST(test_handle_message_type_terminal_message_processing);
-- tests/unity/src/websocket/websocket_server_test_run_helpers.c:285:    if (0) RUN_TEST(test_run_service_loop_success);
-- tests/unity/src/websocket/websocket_server_test_run_helpers.c:286:    if (0) RUN_TEST(test_run_service_loop_service_error);
-- tests/unity/src/websocket/websocket_server_test_run_helpers.c:287:    if (0) RUN_TEST(test_run_service_loop_shutdown);
-- tests/unity/src/websocket/websocket_server_test_run_helpers.c:291:    if (0) RUN_TEST(test_handle_shutdown_timeout_with_connections);
-- tests/unity/src/websocket/websocket_server_test_run_helpers.c:292:    if (0) RUN_TEST(test_handle_shutdown_timeout_mutex_lock_failure);
-- tests/unity/src/websocket/websocket_server_message_test_comprehensive.c:485:    if (0) RUN_TEST(test_ws_handle_receive_message_too_large);
-- tests/unity/src/websocket/websocket_server_auth_test.c:452:    if (0) RUN_TEST(test_authentication_edge_cases);
-- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:134:    if (0) RUN_TEST(test_find_or_create_terminal_session_null_wsi);
-- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:135:    if (0) RUN_TEST(test_find_or_create_terminal_session_null_context);
-- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:136:    if (0) RUN_TEST(test_find_or_create_terminal_session_terminal_disabled);
-- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:137:    if (0) RUN_TEST(test_find_or_create_terminal_session_reuse_existing);
-- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:138:    if (0) RUN_TEST(test_find_or_create_terminal_session_create_new);
-- tests/unity/src/websocket/websocket_server_terminal_test_find_or_create_terminal_session.c:139:    if (0) RUN_TEST(test_find_or_create_terminal_session_inactive_existing);
-- tests/unity/src/websocket/websocket_server_test_start_server_error_paths.c:138:    if (0) RUN_TEST(test_start_websocket_server_successful_start);
-- tests/unity/src/websocket/websocket_server_pty_test_pty_bridge.c:238:    if (0) RUN_TEST(test_setup_pty_select_valid_fd); // Temporarily disabled due to test environment limitations
-
-## mDNS Server
-
-- tests/unity/src/mdns/mdns_server_init_test.c:814:    if (0) RUN_TEST(test_mdns_server_init_null_services_array); // Disabled due to double free issues - needs investigation
-- tests/unity/src/mdns/mdns_server_init_test.c:815:    if (0) RUN_TEST(test_mdns_server_init_network_failure);
-- tests/unity/src/mdns/mdns_server_init_test.c:816:    if (0) RUN_TEST(test_mdns_server_init_malloc_failure);
-- tests/unity/src/mdns/mdns_server_init_test.c:817:    if (0) RUN_TEST(test_mdns_server_init_socket_failure);
-- tests/unity/src/mdns/mdns_server_init_test.c:818:    if (0) RUN_TEST(test_mdns_server_init_hostname_failure);
-- tests/unity/src/mdns/mdns_server_init_test_setup_hostname.c:91:    if (0) RUN_TEST(test_mdns_server_setup_hostname_gethostname_failure);
-- tests/unity/src/mdns/mdns_server_init_test_setup_hostname.c:92:    if (0) RUN_TEST(test_mdns_server_setup_hostname_malloc_failure);
-- tests/unity/src/mdns/mdns_server_init_test_allocate.c:64:    if (0) RUN_TEST(test_mdns_server_allocate_malloc_failure);
-
-## Swagger
-
-- tests/unity/src/swagger/swagger_test_handle_swagger_request.c:447:    if (0) RUN_TEST(test_handle_swagger_request_root_path);
-- tests/unity/src/swagger/swagger_test_static_functions.c:240:    if (0) RUN_TEST(test_load_swagger_files_from_tar_null_data);
-- tests/unity/src/swagger/swagger_test_static_functions.c:241:    if (0) RUN_TEST(test_load_swagger_files_from_tar_empty_data);
-- tests/unity/src/swagger/swagger_test_static_functions.c:242:    if (0) RUN_TEST(test_load_swagger_files_from_tar_invalid_tar);
-- tests/unity/src/swagger/swagger_test_static_functions.c:243:    if (0) RUN_TEST(test_load_swagger_files_from_tar_valid_empty_tar);
-- tests/unity/src/swagger/swagger_test_static_functions.c:254:    if (0) RUN_TEST(test_create_dynamic_initializer_null_config);
-
-## Threads
-
-- tests/unity/src/threads/threads_test_free_threads_resources.c:317:    if (0) RUN_TEST(test_free_threads_resources_empty_state);
-- tests/unity/src/threads/threads_test_free_threads_resources.c:318:    if (0) RUN_TEST(test_free_threads_resources_with_threads);
-- tests/unity/src/threads/threads_test_free_threads_resources.c:319:    if (0) RUN_TEST(test_free_threads_resources_max_threads);
-- tests/unity/src/threads/threads_test_free_threads_resources.c:322:    if (0) RUN_TEST(test_free_threads_resources_sets_shutdown_mode);
-- tests/unity/src/threads/threads_test_free_threads_resources.c:323:    if (0) RUN_TEST(test_free_threads_resources_shutdown_mode_persistent);
-- tests/unity/src/threads/threads_test_free_threads_resources.c:326:    if (0) RUN_TEST(test_free_threads_resources_resets_subsystem_names);
-- tests/unity/src/threads/threads_test_free_threads_resources.c:327:    if (0) RUN_TEST(test_free_threads_resources_resets_memory_totals);
-- tests/unity/src/threads/threads_test_free_threads_resources.c:328:    if (0) RUN_TEST(test_free_threads_resources_resets_memory_percent);
-- tests/unity/src/threads/threads_test_free_threads_resources.c:331:    if (0) RUN_TEST(test_free_threads_resources_clears_thread_arrays);
-- tests/unity/src/threads/threads_test_free_threads_resources.c:334:    if (0) RUN_TEST(test_free_threads_resources_multiple_calls_safe);
-- tests/unity/src/threads/threads_test_free_threads_resources.c:335:    if (0) RUN_TEST(test_free_threads_resources_reinitialization_after_cleanup);
-
-## Database_Engine
-
-- tests/unity/src/database/database_engine_test_comprehensive.c:685:    if (0) RUN_TEST(test_database_engine_register_basic);
-- tests/unity/src/database/database_engine_test_comprehensive.c:686:    if (0) RUN_TEST(test_database_engine_register_null_engine);
-- tests/unity/src/database/database_engine_test_comprehensive.c:687:    if (0) RUN_TEST(test_database_engine_register_invalid_type);
-- tests/unity/src/database/database_engine_test_comprehensive.c:688:    if (0) RUN_TEST(test_database_engine_register_already_registered);
-- tests/unity/src/database/database_engine_test_comprehensive.c:689:    if (0) RUN_TEST(test_database_engine_register_already_registered_independent);
-- tests/unity/src/database/database_engine_test_transaction.c:429:    if (0) RUN_TEST(test_database_engine_begin_transaction_no_engine);
-- tests/unity/src/database/database_engine_test_transaction.c:433:    if (0) RUN_TEST(test_database_engine_commit_transaction_null_transaction);
-- tests/unity/src/database/database_engine_test_transaction.c:434:    if (0) RUN_TEST(test_database_engine_commit_transaction_no_engine);
-- tests/unity/src/database/database_engine_test_transaction.c:436:    if (0) RUN_TEST(test_database_engine_rollback_transaction_basic);
-- tests/unity/src/database/database_engine_test_transaction.c:438:    if (0) RUN_TEST(test_database_engine_rollback_transaction_null_transaction);
-- tests/unity/src/database/database_engine_test_transaction.c:439:    if (0) RUN_TEST(test_database_engine_rollback_transaction_no_engine);
-- tests/unity/src/database/database_engine_test_connect.c:300:    if (0) RUN_TEST(test_database_engine_connect_with_designator_basic);
-- tests/unity/src/database/database_engine_test_connect.c:301:    if (0) RUN_TEST(test_database_engine_connect_with_designator_null_designator);
-
-## Database_Bootstrap
-
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query.c:72:    if (0) RUN_TEST(test_database_queue_execute_bootstrap_query_lead_queue_no_connection);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:867:    if (0) RUN_TEST(test_lead_queue_no_connection);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:869:    if (0) RUN_TEST(test_query_id_allocation_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:870:    if (0) RUN_TEST(test_sql_template_allocation_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:871:    if (0) RUN_TEST(test_parameters_json_allocation_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:872:    if (0) RUN_TEST(test_query_execution_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:873:    if (0) RUN_TEST(test_successful_execution_no_qtc);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:874:    if (0) RUN_TEST(test_successful_execution_with_qtc);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:875:    if (0) RUN_TEST(test_qtc_creation_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:876:    if (0) RUN_TEST(test_qtc_entry_creation_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:877:    if (0) RUN_TEST(test_migration_tracking_available);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:878:    if (0) RUN_TEST(test_migration_tracking_installed);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:879:    if (0) RUN_TEST(test_migration_tracking_mixed);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:880:    if (0) RUN_TEST(test_bootstrap_completion_signaling);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:881:    if (0) RUN_TEST(test_empty_database_detection);
-
-## Database_ConnString
-
-- tests/unity/src/database/database_connstring_test_parse_connection_string.c:244:    if (0) RUN_TEST(test_parse_connection_string_postgresql_format);
-- tests/unity/src/database/database_connstring_test_parse_connection_string.c:245:    if (0) RUN_TEST(test_parse_connection_string_mysql_format);
-- tests/unity/src/database/database_connstring_test_parse_connection_string.c:246:    if (0) RUN_TEST(test_parse_connection_string_db2_format);
-- tests/unity/src/database/database_connstring_test_parse_connection_string.c:247:    if (0) RUN_TEST(test_parse_connection_string_sqlite_format);
-- tests/unity/src/database/database_connstring_test_parse_connection_string.c:248:    if (0) RUN_TEST(test_parse_connection_string_invalid_format);
-- tests/unity/src/database/database_connstring_test_parse_connection_string.c:253:    if (0) RUN_TEST(test_parse_connection_string_mysql_no_username);
-- tests/unity/src/database/database_connstring_test_parse_connection_string.c:254:    if (0) RUN_TEST(test_parse_connection_string_mysql_no_port);
-- tests/unity/src/database/database_connstring_test_parse_connection_string.c:255:    if (0) RUN_TEST(test_parse_connection_string_postgresql_fallback_database);
-- tests/unity/src/database/database_connstring_test_parse_connection_string.c:256:    if (0) RUN_TEST(test_parse_connection_string_empty_string);
-- tests/unity/src/database/database_connstring_test_parse_connection_string.c:257:    if (0) RUN_TEST(test_parse_connection_string_db2_minimal);
-- tests/unity/src/database/database_connstring_test_parse_connection_string.c:258:    if (0) RUN_TEST(test_parse_connection_string_db2_quoted_values);
-
-## Database_Params
-
-- tests/unity/src/database/database_params_test.c:537:    if (0) RUN_TEST(test_build_parameter_array_simple);
-
-## Database/DBQueue
-
-- tests/unity/src/database/dbqueue/lead_test_run_migration.c:109:    if (0) RUN_TEST(test_database_queue_lead_run_migration_auto_migration_disabled);
-- tests/unity/src/database/dbqueue/manager_test.c:62:    if (0) RUN_TEST(test_database_queue_manager_create_malloc_failure);
-- tests/unity/src/database/dbqueue/manager_test.c:63:    if (0) RUN_TEST(test_database_queue_manager_create_databases_calloc_failure);
-- tests/unity/src/database/dbqueue/process_test_missing_coverage.c:398:    if (0) RUN_TEST(test_database_queue_process_single_query_no_connection);
-- tests/unity/src/database/dbqueue/process_test_missing_coverage.c:400:    if (0) RUN_TEST(test_database_queue_manage_child_queues_scaling_down); // Disabled due to segfault in queue destruction
-- tests/unity/src/database/dbqueue/process_test_missing_coverage.c:404:    if (0) RUN_TEST(test_database_queue_worker_thread_main_loop_processing);
-- tests/unity/src/database/dbqueue/heartbeat_test_perform_heartbeat.c:118:    if (0) RUN_TEST(test_database_queue_perform_heartbeat_with_connection);
-- tests/unity/src/database/dbqueue/heartbeat_test_perform_heartbeat.c:119:    if (0) RUN_TEST(test_database_queue_perform_heartbeat_connection_states);
-- tests/unity/src/database/dbqueue/heartbeat_test_check_connection.c:144:    if (0) RUN_TEST(test_database_queue_check_connection_sqlite_format);
-
-## Database/Migration
-
-- tests/unity/src/database/migration/transaction_test_execute_transaction.c:495:    if (0) RUN_TEST(test_parse_sql_statements_strdup_failure);  // Disabled: malloc mocking not supported
-- tests/unity/src/database/migration/transaction_test_execute_transaction.c:496:    if (0) RUN_TEST(test_parse_sql_statements_realloc_failure);  // Disabled: malloc mocking not supported
-- tests/unity/src/database/migration/transaction_test_execute_transaction.c:503:    if (0) RUN_TEST(test_execute_db2_migration_calloc_failure);  // Disabled: malloc mocking not supported
-- tests/unity/src/database/migration/transaction_test_execute_transaction.c:508:    if (0) RUN_TEST(test_execute_postgresql_migration_calloc_failure);  // Disabled: malloc mocking not supported
-- tests/unity/src/database/migration/transaction_test_execute_transaction.c:529:    if (0) RUN_TEST(test_database_migrations_execute_transaction_parse_failure);  // Disabled: malloc mocking not supported
-- tests/unity/src/database/migration/lua_test_load_database_module.c:669:    if (0) RUN_TEST(test_database_migrations_lua_extract_queries_table_success);
-- tests/unity/src/database/migration/lua_test_load_database_module.c:679:    if (0) RUN_TEST(test_database_migrations_lua_execute_run_migration_success);
-- tests/unity/src/database/migration/execute_test_execute_auto.c:553:    if (0) RUN_TEST(test_database_migrations_execute_single_migration_with_mocks);
-
-## Database/MySQL
-
-- tests/unity/src/database/mysql/query_test_coverage_mysql.c:509:    if (0) RUN_TEST(test_mysql_execute_query_memory_allocation_failure); // Skipped - requires mock_system
-- tests/unity/src/database/mysql/query_test_coverage_mysql.c:516:    if (0) RUN_TEST(test_mysql_execute_prepared_affected_rows_fallback); // Targets line 520
-- tests/unity/src/database/mysql/query_test_coverage_mysql.c:518:    if (0) RUN_TEST(test_mysql_execute_prepared_stmt_execute_unavailable); // Skipped - mock limitation
-- tests/unity/src/database/mysql/query_test_coverage_mysql.c:519:    if (0) RUN_TEST(test_mysql_execute_prepared_memory_allocation_failure); // Skipped - requires mock_system
-- tests/unity/src/database/mysql/query_test_coverage_mysql.c:520:    if (0) RUN_TEST(test_mysql_execute_prepared_with_result_set); // Skipped - mock limitation
-- tests/unity/src/database/mysql/query_test_edge_cases_mysql.c:415:    if (0) RUN_TEST(test_mysql_execute_prepared_execution_failure);
-- tests/unity/src/database/mysql/query_test_edge_cases_mysql.c:418:    if (0) RUN_TEST(test_mysql_execute_prepared_null_column_data);
-
-## Database/PostgreSQL
-
-- tests/unity/src/database/postgresql/prepared_test_postgresql_force_failures.c:218:    if (0) RUN_TEST(test_force_cache_initialization_failure);
-- tests/unity/src/database/postgresql/prepared_test_postgresql_force_failures.c:219:    if (0) RUN_TEST(test_force_lru_eviction_failure);
-
-## Database/SQLite
-
-- tests/unity/src/database/sqlite/query_test_sqlite.c:787:    if (0) RUN_TEST(test_sqlite_execute_query_memory_allocation_failure);
-- tests/unity/src/database/sqlite/query_test_sqlite.c:809:    if (0) RUN_TEST(test_sqlite_execute_prepared_memory_allocation_failure);
-
-## Landing
-
-- tests/unity/src/landing/landing_api_test_readiness.c:100:    if (0) RUN_TEST(test_check_api_landing_readiness_both_running);
-- tests/unity/src/landing/landing_test_land_approved_subsystems.c:224:    if (0) RUN_TEST(test_land_approved_subsystems_single_ready_subsystem);
-- tests/unity/src/landing/landing_test_land_approved_subsystems.c:225:    if (0) RUN_TEST(test_land_approved_subsystems_multiple_ready_subsystems);
-- tests/unity/src/landing/landing_test_land_approved_subsystems.c:226:    if (0) RUN_TEST(test_land_approved_subsystems_registry_skipped);
-- tests/unity/src/landing/landing_test_land_approved_subsystems.c:227:    if (0) RUN_TEST(test_land_approved_subsystems_not_ready_subsystems_skipped);
-- tests/unity/src/landing/landing_test_land_approved_subsystems.c:228:    if (0) RUN_TEST(test_land_approved_subsystems_unknown_subsystem_skipped);
-- tests/unity/src/landing/landing_test_check_all_landing_readiness.c:238:    if (0) RUN_TEST(test_check_all_landing_readiness_shutdown_success);
-- tests/unity/src/landing/landing_test_check_all_landing_readiness.c:239:    if (0) RUN_TEST(test_check_all_landing_readiness_restart_success);
-- tests/unity/src/landing/landing_terminal_test_check_terminal_landing_readiness.c:180:    if (0) RUN_TEST(test_check_terminal_landing_readiness_malloc_failure);
-- tests/unity/src/landing/landing_swagger_test_check_swagger_landing_readiness.c:163:    if (0) RUN_TEST(test_check_swagger_landing_readiness_webserver_not_running);
-- tests/unity/src/landing/landing_payload_test_check_payload_landing_readiness.c:102:    if (0) RUN_TEST(test_check_payload_landing_readiness_memory_allocation_failure);
-- tests/unity/src/landing/landing_mdns_client_test_readiness.c:142:    if (0) RUN_TEST(test_check_mdns_client_landing_readiness_network_not_running);
-- tests/unity/src/landing/landing_mdns_client_test_readiness.c:143:    if (0) RUN_TEST(test_check_mdns_client_landing_readiness_logging_not_running);
-
-## Queue
-
-- tests/unity/src/queue/queue_test_error_paths.c:101:    if (0) RUN_TEST(test_queue_create_malloc_failure);
-- tests/unity/src/queue/queue_test_error_paths.c:102:    if (0) RUN_TEST(test_queue_create_strdup_failure);
-- tests/unity/src/queue/queue_test_error_paths.c:103:    if (0) RUN_TEST(test_queue_enqueue_malloc_failures);
-
-## Logging
-
-- tests/unity/src/logging/logging_test_basic.c:126:    if (0) RUN_TEST(test_count_format_specifiers_single_specifier);
-- tests/unity/src/logging/logging_test_basic.c:127:    if (0) RUN_TEST(test_count_format_specifiers_multiple_specifiers);
-- tests/unity/src/logging/logging_test_basic.c:129:    if (0) RUN_TEST(test_count_format_specifiers_mixed);
-- tests/unity/src/logging/logging_test_basic.c:132:    if (0) RUN_TEST(test_get_fallback_priority_label_valid_priorities);
-- tests/unity/src/logging/logging_test_basic.c:133:    if (0) RUN_TEST(test_get_fallback_priority_label_invalid_priority);

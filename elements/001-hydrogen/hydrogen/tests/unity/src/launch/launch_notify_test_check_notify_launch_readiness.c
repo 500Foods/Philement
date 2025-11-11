@@ -88,7 +88,7 @@ int main(void) {
 
     RUN_TEST(test_check_notify_launch_readiness_basic_functionality);
     RUN_TEST(test_check_notify_launch_readiness_validation_errors);
-    if (0) RUN_TEST(test_check_notify_launch_readiness_disabled_path);
+    RUN_TEST(test_check_notify_launch_readiness_disabled_path);
 
     return UNITY_END();
 }
