@@ -22,6 +22,9 @@
 // Registry ID for the Swagger subsystem
 int swagger_subsystem_id = -1;
 
+// Forward declarations
+bool validate_swagger_configuration(const char*** messages, size_t* count, size_t* capacity);
+
 // Check if the Swagger subsystem is ready to launch
 LaunchReadiness check_swagger_launch_readiness(void) {
     const char** messages = NULL;
@@ -84,65 +87,10 @@ LaunchReadiness check_swagger_launch_readiness(void) {
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Payload subsystem ready"));
     cleanup_readiness_messages(&payload_readiness);
 
-    // Validate prefix
-    if (!app_config->swagger.prefix || strlen(app_config->swagger.prefix) < 1 ||
-        strlen(app_config->swagger.prefix) > 64 || app_config->swagger.prefix[0] != '/') {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid Swagger prefix configuration"));
-        ready = false;
-    } else {
-        char* prefix_msg = malloc(256);
-        if (prefix_msg) {
-            snprintf(prefix_msg, 256, "  Go:      Valid Swagger prefix: %s",
-                    app_config->swagger.prefix);
-            add_launch_message(&messages, &count, &capacity, prefix_msg);
-        }
-    }
-
-    // Validate required metadata
-    if (!app_config->swagger.metadata.title ||
-        strlen(app_config->swagger.metadata.title) < 1 ||
-        strlen(app_config->swagger.metadata.title) > 128) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid Swagger title configuration"));
-        ready = false;
-    }
-
-    if (!app_config->swagger.metadata.version ||
-        strlen(app_config->swagger.metadata.version) < 1 ||
-        strlen(app_config->swagger.metadata.version) > 32) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid Swagger version configuration"));
-        ready = false;
-    }
-
-    if (app_config->swagger.metadata.description &&
-        strlen(app_config->swagger.metadata.description) > 1024) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Swagger description too long"));
-        ready = false;
-    }
-
-    // Validate UI options
-    if (app_config->swagger.ui_options.default_models_expand_depth < 0 ||
-        app_config->swagger.ui_options.default_models_expand_depth > 10) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid models expand depth"));
-        ready = false;
-    }
-
-    if (app_config->swagger.ui_options.default_model_expand_depth < 0 ||
-        app_config->swagger.ui_options.default_model_expand_depth > 10) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid model expand depth"));
-        ready = false;
-    }
-
-    // Validate doc expansion value
-    if (app_config->swagger.ui_options.doc_expansion) {
-        const char* exp = app_config->swagger.ui_options.doc_expansion;
-        if (strcmp(exp, "list") != 0 && strcmp(exp, "full") != 0 && strcmp(exp, "none") != 0) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid doc expansion value"));
-            ready = false;
-        }
-    }
-
-    if (ready) {
-        add_launch_message(&messages, &count, &capacity, strdup("  Go:      All configuration values validated"));
+    // Validate configuration - extracted to separate function for testability
+    if (!validate_swagger_configuration(&messages, &count, &capacity)) {
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){.subsystem = SR_SWAGGER, .ready = false, .messages = messages};
     }
 
     // Final decision
@@ -157,6 +105,74 @@ LaunchReadiness check_swagger_launch_readiness(void) {
         .ready = ready,
         .messages = messages
     };
+}
+
+// Validate Swagger configuration (extracted for testability)
+bool validate_swagger_configuration(const char*** messages, size_t* count, size_t* capacity) {
+    bool ready = true;
+
+    // Validate prefix
+    if (!app_config->swagger.prefix || strlen(app_config->swagger.prefix) < 1 ||
+        strlen(app_config->swagger.prefix) > 64 || app_config->swagger.prefix[0] != '/') {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Invalid Swagger prefix configuration"));
+        ready = false;
+    } else {
+        char* prefix_msg = malloc(256);
+        if (prefix_msg) {
+            snprintf(prefix_msg, 256, "  Go:      Valid Swagger prefix: %s",
+                    app_config->swagger.prefix);
+            add_launch_message(messages, count, capacity, prefix_msg);
+        }
+    }
+
+    // Validate required metadata
+    if (!app_config->swagger.metadata.title ||
+        strlen(app_config->swagger.metadata.title) < 1 ||
+        strlen(app_config->swagger.metadata.title) > 128) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Invalid Swagger title configuration"));
+        ready = false;
+    }
+
+    if (!app_config->swagger.metadata.version ||
+        strlen(app_config->swagger.metadata.version) < 1 ||
+        strlen(app_config->swagger.metadata.version) > 32) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Invalid Swagger version configuration"));
+        ready = false;
+    }
+
+    if (app_config->swagger.metadata.description &&
+        strlen(app_config->swagger.metadata.description) > 1024) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Swagger description too long"));
+        ready = false;
+    }
+
+    // Validate UI options
+    if (app_config->swagger.ui_options.default_models_expand_depth < 0 ||
+        app_config->swagger.ui_options.default_models_expand_depth > 10) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Invalid models expand depth"));
+        ready = false;
+    }
+
+    if (app_config->swagger.ui_options.default_model_expand_depth < 0 ||
+        app_config->swagger.ui_options.default_model_expand_depth > 10) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Invalid model expand depth"));
+        ready = false;
+    }
+
+    // Validate doc expansion value
+    if (app_config->swagger.ui_options.doc_expansion) {
+        const char* exp = app_config->swagger.ui_options.doc_expansion;
+        if (strcmp(exp, "list") != 0 && strcmp(exp, "full") != 0 && strcmp(exp, "none") != 0) {
+            add_launch_message(messages, count, capacity, strdup("  No-Go:   Invalid doc expansion value"));
+            ready = false;
+        }
+    }
+
+    if (ready) {
+        add_launch_message(messages, count, capacity, strdup("  Go:      All configuration values validated"));
+    }
+
+    return ready;
 }
 
 // Launch Swagger subsystem

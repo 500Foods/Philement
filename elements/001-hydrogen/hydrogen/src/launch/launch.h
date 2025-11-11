@@ -163,6 +163,13 @@ LaunchReadiness check_notify_launch_readiness(void);
 LaunchReadiness check_oidc_launch_readiness(void);
 LaunchReadiness check_resources_launch_readiness(void);
 
+// OIDC validation helper functions
+bool validate_oidc_issuer(const char* issuer, const char*** messages, size_t* count, size_t* capacity, bool* ready);
+bool validate_oidc_redirect_uri(const char* redirect_uri, const char*** messages, size_t* count, size_t* capacity, bool* ready);
+bool validate_oidc_port(int port, const char*** messages, size_t* count, size_t* capacity, bool* ready);
+bool validate_oidc_token_lifetimes(const OIDCTokensConfig* tokens, const char*** messages, size_t* count, size_t* capacity, bool* ready);
+bool validate_oidc_key_settings(const OIDCKeysConfig* keys, const char*** messages, size_t* count, size_t* capacity, bool* ready);
+
 // Subsystem launch functions
 int launch_registry_subsystem(bool is_restart);  // Must be first
 int launch_payload_subsystem(void);

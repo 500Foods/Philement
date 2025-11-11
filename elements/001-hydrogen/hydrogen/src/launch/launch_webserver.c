@@ -14,6 +14,7 @@
 
 // Local includes
 #include "launch.h"
+#include "launch_webserver_helpers.h"
 #include <sys/socket.h>
 #include <netdb.h>
 #include <ifaddrs.h>
@@ -292,67 +293,13 @@ int launch_webserver_subsystem(void) {
     log_this(SR_WEBSERVER, "Waiting for initialization", LOG_LEVEL_DEBUG, 0);
 
     // Phase 1: Immediate check (no sleep)
-    if (webserver_daemon != NULL) {
-        const union MHD_DaemonInfo *info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_BIND_PORT);
-        if (info != NULL && info->port > 0) {
-            server_ready = true;
-        }
-    }
+    server_ready = check_webserver_daemon_ready();
 
     // Phase 2: CPU-friendly busy wait with yield (first 100 tries = ~10ms)
     while (!server_ready && tries < 100) {
         sched_yield(); // Yield CPU to other threads
-
-        // Check if web daemon is running and bound to port
-        if (webserver_daemon != NULL) {
-            const union MHD_DaemonInfo *info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_BIND_PORT);
-            if (info != NULL && info->port > 0) {
-                // Get connection info
-                const union MHD_DaemonInfo *conn_info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_CURRENT_CONNECTIONS);
-                unsigned int num_connections = conn_info ? conn_info->num_connections : 0;
-                
-                // Get thread info
-                const union MHD_DaemonInfo *thread_info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_FLAGS);
-                bool using_threads = thread_info && (thread_info->flags & MHD_USE_THREAD_PER_CONNECTION);
-                
-                log_this(SR_WEBSERVER, "Server status:", LOG_LEVEL_DEBUG, 0);
-                log_this(SR_WEBSERVER, "― Bound to port: %u", LOG_LEVEL_DEBUG, 1, info->port);
-                log_this(SR_WEBSERVER, "― Active connections: %u", LOG_LEVEL_DEBUG, 1, num_connections);
-                log_this(SR_WEBSERVER, "― Thread mode: %s", LOG_LEVEL_DEBUG, 1, using_threads ? "Thread per connection" : "Single thread");
-                log_this(SR_WEBSERVER, "― IPv6: %s", LOG_LEVEL_DEBUG, 1, app_config->webserver.enable_ipv6 ? "enabled" : "disabled");
-                log_this(SR_WEBSERVER, "― Max connections: %d", LOG_LEVEL_DEBUG, 1, app_config->webserver.max_connections);
-                
-                // Log network interfaces
-                log_this(SR_WEBSERVER, "― Network interfaces:", LOG_LEVEL_DEBUG, 0);
-                struct ifaddrs *ifaddr, *ifa;
-                if (getifaddrs(&ifaddr) != -1) {
-                    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-                        if (ifa->ifa_addr == NULL)
-                            continue;
-
-                        int family = ifa->ifa_addr->sa_family;
-                        if (family == AF_INET || (family == AF_INET6 && app_config->webserver.enable_ipv6)) {
-                            char host[NI_MAXHOST];
-                            int s = getnameinfo(ifa->ifa_addr,
-                                             (family == AF_INET) ? sizeof(struct sockaddr_in) :
-                                                                 sizeof(struct sockaddr_in6),
-                                             host, NI_MAXHOST,
-                                             NULL, 0, NI_NUMERICHOST);
-                            if (s == 0) {
-                                log_this(SR_WEBSERVER, "――― %s: %s (%s)", LOG_LEVEL_DEBUG, 3,
-                                        ifa->ifa_name, 
-                                        host,
-                                        (family == AF_INET) ? "IPv4" : "IPv6");
-                            }
-                        }
-                    }
-                    freeifaddrs(ifaddr);
-                }
-                
-                server_ready = true;
-                break;
-            }
-        }
+        server_ready = check_webserver_daemon_ready();
+        if (server_ready) break;
         tries++;
     }
 
@@ -360,57 +307,8 @@ int launch_webserver_subsystem(void) {
     struct timespec micro_wait = {0, 10000}; // 10 microseconds
     while (!server_ready && tries < 1000) {
         nanosleep(&micro_wait, NULL);
-
-        // Check if web daemon is running and bound to port
-        if (webserver_daemon != NULL) {
-            const union MHD_DaemonInfo *info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_BIND_PORT);
-            if (info != NULL && info->port > 0) {
-                // Get connection info
-                const union MHD_DaemonInfo *conn_info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_CURRENT_CONNECTIONS);
-                unsigned int num_connections = conn_info ? conn_info->num_connections : 0;
-
-                // Get thread info
-                const union MHD_DaemonInfo *thread_info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_FLAGS);
-                bool using_threads = thread_info && (thread_info->flags & MHD_USE_THREAD_PER_CONNECTION);
-
-                log_this(SR_WEBSERVER, "Server status:", LOG_LEVEL_DEBUG, 0);
-                log_this(SR_WEBSERVER, "― Bound to port: %u", LOG_LEVEL_DEBUG, 1, info->port);
-                log_this(SR_WEBSERVER, "― Active connections: %u", LOG_LEVEL_DEBUG, 1, num_connections);
-                log_this(SR_WEBSERVER, "― Thread mode: %s", LOG_LEVEL_DEBUG, 1, using_threads ? "Thread per connection" : "Single thread");
-                log_this(SR_WEBSERVER, "― IPv6: %s", LOG_LEVEL_DEBUG, 1, app_config->webserver.enable_ipv6 ? "enabled" : "disabled");
-                log_this(SR_WEBSERVER, "― Max connections: %d", LOG_LEVEL_DEBUG, 1, app_config->webserver.max_connections);
-
-                // Log network interfaces
-                log_this(SR_WEBSERVER, "― Network interfaces:", LOG_LEVEL_DEBUG, 0);
-                struct ifaddrs *ifaddr, *ifa;
-                if (getifaddrs(&ifaddr) != -1) {
-                    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-                        if (ifa->ifa_addr == NULL)
-                            continue;
-
-                        int family = ifa->ifa_addr->sa_family;
-                        if (family == AF_INET || (family == AF_INET6 && app_config->webserver.enable_ipv6)) {
-                            char host[NI_MAXHOST];
-                            int s = getnameinfo(ifa->ifa_addr,
-                                             (family == AF_INET) ? sizeof(struct sockaddr_in) :
-                                                                 sizeof(struct sockaddr_in6),
-                                             host, NI_MAXHOST,
-                                             NULL, 0, NI_NUMERICHOST);
-                            if (s == 0) {
-                                log_this(SR_WEBSERVER, "――― %s: %s (%s)", LOG_LEVEL_DEBUG, 3,
-                                        ifa->ifa_name,
-                                        host,
-                                        (family == AF_INET) ? "IPv4" : "IPv6");
-                            }
-                        }
-                    }
-                    freeifaddrs(ifaddr);
-                }
-
-                server_ready = true;
-                break;
-            }
-        }
+        server_ready = check_webserver_daemon_ready();
+        if (server_ready) break;
         tries++;
     }
 
@@ -418,57 +316,8 @@ int launch_webserver_subsystem(void) {
     struct timespec milli_wait = {0, 1000000}; // 1ms
     while (!server_ready && tries < max_tries) {
         nanosleep(&milli_wait, NULL);
-
-        // Check if web daemon is running and bound to port
-        if (webserver_daemon != NULL) {
-            const union MHD_DaemonInfo *info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_BIND_PORT);
-            if (info != NULL && info->port > 0) {
-                // Get connection info
-                const union MHD_DaemonInfo *conn_info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_CURRENT_CONNECTIONS);
-                unsigned int num_connections = conn_info ? conn_info->num_connections : 0;
-
-                // Get thread info
-                const union MHD_DaemonInfo *thread_info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_FLAGS);
-                bool using_threads = thread_info && (thread_info->flags & MHD_USE_THREAD_PER_CONNECTION);
-
-                log_this(SR_WEBSERVER, "Server status:", LOG_LEVEL_DEBUG, 0);
-                log_this(SR_WEBSERVER, "― Bound to port: %u", LOG_LEVEL_DEBUG, 1, info->port);
-                log_this(SR_WEBSERVER, "― Active connections: %u", LOG_LEVEL_DEBUG, 1, num_connections);
-                log_this(SR_WEBSERVER, "― Thread mode: %s", LOG_LEVEL_DEBUG, 1, using_threads ? "Thread per connection" : "Single thread");
-                log_this(SR_WEBSERVER, "― IPv6: %s", LOG_LEVEL_DEBUG, 1, app_config->webserver.enable_ipv6 ? "enabled" : "disabled");
-                log_this(SR_WEBSERVER, "― Max connections: %d", LOG_LEVEL_DEBUG, 1, app_config->webserver.max_connections);
-
-                // Log network interfaces
-                log_this(SR_WEBSERVER, "― Network interfaces:", LOG_LEVEL_DEBUG, 0);
-                struct ifaddrs *ifaddr, *ifa;
-                if (getifaddrs(&ifaddr) != -1) {
-                    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-                        if (ifa->ifa_addr == NULL)
-                            continue;
-
-                        int family = ifa->ifa_addr->sa_family;
-                        if (family == AF_INET || (family == AF_INET6 && app_config->webserver.enable_ipv6)) {
-                            char host[NI_MAXHOST];
-                            int s = getnameinfo(ifa->ifa_addr,
-                                             (family == AF_INET) ? sizeof(struct sockaddr_in) :
-                                                                 sizeof(struct sockaddr_in6),
-                                             host, NI_MAXHOST,
-                                             NULL, 0, NI_NUMERICHOST);
-                            if (s == 0) {
-                                log_this(SR_WEBSERVER, "――― %s: %s (%s)", LOG_LEVEL_DEBUG, 3,
-                                        ifa->ifa_name,
-                                        host,
-                                        (family == AF_INET) ? "IPv4" : "IPv6");
-                            }
-                        }
-                    }
-                    freeifaddrs(ifaddr);
-                }
-
-                server_ready = true;
-                break;
-            }
-        }
+        server_ready = check_webserver_daemon_ready();
+        if (server_ready) break;
         tries++;
 
         if (tries % 1000 == 0) { // Log every second
