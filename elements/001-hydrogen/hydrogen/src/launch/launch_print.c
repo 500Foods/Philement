@@ -22,6 +22,34 @@
 extern ServiceThreads print_threads;
 extern pthread_t print_queue_thread;
 
+// Helper function to validate and report range errors for size_t values
+static bool validate_size_range(size_t value, size_t min, size_t max, 
+                                 const char* field_name, const char*** messages, 
+                                 size_t* count, size_t* capacity) {
+    if (value < min || value > max) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid %s %zu (must be between %zu and %zu)",
+                field_name, value, min, max);
+        add_launch_message(messages, count, capacity, strdup(msg));
+        return false;
+    }
+    return true;
+}
+
+// Helper function to validate and report range errors for double values
+static bool validate_double_range(double value, double min, double max,
+                                   const char* field_name, const char*** messages,
+                                   size_t* count, size_t* capacity) {
+    if (value < min || value > max) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid %s %.2f (must be between %.2f and %.2f)",
+                field_name, value, min, max);
+        add_launch_message(messages, count, capacity, strdup(msg));
+        return false;
+    }
+    return true;
+}
+
 // Check if the print subsystem is ready to launch
 LaunchReadiness check_print_launch_readiness(void) {
     const char** messages = NULL;
@@ -59,23 +87,15 @@ LaunchReadiness check_print_launch_readiness(void) {
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Print queue enabled in configuration"));
 
     // Validate job limits
-    if (app_config->print.max_queued_jobs < MIN_QUEUED_JOBS ||
-        app_config->print.max_queued_jobs > MAX_QUEUED_JOBS) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid max queued jobs %zu (must be between %d and %d)",
-                app_config->print.max_queued_jobs, MIN_QUEUED_JOBS, MAX_QUEUED_JOBS);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
+    if (!validate_size_range(app_config->print.max_queued_jobs, MIN_QUEUED_JOBS, MAX_QUEUED_JOBS,
+                             "max queued jobs", &messages, &count, &capacity)) {
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Max queued jobs within limits"));
 
-    if (app_config->print.max_concurrent_jobs < MIN_CONCURRENT_JOBS ||
-        app_config->print.max_concurrent_jobs > MAX_CONCURRENT_JOBS) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid max concurrent jobs %zu (must be between %d and %d)",
-                app_config->print.max_concurrent_jobs, MIN_CONCURRENT_JOBS, MAX_CONCURRENT_JOBS);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
+    if (!validate_size_range(app_config->print.max_concurrent_jobs, MIN_CONCURRENT_JOBS, MAX_CONCURRENT_JOBS,
+                             "max concurrent jobs", &messages, &count, &capacity)) {
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
@@ -104,20 +124,14 @@ LaunchReadiness check_print_launch_readiness(void) {
 
     // Validate timeouts
     const PrintQueueTimeoutsConfig* t = &app_config->print.timeouts;
-    if (t->shutdown_wait_ms < MIN_SHUTDOWN_WAIT || t->shutdown_wait_ms > MAX_SHUTDOWN_WAIT) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid shutdown wait time %zu ms (must be between %d and %d)",
-                t->shutdown_wait_ms, MIN_SHUTDOWN_WAIT, MAX_SHUTDOWN_WAIT);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
+    if (!validate_size_range(t->shutdown_wait_ms, MIN_SHUTDOWN_WAIT, MAX_SHUTDOWN_WAIT,
+                             "shutdown wait time", &messages, &count, &capacity)) {
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
 
-    if (t->job_processing_timeout_ms < MIN_JOB_TIMEOUT || t->job_processing_timeout_ms > MAX_JOB_TIMEOUT) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid job timeout %zu ms (must be between %d and %d)",
-                t->job_processing_timeout_ms, MIN_JOB_TIMEOUT, MAX_JOB_TIMEOUT);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
+    if (!validate_size_range(t->job_processing_timeout_ms, MIN_JOB_TIMEOUT, MAX_JOB_TIMEOUT,
+                             "job timeout", &messages, &count, &capacity)) {
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
@@ -125,20 +139,14 @@ LaunchReadiness check_print_launch_readiness(void) {
 
     // Validate buffers
     const PrintQueueBuffersConfig* b = &app_config->print.buffers;
-    if (b->job_message_size < MIN_MESSAGE_SIZE || b->job_message_size > MAX_MESSAGE_SIZE) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid job message size %zu (must be between %d and %d)",
-                b->job_message_size, MIN_MESSAGE_SIZE, MAX_MESSAGE_SIZE);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
+    if (!validate_size_range(b->job_message_size, MIN_MESSAGE_SIZE, MAX_MESSAGE_SIZE,
+                             "job message size", &messages, &count, &capacity)) {
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
 
-    if (b->status_message_size < MIN_MESSAGE_SIZE || b->status_message_size > MAX_MESSAGE_SIZE) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid status message size %zu (must be between %d and %d)",
-                b->status_message_size, MIN_MESSAGE_SIZE, MAX_MESSAGE_SIZE);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
+    if (!validate_size_range(b->status_message_size, MIN_MESSAGE_SIZE, MAX_MESSAGE_SIZE,
+                             "status message size", &messages, &count, &capacity)) {
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
@@ -146,29 +154,20 @@ LaunchReadiness check_print_launch_readiness(void) {
 
     // Validate motion control settings
     const MotionConfig* m = &app_config->print.motion;
-    if (m->max_speed < MIN_SPEED || m->max_speed > MAX_SPEED) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid max speed %.2f (must be between %.2f and %.2f)",
-                m->max_speed, MIN_SPEED, MAX_SPEED);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
+    if (!validate_double_range(m->max_speed, MIN_SPEED, MAX_SPEED,
+                                "max speed", &messages, &count, &capacity)) {
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
 
-    if (m->acceleration < MIN_ACCELERATION || m->acceleration > MAX_ACCELERATION) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid acceleration %.2f (must be between %.2f and %.2f)",
-                m->acceleration, MIN_ACCELERATION, MAX_ACCELERATION);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
+    if (!validate_double_range(m->acceleration, MIN_ACCELERATION, MAX_ACCELERATION,
+                                "acceleration", &messages, &count, &capacity)) {
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
 
-    if (m->jerk < MIN_JERK || m->jerk > MAX_JERK) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid jerk %.2f (must be between %.2f and %.2f)",
-                m->jerk, MIN_JERK, MAX_JERK);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
+    if (!validate_double_range(m->jerk, MIN_JERK, MAX_JERK,
+                                "jerk", &messages, &count, &capacity)) {
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
