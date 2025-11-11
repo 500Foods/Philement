@@ -49,7 +49,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     if (!app_config || !app_config->mail_relay.Enabled) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Mail relay disabled in configuration"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Mail relay enabled in configuration"));
 

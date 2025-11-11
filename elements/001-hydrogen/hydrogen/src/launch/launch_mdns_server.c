@@ -29,7 +29,8 @@ static pthread_t mdns_server_responder_thread = 0;
 // Registry ID and cached readiness state
 int mdns_server_subsystem_id = -1;
 
-// Forward declarations - now handled in launch function
+// Forward declarations
+bool validate_mdns_server_configuration(const char*** messages, size_t* count, size_t* capacity);
 
 // Register the mDNS server subsystem with the registry (for launch)
 void register_mdns_server_for_launch(void) {
@@ -74,97 +75,10 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem will be available"));
     }
 
-    // Check basic configuration
-    if (!app_config || !(app_config->mdns_server.enable_ipv4 || app_config->mdns_server.enable_ipv6)) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   mDNS server disabled in configuration"));
+    // Validate configuration - extracted to separate function for testability
+    if (!validate_mdns_server_configuration(&messages, &count, &capacity)) {
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
-    }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      mDNS server enabled in configuration"));
-
-    // Validate required configuration fields
-    const MDNSServerConfig* config = &app_config->mdns_server;
-
-    if (!config->device_id || !config->device_id[0]) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Device ID is required"));
-        finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
-    }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Device ID configured"));
-
-    if (!config->friendly_name || !config->friendly_name[0]) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Friendly name is required"));
-        finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
-    }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Friendly name configured"));
-
-    if (!config->model || !config->model[0]) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Model is required"));
-        finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
-    }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Model configured"));
-
-    if (!config->manufacturer || !config->manufacturer[0]) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Manufacturer is required"));
-        finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
-    }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Manufacturer configured"));
-
-    if (!config->version || !config->version[0]) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Version is required"));
-        finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
-    }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Version configured"));
-
-    // Validate services array if present
-    if (config->num_services > 0) {
-        if (!config->services) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Services array is NULL but count is non-zero"));
-            finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
-        }
-        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Services array allocated"));
-
-        // Validate each service
-        for (size_t i = 0; i < config->num_services; i++) {
-            const mdns_server_service_t* service = &config->services[i];
-            char msg_buffer[256];
-
-            if (!service->name || !service->name[0]) {
-                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu name is required", i + 1);
-                add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
-                finalize_launch_messages(&messages, &count, &capacity);
-                return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
-            }
-
-            if (!service->type || !service->type[0]) {
-                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu type is required", i + 1);
-                add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
-                finalize_launch_messages(&messages, &count, &capacity);
-                return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
-            }
-
-            if (service->port <= 0 || service->port > 65535) {
-                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu has invalid port number", i + 1);
-                add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
-                finalize_launch_messages(&messages, &count, &capacity);
-                return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
-            }
-
-            if (service->num_txt_records > 0 && !service->txt_records) {
-                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu TXT records array is NULL but count is non-zero", i + 1);
-                add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
-                finalize_launch_messages(&messages, &count, &capacity);
-                return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
-            }
-
-            snprintf(msg_buffer, sizeof(msg_buffer), "  Go:      Service %zu validated", i + 1);
-            add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
-        }
     }
 
     // All checks passed
@@ -177,6 +91,93 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
         .ready = ready,
         .messages = messages
     };
+}
+
+// Validate mDNS server configuration (extracted for testability)
+bool validate_mdns_server_configuration(const char*** messages, size_t* count, size_t* capacity) {
+    // Check basic configuration
+    if (!app_config || !(app_config->mdns_server.enable_ipv4 || app_config->mdns_server.enable_ipv6)) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   mDNS server disabled in configuration"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      mDNS server enabled in configuration"));
+
+    // Validate required configuration fields
+    const MDNSServerConfig* config = &app_config->mdns_server;
+
+    if (!config->device_id || !config->device_id[0]) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Device ID is required"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      Device ID configured"));
+
+    if (!config->friendly_name || !config->friendly_name[0]) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Friendly name is required"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      Friendly name configured"));
+
+    if (!config->model || !config->model[0]) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Model is required"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      Model configured"));
+
+    if (!config->manufacturer || !config->manufacturer[0]) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Manufacturer is required"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      Manufacturer configured"));
+
+    if (!config->version || !config->version[0]) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Version is required"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      Version configured"));
+
+    // Validate services array if present
+    if (config->num_services > 0) {
+        if (!config->services) {
+            add_launch_message(messages, count, capacity, strdup("  No-Go:   Services array is NULL but count is non-zero"));
+            return false;
+        }
+        add_launch_message(messages, count, capacity, strdup("  Go:      Services array allocated"));
+
+        // Validate each service
+        for (size_t i = 0; i < config->num_services; i++) {
+            const mdns_server_service_t* service = &config->services[i];
+            char msg_buffer[256];
+
+            if (!service->name || !service->name[0]) {
+                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu name is required", i + 1);
+                add_launch_message(messages, count, capacity, strdup(msg_buffer));
+                return false;
+            }
+
+            if (!service->type || !service->type[0]) {
+                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu type is required", i + 1);
+                add_launch_message(messages, count, capacity, strdup(msg_buffer));
+                return false;
+            }
+
+            if (service->port <= 0 || service->port > 65535) {
+                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu has invalid port number", i + 1);
+                add_launch_message(messages, count, capacity, strdup(msg_buffer));
+                return false;
+            }
+
+            if (service->num_txt_records > 0 && !service->txt_records) {
+                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu TXT records array is NULL but count is non-zero", i + 1);
+                add_launch_message(messages, count, capacity, strdup(msg_buffer));
+                return false;
+            }
+
+            snprintf(msg_buffer, sizeof(msg_buffer), "  Go:      Service %zu validated", i + 1);
+            add_launch_message(messages, count, capacity, strdup(msg_buffer));
+        }
+    }
+
+    return true;
 }
 
 // Launch the mDNS server subsystem

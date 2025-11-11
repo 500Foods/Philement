@@ -30,7 +30,7 @@ void test_check_mail_relay_launch_readiness_basic_functionality(void) {
     // Test basic functionality
     LaunchReadiness result = check_mail_relay_launch_readiness();
     TEST_ASSERT_NOT_NULL(result.subsystem);
-    TEST_ASSERT_EQUAL_STRING("Mail Relay", result.subsystem);
+    TEST_ASSERT_EQUAL_STRING(SR_MAIL_RELAY, result.subsystem);
     // Note: actual readiness depends on system state and mail relay configuration
 }
 

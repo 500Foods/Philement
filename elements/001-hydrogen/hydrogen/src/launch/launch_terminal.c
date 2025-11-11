@@ -22,6 +22,9 @@
 // Registry ID for the Terminal subsystem
 int terminal_subsystem_id = -1;
 
+// Forward declarations
+bool validate_terminal_configuration(const char*** messages, size_t* count, size_t* capacity);
+
 // Check if the terminal subsystem is ready to launch
 LaunchReadiness check_terminal_launch_readiness(void) {
     const char** messages = NULL;
@@ -62,44 +65,9 @@ LaunchReadiness check_terminal_launch_readiness(void) {
         is_ready = false;
     }
 
-    // Check if terminal is enabled - handle NULL config gracefully
-    if (!app_config || !app_config->terminal.enabled) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Terminal System Disabled"));
-        add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Disabled in Configuration"));
+    // Validate configuration - extracted to separate function for testability
+    if (!validate_terminal_configuration(&messages, &count, &capacity)) {
         is_ready = false;
-    } else {
-        // Validate required strings
-        if (!app_config->terminal.web_path) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Missing Web Path"));
-            add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Web Path Must Be Set"));
-            is_ready = false;
-        }
-
-        if (!app_config->terminal.shell_command) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Missing Shell Command"));
-            add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Shell Command Must Be Set"));
-            is_ready = false;
-        }
-
-        // Validate numeric ranges
-        if (app_config->terminal.max_sessions < 1 || app_config->terminal.max_sessions > 100) {
-            char msg[128];
-            snprintf(msg, sizeof(msg), "  No-Go:   Invalid Max Sessions: %d",
-                    app_config->terminal.max_sessions);
-            add_launch_message(&messages, &count, &capacity, strdup(msg));
-            add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Must Be Between 1 and 100"));
-            is_ready = false;
-        }
-
-        if (app_config->terminal.idle_timeout_seconds < 60 ||
-            app_config->terminal.idle_timeout_seconds > 3600) {
-            char msg[128];
-            snprintf(msg, sizeof(msg), "  No-Go:   Invalid Idle Timeout: %d",
-                    app_config->terminal.idle_timeout_seconds);
-            add_launch_message(&messages, &count, &capacity, strdup(msg));
-            add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Must Be Between 60 and 3600 Seconds"));
-            is_ready = false;
-        }
     }
 
     // Add final decision message
@@ -116,6 +84,56 @@ LaunchReadiness check_terminal_launch_readiness(void) {
         .ready = is_ready,
         .messages = messages
     };
+}
+
+// Validate terminal configuration (extracted for testability)
+bool validate_terminal_configuration(const char*** messages, size_t* count, size_t* capacity) {
+    // Check if terminal is enabled - handle NULL config gracefully
+    if (!app_config || !app_config->terminal.enabled) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Terminal System Disabled"));
+        add_launch_message(messages, count, capacity, strdup("  Reason:  Disabled in Configuration"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      Terminal System Enabled"));
+
+    // Validate required strings
+    if (!app_config->terminal.web_path) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Missing Web Path"));
+        add_launch_message(messages, count, capacity, strdup("  Reason:  Web Path Must Be Set"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      Web Path Configured"));
+
+    if (!app_config->terminal.shell_command) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Missing Shell Command"));
+        add_launch_message(messages, count, capacity, strdup("  Reason:  Shell Command Must Be Set"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      Shell Command Configured"));
+
+    // Validate numeric ranges
+    if (app_config->terminal.max_sessions < 1 || app_config->terminal.max_sessions > 100) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid Max Sessions: %d",
+                app_config->terminal.max_sessions);
+        add_launch_message(messages, count, capacity, strdup(msg));
+        add_launch_message(messages, count, capacity, strdup("  Reason:  Must Be Between 1 and 100"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      Max Sessions Valid"));
+
+    if (app_config->terminal.idle_timeout_seconds < 60 ||
+        app_config->terminal.idle_timeout_seconds > 3600) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid Idle Timeout: %d",
+                app_config->terminal.idle_timeout_seconds);
+        add_launch_message(messages, count, capacity, strdup(msg));
+        add_launch_message(messages, count, capacity, strdup("  Reason:  Must Be Between 60 and 3600 Seconds"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      Idle Timeout Valid"));
+
+    return true;
 }
 
 // Launch the terminal subsystem

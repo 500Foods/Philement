@@ -15,6 +15,106 @@
 // Registry ID and cached readiness state
 static int oidc_subsystem_id = -1;
 
+// Helper function to validate OIDC issuer URL
+bool validate_oidc_issuer(const char* issuer, const char*** messages, size_t* count, size_t* capacity, bool* ready) {
+    if (!issuer || strlen(issuer) == 0) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   OIDC issuer is required"));
+        *ready = false;
+        return false;
+    } else if (strncmp(issuer, "http://", 7) != 0 && strncmp(issuer, "https://", 8) != 0) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Invalid URL format for issuer"));
+        *ready = false;
+        return false;
+    }
+    return true;
+}
+
+// Helper function to validate OIDC redirect URI
+bool validate_oidc_redirect_uri(const char* redirect_uri, const char*** messages, size_t* count, size_t* capacity, bool* ready) {
+    if (redirect_uri && (strlen(redirect_uri) == 0 ||
+        (strncmp(redirect_uri, "http://", 7) != 0 && strncmp(redirect_uri, "https://", 8) != 0))) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Invalid URL format for redirect_uri"));
+        *ready = false;
+        return false;
+    }
+    return true;
+}
+
+// Helper function to validate OIDC port
+bool validate_oidc_port(int port, const char*** messages, size_t* count, size_t* capacity, bool* ready) {
+    if (port < MIN_OIDC_PORT || port > MAX_OIDC_PORT) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid OIDC port %d (must be between %d and %d)",
+                port, MIN_OIDC_PORT, MAX_OIDC_PORT);
+        add_launch_message(messages, count, capacity, strdup(msg));
+        *ready = false;
+        return false;
+    }
+    return true;
+}
+
+// Helper function to validate OIDC token lifetimes
+bool validate_oidc_token_lifetimes(const OIDCTokensConfig* tokens, const char*** messages, size_t* count, size_t* capacity, bool* ready) {
+    bool all_valid = true;
+    
+    if (tokens->access_token_lifetime < MIN_TOKEN_LIFETIME ||
+        tokens->access_token_lifetime > MAX_TOKEN_LIFETIME) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid access token lifetime %d (must be between %d and %d)",
+                tokens->access_token_lifetime, MIN_TOKEN_LIFETIME, MAX_TOKEN_LIFETIME);
+        add_launch_message(messages, count, capacity, strdup(msg));
+        *ready = false;
+        all_valid = false;
+    }
+    
+    if (tokens->refresh_token_lifetime < MIN_REFRESH_LIFETIME ||
+        tokens->refresh_token_lifetime > MAX_REFRESH_LIFETIME) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid refresh token lifetime %d (must be between %d and %d)",
+                tokens->refresh_token_lifetime, MIN_REFRESH_LIFETIME, MAX_REFRESH_LIFETIME);
+        add_launch_message(messages, count, capacity, strdup(msg));
+        *ready = false;
+        all_valid = false;
+    }
+    
+    if (tokens->id_token_lifetime < MIN_TOKEN_LIFETIME ||
+        tokens->id_token_lifetime > MAX_TOKEN_LIFETIME) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid ID token lifetime %d (must be between %d and %d)",
+                tokens->id_token_lifetime, MIN_TOKEN_LIFETIME, MAX_TOKEN_LIFETIME);
+        add_launch_message(messages, count, capacity, strdup(msg));
+        *ready = false;
+        all_valid = false;
+    }
+    
+    return all_valid;
+}
+
+// Helper function to validate OIDC key settings
+bool validate_oidc_key_settings(const OIDCKeysConfig* keys, const char*** messages, size_t* count, size_t* capacity, bool* ready) {
+    bool all_valid = true;
+    
+    if (keys->encryption_enabled) {
+        if (!keys->encryption_key || strlen(keys->encryption_key) == 0) {
+            add_launch_message(messages, count, capacity, strdup("  No-Go:   Encryption key required when encryption is enabled"));
+            *ready = false;
+            all_valid = false;
+        }
+    }
+    
+    if (keys->rotation_interval_days < MIN_KEY_ROTATION_DAYS ||
+        keys->rotation_interval_days > MAX_KEY_ROTATION_DAYS) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid key rotation interval %d days (must be between %d and %d)",
+                keys->rotation_interval_days, MIN_KEY_ROTATION_DAYS, MAX_KEY_ROTATION_DAYS);
+        add_launch_message(messages, count, capacity, strdup(msg));
+        *ready = false;
+        all_valid = false;
+    }
+    
+    return all_valid;
+}
+
 // Check if the OIDC subsystem is ready to launch
 LaunchReadiness check_oidc_launch_readiness(void) {
     const char** messages = NULL;
@@ -55,14 +155,8 @@ LaunchReadiness check_oidc_launch_readiness(void) {
         return (LaunchReadiness){ .subsystem = SR_OIDC, .ready = true, .messages = messages };
     }
 
-    // Validate core settings
-    if (!app_config->oidc.issuer || strlen(app_config->oidc.issuer) == 0) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   OIDC issuer is required"));
-        ready = false;
-    } else if (strncmp(app_config->oidc.issuer, "http://", 7) != 0 && strncmp(app_config->oidc.issuer, "https://", 8) != 0) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid URL format for issuer"));
-        ready = false;
-    }
+    // Validate core settings using helper functions
+    validate_oidc_issuer(app_config->oidc.issuer, &messages, &count, &capacity, &ready);
 
     if (!app_config->oidc.client_id || strlen(app_config->oidc.client_id) == 0) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   OIDC client_id is required"));
@@ -74,73 +168,22 @@ LaunchReadiness check_oidc_launch_readiness(void) {
         ready = false;
     }
 
-    if (app_config->oidc.redirect_uri && (strlen(app_config->oidc.redirect_uri) == 0 ||
-        (strncmp(app_config->oidc.redirect_uri, "http://", 7) != 0 && strncmp(app_config->oidc.redirect_uri, "https://", 8) != 0))) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid URL format for redirect_uri"));
-        ready = false;
-    }
-
-    // Validate port
-    if (app_config->oidc.port < MIN_OIDC_PORT || app_config->oidc.port > MAX_OIDC_PORT) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid OIDC port %d (must be between %d and %d)",
-                app_config->oidc.port, MIN_OIDC_PORT, MAX_OIDC_PORT);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
-        ready = false;
-    }
+    validate_oidc_redirect_uri(app_config->oidc.redirect_uri, &messages, &count, &capacity, &ready);
+    validate_oidc_port(app_config->oidc.port, &messages, &count, &capacity, &ready);
 
     if (ready) {
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Core settings valid"));
     }
 
-    // Validate token settings
-    if (app_config->oidc.tokens.access_token_lifetime < MIN_TOKEN_LIFETIME ||
-        app_config->oidc.tokens.access_token_lifetime > MAX_TOKEN_LIFETIME) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid access token lifetime %d (must be between %d and %d)",
-                app_config->oidc.tokens.access_token_lifetime, MIN_TOKEN_LIFETIME, MAX_TOKEN_LIFETIME);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
-        ready = false;
-    }
-
-    if (app_config->oidc.tokens.refresh_token_lifetime < MIN_REFRESH_LIFETIME ||
-        app_config->oidc.tokens.refresh_token_lifetime > MAX_REFRESH_LIFETIME) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid refresh token lifetime %d (must be between %d and %d)",
-                app_config->oidc.tokens.refresh_token_lifetime, MIN_REFRESH_LIFETIME, MAX_REFRESH_LIFETIME);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
-        ready = false;
-    }
-
-    if (app_config->oidc.tokens.id_token_lifetime < MIN_TOKEN_LIFETIME ||
-        app_config->oidc.tokens.id_token_lifetime > MAX_TOKEN_LIFETIME) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid ID token lifetime %d (must be between %d and %d)",
-                app_config->oidc.tokens.id_token_lifetime, MIN_TOKEN_LIFETIME, MAX_TOKEN_LIFETIME);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
-        ready = false;
-    }
+    // Validate token settings using helper function
+    validate_oidc_token_lifetimes(&app_config->oidc.tokens, &messages, &count, &capacity, &ready);
 
     if (ready) {
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Token settings valid"));
     }
 
-    // Validate key settings
-    if (app_config->oidc.keys.encryption_enabled) {
-        if (!app_config->oidc.keys.encryption_key || strlen(app_config->oidc.keys.encryption_key) == 0) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Encryption key required when encryption is enabled"));
-            ready = false;
-        }
-    }
-
-    if (app_config->oidc.keys.rotation_interval_days < MIN_KEY_ROTATION_DAYS ||
-        app_config->oidc.keys.rotation_interval_days > MAX_KEY_ROTATION_DAYS) {
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No-Go:   Invalid key rotation interval %d days (must be between %d and %d)",
-                app_config->oidc.keys.rotation_interval_days, MIN_KEY_ROTATION_DAYS, MAX_KEY_ROTATION_DAYS);
-        add_launch_message(&messages, &count, &capacity, strdup(msg));
-        ready = false;
-    }
+    // Validate key settings using helper function
+    validate_oidc_key_settings(&app_config->oidc.keys, &messages, &count, &capacity, &ready);
 
     if (ready) {
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Key settings valid"));
