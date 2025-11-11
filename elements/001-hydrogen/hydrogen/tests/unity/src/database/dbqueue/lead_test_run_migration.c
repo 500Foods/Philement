@@ -106,7 +106,7 @@ int main(void) {
 
     RUN_TEST(test_database_queue_lead_run_migration_null_queue);
     RUN_TEST(test_database_queue_lead_run_migration_non_lead_queue);
-    if (0) RUN_TEST(test_database_queue_lead_run_migration_auto_migration_disabled);
+    RUN_TEST(test_database_queue_lead_run_migration_auto_migration_disabled);
     RUN_TEST(test_database_queue_lead_run_migration_auto_migration_enabled_no_cycles);
 
     return UNITY_END();

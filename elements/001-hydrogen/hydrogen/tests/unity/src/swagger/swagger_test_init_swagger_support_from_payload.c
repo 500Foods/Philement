@@ -83,9 +83,9 @@ void setUp(void) {
     // Initialize test payload files
     memset(test_files, 0, sizeof(test_files));
 
-    // File 1: swagger/index.html
-    test_files[0].name = strdup("swagger/index.html");
-    test_files[0].data = (uint8_t*)strdup("<html>Test</html>");
+    // File 1: swagger/swagger.html
+    test_files[0].name = strdup("swagger/swagger.html");
+    test_files[0].data = (uint8_t*)strdup("<html>swagger-ui</html>");
     test_files[0].size = strlen((char*)test_files[0].data);
     test_files[0].is_compressed = false;
 

@@ -166,9 +166,9 @@ int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_collect_file_descriptors_basic_functionality);
-    if (0) RUN_TEST(test_collect_file_descriptors_null_pointers);
+    RUN_TEST(test_collect_file_descriptors_null_pointers);
     RUN_TEST(test_collect_file_descriptors_return_type);
-    if (0) RUN_TEST(test_collect_file_descriptors_parameter_validation);
+    RUN_TEST(test_collect_file_descriptors_parameter_validation);
     RUN_TEST(test_collect_file_descriptors_error_handling);
     RUN_TEST(test_collect_file_descriptors_memory_management);
     RUN_TEST(test_collect_file_descriptors_conceptual_behavior);

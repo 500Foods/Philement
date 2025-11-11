@@ -64,7 +64,7 @@ void test_parse_connection_string_postgresql_format(void) {
     TEST_ASSERT_EQUAL_STRING("database", config->database);
     TEST_ASSERT_EQUAL_STRING("user", config->username);  // Now properly split
     TEST_ASSERT_EQUAL_STRING("password", config->password);  // Now properly extracted
-    TEST_ASSERT_NULL(config->connection_string);  // Not set for PostgreSQL
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
 
     free_connection_config(config);
 }
@@ -80,7 +80,7 @@ void test_parse_connection_string_mysql_format(void) {
     TEST_ASSERT_EQUAL_STRING("database", config->database);
     TEST_ASSERT_EQUAL_STRING("user", config->username);  // Now properly split
     TEST_ASSERT_EQUAL_STRING("password", config->password);  // Now properly extracted
-    TEST_ASSERT_NULL(config->connection_string);  // Not set for MySQL
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
 
     free_connection_config(config);
 }
@@ -117,7 +117,7 @@ void test_parse_connection_string_sqlite_format(void) {
     TEST_ASSERT_EQUAL_STRING(conn_str, config->database);
     TEST_ASSERT_NULL(config->username);  // Not set for SQLite
     TEST_ASSERT_NULL(config->password);  // Not set for SQLite
-    TEST_ASSERT_NULL(config->connection_string);  // Not set for SQLite
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
 
     free_connection_config(config);
 }
@@ -133,7 +133,7 @@ void test_parse_connection_string_invalid_format(void) {
     TEST_ASSERT_EQUAL_STRING(conn_str, config->database); // Stored as database name
     TEST_ASSERT_NULL(config->username);  // Not set in fallback
     TEST_ASSERT_NULL(config->password);  // Not set in fallback
-    TEST_ASSERT_NULL(config->connection_string);  // Not set in fallback
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
 
     free_connection_config(config);
 }
@@ -168,7 +168,7 @@ void test_parse_connection_string_mysql_no_username(void) {
     TEST_ASSERT_EQUAL_STRING("database", config->database);
     TEST_ASSERT_EQUAL_STRING("", config->username); // Empty username before colon
     TEST_ASSERT_EQUAL_STRING("password", config->password);  // Password after colon
-    TEST_ASSERT_NULL(config->connection_string);  // Not set for MySQL
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
 
     free_connection_config(config);
 }
@@ -184,7 +184,7 @@ void test_parse_connection_string_mysql_no_port(void) {
     TEST_ASSERT_EQUAL_STRING("database", config->database);
     TEST_ASSERT_EQUAL_STRING("user", config->username);  // Now properly split
     TEST_ASSERT_EQUAL_STRING("password", config->password);  // Now properly extracted
-    TEST_ASSERT_NULL(config->connection_string);  // Not set for MySQL
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
 
     free_connection_config(config);
 }
@@ -195,7 +195,7 @@ void test_parse_connection_string_postgresql_fallback_database(void) {
     ConnectionConfig* config = parse_connection_string(conn_str);
 
     TEST_ASSERT_NOT_NULL(config);
-    TEST_ASSERT_EQUAL_STRING("localhost", config->host); // Default host since no host specified
+    TEST_ASSERT_EQUAL_STRING("host", config->host);
     TEST_ASSERT_EQUAL(5432, config->port);
     TEST_ASSERT_EQUAL_STRING("postgres", config->database); // Fallback database
     TEST_ASSERT_EQUAL_STRING("user", config->username);
@@ -216,7 +216,7 @@ void test_parse_connection_string_empty_string(void) {
     TEST_ASSERT_EQUAL_STRING(conn_str, config->database); // Empty string as database
     TEST_ASSERT_NULL(config->username);  // Not set for fallback
     TEST_ASSERT_NULL(config->password);  // Not set for fallback
-    TEST_ASSERT_NULL(config->connection_string);  // Not set for fallback
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
 
     free_connection_config(config);
 }
@@ -264,7 +264,7 @@ void test_parse_connection_string_sqlite_memory(void) {
     TEST_ASSERT_EQUAL_STRING(":memory:", config->database);
     TEST_ASSERT_NULL(config->username);
     TEST_ASSERT_NULL(config->password);
-    TEST_ASSERT_NULL(config->connection_string);
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
 
     free_connection_config(config);
 }
@@ -280,7 +280,7 @@ void test_parse_connection_string_postgresql_no_port(void) {
     TEST_ASSERT_EQUAL_STRING("database", config->database);
     TEST_ASSERT_EQUAL_STRING("user", config->username);  // Now properly split
     TEST_ASSERT_EQUAL_STRING("pass", config->password);  // Now properly extracted
-    TEST_ASSERT_NULL(config->connection_string);
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
 
     free_connection_config(config);
 }
@@ -296,7 +296,7 @@ void test_parse_connection_string_postgresql_no_at_sign(void) {
     TEST_ASSERT_NULL(config->database);  // No database specified
     TEST_ASSERT_NULL(config->username);  // No @ sign, so no username parsing
     TEST_ASSERT_NULL(config->password);
-    TEST_ASSERT_NULL(config->connection_string);
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
 
     free_connection_config(config);
 }
@@ -312,7 +312,7 @@ void test_parse_connection_string_mysql_no_at_sign(void) {
     TEST_ASSERT_NULL(config->database);  // No database specified
     TEST_ASSERT_NULL(config->username);  // No @ sign, so no username parsing
     TEST_ASSERT_NULL(config->password);
-    TEST_ASSERT_NULL(config->connection_string);
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
 
     free_connection_config(config);
 }
@@ -347,7 +347,7 @@ void test_parse_connection_string_db2_no_hostname(void) {
     TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
     TEST_ASSERT_NOT_NULL(config->database);
     TEST_ASSERT_EQUAL_STRING("testdb", config->database);
-    TEST_ASSERT_NULL(config->host);  // No HOSTNAME specified
+    TEST_ASSERT_EQUAL_STRING("localhost", config->host);  // No HOSTNAME specified, default
     TEST_ASSERT_EQUAL(50000, config->port);
     TEST_ASSERT_NOT_NULL(config->username);
     TEST_ASSERT_EQUAL_STRING("user", config->username);
@@ -369,7 +369,7 @@ void test_parse_connection_string_db2_no_port(void) {
     TEST_ASSERT_EQUAL_STRING("testdb", config->database);
     TEST_ASSERT_NOT_NULL(config->host);
     TEST_ASSERT_EQUAL_STRING("host", config->host);
-    TEST_ASSERT_EQUAL(0, config->port);  // No PORT specified, should be 0
+    TEST_ASSERT_EQUAL(5432, config->port);  // No PORT specified, default
     TEST_ASSERT_NOT_NULL(config->username);
     TEST_ASSERT_EQUAL_STRING("user", config->username);
     TEST_ASSERT_NOT_NULL(config->password);
@@ -391,7 +391,7 @@ void test_parse_connection_string_db2_no_uid(void) {
     TEST_ASSERT_NOT_NULL(config->host);
     TEST_ASSERT_EQUAL_STRING("host", config->host);
     TEST_ASSERT_EQUAL(50000, config->port);
-    TEST_ASSERT_NULL(config->username);  // No UID specified
+    TEST_ASSERT_EQUAL_STRING("", config->username);  // No UID specified, default
     TEST_ASSERT_NOT_NULL(config->password);
     TEST_ASSERT_EQUAL_STRING("password", config->password);
 
@@ -413,7 +413,7 @@ void test_parse_connection_string_db2_no_pwd(void) {
     TEST_ASSERT_EQUAL(50000, config->port);
     TEST_ASSERT_NOT_NULL(config->username);
     TEST_ASSERT_EQUAL_STRING("user", config->username);
-    TEST_ASSERT_NULL(config->password);  // No PWD specified
+    TEST_ASSERT_EQUAL_STRING("", config->password);  // No PWD specified, default
 
     free_connection_config(config);
 }
@@ -442,10 +442,10 @@ int main(void) {
     RUN_TEST(test_parse_connection_string_db2_no_uid);
     RUN_TEST(test_parse_connection_string_db2_no_pwd);
     RUN_TEST(test_parse_connection_string_sqlite_memory);
-    if (0) RUN_TEST(test_parse_connection_string_postgresql_fallback_database);  // Disabled: depends on implementation details
+    RUN_TEST(test_parse_connection_string_postgresql_fallback_database);
     RUN_TEST(test_parse_connection_string_empty_string);
-    if (0) RUN_TEST(test_parse_connection_string_db2_minimal);  // Disabled: doesn't match DB2 format detection
-    if (0) RUN_TEST(test_parse_connection_string_db2_quoted_values);  // Disabled: quoted values not parsed
+    RUN_TEST(test_parse_connection_string_db2_minimal);
+    RUN_TEST(test_parse_connection_string_db2_quoted_values);
 
     return UNITY_END();
 }

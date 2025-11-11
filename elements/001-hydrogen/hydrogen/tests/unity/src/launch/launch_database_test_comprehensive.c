@@ -21,7 +21,7 @@
 #define USE_MOCK_LIBSQLITE3
 #define USE_MOCK_LIBDB2
 #define USE_MOCK_SYSTEM
-#define USE_MOCK_LAUNCH
+// USE_MOCK_LAUNCH defined by CMake
 
 #include <unity/mocks/mock_libpq.h>
 #include <unity/mocks/mock_libmysqlclient.h>

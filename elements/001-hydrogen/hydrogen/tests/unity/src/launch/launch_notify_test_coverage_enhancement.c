@@ -75,9 +75,12 @@ void test_check_notify_null_config_scenario(void) {
     TEST_ASSERT_NOT_NULL(result.messages);
     TEST_ASSERT_EQUAL_STRING("Notify", result.subsystem);
 
-    // Check that the first message indicates configuration not loaded
+    // Check that messages[0] is subsystem name and messages[1] is the error
     if (result.messages && result.messages[0]) {
-        TEST_ASSERT_TRUE(strstr(result.messages[0], "Configuration not loaded") != NULL);
+        TEST_ASSERT_EQUAL_STRING("Notify", result.messages[0]);
+    }
+    if (result.messages && result.messages[1]) {
+        TEST_ASSERT_TRUE(strstr(result.messages[1], "Configuration not loaded") != NULL);
     }
 }
 
@@ -186,10 +189,7 @@ void test_check_notify_ready_decision_true_path(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    // Disabled: Demonstrates architectural limitation with NULL config assertion
-    // Re-enable when registry subsystem can be mocked or global state better isolated
-    if (0) RUN_TEST(test_check_notify_null_config_scenario);
-
+    RUN_TEST(test_check_notify_null_config_scenario);
     RUN_TEST(test_check_notify_null_notifier_scenario);
     RUN_TEST(test_check_notify_smtp_validation_errors);
     RUN_TEST(test_check_notify_ready_decision_true_path);

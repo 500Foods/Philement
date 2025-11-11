@@ -44,7 +44,7 @@ void test_database_queue_manager_create_malloc_failure(void) {
 
 // Test database_queue_manager_create with databases calloc failure
 void test_database_queue_manager_create_databases_calloc_failure(void) {
-    mock_system_set_malloc_failure(1);
+    mock_system_set_malloc_failure(2);  // Skip first malloc, fail on calloc
     DatabaseQueueManager* result = database_queue_manager_create(5);
     TEST_ASSERT_NULL(result);
 }
@@ -59,8 +59,8 @@ void test_database_queue_manager_create_mutex_init_failure(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_database_queue_manager_create_malloc_failure);
-    if (0) RUN_TEST(test_database_queue_manager_create_databases_calloc_failure);
+    RUN_TEST(test_database_queue_manager_create_malloc_failure);
+    RUN_TEST(test_database_queue_manager_create_databases_calloc_failure);
     RUN_TEST(test_database_queue_manager_create_mutex_init_failure);
 
     return UNITY_END();

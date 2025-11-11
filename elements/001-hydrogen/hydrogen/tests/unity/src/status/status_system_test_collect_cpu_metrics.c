@@ -133,7 +133,7 @@ int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_collect_cpu_metrics_basic_functionality);
-    if (0) RUN_TEST(test_collect_cpu_metrics_null_pointer);
+    RUN_TEST(test_collect_cpu_metrics_null_pointer);
     RUN_TEST(test_collect_cpu_metrics_return_type);
     RUN_TEST(test_collect_cpu_metrics_parameter_validation);
     RUN_TEST(test_collect_cpu_metrics_error_handling);

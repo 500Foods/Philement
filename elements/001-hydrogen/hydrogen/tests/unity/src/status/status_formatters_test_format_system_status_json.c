@@ -215,13 +215,13 @@ void test_format_system_status_json_with_system_info(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_format_system_status_json_null_metrics);
-    if (0) RUN_TEST(test_format_system_status_json_minimal_metrics);
-    if (0) RUN_TEST(test_format_system_status_json_return_type);
-    if (0) RUN_TEST(test_format_system_status_json_memory_management);
-    if (0) RUN_TEST(test_format_system_status_json_json_structure);
-    if (0) RUN_TEST(test_format_system_status_json_with_version_info);
-    if (0) RUN_TEST(test_format_system_status_json_with_system_info);
+    RUN_TEST(test_format_system_status_json_null_metrics);
+    RUN_TEST(test_format_system_status_json_minimal_metrics);
+    RUN_TEST(test_format_system_status_json_return_type);
+    RUN_TEST(test_format_system_status_json_memory_management);
+    RUN_TEST(test_format_system_status_json_json_structure);
+    RUN_TEST(test_format_system_status_json_with_version_info);
+    RUN_TEST(test_format_system_status_json_with_system_info);
 
     return UNITY_END();
 }

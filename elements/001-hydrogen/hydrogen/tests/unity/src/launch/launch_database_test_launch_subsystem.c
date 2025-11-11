@@ -21,7 +21,7 @@
 #define USE_MOCK_LIBSQLITE3
 #define USE_MOCK_LIBDB2
 #define USE_MOCK_SYSTEM
-#define USE_MOCK_LAUNCH
+// USE_MOCK_LAUNCH defined by CMake
 
 #include <unity/mocks/mock_libpq.h>
 #include <unity/mocks/mock_libmysqlclient.h>
@@ -108,6 +108,12 @@ static void test_launch_database_subsystem_basic_functionality(void) {
     TEST_ASSERT_TRUE(result == 1 || result == 0);
 }
 
+// NOTE: Test disabled - Causes SEGFAULT in database worker thread
+// ISSUE: mock_strdup() is called with NULL from database_bootstrap.c:65
+// The mock passes NULL to real strdup() which crashes
+// POTENTIAL FIX: Update mock_strdup to handle NULL gracefully (return NULL without calling real strdup)
+// Or fix the source code to not pass NULL to strdup in the first place
+
 static void test_launch_database_subsystem_no_databases_configured(void) {
     // Test behavior when no databases are configured
     test_app_config->databases.connection_count = 0;
@@ -145,6 +151,9 @@ static void test_launch_database_subsystem_null_config(void) {
     TEST_IGNORE_MESSAGE("Function doesn't handle NULL app_config gracefully - crashes");
 }
 
+// NOTE: Test disabled - Marked as TEST_IGNORE because it crashes
+// The function needs NULL checks added to handle missing app_config
+
 static void test_launch_database_subsystem_server_stopping(void) {
     // Test behavior when server is stopping
     // Note: The function doesn't handle server_stopping gracefully in all cases
@@ -165,11 +174,11 @@ static void test_launch_database_subsystem_server_stopping(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_launch_database_subsystem_basic_functionality);
+    if (0) RUN_TEST(test_launch_database_subsystem_basic_functionality);  // Disabled: SEGFAULT - mock_strdup(NULL) issue
     RUN_TEST(test_launch_database_subsystem_no_databases_configured);
     RUN_TEST(test_launch_database_subsystem_disabled_databases);
     RUN_TEST(test_launch_database_subsystem_get_subsystem_id_failure);
-    if (0) RUN_TEST(test_launch_database_subsystem_null_config);
+    if (0) RUN_TEST(test_launch_database_subsystem_null_config);           // Disabled: TEST_IGNORE - needs NULL check in source
     RUN_TEST(test_launch_database_subsystem_server_stopping);
 
     return UNITY_END();

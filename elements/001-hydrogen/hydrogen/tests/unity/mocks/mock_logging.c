@@ -77,7 +77,12 @@ void mock_log_this(const char* subsystem, const char* format, int priority, int 
 
     // Store call information
     mock_call_count++;
-    strncpy(mock_last_subsystem, subsystem, sizeof(mock_last_subsystem) - 1);
+    if (subsystem) {
+        strncpy(mock_last_subsystem, subsystem, sizeof(mock_last_subsystem) - 1);
+        mock_last_subsystem[sizeof(mock_last_subsystem) - 1] = '\0';
+    } else {
+        mock_last_subsystem[0] = '\0';
+    }
     mock_last_priority = priority;
 
     // Format the message
@@ -87,7 +92,7 @@ void mock_log_this(const char* subsystem, const char* format, int priority, int 
     va_end(args);
 
     // Print to stderr for debugging
-    fprintf(stderr, "MOCK_LOG: [%s] %s (priority: %d, calls: %d)\n", subsystem, mock_last_message, priority, mock_call_count);
+    fprintf(stderr, "MOCK_LOG: [%s] %s (priority: %d, calls: %d)\n", subsystem ? subsystem : "(null)", mock_last_message, priority, mock_call_count);
 }
 
 // Reset all mock state

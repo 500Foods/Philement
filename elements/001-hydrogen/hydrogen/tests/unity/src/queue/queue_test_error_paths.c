@@ -5,13 +5,13 @@
  * Following the "One Test File Per Function Rule" from UNITY.md
  */
 
+// Enable mocks for testing error conditions BEFORE any includes
+#define USE_MOCK_SYSTEM
+#include <unity/mocks/mock_system.h>
+
 // Standard project header plus Unity Framework header
 #include <src/hydrogen.h>
 #include <unity.h>
-
-// Enable mocks for testing error conditions
-#define USE_MOCK_SYSTEM
-#include <unity/mocks/mock_system.h>
 
 // Function prototypes for test functions
 void test_queue_create_malloc_failure(void);
@@ -98,9 +98,9 @@ void test_queue_enqueue_malloc_failures(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_queue_create_malloc_failure);
-    if (0) RUN_TEST(test_queue_create_strdup_failure);
-    if (0) RUN_TEST(test_queue_enqueue_malloc_failures);
+    RUN_TEST(test_queue_create_malloc_failure);
+    RUN_TEST(test_queue_create_strdup_failure);
+    RUN_TEST(test_queue_enqueue_malloc_failures);
 
     return UNITY_END();
 }

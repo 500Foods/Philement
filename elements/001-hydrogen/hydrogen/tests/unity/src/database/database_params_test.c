@@ -399,9 +399,90 @@ void test_convert_named_to_positional_parameter_not_found(void) {
 
 // Test build_parameter_array function
 void test_build_parameter_array_simple(void) {
-    // Skip this test for now due to memory management issues
-    // The test is complex and the memory management is tricky with shared pointers
-    TEST_IGNORE_MESSAGE("Skipping complex memory management test for now");
+    // Create test parameters in reverse order to test reordering
+    ParameterList* params = (ParameterList*)malloc(sizeof(ParameterList));
+    if (!params) {
+        TEST_FAIL_MESSAGE("Failed to allocate ParameterList");
+        return;
+    }
+    params->count = 2;
+    params->params = (TypedParameter**)malloc(2 * sizeof(TypedParameter*));
+    if (!params->params) {
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate params array");
+        return;
+    }
+
+    // Create second parameter first (userName)
+    params->params[0] = (TypedParameter*)malloc(sizeof(TypedParameter));
+    if (!params->params[0]) {
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate first parameter");
+        return;
+    }
+    params->params[0]->name = strdup("userName");
+    if (!params->params[0]->name) {
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate first parameter name");
+        return;
+    }
+    params->params[0]->type = PARAM_TYPE_STRING;
+    params->params[0]->value.string_value = strdup("johndoe");
+    if (!params->params[0]->value.string_value) {
+        free(params->params[0]->name);
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate first parameter value");
+        return;
+    }
+
+    // Create first parameter second (userId)
+    params->params[1] = (TypedParameter*)malloc(sizeof(TypedParameter));
+    if (!params->params[1]) {
+        free_typed_parameter(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate second parameter");
+        return;
+    }
+    params->params[1]->name = strdup("userId");
+    if (!params->params[1]->name) {
+        free_typed_parameter(params->params[0]);
+        free(params->params[1]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate second parameter name");
+        return;
+    }
+    params->params[1]->type = PARAM_TYPE_INTEGER;
+    params->params[1]->value.int_value = 123;
+
+    const char* sql_template = "SELECT * FROM users WHERE userId = :userId AND userName = :userName";
+    TypedParameter** ordered_params = NULL;
+    size_t param_count = 0;
+
+    bool result = build_parameter_array(sql_template, params, &ordered_params, &param_count, NULL);
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL(2, param_count);
+    TEST_ASSERT_NOT_NULL(ordered_params);
+
+    // Verify order matches SQL template order
+    TEST_ASSERT_EQUAL_STRING("userId", ordered_params[0]->name);
+    TEST_ASSERT_EQUAL(PARAM_TYPE_INTEGER, ordered_params[0]->type);
+    TEST_ASSERT_EQUAL(123, ordered_params[0]->value.int_value);
+
+    TEST_ASSERT_EQUAL_STRING("userName", ordered_params[1]->name);
+    TEST_ASSERT_EQUAL(PARAM_TYPE_STRING, ordered_params[1]->type);
+    TEST_ASSERT_EQUAL_STRING("johndoe", ordered_params[1]->value.string_value);
+
+    // Cleanup
+    free(ordered_params);
+    free_parameter_list(params);
 }
 
 void test_build_parameter_array_no_matches(void) {
@@ -534,7 +615,7 @@ int main(void) {
     RUN_TEST(test_convert_named_to_positional_parameter_not_found);
 
     // Parameter array building tests
-    if (0) RUN_TEST(test_build_parameter_array_simple);
+    RUN_TEST(test_build_parameter_array_simple);
     RUN_TEST(test_build_parameter_array_no_matches);
 
     // Cleanup tests
