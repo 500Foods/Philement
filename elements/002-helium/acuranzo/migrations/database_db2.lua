@@ -20,6 +20,9 @@ return {
     VARCHAR_128 = "VARCHAR(128)",
     VARCHAR_500 = "VARCHAR(500)",
 
+    BASE64_START = "CAST(BASE64DECODE(",
+    BASE64_END = ") AS CLOB(1M) CCSID UNICODE)",
+
     JSON = "CLOB(1M)",
     JSON_INGEST_START = "${SCHEMA}json_ingest(",
     JSON_INGEST_END = ")",
