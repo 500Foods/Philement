@@ -92,19 +92,27 @@ int land_mdns_server_subsystem(void) {
     // Signal thread shutdown
     mdns_server_system_shutdown = 1;
     log_this(SR_MDNS_SERVER, "Signaled mDNS Server threads to stop", LOG_LEVEL_DEBUG, 0);
-    
+
+    // Call the actual mDNS server shutdown function to send goodbye packets and cleanup resources
+    extern mdns_server_t* mdns_server_instance;  // Access global instance from launch module
+    if (mdns_server_instance) {
+        mdns_server_shutdown(mdns_server_instance);
+        mdns_server_instance = NULL;  // Prevent double-free
+        log_this(SR_MDNS_SERVER, "mDNS Server instance shutdown and resources freed", LOG_LEVEL_DEBUG, 0);
+    }
+
     // Log thread count before cleanup
     log_this(SR_MDNS_SERVER, "Cleaning up %d mDNS Server threads", LOG_LEVEL_DEBUG, 1, mdns_server_threads.thread_count);
-    
+
     // Remove all mDNS server threads from tracking
     for (int i = 0; i < mdns_server_threads.thread_count; i++) {
         remove_service_thread(&mdns_server_threads, mdns_server_threads.thread_ids[i]);
     }
-    
+
     // Reinitialize thread structure
     init_service_threads(&mdns_server_threads, SR_MDNS_SERVER);
-    
+
     log_this(SR_MDNS_SERVER, "LANDING: " SR_MDNS_SERVER " COMPLETE", LOG_LEVEL_DEBUG, 0);
-    
+
     return 1; // Success
 }

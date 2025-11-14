@@ -16,6 +16,7 @@
 #include <src/database/database.h>
 
 // Local includes
+#include "../conduit_service.h"
 #include "query.h"
 
 // Enable mock database queue functions for unit testing
@@ -603,9 +604,11 @@ enum MHD_Result handle_conduit_query_request(
     // cppcheck-suppress[constParameterPointer] - upload_data_size parameter must match libmicrohttpd callback signature
     size_t *upload_data_size,
     void **con_cls
-  ) {
+   ) {
     (void)url;              // Unused parameter
     (void)con_cls;          // Will be used when implemented
+
+    log_this(SR_API, "%s: Processing conduit query request", LOG_LEVEL_TRACE, 1, conduit_service_name());
 
     // Step 1: Validate HTTP method
     enum MHD_Result result = handle_method_validation(connection, method);
@@ -615,6 +618,8 @@ enum MHD_Result handle_conduit_query_request(
     json_t *request_json = NULL;
     result = handle_request_parsing(connection, method, upload_data, upload_data_size, &request_json);
     if (result != MHD_YES) return result;
+
+    log_this(SR_API, "%s: Request data parsed successfully", LOG_LEVEL_TRACE, 1, conduit_service_name());
 
     // Step 3: Extract and validate required fields
     int query_ref;
@@ -626,6 +631,8 @@ enum MHD_Result handle_conduit_query_request(
         return result;
     }
 
+    log_this(SR_API, "%s: Request fields extracted: query_ref=%d, database=%s", LOG_LEVEL_TRACE, 3, conduit_service_name(), query_ref, database);
+
     // Step 4: Lookup database queue and query cache entry
     DatabaseQueue* db_queue = NULL;
     QueryCacheEntry* cache_entry = NULL;
@@ -634,6 +641,8 @@ enum MHD_Result handle_conduit_query_request(
         json_decref(request_json);
         return result;
     }
+
+    log_this(SR_API, "%s: Database and query lookup successful", LOG_LEVEL_TRACE, 1, conduit_service_name());
 
     // Step 5: Parse and convert parameters
     ParameterList* param_list;
@@ -686,9 +695,11 @@ enum MHD_Result handle_conduit_query_request(
 
     // Step 10: Wait for result and build response
     result = handle_response_building(connection, query_ref, database, cache_entry,
-                                    selected_queue, pending, query_id, converted_sql,
-                                    param_list, ordered_params);
+                                     selected_queue, pending, query_id, converted_sql,
+                                     param_list, ordered_params);
     json_decref(request_json);
+
+    log_this(SR_API, "%s: Conduit query request processing completed", LOG_LEVEL_TRACE, 1, conduit_service_name());
 
     return result;
 }

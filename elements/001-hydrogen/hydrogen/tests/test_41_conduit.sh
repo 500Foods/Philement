@@ -333,6 +333,11 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     run_conduit_test_parallel "conduit_query" "${CONFIG_PATH}" "conduit" "Conduit Query"
 
     # Analyze results
+    log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_conduit.log"
+    result_file="${LOG_PREFIX}${TIMESTAMP}_conduit.result"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Conduit Server Log: ..${log_file}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Conduit Result Log: ..${result_file}"
+
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if analyze_conduit_test_results "conduit_query" "conduit" "Conduit Query"; then
         PASS_COUNT=$(( PASS_COUNT + 1 ))

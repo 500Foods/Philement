@@ -56,6 +56,10 @@ declare -gA CACHE_DATA
 # Delete this cache as one of the tests' coverages depends on it being empty
 rm -rf ~/.cache/hydrogen/depdendency/*
 
+# Erase the unity failures log file at the start of Test 10
+UNITY_FAILURES_FILE="${RESULTS_DIR}/unity_failures.txt"
+rm -f "${UNITY_FAILURES_FILE}"
+
 # Function to load consolidated cache into associative array
 load_consolidated_cache() {
     local cache_file="$1"
@@ -180,6 +184,7 @@ run_single_unity_test_parallel() {
     local test_name="$1"
     local result_file="$2"
     local output_file="$3"
+    local failures_file="$4"
     local test_exe="${UNITY_BUILD_DIR}/src/${test_name}"
 
     # Initialize result tracking
@@ -306,8 +311,13 @@ run_single_unity_test_parallel() {
         fi
 
         exit_code=1
+
+        # Collect failing test filename
+        if [[ "${exit_code}" -eq 1 ]]; then
+            echo "${test_name}" >> "${failures_file}"
+        fi
     fi
-    
+
     # Add SUBTEST_END with long-running flag
     echo "SUBTEST_END|${subtest_number}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}|${is_long_running}" >> "${output_file}"
     echo "${exit_code}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}|${is_long_running}" > "${result_file}"
@@ -494,7 +504,7 @@ run_unity_tests() {
                 temp_outputs+=("${temp_output_file}")
                 filecounter=$(( filecounter + 1 ))
                 # Run test in background
-                run_single_unity_test_parallel "${test_path}" "${temp_result_file}" "${temp_output_file}" &
+                run_single_unity_test_parallel "${test_path}" "${temp_result_file}" "${temp_output_file}" "${UNITY_FAILURES_FILE}" &
                 pids+=($!)
             done
 

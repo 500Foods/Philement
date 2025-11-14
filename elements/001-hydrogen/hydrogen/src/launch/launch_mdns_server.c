@@ -22,7 +22,7 @@
 extern ServiceThreads mdns_server_threads;
 
 // mDNS server subsystem global variables
-static mdns_server_t* mdns_server_instance = NULL;
+mdns_server_t* mdns_server_instance = NULL;  // Made non-static for access from landing module
 static pthread_t mdns_server_announce_thread = 0;
 static pthread_t mdns_server_responder_thread = 0;
 

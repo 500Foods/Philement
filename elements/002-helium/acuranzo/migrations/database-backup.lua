@@ -253,28 +253,12 @@ local database = {
             end
         end
 
-        -- Base64 encode text blocks inside [={ markers
-        local function base64_encode(data)
-            local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-            return ((data:gsub('.', function(x)
-                local r,byte_val='',x:byte()
-                for i=8,1,-1 do r=r..(byte_val%2^i-byte_val%2^(i-1)>0 and '1' or '0') end
-                return r;
-            end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
-                if (#x < 6) then return '' end
-                local c=0
-                for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
-                return b:sub(c+1,c+1)
-            end)..({ '', '==', '=' })[#data%3+1])
-        end
-
+        -- Escape quotes in multiline strings
+        sql = sql:gsub("%[==%[(.-)%]==%]", function(content)
+            return "[==[" .. content:gsub('"', '""') .. "]==]"
+        end)
         sql = sql:gsub("%[=%[(.-)%]=%]", function(content)
-            local encoded = "'" .. base64_encode(content) .. "'"
-            if cfg.BASE64_START and cfg.BASE64_END then
-                return cfg.BASE64_START .. encoded .. cfg.BASE64_END
-            else
-                return encoded
-            end
+            return "[=[" .. content:gsub("'", "''") .. "]=]"
         end)
 
         return sql

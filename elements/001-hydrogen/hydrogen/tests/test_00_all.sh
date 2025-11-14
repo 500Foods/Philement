@@ -773,6 +773,16 @@ if [[ ! "${results_summary}" == "${coverage_summary}" ]]; then
     echo "Please adjust via tests/lib/coverage.sh"
 fi
 
+# Check for Unity test failures and display them if any exist
+UNITY_FAILURES_FILE="${RESULTS_DIR}/unity_failures.txt"
+if [[ -f "${UNITY_FAILURES_FILE}" ]] && [[ -s "${UNITY_FAILURES_FILE}" ]]; then
+    echo ""
+    echo "⚠️  Unity Test Failures Detected:"
+    echo "The following Unity test executables failed:"
+    cat "${UNITY_FAILURES_FILE}"
+    echo ""
+fi
+
 # Generate SVGs from generated tables
 # shellcheck disable=SC2154 # OH defined externally in framework.sh
 ("${OH}" --width 108 -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
