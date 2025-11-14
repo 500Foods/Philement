@@ -7,16 +7,14 @@
 #   make test DB=HYDROTST                   # run tests again
 #   make clean
 
-DB2DIR ?= /opt/ibm/db2/V11.5
+DB2DIR ?= /opt/ibm/db2/V11.1
 SCHEMA  ?= TEST
 DB      ?= HYDROTST
 
 CC      := gcc
-CFLAGS  := -fPIC \
-           -shared  \
-		   -O2 \
-		   -I"/opt/ibm/db2/V11.1/include" \
-		   -fPIC 
+CFLAGS  := -fpic -O2 -I"$(DB2DIR)/include" -D_REENTRANT
+LDFLAGS := -shared -Wl,-rpath,$(DB2DIR)/lib64
+LIBS    := -L$(DB2DIR)/lib64 -ldb2 -lpthread
 SO_DIR  := /home/db2inst1/sqllib/function
 SO_FILE := base64_chunk_udf.so
 SRC     := base64_chunk_udf.c
@@ -26,7 +24,9 @@ SRC     := base64_chunk_udf.c
 all: $(SO_FILE)
 
 $(SO_FILE): $(SRC)
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -c $(SRC)
+	$(CC) $(LDFLAGS) -o $@ base64_chunk_udf.o $(LIBS)
+	rm -f base64_chunk_udf.o
 
 install: $(SO_FILE)
 	mkdir -p "$(SO_DIR)"
