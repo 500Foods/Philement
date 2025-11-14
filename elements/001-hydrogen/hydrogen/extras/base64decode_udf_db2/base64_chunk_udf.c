@@ -1,6 +1,7 @@
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "sqludf.h"
+#include <sqludf.h>
 
 /* Base64 map */
 static int b64_idx[256];
@@ -33,31 +34,40 @@ static size_t b64_decode_block(const char* in, size_t inlen, unsigned char* out)
     return o;
 }
 
-/* DB2SQL parameter style: VARCHAR(32672) -> VARCHAR(32672) */
+/* DB2SQL parameter style: VARCHAR(32672) -> VARCHAR(32672)
+   Parameter order: inputs, outputs, null indicators, trail args */
+#ifdef __cplusplus
+extern "C"
+#endif
 void SQL_API_FN BASE64_DECODE_CHUNK(
-    SQLUDF_VARCHAR *in_str,   SQLUDF_INTEGER *in_len,   SQLUDF_NULLIND *in_ind,
-    SQLUDF_VARCHAR *out_str,  SQLUDF_INTEGER *out_len,  SQLUDF_NULLIND *out_ind,
+    const SQLUDF_VARCHAR *in_str,    /* Input parameter */
+    SQLUDF_VARCHAR *out_str,         /* Output parameter */
+    const SQLUDF_NULLIND *in_ind,    /* Input null indicator */
+    SQLUDF_NULLIND *out_ind,         /* Output null indicator */
     SQLUDF_TRAIL_ARGS
 ){
-    if (*in_ind == -1){ *out_ind = -1; *out_len = 0; return; }
+    /* Initialize SQLSTATE to success */
+    strcpy(SQLUDF_STATE, "00000");
+    
+    if (*in_ind == -1){ *out_ind = -1; return; }
     *out_ind = 0;
-
-    /* Out buffer capacity that Db2 actually provided */
-    size_t outcap = (*out_len > 0) ? (size_t)(*out_len) : 0;
-    if (outcap == 0){
-        /* No space to write anything */
-        *out_len = 0;
-        return;
-    }
-
+    
+    /* Initialize output */
+    out_str[0] = '\0';
+    
     b64_init();
 
-    /* Filter input to legal base64 chars */
-    size_t inlen = (size_t)(*in_len);
+    /* Get input length and filter to legal base64 chars */
+    size_t inlen = strlen(in_str);
+    if (inlen == 0) return;
+    
     const unsigned char *src = (const unsigned char*)in_str;
-
     char *work = (char*)malloc(inlen + 4);
-    if (!work){ strcpy(sqludf_sqlstate,"38MEM"); *out_ind=-1; *out_len=0; return; }
+    if (!work){
+        strcpy(SQLUDF_STATE, "UDF02");
+        strcpy(SQLUDF_MSGTX, "Memory allocation failed");
+        *out_ind=-1; return;
+    }
 
     size_t eff=0;
     for (size_t i=0;i<inlen;++i){
@@ -65,22 +75,70 @@ void SQL_API_FN BASE64_DECODE_CHUNK(
         if (c=='=' || b64_idx[c]>=0) work[eff++] = (char)c;
     }
 
-    /* Decode only full quartets; clamp so decoded bytes <= outcap */
+    /* Decode only full quartets */
     size_t full = (eff/4)*4;
-    size_t dec_bytes = (full/4)*3;         /* exact max decoded for 'full' */
-    if (dec_bytes > outcap){
-        full      = (outcap/3)*4;          /* largest multiple-of-4 that fits */
-        dec_bytes = (full/4)*3;
-    }
-
     size_t wrote = 0;
-    if (full){
+    if (full > 0){
         wrote = b64_decode_block(work, full, (unsigned char*)out_str);
-        if (wrote == 0 && full>0){
-            free(work); strcpy(sqludf_sqlstate,"38DEC"); *out_ind=-1; *out_len=0; return;
+        if (wrote == 0){
+            strcpy(SQLUDF_STATE, "UDF01");
+            strcpy(SQLUDF_MSGTX, "Invalid base64 input");
+            free(work); *out_ind=-1; return;
         }
     }
 
+    /* Null-terminate the output */
+    out_str[wrote] = '\0';
     free(work);
-    *out_len = (SQLUDF_INTEGER)wrote;      /* tell Db2 how many bytes we set */
+}
+
+/* Copy of official DB2 ScalarUDF sample for testing */
+#ifdef __cplusplus
+extern "C"
+#endif
+void SQL_API_FN ScalarUDF(const SQLUDF_CHAR *inJob,
+                          const SQLUDF_DOUBLE *inSalary,
+                          SQLUDF_DOUBLE *outNewSalary,
+                          const SQLUDF_SMALLINT *jobNullInd,
+                          const SQLUDF_SMALLINT *salaryNullInd,
+                          SQLUDF_SMALLINT *newSalaryNullInd,
+                          SQLUDF_TRAIL_ARGS)
+{
+  if (*jobNullInd == -1 || *salaryNullInd == -1)
+  {
+    *newSalaryNullInd = -1;
+  }
+  else
+  {
+    if (strcmp(inJob, "Mgr  ") == 0)
+    {
+      *outNewSalary = *inSalary * 1.20;
+    }
+    else if (strcmp(inJob, "Sales") == 0)
+    {
+      *outNewSalary = *inSalary * 1.10;
+    }
+    else /* it is clerk */
+    {
+      *outNewSalary = *inSalary * 1.05;
+    }
+    *newSalaryNullInd = 0;
+  }
+}
+
+/* Simple test UDF: returns "Hydrogen" */
+#ifdef __cplusplus
+extern "C"
+#endif
+void SQL_API_FN HYDROGEN_CHECK(
+    SQLUDF_VARCHAR *out_str,
+    SQLUDF_NULLIND *out_ind,
+    SQLUDF_TRAIL_ARGS
+){
+    /* Initialize SQLSTATE to success */
+    strcpy(SQLUDF_STATE, "00000");
+
+    /* Return the string "Hydrogen" */
+    strcpy(out_str, "Hydrogen");
+    *out_ind = 0;
 }
