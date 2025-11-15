@@ -29,28 +29,12 @@ typedef int (*sqlite3_bind_double_t)(void*, int, double);
 typedef int (*sqlite3_bind_null_t)(void*, int);
 typedef const char* (*sqlite3_errmsg_t)(void*);
 typedef int (*sqlite3_extended_result_codes_t)(void*, int);
+typedef int (*sqlite3_load_extension_t)(void*, const char*, const char*, char**);
+typedef int (*sqlite3_db_config_t)(void*, int, ...);
 typedef void (*sqlite3_free_t)(void*);
 
 // SQLite function pointers (loaded dynamically)
-extern sqlite3_open_t sqlite3_open_ptr;
-extern sqlite3_close_t sqlite3_close_ptr;
-extern sqlite3_exec_t sqlite3_exec_ptr;
-extern sqlite3_prepare_v2_t sqlite3_prepare_v2_ptr;
-extern sqlite3_step_t sqlite3_step_ptr;
-extern sqlite3_finalize_t sqlite3_finalize_ptr;
-extern sqlite3_column_count_t sqlite3_column_count_ptr;
-extern sqlite3_column_name_t sqlite3_column_name_ptr;
-extern sqlite3_column_text_t sqlite3_column_text_ptr;
-extern sqlite3_column_type_t sqlite3_column_type_ptr;
-extern sqlite3_changes_t sqlite3_changes_ptr;
-extern sqlite3_reset_t sqlite3_reset_ptr;
-extern sqlite3_clear_bindings_t sqlite3_clear_bindings_ptr;
-extern sqlite3_bind_text_t sqlite3_bind_text_ptr;
-extern sqlite3_bind_int_t sqlite3_bind_int_ptr;
-extern sqlite3_bind_double_t sqlite3_bind_double_ptr;
-extern sqlite3_bind_null_t sqlite3_bind_null_ptr;
-extern sqlite3_errmsg_t sqlite3_errmsg_ptr;
-extern sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr;
+// Defined in connection.c
 
 // Library handle (declared in connection.c)
 
@@ -59,6 +43,7 @@ extern sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr;
 #define SQLITE_ROW 100
 #define SQLITE_DONE 101
 #define SQLITE_NULL 5
+#define SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION 1005
 
 // Prepared statement cache structure
 typedef struct PreparedStatementCache {
@@ -73,6 +58,7 @@ typedef struct SQLiteConnection {
     void* db;  // sqlite3* loaded dynamically
     char* db_path;
     PreparedStatementCache* prepared_statements;
+    void* crypto_handle;  // Handle for crypto.so library
 } SQLiteConnection;
 
 #endif // SQLITE_TYPES_H

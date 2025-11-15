@@ -39,6 +39,8 @@ sqlite3_bind_double_t sqlite3_bind_double_ptr = NULL;
 sqlite3_bind_null_t sqlite3_bind_null_ptr = NULL;
 sqlite3_errmsg_t sqlite3_errmsg_ptr = mock_sqlite3_errmsg;
 sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr = mock_sqlite3_extended_result_codes;
+sqlite3_load_extension_t sqlite3_load_extension_ptr = NULL;
+sqlite3_db_config_t sqlite3_db_config_ptr = NULL;
 sqlite3_free_t sqlite3_free_ptr = mock_sqlite3_free;
 #else
 sqlite3_open_t sqlite3_open_ptr = NULL;
@@ -60,6 +62,8 @@ sqlite3_bind_double_t sqlite3_bind_double_ptr = NULL;
 sqlite3_bind_null_t sqlite3_bind_null_ptr = NULL;
 sqlite3_errmsg_t sqlite3_errmsg_ptr = NULL;
 sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr = NULL;
+sqlite3_load_extension_t sqlite3_load_extension_ptr = NULL;
+sqlite3_db_config_t sqlite3_db_config_ptr = NULL;
 sqlite3_free_t sqlite3_free_ptr = NULL;
 #endif
 
@@ -121,6 +125,8 @@ bool load_libsqlite_functions(const char* designator __attribute__((unused))) {
     sqlite3_bind_null_ptr = (sqlite3_bind_null_t)dlsym(libsqlite_handle, "sqlite3_bind_null");
     sqlite3_errmsg_ptr = (sqlite3_errmsg_t)dlsym(libsqlite_handle, "sqlite3_errmsg");
     sqlite3_extended_result_codes_ptr = (sqlite3_extended_result_codes_t)dlsym(libsqlite_handle, "sqlite3_extended_result_codes");
+    sqlite3_load_extension_ptr = (sqlite3_load_extension_t)dlsym(libsqlite_handle, "sqlite3_load_extension");
+    sqlite3_db_config_ptr = (sqlite3_db_config_t)dlsym(libsqlite_handle, "sqlite3_db_config");
     sqlite3_free_ptr = (sqlite3_free_t)dlsym(libsqlite_handle, "sqlite3_free");
 #pragma GCC diagnostic pop
 
@@ -198,6 +204,19 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
         return false;
     }
 
+    // Load crypto.so library for crypto_decode() function
+    const char* crypto_path = "/usr/local/lib/crypto.so";
+    void* crypto_handle = dlopen(crypto_path, RTLD_LAZY);
+    if (!crypto_handle) {
+        const char* log_subsystem = designator ? designator : SR_DATABASE;
+        log_this(log_subsystem, "Failed to load crypto.so library from %s", LOG_LEVEL_ERROR, 1, crypto_path);
+        log_this(log_subsystem, dlerror(), LOG_LEVEL_ERROR, 0);
+        // Continue anyway - crypto functions may not be needed for all operations
+    } else {
+        const char* log_subsystem = designator ? designator : SR_DATABASE;
+        log_this(log_subsystem, "Successfully loaded crypto.so library from %s", LOG_LEVEL_TRACE, 1, crypto_path);
+    }
+
     // Determine database file path
     const char* db_path = NULL;
     if (config->database && strlen(config->database) > 0) {
@@ -236,6 +255,52 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
         return false;
     }
 
+    // Load crypto extension if crypto.so was loaded (must be done immediately after opening)
+    if (crypto_handle) {
+        const char* log_subsystem = designator ? designator : SR_DATABASE;
+        log_this(log_subsystem, "Crypto library loaded, attempting to enable SQLite extension loading", LOG_LEVEL_TRACE, 0);
+
+        // Enable extension loading
+        if (sqlite3_db_config_ptr) {
+            int config_result = sqlite3_db_config_ptr(sqlite_db, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 1, NULL);
+            if (config_result == 1) {
+                log_this(log_subsystem, "Successfully enabled SQLite extension loading", LOG_LEVEL_TRACE, 0);
+            } else if (config_result == 0) {
+                log_this(log_subsystem, "SQLite extension loading not supported or already enabled (config_result=%d)", LOG_LEVEL_TRACE, 1, config_result);
+            } else {
+                log_this(log_subsystem, "Unexpected result from sqlite3_db_config: %d", LOG_LEVEL_ERROR, 1, config_result);
+                // Continue anyway
+            }
+        } else {
+            log_this(log_subsystem, "sqlite3_db_config function not available", LOG_LEVEL_ERROR, 0);
+        }
+
+        // Try to load the crypto extension
+        log_this(log_subsystem, "Attempting to load crypto extension from: %s", LOG_LEVEL_TRACE, 1, crypto_path);
+        char* error_msg = NULL;
+        int load_result = sqlite3_load_extension_ptr ?
+            sqlite3_load_extension_ptr(sqlite_db, crypto_path, 0, &error_msg) : -1;
+        if (load_result != SQLITE_OK) {
+            log_this(log_subsystem, "Failed to load crypto extension into SQLite (result=%d)", LOG_LEVEL_ERROR, 1, load_result);
+            if (error_msg) {
+                log_this(log_subsystem, "Crypto extension load error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+                if (sqlite3_free_ptr) {
+                    sqlite3_free_ptr(error_msg);
+                } else {
+                    free(error_msg);
+                }
+            } else {
+                log_this(log_subsystem, "No error message provided for crypto extension load failure", LOG_LEVEL_ERROR, 0);
+            }
+            // Continue anyway - crypto functions may not be needed for all operations
+        } else {
+            log_this(log_subsystem, "Successfully loaded crypto extension into SQLite", LOG_LEVEL_TRACE, 0);
+        }
+    } else {
+        const char* log_subsystem = designator ? designator : SR_DATABASE;
+        log_this(log_subsystem, "Crypto library not loaded, skipping SQLite extension loading", LOG_LEVEL_TRACE, 0);
+    }
+
     // Enable extended result codes if available
     if (sqlite3_extended_result_codes_ptr) {
         sqlite3_extended_result_codes_ptr(sqlite_db, 1);
@@ -258,8 +323,12 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
 
     sqlite_wrapper->db = sqlite_db;
     sqlite_wrapper->db_path = strdup(db_path);
+    sqlite_wrapper->crypto_handle = crypto_handle;  // Store crypto library handle
     sqlite_wrapper->prepared_statements = sqlite_create_prepared_statement_cache();
-    if (!sqlite_wrapper->prepared_statements) {
+    if (!sqlite_wrapper->db_path || !sqlite_wrapper->prepared_statements) {
+        if (crypto_handle) {
+            dlclose(crypto_handle);
+        }
         free(sqlite_wrapper->db_path);
         free(sqlite_wrapper);
         free(db_handle);
@@ -304,6 +373,9 @@ bool sqlite_disconnect(DatabaseHandle* connection) {
             sqlite3_close_ptr(sqlite_conn->db);
         }
         sqlite_destroy_prepared_statement_cache(sqlite_conn->prepared_statements);
+        if (sqlite_conn->crypto_handle) {
+            dlclose(sqlite_conn->crypto_handle);
+        }
         free(sqlite_conn->db_path);
         free(sqlite_conn);
     }
