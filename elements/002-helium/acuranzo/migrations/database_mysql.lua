@@ -20,8 +20,8 @@ return {
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
 
-    BASE64_START = "BASE64DECODE(",
-    BASE64_END = ")",
+    BASE64_START = "CAST(FROM_BASE64(",
+    BASE64_END = ") AS CHAR CHARACTER SET utf8mb4)",
 
     -- JSON = "longtext characterset utf8mb4 collate utf8mb4_bin", -- because JSON_VALID doesn't pass our JSON properly
     JSON = "longtext",
