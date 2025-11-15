@@ -277,6 +277,21 @@ local database = {
             end
         end)
 
+        -- Run macro expansion again to resolve any macros in BASE64_START/END wrappers
+        unresolved = 5
+        while unresolved > 0 do
+            -- Run macro expansion
+            for key, value in pairs(cfg) do
+                sql = sql:gsub("${" .. key .. "}", value)
+            end
+            -- Check if we still have macros left to expand
+            if sql:match("${([^}]+)}") then
+              unresolved = unresolved - 1
+            else
+              unresolved = 0
+            end
+        end
+
         return sql
     end,
 
