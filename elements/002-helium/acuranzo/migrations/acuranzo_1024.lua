@@ -76,7 +76,7 @@ table.insert(queries,{sql=[[
             the running environment.
         ]=]
                                                                             AS summary,
-        ''                                                                  AS collection,
+        '{}'                                                                  AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;
 
@@ -111,7 +111,7 @@ table.insert(queries,{sql=[[
               and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
         ]=]
                                                                             AS code,
-        'Delete Administrator account from ${TABLE} Table'                                               AS name,
+        'Delete Administrator account from ${TABLE} Table'                  AS name,
         [=[
             # Reverse Migration ${MIGRATION}: Delete Administrator account from ${TABLE} Table
 
@@ -119,7 +119,7 @@ table.insert(queries,{sql=[[
             to ensure that forward and reverse migrations are complete.
         ]=]
                                                                             AS summary,
-        ''                                                                  AS collection,
+        '{}'                                                                AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;
 
