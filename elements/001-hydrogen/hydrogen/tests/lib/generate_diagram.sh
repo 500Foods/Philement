@@ -4,10 +4,11 @@
 # Generate SVG database diagram from migration JSON
 
 # CHANGELOG
+# 1.2.0 - 2025-11-15 - Fixed Base64 decoding to handle BASE64DECODE wrapper functions
 # 1.1.0 - 2025-09-30 - Passing metadata
 # 1.0.0 - 2025-09-28 - Initial creation
 
-set -xeuo pipefail
+set -euo pipefail
 
 # Script configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -120,6 +121,9 @@ TEMP_JSON=$(mktemp)
 # Initialize combined JSON as empty array
 echo "[]" > "${TEMP_JSON}"
 
+# Track the last migration that actually had diagram data
+LAST_DIAGRAM_MIGRATION=""
+
 # Process each migration file
 for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
     # Extract migration number from filename
@@ -137,17 +141,142 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
     RAW_BLOCK=$(echo "${SQL_OUTPUT}" | sed -n '/-- DIAGRAM_START/,/-- DIAGRAM_END/p' | sed '1,2d;$d')
 
     if [[ ${#RAW_BLOCK} -eq 0 ]]; then
-        echo "Warning: No diagram data found in ${DESIGN}_${migration_num}.lua, skipping..." >&2
+        # No diagram data in this migration - skip it silently
         continue
     fi
+    
+    # This migration has diagram data - track it
+    LAST_DIAGRAM_MIGRATION="${migration_num}"
 
     # Clean up the extracted JSON
     # Step 1: Remove DIAGRAM_START, DIAGRAM_END, and outer single quotes
     JSON_DATA=$(printf '%s' "${RAW_BLOCK}" | \
         sed '/DIAGRAM_START/d; /DIAGRAM_END/d; s/^'\''//; s/'\''$//' | head -n -1)
 
-    # Step 2: Escape newlines and tabs only within JSON strings
-    JSON_DATA=$(printf '%s' "${JSON_DATA}" | awk '
+    # Step 2: Remove JSON_INGEST_START and JSON_INGEST_END wrappers if present
+    case "${ENGINE}" in
+        sqlite)
+            JSON_INGEST_START="("
+            JSON_INGEST_END=")"
+            ;;
+        postgresql|mysql|db2)
+            # For these engines, JSON_INGEST_START includes schema prefix like "ACURANZOjson_ingest ("
+            # We need to match the pattern dynamically
+            JSON_INGEST_START="json_ingest[ ]*("
+            JSON_INGEST_END=")"
+            ;;
+        *)
+            JSON_INGEST_START=""
+            JSON_INGEST_END=""
+            ;;
+    esac
+
+    if [[ -n "${JSON_INGEST_START}" && -n "${JSON_INGEST_END}" ]]; then
+        # Remove the JSON_INGEST wrappers
+        JSON_DATA=$(printf '%s' "${JSON_DATA}" | sed "s/^${JSON_INGEST_START}//; s/${JSON_INGEST_END}$//")
+    fi
+
+    # Step 3: Handle BASE64DECODE wrapper if present
+    ESCAPED_ALREADY=false
+    
+    # Check if the data contains BASE64DECODE or BASE64_START pattern
+    if printf '%s' "${JSON_DATA}" | grep -qiE 'BASE64DECODE'; then
+        
+        # Extract Base64 content from within BASE64DECODE('content')
+        # This handles multiline Base64 strings by extracting everything between the first and last single quote
+        BASE64_CONTENT=$(printf '%s' "${JSON_DATA}" | awk '
+            BEGIN { content = ""; in_quote = 0; ORS = ""; sq = "\047" }
+            {
+                for (i = 1; i <= length($0); i++) {
+                    char = substr($0, i, 1)
+                    if (char == sq && !in_quote) {
+                        in_quote = 1
+                    } else if (char == sq && in_quote) {
+                        # Found closing quote - we have our content
+                        exit
+                    } else if (in_quote) {
+                        content = content char
+                    }
+                }
+                if (in_quote) {
+                    content = content "\n"
+                }
+            }
+            END { print content }
+        ')
+        
+        if [[ -n "${BASE64_CONTENT}" ]]; then
+            # Remove any whitespace/newlines from Base64 string before decoding
+            BASE64_CLEAN=$(printf '%s' "${BASE64_CONTENT}" | tr -d '\n\r\t ')
+            
+            # Decode the Base64 string
+            DECODED_DATA=$(printf '%s' "${BASE64_CLEAN}" | base64 -d 2>/dev/null || true)
+            DECODE_STATUS=$?
+            
+            if [[ ${DECODE_STATUS} -eq 0 ]] && [[ -n "${DECODED_DATA}" ]]; then
+                
+                # Apply escape processing to decoded data before validation
+                DECODED_DATA=$(printf '%s' "${DECODED_DATA}" | awk '
+                BEGIN {
+                    in_string = 0
+                    escaped = 0
+                    result = ""
+                }
+                {
+                    line = $0
+                    for (i = 1; i <= length(line); i++) {
+                        char = substr(line, i, 1)
+                        if (escaped) {
+                            result = result char
+                            escaped = 0
+                        } else if (char == "\\") {
+                            result = result char
+                            escaped = 1
+                        } else if (char == "\"") {
+                            result = result char
+                            in_string = !in_string
+                        } else if (in_string && char == "\t") {
+                            result = result "\\t"
+                        } else {
+                            result = result char
+                        }
+                    }
+                    if (in_string) {
+                        result = result "\\n"
+                    } else {
+                        result = result "\n"
+                    }
+                }
+                END {
+                    if (length(result) > 0 && substr(result, length(result), 1) == "\n") {
+                        result = substr(result, 1, length(result) - 1)
+                    }
+                    printf "%s", result
+                }
+                ')
+                
+                # Now verify the processed data is valid JSON
+                if printf '%s' "${DECODED_DATA}" | jq empty >/dev/null 2>&1; then
+                    JSON_DATA="${DECODED_DATA}"
+                    ESCAPED_ALREADY=true
+                fi
+            fi
+        fi
+    else
+        # No BASE64DECODE wrapper, check if content itself is Base64
+        # Remove whitespace and check if it looks like Base64
+        BASE64_TEST=$(printf '%s' "${JSON_DATA}" | tr -d '\n\r\t ')
+        
+        if printf '%s' "${BASE64_TEST}" | grep -qE '^[A-Za-z0-9+/]{20,}={0,2}$'; then
+            if DECODED_DATA=$(printf '%s' "${BASE64_TEST}" | base64 -d 2>/dev/null) && [[ -n "${DECODED_DATA}" ]] && printf '%s' "${DECODED_DATA}" | jq empty >/dev/null 2>&1; then
+                JSON_DATA="${DECODED_DATA}"
+            fi
+        fi
+    fi
+
+    # Step 4: Escape newlines and tabs only within JSON strings (skip if already done)
+    if [[ "${ESCAPED_ALREADY}" != "true" ]]; then
+        JSON_DATA=$(printf '%s' "${JSON_DATA}" | awk '
     BEGIN {
         in_string = 0
         escaped = 0
@@ -200,6 +329,7 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
         printf "%s", result
     }
     ')
+    fi
 
     # Basic validation
     if [[ "${JSON_DATA}" == "" ]]; then
@@ -240,16 +370,14 @@ if [[ -f "${METADATA_TMP}" ]] && [[ -s "${METADATA_TMP}" ]]; then
     # Find the METADATA line in stderr output
     METADATA_LINE=$(grep "^METADATA:" "${METADATA_TMP}" 2>/dev/null || true)
 
-    if [[ -n "${METADATA_LINE}" ]]; then
+    if [[ -n "${METADATA_LINE}" ]] && [[ -n "${LAST_DIAGRAM_MIGRATION}" ]]; then
         # Extract JSON part after "METADATA:"
         METADATA_JSON="${METADATA_LINE#METADATA: }"
 
-        # Validate that it's valid JSON
+        # Validate that it's valid JSON and add last_diagram_migration
         if jq empty <<< "${METADATA_JSON}" 2>/dev/null; then
-            METADATA="${METADATA_JSON}"
-            echo "Metadata captured: ${METADATA}" >&2
-        else
-            echo "Warning: Invalid metadata JSON format, ignoring..." >&2
+            # Add the last diagram migration number to the metadata
+            METADATA=$(jq --arg lastmig "${LAST_DIAGRAM_MIGRATION}" '. + {last_diagram_migration: $lastmig}' <<< "${METADATA_JSON}")
         fi
     fi
 
