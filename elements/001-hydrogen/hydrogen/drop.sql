@@ -21,3 +21,5 @@ DROP TABLE TEST.SYSTEMS;
 DROP TABLE TEST.TEMPLATES;                        
 DROP TABLE TEST.TOKENS;                           
 DROP TABLE TEST.WORKFLOW_STEPS;                   
+DROP TABLE TEST.WORKFLOW_STEPS;                   
+DROP TABLE TEST.WORKFLOWS;                   
