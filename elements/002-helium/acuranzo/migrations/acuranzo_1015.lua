@@ -62,7 +62,7 @@ table.insert(queries,{sql=[[
             This migration creates the ${TABLE} table for storing report data.
         ]=]
                                                                             AS summary,
-        ''                                                                  AS collection,
+        '{}'                                                                AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;
 

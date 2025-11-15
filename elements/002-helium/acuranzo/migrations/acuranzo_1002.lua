@@ -63,7 +63,7 @@ table.insert(queries,{sql=[[
             This migration creates the ${TABLE} table for storing account access data.
         ]=]
                                                                             AS summary,
-        ''                                                                  AS collection,
+        '{}'                                                                AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;
 
@@ -105,7 +105,7 @@ table.insert(queries,{sql=[[
             to ensure that forward and reverse migrations are complete.
         ]=]
                                                                             AS summary,
-        ''                                                                  AS collection,
+        '{}'                                                                AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;
 
