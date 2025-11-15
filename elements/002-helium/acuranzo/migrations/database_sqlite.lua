@@ -24,6 +24,9 @@ return {
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
 
+    BASE64_START = "BASE64DECODE(",
+    BASE64_END = ")",
+
     JSON = "text",
     JSON_INGEST_START = "(",
     JSON_INGEST_END = ")",

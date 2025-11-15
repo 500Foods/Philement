@@ -7,17 +7,19 @@
 # generate_database_diagram()
 
 # CHANGELOG
+# 1.2.0 - 2025-11-15 - Fixed filename generation to use last_diagram_migration from metadata
 # 1.1.0 - 2025-09-30 - Added metadata, starting with 'Tables included' to output
 # 1.0.0 - 2025-09-29 - Initial creation for database diagram generation
 
-set -euo pipefail
+#set -euo pipefail
+#set -x
 
 # Test configuration
 TEST_NAME="Database Diagrams"
 TEST_ABBR="ERD"
 TEST_NUMBER="39"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -105,12 +107,12 @@ generate_database_diagram() {
     local output_dir="${hydrogen_dir}/images/${design}"
     mkdir -p "${output_dir}"
 
-    # Generate filename (lowercase, handle empty schema)
+    # Generate temporary filename for initial output
     local schema_part=""
     if [[ -n "${schema}" ]]; then
         schema_part="-${schema,,}"  # ,, converts to lowercase
     fi
-    local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${migration_num}.svg"
+    local temp_output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${migration_num}.svg.tmp"
 
     # Run generate_diagram.sh and capture both SVG output and metadata
     local error_file
@@ -119,20 +121,37 @@ generate_database_diagram() {
     local metadata=""
 
     # Capture both stdout (SVG) and stderr (metadata + errors)
-    if "${SCRIPT_DIR}/lib/generate_diagram.sh" "${engine}" "${design}" "${schema}" "${migration_num}" > "${output_file}" 2> "${error_file}"; then
+    if "${SCRIPT_DIR}/lib/generate_diagram.sh" "${engine}" "${design}" "${schema}" "${migration_num}" > "${temp_output_file}" 2> "${error_file}"; then
         # Success - check for metadata in error output
         error_output=$(cat "${error_file}")
         rm -f "${error_file}"
 
         # Extract metadata if present
         metadata_line=$(echo "${error_output}" | grep "^DIAGRAM_METADATA:" || true)
+        local actual_migration_num="${migration_num}"
+        
         if [[ -n "${metadata_line}" ]]; then
             metadata="${metadata_line#DIAGRAM_METADATA: }"
+            
+            # Extract last_diagram_migration from metadata to get correct filename
+            local last_diagram_migration
+            last_diagram_migration=$(echo "${metadata}" | jq -r '.last_diagram_migration // empty' 2>/dev/null || true)
+            
+            if [[ -n "${last_diagram_migration}" ]] && [[ "${last_diagram_migration}" != "null" ]]; then
+                actual_migration_num="${last_diagram_migration}"
+            fi
+            
             # Save metadata to a file for later use
+            local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${actual_migration_num}.svg"
             local metadata_file="${output_file%.svg}.metadata"
             echo "${metadata}" > "${metadata_file}"
-            # Suppress success messages for cleaner output
+        else
+            # No metadata, use requested migration number
+            local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${actual_migration_num}.svg"
         fi
+        
+        # Move temp file to final location with correct name
+        mv "${temp_output_file}" "${output_file}"
 
         return 0
     else
@@ -142,12 +161,30 @@ generate_database_diagram() {
 
         # Extract metadata if present (even on failure, for debugging)
         metadata_line=$(echo "${error_output}" | grep "^DIAGRAM_METADATA:" || true)
+        local actual_migration_num="${migration_num}"
+        
         if [[ -n "${metadata_line}" ]]; then
             metadata="${metadata_line#DIAGRAM_METADATA: }"
+            
+            # Extract last_diagram_migration from metadata
+            local last_diagram_migration
+            last_diagram_migration=$(echo "${metadata}" | jq -r '.last_diagram_migration // empty' 2>/dev/null || true)
+            
+            if [[ -n "${last_diagram_migration}" ]] && [[ "${last_diagram_migration}" != "null" ]]; then
+                actual_migration_num="${last_diagram_migration}"
+            fi
+            
             # Save metadata to a file for later use even on failure
+            local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${actual_migration_num}.svg"
             local metadata_file="${output_file%.svg}.metadata"
             echo "${metadata}" > "${metadata_file}"
+        else
+            # No metadata, use requested migration number
+            local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${actual_migration_num}.svg"
         fi
+        
+        # Move temp file to final location if it exists
+        [[ -f "${temp_output_file}" ]] && mv "${temp_output_file}" "${output_file}"
 
         # Determine failure reason from error output
         if echo "${error_output}" | grep -q "No JSON data extracted"; then
@@ -314,10 +351,10 @@ for design in "${DESIGNS[@]}"; do
             # Check result file
             result_file="${LOG_PREFIX}_${design}_${engine}.result"
 
-            # Get the actual migration number for this design
-            actual_migration_num=$(get_migration_number "${design}")
-            if [[ -z "${actual_migration_num}" ]]; then
-                actual_migration_num="unknown"
+            # Get the requested migration number for this design
+            requested_migration_num=$(get_migration_number "${design}")
+            if [[ -z "${requested_migration_num}" ]]; then
+                requested_migration_num="unknown"
             fi
 
             # Generate the correct filename with proper schema handling
@@ -331,13 +368,31 @@ for design in "${DESIGNS[@]}"; do
             # Calculate output directory in the right scope
             hydrogen_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
             output_dir="${hydrogen_dir}/images/${design}"
-            metadata_file="${output_dir}/${design,,}-${engine,,}${display_schema}-${actual_migration_num}.metadata"
+            
+            # Try to find the metadata file with the requested migration number first
+            metadata_file="${output_dir}/${design,,}-${engine,,}${display_schema}-${requested_migration_num}.metadata"
+            actual_migration_num="${requested_migration_num}"
+            
+            # If metadata file doesn't exist, search for any metadata file for this design/engine
+            if [[ ! -f "${metadata_file}" ]]; then
+                # Find the most recent metadata file for this design/engine combination
+                latest_metadata=$(find "${output_dir}" -name "${design,,}-${engine,,}${display_schema}-*.metadata" -type f 2>/dev/null | sort -V | tail -1 || true)
+                if [[ -n "${latest_metadata}" ]]; then
+                    metadata_file="${latest_metadata}"
+                fi
+            fi
 
-            # Show table count on separate line if available
+            # Show table count and get actual migration number from metadata
             if [[ -f "${metadata_file}" ]]; then
                 metadata=$(cat "${metadata_file}")
+                
+                # Extract last_diagram_migration from metadata
+                last_diagram_migration=$(echo "${metadata}" | jq -r '.last_diagram_migration // empty' 2>/dev/null || true)
+                if [[ -n "${last_diagram_migration}" ]] && [[ "${last_diagram_migration}" != "null" ]]; then
+                    actual_migration_num="${last_diagram_migration}"
+                fi
+                
                 table_count=$(echo "${metadata}" | jq -r '.table_count // empty' 2>/dev/null || true)
-
                 if [[ -n "${table_count}" ]] && [[ "${table_count}" != "null" ]]; then
                     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Tables included: ${table_count}"
                 fi
