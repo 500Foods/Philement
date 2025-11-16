@@ -42,7 +42,7 @@ table.insert(queries,{sql=[[
                 system_id               ${INTEGER}          NOT NULL,
                 name                    ${TEXT}             NOT NULL,
                 summary                 ${TEXT_BIG}                 ,
-                4              ${JSON}                     ,
+                collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 ${PRIMARY}(license_id)
             );
@@ -104,7 +104,7 @@ table.insert(queries,{sql=[[
             to ensure that forward and reverse migrations are complete.
         ]=]
                                                                             AS summary,
-        '{}'                                                                AS collection,
+        '{}'                                                                  AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;
 
