@@ -1,6 +1,12 @@
 -- database_mysql.lua
 -- MySQL-specific configuration for Helium schema
 
+-- CHANGLOG
+-- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
+
+-- NOTES
+-- Base64 support provided natively by database
+
 return {
     CHAR_2 = "char(2)",
     CHAR_20 = "char(20)",
@@ -20,8 +26,8 @@ return {
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
 
-    BASE64_START = "CAST(FROM_BASE64(",
-    BASE64_END = ") AS CHAR CHARACTER SET utf8mb4)",
+    BASE64_START = "cast(from_base64(",
+    BASE64_END = ") as char character set utf8mb4)",
 
     -- JSON = "longtext characterset utf8mb4 collate utf8mb4_bin", -- because JSON_VALID doesn't pass our JSON properly
     JSON = "longtext",

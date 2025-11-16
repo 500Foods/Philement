@@ -1,6 +1,12 @@
 -- database_db2.lua
 -- DB2-specific configuration for Helium schema
 
+-- CHANGLOG
+-- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
+
+-- NOTES
+-- Bse64 support provided via a C UDF found in extras
+
 return {
     CHAR_2 = "CHAR(2)",
     CHAR_20 = "CHAR(20)",
