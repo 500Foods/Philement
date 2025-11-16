@@ -1,6 +1,12 @@
 -- database_postgresql.lua
 -- PostgreSQL-specific configuration for Helium schema
 
+-- CHANGLOG
+-- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
+
+-- NOTES
+-- Base64 support provided natively by database
+
 return {
     CHAR_2 = "char(2)",
     CHAR_20 = "char(20)",
@@ -20,14 +26,14 @@ return {
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
 
-    BASE64_START = "convert_from(decode(",
+    BASE64_START = "CONVERT_FROM(DECODE(",
     BASE64_END = ", 'base64'), 'UTF8')",
 
     JSON = "jsonb",
     JSON_INGEST_START = "${SCHEMA}json_ingest (",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = [[
-      CREATE OR REPLACE FUNCTION TEST.json_ingest(s text)
+      CREATE OR REPLACE FUNCTION ${SCHEMA}.json_ingest(s text)
       RETURNS jsonb
       LANGUAGE plpgsql
       STRICT
