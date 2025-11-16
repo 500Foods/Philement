@@ -55,7 +55,7 @@ table.insert(queries,{sql=[[
                 '${HYDROGEN_USERNAME}',         -- Same as above
                 '${HYDROGEN_PASSHASH}',         -- This is the SHA256+salted password value
                 'Administrative Account',       -- Just something to remind us
-                '',                             -- No JSON needed at this stage
+                '{}',                           -- No JSON needed at this stage
                 ${COMMON_VALUES}
             );
 

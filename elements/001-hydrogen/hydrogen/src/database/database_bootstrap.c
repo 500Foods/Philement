@@ -81,7 +81,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
         return;
     }
 
-    request->timeout_seconds = 1;
+    request->timeout_seconds = 30;
     request->isolation_level = DB_ISOLATION_READ_COMMITTED;
     request->use_prepared_statement = false;
 
