@@ -1,9 +1,13 @@
 -- database_sqlite.lua
 -- SQLite-specific configuration for Helium schema
 
+-- CHANGLOG
+-- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
+
 -- NOTES
 -- SQLite stores timestamps as TEXT in ISO format
 -- SQLite doesn't have native JSON, so no need to deal with invalid JSON at this stage
+-- Base64 support provided by way of sqlean's crypto.so extension in /usr/local/lib/crypto.so
 
 return {
     CHAR_2 = "char(2)",
@@ -24,7 +28,7 @@ return {
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
 
-    BASE64_START = "crypto_decode(",
+    BASE64_START = "CRYPTO_DECODE(",
     BASE64_END = ",'base64')",
 
     JSON = "text",
