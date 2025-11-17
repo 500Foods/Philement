@@ -4,6 +4,7 @@
 // Converts JSON table definition into SVG database diagram
 
 // CHANGELOG
+// 2.0.0 - 2025-11-17 - Implemented before/after comparison with automatic highlighting
 // 1.1.0 - 2025-09-30 - Added metadata, starting with 'Tables included' to output
 // 1.0.0 - 2025-09-28 - Initial creation for database diagram generation
 
@@ -63,6 +64,103 @@ function preprocessJSONData(data) {
 }
 
 // ============================================================================
+// HIGHLIGHTING FUNCTIONS
+// ============================================================================
+
+/**
+ * Add highlight flags to "after" JSON based on comparison with "before"
+ * @param {Object} beforeData - {diagram: [...]} or just [...]
+ * @param {Object} afterData - {diagram: [...]} or just [...]
+ * @returns {Array} - Array of table objects with highlight flags added
+ */
+function addHighlightFlags(beforeData, afterData) {
+    // Normalize inputs
+    const beforeDiagram = Array.isArray(beforeData) ? beforeData : (beforeData.diagram || []);
+    const afterDiagram = Array.isArray(afterData) ? afterData : (afterData.diagram || []);
+    
+    // Filter to only table objects
+    const beforeTables = beforeDiagram.filter(obj => obj.object_type === 'table');
+    const afterTables = afterDiagram.filter(obj => obj.object_type === 'table');
+    
+    console.error(`Comparing ${beforeTables.length} before tables with ${afterTables.length} after tables`);
+    
+    // Create lookup map of before tables
+    const beforeTableMap = new Map();
+    beforeTables.forEach(table => {
+        beforeTableMap.set(table.object_id, table);
+    });
+    
+    // Process each table in after state
+    afterTables.forEach(afterTable => {
+        const beforeTable = beforeTableMap.get(afterTable.object_id);
+        
+        if (!beforeTable) {
+            // NEW TABLE - highlight table and all columns
+            console.error(`  New table: ${afterTable.object_id}`);
+            afterTable.highlight = true;
+            
+            afterTable.table.forEach(col => {
+                // Preserve existing highlight if present
+                if (col.highlight !== true) {
+                    col.highlight = true;
+                }
+            });
+        } else {
+            // EXISTING TABLE - check each column
+            const beforeColMap = new Map();
+            beforeTable.table.forEach(col => {
+                beforeColMap.set(col.name, col);
+            });
+            
+            afterTable.table.forEach(afterCol => {
+                // Preserve existing highlight flag if already true
+                if (afterCol.highlight === true) {
+                    console.error(`  Preserving existing highlight: ${afterTable.object_id}.${afterCol.name}`);
+                    return;
+                }
+                
+                const beforeCol = beforeColMap.get(afterCol.name);
+                
+                if (!beforeCol) {
+                    // NEW COLUMN
+                    console.error(`  New column: ${afterTable.object_id}.${afterCol.name}`);
+                    afterCol.highlight = true;
+                } else {
+                    // Check for modifications
+                    const modifications = [];
+                    
+                    if (beforeCol.datatype !== afterCol.datatype) {
+                        modifications.push('datatype');
+                    }
+                    if (beforeCol.nullable !== afterCol.nullable) {
+                        modifications.push('nullable');
+                    }
+                    if (beforeCol.primary_key !== afterCol.primary_key) {
+                        modifications.push('primary_key');
+                    }
+                    if (beforeCol.unique !== afterCol.unique) {
+                        modifications.push('unique');
+                    }
+                    if (beforeCol.lookup !== afterCol.lookup) {
+                        modifications.push('lookup');
+                    }
+                    if (beforeCol.standard !== afterCol.standard) {
+                        modifications.push('standard');
+                    }
+                    
+                    if (modifications.length > 0) {
+                        console.error(`  Modified column: ${afterTable.object_id}.${afterCol.name} (${modifications.join(', ')})`);
+                        afterCol.highlight = true;
+                    }
+                }
+            });
+        }
+    });
+    
+    return afterTables;
+}
+
+// ============================================================================
 // RENDERING FUNCTIONS
 // ============================================================================
 
@@ -104,10 +202,13 @@ function renderTableHeader(tableDef, x, y, width, height, scale = 1, isDB2 = fal
     const textOffsetY = 62.37 * scale; // Moved down 10% from center (56.7 * scale * 1.1)
     let svg = '';
 
+    // Determine header color based on highlight flag
+    const headerColor = (tableDef.highlight === true) ? "#ffeb3b" : "skyblue";
+
     // Create path with only top corners rounded
     const pathData = `M ${x + radius} ${y} L ${x + width - radius} ${y} Q ${x + width} ${y} ${x + width} ${y + radius} L ${x + width} ${y + height} L ${x} ${y + height} L ${x} ${y + radius} Q ${x} ${y} ${x + radius} ${y} Z`;
 
-    svg += `<path d="${pathData}" fill="skyblue" stroke="transparent" stroke-width="${strokeWidth}"/>\n`; // Sky blue background with only top corners rounded
+    svg += `<path d="${pathData}" fill="${headerColor}" stroke="transparent" stroke-width="${strokeWidth}"/>\n`; // Header background color with only top corners rounded
     svg += `    <text x="${x + textOffsetX}" y="${y + textOffsetY}" font-family="${FONTS.header}" font-size="${fontSize}" font-weight="bold">${tableName}</text>`;
 
     // Add object_ref if present - right-justified in navy color
@@ -615,57 +716,97 @@ function generateTablesSVG(tables, isDB2 = false) {
  * @returns {string} - Generated SVG diagram
  */
 function generateDiagramCore(jsonInput, options = {}) {
-    console.error(`\n=== DEBUG: generateDiagramCore called with input length: ${jsonInput.length} ===`);
+    console.error(`\n=== Diagram Generation Started ===`);
 
     // Initialize metadata collection
     const metadata = {
-        object_refs: [],
         table_count: 0,
+        highlighted_tables: 0,
+        highlighted_columns: 0,
         processing_timestamp: new Date().toISOString()
     };
 
     try {
-        // Parse and preprocess JSON data
+        // Parse input JSON
         const data = JSON.parse(jsonInput.trim());
-        const objects = preprocessJSONData(data);
-
-        console.error(`Parsed ${objects.length} objects from JSON`);
-
-        // Find the template object
-        const templateObj = objects.find(obj => obj.object_type === 'template');
+        
+        let processedDiagram;
+        let templateObj;
+        
+        // Check if this is before/after comparison mode
+        if (data.before && data.after) {
+            console.error('Comparison mode detected');
+            
+            // Extract template from after state (it should have it)
+            const afterDiagram = data.after.diagram || [];
+            templateObj = afterDiagram.find(obj => obj.object_type === 'template');
+            
+            // Add highlight flags by comparing (returns only tables)
+            const highlightedTables = addHighlightFlags(data.before, data.after);
+            
+            // Combine template with highlighted tables
+            processedDiagram = templateObj ? [templateObj, ...highlightedTables] : highlightedTables;
+            
+            // Count highlights for metadata
+            highlightedTables.forEach(table => {
+                if (table.highlight === true) {
+                    metadata.highlighted_tables++;
+                }
+                table.table.forEach(col => {
+                    if (col.highlight === true) {
+                        metadata.highlighted_columns++;
+                    }
+                });
+            });
+            
+            console.error(`Highlighting: ${metadata.highlighted_tables} tables, ${metadata.highlighted_columns} columns`);
+        } else {
+            // Single state mode - use diagram as-is
+            console.error('Single state mode (no comparison)');
+            processedDiagram = Array.isArray(data) ? data : (data.diagram || []);
+            templateObj = processedDiagram.find(obj => obj.object_type === 'template');
+        }
+        
+        // Preprocess to remove duplicates
+        processedDiagram = removeDuplicateObjects(processedDiagram);
+        
+        console.error(`Processing ${processedDiagram.length} objects`);
+        
+        // Find template object if we don't have it yet
+        if (!templateObj) {
+            templateObj = processedDiagram.find(obj => obj.object_type === 'template');
+        }
+        
+        // If no template, we need a default (this shouldn't happen in normal flow)
         if (!templateObj || !templateObj.object_value) {
+            console.error('Error: No template found in diagram data');
             throw new Error('Template object not found in JSON data');
         }
+        
         const template = templateObj.object_value;
-
+        
         // Find all table objects
-        const tables = objects.filter(obj => obj.object_type === 'table');
+        const tables = processedDiagram.filter(obj => obj.object_type === 'table');
         metadata.table_count = tables.length;
-
-        // Collect object_ref metadata from tables
-        tables.forEach(table => {
-            if (table.object_ref) {
-                metadata.object_refs.push({
-                    table_name: table.object_id.replace('table.', ''),
-                    object_ref: table.object_ref
-                });
-            }
-        });
-
-        // Output metadata to STDERR for shell script consumption
+        
+        console.error(`Found ${tables.length} tables to render`);
+        
+        // Output metadata to STDERR
         console.error(`METADATA: ${JSON.stringify(metadata)}`);
-
+        
         // Determine if this is DB2 engine
         const isDB2 = options.engine === 'db2';
-
+        
         // Generate SVG with auto-fitting layout
         const svgContent = generateTablesSVG(tables, isDB2);
-
+        
         // Replace placeholder in template
         const finalSVG = template.replace('<!-- ERD SVG content goes here -->', svgContent);
-
+        
         return finalSVG;
+        
     } catch (error) {
+        console.error(`Error: ${error.message}`);
         if (error instanceof SyntaxError && error.message.includes('JSON')) {
             const errorMsg = `JSON parsing error: ${error.message}`;
             const position = error.message.match(/position (\d+)/) ?
@@ -744,6 +885,7 @@ if (typeof process !== 'undefined' && import.meta.url === `file://${process.argv
 export {
     generateDiagram,
     generateDiagramCore,
+    addHighlightFlags,
     preprocessJSONData,
     removeDuplicateObjects,
     renderTable,
