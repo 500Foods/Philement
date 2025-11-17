@@ -1,28 +1,28 @@
 <svg   xmlns="http://www.w3.org/2000/svg"
-            xmlns:xlink="http://www.w3.org/1999/xlink"
-            width="2520"
-            height="1980"
-            viewBox="0 0 2520 1980">
-            <!-- Define clipPath for rounded border with 2mm margin -->
-            <defs>
-            <clipPath id="border-clip">
-            <rect x="18" y="18" width="2484" height="1944" rx="42.51" ry="42.51"/>
-            </clipPath>
-            </defs>
-            <!-- Thin black border with 2mm margin -->
-            <rect x="18" y="18" width="2484" height="1944" fill="none" stroke="black" stroke-width="3" rx="42.51" ry="42.51"/>
-            <!-- White background within border, clipped to rounded shape -->
-            <rect x="18" y="18" width="2484" height="1944" fill="white" clip-path="url(#border-clip)"/>
-            <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
-            <defs>
-            <pattern id="grid" width="84.9" height="84.9" patternUnits="userSpaceOnUse" x="18" y="18">
-            <path d="M 84.9 0 L 0 0 0 84.9" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="6,6"/>
-            </pattern>
-            </defs>
-            <rect x="18" y="18" width="2484" height="1944" fill="url(#grid)" clip-path="url(#border-clip)"/>
-            <!-- ERD content placeholder -->
-            <g id="erd-content" transform="translate(0, 0)">
-            
+                                                xmlns:xlink="http://www.w3.org/1999/xlink"
+                                                width="2520"
+                                                height="1980"
+                                                viewBox="0 0 2520 1980">
+                                            <!-- Define clipPath for rounded border with 2mm margin -->
+                                            <defs>
+                                                <clipPath id="border-clip">
+                                                <rect x="18" y="18" width="2484" height="1944" rx="42.51" ry="42.51"/>
+                                                </clipPath>
+                                            </defs>
+                                            <!-- Thin black border with 2mm margin -->
+                                            <rect x="18" y="18" width="2484" height="1944" fill="none" stroke="black" stroke-width="3" rx="42.51" ry="42.51"/>
+                                            <!-- White background within border, clipped to rounded shape -->
+                                            <rect x="18" y="18" width="2484" height="1944" fill="white" clip-path="url(#border-clip)"/>
+                                            <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
+                                            <defs>
+                                                <pattern id="grid" width="84.9" height="84.9" patternUnits="userSpaceOnUse" x="18" y="18">
+                                                    <path d="M 84.9 0 L 0 0 0 84.9" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="6,6"/>
+                                                </pattern>
+                                            </defs>
+                                            <rect x="18" y="18" width="2484" height="1944" fill="url(#grid)" clip-path="url(#border-clip)"/>
+                                            <!-- ERD content placeholder -->
+                                            <g id="erd-content" transform="translate(0, 0)">
+                                                
 <!-- Layout Region -->
 <defs>
     <clipPath id="layout-region-clip">
@@ -75,73 +75,82 @@
     </filter>
 </defs>
 <g transform="translate(59.519999999999996, 59.519999999999996)" filter="url(#shadow-queries)">
-    <rect x="2" y="2" width="850.5" height="1452.06" fill="white" stroke="transparent" stroke-width="3" rx="27" ry="27"/>
-    <path d="M 29 2 L 825.5 2 Q 852.5 2 852.5 29 L 852.5 104.06 L 2 104.06 L 2 29 Q 2 2 29 2 Z" fill="skyblue" stroke="transparent" stroke-width="6"/>
+    <rect x="2" y="2" width="850.5" height="1632.06" fill="white" stroke="transparent" stroke-width="3" rx="27" ry="27"/>
+    <path d="M 29 2 L 825.5 2 Q 852.5 2 852.5 29 L 852.5 104.06 L 2 104.06 L 2 29 Q 2 2 29 2 Z" fill="#ffeb3b" stroke="transparent" stroke-width="6"/>
     <text x="32" y="64.37" font-family="Cairo, Arial, sans-serif" font-size="48" font-weight="bold">queries</text>    <text x="822.5" y="64.37" font-family="Cairo, Arial, sans-serif" font-size="36" font-weight="bold" fill="navy" text-anchor="end">1000</text>
-    <rect x="2" y="104.06" width="850.5" height="90" fill="transparent" stroke="transparent" stroke-width="1.5"/>
+    <rect x="2" y="104.06" width="850.5" height="90" fill="yellow" stroke="transparent" stroke-width="1.5"/>
     <use href="#key-icon-navy" x="32" y="125.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
     <use href="#not-null-icon-navy" x="774.5" y="125.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
     <text x="110" y="163.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="navy" font-weight="bold">query_id</text>
-    <text x="744.5" y="163.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="navy" font-weight="bold">INTEGER</text>
+    <text x="744.5" y="163.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="navy" font-weight="bold">integer</text>
     <rect x="2" y="194.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
     <use href="#unique-icon-gray" x="32" y="215.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
     <use href="#not-null-icon-black" x="774.5" y="215.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
     <text x="110" y="253.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="black" font-weight="normal">query_ref</text>
-    <text x="744.5" y="253.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="black" font-weight="normal">INTEGER</text>
+    <text x="744.5" y="253.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="black" font-weight="normal">integer</text>
     <rect x="2" y="284.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
-    <use href="#not-null-icon-black" x="774.5" y="305.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
-    <text x="110" y="343.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="black" font-weight="normal">name</text>
-    <text x="744.5" y="343.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="black" font-weight="normal">VARCHAR(100)</text>
-    <rect x="2" y="374.06" width="850.5" height="90" fill="transparent" stroke="#cccccc" stroke-width="1.5"/>
-    <text x="110" y="433.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="black" font-weight="normal">summary</text>
-    <text x="744.5" y="433.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="black" font-weight="normal">TEXT</text>
-    <rect x="2" y="464.06" width="850.5" height="90" fill="transparent" stroke="#cccccc" stroke-width="1.5"/>
-    <use href="#not-null-icon-black" x="774.5" y="485.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
-    <text x="110" y="523.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="black" font-weight="normal">query_code</text>
-    <text x="744.5" y="523.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="black" font-weight="normal">TEXT</text>
-    <rect x="2" y="554.06" width="850.5" height="90" fill="transparent" stroke="#cccccc" stroke-width="1.5"/>
+    <use href="#lookup-icon-maroon" x="32" y="305.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
+    <use href="#not-null-icon-maroon" x="774.5" y="305.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
+    <text x="110" y="343.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="maroon" font-weight="normal">query_status_a27</text>
+    <text x="744.5" y="343.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="maroon" font-weight="normal">integer</text>
+    <rect x="2" y="374.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
+    <use href="#lookup-icon-maroon" x="32" y="395.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
+    <use href="#not-null-icon-maroon" x="774.5" y="395.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
+    <text x="110" y="433.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="maroon" font-weight="normal">query_type_a28</text>
+    <text x="744.5" y="433.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="maroon" font-weight="normal">integer</text>
+    <rect x="2" y="464.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
+    <use href="#lookup-icon-maroon" x="32" y="485.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
+    <use href="#not-null-icon-maroon" x="774.5" y="485.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
+    <text x="110" y="523.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="maroon" font-weight="normal">query_dialect_a30</text>
+    <text x="744.5" y="523.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="maroon" font-weight="normal">integer</text>
+    <rect x="2" y="554.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
     <use href="#lookup-icon-maroon" x="32" y="575.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
     <use href="#not-null-icon-maroon" x="774.5" y="575.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
-    <text x="110" y="613.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" fill="maroon" font-weight="normal">query_status_lua_27</text>
-    <text x="744.5" y="613.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="maroon" font-weight="normal">INTEGER</text>
-    <rect x="2" y="644.06" width="850.5" height="90" fill="transparent" stroke="#cccccc" stroke-width="1.5"/>
-    <use href="#lookup-icon-maroon" x="32" y="665.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
-    <use href="#not-null-icon-maroon" x="774.5" y="665.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
-    <text x="110" y="703.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" fill="maroon" font-weight="normal">query_type_lua_28</text>
-    <text x="744.5" y="703.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="maroon" font-weight="normal">INTEGER</text>
-    <rect x="2" y="734.06" width="850.5" height="90" fill="transparent" stroke="#cccccc" stroke-width="1.5"/>
-    <use href="#lookup-icon-maroon" x="32" y="755.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
-    <use href="#not-null-icon-maroon" x="774.5" y="755.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
-    <text x="110" y="793.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" fill="maroon" font-weight="normal">query_dialect_lua_30</text>
-    <text x="744.5" y="793.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="maroon" font-weight="normal">INTEGER</text>
-    <rect x="2" y="824.06" width="850.5" height="90" fill="transparent" stroke="#cccccc" stroke-width="1.5"/>
-    <text x="110" y="883.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">collection</text>
-    <text x="744.5" y="883.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">TEXT</text>
-    <rect x="2" y="914.06" width="850.5" height="90" fill="transparent" stroke="#cccccc" stroke-width="1.5"/>
-    <text x="110" y="973.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="744.5" y="973.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">TEXT</text>
-    <rect x="2" y="1004.06" width="850.5" height="90" fill="transparent" stroke="#cccccc" stroke-width="1.5"/>
-    <text x="110" y="1063.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="744.5" y="1063.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">TEXT</text>
-    <rect x="2" y="1094.06" width="850.5" height="90" fill="transparent" stroke="#cccccc" stroke-width="1.5"/>
-    <use href="#not-null-icon-darkgreen" x="774.5" y="1115.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
-    <text x="110" y="1153.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">created_id</text>
-    <text x="744.5" y="1153.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">INTEGER</text>
-    <rect x="2" y="1184.06" width="850.5" height="90" fill="transparent" stroke="#cccccc" stroke-width="1.5"/>
-    <use href="#not-null-icon-darkgreen" x="774.5" y="1205.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
-    <text x="110" y="1243.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">created_at</text>
-    <text x="744.5" y="1243.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">TEXT</text>
-    <rect x="2" y="1274.06" width="850.5" height="90" fill="transparent" stroke="#cccccc" stroke-width="1.5"/>
+    <text x="110" y="613.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" fill="maroon" font-weight="normal">query_queue_a58</text>
+    <text x="744.5" y="613.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="maroon" font-weight="normal">integer</text>
+    <rect x="2" y="644.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
+    <use href="#not-null-icon-black" x="774.5" y="665.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
+    <text x="110" y="703.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" fill="black" font-weight="normal">query_timeout</text>
+    <text x="744.5" y="703.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="black" font-weight="normal">integer</text>
+    <rect x="2" y="734.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
+    <use href="#not-null-icon-black" x="774.5" y="755.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
+    <text x="110" y="793.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" fill="black" font-weight="normal">query_code</text>
+    <text x="744.5" y="793.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <rect x="2" y="824.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
+    <use href="#not-null-icon-black" x="774.5" y="845.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
+    <text x="110" y="883.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" fill="black" font-weight="normal">name</text>
+    <text x="744.5" y="883.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <rect x="2" y="914.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
+    <text x="110" y="973.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" fill="black" font-weight="normal">summary</text>
+    <text x="744.5" y="973.4599999999999" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <rect x="2" y="1004.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
+    <text x="110" y="1063.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="black" font-weight="normal">collection</text>
+    <text x="744.5" y="1063.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <rect x="2" y="1094.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
+    <text x="110" y="1153.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">valid_after</text>
+    <text x="744.5" y="1153.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">text</text>
+    <rect x="2" y="1184.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
+    <text x="110" y="1243.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">valid_until</text>
+    <text x="744.5" y="1243.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">text</text>
+    <rect x="2" y="1274.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
     <use href="#not-null-icon-darkgreen" x="774.5" y="1295.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
-    <text x="110" y="1333.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">updated_id</text>
-    <text x="744.5" y="1333.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">INTEGER</text>
-    <rect x="2" y="1364.06" width="850.5" height="90" fill="transparent" stroke="transparent" stroke-width="1.5"/>
+    <text x="110" y="1333.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">created_id</text>
+    <text x="744.5" y="1333.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">integer</text>
+    <rect x="2" y="1364.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
     <use href="#not-null-icon-darkgreen" x="774.5" y="1385.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
-    <text x="110" y="1423.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="744.5" y="1423.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">TEXT</text>
-    <rect x="2" y="2" width="850.5" height="1452.06" fill="transparent" stroke="silver" stroke-width="3" rx="27" ry="27"/>
+    <text x="110" y="1423.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">created_at</text>
+    <text x="744.5" y="1423.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">text</text>
+    <rect x="2" y="1454.06" width="850.5" height="90" fill="yellow" stroke="#cccccc" stroke-width="1.5"/>
+    <use href="#not-null-icon-darkgreen" x="774.5" y="1475.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
+    <text x="110" y="1513.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">updated_id</text>
+    <text x="744.5" y="1513.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">integer</text>
+    <rect x="2" y="1544.06" width="850.5" height="90" fill="yellow" stroke="transparent" stroke-width="1.5"/>
+    <use href="#not-null-icon-darkgreen" x="774.5" y="1565.06" width="48" height="48" rx="9.600000000000001" ry="9.600000000000001"/>
+    <text x="110" y="1603.46" font-family="Cairo, Arial, sans-serif" font-size="40" fill="forestgreen" font-weight="normal">updated_at</text>
+    <text x="744.5" y="1603.46" font-family="Cairo, Arial, sans-serif" font-size="40" text-anchor="end" fill="forestgreen" font-weight="normal">text</text>
+    <rect x="2" y="2" width="850.5" height="1632.06" fill="transparent" stroke="silver" stroke-width="3" rx="27" ry="27"/>
 </g>
 </g>
 
-            </g>
-            </svg>
+                                            </g>
+                                        </svg>

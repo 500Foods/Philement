@@ -19,6 +19,60 @@
 #include "migration.h"
 
 /*
+ * Helper function to validate migration configuration and extract parameters
+ * Returns true if configuration is valid, false otherwise
+ * Extracts engine_name, schema_name, and migration_name on success
+ */
+static bool validate_migration_config(const DatabaseConnection* conn_config,
+                                     const char** engine_name_out,
+                                     const char** schema_name_out,
+                                     const char** migration_name_out,
+                                     char** path_copy_out,
+                                     const char* dqm_label) {
+    // Check if test migration is enabled
+    if (!conn_config->test_migration) {
+        log_this(dqm_label, "Test migration not enabled", LOG_LEVEL_TRACE, 0);
+        return false; // Not an error, just not enabled
+    }
+
+    // Validate that migrations are configured
+    if (!conn_config->migrations) {
+        log_this(dqm_label, "No migrations configured", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    // Determine database engine type
+    const char* engine_name = normalize_engine_name(conn_config->type);
+    if (!engine_name) {
+        log_this(dqm_label, "No database engine type specified", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    // Get schema name (default to empty string if not specified)
+    const char* schema_name = conn_config->schema ? conn_config->schema : "";
+
+    // Extract migration name from PAYLOAD: prefix or path
+    char* path_copy = NULL;
+    const char* migration_name = extract_migration_name(conn_config->migrations, &path_copy);
+
+    if (!migration_name) {
+        log_this(dqm_label, "Invalid migration configuration", LOG_LEVEL_ERROR, 0);
+        free(path_copy);
+        return false;
+    }
+
+    // Output parameters
+    *engine_name_out = engine_name;
+    *schema_name_out = schema_name;
+    *migration_name_out = migration_name;
+    *path_copy_out = path_copy;
+
+    return true;
+}
+
+
+
+/*
  * Execute LOAD phase migrations for the given database connection
  * This generates SQL to populate the Queries table with migration metadata (type = 1000)
  * NO database schema changes occur in this phase
@@ -48,40 +102,22 @@ bool execute_load_migrations(DatabaseQueue* db_queue, DatabaseHandle* connection
         return false;
     }
 
-    // Check if test migration is enabled
+    // Check if test migration is enabled - return success if disabled
     if (!conn_config->test_migration) {
         log_this(dqm_label, "Test migration not enabled", LOG_LEVEL_TRACE, 0);
         free(dqm_label);
-        return true; // Not an error, just not enabled
+        return true; // Disabled is not an error - return success
     }
 
-    // Validate that migrations are configured
-    if (!conn_config->migrations) {
-        log_this(dqm_label, "No migrations configured", LOG_LEVEL_ERROR, 0);
-        free(dqm_label);
-        return false;
-    }
-
-    // Determine database engine type
-    const char* engine_name = normalize_engine_name(conn_config->type);
-    if (!engine_name) {
-        log_this(dqm_label, "No database engine type specified", LOG_LEVEL_ERROR, 0);
-        free(dqm_label);
-        return false;
-    }
-
-    // Get schema name (default to empty string if not specified)
-    const char* schema_name = conn_config->schema ? conn_config->schema : "";
-
-    // Extract migration name from PAYLOAD: prefix or path
+    // Validate migration configuration and extract parameters
+    const char* engine_name = NULL;
+    const char* schema_name = NULL;
+    const char* migration_name = NULL;
     char* path_copy = NULL;
-    const char* migration_name = extract_migration_name(conn_config->migrations, &path_copy);
 
-    if (!migration_name) {
-        log_this(dqm_label, "Invalid migration configuration", LOG_LEVEL_ERROR, 0);
-        free(path_copy);
+    if (!validate_migration_config(conn_config, &engine_name, &schema_name, &migration_name, &path_copy, dqm_label)) {
         free(dqm_label);
-        return false;
+        return false; // validate_migration_config handles logging and cleanup
     }
 
     // Discover all migration files in sorted order

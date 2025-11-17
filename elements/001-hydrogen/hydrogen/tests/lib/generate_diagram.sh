@@ -4,6 +4,7 @@
 # Generate SVG database diagram from migration JSON
 
 # CHANGELOG
+# 2.0.0 - 2025-11-17 - Implemented before/after comparison with automatic highlighting, fixed diagram numbering bug, improved base64 extraction to handle all database engine wrappers
 # 1.2.0 - 2025-11-15 - Fixed Base64 decoding to handle BASE64DECODE wrapper functions
 # 1.1.0 - 2025-09-30 - Passing metadata
 # 1.0.0 - 2025-09-28 - Initial creation
@@ -114,15 +115,14 @@ else
     FILTERED_MIGRATION_FILES=("${MIGRATION_FILES[@]}")
 fi
 
-# Create temporary file for combined JSON
-TEMP_JSON=$(mktemp)
-# trap 'rm -f "${TEMP_JSON}"' EXIT
+# Create temporary files for before and after states
+TEMP_BEFORE_JSON=$(mktemp)
+TEMP_AFTER_JSON=$(mktemp)
+# trap 'rm -f "${TEMP_BEFORE_JSON}" "${TEMP_AFTER_JSON}"' EXIT
 
-# Initialize combined JSON as empty array
-echo "[]" > "${TEMP_JSON}"
-
-# Track the last migration that actually had diagram data
-LAST_DIAGRAM_MIGRATION=""
+# Initialize both as empty arrays
+echo "[]" > "${TEMP_BEFORE_JSON}"
+echo "[]" > "${TEMP_AFTER_JSON}"
 
 # Process each migration file
 for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
@@ -144,9 +144,6 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
         # No diagram data in this migration - skip it silently
         continue
     fi
-    
-    # This migration has diagram data - track it
-    LAST_DIAGRAM_MIGRATION="${migration_num}"
 
     # Clean up the extracted JSON
     # Step 1: Remove DIAGRAM_START, DIAGRAM_END, and outer single quotes
@@ -176,28 +173,51 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
         JSON_DATA=$(printf '%s' "${JSON_DATA}" | sed "s/^${JSON_INGEST_START}//; s/${JSON_INGEST_END}$//")
     fi
 
-    # Step 3: Handle BASE64DECODE wrapper if present
+    # Step 3: Handle BASE64 wrapper if present
     ESCAPED_ALREADY=false
     
-    # Check if the data contains BASE64DECODE or BASE64_START pattern
-    if printf '%s' "${JSON_DATA}" | grep -qiE 'BASE64DECODE'; then
+    # Generic base64 detection: Look for any function that suggests base64 encoding/decoding
+    # Patterns: BASE64DECODE, DECODE, from_base64, CRYPTO_DECODE, CONVERT_FROM
+    if printf '%s' "${JSON_DATA}" | grep -qiE '(BASE64|DECODE|from_base64|CRYPTO_DECODE|CONVERT_FROM)'; then
         
-        # Extract Base64 content from within BASE64DECODE('content')
-        # This handles multiline Base64 strings by extracting everything between the first and last single quote
+        # Strategy: Extract the FIRST quoted string (single or double quotes)
+        # This works for all our database wrapper patterns:
+        # - DB2: BASE64DECODE('base64data')
+        # - PostgreSQL: CONVERT_FROM(DECODE('base64data', 'base64'), 'UTF8')
+        # - MySQL: cast(from_base64('base64data') as char...)
+        # - SQLite: CRYPTO_DECODE('base64data','base64')
+        #
+        # The base64 data is always the innermost/first quoted string
         BASE64_CONTENT=$(printf '%s' "${JSON_DATA}" | awk '
-            BEGIN { content = ""; in_quote = 0; ORS = ""; sq = "\047" }
+            BEGIN {
+                content = "";
+                in_quote = 0;
+                ORS = "";
+                sq = "\047";  # Single quote
+                quote_char = "";
+            }
             {
-                for (i = 1; i <= length($0); i++) {
-                    char = substr($0, i, 1)
-                    if (char == sq && !in_quote) {
-                        in_quote = 1
-                    } else if (char == sq && in_quote) {
-                        # Found closing quote - we have our content
-                        exit
-                    } else if (in_quote) {
-                        content = content char
+                line = $0
+                for (i = 1; i <= length(line); i++) {
+                    char = substr(line, i, 1)
+                    
+                    if (!in_quote) {
+                        # Looking for opening single quote only (our data uses single quotes)
+                        if (char == sq) {
+                            in_quote = 1
+                            quote_char = sq
+                        }
+                    } else {
+                        # In quote - check for closing
+                        if (char == quote_char) {
+                            # Found closing quote - done with first string
+                            exit
+                        } else {
+                            content = content char
+                        }
                     }
                 }
+                # If still in quote at EOL, add newline to content
                 if (in_quote) {
                     content = content "\n"
                 }
@@ -337,21 +357,37 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
         continue
     fi
 
-    # Combine this migration's JSON with the accumulated JSON using jq
-    jq -s '.[0] + .[1].diagram' "${TEMP_JSON}" <(echo "${JSON_DATA}") > "${TEMP_JSON}.tmp" && mv "${TEMP_JSON}.tmp" "${TEMP_JSON}"
+    # Add to AFTER state (always, since we're processing migrations up to the requested one)
+    jq -s '.[0] + .[1].diagram' "${TEMP_AFTER_JSON}" <(echo "${JSON_DATA}") > "${TEMP_AFTER_JSON}.tmp" && mv "${TEMP_AFTER_JSON}.tmp" "${TEMP_AFTER_JSON}"
+    
+    # Add to BEFORE state (only if this migration is BEFORE the requested migration)
+    if [[ -n "${MIGRATION}" ]] && (( migration_num < MIGRATION )); then
+        jq -s '.[0] + .[1].diagram' "${TEMP_BEFORE_JSON}" <(echo "${JSON_DATA}") > "${TEMP_BEFORE_JSON}.tmp" && mv "${TEMP_BEFORE_JSON}.tmp" "${TEMP_BEFORE_JSON}"
+    fi
 done
 
-# Check if we have any data
-json_length=$(jq '. | length' "${TEMP_JSON}")
-if [[ "${json_length}" -eq 0 ]]; then
-    echo "Error: No JSON data extracted from any migration files" >&2
+# Check if we have any data in AFTER state
+after_length=$(jq '. | length' "${TEMP_AFTER_JSON}")
+if [[ "${after_length}" -eq 0 ]]; then
+    echo "Error: No diagram data found in any migration up to ${MIGRATION:-latest}" >&2
     exit 1
 fi
 
-# Read the combined JSON
-JSON_DATA=$(cat "${TEMP_JSON}")
+# Create combined before/after JSON structure
+BEFORE_DATA=$(cat "${TEMP_BEFORE_JSON}")
+AFTER_DATA=$(cat "${TEMP_AFTER_JSON}")
 
-# Generate diagram
+COMBINED_JSON=$(jq -n \
+    --argjson before "${BEFORE_DATA}" \
+    --argjson after "${AFTER_DATA}" \
+    '{before: {diagram: $before}, after: {diagram: $after}}')
+
+# Report state counts
+before_count=$(jq '. | length' "${TEMP_BEFORE_JSON}" || true)
+after_count=$(jq '. | length' "${TEMP_AFTER_JSON}" || true)
+echo "Before state: ${before_count} tables, After state: ${after_count} tables" >&2
+
+# Generate diagram with before/after comparison
 migration_count=${#FILTERED_MIGRATION_FILES[@]}
 if [[ ${migration_count} -eq 1 ]]; then
     echo "Generating SVG diagram from 1 migration..." >&2
@@ -362,7 +398,7 @@ fi
 # Generate diagram and capture both stdout (SVG) and stderr (metadata)
 # Use unique temporary file to avoid conflicts in parallel execution
 METADATA_TMP=$(mktemp)
-SVG_OUTPUT=$(echo "${JSON_DATA}" | node "${LIB_DIR}/generate_diagram.js" "${ENGINE}" 2>"${METADATA_TMP}")
+SVG_OUTPUT=$(echo "${COMBINED_JSON}" | node "${LIB_DIR}/generate_diagram.js" "${ENGINE}" 2>"${METADATA_TMP}")
 
 # Extract metadata from stderr if available
 METADATA=""
@@ -370,20 +406,27 @@ if [[ -f "${METADATA_TMP}" ]] && [[ -s "${METADATA_TMP}" ]]; then
     # Find the METADATA line in stderr output
     METADATA_LINE=$(grep "^METADATA:" "${METADATA_TMP}" 2>/dev/null || true)
 
-    if [[ -n "${METADATA_LINE}" ]] && [[ -n "${LAST_DIAGRAM_MIGRATION}" ]]; then
+    if [[ -n "${METADATA_LINE}" ]]; then
         # Extract JSON part after "METADATA:"
         METADATA_JSON="${METADATA_LINE#METADATA: }"
 
-        # Validate that it's valid JSON and add last_diagram_migration
+        # Validate that it's valid JSON and add requested_migration
         if jq empty <<< "${METADATA_JSON}" 2>/dev/null; then
-            # Add the last diagram migration number to the metadata
-            METADATA=$(jq --arg lastmig "${LAST_DIAGRAM_MIGRATION}" '. + {last_diagram_migration: $lastmig}' <<< "${METADATA_JSON}")
+            # Add the requested migration number to the metadata
+            if [[ -n "${MIGRATION}" ]]; then
+                METADATA=$(jq --arg reqmig "${MIGRATION}" '. + {requested_migration: $reqmig}' <<< "${METADATA_JSON}")
+            else
+                METADATA="${METADATA_JSON}"
+            fi
         fi
     fi
 
     # Clean up temporary file
     rm -f "${METADATA_TMP}"
 fi
+
+# Clean up temporary JSON files
+rm -f "${TEMP_BEFORE_JSON}" "${TEMP_AFTER_JSON}"
 
 # Output SVG to stdout (main purpose)
 echo "${SVG_OUTPUT}"

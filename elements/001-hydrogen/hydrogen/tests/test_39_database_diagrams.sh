@@ -7,19 +7,19 @@
 # generate_database_diagram()
 
 # CHANGELOG
+# 2.0.0 - 2025-11-17 - Fixed diagram numbering bug, added before/after highlighting, generates diagrams for ALL migrations (not just latest)
 # 1.2.0 - 2025-11-15 - Fixed filename generation to use last_diagram_migration from metadata
 # 1.1.0 - 2025-09-30 - Added metadata, starting with 'Tables included' to output
 # 1.0.0 - 2025-09-29 - Initial creation for database diagram generation
 
-#set -euo pipefail
-#set -x
+set -euo pipefail
 
 # Test configuration
 TEST_NAME="Database Diagrams"
 TEST_ABBR="ERD"
 TEST_NUMBER="39"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="2.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -75,31 +75,12 @@ DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO"
 # DESIGN_SCHEMAS["glm"]="glm2:glm2:glm2:GLM2"
 # DESIGN_SCHEMAS["gaius"]="gaius:gaius:gaius:GAIUS"
 
-# Function to generate database diagram for a specific combination
+# Function to generate database diagram for a specific migration number
 generate_database_diagram() {
     local design="$1"
     local engine="$2"
     local schema="$3"
-
-    # Find the highest numbered migration file for this design
-    local design_dir="${HELIUM_DIR}/${design}/migrations"
-    local migration_files=()
-    if [[ -d "${design_dir}" ]]; then
-        while IFS= read -r -d '' file; do
-            migration_files+=("${file}")
-        done < <("${FIND}" "${design_dir}" -name "${design}_*.lua" -type f -print0 2>/dev/null | sort -z -V || true)
-    fi
-
-    if [[ ${#migration_files[@]} -eq 0 ]]; then
-        echo "ERROR=No migration files found for ${design}"
-        return 1
-    fi
-
-    # Get the highest numbered migration (last in sorted array)
-    local highest_migration_file="${migration_files[-1]}"
-    local migration_name
-    migration_name=$(basename "${highest_migration_file}" .lua)
-    local migration_num="${migration_name#"${design}"_}"
+    local migration_num="$4"
 
     # Create output directory in hydrogen project (not global project root)
     local hydrogen_dir
@@ -107,12 +88,21 @@ generate_database_diagram() {
     local output_dir="${hydrogen_dir}/images/${design}"
     mkdir -p "${output_dir}"
 
-    # Generate temporary filename for initial output
+    # Generate filename using requested migration number
     local schema_part=""
     if [[ -n "${schema}" ]]; then
         schema_part="-${schema,,}"  # ,, converts to lowercase
     fi
-    local temp_output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${migration_num}.svg.tmp"
+    
+    # Always use the requested migration number for the filename
+    local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${migration_num}.svg"
+    local metadata_file="${output_file%.svg}.metadata"
+
+    # Check if diagram already exists - skip if it does
+    if [[ -f "${output_file}" ]]; then
+        echo "SKIPPED=Diagram already exists"
+        return 0
+    fi
 
     # Run generate_diagram.sh and capture both SVG output and metadata
     local error_file
@@ -121,37 +111,18 @@ generate_database_diagram() {
     local metadata=""
 
     # Capture both stdout (SVG) and stderr (metadata + errors)
-    if "${SCRIPT_DIR}/lib/generate_diagram.sh" "${engine}" "${design}" "${schema}" "${migration_num}" > "${temp_output_file}" 2> "${error_file}"; then
+    if "${SCRIPT_DIR}/lib/generate_diagram.sh" "${engine}" "${design}" "${schema}" "${migration_num}" > "${output_file}" 2> "${error_file}"; then
         # Success - check for metadata in error output
         error_output=$(cat "${error_file}")
         rm -f "${error_file}"
 
-        # Extract metadata if present
+        # Extract metadata if present and save it
         metadata_line=$(echo "${error_output}" | grep "^DIAGRAM_METADATA:" || true)
-        local actual_migration_num="${migration_num}"
         
         if [[ -n "${metadata_line}" ]]; then
             metadata="${metadata_line#DIAGRAM_METADATA: }"
-            
-            # Extract last_diagram_migration from metadata to get correct filename
-            local last_diagram_migration
-            last_diagram_migration=$(echo "${metadata}" | jq -r '.last_diagram_migration // empty' 2>/dev/null || true)
-            
-            if [[ -n "${last_diagram_migration}" ]] && [[ "${last_diagram_migration}" != "null" ]]; then
-                actual_migration_num="${last_diagram_migration}"
-            fi
-            
-            # Save metadata to a file for later use
-            local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${actual_migration_num}.svg"
-            local metadata_file="${output_file%.svg}.metadata"
             echo "${metadata}" > "${metadata_file}"
-        else
-            # No metadata, use requested migration number
-            local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${actual_migration_num}.svg"
         fi
-        
-        # Move temp file to final location with correct name
-        mv "${temp_output_file}" "${output_file}"
 
         return 0
     else
@@ -161,36 +132,15 @@ generate_database_diagram() {
 
         # Extract metadata if present (even on failure, for debugging)
         metadata_line=$(echo "${error_output}" | grep "^DIAGRAM_METADATA:" || true)
-        local actual_migration_num="${migration_num}"
         
         if [[ -n "${metadata_line}" ]]; then
             metadata="${metadata_line#DIAGRAM_METADATA: }"
-            
-            # Extract last_diagram_migration from metadata
-            local last_diagram_migration
-            last_diagram_migration=$(echo "${metadata}" | jq -r '.last_diagram_migration // empty' 2>/dev/null || true)
-            
-            if [[ -n "${last_diagram_migration}" ]] && [[ "${last_diagram_migration}" != "null" ]]; then
-                actual_migration_num="${last_diagram_migration}"
-            fi
-            
-            # Save metadata to a file for later use even on failure
-            local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${actual_migration_num}.svg"
-            local metadata_file="${output_file%.svg}.metadata"
             echo "${metadata}" > "${metadata_file}"
-        else
-            # No metadata, use requested migration number
-            local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${actual_migration_num}.svg"
         fi
-        
-        # Move temp file to final location if it exists
-        [[ -f "${temp_output_file}" ]] && mv "${temp_output_file}" "${output_file}"
 
         # Determine failure reason from error output
-        if echo "${error_output}" | grep -q "No JSON data extracted"; then
+        if echo "${error_output}" | grep -q "No diagram data"; then
             echo "ERROR=No diagram data found in migration files"
-        elif echo "${error_output}" | grep -q "No diagram data found"; then
-            echo "ERROR=No diagram data found in processed migrations"
         elif [[ -n "${error_output}" ]]; then
             # Extract the last error line for cleaner output
             error_line=$(echo "${error_output}" | grep "^Error:" | tail -1 | sed 's/^Error: //')
@@ -228,7 +178,8 @@ run_diagram_generation_parallel() {
     local design="$1"
     local engine="$2"
     local schema="$3"
-    local result_file="$4"
+    local migration_num="$4"
+    local result_file="$5"
 
     # Clear result file
     true > "${result_file}"
@@ -238,11 +189,15 @@ run_diagram_generation_parallel() {
 
     # Run diagram generation and capture output
     local output
-    output=$(generate_database_diagram "${design}" "${engine}" "${schema}")
+    output=$(generate_database_diagram "${design}" "${engine}" "${schema}" "${migration_num}")
     local exit_code=$?
 
     if [[ ${exit_code} -eq 0 ]]; then
-        echo "SUCCESS" > "${result_file}"
+        if [[ "${output}" == "SKIPPED=Diagram already exists" ]]; then
+            echo "${output}" > "${result_file}"
+        else
+            echo "SUCCESS" > "${result_file}"
+        fi
     else
         # Check if output starts with ERROR=
         if [[ "${output}" == ERROR=* ]]; then
@@ -280,6 +235,46 @@ get_migration_number() {
     echo "${migration_num}"
 }
 
+# Find all migration numbers for each design
+declare -A DESIGN_MIGRATIONS
+for design in "${DESIGNS[@]}"; do
+    design_dir="${HELIUM_DIR}/${design}/migrations"
+    if [[ -d "${design_dir}" ]]; then
+        migration_nums=()
+        while IFS= read -r -d '' file; do
+            filename=$(basename "${file}" .lua)
+            migration_num=${filename#"${design}_"}
+            if [[ "${migration_num}" =~ ^[0-9]+$ ]]; then
+                migration_nums+=("${migration_num}")
+            fi
+        done < <("${FIND}" "${design_dir}" -name "${design}_*.lua" -type f -print0 2>/dev/null | sort -z -V || true)
+        
+        # Sort numerically and store
+        if [[ ${#migration_nums[@]} -gt 0 ]]; then
+            IFS=$'\n' sorted_nums=($(sort -n <<<"${migration_nums[*]}"))
+            unset IFS
+            DESIGN_MIGRATIONS["${design}"]="${sorted_nums[*]}"
+        fi
+    fi
+done
+
+# Calculate total combinations (all migrations for all designs/engines)
+TOTAL_COMBINATIONS=0
+for design in "${DESIGNS[@]}"; do
+    design_schemas="${DESIGN_SCHEMAS[${design}]:-}"
+    if [[ -n "${design_schemas}" ]]; then
+        IFS=':' read -ra SCHEMA_ARRAY <<< "${design_schemas}"
+        migration_nums="${DESIGN_MIGRATIONS[${design}]:-}"
+        if [[ -n "${migration_nums}" ]]; then
+            IFS=' ' read -ra MIGRATION_ARRAY <<< "${migration_nums}"
+            TOTAL_COMBINATIONS=$((TOTAL_COMBINATIONS + (${#ENGINES[@]} * ${#MIGRATION_ARRAY[@]})))
+        fi
+    fi
+done
+
+# Update test name with total count
+TEST_NAME="${TEST_NAME} {BLUE}(combos: ${TOTAL_COMBINATIONS}){RESET}"
+
 # Start parallel diagram generation
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Diagram Generation in Parallel"
 
@@ -288,32 +283,39 @@ for design in "${DESIGNS[@]}"; do
     design_schemas="${DESIGN_SCHEMAS[${design}]:-}"
     if [[ -n "${design_schemas}" ]]; then
         IFS=':' read -ra SCHEMA_ARRAY <<< "${design_schemas}"
+        migration_nums="${DESIGN_MIGRATIONS[${design}]:-}"
+        
+        if [[ -n "${migration_nums}" ]]; then
+            IFS=' ' read -ra MIGRATION_ARRAY <<< "${migration_nums}"
+            
+            # Process each migration/engine/schema combination
+            for migration_num in "${MIGRATION_ARRAY[@]}"; do
+                for i in "${!ENGINES[@]}"; do
+                    engine="${ENGINES[${i}]}"
+                    # Get schema for this engine index, or empty if index is out of bounds
+                    if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
+                        schema="${SCHEMA_ARRAY[${i}]}"
+                    else
+                        schema=""
+                    fi
 
-        # Process each engine/schema combination
-        for i in "${!ENGINES[@]}"; do
-            engine="${ENGINES[${i}]}"
-            # Get schema for this engine index, or empty if index is out of bounds
-            if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
-                schema="${SCHEMA_ARRAY[${i}]}"
-            else
-                schema=""
-            fi
+                    # Job limiting - wait if we have too many parallel jobs
+                    # shellcheck disable=SC2312 # Job control with wc -l is standard practice
+                    while (( $(jobs -r | wc -l) >= CORES )); do
+                        wait -n  # Wait for any job to finish
+                    done
 
-            # Job limiting - wait if we have too many parallel jobs
-            # shellcheck disable=SC2312 # Job control with wc -l is standard practice
-            while (( $(jobs -r | wc -l) >= CORES )); do
-                wait -n  # Wait for any job to finish
+                    # Create result file for this combination
+                    result_file="${LOG_PREFIX}_${design}_${engine}_${migration_num}.result"
+
+                    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel generation: ${design} ${engine} ${schema} ${migration_num}"
+
+                    # Run diagram generation in background
+                    run_diagram_generation_parallel "${design}" "${engine}" "${schema}" "${migration_num}" "${result_file}" &
+                    PARALLEL_PIDS+=($!)
+                done
             done
-
-            # Create result file for this combination
-            result_file="${LOG_PREFIX}_${design}_${engine}.result"
-
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel generation: ${design} ${engine} ${schema}"
-
-            # Run diagram generation in background
-            run_diagram_generation_parallel "${design}" "${engine}" "${schema}" "${result_file}" &
-            PARALLEL_PIDS+=($!)
-        done
+        fi
     fi
 done
 
@@ -329,102 +331,105 @@ for design in "${DESIGNS[@]}"; do
     design_schemas="${DESIGN_SCHEMAS[${design}]:-}"
     if [[ -n "${design_schemas}" ]]; then
         IFS=':' read -ra SCHEMA_ARRAY <<< "${design_schemas}"
-
-        # Process each engine/schema combination
-        for i in "${!ENGINES[@]}"; do
-            engine="${ENGINES[${i}]}"
-            # Get schema for this engine index, or empty if index is out of bounds
-            if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
-                schema="${SCHEMA_ARRAY[${i}]}"
-            else
-                schema=""
-            fi
-
-            if [[ -z "${schema}" ]]; then
-                subtest_name="${engine} ${design} (no schema)"
-            else
-                subtest_name="${engine} ${design} ${schema}"
-            fi
-
-            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${subtest_name}"
-
-            # Check result file
-            result_file="${LOG_PREFIX}_${design}_${engine}.result"
-
-            # Get the requested migration number for this design
-            requested_migration_num=$(get_migration_number "${design}")
-            if [[ -z "${requested_migration_num}" ]]; then
-                requested_migration_num="unknown"
-            fi
-
-            # Generate the correct filename with proper schema handling
-            display_schema=""
-            if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
-                if [[ -n "${SCHEMA_ARRAY[${i}]}" ]]; then
-                    display_schema="-${SCHEMA_ARRAY[${i}],,}"
-                fi
-            fi
-
-            # Calculate output directory in the right scope
-            hydrogen_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
-            output_dir="${hydrogen_dir}/images/${design}"
+        migration_nums="${DESIGN_MIGRATIONS[${design}]:-}"
+        
+        if [[ -n "${migration_nums}" ]]; then
+            IFS=' ' read -ra MIGRATION_ARRAY <<< "${migration_nums}"
             
-            # Try to find the metadata file with the requested migration number first
-            metadata_file="${output_dir}/${design,,}-${engine,,}${display_schema}-${requested_migration_num}.metadata"
-            actual_migration_num="${requested_migration_num}"
-            
-            # If metadata file doesn't exist, search for any metadata file for this design/engine
-            if [[ ! -f "${metadata_file}" ]]; then
-                # Find the most recent metadata file for this design/engine combination
-                latest_metadata=$(find "${output_dir}" -name "${design,,}-${engine,,}${display_schema}-*.metadata" -type f 2>/dev/null | sort -V | tail -1 || true)
-                if [[ -n "${latest_metadata}" ]]; then
-                    metadata_file="${latest_metadata}"
-                fi
-            fi
+            # Process each migration/engine/schema combination
+            for migration_num in "${MIGRATION_ARRAY[@]}"; do
+                for i in "${!ENGINES[@]}"; do
+                    engine="${ENGINES[${i}]}"
+                    # Get schema for this engine index, or empty if index is out of bounds
+                    if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
+                        schema="${SCHEMA_ARRAY[${i}]}"
+                    else
+                        schema=""
+                    fi
 
-            # Show table count and get actual migration number from metadata
-            if [[ -f "${metadata_file}" ]]; then
-                metadata=$(cat "${metadata_file}")
-                
-                # Extract last_diagram_migration from metadata
-                last_diagram_migration=$(echo "${metadata}" | jq -r '.last_diagram_migration // empty' 2>/dev/null || true)
-                if [[ -n "${last_diagram_migration}" ]] && [[ "${last_diagram_migration}" != "null" ]]; then
-                    actual_migration_num="${last_diagram_migration}"
-                fi
-                
-                table_count=$(echo "${metadata}" | jq -r '.table_count // empty' 2>/dev/null || true)
-                if [[ -n "${table_count}" ]] && [[ "${table_count}" != "null" ]]; then
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Tables included: ${table_count}"
-                fi
+                    # Check result file first to see if we should skip output
+                    result_file="${LOG_PREFIX}_${design}_${engine}_${migration_num}.result"
 
-                # Clean up metadata file after use
-                rm -f "${metadata_file}"
-            fi
+                    if [[ -f "${result_file}" ]]; then
+                        result_content=$(cat "${result_file}")
+                        if [[ "${result_content}" == "SKIPPED=Diagram already exists" ]]; then
+                            # Skip all output for existing diagrams
+                            SUCCESSFUL_GENERATIONS=$((SUCCESSFUL_GENERATIONS + 1))
+                            continue
+                        fi
+                    fi
 
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ..${result_file}"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diagram in ../images/${design}/${design}-${engine}${display_schema}-${actual_migration_num}.svg"
+                    if [[ -z "${schema}" ]]; then
+                        subtest_name="${engine} ${design} ${migration_num} (no schema)"
+                    else
+                        subtest_name="${engine} ${design} ${schema} ${migration_num}"
+                    fi
 
-            if [[ -f "${result_file}" ]]; then
-                result_content=$(cat "${result_file}")
-                if [[ "${result_content}" == "SUCCESS" ]]; then
-                    SUCCESSFUL_GENERATIONS=$((SUCCESSFUL_GENERATIONS + 1))
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Diagram generation successful"
-                elif [[ "${result_content}" == ERROR=* ]]; then
-                    FAILED_GENERATIONS=$((FAILED_GENERATIONS + 1))
-                    error_msg="${result_content#ERROR=}"
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Diagram generation failed: ${error_msg}"
-                    EXIT_CODE=1
-                else
-                    FAILED_GENERATIONS=$((FAILED_GENERATIONS + 1))
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Diagram generation failed: ${result_content}"
-                    EXIT_CODE=1
-                fi
-            else
-                FAILED_GENERATIONS=$((FAILED_GENERATIONS + 1))
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Diagram generation failed: no result file"
-                EXIT_CODE=1
-            fi
-        done
+                    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${subtest_name}"
+
+                    # Generate the correct filename with proper schema handling
+                    display_schema=""
+                    if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
+                        if [[ -n "${SCHEMA_ARRAY[${i}]}" ]]; then
+                            display_schema="-${SCHEMA_ARRAY[${i}],,}"
+                        fi
+                    fi
+
+                    # Calculate output directory
+                    hydrogen_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
+                    output_dir="${hydrogen_dir}/images/${design}"
+
+                    # Metadata file uses requested migration number
+                    metadata_file="${output_dir}/${design,,}-${engine,,}${display_schema}-${migration_num}.metadata"
+
+                    # Show table count and highlighting statistics from metadata
+                    if [[ -f "${metadata_file}" ]]; then
+                        metadata=$(cat "${metadata_file}")
+
+                        table_count=$(echo "${metadata}" | jq -r '.table_count // empty' 2>/dev/null || true)
+                        if [[ -n "${table_count}" ]] && [[ "${table_count}" != "null" ]]; then
+                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Tables included: ${table_count}"
+                        fi
+
+                        highlighted_tables=$(echo "${metadata}" | jq -r '.highlighted_tables // empty' 2>/dev/null || true)
+                        highlighted_columns=$(echo "${metadata}" | jq -r '.highlighted_columns // empty' 2>/dev/null || true)
+
+                        if [[ -n "${highlighted_tables}" ]] && [[ "${highlighted_tables}" != "null" ]] && [[ "${highlighted_tables}" != "0" ]]; then
+                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Highlighted: ${highlighted_tables} tables, ${highlighted_columns} columns"
+                        fi
+
+                        # Clean up metadata file after use
+                        rm -f "${metadata_file}"
+                    fi
+
+                    # Extract relative path from hydrogen directory
+                    relative_result_file="${result_file#*hydrogen/hydrogen/}"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${relative_result_file}"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diagram in images/${design}/${design}-${engine}${display_schema}-${migration_num}.svg"
+
+                    if [[ -f "${result_file}" ]]; then
+                        result_content=$(cat "${result_file}")
+                        if [[ "${result_content}" == "SUCCESS" ]]; then
+                            SUCCESSFUL_GENERATIONS=$((SUCCESSFUL_GENERATIONS + 1))
+                            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Diagram generation successful"
+                        elif [[ "${result_content}" == ERROR=* ]]; then
+                            FAILED_GENERATIONS=$((FAILED_GENERATIONS + 1))
+                            error_msg="${result_content#ERROR=}"
+                            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Diagram generation failed: ${error_msg}"
+                            EXIT_CODE=1
+                        else
+                            FAILED_GENERATIONS=$((FAILED_GENERATIONS + 1))
+                            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Diagram generation failed: ${result_content}"
+                            EXIT_CODE=1
+                        fi
+                    else
+                        FAILED_GENERATIONS=$((FAILED_GENERATIONS + 1))
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Diagram generation failed: no result file"
+                        EXIT_CODE=1
+                    fi
+                done
+            done
+        fi
     fi
 done
 
