@@ -250,6 +250,16 @@ Typical development workflow using these tools:
 3. **Cleanup:** Use `make-clean.sh` to reset build environment
 4. **Payload debugging:** Use one-off tools when investigating payload issues
 
+## Database Extensions
+
+### DB2 Base64 Decode UDF
+
+**Location:** `base64decode_udf_db2/`
+**Purpose:** DB2 User-Defined Functions for Base64 decoding
+**Description:** Provides chunked Base64 decoding capabilities for DB2 databases, including both C-implemented UDFs and SQL wrappers for large data handling.
+
+See [base64decode_udf_db2/README.md](base64decode_udf_db2/README.md) for detailed documentation.
+
 ## Error Handling
 
 All scripts include proper error handling and return appropriate exit codes:
