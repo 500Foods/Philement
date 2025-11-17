@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 6.5.0 - 2025-11-17 - Added "Coverage Combined" row to extended statistics table
 # 6.4.0 - 2025-10-15 - Added "Instrumented Tests" row to extended statistics table
 # 6.3.1 - 2025-09-30 - Fixed decimal .0 problem
 # 6.3.0 - 2025-09-29 - Added sorting by total lines within primary/secondary sections in table 1
@@ -35,7 +36,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="6.3.1"
+CLOC_VERSION="6.5.0"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
@@ -468,6 +469,11 @@ EOF
             format_instrumented_unity=$("${PRINTF}" "%'d" "${instrumented_unity}")
             format_covered_black=$("${PRINTF}" "%'d" "${covered_blackbox}")
             format_covered_unity=$("${PRINTF}" "%'d" "${covered_unity}")
+            # Calculate covered lines for combined coverage
+            local covered_combined
+            covered_combined=$(printf "%.0f" "$(bc -l <<< "scale=0; (${coverage_combined} * ${instrumented_blackbox}) / 100" 2>/dev/null || echo 0)" 2>/dev/null || echo 0) || true
+            local format_covered_combined
+            format_covered_combined=$("${PRINTF}" "%'d" "${covered_combined}")
             # Debug: ensure instrumented_tests is not empty before formatting
             if [[ -n "${instrumented_tests}" ]] && [[ "${instrumented_tests}" != "0" ]]; then
                 format_instrumented_tests=$("${PRINTF}" "%'d" "${instrumented_tests}")
@@ -676,6 +682,12 @@ EOF
          "metric": "Coverage Blackbox",
          "value": "${format_covered_black}",
          "description": "Lines of covered code - Blackbox"
+     },
+     {
+         "section": "coverage_lines",
+         "metric": "Coverage Combined",
+         "value": "${format_covered_combined}",
+         "description": "Lines of covered code - Combined"
      },
      {
          "section": "coverage_percentages",
