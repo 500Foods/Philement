@@ -248,11 +248,10 @@ for design in "${DESIGNS[@]}"; do
                 migration_nums+=("${migration_num}")
             fi
         done < <("${FIND}" "${design_dir}" -name "${design}_*.lua" -type f -print0 2>/dev/null | sort -z -V || true)
-        
+
         # Sort numerically and store
         if [[ ${#migration_nums[@]} -gt 0 ]]; then
-            IFS=$'\n' sorted_nums=($(sort -n <<<"${migration_nums[*]}"))
-            unset IFS
+            mapfile -t sorted_nums < <(printf '%s\n' "${migration_nums[@]}" | sort -n || true)
             DESIGN_MIGRATIONS["${design}"]="${sorted_nums[*]}"
         fi
     fi
@@ -264,9 +263,9 @@ for design in "${DESIGNS[@]}"; do
     design_schemas="${DESIGN_SCHEMAS[${design}]:-}"
     if [[ -n "${design_schemas}" ]]; then
         IFS=':' read -ra SCHEMA_ARRAY <<< "${design_schemas}"
-        migration_nums="${DESIGN_MIGRATIONS[${design}]:-}"
-        if [[ -n "${migration_nums}" ]]; then
-            IFS=' ' read -ra MIGRATION_ARRAY <<< "${migration_nums}"
+        migration_nums_str="${DESIGN_MIGRATIONS[${design}]:-}"
+        if [[ -n "${migration_nums_str}" ]]; then
+            IFS=' ' read -ra MIGRATION_ARRAY <<< "${migration_nums_str}"
             TOTAL_COMBINATIONS=$((TOTAL_COMBINATIONS + (${#ENGINES[@]} * ${#MIGRATION_ARRAY[@]})))
         fi
     fi
@@ -283,10 +282,10 @@ for design in "${DESIGNS[@]}"; do
     design_schemas="${DESIGN_SCHEMAS[${design}]:-}"
     if [[ -n "${design_schemas}" ]]; then
         IFS=':' read -ra SCHEMA_ARRAY <<< "${design_schemas}"
-        migration_nums="${DESIGN_MIGRATIONS[${design}]:-}"
-        
-        if [[ -n "${migration_nums}" ]]; then
-            IFS=' ' read -ra MIGRATION_ARRAY <<< "${migration_nums}"
+        migration_nums_str="${DESIGN_MIGRATIONS[${design}]:-}"
+
+        if [[ -n "${migration_nums_str}" ]]; then
+            IFS=' ' read -ra MIGRATION_ARRAY <<< "${migration_nums_str}"
             
             # Process each migration/engine/schema combination
             for migration_num in "${MIGRATION_ARRAY[@]}"; do
@@ -331,10 +330,10 @@ for design in "${DESIGNS[@]}"; do
     design_schemas="${DESIGN_SCHEMAS[${design}]:-}"
     if [[ -n "${design_schemas}" ]]; then
         IFS=':' read -ra SCHEMA_ARRAY <<< "${design_schemas}"
-        migration_nums="${DESIGN_MIGRATIONS[${design}]:-}"
-        
-        if [[ -n "${migration_nums}" ]]; then
-            IFS=' ' read -ra MIGRATION_ARRAY <<< "${migration_nums}"
+        migration_nums_str="${DESIGN_MIGRATIONS[${design}]:-}"
+
+        if [[ -n "${migration_nums_str}" ]]; then
+            IFS=' ' read -ra MIGRATION_ARRAY <<< "${migration_nums_str}"
             
             # Process each migration/engine/schema combination
             for migration_num in "${MIGRATION_ARRAY[@]}"; do
