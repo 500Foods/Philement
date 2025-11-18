@@ -7,6 +7,7 @@
 // Project includes
 #include <src/hydrogen.h>
 #include <src/database/database.h>
+#include <src/database/database_json.h>
 #include <src/database/dbqueue/dbqueue.h>
 
 // Local includes
@@ -419,7 +420,8 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
     // Convert result to JSON
     if (db_result->row_count > 0 && db_result->column_count > 0) {
         // Simple JSON array of objects
-        size_t json_size = 1024 * db_result->row_count; // Estimate size
+        // Increase buffer size to handle large query templates (migration SQL can be 10KB+)
+        size_t json_size = 16384 * db_result->row_count; // Larger estimate for query templates
         db_result->data_json = calloc(1, json_size);
         if (!db_result->data_json) {
             // Cleanup
@@ -435,19 +437,88 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
         strcpy(db_result->data_json, "[");
         for (size_t row = 0; row < db_result->row_count; row++) {
             if (row > 0) strcat(db_result->data_json, ",");
+
+            // Track start of this row for debug logging
+            size_t row_start_pos = strlen(db_result->data_json);
+
             strcat(db_result->data_json, "{");
 
             for (size_t col = 0; col < db_result->column_count; col++) {
                 if (col > 0) strcat(db_result->data_json, ",");
+
+                // Get column type to determine if we should quote the value
+                int col_type_oid = PQftype_ptr ? PQftype_ptr(pg_result, (int)col) : 0;
+                bool is_numeric = postgresql_is_numeric_type(col_type_oid);
+
                 const char* value = PQgetvalue_ptr(pg_result, (int)row, (int)col);
-                char buffer[256];
-                snprintf(buffer, sizeof(buffer), "\"%s\":\"%s\"",
-                        db_result->column_names[col], value ? value : "");
-                strcat(db_result->data_json, buffer);
+                const char* col_name = db_result->column_names[col];
+
+                // Calculate needed size for this column (name + value + escaping overhead)
+                size_t value_len = value ? strlen(value) : 0;
+                size_t needed_size = strlen(col_name) + (value_len * 2) + 20; // Extra for escaping
+
+                // Ensure buffer has enough space
+                size_t current_len = strlen(db_result->data_json);
+                if (current_len + needed_size > json_size) {
+                    json_size = (current_len + needed_size) * 2;
+                    char* new_json = realloc(db_result->data_json, json_size);
+                    if (!new_json) continue; // Skip column on allocation failure
+                    db_result->data_json = new_json;
+                }
+
+                // Append column to JSON
+                char* append_pos = db_result->data_json + current_len;
+
+                if (is_numeric && value && strlen(value) > 0) {
+                    // Numeric type - no quotes around value
+                    sprintf(append_pos, "\"%s\":%s", col_name, value);
+                } else if (value) {
+                    // String type - escape and quote
+                    sprintf(append_pos, "\"%s\":\"", col_name);
+                    char* dst = append_pos + strlen(append_pos);
+                    const char* src = value;
+                    while (*src) {
+                        if (*src == '"' || *src == '\\') {
+                            *dst++ = '\\';
+                            *dst++ = *src++;
+                        } else if (*src == '\n') {
+                            *dst++ = '\\';
+                            *dst++ = 'n';
+                            src++;
+                        } else if (*src == '\r') {
+                            *dst++ = '\\';
+                            *dst++ = 'r';
+                            src++;
+                        } else if (*src == '\t') {
+                            *dst++ = '\\';
+                            *dst++ = 't';
+                            src++;
+                        } else {
+                            *dst++ = *src++;
+                        }
+                    }
+                    *dst++ = '"';
+                    *dst = '\0';
+                } else {
+                    // NULL value
+                    sprintf(append_pos, "\"%s\":null", col_name);
+                }
             }
             strcat(db_result->data_json, "}");
+
+            // Debug: Log first row JSON for diagnosis
+            if (row == 0) {
+                size_t row_len = strlen(db_result->data_json) - row_start_pos;
+                char* row_json = strndup(db_result->data_json + row_start_pos, row_len);
+                if (row_json) {
+                    log_this(designator, "PostgreSQL first row JSON: %s", LOG_LEVEL_DEBUG, 1, row_json);
+                    free(row_json);
+                }
+            }
         }
         strcat(db_result->data_json, "]");
+
+        // log_this(designator, "PostgreSQL execute_prepared: Complete result JSON: %s", LOG_LEVEL_DEBUG, 1, db_result->data_json);
     } else {
         log_this(designator, "PostgreSQL execute_prepared: Query returned no data (0 rows or 0 columns)", LOG_LEVEL_TRACE, 0);
     }

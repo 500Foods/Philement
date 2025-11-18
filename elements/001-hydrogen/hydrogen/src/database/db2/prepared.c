@@ -108,17 +108,9 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
         return false;
     }
 
-    // Prepare the statement with timeout protection
-    time_t start_time = time(NULL);
+    // Prepare the statement (connection-level timeout handles timing)
     int result = SQLPrepare_ptr(stmt_handle, (char*)sql, SQL_NTS);
-    
-    // Check if prepare took too long
-    if (db2_check_timeout_expired(start_time, 15)) {
-        log_this(log_subsystem, "DB2 PREPARE execution time exceeded 15 seconds", LOG_LEVEL_ERROR, 0);
-        SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-        return false;
-    }
-    
+
     if (result != SQL_SUCCESS) {
         log_this(log_subsystem, "DB2 SQLPrepare failed", LOG_LEVEL_ERROR, 0);
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);

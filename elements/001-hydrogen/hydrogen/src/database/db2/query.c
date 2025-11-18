@@ -171,7 +171,7 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
                     return false;
                 }
                 
-                db2_json_escape_string(col_data, escaped_data, escaped_size);
+                database_json_escape_string(col_data, escaped_data, escaped_size);
                 int written = snprintf(current_pos, needed_json_space, "\"%s\":\"%s\"", column_names[col], escaped_data);
                 // Check for truncation - snprintf returns what WOULD be written, not what WAS written
                 if (written >= (int)needed_json_space) {
