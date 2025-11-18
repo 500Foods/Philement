@@ -5,7 +5,7 @@
   */
 #include <src/hydrogen.h>
 #include <src/database/database.h>
-#include <src/database/database_json.h>
+#include <src/database/database_serialize.h>
 #include "types.h"
 #include "utils.h"
 

@@ -212,7 +212,7 @@ void save_cache(const char *db_name, const char *version) {
  }
  
  static const char *parse_db2_version(const char *output, char *buffer, size_t size) {
-     // Parse DB2 output: Look for pattern in "DB2 v11.1.3.3"
+     // Parse DB2 output: Look for pattern in "DB2 v12.1.3.0"
      char *version_start = (char *)strstr(output, "DB2 v");
      if (version_start) {
          version_start += 5; // Skip "DB2 v"

@@ -44,6 +44,7 @@ typedef unsigned short SQLUSMALLINT;
 #define SQL_COMMIT_TYPE_DEFAULT 0    // Default commit behavior
 #define SQL_COMMIT_TYPE_ASYNC 1      // Asynchronous commits
 #define SQL_IS_UINTEGER -5           // SQLUINTEGER type indicator
+#define SQL_ATTR_LOG_MODE  1903
 
 // DB2 function pointers (loaded dynamically or mocked)
 SQLAllocHandle_t SQLAllocHandle_ptr = NULL;
@@ -300,27 +301,25 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
             }
         }
 
-        // 2. AUTOCOMMIT OFF – the golden ticket
-        if (SQLSetConnectAttr_ptr) {
-            SQLUINTEGER off = SQL_AUTOCOMMIT_OFF;
-            rc = SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_AUTOCOMMIT, (long)off, SQL_IS_UINTEGER);
-            if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
-                log_this(log_subsystem, "Failed to disable autocommit", LOG_LEVEL_ALERT, 0);
-            }
-        }
+        // // 2. AUTOCOMMIT OFF – the golden ticket
+        // if (SQLSetConnectAttr_ptr) {
+        //     SQLUINTEGER off = SQL_AUTOCOMMIT_OFF;
+        //     rc = SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_AUTOCOMMIT, (long)off, SQL_IS_UINTEGER);
+        //     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+        //         log_this(log_subsystem, "Failed to disable autocommit", LOG_LEVEL_ALERT, 0);
+        //     }
+        // }
 
         // 3. Row array size – optional, but nice for bulk fetches later
         if (SQLSetConnectAttr_ptr) {
-            SQLUINTEGER rows = 50;
+            SQLUINTEGER rows = 100;
             rc = SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_ROW_ARRAY_SIZE, (long)rows, SQL_IS_UINTEGER);
             if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
                 log_this(log_subsystem, "Failed to set row array size", LOG_LEVEL_ALERT, 0);
             }
         }
 
-        // Do NOT touch SQL_ATTR_COMMIT_TYPE (doesn't exist) and never use magic number 27
-
-        log_this(log_subsystem, "DB2 CLI: autocommit=off and optimizations applied", LOG_LEVEL_TRACE, 0);
+        log_this(log_subsystem, "DB2 CLI: optimizations applied", LOG_LEVEL_TRACE, 0);
     }
 
     if (result != SQL_SUCCESS) {
