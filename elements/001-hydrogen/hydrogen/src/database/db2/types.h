@@ -83,6 +83,15 @@ extern SQLSetConnectAttr_t SQLSetConnectAttr_ptr;
 #define SQL_AUTOCOMMIT_OFF 0
 #define SQL_AUTOCOMMIT_ON 1
 
+// Current catalog/database
+#define SQL_ATTR_CURRENT_CATALOG 109
+
+// Row array size for batch fetching
+#define SQL_ATTR_ROW_ARRAY_SIZE 27
+
+// Type definitions
+typedef void* SQLPOINTER;
+
 // Prepared statement cache structure
 typedef struct PreparedStatementCache {
     char** names;

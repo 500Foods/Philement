@@ -32,9 +32,9 @@ DatabaseHandle* create_test_connection(void);
 void cleanup_test_connection(DatabaseHandle* conn);
 
 // Test function prototypes
-void test_prepare_statement_timeout_during_prepare(void);
+void test_prepare_statement_basic_functionality(void);
 void test_prepare_statement_null_pg_connection(void);
-void test_unprepare_statement_timeout_during_deallocate(void);
+void test_unprepare_statement_basic_functionality(void);
 
 // Test fixtures
 void setUp(void) {
@@ -98,21 +98,17 @@ void cleanup_test_connection(DatabaseHandle* conn) {
     free(conn);
 }
 
-// Test: Timeout during PREPARE operation
-void test_prepare_statement_timeout_during_prepare(void) {
+// Test: PREPARE operation (no longer has individual timeout checks - timeouts set at connection level)
+void test_prepare_statement_basic_functionality(void) {
     DatabaseHandle* conn = create_test_connection();
-    
-    // Set up mock to simulate timeout
-    mock_libpq_set_check_timeout_expired_use_mock(true);
-    mock_libpq_set_check_timeout_expired_result(true);
-    
+
     PreparedStatement* stmt = NULL;
     bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
-    
-    // Should fail due to timeout
-    TEST_ASSERT_FALSE(result);
-    TEST_ASSERT_NULL(stmt);
-    
+
+    // Should succeed (timeout handling moved to connection level)
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_NOT_NULL(stmt);
+
     cleanup_test_connection(conn);
 }
 
@@ -134,35 +130,30 @@ void test_prepare_statement_null_pg_connection(void) {
     cleanup_test_connection(conn);
 }
 
-// Test: Timeout during DEALLOCATE operation
-void test_unprepare_statement_timeout_during_deallocate(void) {
+// Test: DEALLOCATE operation (no longer has individual timeout checks - timeouts set at connection level)
+void test_unprepare_statement_basic_functionality(void) {
     DatabaseHandle* conn = create_test_connection();
-    
+
     // First create a statement successfully
-    mock_libpq_set_check_timeout_expired_use_mock(false);
     PreparedStatement* stmt = NULL;
     TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt));
     TEST_ASSERT_NOT_NULL(stmt);
-    
-    // Now simulate timeout during unprepare
-    mock_libpq_set_check_timeout_expired_use_mock(true);
-    mock_libpq_set_check_timeout_expired_result(true);
-    
+
+    // Now unprepare the statement
     bool result = postgresql_unprepare_statement(conn, stmt);
-    
-    // Should fail due to timeout
-    TEST_ASSERT_FALSE(result);
-    
-    // Statement remains in cache, cleanup will handle it
+
+    // Should succeed (timeout handling moved to connection level)
+    TEST_ASSERT_TRUE(result);
+
     cleanup_test_connection(conn);
 }
 
 int main(void) {
     UNITY_BEGIN();
-    
-    RUN_TEST(test_prepare_statement_timeout_during_prepare);
+
+    RUN_TEST(test_prepare_statement_basic_functionality);
     RUN_TEST(test_prepare_statement_null_pg_connection);
-    RUN_TEST(test_unprepare_statement_timeout_during_deallocate);
-    
+    RUN_TEST(test_unprepare_statement_basic_functionality);
+
     return UNITY_END();
 }

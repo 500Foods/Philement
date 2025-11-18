@@ -34,31 +34,18 @@ bool db2_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel le
 
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
 
-    // Turn off auto-commit to start a transaction with timeout protection
-    if (SQLSetConnectAttr_ptr) {
-        time_t start_time = time(NULL);
-        int result = SQLSetConnectAttr_ptr(db2_conn->connection, SQL_ATTR_AUTOCOMMIT, (long)SQL_AUTOCOMMIT_OFF, 0);
-        
-        // Check if operation took too long
-        if (db2_check_timeout_expired(start_time, 10)) {
-            log_this(log_subsystem, "DB2 BEGIN TRANSACTION execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
-            return false;
-        }
-        
+    // Auto-commit is already OFF at connection level - start explicit transaction
+    if (SQLEndTran_ptr) {
+        int result = SQLEndTran_ptr(SQL_HANDLE_DBC, db2_conn->connection, SQL_COMMIT);
         if (result != SQL_SUCCESS) {
-            log_this(log_subsystem, "DB2 failed to turn off auto-commit for transaction", LOG_LEVEL_ERROR, 0);
+            log_this(log_subsystem, "DB2 failed to start transaction", LOG_LEVEL_ERROR, 0);
             return false;
         }
-    } else {
-        log_this(log_subsystem, "DB2 SQLSetConnectAttr not available - cannot control auto-commit", LOG_LEVEL_ERROR, 0);
-        return false;
     }
 
     // Create transaction structure
     Transaction* tx = calloc(1, sizeof(Transaction));
     if (!tx) {
-        // Restore auto-commit on failure
-        SQLSetConnectAttr_ptr(db2_conn->connection, SQL_ATTR_AUTOCOMMIT, (long)SQL_AUTOCOMMIT_ON, 0);
         return false;
     }
 
@@ -70,7 +57,7 @@ bool db2_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel le
     *transaction = tx;
     connection->current_transaction = tx;
 
-    log_this(log_subsystem, "DB2 transaction started (auto-commit disabled)", LOG_LEVEL_TRACE, 0);
+    log_this(log_subsystem, "DB2 transaction started", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -86,38 +73,22 @@ bool db2_commit_transaction(DatabaseHandle* connection, Transaction* transaction
 
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
 
-    // Commit transaction using SQLEndTran with timeout protection
+    // Commit transaction using SQLEndTran (connection-level timeout handles timing)
     if (SQLEndTran_ptr) {
-        time_t start_time = time(NULL);
         int result = SQLEndTran_ptr(SQL_HANDLE_DBC, db2_conn->connection, SQL_COMMIT);
-        
-        // Check if commit took too long
-        if (db2_check_timeout_expired(start_time, 10)) {
-            log_this(log_subsystem, "DB2 COMMIT execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
-            return false;
-        }
-        
+
         if (result != SQL_SUCCESS) {
             log_this(log_subsystem, "DB2 SQLEndTran commit failed", LOG_LEVEL_ERROR, 0);
             return false;
         }
     }
 
-    // Restore auto-commit with timeout protection
-    if (SQLSetConnectAttr_ptr) {
-        time_t restore_time = time(NULL);
-        SQLSetConnectAttr_ptr(db2_conn->connection, SQL_ATTR_AUTOCOMMIT, (long)SQL_AUTOCOMMIT_ON, 0);
-        
-        // Check if restore took too long
-        if (db2_check_timeout_expired(restore_time, 5)) {
-            log_this(log_subsystem, "DB2 AUTOCOMMIT restore execution time exceeded 5 seconds", LOG_LEVEL_ERROR, 0);
-        }
-    }
+    // Auto-commit remains OFF - no need to restore
 
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    log_this(log_subsystem, "DB2 transaction committed (auto-commit restored)", LOG_LEVEL_TRACE, 0);
+    log_this(log_subsystem, "DB2 transaction committed", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -133,37 +104,21 @@ bool db2_rollback_transaction(DatabaseHandle* connection, Transaction* transacti
 
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
 
-    // Rollback transaction using SQLEndTran with timeout protection
+    // Rollback transaction using SQLEndTran (connection-level timeout handles timing)
     if (SQLEndTran_ptr) {
-        time_t start_time = time(NULL);
         int result = SQLEndTran_ptr(SQL_HANDLE_DBC, db2_conn->connection, SQL_ROLLBACK);
-        
-        // Check if rollback took too long
-        if (db2_check_timeout_expired(start_time, 10)) {
-            log_this(log_subsystem, "DB2 ROLLBACK execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
-            return false;
-        }
-        
+
         if (result != SQL_SUCCESS) {
             log_this(log_subsystem, "DB2 SQLEndTran rollback failed", LOG_LEVEL_ERROR, 0);
             return false;
         }
     }
 
-    // Restore auto-commit with timeout protection
-    if (SQLSetConnectAttr_ptr) {
-        time_t restore_time = time(NULL);
-        SQLSetConnectAttr_ptr(db2_conn->connection, SQL_ATTR_AUTOCOMMIT, (long)SQL_AUTOCOMMIT_ON, 0);
-        
-        // Check if restore took too long
-        if (db2_check_timeout_expired(restore_time, 5)) {
-            log_this(log_subsystem, "DB2 AUTOCOMMIT restore execution time exceeded 5 seconds", LOG_LEVEL_ERROR, 0);
-        }
-    }
+    // Auto-commit remains OFF - no need to restore
 
     transaction->active = false;
     connection->current_transaction = NULL;
 
-    log_this(log_subsystem, "DB2 transaction rolled back (auto-commit restored)", LOG_LEVEL_TRACE, 0);
+    log_this(log_subsystem, "DB2 transaction rolled back", LOG_LEVEL_TRACE, 0);
     return true;
 }

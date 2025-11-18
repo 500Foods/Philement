@@ -54,3 +54,6 @@ docs/metrics/*
 
 # Let's not worry about this guy so much
 CURIOSITIES.md
+
+# We'll have a lot of SVG files, but they're just padding numbers unnecessarily
+images/acuranzo

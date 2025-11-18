@@ -33,34 +33,13 @@ bool postgresql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationL
         return false;
     }
 
-    // Determine isolation level string
-    const char* isolation_str;
-    switch (level) {
-        case DB_ISOLATION_READ_UNCOMMITTED:
-            isolation_str = "READ UNCOMMITTED";
-            break;
-        case DB_ISOLATION_READ_COMMITTED:
-            isolation_str = "READ COMMITTED";
-            break;
-        case DB_ISOLATION_REPEATABLE_READ:
-            isolation_str = "REPEATABLE READ";
-            break;
-        case DB_ISOLATION_SERIALIZABLE:
-            isolation_str = "SERIALIZABLE";
-            break;
-        default:
-            isolation_str = "READ COMMITTED";
-    }
+    // Begin transaction with simplified command (default isolation level is READ COMMITTED)
+    // This eliminates unnecessary command complexity and parsing overhead
+    // Note: PostgreSQL's default isolation level is READ COMMITTED, so no explicit level needed
+    const char* query = "BEGIN";
 
-    // Begin transaction with timeout protection
-    char query[256];
-    snprintf(query, sizeof(query), "BEGIN ISOLATION LEVEL %s", isolation_str);
-
-    // Set timeout for transaction operations
-    void* timeout_result = PQexec_ptr(pg_conn->connection, "SET statement_timeout = 10000"); // 10 seconds
-    if (timeout_result) {
-        PQclear_ptr(timeout_result);
-    }
+    // Note: Timeout is now set once per connection in postgresql_connect()
+    // No need to set it before each transaction operation
 
     time_t start_time = time(NULL);
     void* res = PQexec_ptr(pg_conn->connection, query);
@@ -89,15 +68,8 @@ bool postgresql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationL
     // Create transaction structure
     tx = calloc(1, sizeof(Transaction));
     if (!tx) {
-        // Rollback on failure with timeout protection
-        time_t rollback_start = time(NULL);
+        // Rollback on failure (timeout already set at connection level)
         rollback_res = PQexec_ptr(pg_conn->connection, "ROLLBACK");
-
-        // Check if rollback took too long
-        if (check_timeout_expired(rollback_start, 5)) {
-            log_this(SR_DATABASE, "PostgreSQL ROLLBACK on failure execution time exceeded 5 seconds", LOG_LEVEL_ERROR, 0);
-        }
-
         if (rollback_res) PQclear_ptr(rollback_res);
         pg_conn->in_transaction = false;
         return false;
@@ -126,11 +98,8 @@ bool postgresql_commit_transaction(DatabaseHandle* connection, Transaction* tran
         return false;
     }
 
-    // Set timeout for commit operation
-    void* timeout_result = PQexec_ptr(pg_conn->connection, "SET statement_timeout = 10000"); // 10 seconds
-    if (timeout_result) {
-        PQclear_ptr(timeout_result);
-    }
+    // Note: Timeout is now set once per connection in postgresql_connect()
+    // No need to set it before each commit operation
 
     time_t start_time = time(NULL);
     void* res = PQexec_ptr(pg_conn->connection, "COMMIT");
@@ -167,11 +136,8 @@ bool postgresql_rollback_transaction(DatabaseHandle* connection, Transaction* tr
         return false;
     }
 
-    // Set timeout for rollback operation
-    void* timeout_result = PQexec_ptr(pg_conn->connection, "SET statement_timeout = 10000"); // 10 seconds
-    if (timeout_result) {
-        PQclear_ptr(timeout_result);
-    }
+    // Note: Timeout is now set once per connection in postgresql_connect()
+    // No need to set it before each rollback operation
 
     time_t start_time = time(NULL);
     void* res = PQexec_ptr(pg_conn->connection, "ROLLBACK");

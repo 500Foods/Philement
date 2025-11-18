@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <src/database/database_json.h>
 
 /**
  * Retrieve column name from statement handle with fallback to generic name

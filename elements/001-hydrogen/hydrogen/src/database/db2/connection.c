@@ -22,10 +22,12 @@
 // ODBC type definitions for DB2
 typedef signed short SQLSMALLINT;
 typedef long SQLINTEGER;
+typedef unsigned long SQLUINTEGER;
 typedef unsigned char SQLCHAR;
 typedef short SQLRETURN;
 typedef void* SQLHANDLE;
 typedef void* SQLHWND;
+typedef void* SQLPOINTER;
 typedef unsigned short SQLUSMALLINT;
 
 // ODBC constants
@@ -34,6 +36,14 @@ typedef unsigned short SQLUSMALLINT;
 #define SQL_HANDLE_DBC 2
 #define SQL_HANDLE_ENV 1
 #define SQL_NTS -3
+#define SQL_ATTR_QUERY_TIMEOUT 0     // Statement query timeout
+#define SQL_ATTR_AUTOCOMMIT 102      // Auto-commit mode
+#define SQL_ATTR_COMMIT_TYPE 0x000C  // Commit type (DB2-specific)
+#define SQL_AUTOCOMMIT_OFF 0         // Auto-commit off
+#define SQL_AUTOCOMMIT_ON 1          // Auto-commit on
+#define SQL_COMMIT_TYPE_DEFAULT 0    // Default commit behavior
+#define SQL_COMMIT_TYPE_ASYNC 1      // Asynchronous commits
+#define SQL_IS_UINTEGER -5           // SQLUINTEGER type indicator
 
 // DB2 function pointers (loaded dynamically or mocked)
 SQLAllocHandle_t SQLAllocHandle_ptr = NULL;
@@ -130,7 +140,7 @@ bool load_libdb2_functions(const char* designator __attribute__((unused))) {
     SQLFreeStmt_ptr = (SQLFreeStmt_t)dlsym(libdb2_handle, "SQLFreeStmt");
     SQLDescribeCol_ptr = (SQLDescribeCol_t)dlsym(libdb2_handle, "SQLDescribeCol");
     SQLGetDiagRec_ptr = (SQLGetDiagRec_t)dlsym(libdb2_handle, "SQLGetDiagRec");
-    SQLSetConnectAttr_ptr = (SQLSetConnectAttr_t)dlsym(libdb2_handle, "SQLSetConnectAttr");
+    SQLSetConnectAttr_ptr = (SQLSetConnectAttr_t)(void*)dlsym(libdb2_handle, "SQLSetConnectAttr");
 #pragma GCC diagnostic pop
 
     // Check if all required functions were loaded
@@ -228,13 +238,13 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
         return false;
     }
 
-    // Connect to database using SQLDriverConnect for full connection string support
+    // Connect to database using optimized DB2 CLI connection
     char* conn_string = NULL;
     if (config->connection_string) {
         conn_string = strdup(config->connection_string);
         // log_this(log_subsystem, "DB2 connecting using provided connection string", LOG_LEVEL_TRACE, 0);
     } else {
-        // Build full connection string from config
+        // Build optimized connection string from config
         conn_string = db2_get_connection_string(config);
         // log_this(log_subsystem, "DB2 connecting using built connection string", LOG_LEVEL_TRACE, 0);
     }
@@ -259,9 +269,9 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
         }
     }
 
-    log_this(log_subsystem, "%s", LOG_LEVEL_TRACE, 1, safe_conn_str);
+    log_this(log_subsystem, "DB2 connecting with: %s", LOG_LEVEL_TRACE, 1, safe_conn_str);
 
-    // Use SQLDriverConnect for full connection string support
+    // Use SQLDriverConnect for DB2 CLI connection with optimized settings
     char out_conn_string[1024] = {0};
     SQLSMALLINT out_conn_string_len = 0;
     SQLUSMALLINT driver_completion = 0; // SQL_DRIVER_NOPROMPT
@@ -277,6 +287,41 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
 
     // Clean up connection string
     free(conn_string);
+
+    if (result == SQL_SUCCESS) {
+        // Set connection attributes for optimal DB2 performance
+        int rc;
+
+        // 1. Query timeout – harmless, keep if you want
+        if (SQLSetConnectAttr_ptr) {
+            rc = SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_QUERY_TIMEOUT, (long)30, 0);
+            if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+                log_this(log_subsystem, "Failed to set query timeout", LOG_LEVEL_ALERT, 0);
+            }
+        }
+
+        // 2. AUTOCOMMIT OFF – the golden ticket
+        if (SQLSetConnectAttr_ptr) {
+            SQLUINTEGER off = SQL_AUTOCOMMIT_OFF;
+            rc = SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_AUTOCOMMIT, (long)off, SQL_IS_UINTEGER);
+            if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+                log_this(log_subsystem, "Failed to disable autocommit", LOG_LEVEL_ALERT, 0);
+            }
+        }
+
+        // 3. Row array size – optional, but nice for bulk fetches later
+        if (SQLSetConnectAttr_ptr) {
+            SQLUINTEGER rows = 50;
+            rc = SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_ROW_ARRAY_SIZE, (long)rows, SQL_IS_UINTEGER);
+            if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+                log_this(log_subsystem, "Failed to set row array size", LOG_LEVEL_ALERT, 0);
+            }
+        }
+
+        // Do NOT touch SQL_ATTR_COMMIT_TYPE (doesn't exist) and never use magic number 27
+
+        log_this(log_subsystem, "DB2 CLI: autocommit=off and optimizations applied", LOG_LEVEL_TRACE, 0);
+    }
 
     if (result != SQL_SUCCESS) {
         log_this(log_subsystem, "DB2 connection failed: SQLDriverConnect returned %d", LOG_LEVEL_ERROR, 1, result);

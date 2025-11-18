@@ -322,6 +322,13 @@ bool postgresql_connect(ConnectionConfig* config, DatabaseHandle** connection, c
         return false;
     }
 
+    // Set connection-level statement timeout (30 seconds for all operations)
+    // This eliminates the need to set timeouts before each individual operation
+    void* timeout_result = PQexec_ptr(pg_conn, "SET statement_timeout = 30000");
+    if (timeout_result) {
+        PQclear_ptr(timeout_result);
+    }
+
     // Create database handle
     DatabaseHandle* db_handle = calloc(1, sizeof(DatabaseHandle));
     if (!db_handle) {
@@ -381,6 +388,8 @@ bool postgresql_disconnect(DatabaseHandle* connection) {
     PostgresConnection* pg_conn = (PostgresConnection*)connection->connection_handle;
     if (pg_conn) {
         if (pg_conn->connection) {
+            // PostgreSQL automatically deallocates all prepared statements when connection closes
+            // No explicit cleanup needed - this eliminates hundreds of DEALLOCATE operations per migration
             PQfinish_ptr(pg_conn->connection);
         }
         destroy_prepared_statement_cache(pg_conn->prepared_statements);
