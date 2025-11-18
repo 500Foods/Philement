@@ -7,7 +7,7 @@
 #   make test DB=HYDROTST                   # run tests again
 #   make clean
 
-DB2DIR ?= /opt/ibm/db2/V11.1
+DB2DIR ?= /opt/ibm/db2/V12.1
 SCHEMA  ?= TEST
 DB      ?= HYDROTST
 
