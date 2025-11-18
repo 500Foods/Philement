@@ -214,8 +214,8 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
     }
 
     if (PQresultStatus_ptr(res) != PGRES_COMMAND_OK) {
-        log_this(SR_DATABASE, "PostgreSQL DEALLOCATE failed", LOG_LEVEL_ERROR, 0);
-        log_this(SR_DATABASE, PQerrorMessage_ptr(pg_conn->connection), LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "PostgreSQL DEALLOCATE failed", LOG_LEVEL_TRACE, 0);
+        log_this(SR_DATABASE, PQerrorMessage_ptr(pg_conn->connection), LOG_LEVEL_TRACE, 0);
         PQclear_ptr(res);
         return false;
     }
