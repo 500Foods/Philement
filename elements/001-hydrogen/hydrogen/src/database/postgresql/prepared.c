@@ -23,7 +23,7 @@ extern PQerrorMessage_t PQerrorMessage_ptr;
 
 // Forward declarations for utility functions
 bool postgresql_initialize_prepared_statement_cache(DatabaseHandle* connection, size_t cache_size);
-bool postgresql_evict_lru_prepared_statement(DatabaseHandle* connection, PostgresConnection* pg_conn, const char* new_stmt_name);
+bool postgresql_evict_lru_prepared_statement(DatabaseHandle* connection, const PostgresConnection* pg_conn, const char* new_stmt_name);
 bool postgresql_add_prepared_statement_to_cache(DatabaseHandle* connection, PreparedStatement* stmt, size_t cache_size);
 
 // Utility functions for prepared statement cache management
@@ -48,7 +48,7 @@ bool postgresql_initialize_prepared_statement_cache(DatabaseHandle* connection, 
     return true;
 }
 
-bool postgresql_evict_lru_prepared_statement(DatabaseHandle* connection, PostgresConnection* pg_conn, const char* new_stmt_name) {
+bool postgresql_evict_lru_prepared_statement(DatabaseHandle* connection, const PostgresConnection* pg_conn, const char* new_stmt_name) {
     if (!connection || !pg_conn || !pg_conn->connection) return false;
 
     // Find least recently used prepared statement (lowest LRU counter)
@@ -65,12 +65,8 @@ bool postgresql_evict_lru_prepared_statement(DatabaseHandle* connection, Postgre
     // Evict the LRU prepared statement
     PreparedStatement* evicted_stmt = connection->prepared_statements[lru_index];
     if (evicted_stmt) {
-        // Clean up the evicted statement - deallocate from database
-        char dealloc_query[256];
-        snprintf(dealloc_query, sizeof(dealloc_query), "DEALLOCATE %s", evicted_stmt->name);
-        void* dealloc_res = PQexec_ptr(pg_conn->connection, dealloc_query);
-        if (dealloc_res) PQclear_ptr(dealloc_res);
-
+        // PostgreSQL automatically deallocates prepared statements when connection closes
+        // No explicit DEALLOCATE needed during LRU eviction
         free(evicted_stmt->name);
         free(evicted_stmt->sql_template);
         free(evicted_stmt);
@@ -92,7 +88,7 @@ bool postgresql_add_prepared_statement_to_cache(DatabaseHandle* connection, Prep
 
     // Check if cache is full - implement LRU eviction if needed
     if (connection->prepared_statement_count >= cache_size) {
-        PostgresConnection* pg_conn = (PostgresConnection*)connection->connection_handle;
+        const PostgresConnection* pg_conn = (const PostgresConnection*)connection->connection_handle;
         if (!postgresql_evict_lru_prepared_statement(connection, pg_conn, stmt->name)) {
             return false;
         }
@@ -116,18 +112,15 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
         return false;
     }
 
-    PostgresConnection* pg_conn = (PostgresConnection*)connection->connection_handle;
+    const PostgresConnection* pg_conn = (const PostgresConnection*)connection->connection_handle;
     if (!pg_conn || !pg_conn->connection) {
         return false;
     }
 
-    // Set timeout for prepare operation
-    void* timeout_result = PQexec_ptr(pg_conn->connection, "SET statement_timeout = 15000"); // 15 seconds
-    if (timeout_result) {
-        PQclear_ptr(timeout_result);
-    }
+    // Note: Timeout is now set once per connection in postgresql_connect()
+    // No need to set it before each PREPARE operation
 
-    // Prepare the statement with timeout protection
+    // Prepare the statement (timeout already set at connection level)
     time_t start_time = time(NULL);
     void* res = PQprepare_ptr(pg_conn->connection, name, sql, 0, NULL);
 
@@ -149,27 +142,8 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
     // Create prepared statement structure
     PreparedStatement* prepared_stmt = calloc(1, sizeof(PreparedStatement));
     if (!prepared_stmt) {
-        // Cleanup with timeout protection
-        char dealloc_query[256];
-        snprintf(dealloc_query, sizeof(dealloc_query), "DEALLOCATE %s", name);
-
-        {
-            // Set timeout for deallocate operation
-            void* stmt_timeout_result = PQexec_ptr(pg_conn->connection, "SET statement_timeout = 5000"); // 5 seconds
-            if (stmt_timeout_result) {
-                PQclear_ptr(stmt_timeout_result);
-            }
-
-            time_t dealloc_start = time(NULL);
-            void* dealloc_res = PQexec_ptr(pg_conn->connection, dealloc_query);
-
-            // Check if dealloc took too long
-            if (check_timeout_expired(dealloc_start, 5)) {
-                log_this(SR_DATABASE, "PostgreSQL DEALLOCATE on prepared statement failure execution time exceeded 5 seconds", LOG_LEVEL_ERROR, 0);
-            }
-
-            if (dealloc_res) PQclear_ptr(dealloc_res);
-        }
+        // PostgreSQL automatically deallocates prepared statements when connection closes
+        // No explicit DEALLOCATE needed in error cleanup
         return false;
     }
 
@@ -193,11 +167,8 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
             free(prepared_stmt->name);
             free(prepared_stmt->sql_template);
             free(prepared_stmt);
-            // Cleanup with timeout protection
-            char dealloc_query[256];
-            snprintf(dealloc_query, sizeof(dealloc_query), "DEALLOCATE %s", name);
-            void* dealloc_res = PQexec_ptr(pg_conn->connection, dealloc_query);
-            if (dealloc_res) PQclear_ptr(dealloc_res);
+            // PostgreSQL automatically deallocates prepared statements when connection closes
+            // No explicit DEALLOCATE needed in error cleanup
             return false;
         }
     }
@@ -207,11 +178,8 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
         free(prepared_stmt->name);
         free(prepared_stmt->sql_template);
         free(prepared_stmt);
-        // Cleanup with timeout protection
-        char dealloc_query[256];
-        snprintf(dealloc_query, sizeof(dealloc_query), "DEALLOCATE %s", name);
-        void* dealloc_res = PQexec_ptr(pg_conn->connection, dealloc_query);
-        if (dealloc_res) PQclear_ptr(dealloc_res);
+        // PostgreSQL automatically deallocates prepared statements when connection closes
+        // No explicit DEALLOCATE needed in error cleanup
         return false;
     }
 
@@ -226,33 +194,28 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
         return false;
     }
 
-    PostgresConnection* pg_conn = (PostgresConnection*)connection->connection_handle;
+    const PostgresConnection* pg_conn = (const PostgresConnection*)connection->connection_handle;
     if (!pg_conn || !pg_conn->connection) {
         return false;
     }
 
-    // Deallocate from database with timeout protection
-    char dealloc_query[256];
-    snprintf(dealloc_query, sizeof(dealloc_query), "DEALLOCATE %s", stmt->name);
-
-    // Set timeout for deallocate operation
-    void* timeout_result = PQexec_ptr(pg_conn->connection, "SET statement_timeout = 10000"); // 10 seconds
-    if (timeout_result) {
-        PQclear_ptr(timeout_result);
-    }
+    // Execute DEALLOCATE to explicitly deallocate the prepared statement
+    char deallocate_query[256];
+    snprintf(deallocate_query, sizeof(deallocate_query), "DEALLOCATE %s", stmt->name);
 
     time_t start_time = time(NULL);
-    void* res = PQexec_ptr(pg_conn->connection, dealloc_query);
+    void* res = PQexec_ptr(pg_conn->connection, deallocate_query);
 
-    // Check if dealloc took too long
-    if (check_timeout_expired(start_time, 10)) {
-        log_this(SR_DATABASE, "PostgreSQL DEALLOCATE execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
+    // Check if deallocate took too long
+    if (check_timeout_expired(start_time, 15)) {
+        log_this(SR_DATABASE, "PostgreSQL DEALLOCATE execution time exceeded 15 seconds", LOG_LEVEL_ERROR, 0);
         if (res) PQclear_ptr(res);
         return false;
     }
 
     if (PQresultStatus_ptr(res) != PGRES_COMMAND_OK) {
-        log_this(SR_DATABASE, "PostgreSQL DEALLOCATE failed", LOG_LEVEL_TRACE, 0);
+        log_this(SR_DATABASE, "PostgreSQL DEALLOCATE failed", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, PQerrorMessage_ptr(pg_conn->connection), LOG_LEVEL_ERROR, 0);
         PQclear_ptr(res);
         return false;
     }
@@ -276,6 +239,6 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
     free(stmt->sql_template);
     free(stmt);
 
-    log_this(SR_DATABASE, "PostgreSQL prepared statement removed", LOG_LEVEL_TRACE, 0);
+    log_this(SR_DATABASE, "PostgreSQL prepared statement deallocated and removed", LOG_LEVEL_TRACE, 0);
     return true;
 }
