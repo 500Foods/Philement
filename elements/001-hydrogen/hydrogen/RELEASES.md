@@ -61,7 +61,25 @@ Remember:
 - Group by topic to maintain clarity
 -->
 
+- November 2025
+  - [2025-Nov-18 (Tue)](docs/releases/2025-11/2025-11-18.md): Database JSON handling and query enhancements
+  - [2025-Nov-16 (Sun)](docs/releases/2025-11/2025-11-16.md): Database diagram testing and migration load testing
+  - [2025-Nov-15 (Sat)](docs/releases/2025-11/2025-11-15.md): SQLite connection and type enhancements
+  - [2025-Nov-14 (Fri)](docs/releases/2025-11/2025-11-14.md): Diagram generation and DB2 UDF enhancements
+  - [2025-Nov-13 (Thu)](docs/releases/2025-11/2025-11-13.md): DB2 base64 UDF and API conduit updates
+  - [2025-Nov-11 (Tue)](docs/releases/2025-11/2025-11-11.md): Swagger and database parameter enhancements
+  - [2025-Nov-10 (Mon)](docs/releases/2025-11/2025-11-10.md): Launch subsystem unit testing expansion
+  - [2025-Nov-09 (Sun)](docs/releases/2025-11/2025-11-09.md): Comprehensive database unit testing expansion
+  - [2025-Nov-08 (Sat)](docs/releases/2025-11/2025-11-08.md): Logging, mutex, and testing framework enhancements
+  - [2025-Nov-07 (Fri)](docs/releases/2025-11/2025-11-07.md): Database engine and queue management updates
+  - [2025-Nov-06 (Thu)](docs/releases/2025-11/2025-11-06.md): Database migration execution and engine updates
+  - [2025-Nov-05 (Wed)](docs/releases/2025-11/2025-11-05.md): Database queue migration operations
+  - [2025-Nov-04 (Tue)](docs/releases/2025-11/2025-11-04.md): Database pending operations and parameters
+  - [2025-Nov-03 (Mon)](docs/releases/2025-11/2025-11-03.md): Database connection and caching enhancements
+
 - October 2025
+  - [2025-Oct-30 (Thu)](docs/releases/2025-10/2025-10-30.md): Database query implementation updates
+  - [2025-Oct-29 (Wed)](docs/releases/2025-10/2025-10-29.md): Database migration system enhancements
   - [2025-Oct-25 (Fri)](docs/releases/2025-10/2025-10-25.md): Database bootstrap coverage completion
   - [2025-Oct-23 (Thu)](docs/releases/2025-10/2025-10-23.md): CONDUIT query coverage completion
   - [2025-Oct-22 (Wed)](docs/releases/2025-10/2025-10-22.md): CONDUIT query coverage improvements
