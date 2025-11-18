@@ -5,7 +5,7 @@
 #include <src/hydrogen.h>
 #include <string.h>
 #include <stdlib.h>
-#include "database_json.h"
+#include "database_serialize.h"
 
 // JSON string escaping - escapes quotes, backslashes, and control characters
 int database_json_escape_string(const char* input, char* output, size_t output_size) {

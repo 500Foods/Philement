@@ -15,7 +15,7 @@
 #include <unity.h>
 
 // Include necessary headers for the module being tested
-#include <src/database/database_json.h>
+#include <src/database/database_serialize.h>
 
 // Forward declarations for functions being tested
 bool database_json_ensure_buffer_capacity(char** buffer, size_t current_size,

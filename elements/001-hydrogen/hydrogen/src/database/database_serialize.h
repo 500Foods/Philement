@@ -4,8 +4,8 @@
  * Provides consistent JSON formatting across all database engines.
  */
 
-#ifndef DATABASE_JSON_H
-#define DATABASE_JSON_H
+#ifndef DATABASE_SERIALIZE_H
+#define DATABASE_SERIALIZE_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -21,4 +21,4 @@ bool database_json_format_value(const char* column_name, const char* value, bool
 bool database_json_ensure_buffer_capacity(char** buffer, size_t current_size,
                                          size_t* capacity, size_t needed_size);
 
-#endif // DATABASE_JSON_H
+#endif // DATABASE_SERIALIZE_H

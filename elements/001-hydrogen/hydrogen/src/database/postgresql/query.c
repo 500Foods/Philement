@@ -7,7 +7,7 @@
 // Project includes
 #include <src/hydrogen.h>
 #include <src/database/database.h>
-#include <src/database/database_json.h>
+#include <src/database/database_serialize.h>
 #include <src/database/dbqueue/dbqueue.h>
 
 // Local includes

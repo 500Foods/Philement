@@ -15,7 +15,7 @@
 #include <unity.h>
 
 // Include necessary headers for the module being tested
-#include <src/database/database_json.h>
+#include <src/database/database_serialize.h>
 
 // Forward declarations for functions being tested
 bool database_json_format_value(const char* column_name, const char* value, bool is_numeric, bool is_null,
