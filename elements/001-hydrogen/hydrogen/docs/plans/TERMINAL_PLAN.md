@@ -2,7 +2,7 @@
 
 ## REQUIRED: Complete understanding required
 
-- [**RECIPE.md**](../..//RECIPE.md) - Critical development guide with C programming requirements, build configurations, and Hydrogen development patterns
+- [**INSTRUCTIONS.md**](../..//INSTRUCTIONS.md) - Critical development guide with C programming requirements, build configurations, and Hydrogen development patterns
 - [**README.md**](../..//README.md) - Project overview, architecture, and testing status information
 - [**tests/README.md**](../../tests/README.md) - Complete testing framework documentation and test suite structure
 
@@ -16,7 +16,7 @@
 
 ## Hydrogen System Architecture Essentials
 
-- **C Programming Style**: Strict following of RECIPE.md requirements (GOTO-free, function prototypes, commenting conventions)
+- **C Programming Style**: Strict following of INSTRUCTIONS.md requirements (GOTO-free, function prototypes, commenting conventions)
 - **Subsystem Pattern**: Launch/landing initialization cycle (Registry → Payload → Threads → Network → Database → Logging → WebServer → API → Swagger → WebSocket → Terminal)
 - **Configuration Management**: JSON files with `${ENV_VAR}` substitution, environment-aware defaults
 - **Memory Management**: Comprehensive cleanup required, no leaks (test_11_leaks_like_a_sieve validates)
@@ -94,7 +94,7 @@
 - [ ] C compilation with all Hydrogen dependencies (see SETUP.md)
 - [ ] MicroHTTPd development understanding (see cmake CMakeLists.txt)
 - [ ] Testing framework familiarity (see tests/test_00_all.sh patterns)
-- [ ] Build system operation (see cmake/README.md and RECIPE.md `mkt` process)
+- [ ] Build system operation (see cmake/README.md and INSTRUCTIONS.md `mkt` process)
 - [ ] Bash scripting for payload generation (see payloads/*.sh patterns)
 
 ### Suggested Code Review Priority Order
@@ -110,7 +110,7 @@
 
 - **Critical Build Rule**: `mkt` (extras/make-trial.sh) is ONLY supported build method
 - **Compilation Errors**: Fix with `mkt` before any commits or completion
-- **Code Standards**: Follow RECIPE.md C requirements (prototypes, commenting, GOTO-free)
+- **Code Standards**: Follow INSTRUCTIONS.md C requirements (prototypes, commenting, GOTO-free)
 - **Documentation**: Update docs on functionality completion (following Structure.md patterns)
 - **Testing**: Run `mkt` successfully before full test suite validation
 
@@ -190,7 +190,7 @@ Implementation of xterm.js-based terminal subsystem for Hydrogen, providing web-
 
 ```directory
 elements/001-hydrogen/hydrogen/
-├── RECIPE.md                                    # Existing project guide
+├── INSTRUCTIONS.md                                    # Existing project guide
 ├── TERMINAL_PLAN.md                             # This plan document
 ├── payloads/
 │   ├── payload-generate.sh                      # Updated to include terminal

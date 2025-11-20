@@ -14,7 +14,7 @@ This is for the AI Model to use to resolve these failing tests.
 
 ### Review Background information
 
-- Review RECIPE.md
+- Review INSTRUCTIONS.md
 - Review tests/README.md
 - Review tests/UNITY.md
 
