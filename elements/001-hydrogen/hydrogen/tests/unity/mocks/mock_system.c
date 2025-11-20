@@ -111,6 +111,9 @@ void mock_system_set_waitpid_result(pid_t result);
 void mock_system_set_waitpid_status(int status);
 void mock_system_set_kill_failure(int should_fail);
 void mock_system_set_close_failure(int should_fail);
+void mock_system_set_sem_init_failure(int should_fail);
+void mock_system_set_fork_failure(int should_fail);
+void mock_system_set_read_eagain(int should_return_eagain);
 void mock_system_reset_all(void);
 
 // Global variables to store mock state - shared across all object files
@@ -135,9 +138,11 @@ int mock_access_result = 0;
 int mock_openpty_should_fail = 0;
 int mock_fcntl_should_fail = 0;
 pid_t mock_fork_result = 0;
+int mock_fork_should_fail = 0;
 int mock_ioctl_should_fail = 0;
 ssize_t mock_read_result = 0;
 int mock_read_should_fail = 0;
+int mock_read_should_return_eagain = 0;
 ssize_t mock_write_result = 0;
 int mock_write_should_fail = 0;
 pid_t mock_waitpid_result = 0;
@@ -348,6 +353,10 @@ void mock_system_set_fork_result(pid_t result) {
     mock_fork_result = result;
 }
 
+void mock_system_set_fork_failure(int should_fail) {
+    mock_fork_should_fail = should_fail;
+}
+
 void mock_system_set_ioctl_failure(int should_fail) {
     mock_ioctl_should_fail = should_fail;
 }
@@ -358,6 +367,10 @@ void mock_system_set_read_result(ssize_t result) {
 
 void mock_system_set_read_should_fail(int should_fail) {
     mock_read_should_fail = should_fail;
+}
+
+void mock_system_set_read_eagain(int should_return_eagain) {
+    mock_read_should_return_eagain = should_return_eagain;
 }
 
 void mock_system_set_write_result(ssize_t result) {
@@ -407,9 +420,11 @@ void mock_system_reset_all(void) {
     mock_openpty_should_fail = 0;
     mock_fcntl_should_fail = 0;
     mock_fork_result = 0;
+    mock_fork_should_fail = 0;
     mock_ioctl_should_fail = 0;
     mock_read_result = 0;
     mock_read_should_fail = 0;
+    mock_read_should_return_eagain = 0;
     mock_write_result = 0;
     mock_write_should_fail = 0;
     mock_waitpid_result = 0;
@@ -490,6 +505,10 @@ int mock_fcntl(int fd, int cmd, ...) {
 
 // Mock implementation of fork
 pid_t mock_fork(void) {
+    if (mock_fork_should_fail) {
+        errno = EAGAIN;  // Common fork failure errno
+        return -1;
+    }
     return mock_fork_result;
 }
 
@@ -511,7 +530,13 @@ ssize_t mock_read(int fd, void *buf, size_t count) {
     (void)buf;  // Suppress unused parameter
     (void)count; // Suppress unused parameter
 
+    if (mock_read_should_return_eagain) {
+        errno = EAGAIN;
+        return -1;
+    }
+
     if (mock_read_should_fail) {
+        errno = EBADF;  // Bad file descriptor
         return -1;
     }
 

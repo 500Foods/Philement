@@ -1,31 +1,26 @@
 /*
- * Terminal PTY Shell Spawning
+ * Terminal PTY Shell Management
  *
- * This module handles PTY (pseudo-terminal) creation and shell process spawning.
- * It provides functions to create PTY pairs and spawn shell processes.
+ * This module handles PTY (pseudo-terminal) creation, shell process spawning,
+ * and I/O operations. It provides functions for creating PTY pairs, spawning
+ * shell processes, and managing data flow between terminals and shells.
  */
 
-#include "terminal_shell.h"
+// System includes
+#include <pty.h>
+#include <sys/wait.h>
+
+ // Project includes
 #include <src/hydrogen.h>
 #include <src/globals.h>
 #include <src/logging/logging.h>
 #include <src/utils/utils.h>
+                    
+// Local includes
 #include "terminal.h"
 #include "terminal_session.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <pty.h>
-#include <utmp.h>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <signal.h>
-
+#include "terminal_shell.h"
+                 
 /**
  * Create and configure a PTY pair
  *
@@ -109,6 +104,29 @@ void setup_child_process(const char *shell_command, int slave_fd, int master_fd)
 }
 
 /**
+ * Clean up PTY resources on error during spawn
+ *
+ * @param master_fd Master file descriptor to close
+ * @param slave_fd Slave file descriptor to close
+ * @param slave_name Slave name string to free
+ * @param shell Shell structure to free
+ */
+void cleanup_pty_resources(int master_fd, int slave_fd, char *slave_name, PtyShell *shell) {
+    if (master_fd >= 0) {
+        close(master_fd);
+    }
+    if (slave_fd >= 0) {
+        close(slave_fd);
+    }
+    if (slave_name) {
+        free(slave_name);
+    }
+    if (shell) {
+        free(shell);
+    }
+}
+
+/**
  * Spawn a new shell process using PTY
  *
  * This function creates a new pseudo-terminal pair, forks a child process,
@@ -140,7 +158,7 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
     char slave_name[256];
 
     if (!create_pty_pair(&master_fd, &shell->slave_fd, slave_name)) {
-        free(shell);
+        cleanup_pty_resources(-1, -1, NULL, shell);
         return NULL;
     }
 
@@ -149,18 +167,13 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
     shell->slave_name = strdup(slave_name);
     if (!shell->slave_name) {
         log_this(SR_TERMINAL, "Failed to allocate slave name", LOG_LEVEL_ERROR, 0);
-        close(master_fd);
-        close(shell->slave_fd);
-        free(shell);
+        cleanup_pty_resources(master_fd, shell->slave_fd, NULL, shell);
         return NULL;
     }
 
     // Make master FD non-blocking
     if (!configure_master_fd(master_fd)) {
-        close(master_fd);
-        close(shell->slave_fd);
-        free(shell->slave_name);
-        free(shell);
+        cleanup_pty_resources(master_fd, shell->slave_fd, shell->slave_name, shell);
         return NULL;
     }
 
@@ -168,10 +181,7 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
     pid_t pid = fork();
     if (pid == -1) {
         log_this(SR_TERMINAL, "Fork failed: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
-        close(master_fd);
-        close(shell->slave_fd);
-        free(shell->slave_name);
-        free(shell);
+        cleanup_pty_resources(master_fd, shell->slave_fd, shell->slave_name, shell);
         return NULL;
     }
 
@@ -194,9 +204,7 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
         if (result == pid) {
         if (WIFEXITED(status) || WIFSIGNALED(status)) {
             log_this(SR_TERMINAL, "Shell process terminated prematurely", LOG_LEVEL_ERROR, 0);
-                close(master_fd);
-                free(shell->slave_name);
-                free(shell);
+                cleanup_pty_resources(master_fd, -1, shell->slave_name, shell);
                 return NULL;
             }
         }
@@ -205,6 +213,143 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
     }
 
     return shell;
+}
+
+/**
+ * Send data to the PTY master (towards the shell)
+ *
+ * @param shell Pointer to PtyShell structure
+ * @param data Buffer containing data to send
+ * @param size Size of data buffer
+ * @return Number of bytes written, or -1 on error
+ */
+int pty_write_data(PtyShell *shell, const char *data, size_t size) {
+    if (!shell || !shell->running || !data || size == 0) {
+        return -1;
+    }
+
+    ssize_t written = write(shell->master_fd, data, size);
+    if (written == -1) {
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            log_this(SR_TERMINAL, "Failed to write to PTY: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
+        }
+        return -1;
+    }
+
+    return (int)written;
+}
+
+/**
+ * Read data from the PTY master (from the shell)
+ *
+ * @param shell Pointer to PtyShell structure
+ * @param buffer Buffer to store read data
+ * @param size Size of buffer
+ * @return Number of bytes read, 0 on EWOULDBLOCK, or -1 on error
+ */
+int pty_read_data(PtyShell *shell, char *buffer, size_t size) {
+    if (!shell || !shell->running || !buffer || size == 0) {
+        return -1;
+    }
+
+    ssize_t read_bytes = read(shell->master_fd, buffer, size);
+    if (read_bytes == -1) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return 0; // No data available
+        } else {
+            log_this(SR_TERMINAL, "Failed to read from PTY: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
+            return -1;
+        }
+    }
+
+    return (int)read_bytes;
+}
+
+/**
+ * Set terminal window size for PTY
+ *
+ * @param shell Pointer to PtyShell structure
+ * @param rows Number of rows
+ * @param cols Number of columns
+ * @return true on success, false on failure
+ */
+bool pty_set_size(PtyShell *shell, unsigned short rows, unsigned short cols) {
+    if (!shell || !shell->running) {
+        return false;
+    }
+
+    struct winsize ws = {
+        .ws_row = rows,
+        .ws_col = cols,
+        .ws_xpixel = 0,
+        .ws_ypixel = 0
+    };
+
+    if (ioctl(shell->master_fd, TIOCSWINSZ, &ws) == -1) {
+        log_this(SR_TERMINAL, "Failed to set terminal size: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Check if shell process is still running
+ *
+ * @param shell Pointer to PtyShell structure
+ * @return true if running, false if terminated
+ */
+bool pty_is_running(PtyShell *shell) {
+    if (!shell) {
+        return false;
+    }
+
+    if (!shell->running) {
+        return false;
+    }
+
+    // Check if process exists
+    int status;
+    pid_t result = waitpid(shell->pid, &status, WNOHANG);
+
+    if (result == shell->pid) {
+        // Process terminated
+        shell->running = false;
+        return false;
+    } else if (result == -1) {
+        // Error (likely process doesn't exist)
+        if (errno == ECHILD) {
+            shell->running = false;
+            return false;
+        }
+    }
+
+    return shell->running;
+}
+
+/**
+ * Terminate the shell process gracefully
+ *
+ * @param shell Pointer to PtyShell structure
+ * @return true on success, false on failure
+ */
+bool pty_terminate_shell(PtyShell *shell) {
+    if (!shell || !shell->running) {
+        return false;
+    }
+
+    // Send SIGTERM first
+    if (kill(shell->pid, SIGTERM) == -1) {
+        log_this(SR_TERMINAL, "Failed to send SIGTERM to process %d: %s", LOG_LEVEL_ERROR, 2, shell->pid, strerror(errno));
+        return false;
+    }
+
+    // Process termination will be handled by the system
+
+    shell->running = false;
+    log_this(SR_TERMINAL, "Shell process terminated successfully", LOG_LEVEL_STATE, 0);
+
+    return true;
 }
 
 /**

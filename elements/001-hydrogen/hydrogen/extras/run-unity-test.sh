@@ -138,9 +138,9 @@ if ${BUILD_CMD}; then
     print_success "Test built successfully"
 else
     print_error "Failed to build test: ${TEST_NAME}"
-    print_info "Try building all unity tests first:"
-    echo "  cd ${PROJECT_ROOT}"
-    echo "  cmake --build build --target unity"
+    print_info "Try a trial build first - this only has to happen once when adding a brand new test:"
+    print_info "  mkt"
+    print_info "After this runs cleanly, you can revert to the individual 'mku' approach"
     exit 1
 fi
 

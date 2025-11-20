@@ -32,22 +32,13 @@ typedef struct PtyShell {
 } PtyShell;
 
 /**
- * Create and configure a PTY pair
- *
- * @param master_fd Pointer to store master file descriptor
- * @param slave_fd Pointer to store slave file descriptor
- * @param slave_name Buffer to store slave device name (at least 256 bytes)
- * @return true on success, false on failure
+ * Function prototypes
  */
 bool create_pty_pair(int *master_fd, int *slave_fd, char *slave_name);
-
-/**
- * Configure master file descriptor as non-blocking
- *
- * @param master_fd File descriptor to configure
- * @return true on success, false on failure
- */
 bool configure_master_fd(int master_fd);
+void setup_child_process(const char *shell_command, int slave_fd, int master_fd);
+void cleanup_pty_resources(int master_fd, int slave_fd, char *slave_name, PtyShell *shell);
+PtyShell *pty_spawn_shell(const char *shell_command, struct TerminalSession *session);
 
 /**
  * Spawn a new shell process using PTY
@@ -113,15 +104,6 @@ bool pty_terminate_shell(PtyShell *shell);
  * @param shell Pointer to PtyShell structure (will be freed)
  */
 void pty_cleanup_shell(PtyShell *shell);
-
-/**
- * Setup child process with PTY and execute shell
- *
- * @param shell_command The shell command to execute
- * @param slave_fd The slave PTY file descriptor
- * @param master_fd The master PTY file descriptor to close in child
- */
-void setup_child_process(const char *shell_command, int slave_fd, int master_fd);
 
 #ifdef __cplusplus
 }
