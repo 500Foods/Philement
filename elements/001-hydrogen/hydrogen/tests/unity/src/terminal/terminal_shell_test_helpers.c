@@ -28,6 +28,9 @@ void test_configure_master_fd_success(void);
 void test_pty_cleanup_shell_null_shell(void);
 void test_pty_cleanup_shell_with_running_shell(void);
 void test_pty_cleanup_shell_not_running(void);
+void test_cleanup_pty_resources_all_null(void);
+void test_cleanup_pty_resources_partial(void);
+void test_cleanup_pty_resources_with_shell(void);
 
 // Helper function prototypes
 TerminalSession* create_test_session(void);
@@ -195,6 +198,59 @@ void test_pty_cleanup_shell_not_running(void) {
     TEST_PASS();
 }
 
+/*
+ * TEST SUITE: cleanup_pty_resources
+ */
+
+// Test cleanup_pty_resources with all null/invalid parameters
+void test_cleanup_pty_resources_all_null(void) {
+    // Should not crash with all invalid/null values
+    cleanup_pty_resources(-1, -1, NULL, NULL);
+    TEST_PASS();
+}
+
+// Test cleanup_pty_resources with partial cleanup
+void test_cleanup_pty_resources_partial(void) {
+    // Create a real PTY pair
+    int master_fd, slave_fd;
+    char slave_name[256];
+    bool result = create_pty_pair(&master_fd, &slave_fd, slave_name);
+    TEST_ASSERT_TRUE(result);
+    
+    // Duplicate the slave name
+    char *name_copy = strdup(slave_name);
+    TEST_ASSERT_NOT_NULL(name_copy);
+    
+    // Clean up just the file descriptors and name, no shell structure
+    cleanup_pty_resources(master_fd, slave_fd, name_copy, NULL);
+    
+    // If we got here without crashing, the cleanup worked
+    TEST_PASS();
+}
+
+// Test cleanup_pty_resources with a shell structure
+void test_cleanup_pty_resources_with_shell(void) {
+    // Create a mock shell structure
+    PtyShell *shell = calloc(1, sizeof(PtyShell));
+    TEST_ASSERT_NOT_NULL(shell);
+    
+    // Create a real PTY pair
+    int master_fd, slave_fd;
+    char slave_name[256];
+    bool result = create_pty_pair(&master_fd, &slave_fd, slave_name);
+    TEST_ASSERT_TRUE(result);
+    
+    // Duplicate the slave name
+    char *name_copy = strdup(slave_name);
+    TEST_ASSERT_NOT_NULL(name_copy);
+    
+    // Clean up everything including shell
+    cleanup_pty_resources(master_fd, slave_fd, name_copy, shell);
+    
+    // If we got here without crashing, the cleanup worked
+    TEST_PASS();
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -207,6 +263,11 @@ int main(void) {
     // configure_master_fd tests
     RUN_TEST(test_configure_master_fd_invalid_fd);
     RUN_TEST(test_configure_master_fd_success);
+
+    // cleanup_pty_resources tests
+    RUN_TEST(test_cleanup_pty_resources_all_null);
+    RUN_TEST(test_cleanup_pty_resources_partial);
+    RUN_TEST(test_cleanup_pty_resources_with_shell);
 
     // pty_cleanup_shell tests
     RUN_TEST(test_pty_cleanup_shell_null_shell);
