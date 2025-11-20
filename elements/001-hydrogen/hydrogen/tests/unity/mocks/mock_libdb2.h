@@ -27,7 +27,7 @@ int mock_SQLRowCount(void* statementHandle, int* rowCount);
 int mock_SQLFreeHandle(int handleType, void* handle);
 int mock_SQLDisconnect(void* connectionHandle);
 int mock_SQLEndTran(int handleType, void* handle, int completionType);
-int mock_SQLPrepare(void* statementHandle, char* statementText, int textLength);
+int mock_SQLPrepare(void* statementHandle, unsigned char* statementText, int textLength);
 int mock_SQLExecute(void* statementHandle);
 int mock_SQLFreeStmt(void* statementHandle, int option);
 int mock_SQLDescribeCol(void* statementHandle, int columnNumber, unsigned char* columnName,
@@ -56,6 +56,7 @@ void mock_libdb2_set_fetch_row_count(int count);
 void mock_libdb2_set_SQLFreeHandle_result(int result);
 void mock_libdb2_set_SQLEndTran_result(int result);
 void mock_libdb2_set_SQLSetConnectAttr_result(int result);
+void mock_libdb2_set_SQLPrepare_result(int result);
 void mock_libdb2_reset_all(void);
 
 #endif // MOCK_LIBDB2_H

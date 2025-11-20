@@ -10,7 +10,7 @@ Hyrogen project is in elements/001-hydrogen/hydrogen folder.
 Everything we're doing here assumes this as the project root.
 For example,  tests/ is in elements/001-hydrogen/hydrogen/tests
 
-Review RECIPE.md.
+Review INSTRUCTIONS.md.
 Review tests/README.md
 Review tests/UNITY.md
 Review tests/unity/mocks/README.md

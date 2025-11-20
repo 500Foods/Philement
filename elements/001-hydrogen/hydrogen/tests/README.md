@@ -197,4 +197,4 @@ this causes a number of issues that need to be resolved, mostly involving links 
 - tests/README.md must be updated with a new link to the test and documentation
 - SITEMAP.md must be updated to reflect the new documentation
 - RELEASES.md must be reviewed as this will undoubtedly need to be noted in the release notes
-- RECIPE.md must be updated with the new test list
+- INSTRUCTIONS.md must be updated with the new test list

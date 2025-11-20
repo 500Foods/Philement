@@ -31,7 +31,7 @@ Hydrogen is currently designed for technical users who:
 ### Getting Started
 
 - [**Curiosities**](CURIOSITIES.md) - Conventions and Curiosities worth noting before proceeding
-- [**AI Recipe**](RECIPE.md) - Development guide optimized for AI assistance
+- [**AI Instructions**](INSTRUCTIONS.md) - Development guide optimized for AI assistance
 - [**AI Prompts**](PROMPTS.md) - Development guide optimized for AI assistance
 - [**Project Structure**](STRUCTURE.md) - Complete file organization and architecture overview
 - [**Build Environment**](SETUP.md) - Build and runtime requirements, environment setup

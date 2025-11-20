@@ -28,5 +28,6 @@ void mysql_evict_lru_statement(DatabaseHandle* connection, size_t lru_index);
 bool mysql_add_statement_to_cache(DatabaseHandle* connection, PreparedStatement* stmt, size_t cache_size);
 bool mysql_remove_statement_from_cache(DatabaseHandle* connection, const PreparedStatement* stmt);
 void mysql_cleanup_prepared_statement(PreparedStatement* stmt);
+void mysql_update_prepared_lru_counter(DatabaseHandle* connection, const char* stmt_name);
 
 #endif // DATABASE_ENGINE_MYSQL_PREPARED_H

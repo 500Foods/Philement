@@ -10,6 +10,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// SQL constants
+#define SQL_SUCCESS 0
+
 // Include the header but undefine the macros to access real functions if needed
 #include "mock_libdb2.h"
 
@@ -47,7 +50,7 @@ int mock_SQLRowCount(void* statementHandle, int* rowCount);
 int mock_SQLFreeHandle(int handleType, void* handle);
 int mock_SQLDisconnect(void* connectionHandle);
 int mock_SQLEndTran(int handleType, void* handle, int completionType);
-int mock_SQLPrepare(void* statementHandle, char* statementText, int textLength);
+int mock_SQLPrepare(void* statementHandle, unsigned char* statementText, int textLength);
 int mock_SQLExecute(void* statementHandle);
 int mock_SQLFreeStmt(void* statementHandle, int option);
 int mock_SQLDescribeCol(void* statementHandle, int columnNumber, unsigned char* columnName,
@@ -89,6 +92,7 @@ static char mock_SQLGetDiagRec_message[1024] = "Mock error message";
 static int mock_SQLFreeHandle_result = 0; // 0 = SQL_SUCCESS
 static int mock_SQLEndTran_result = 0; // 0 = SQL_SUCCESS
 static int mock_SQLSetConnectAttr_result = 0; // 0 = SQL_SUCCESS
+static int mock_SQLPrepare_result = 0; // 0 = SQL_SUCCESS
 
 // Mock implementations
 int mock_SQLAllocHandle(int handleType, void* inputHandle, void** outputHandle) {
@@ -205,11 +209,11 @@ int mock_SQLEndTran(int handleType, void* handle, int completionType) {
     return mock_SQLEndTran_result;
 }
 
-int mock_SQLPrepare(void* statementHandle, char* statementText, int textLength) {
+int mock_SQLPrepare(void* statementHandle, unsigned char* statementText, int textLength) {
     (void)statementHandle;
     (void)statementText;
     (void)textLength;
-    return 0; // Always success
+    return mock_SQLPrepare_result;
 }
 
 int mock_SQLExecute(void* statementHandle) {
@@ -383,6 +387,10 @@ void mock_libdb2_set_SQLSetConnectAttr_result(int result) {
     mock_SQLSetConnectAttr_result = result;
 }
 
+void mock_libdb2_set_SQLPrepare_result(int result) {
+    mock_SQLPrepare_result = result;
+}
+
 void mock_libdb2_reset_all(void) {
     mock_SQLAllocHandle_result = 0;
     mock_SQLAllocHandle_output_handle = (void*)0x12345678;
@@ -408,4 +416,5 @@ void mock_libdb2_reset_all(void) {
     mock_SQLFreeHandle_result = 0;
     mock_SQLEndTran_result = 0;
     mock_SQLSetConnectAttr_result = 0;
+    mock_SQLPrepare_result = 0;
 }

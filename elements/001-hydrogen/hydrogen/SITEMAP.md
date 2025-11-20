@@ -6,7 +6,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [README.md](README.md): Main Hydrogen project README - eseentially the Table of Contents for the project
 - [LICENSE.md](LICENSE.md): Standard MIT License
-- [RECIPE.md](RECIPE.md): "Recipe For Success" targetting AI models (or humans!) that are working on the project
+- [INSTRUCTIONS.md](INSTRUCTIONS.md): "Recipe For Success" targetting AI models (or humans!) that are working on the project
 - [RELEASES.md](RELEASES.md): Version history index and instructions
 - [REVIEW.md](REVIEW.md): Used to track current project work
 - [SECRETS.md](SECRETS.md): Outlines how secrets are managed in the project
