@@ -36,7 +36,7 @@ The test uses:
 
 The test processes Markdown files in:
 
-- Root documentation (README.md, RECIPE.md, etc.)
+- Root documentation (README.md, INSTRUCTIONS.md, etc.)
 - `docs/` - Comprehensive project documentation
 - `tests/docs/` - Test framework documentation
 - Example and tutorial markdown files

@@ -20,7 +20,7 @@ typedef int (*SQLRowCount_t)(void*, int*);
 typedef int (*SQLFreeHandle_t)(int, void*);
 typedef int (*SQLDisconnect_t)(void*);
 typedef int (*SQLEndTran_t)(int, void*, int);
-typedef int (*SQLPrepare_t)(void*, char*, int);
+typedef int (*SQLPrepare_t)(void*, unsigned char*, int);
 typedef int (*SQLExecute_t)(void*);
 typedef int (*SQLFreeStmt_t)(void*, int);
 typedef int (*SQLDescribeCol_t)(void*, int, unsigned char*, int, short*, int*, int*, short*, short*);

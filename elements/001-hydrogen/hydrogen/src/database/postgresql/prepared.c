@@ -239,6 +239,7 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
     free(stmt->sql_template);
     free(stmt);
 
+
     log_this(SR_DATABASE, "PostgreSQL prepared statement deallocated and removed", LOG_LEVEL_TRACE, 0);
     return true;
 }

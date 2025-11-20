@@ -17,4 +17,10 @@ bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* s
 bool sqlite_add_prepared_statement(PreparedStatementCache* cache, const char* name);
 bool sqlite_remove_prepared_statement(PreparedStatementCache* cache, const char* name);
 
+// Helper functions for better testability
+bool sqlite_initialize_prepared_statement_cache(DatabaseHandle* connection, size_t cache_size);
+bool sqlite_evict_lru_prepared_statement(DatabaseHandle* connection, const SQLiteConnection* sqlite_conn, const char* new_stmt_name);
+bool sqlite_add_prepared_statement_to_cache(DatabaseHandle* connection, PreparedStatement* stmt, size_t cache_size);
+void sqlite_update_prepared_lru_counter(DatabaseHandle* connection, const char* stmt_name);
+
 #endif // SQLITE_PREPARED_H

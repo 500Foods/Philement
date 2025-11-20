@@ -8,7 +8,9 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <summary><b>Configuration & Documentation</b></summary>
 
 - [README.md](README.md) - Project overview and quick start guide
-- [RECIPE.md](RECIPE.md) - Development requirements and coding standards
+- [INSTRUCTIONS.md](INSTRUCTIONS.md) - Development requirements and coding standards
+- [PROMPTS.md](PROMPTS.md) - More about prompts
+- [CURIOSITIES.md](CURIOSITIES.md) - More about the project
 - [SETUP.md](SETUP.md) - Installation and setup instructions
 - [RELEASES.md](RELEASES.md) - Release notes and version history
 - [SECRETS.md](SECRETS.md) - Security configuration guide
@@ -546,11 +548,11 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 ## Directory Structure Overview
 
-Based on the RECIPE.md structure and current implementation:
+Based on the INSTRUCTIONS.md structure and current implementation:
 
 ```directory
 hydrogen/
-├── README.md, RECIPE.md, SETUP.md, RELEASES.md, SECRETS.md, SITEMAP.md, STRUCTURE.md
+├── README.md, INSTRUCTIONS.md, SETUP.md, RELEASES.md, SECRETS.md, SITEMAP.md, STRUCTURE.md
 ├── configs/                    # Configuration files
 │   ├── hydrogen.json          # Main configuration
 │   └── hydrogen-env.json      # Environment configuration
@@ -609,7 +611,7 @@ The Hydrogen project follows a modular architecture with clear separation of con
 - **Registry**: Central coordination of all subsystems
 - **Phases**: Readiness → Plan → Execute → Review
 
-### Subsystem Order (from RECIPE.md)
+### Subsystem Order (from INSTRUCTIONS.md)
 
 1. Registry - Central subsystem coordination
 2. Payload - Payload management system

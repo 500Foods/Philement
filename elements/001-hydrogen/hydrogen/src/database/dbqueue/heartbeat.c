@@ -376,6 +376,12 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
         is_connected ? "OK" : "FAILED",
         database_queue_get_depth_with_designator(db_queue, dqm_label));
 
+    if (db_queue->persistent_connection && db_queue->persistent_connection->config) {
+        log_this(dqm_label, "Prepared cache: %zu/%zu used", LOG_LEVEL_TRACE, 2,
+            db_queue->persistent_connection->prepared_statement_count,
+            db_queue->persistent_connection->config->prepared_statement_cache_size);
+    }
+
     // Log connection status changes
     if (was_connected != is_connected) {
         if (is_connected) {

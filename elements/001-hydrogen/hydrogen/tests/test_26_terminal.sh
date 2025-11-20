@@ -10,6 +10,11 @@
 # test_terminal_configuration()
 
 # CHANGELOG
+# 2.4.0 - 2025-11-20 - Enhanced test coverage for terminal_shell_ops.c, terminal_websocket_bridge.c:
+#                    - Extended I/O test from 3 to 8 commands with longer delays (1s between commands + 3s post-test)
+#                    - Added multiple resize commands (5 different dimensions) to thoroughly exercise pty_set_size()
+#                    - Added long-running session test (4 iterations over 8 seconds) to exercise pty_is_running()
+#                    - These changes significantly increase coverage of PTY operations and I/O bridge functions
 # 2.3.0 - 2025-09-09 - Fixed WebSocket I/O and resize test crashes: Added NULL pointer checks in terminal_websocket.c
 #                    - Re-enabled WebSocket I/O and resize tests that were disabled due to SIGSEGV crashes
 #                    - Enhanced libwebsockets mocks to support lws_get_protocol for better terminal message routing
@@ -28,7 +33,7 @@ TEST_NAME="Terminal"
 TEST_ABBR="TRM"
 TEST_NUMBER="26"
 TEST_COUNTER=0
-TEST_VERSION="2.3.0"  # Fixed WebSocket I/O and resize test crashes
+TEST_VERSION="2.4.0"  # Enhanced coverage for terminal_shell_ops.c and terminal_websocket_bridge.c
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -299,6 +304,17 @@ run_terminal_test_parallel() {
                 echo "WEBSOCKET_RESIZE_TEST_PASSED" >> "${result_file}"
             else
                 echo "WEBSOCKET_RESIZE_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+
+            # Test WebSocket terminal long-running session
+            # This exercises pty_is_running, should_continue_iobridge, and the I/O bridge loop
+            local websocket_long_session_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_websocket_long_session.json"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if test_websocket_terminal_long_session "${ws_url}" "${websocket_protocol}" "${websocket_long_session_file}"; then
+                echo "WEBSOCKET_LONG_SESSION_TEST_PASSED" >> "${result_file}"
+            else
+                echo "WEBSOCKET_LONG_SESSION_TEST_FAILED" >> "${result_file}"
                 all_tests_passed=false
             fi
 
@@ -580,13 +596,19 @@ test_websocket_terminal_input_output() {
     local protocol="$2"
     local response_file="$3"
 
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal input/output with multiple commands"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal input/output with multiple commands (extended for coverage)"
 
     # Send multiple input commands to better exercise I/O processing
+    # Extended from 3 to 8 commands to increase coverage
     local commands=(
         '{"type": "input", "data": "echo hello\n"}'
         '{"type": "input", "data": "pwd\n"}'
         '{"type": "input", "data": "date\n"}'
+        '{"type": "input", "data": "whoami\n"}'
+        '{"type": "input", "data": "echo Coverage Test Line 1\n"}'
+        '{"type": "input", "data": "echo Coverage Test Line 2\n"}'
+        '{"type": "input", "data": "ls -la /tmp 2>/dev/null | head -n 5\n"}'
+        '{"type": "input", "data": "echo COVERAGE_TEST_COMPLETE\n"}'
     )
 
     local all_commands_successful=true
@@ -605,9 +627,14 @@ test_websocket_terminal_input_output() {
             break
         fi
 
-        # Brief pause between commands to allow processing
-        sleep 0.5
+        # Increased pause between commands from 0.5s to 1s to allow more bridge cycles
+        sleep 1
     done
+
+    # Additional pause to allow I/O bridge thread to process multiple read cycles
+    # This ensures terminal_websocket_bridge.c functions get sufficient execution time
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Maintaining connection for I/O bridge coverage (additional 3 seconds)..."
+    sleep 3
 
     if [[ "${all_commands_successful}" = true ]]; then
         # The test passes if commands were sent successfully
@@ -626,23 +653,83 @@ test_websocket_terminal_resize() {
     local protocol="$2"
     local response_file="$3"
 
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal resize functionality"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal resize functionality (multiple dimensions for coverage)"
 
-    # Send resize command
-    local resize_command='{"type": "resize", "rows": 30, "cols": 100}'
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${resize_command}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
+    # Send multiple resize commands with different dimensions
+    # This exercises terminal_shell_ops.c:pty_set_size() more thoroughly
+    local resize_commands=(
+        '{"type": "resize", "rows": 30, "cols": 100}'
+        '{"type": "resize", "rows": 40, "cols": 120}'
+        '{"type": "resize", "rows": 50, "cols": 132}'
+        '{"type": "resize", "rows": 24, "cols": 80}'   # Standard size
+        '{"type": "resize", "rows": 25, "cols": 85}'   # Different variation
+    )
 
-    # Send resize command - success means terminal_websocket.c resize function was called
-    if echo "${resize_command}" | websocat \
-        --protocol="${protocol}" \
-        -H="Authorization: Key ${WEBSOCKET_KEY}" \
-        --ping-interval=30 \
-        --one-message \
-        "${ws_url}" > "${response_file}" 2>&1; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal resize command sent successfully (terminal_websocket.c exercised)"
+    local all_resize_successful=true
+
+    for resize_command in "${resize_commands[@]}"; do
+        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${resize_command}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
+
+        # Send resize command - success means terminal_websocket.c resize function was called
+        if ! echo "${resize_command}" | websocat \
+            --protocol="${protocol}" \
+            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            --ping-interval=30 \
+            --one-message \
+            "${ws_url}" >> "${response_file}" 2>&1; then
+            all_resize_successful=false
+            break
+        fi
+
+        # Brief pause between resizes to allow processing
+        sleep 0.5
+    done
+
+    if [[ "${all_resize_successful}" = true ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal resize commands sent successfully (terminal_websocket.c and terminal_shell_ops.c exercised)"
         return 0
     else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to send terminal resize command"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to send terminal resize commands"
+        return 1
+    fi
+}
+
+# Function to test long-running WebSocket terminal session
+test_websocket_terminal_long_session() {
+    local ws_url="$1"
+    local protocol="$2"
+    local response_file="$3"
+    
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal long-running session (pty_is_running coverage)"
+    
+    # Keep connection alive with periodic commands over 8 seconds
+    # This exercises terminal_shell_ops.c:pty_is_running() and ensures
+    # the I/O bridge thread maintains the session properly
+    local session_successful=true
+    
+    for i in {1..4}; do
+        local cmd='{"type": "input", "data": "echo Session iteration '${i}'\n"}'
+        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${cmd}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
+        
+        if ! echo "${cmd}" | websocat \
+            --protocol="${protocol}" \
+            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            --ping-interval=30 \
+            --one-message \
+            "${ws_url}" >> "${response_file}" 2>&1; then
+            session_successful=false
+            break
+        fi
+        
+        # 2-second pause between commands to maintain session over time
+        sleep 2
+    done
+    
+    if [[ "${session_successful}" = true ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Long-running session test completed (pty_is_running and should_continue_io_bridge exercised)"
+        return 0
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Long-running session test failed"
         return 1
     fi
 }
@@ -819,6 +906,15 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket resize test passed"
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket resize test failed"
+                EXIT_CODE=1
+            fi
+
+            # Check WebSocket long-running session test results
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WebSocket Terminal Long Session - ${description}"
+            if "${GREP}" -q "WEBSOCKET_LONG_SESSION_TEST_PASSED" "${result_file}" 2>/dev/null; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket long-running session test passed"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket long-running session test failed"
                 EXIT_CODE=1
             fi
 
