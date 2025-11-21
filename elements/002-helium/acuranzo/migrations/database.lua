@@ -268,14 +268,101 @@ local database = {
             end)..({ '', '==', '=' })[#data%3+1])
         end
 
-        sql = sql:gsub("%[=%[(.-)%]=%]", function(content)
-            local encoded = "'" .. base64_encode(content) .. "'"
-            if cfg.BASE64_START and cfg.BASE64_END then
-                return cfg.BASE64_START .. encoded .. cfg.BASE64_END
-            else
-                return encoded
+        -- Multi-level Base64 encoding for nested multiline strings
+        -- Process from highest nesting level (most equals signs) down to level 1
+        -- This ensures inner blocks are encoded before outer blocks, maintaining proper nesting
+
+        -- Step 1: Detect maximum nesting level by finding highest number of equals signs
+        local max_level = 0
+        local max_nesting_depth = 5  -- Support up to [=====[...]]=====]
+        for equals in sql:gmatch("%[(=+)%[") do
+            local level = #equals
+            if level > max_level and level <= max_nesting_depth then
+                max_level = level
             end
-        end)
+        end
+
+        -- Step 2: Process each level from highest to lowest (inside-out approach)
+        -- This handles multiple instances at the same level automatically via gsub
+        for level = max_level, 1, -1 do
+            -- Build pattern for this specific nesting level
+            local equals_str = string.rep("=", level)
+            local open_pattern = "%[" .. equals_str .. "%["
+            local close_pattern = "%]" .. equals_str .. "%]"
+
+            -- Enhanced pattern to capture leading whitespace before the opening marker
+            -- This allows us to calculate the base indentation to strip
+            local full_pattern = "([\n]?)(%s*)" .. open_pattern .. "(.-)" .. close_pattern
+
+            -- Apply Base64 encoding to all blocks at this level
+            -- The (.-) non-greedy matcher ensures each block is processed independently
+            sql = sql:gsub(full_pattern, function(newline, leading_ws, content)
+                -- Calculate base indentation: position of marker + 4 spaces
+                -- The 4 spaces account for the standard indentation inside the multiline block
+                local base_indent_len = #leading_ws + 4
+
+                -- Strip the base indentation from each line of content
+                -- This preserves relative indentation for lines that are further indented
+                local function strip_base_indent(text)
+                    local lines = {}
+                    -- Split content by line
+                    for line in text:gmatch("([^\n]*)\n?") do
+                        if line ~= "" or text:match("\n") then
+                            -- Count leading spaces on this line
+                            local line_leading = line:match("^(%s*)")
+                            local line_leading_len = #line_leading
+
+                            -- Strip up to base_indent_len spaces, but not more than what exists
+                            local strip_len = math.min(base_indent_len, line_leading_len)
+
+                            -- Only strip if we have whitespace to strip
+                            if strip_len > 0 then
+                                line = line:sub(strip_len + 1)
+                            end
+
+                            table.insert(lines, line)
+                        end
+                    end
+                    return table.concat(lines, "\n")
+                end
+
+                -- Strip indentation and encode
+                local stripped_content = strip_base_indent(content)
+                local encoded = "'" .. base64_encode(stripped_content) .. "'"
+
+                -- Wrap with database-specific BASE64 function if configured
+                local result
+                if cfg.BASE64_START and cfg.BASE64_END then
+                    result = cfg.BASE64_START .. encoded .. cfg.BASE64_END
+                else
+                    result = encoded
+                end
+
+                -- Preserve the newline and leading whitespace context
+                return newline .. leading_ws .. result
+            end)
+
+            -- CRITICAL: Expand macros after each level to ensure BASE64_START/END
+            -- are converted to actual function calls before the next outer level encodes them
+            -- This prevents the literal strings ${BASE64_START} from being Base64 encoded
+            unresolved = 5
+            while unresolved > 0 do
+                local changed = false
+                for key, value in pairs(cfg) do
+                    local before = sql
+                    sql = sql:gsub("${" .. key .. "}", value)
+                    if sql ~= before then
+                        changed = true
+                    end
+                end
+                -- Check if we still have macros left to expand
+                if changed and sql:match("${([^}]+)}") then
+                    unresolved = unresolved - 1
+                else
+                    unresolved = 0
+                end
+            end
+        end
 
         -- Run macro expansion again to resolve any macros in BASE64_START/END wrappers
         unresolved = 5
