@@ -113,7 +113,7 @@ The Hydrogen project uses several security mechanisms that developers need to be
 1. **Payload Encryption**
    - RSA+AES hybrid encryption for embedded assets
    - See [payload/README.md](/payloads/README.md) for implementation
-   - Key management documented in [SECRETS.md](/SECRETS.md)
+   - Key management documented in [SECRETS.md](SECRETS.md)
 
 2. **OIDC Security**
    - RSA key pairs for token signing
@@ -129,7 +129,7 @@ The Hydrogen project uses several security mechanisms that developers need to be
 
 - Environment variable-based configuration
 - Secure key storage guidelines
-- See [SECRETS.md](/SECRETS.md) for comprehensive documentation
+- See [SECRETS.md](SECRETS.md) for comprehensive documentation
 
 ## Project Glossary
 

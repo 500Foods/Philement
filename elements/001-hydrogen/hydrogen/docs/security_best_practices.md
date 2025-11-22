@@ -4,7 +4,7 @@
 
 This document is a placeholder for future content on security best practices for the Hydrogen project. Detailed guidelines and recommendations will be added here as the project evolves.
 
-For current security-related information, please refer to [SECRETS.md](/SECRETS.md).
+For current security-related information, please refer to [SECRETS.md](SECRETS.md).
 
 ## Topics to be Covered
 

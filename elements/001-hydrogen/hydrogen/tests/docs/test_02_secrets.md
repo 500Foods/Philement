@@ -119,4 +119,4 @@ The test will fail if:
 - [framework.md](framework.md) - Testing framework overview and architecture
 - [env_utils.md](env_utils.md) - Environment utility functions documentation
 - [log_output.md](log_output.md) - Log output formatting and analysis
-- [SECRETS.md](/SECRETS.md) - Information about managing secrets throughout the project
+- [SECRETS.md](../../docs/SECRETS.md) - Information about managing secrets throughout the project

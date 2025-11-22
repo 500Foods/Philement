@@ -4,7 +4,7 @@ This document serves as a table of contents for all available API endpoints in t
 
 ## Security Overview
 
-All sensitive endpoints use encryption and secure key management as documented in [SECRETS.md](/SECRETS.md). For implementation details of the encryption systems, see:
+All sensitive endpoints use encryption and secure key management as documented in [SECRETS.md](SECRETS.md). For implementation details of the encryption systems, see:
 
 - [Payload Encryption](/payloads/README.md)
 - [OIDC Security](./oidc_integration.md)
@@ -25,7 +25,7 @@ Endpoints for system-level operations and monitoring:
 
 ## OIDC Service
 
-Endpoints for OpenID Connect (OIDC) authentication and identity management. All OIDC endpoints use RSA key pairs for signing and AES encryption for sensitive data. See [SECRETS.md](/SECRETS.md) for key management details.
+Endpoints for OpenID Connect (OIDC) authentication and identity management. All OIDC endpoints use RSA key pairs for signing and AES encryption for sensitive data. See [SECRETS.md](SECRETS.md) for key management details.
 
 - [Authorization Endpoint](./api/oidc/oidc_endpoints.md#authorization) - GET/POST `/oauth/authorize`  
   Initiates authentication flows and obtains user consent  

@@ -183,8 +183,8 @@ As Hydrogen grows, we’ll add more secrets for different features, like authent
 
 ## Need More Help or Info?
 
-- Check out [README.md](README.md) for general info on Hydrogen.
-- Look at [payloads/README.md](payloads/README.md) for more on the payload system.
+- Check out [README.md](../README.md) for general info on Hydrogen.
+- Look at [payloads/README.md](../payloads/README.md) for more on the payload system.
 - Visit the [OpenSSL Documentation](https://www.openssl.org/docs/) if you’re curious about the tools we used.
 
 If you have questions or run into trouble, don’t hesitate to ask someone on the team or look for help online. We’re all in this together!
