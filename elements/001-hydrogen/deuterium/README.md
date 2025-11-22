@@ -1,16 +1,18 @@
-# klippertest
-This is a prototype that is intended to demonstrate how to work with the Klipper API natively. As in, directly with its Unix socket interface and explicitly not through Moonraker or anything else. 
-A Python version is provided to prove the concept is workable, and then a C program is used to do largely the same thing, demonstrating that this can be a more performant system overall. 
+# Deuterium aka klippertest
+
+This is a prototype that is intended to demonstrate how to work with the Klipper API natively. As in, directly with its Unix socket interface and explicitly not through Moonraker or anything else.
+A Python version is provided to prove the concept is workable, and then a C program is used to do largely the same thing, demonstrating that this can be a more performant system overall.
 
 NOTE: As a comparison, the initial connection establishment time for the C program is on the order of 0.005s. For Python, it is 0.5s. So a 100x improvement in that aspect alone. Of course, establishing a connection
 is only part of the process, and the performance gains on average will likely be less, but still rather significant - enough to justify bypassing Python entirely for the Philement project, where feasible.
 
-The first part of the test involves parsing what we can from the Klipper configuration files, which themselves are located by looking at the processes running on the system. 
+The first part of the test involves parsing what we can from the Klipper configuration files, which themselves are located by looking at the processes running on the system.
 Note that this has to be run on the same system running Klipper in order to access the Unix socket, in a default Klipper configuration. What we're primarily after is the socket in the underlying filesystem, assuming a Linux-style environment.
 
 The second part of the test involves setting up a subscription for toolhead position notifications. Once subscribed, Klipper will send any toolhead position changes back to our program via the same Unix socket, which is then output to the console.
 
 ## klippertest.py
+
 - The asyncio library is used to try to make this as performant as possible
 - Lots of effort to track down the configuration information
 - Shouldn't need to pass parameters as we can determine everything with a bit of work
@@ -19,7 +21,8 @@ The second part of the test involves setting up a subscription for toolhead posi
 - The printer in this case is a Troodon 2.0 Pro running with a BTT-CB1 Pi clone (very similar to a Voron 2.4R2)
 
 Sample output.
-```
+
+``` bash
 $ ./klippertest.py
 2024-06-24 13:29:31,403 - DEBUG - Using selector: EpollSelector
 2024-06-24 13:29:31,658 - DEBUG - Found processes:
@@ -132,13 +135,15 @@ Toolhead Position: X=152.68, Y=216.57, Z=4.82
 ```
 
 ## klippertest.c
+
 - Makefile provided
 - Uses jansson library to provide JSON support for C programs
 - Written to C17 standards like all the other Philement projects
 - A queue library was created to help with integrating this in other projects
 
 Sample output.
-```
+
+```bash
 $ ./klippertest
 Starting Klipper Proxy
 Initializing Klipper connection
@@ -258,4 +263,3 @@ Received update:[158.221,180.82400000000001,5.4157249316966194,37269.16828000522
 Received update:[191.297,219.65799999999999,5.4152116038433444,37270.516080005233]
 Received update:[158.703,180.34200000000001,5.4158667163213785,37271.863880005236]
 ```
-

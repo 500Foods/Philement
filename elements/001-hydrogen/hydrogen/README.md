@@ -30,15 +30,16 @@ Hydrogen is currently designed for technical users who:
 
 ### Getting Started
 
-- [**Curiosities**](CURIOSITIES.md) - Conventions and Curiosities worth noting before proceeding
+- [**Curiosities**](docs/CURIOSITIES.md) - Conventions and Curiosities worth noting before proceeding
+- [**Databases**](docs/DATABASES.md) - Considerations around using PostgreSQL, MySQL/MariaDB, SQLite, and DB2
 - [**AI Instructions**](INSTRUCTIONS.md) - Development guide optimized for AI assistance
-- [**AI Prompts**](PROMPTS.md) - Development guide optimized for AI assistance
+- [**AI Prompts**](docs/PROMPTS.md) - Development guide optimized for AI assistance
 - [**Project Structure**](STRUCTURE.md) - Complete file organization and architecture overview
-- [**Build Environment**](SETUP.md) - Build and runtime requirements, environment setup
-- [**Secrets Management**](SECRETS.md) - Environment variables and security configuration
+- [**Build Environment**](docs/SETUP.md) - Build and runtime requirements, environment setup
+- [**Secrets Management**](docs/SECRETS.md) - Environment variables and security configuration
 - [**Release Notes**](RELEASES.md) - Detailed version history and changes
 - [**Markdown Site Map**](SITEMAP.md) - Index to all Markdown files in this repository
-- [**TO-DO List**](TODO.md) - Summary of references to TODO in the code that still need work
+- [**TO-DO List**](docs/TODO.md) - Summary of references to TODO in the code that still need work
 
 ### Core Documentation
 

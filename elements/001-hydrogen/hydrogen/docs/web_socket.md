@@ -94,7 +94,7 @@ Common error codes:
 
 ## Security
 
-The WebSocket server implements multiple layers of security as documented in [SECRETS.md](/SECRETS.md):
+The WebSocket server implements multiple layers of security as documented in [SECRETS.md](SECRETS.md):
 
 ### Transport Security
 
