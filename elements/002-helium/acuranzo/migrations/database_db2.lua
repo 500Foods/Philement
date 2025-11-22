@@ -30,11 +30,13 @@ return {
     BASE64_END = ")",
 
     JSON = "CLOB(1M)",
-    JSON_INGEST_START = "${SCHEMA}json_ingest(",
+    JIS = "${SCHEMA}JSON_INGEST(",
+    JIE = ")",
+    JSON_INGEST_START = "${SCHEMA}JSON_INGEST(",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = [[
-        -- json.ingest for db2 attempt 3
-        CREATE OR REPLACE FUNCTION ${SCHEMA}json_ingest(s CLOB)
+        -- json.ingest for db2 attempt 4
+        CREATE OR REPLACE FUNCTION ${SCHEMA}JSON_INGEST(s CLOB)
         RETURNS CLOB
         LANGUAGE SQL
         DETERMINISTIC

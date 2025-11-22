@@ -31,6 +31,8 @@ return {
 
     -- JSON = "longtext characterset utf8mb4 collate utf8mb4_bin", -- because JSON_VALID doesn't pass our JSON properly
     JSON = "longtext",
+    JIS = "${SCHEMA}json_ingest(",
+    JIE = ")",
     JSON_INGEST_START = "${SCHEMA}json_ingest(",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = [[

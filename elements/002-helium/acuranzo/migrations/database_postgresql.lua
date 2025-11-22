@@ -30,10 +30,12 @@ return {
     BASE64_END = ", 'base64'), 'UTF8')",
 
     JSON = "jsonb",
+    JIS = "${SCHEMA}json_ingest (",
+    JIE = ")",
     JSON_INGEST_START = "${SCHEMA}json_ingest (",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = [[
-      CREATE OR REPLACE FUNCTION ${SCHEMA}.json_ingest(s text)
+      CREATE OR REPLACE FUNCTION ${SCHEMA}json_ingest(s text)
       RETURNS jsonb
       LANGUAGE plpgsql
       STRICT
