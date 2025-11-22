@@ -9,11 +9,11 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 - [README.md](README.md) - Project overview and quick start guide
 - [INSTRUCTIONS.md](INSTRUCTIONS.md) - Development requirements and coding standards
-- [PROMPTS.md](PROMPTS.md) - More about prompts
-- [CURIOSITIES.md](CURIOSITIES.md) - More about the project
-- [SETUP.md](SETUP.md) - Installation and setup instructions
+- [PROMPTS.md](docs/PROMPTS.md) - More about prompts
+- [CURIOSITIES.md](docs/CURIOSITIES.md) - More about the project
+- [SETUP.md](docs/SETUP.md) - Installation and setup instructions
 - [RELEASES.md](RELEASES.md) - Release notes and version history
-- [SECRETS.md](SECRETS.md) - Security configuration guide
+- [SECRETS.md](docs/SECRETS.md) - Security configuration guide
 - [SITEMAP.md](SITEMAP.md) - Project navigation and file index
 - [STRUCTURE.md](STRUCTURE.md) - This file - project structure overview
 

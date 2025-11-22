@@ -8,7 +8,7 @@ changes to the code. Nothing remarkably innovative here, just a bit of grounding
 ## Structure
 
 The root for the Hydrogen Project is `elements/001-hydrogen/hydrogen`. There are other side-projects
-in the parent folder - [deuterium](../deuterium/README.md) and [tritium](elements/001-hydrogen/tritium/README.md), specifically, but they have their own README.md files
+in the hydrogen project folder - [deuterium](https://github.com/500Foods/Philement/blob/main/elements/001-hydrogen/deuterium/README.md) and [tritium](https://github.com/500Foods/Philement/blob/main/elements/001-hydrogen/tritium/README.md), specifically, but they have their own README.md files
 you can have a look at - they are not yet directly part of this project.
 
 This folder contains four basic things.
@@ -29,17 +29,17 @@ This folder contains four basic things.
   - `tests` contain the Bash scripts that implement our blackbox tests
   - `tests\unity` contain the Unity Framework source for all of the unit tests
 - Hidden configuration files
-  - [.gitignore](.gitignore) - used to determine what doesn't get automatically synced to GitHub
-  - [.lintignore](.lintignore) - used by all the lint tests to skip files for various reasons
-  - [.lintignore-bash](.lintignore-bash) - options for shellcheck used by [Test 92: xhellcheck](tests/docs/test_92_shellcheck.md)
-  - [.lintignore-c](.lintignore-c) - options for cppcheck used by [Test 91: cppcheck](tests/docs/test_91_cppcheck.md)
-  - [.lintignore-lua](.lintignore-lua) - options for luacheck used by [Test 38: luacheck](tests/docs/test_38_luacheck.md)
-  - [.lintignore-markdown](.lintignore-markdown) - options for markdownlint used by [Test 90: markdownlint](tests/docs/test_90_markdownlint.md)
-  - [.sqruff_db2](.sqruff-db2) - DB2 options for sqruff (SQL lint tool) used by [Test 31: Migrations](tests/docs/test_31_migrations.md)
-  - [.sqruff_mysql](.sqruff-mysql) - MySQL/MariaDB options for sqruff (SQL lint tool) used by [Test 31: migrations](tests/docs/test_31_migrations.md)
-  - [.sqruff_postgresql](.sqruff-postgresql) - PostgreSQL options for sqruff (SQL lint tool) used by [Test 31: Migrations](tests/docs/test_31_migrations.md)
-  - [.sqruff_sqlite](.sqruff-sqlite) - SQLite options for sqruff (SQL lint tool) used by [Test 31: Migrations](tests/docs/test_31_migrations.md)
-  - [.trial-ignore](.trial-ignore) - used to indicate C files that we don't want lined into the final executables
+  - [.gitignore](../.gitignore) - used to determine what doesn't get automatically synced to GitHub
+  - [.lintignore](../.lintignore) - used by all the lint tests to skip files for various reasons
+  - [.lintignore-bash](../.lintignore-bash) - options for shellcheck used by [Test 92: xhellcheck](../tests/docs/test_92_shellcheck.md)
+  - [.lintignore-c](../.lintignore-c) - options for cppcheck used by [Test 91: cppcheck](../tests/docs/test_91_cppcheck.md)
+  - [.lintignore-lua](../.lintignore-lua) - options for luacheck used by [Test 38: luacheck](../tests/docs/test_38_luacheck.md)
+  - [.lintignore-markdown](../.lintignore-markdown) - options for markdownlint used by [Test 90: markdownlint](../tests/docs/test_90_markdownlint.md)
+  - [.sqruff_db2](../.sqruff_db2) - DB2 options for sqruff (SQL lint tool) used by [Test 31: Migrations](../tests/docs/test_31_migrations.md)
+  - [.sqruff_mysql](../.sqruff_mysql) - MySQL/MariaDB options for sqruff (SQL lint tool) used by [Test 31: migrations](../tests/docs/test_31_migrations.md)
+  - [.sqruff_postgresql](../.sqruff_postgresql) - PostgreSQL options for sqruff (SQL lint tool) used by [Test 31: Migrations](../tests/docs/test_31_migrations.md)
+  - [.sqruff_sqlite](../.sqruff_sqlite) - SQLite options for sqruff (SQL lint tool) used by [Test 31: Migrations](../tests/docs/test_31_migrations.md)
+  - [.trial-ignore](../.trial-ignore) - used to indicate C files that we don't want lined into the final executables
   
 Generally speaking, nothing else should be in this folder. Sometimes during a build or test of some
 kind, core dumps or temp files will land here, but those are not included.
@@ -71,9 +71,9 @@ Some work was put into a native macOS port until it became clear how much work w
 Which conveniently also addresses the Windows platform issue.
 
 The Blackbox scripts are also serving double-duty has the tools to help with managing builds.  Specifically
-[Test 01: Compilation](tests/docs/test_01_compilation.md) runs cmake to build absolutely everyting in one shot, including all the Unity unit test
-executables. And [Test 10: Unity](tests/docs/test_10_unity.md) takes care of running the hundreds of Unity tests and collecting the results.
-[Test 99: Coverage](tests/docs/test_99_coverage.md) tallies up everything and helps give us the final results.
+[Test 01: Compilation](../tests/docs/test_01_compilation.md) runs cmake to build absolutely everyting in one shot, including all the Unity unit test
+executables. And [Test 10: Unity](../tests/docs/test_10_unity.md) takes care of running the hundreds of Unity tests and collecting the results.
+[Test 99: Coverage](../tests/docs/test_99_coverage.md) tallies up everything and helps give us the final results.
 
 ## Linting
 
@@ -83,7 +83,7 @@ created our project from nothing so it was no problem at all to just "go" with t
 considerably less fun to impose on an existing codebase, without a doubt. Or if there wasn't a handy AI agent to go and change all the if statements from
 using `[ condition ]` to using `[[ condition ]]`. Having said that, there are overrides in some places for some things, like enforcing 80-char
 line lengths anywhere is not something that is enforced. Because it is not 1978. Many of these linting tools also support inline exceptions and those
-appear with some frequency as well. In the case of shellcheck in particular, [Test 92: xhellcheck](tests/docs/test_92_shellcheck.md) also goes the
+appear with some frequency as well. In the case of shellcheck in particular, [Test 92: xhellcheck](../tests/docs/test_92_shellcheck.md) also goes the
 extra mile to check that some effort has been made to include a justification for why an exception has been added, to try and limit the behaviour.
 
 One of the more recent additions in this arena is the use of `sqruff` to essentially serve as a linting tool for SQL. This is a terrible thing to do
@@ -94,25 +94,25 @@ the sqruff configurations to get everyone to play nice together.
 
 ## Key Reports
 
-Each time [Test 01: Compilation](tests/docs/test_01_compilation.md) runs, a suite of "reports" is generated and output. There are four in particular
+Each time [Test 01: Compilation](../tests/docs/test_01_compilation.md) runs, a suite of "reports" is generated and output. There are four in particular
 worth paying attention to.
 
-- [Test Suite Results](images/COMPLETE.svg) provides the top-level overview, showing all of the Blackbox results in a nicely formatted and organized
+- [Test Suite Results](../images/COMPLETE.svg) provides the top-level overview, showing all of the Blackbox results in a nicely formatted and organized
 table. Ideally we'd have no failing tests here, and the whole test suite would complete in around one minute, or far less if it has been run recently,
 as it parallelizes and caches almost everything it possibly can. This also provides key coverage statistics like what our overall coverage is for
 the project and the breakdown of Blackbox vs. Unity coverage. This table is available only when running
-[Test 01: Compilation](tests/docs/test_01_compilation.md).
-- [Test Suite Coverage](images/COVERAGE.svg) provides a more detailed analysis file-by-file, showing how many lines of code, Unity tests, Unity
+[Test 01: Compilation](../tests/docs/test_01_compilation.md).
+- [Test Suite Coverage](../images/COVERAGE.svg) provides a more detailed analysis file-by-file, showing how many lines of code, Unity tests, Unity
 coverage, Blackbox coverage, and so on for each C file in the project that has instrumented code.  Currently a little more than 200 files, with
 more than 4,000 individual tests across well over 20,000 lines of instrumented code.  This table can be generated separately by running the
-[Coverage Table](tests/docs/coverage_table.md) script. This uses data from the most recent build.
-- [Cloc Code](images/CLOC_CODE.svg) uses the common `cloc` program to count the number of lines of code for the project, broken down by filetypes
+[Coverage Table](../tests/docs/coverage_table.md) script. This uses data from the most recent build.
+- [Cloc Code](../images/CLOC_CODE.svg) uses the common `cloc` program to count the number of lines of code for the project, broken down by filetypes
 and separating out comments and blank lines and so on. This gives a reasonable overview of the size and scale of the project, and some insight into
 its complexity, that makes it a little easier to compare to other projects. You could upload this to an AI model for example and ask how it compares
 to something like Klipper or SQLite or another open source project, and it will happily oblige. This table and the following table can be generated
-by runining the [Cloc Tables](tests/docs/cloc_tables.md) command. As with the Test Suite Coverage, this is typically useful only after performing a
+by runining the [Cloc Tables](../tests/docs/cloc_tables.md) command. As with the Test Suite Coverage, this is typically useful only after performing a
 full build.
-- [Cloc Stats](images/CLOC_STAT.svg) takes the `cloc` data a step further, combining it with data from our coverage calculations to give an extended
+- [Cloc Stats](../images/CLOC_STAT.svg) takes the `cloc` data a step further, combining it with data from our coverage calculations to give an extended
 view of the project, showing how we're doing in terms of comments versus code, or Unity versus Blackbox coverage in our tests.
 
 All of these are SVG files generated using `tables` for the formatting, and `Oh.sh` to convert ANSI terminal output into SVG. Both of those are

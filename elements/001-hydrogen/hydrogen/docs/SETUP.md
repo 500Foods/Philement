@@ -32,7 +32,7 @@ These tools are required when building or developing with the Hydrogen codebase:
 
 A handful of other projects are directly included in the tests/lib folder of this project.
 
-- [GitHub Sitmemap](https://github.com/500Foods/Scripts/github-sitemap) - Cross-reference all the markdown in a repository [lib/github-sitemap.sh](tests/lib/github-sitemap.sh)) ([Docs](tests/docs/github-sitemap.md))
+- [GitHub Sitmemap](https://github.com/500Foods/Scripts/github-sitemap) - Cross-reference all the markdown in a repository [lib/github-sitemap.sh](../tests/lib/github-sitemap.sh)) ([Docs](../tests/docs/github-sitemap.md))
 
 ## Example Ubuntu Build Environment
 

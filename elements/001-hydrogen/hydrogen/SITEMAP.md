@@ -8,9 +8,8 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [LICENSE.md](LICENSE.md): Standard MIT License
 - [INSTRUCTIONS.md](INSTRUCTIONS.md): "Recipe For Success" targetting AI models (or humans!) that are working on the project
 - [RELEASES.md](RELEASES.md): Version history index and instructions
-- [REVIEW.md](REVIEW.md): Used to track current project work
-- [SECRETS.md](SECRETS.md): Outlines how secrets are managed in the project
-- [SETUP.md](SETUP.md): Describes how to setup the dev environment
+- [SECRETS.md](docs/SECRETS.md): Outlines how secrets are managed in the project
+- [SETUP.md](docs/SETUP.md): Describes how to setup the dev environment
 - [SITEMAP.md](SITEMAP.md): An index to all the Markdown files in the proejct
 - [STRUCTURE.md](STRUCTURE.md): An index to all of the files in the project
 

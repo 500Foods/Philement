@@ -67,7 +67,7 @@ The configuration system is divided into subsystems, each with its own detailed 
 
 - [Security Configuration](/docs/reference/security_configuration.md) - Security settings
 - [OIDC Integration](/docs/oidc_integration.md) - Authentication
-- [Secrets Management](/SECRETS.md) - Managing sensitive data
+- [Secrets Management](/docs/SECRETS.md) - Managing sensitive data
 
 ## Use Cases
 

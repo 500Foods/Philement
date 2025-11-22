@@ -586,7 +586,7 @@ This dependency graph guides:
 
 ## Security Model
 
-Hydrogen implements a comprehensive security model with multiple layers of protection. For detailed implementation of encryption and secrets management, see [SECRETS.md](/SECRETS.md).
+Hydrogen implements a comprehensive security model with multiple layers of protection. For detailed implementation of encryption and secrets management, see [SECRETS.md](../SECRETS.md).
 
 ```diagram
 ┌───────────────────────────────────────────────────────────────┐

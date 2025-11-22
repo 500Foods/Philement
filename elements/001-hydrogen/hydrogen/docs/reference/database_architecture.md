@@ -119,7 +119,7 @@ The Database subsystem is configured through the following settings in hydrogen.
    - TLS encryption for all connections (see [network_architecture.md](./network_architecture.md))
    - Certificate validation using system CA store
    - Connection timeouts with configurable thresholds
-   - Secure credential handling as documented in [SECRETS.md](../../SECRETS.md)
+   - Secure credential handling as documented in [SECRETS.md](../SECRETS.md)
 
 2. **Access Control**
    - Role-based database access with least privilege principle
@@ -128,7 +128,7 @@ The Database subsystem is configured through the following settings in hydrogen.
    - Query restrictions based on service roles
 
 3. **Data Protection**
-   - Environment variable secrets management (see [SECRETS.md](../../SECRETS.md))
+   - Environment variable secrets management (see [SECRETS.md](../SECRETS.md))
    - AES-256 encrypted credentials in transit
    - Secure connection strings using environment variables
    - Sensitive data handling with encryption at rest
