@@ -32,6 +32,8 @@ return {
     BASE64_END = ",'base64')",
 
     JSON = "text",
+    JIS = "(",
+    JIE = ")",
     JSON_INGEST_START = "(",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = ""
