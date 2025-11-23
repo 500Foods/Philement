@@ -29,9 +29,9 @@ static bool validate_migration_config(const DatabaseConnection* conn_config,
                                      const char** migration_name_out,
                                      char** path_copy_out,
                                      const char* dqm_label) {
-    // Check if test migration is enabled
-    if (!conn_config->test_migration) {
-        log_this(dqm_label, "Test migration not enabled", LOG_LEVEL_TRACE, 0);
+    // Check if auto migration is enabled (LOAD phase is part of auto migration)
+    if (!conn_config->auto_migration) {
+        log_this(dqm_label, "Automatic migration not enabled", LOG_LEVEL_TRACE, 0);
         return false; // Not an error, just not enabled
     }
 
@@ -102,9 +102,9 @@ bool execute_load_migrations(DatabaseQueue* db_queue, DatabaseHandle* connection
         return false;
     }
 
-    // Check if test migration is enabled - return success if disabled
-    if (!conn_config->test_migration) {
-        log_this(dqm_label, "Test migration not enabled", LOG_LEVEL_TRACE, 0);
+    // Check if auto migration is enabled - return success if disabled
+    if (!conn_config->auto_migration) {
+        log_this(dqm_label, "Automatic migration not enabled", LOG_LEVEL_TRACE, 0);
         free(dqm_label);
         return true; // Disabled is not an error - return success
     }
