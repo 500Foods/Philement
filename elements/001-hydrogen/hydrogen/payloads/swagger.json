@@ -24,10 +24,6 @@
   ],
   "tags": [
     {
-      "name": "Conduit Service",
-      "description": "Provides database query execution by reference with typed parameters"
-    },
-    {
       "name": "OIDC Service",
       "description": "Provides OpenID Connect protocol endpoints and authentication services"
     },
@@ -43,7 +39,7 @@
         "description": "Executes a pre-defined query from the Query Table Cache using a query reference ID. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) that are automatically converted to database-specific parameter formats. Returns query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
         "operationId": "executeQueryByReferenceGet",
         "tags": [
-          "Conduit Service"
+          ""
         ],
         "responses": {
           "200": {
@@ -352,7 +348,7 @@
         "description": "Executes a pre-defined query from the Query Table Cache using a query reference ID. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) that are automatically converted to database-specific parameter formats. Returns query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
         "operationId": "executeQueryByReferencePost",
         "tags": [
-          "Conduit Service"
+          ""
         ],
         "responses": {
           "200": {
