@@ -7,6 +7,7 @@
 # download_unity_framework()
 
 # CHANGELOG
+# 4.2.0 - 2025-11-22 - Enhanced payload check to verify migration file timestamps - regenerates if any migration files are newer than payload
 # 4.1.0 - 2025-10-01 - Major optimization: Reduced rebuild time from 10-15s to ~1s with VERSION/RELEASE caching, simplified payload check, optimized source detection, and installer skip
 # 4.0.9 - 2025-10-01 - Fixed build skip logic to actually skip cmake command when nothing changed
 # 4.0.8 - 2025-10-01 - Added installer build skip optimization when hydrogen_release hasn't changed
@@ -39,7 +40,7 @@ TEST_NAME="Compilation"
 TEST_ABBR="CMP"
 TEST_NUMBER="01"
 TEST_COUNTER=0
-TEST_VERSION="4.1.0"
+TEST_VERSION="4.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -79,12 +80,12 @@ build_installer() {
         fi
     fi
     
-    print_optimization_status "Installer Build" "BUILD" "Building installer..."
+    print_optimization_status "Installer Build" "BUILD" "Building installer.."
 
 
     # Generate SHA256 hashes for files
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "sha256sum configs/hydrogen_default.json LICENSE.md hydrogen_release"
-    config_sha=$(sha256sum "${PROJECT_DIR}/configs/hydrogen_default.json" | cut -d' ' -f1)
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "sha256sum examples/configs/hydrogen_default.json LICENSE.md hydrogen_release"
+    config_sha=$(sha256sum "${PROJECT_DIR}/examples/configs/hydrogen_default.json" | cut -d' ' -f1)
     license_sha=$(sha256sum "${PROJECT_DIR}/LICENSE.md" | cut -d' ' -f1)
     exe_sha=$(sha256sum "${PROJECT_DIR}/hydrogen_release" | cut -d' ' -f1)
 
@@ -93,7 +94,7 @@ build_installer() {
     local license_b64
     local exe_b64
 
-    config_b64=$(base64 -w 76 "${PROJECT_DIR}/configs/hydrogen_default.json")
+    config_b64=$(base64 -w 76 "${PROJECT_DIR}/examples/configs/hydrogen_default.json")
     license_b64=$(base64 -w 76 "${PROJECT_DIR}/LICENSE.md")
     exe_b64=$(base64 -w 76 "${PROJECT_DIR}/hydrogen_release")
 
@@ -205,11 +206,11 @@ build_installer() {
                     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Signature generated successfully"
                 else
                     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Signature generation returned empty result"
-                    sed -i "s|### HYDROGEN SIGNATURE|### HYDROGEN SIGNATURE\n#|" "${installer_output}"
+                    sed -i "s|### HYDROGEN SIGNATURE|### HYDROGEN SIGNATURE\n#}" "${installer_output}"
                 fi
             else
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "openssl command failed"
-                sed -i "s|### HYDROGEN SIGNATURE|### HYDROGEN SIGNATURE\n#|" "${installer_output}"
+                sed -i "s|### HYDROGEN SIGNATURE|### HYDROGEN SIGNATURE\n#}" "${installer_output}"
             fi
             # Clean up key file
             rm -f "${key_file}"
@@ -377,12 +378,32 @@ is_cmake_configured() {
 needs_payload_regeneration() {
     local payload_file="${PAYLOAD_DIR}/payload.tar.br.enc"
     
-    # Simple check: if payload file exists, we're good. If not, generate it.
-    if [[ -f "${payload_file}" ]]; then
-        return 1  # Payload exists, no regeneration needed
-    else
+    # Simple check: if payload file doesn't exist, generate it
+    if [[ ! -f "${payload_file}" ]]; then
         return 0  # Payload missing, need to generate
     fi
+    
+    # Check if migration files are newer than the payload
+    # Migration files are in elements/002-helium/{design}/migrations/
+    local helium_base_dir="${PROJECT_DIR}/../../002-helium"
+    local designs=("helium" "acuranzo")
+    
+    for design in "${designs[@]}"; do
+        local migrations_dir="${helium_base_dir}/${design}/migrations"
+        
+        # Skip if migrations directory doesn't exist
+        [[ ! -d "${migrations_dir}" ]] && continue
+        
+        # Check if any migration files are newer than the payload
+        # Look for: database.lua, database_*.lua, and ${design}_????.lua files
+        if find "${migrations_dir}" -type f \
+            \( -name "database.lua" -o -name "database_*.lua" -o -name "${design}_????.lua" \) \
+            -newer "${payload_file}" -print -quit 2>/dev/null | grep -q .; then
+            return 0  # Found newer migration files, need to regenerate
+        fi
+    done
+    
+    return 1  # Payload exists and is current, no regeneration needed
 }
 
 update_build_timestamp() {
@@ -497,7 +518,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Check and Generate Payload"
 # shellcheck disable=SC2310 # Function intentionally used in condition
 if needs_payload_regeneration; then
     print_optimization_status "Payload Generation" "BUILD" "Generating payload..."
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Payload file not found, generating..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Payload file not found or not current, generating..."
 
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if safe_cd payloads; then
