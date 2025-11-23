@@ -281,6 +281,9 @@ bool database_queue_lead_execute_migration_process(DatabaseQueue* lead_queue, ch
  * AVAIL: The highest number of Lua scripts available
  * LOAD: The highest number from Bootstrap query where type = 1000
  * APPLY: The highest number from Bootstrap query where type = 1003
+ *
+ * NOTE: This function ONLY checks AutoMigration flag (not TestMigration).
+ *       TestMigration is checked separately by database_queue_lead_run_migration_test().
  */
 bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
     if (!lead_queue || !lead_queue->is_lead_queue) {
@@ -295,6 +298,7 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
     migration_timer_running = true;
 
     // Check if auto-migration is enabled
+    // NOTE: TestMigration flag is NOT checked here - it's checked in run_migration_test()
     if (!database_queue_lead_is_auto_migration_enabled(lead_queue)) {
         log_this(dqm_label, "Automatic Migration disabled - skipping migration execution", LOG_LEVEL_DEBUG, 0);
         // End the migration timer
@@ -313,7 +317,7 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
         return true;
     }
 
-    log_this(dqm_label, "Automatic Migration enabled", LOG_LEVEL_DEBUG, 0);
+    log_this(dqm_label, "Automatic Migration enabled - proceeding with LOAD and APPLY phases", LOG_LEVEL_DEBUG, 0);
 
     // Execute migration process (handles LOAD and/or APPLY as needed)
     // APPLY phase has its own internal loop for applying multiple migrations
@@ -342,6 +346,11 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
 
 /*
  * Run migration test for Lead DQM
+ *
+ * NOTE: This function ONLY checks TestMigration flag (not AutoMigration).
+ *       AutoMigration is checked separately by database_queue_lead_run_migration().
+ *       This allows independent control: AutoMigration=TRUE, TestMigration=FALSE
+ *       will run LOAD/APPLY but skip REVERSE testing.
  */
 bool database_queue_lead_run_migration_test(DatabaseQueue* lead_queue) {
     if (!lead_queue || !lead_queue->is_lead_queue) {
@@ -352,6 +361,7 @@ bool database_queue_lead_run_migration_test(DatabaseQueue* lead_queue) {
     log_this(dqm_label, "Running migration test", LOG_LEVEL_TRACE, 0);
 
     // Check if test migration is enabled in config
+    // NOTE: AutoMigration flag is NOT checked here - it was already checked in run_migration()
     const DatabaseConnection* migration_conn_config = NULL;
     if (app_config) {
         for (int i = 0; i < app_config->databases.connection_count; i++) {
@@ -363,7 +373,7 @@ bool database_queue_lead_run_migration_test(DatabaseQueue* lead_queue) {
     }
 
     if (migration_conn_config && migration_conn_config->test_migration) {
-        log_this(dqm_label, "Test Migration enabled - Running migration tests", LOG_LEVEL_DEBUG, 0);
+        log_this(dqm_label, "Test Migration enabled - Running migration tests (REVERSE phase)", LOG_LEVEL_DEBUG, 0);
 
         // Acquire connection for migration test execution
         if (!database_queue_lead_acquire_migration_connection(lead_queue, dqm_label)) {
@@ -383,7 +393,7 @@ bool database_queue_lead_run_migration_test(DatabaseQueue* lead_queue) {
             log_this(dqm_label, "TestMigration completed successfully", LOG_LEVEL_DEBUG, 0);
         }
     } else {
-        log_this(dqm_label, "Test Migration disabled - skipping migration test", LOG_LEVEL_DEBUG, 0);
+        log_this(dqm_label, "Test Migration disabled - skipping migration test (REVERSE phase)", LOG_LEVEL_DEBUG, 0);
     }
 
     // End the migration timer and output elapsed time

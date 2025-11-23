@@ -182,8 +182,12 @@ void* database_queue_worker_thread(void* arg) {
 
         if (connection_ready) {
             if (database_queue_lead_run_bootstrap(db_queue)) {
-                database_queue_lead_run_migration(db_queue);
-                database_queue_lead_run_migration_test(db_queue);
+                // Migration phases are independent:
+                // - AutoMigration controls LOAD and APPLY phases
+                // - TestMigration controls REVERSE (test) phase
+                // They can be enabled/disabled independently
+                database_queue_lead_run_migration(db_queue);         // Checks AutoMigration flag
+                database_queue_lead_run_migration_test(db_queue);    // Checks TestMigration flag independently
                 database_queue_lead_launch_additional_queues(db_queue);
                 // database_queue_lead_manage_heartbeats(db_queue); // Disabled for now - causing mutex issues
                 db_queue->conductor_sequence_completed = true; // Mark as completed to prevent re-execution
@@ -264,55 +268,51 @@ void database_queue_manage_child_queues(DatabaseQueue* lead_queue) {
     // free(dqm_label);
 
     // Implement scaling logic based on queue utilization
-    char* dqm_label = database_queue_generate_label(lead_queue);
-    MutexResult lock_result = MUTEX_LOCK(&lead_queue->children_lock, dqm_label);
-    if (lock_result == MUTEX_SUCCESS) {
-        // Check each child queue for scaling decisions
-        for (int i = 0; i < lead_queue->child_queue_count; i++) {
-            if (lead_queue->child_queues[i]) {
-                DatabaseQueue* child = lead_queue->child_queues[i];
-                size_t queue_depth = database_queue_get_depth(child);
+    // NOTE: Removed children_lock here because spawn/shutdown functions handle their own locking
+    // Having the lock here caused nested locking and mutex timeout errors
+    
+    // Check each child queue for scaling decisions
+    for (int i = 0; i < lead_queue->child_queue_count; i++) {
+        if (lead_queue->child_queues[i]) {
+            DatabaseQueue* child = lead_queue->child_queues[i];
+            size_t queue_depth = database_queue_get_depth(child);
 
-                // Scale up: if all queues of this type are non-empty
-                if (queue_depth > 0) {
-                    // Check if we can spawn another queue of this type
-                    int same_type_count = 0;
-                    for (int j = 0; j < lead_queue->child_queue_count; j++) {
-                        if (lead_queue->child_queues[j] &&
-                            strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
-                            same_type_count++;
-                        }
-                    }
-
-                    // If we have fewer than max queues of this type, consider scaling up
-                    if (same_type_count < 3) {  // Configurable max per type
-                        database_queue_spawn_child_queue(lead_queue, child->queue_type);
+            // Scale up: if all queues of this type are non-empty
+            if (queue_depth > 0) {
+                // Check if we can spawn another queue of this type
+                int same_type_count = 0;
+                for (int j = 0; j < lead_queue->child_queue_count; j++) {
+                    if (lead_queue->child_queues[j] &&
+                        strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
+                        same_type_count++;
                     }
                 }
-                // Scale down: if all queues of this type are empty
-                else {
-                    // Count empty queues of this type
-                    int empty_count = 0;
-                    int total_count = 0;
-                    for (int j = 0; j < lead_queue->child_queue_count; j++) {
-                        if (lead_queue->child_queues[j] &&
-                            strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
-                            total_count++;
-                            if (database_queue_get_depth(lead_queue->child_queues[j]) == 0) {
-                                empty_count++;
-                            }
+
+                // If we have fewer than max queues of this type, consider scaling up
+                if (same_type_count < 3) {  // Configurable max per type
+                    database_queue_spawn_child_queue(lead_queue, child->queue_type);
+                }
+            }
+            // Scale down: if all queues of this type are empty
+            else {
+                // Count empty queues of this type
+                int empty_count = 0;
+                int total_count = 0;
+                for (int j = 0; j < lead_queue->child_queue_count; j++) {
+                    if (lead_queue->child_queues[j] &&
+                        strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
+                        total_count++;
+                        if (database_queue_get_depth(lead_queue->child_queues[j]) == 0) {
+                            empty_count++;
                         }
                     }
+                }
 
-                    // If all queues of this type are empty and we have more than minimum, scale down
-                    if (empty_count == total_count && total_count > 1) {  // Keep at least 1
-                        database_queue_shutdown_child_queue(lead_queue, child->queue_type);
-                    }
+                // If all queues of this type are empty and we have more than minimum, scale down
+                if (empty_count == total_count && total_count > 1) {  // Keep at least 1
+                    database_queue_shutdown_child_queue(lead_queue, child->queue_type);
                 }
             }
         }
-
-        mutex_unlock(&lead_queue->children_lock);
-        free(dqm_label);
     }
 }

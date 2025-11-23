@@ -161,7 +161,7 @@ void test_execute_load_migrations_test_migration_disabled(void) {
     app_config->databases.connection_count = 1;
     app_config->databases.connections[0].name = strdup("testdb");
     app_config->databases.connections[0].enabled = true;
-    app_config->databases.connections[0].test_migration = false;
+    app_config->databases.connections[0].auto_migration = false;
 
     DatabaseHandle dummy_connection = {0};
     bool result = execute_load_migrations(db_queue, &dummy_connection);
@@ -177,6 +177,7 @@ void test_execute_load_migrations_no_migrations_config(void) {
     app_config->databases.connection_count = 1;
     app_config->databases.connections[0].name = strdup("testdb");
     app_config->databases.connections[0].enabled = true;
+    app_config->databases.connections[0].auto_migration = true;
     app_config->databases.connections[0].test_migration = true;
     app_config->databases.connections[0].migrations = NULL;
 
@@ -194,6 +195,7 @@ void test_execute_load_migrations_no_engine_type(void) {
     app_config->databases.connection_count = 1;
     app_config->databases.connections[0].name = strdup("testdb");
     app_config->databases.connections[0].enabled = true;
+    app_config->databases.connections[0].auto_migration = true;
     app_config->databases.connections[0].test_migration = true;
     app_config->databases.connections[0].migrations = strdup("PAYLOAD:test");
     app_config->databases.connections[0].type = NULL;
@@ -212,6 +214,7 @@ void test_execute_load_migrations_invalid_migration_config(void) {
     app_config->databases.connection_count = 1;
     app_config->databases.connections[0].name = strdup("testdb");
     app_config->databases.connections[0].enabled = true;
+    app_config->databases.connections[0].auto_migration = true;
     app_config->databases.connections[0].test_migration = true;
     app_config->databases.connections[0].migrations = strdup("");  // Empty string
     app_config->databases.connections[0].type = strdup("sqlite");
@@ -231,6 +234,7 @@ void test_execute_load_migrations_discover_files_failure(void) {
     app_config->databases.connection_count = 1;
     app_config->databases.connections[0].name = strdup("testdb");
     app_config->databases.connections[0].enabled = true;
+    app_config->databases.connections[0].auto_migration = true;
     app_config->databases.connections[0].test_migration = true;
     app_config->databases.connections[0].migrations = strdup("PAYLOAD:nonexistent");
     app_config->databases.connections[0].type = strdup("sqlite");
@@ -429,7 +433,7 @@ void test_validate_migration_config_edge_cases(void) {
     app_config->databases.connection_count = 1;
     app_config->databases.connections[0].name = strdup("testdb");
     app_config->databases.connections[0].enabled = true;
-    app_config->databases.connections[0].test_migration = true;
+    app_config->databases.connections[0].auto_migration = true;
     app_config->databases.connections[0].migrations = strdup("INVALID:");  // Missing name
     app_config->databases.connections[0].type = strdup("sqlite");
     
@@ -453,6 +457,7 @@ void test_execute_load_migrations_complete_flow_with_mock_data(void) {
     app_config->databases.connection_count = 1;
     app_config->databases.connections[0].name = strdup("testdb");
     app_config->databases.connections[0].enabled = true;
+    app_config->databases.connections[0].auto_migration = true;
     app_config->databases.connections[0].test_migration = true;
     app_config->databases.connections[0].migrations = strdup("PAYLOAD:test_migrations");
     app_config->databases.connections[0].type = strdup("sqlite");
@@ -506,6 +511,7 @@ void test_execute_load_migrations_null_schema(void) {
     app_config->databases.connection_count = 1;
     app_config->databases.connections[0].name = strdup("testdb");
     app_config->databases.connections[0].enabled = true;
+    app_config->databases.connections[0].auto_migration = true;
     app_config->databases.connections[0].test_migration = true;
     app_config->databases.connections[0].migrations = strdup("PAYLOAD:test");
     app_config->databases.connections[0].type = strdup("postgresql");
