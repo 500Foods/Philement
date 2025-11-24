@@ -85,4 +85,10 @@ This folder contains the migrations (aka database DDL and SQL) for creating a ne
 | [1052](acuranzo/migrations/acuranzo_1052.lua) | lookups | 1.0.0 | 2025-11-22 | 6 |  | Defaults for Lookup 027 - Query Status |
 | [1053](acuranzo/migrations/acuranzo_1053.lua) | lookups | 1.0.0 | 2025-11-22 | 6 |  | Defaults for Lookup 028 - Query Type |
 | [1054](acuranzo/migrations/acuranzo_1054.lua) | lookups | 1.0.0 | 2025-11-22 | 6 |  | Defaults for Lookup 029 - Query Quadrant |
-| **55** | | | | **329** | **24** | |
+| [1055](acuranzo/migrations/acuranzo_1055.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 030 - Query Dialect |
+| [1056](acuranzo/migrations/acuranzo_1056.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 031 - List Types |
+| [1057](acuranzo/migrations/acuranzo_1057.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 032 - List Status |
+| [1058](acuranzo/migrations/acuranzo_1058.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 033 - Login Controls |
+| [1059](acuranzo/migrations/acuranzo_1059.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 034 - Role Status |
+| [1060](acuranzo/migrations/acuranzo_1060.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 035 - Role Scope |
+| **61** | | | | **365** | **24** | |

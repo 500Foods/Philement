@@ -5,7 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2025-11-22 - Initial creation
+-- 1.0.0 - 2025-11-24 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
