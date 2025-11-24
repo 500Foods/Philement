@@ -1,27 +1,46 @@
 -- database_db2.lua
--- DB2-specific configuration for Helium schema
+
+-- luacheck: no max line length
+
+-- CHANGLOG
+-- 2.1.0 - 2025-11-23 - Added DROP_CHECK to test for non-empty tables prior to drop
+-- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
+
+-- NOTES
+-- Bse64 support provided via a C UDF found in extras
 
 return {
-    PRIMARY = "PRIMARY KEY",
-    UNIQUE = "UNIQUE",
-    SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
+    CHAR_2 = "CHAR(2)",
+    CHAR_20 = "CHAR(20)",
+    CHAR_50 = "CHAR(50)",
+    CHAR_128 = "CHAR(128)",
     INTEGER = "INTEGER",
+    NOW = "CURRENT TIMESTAMP",
+    PRIMARY = "PRIMARY KEY",
+    SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
+    TEXT = "VARCHAR(250)",
+    TEXT_BIG = "CLOB(1M)",
+    TIMESTAMP_TZ = "TIMESTAMP",
+    UNIQUE = "UNIQUE",
     VARCHAR_20 = "VARCHAR(20)",
     VARCHAR_50 = "VARCHAR(50)",
     VARCHAR_100 = "VARCHAR(100)",
     VARCHAR_128 = "VARCHAR(128)",
     VARCHAR_500 = "VARCHAR(500)",
-    TEXT = "VARCHAR(250)", -- DB2 TEXT equivalent
-    BIGTEXT = "CLOB(10M)",
-    JSONB = "CLOB(1M)",
-    TIMESTAMP_TZ = "TIMESTAMP",
-    NOW = "CURRENT TIMESTAMP",
-    CHECK_CONSTRAINT = "CHECK(status IN ('Pending', 'Applied', 'Utility'))",
-    JSON_INGEST_START = "${SCHEMA}json_ingest(",
+
+    BASE64_START = "${SCHEMA}BASE64DECODE(",
+    BASE64_END = ")",
+
+    DROP_CHECK = "BEGIN IF EXISTS(SELECT 1 FROM ${SCHEMA}${TABLE}) THEN SIGNAL SQLSTATE '75001' SET MESSAGE_TEXT='Refusing to drop table ${SCHEMA}${TABLE} – it contains data'; END IF; END",
+
+    JSON = "CLOB(1M)",
+    JIS = "${SCHEMA}JSON_INGEST(",
+    JIE = ")",
+    JSON_INGEST_START = "${SCHEMA}JSON_INGEST(",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = [[
-        -- json.ingest for db2 attempt 3
-        CREATE OR REPLACE FUNCTION ${SCHEMA}json_ingest(s CLOB)
+        -- json.ingest for db2 attempt 4
+        CREATE OR REPLACE FUNCTION ${SCHEMA}JSON_INGEST(s CLOB)
         RETURNS CLOB
         LANGUAGE SQL
         DETERMINISTIC
