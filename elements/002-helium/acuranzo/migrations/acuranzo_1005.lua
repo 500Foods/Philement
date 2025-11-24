@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1005.lua
--- Creates the accounts table and populating it with the next migration.
+-- Creates the accounts table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

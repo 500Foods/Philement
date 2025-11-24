@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1038.lua
--- Lookup 013 - License Status
+-- Defaults for Lookup 013 - License Status
 
 -- luacheck: no max line length
 -- luacheck: no unused args

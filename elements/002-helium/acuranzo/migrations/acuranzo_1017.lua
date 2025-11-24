@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1017.lua
--- Creates the rules table and populating it with the next migration.
+-- Creates the rules table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

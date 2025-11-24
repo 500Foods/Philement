@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1019.lua
--- Creates the systems table and populating it with the next migration.
+-- Creates the systems table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

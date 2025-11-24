@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1034.lua
--- Lookup 009 - Entity Type
+-- Defaults for Lookup 009 - Entity Type
 
 -- luacheck: no max line length
 -- luacheck: no unused args

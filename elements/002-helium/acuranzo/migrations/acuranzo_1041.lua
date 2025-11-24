@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1041.lua
--- Lookup 016 - Account Access Type
+-- Defaults for Lookup 016 - Account Access Type
 
 -- luacheck: no max line length
 -- luacheck: no unused args

@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1015.lua
--- Creates the reports table and populating it with the next migration.
+-- Creates the reports table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

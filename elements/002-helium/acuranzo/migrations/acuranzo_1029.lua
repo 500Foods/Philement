@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1029.lua
--- Lookup 004 - Connection Type
+-- Defaults for Lookup 004 - Connection Type
 
 -- luacheck: no max line length
 -- luacheck: no unused args

@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1031.lua
--- Lookup 006 - Connection Status
+-- Defaults for Lookup 006 - Connection Status
 
 -- luacheck: no max line length
 -- luacheck: no unused args

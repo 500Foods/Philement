@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1030.lua
--- Lookup 005 - Connected Status
+-- Defaults for Lookup 005 - Connected Status
 
 -- luacheck: no max line length
 -- luacheck: no unused args

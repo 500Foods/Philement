@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1002.lua
--- Creates the account_access table and populating it with the next migration.
+-- Creates the account_access table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

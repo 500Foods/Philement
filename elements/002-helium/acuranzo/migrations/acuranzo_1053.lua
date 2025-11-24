@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1051.lua
--- Lookup 028 - Query Type
+-- Defaults for Lookup 028 - Query Type
 
 -- luacheck: no max line length
 -- luacheck: no unused args

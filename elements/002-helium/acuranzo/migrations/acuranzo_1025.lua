@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1025.lua
--- Lookup 000 - Lookup Items
+-- Defaults for Lookup 000 - Lookup Items
 
 -- luacheck: no max line length
 -- luacheck: no unused args

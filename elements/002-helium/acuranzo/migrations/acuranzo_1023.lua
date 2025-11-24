@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1023.lua
--- Creates the workflows table and populating it with the next migration.
+-- Creates the workflows table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

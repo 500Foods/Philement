@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1042.lua
--- Lookup 017 - IANA Timezone
+-- Defaults for Lookup 017 - IANA Timezone
 
 -- luacheck: no max line length
 -- luacheck: no unused args

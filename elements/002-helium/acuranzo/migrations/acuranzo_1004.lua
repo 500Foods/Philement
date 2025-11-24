@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1004.lua
--- Creates the account_roles table and populating it with the next migration.
+-- Creates the account_roles table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

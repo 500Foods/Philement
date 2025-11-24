@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1044.lua
--- Lookup 019 - Authenticate
+-- Defaults for Lookup 019 - Authenticate
 
 -- luacheck: no max line length
 -- luacheck: no unused args

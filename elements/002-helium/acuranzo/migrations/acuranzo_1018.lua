@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1018.lua
--- Creates the sessions table and populating it with the next migration.
+-- Creates the sessions table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1028.lua
--- Lookup 003 - Dictionary Status
+-- Defaults for Lookup 003 - Dictionary Status
 
 -- luacheck: no max line length
 -- luacheck: no unused args
