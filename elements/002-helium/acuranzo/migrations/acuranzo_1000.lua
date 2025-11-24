@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 3.1.0 - 2025-11-23 - Added DROP_CHECK to reverse migration
 -- 3.0.0 - 2025-10-30 - Another overhaul (thanks, MySQL) to have an alternate increment mechanism
 -- 2.0.0 - 2025-10-18 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
@@ -42,6 +43,66 @@ if engine ~= 'sqlite' then table.insert(queries,{sql=[[
 
     -- Defined in database_<engine>.lua as a macro
     ${JSON_INGEST_FUNCTION}
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: DB2 has no built-in Base64 encoding, so here we're adding the UDF pointing at the
+--       UDF we've got in extras/base64_udf_db2 in case it is applied to a different schema
+if engine == 'db2' then table.insert(queries,{sql=[[
+
+    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64_DECODE_CHUNK(input_base64 VARCHAR(32672))
+    RETURNS VARCHAR(32672)
+    LANGUAGE C
+    PARAMETER STYLE DB2SQL
+    NO SQL
+    DETERMINISTIC
+    NOT FENCED
+    THREADSAFE
+    RETURNS NULL ON NULL INPUT
+    EXTERNAL NAME 'base64_chunk_udf.so!BASE64_DECODE_CHUNK'
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: DB2 has no built-in Base64 encoding, so here we're adding the UDF pointing at the
+--       UDF we've got in extras/base64_udf_db2 in case it is applied to a different schema
+if engine == 'db2' then table.insert(queries,{sql=[[
+
+    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64DECODE(encoded CLOB(2G))
+    RETURNS CLOB(2G)
+    LANGUAGE SQL
+    DETERMINISTIC
+    READS SQL DATA
+
+    BEGIN ATOMIC
+        DECLARE result  CLOB(2G);
+        DECLARE pos     INTEGER   DEFAULT 1;
+        DECLARE len     INTEGER;
+        DECLARE step    INTEGER   DEFAULT 32672;
+        DECLARE piece   VARCHAR(32672);
+        DECLARE aligned INTEGER;
+        DECLARE chunk   VARCHAR(32672);
+        SET result = CAST('' AS CLOB(1K));
+
+        SET len = LENGTH(encoded);
+
+        chunk_loop:
+        WHILE pos <= len DO
+            SET piece = CAST(SUBSTR(encoded, pos, step) AS VARCHAR(32672));
+            IF piece IS NULL OR LENGTH(piece) = 0 THEN
+            LEAVE chunk_loop;
+            END IF;
+
+            SET aligned = LENGTH(piece) - MOD(LENGTH(piece), 4);
+            IF aligned > 0 THEN
+            SET chunk  = SUBSTR(piece, 1, aligned);
+            SET result = result || CAST(TEST.BASE64_DECODE_CHUNK(chunk) AS CLOB(32672));
+            END IF;
+
+            SET pos = pos + step;
+        END WHILE chunk_loop;
+
+        RETURN result;
+    END
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -97,6 +158,11 @@ table.insert(queries,{sql=[[
 
 ]]})
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: Here our intent is to drop the main queries table but we're trying to be careful not to
+--       drop it if anyting has been added to it that we didn't add to it ourselves via another
+--       migration. We'd expect customers to add things regularly, so this is more of a safety
+--       check, like with all the migrations to follow, in case it is run against a production
+--       database with records added that did not come directly from a migration.
 table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
@@ -115,6 +181,15 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
+            DELETE FROM ${SCHEMA}${QUERIES}
+            WHERE query_type_a28 IN (1000, 1001, 1002, 1003);
+
+            ${SUBQUERY_DELIMITER}
+
+            ${DROP_CHECK};
+
+            ${SUBQUERY_DELIMITER}
+
             DROP TABLE ${SCHEMA}${TABLE};
         ]=]
                                                                             AS code,

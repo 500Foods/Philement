@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 3.1.0 - 2025-11-23 - Added DROP_CHECK to reverse migration
 -- 3.0.0 - 2025-11-02 - Another overhaul (thanks, MySQL) to have an alternate increment mechanism
 -- 2.0.0 - 2025-10-27 - Moved to latest migration format
 -- 1.1.0 - 2025-09-28 - Changed diagram query to use JSON table definition instead of PlantUML for custom ERD tool.
@@ -84,6 +85,10 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
+            ${DROP_CHECK};
+
+            ${SUBQUERY_DELIMITER}
+
             DROP TABLE ${SCHEMA}${TABLE};
 
             ${SUBQUERY_DELIMITER}

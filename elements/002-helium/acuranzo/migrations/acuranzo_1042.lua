@@ -79,8 +79,8 @@ table.insert(queries,{sql=[[
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
                 (${LOOKUP_ID}, 0, 1, 'GMT',                 0, 0, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 4, 1, 'America/Vancouver',   0, 4, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 5, 1, 'Europe/London',       0, 5, '', '', '{}', ${COMMON_VALUES});
+                (${LOOKUP_ID}, 1, 1, 'America/Vancouver',   0, 1, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 2, 1, 'Europe/London',       0, 2, '', '', '{}', ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
@@ -129,7 +129,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0, 1);
+            AND key_idx IN (0, 1, 2);
 
             ${SUBQUERY_DELIMITER}
 
