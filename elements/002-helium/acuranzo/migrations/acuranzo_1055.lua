@@ -1,19 +1,19 @@
--- Migration: acuranzo_1054.lua
--- Defaults for Lookup 029 - Query Quadrant
+-- Migration: acuranzo_155.lua
+-- Defaults for Lookup 030 - Query Dialect
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2025-11-22 - Initial creation
+-- 1.0.0 - 2025-11-24 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "lookups"
-cfg.MIGRATION = "1054"
-cfg.LOOKUP_ID = "029"
-cfg.LOOKUP_NAME = "Query Quadrant"
+cfg.MIGRATION = "1055"
+cfg.LOOKUP_ID = "030"
+cfg.LOOKUP_NAME = "Query Dialect"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -57,7 +57,7 @@ table.insert(queries,{sql=[[
                 [==[
                     # ${LOOKUP_ID} - ${LOOKUP_NAME}
 
-                    Query Quadrant - a major grouping of tables, potentially spanning different databases.
+                    Query Dialect - essentially the list of database engines supported.
                 ]==],                           -- summary
                 ${JSON_INGEST_START}
                 [==[
@@ -78,10 +78,12 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, 0, 1, 'APP', 0, 0, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1, 1, 'ORG', 0, 1, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 2, 1, 'SCL', 0, 2, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 3, 1, 'PRJ', 0, 3, '', '', '{}', ${COMMON_VALUES});
+                (${LOOKUP_ID}, 0, 1, 'SQL',             0, 0, '', '', '{"Image":"Images/sql_dialect_db2.png"}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 1, 1, 'PostgreSQL',      0, 1, '', '', '{"Image":"Images/sql_dialect_postgres.png"}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 2, 1, 'SQLite',          0, 2, '', '', '{"Image":"Images/sql_dialect_sqlite.png"}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 3, 1, 'MySQL/MariaDB',   0, 3, '', '', '{"Image":"Images/sql_dialect_mysql.png"}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 4, 1, 'IBM DB2',         0, 4, '', '', '{"Image":"Images/sql_dialect_db2.png"}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 5, 1, 'MS SQL Server',   0, 5, '', '', '{"Image":"Images/sql_dialect_mssql.png"}', ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
@@ -130,7 +132,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0, 1, 2, 3);
+            AND key_idx IN (0, 1, 2, 3, 4, 5);
 
             ${SUBQUERY_DELIMITER}
 
