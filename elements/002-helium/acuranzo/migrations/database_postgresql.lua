@@ -1,7 +1,9 @@
 -- database_postgresql.lua
--- PostgreSQL-specific configuration for Helium schema
+
+-- luacheck: no max line length
 
 -- CHANGLOG
+-- 2.1.0 - 2025-11-23 - Added DROP_CHECK to test for non-empty tables prior to drop
 -- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
 
 -- NOTES
@@ -28,6 +30,8 @@ return {
 
     BASE64_START = "CONVERT_FROM(DECODE(",
     BASE64_END = ", 'base64'), 'UTF8')",
+
+    DROP_CHECK = "SELECT pg_catalog.pg_terminate_backend(pg_backend_pid()) FROM ${SCHEMA}${TABLE} LIMIT 1",
 
     JSON = "jsonb",
     JIS = "${SCHEMA}json_ingest (",

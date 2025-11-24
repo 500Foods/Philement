@@ -1,7 +1,9 @@
 -- database_sqlite.lua
--- SQLite-specific configuration for Helium schema
+
+-- luacheck: no max line length
 
 -- CHANGLOG
+-- 2.1.0 - 2025-11-23 - Added DROP_CHECK to test for non-empty tables prior to drop
 -- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
 
 -- NOTES
@@ -30,6 +32,8 @@ return {
 
     BASE64_START = "CRYPTO_DECODE(",
     BASE64_END = ",'base64')",
+
+    DROP_CHECK = "SELECT 'Refusing to drop table ${SCHEMA}${TABLE} – it contains data' WHERE EXISTS (SELECT 1 FROM ${SCHEMA}${TABLE})",
 
     JSON = "text",
     JIS = "(",

@@ -1,7 +1,9 @@
 -- database_db2.lua
--- DB2-specific configuration for Helium schema
+
+-- luacheck: no max line length
 
 -- CHANGLOG
+-- 2.1.0 - 2025-11-23 - Added DROP_CHECK to test for non-empty tables prior to drop
 -- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
 
 -- NOTES
@@ -28,6 +30,8 @@ return {
 
     BASE64_START = "${SCHEMA}BASE64DECODE(",
     BASE64_END = ")",
+
+    DROP_CHECK = "BEGIN IF EXISTS(SELECT 1 FROM ${SCHEMA}${TABLE}) THEN SIGNAL SQLSTATE '75001' SET MESSAGE_TEXT='Refusing to drop table ${SCHEMA}${TABLE} – it contains data'; END IF; END",
 
     JSON = "CLOB(1M)",
     JIS = "${SCHEMA}JSON_INGEST(",

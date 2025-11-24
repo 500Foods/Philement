@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 3.1.0 - 2025-11-23 - Added DROP_CHECK to reverse migration
 -- 3.0.0 - 2025-10-30 - Another overhaul (thanks, MySQL) to have an alternate increment mechanism
 -- 2.0.2 - 2025-10-29 - Fixed typo - missing comma after first ${TIMEOUT}
 -- 2.0.1 - 2025-10-29 - Fixed typo - {$TABLE} instead of ${TABLE}
@@ -90,6 +91,10 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
+            ${DROP_CHECK};
+
+            ${SUBQUERY_DELIMITER}
+
             DROP TABLE ${SCHEMA}${TABLE};
 
             ${SUBQUERY_DELIMITER}
