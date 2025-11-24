@@ -1,30 +1,49 @@
 -- database_mysql.lua
--- MySQL-specific configuration for Helium schema
+
+-- luacheck: no max line length
+
+-- CHANGLOG
+-- 2.1.0 - 2025-11-23 - Added DROP_CHECK to test for non-empty tables prior to drop
+-- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
+
+-- NOTES
+-- Base64 support provided natively by database
 
 return {
-    PRIMARY = "PRIMARY KEY",
-    UNIQUE = "UNIQUE KEY",
-    SERIAL = "INT AUTO_INCREMENT",
-    INTEGER = "INT",
-    VARCHAR_20 = "VARCHAR(20)",
-    VARCHAR_50 = "VARCHAR(50)",
-    VARCHAR_100 = "VARCHAR(100)",
-    VARCHAR_128 = "VARCHAR(128)",
-    VARCHAR_500 = "VARCHAR(500)",
-    TEXT = "TEXT",
-    BIGTEXT = "TEXT",
-    JSONB = "LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin", -- because JSON_VALID doesn't pass our JSON properly
-    TIMESTAMP_TZ = "TIMESTAMP",
+    CHAR_2 = "char(2)",
+    CHAR_20 = "char(20)",
+    CHAR_50 = "char(50)",
+    CHAR_128 = "char(128)",
+    INTEGER = "int",
     NOW = "CURRENT_TIMESTAMP",
-    CHECK_CONSTRAINT = "ENUM('Pending', 'Applied', 'Utility')",
+    PRIMARY = "PRIMARY KEY",
+    SERIAL = "int auto increment",
+    TEXT = "text",
+    TEXT_BIG = "text",
+    TIMESTAMP_TZ = "timestamp",
+    UNIQUE = "UNIQUE",
+    VARCHAR_20 = "varchar(20)",
+    VARCHAR_50 = "varchar(50)",
+    VARCHAR_100 = "varchar(100)",
+    VARCHAR_128 = "varchar(128)",
+    VARCHAR_500 = "varchar(500)",
+
+    BASE64_START = "cast(from_base64(",
+    BASE64_END = ") as char character set utf8mb4)",
+
+    DROP_CHECK = " DO IF(EXISTS(SELECT 1 FROM ${SCHEMA}${TABLE}), CAST('Refusing to drop table ${SCHEMA}${TABLE} – it contains data' AS CHAR(0)), NULL)",
+
+    JSON = "longtext",
+    JIS = "${SCHEMA}json_ingest(",
+    JIE = ")",
     JSON_INGEST_START = "${SCHEMA}json_ingest(",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = [[
-        CREATE OR REPLACE FUNCTION json_ingest(s LONGTEXT)
-        RETURNS LONGTEXT
+        CREATE OR REPLACE FUNCTION json_ingest(s longtext)
+        RETURNS longtext
         DETERMINISTIC
         BEGIN
-          DECLARE fixed LONGTEXT DEFAULT '';
+          DECLARE fixed longtext DEFAULT '';
           DECLARE i INT DEFAULT 1;
           DECLARE L INT DEFAULT CHAR_LENGTH(s);
           DECLARE ch CHAR(1);
