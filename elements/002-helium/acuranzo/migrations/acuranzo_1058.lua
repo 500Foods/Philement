@@ -1,5 +1,5 @@
--- Migration: acuranzo_1054.lua
--- Defaults for Lookup 029 - Query Quadrant
+-- Migration: acuranzo_1058.lua
+-- Defaults for Lookup 033 - Login Controls
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "lookups"
-cfg.MIGRATION = "1054"
-cfg.LOOKUP_ID = "029"
-cfg.LOOKUP_NAME = "Query Quadrant"
+cfg.MIGRATION = "1058"
+cfg.LOOKUP_ID = "033"
+cfg.LOOKUP_NAME = "Login Controls"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -57,7 +57,7 @@ table.insert(queries,{sql=[[
                 [==[
                     # ${LOOKUP_ID} - ${LOOKUP_NAME}
 
-                    Query Quadrant - a major grouping of tables, potentially spanning different databases.
+                    Login Controls  - flags for login features and settings.
                 ]==],                           -- summary
                 ${JSON_INGEST_START}
                 [==[
@@ -78,10 +78,29 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, 0, 1, 'APP', 0, 0, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1, 1, 'ORG', 0, 1, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 2, 1, 'SCL', 0, 2, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 3, 1, 'PRJ', 0, 3, '', '', '{}', ${COMMON_VALUES});
+                (${LOOKUP_ID},   0, 1, 'Login Log Account',                                 0,   0, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID},   1, 1, 'Retry Attempts',                                    0,   1, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID},   2, 1, 'Retry Window (minutes)',                            0,   2, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID},   3, 1, 'Block Duration (minutes)',                          0,   3, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID},   4, 1, 'Min Username Length',                               0,   4, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID},   5, 1, 'Min Password Length',                               0,   5, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID},   6, 1, 'Min Timezone Length',                               0,   6, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID},   7, 1, 'Min API Key Length',                                0,   7, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID},   8, 1, 'JWT Duration',                                      0,   8, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 100, 1, 'Insufficent Username Length',                       0, 100, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 101, 1, 'Insufficent Password Length',                       0, 101, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 102, 1, 'Insufficent Timezone Length',                       0, 102, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 103, 1, 'Insufficent API Key Length',                        0, 103, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 104, 1, 'Invalid Timezone',                                  0, 104, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 105, 1, 'API Key was not authenticated',                     0, 105, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 106, 1, 'IP Address has been temporarily blocked',           0, 106, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 107, 1, 'Too many login attempts - Please try again later',  0, 107, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 108, 1, 'Invalid Username',                                  0, 108, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 109, 1, 'Non-unique Username detected',                      0, 109, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 110, 1, 'Username authentication disabled',                  0, 110, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 111, 1, 'Account not authorized',                            0, 111, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 112, 1, 'Invalid Password',                                  0, 112, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 113, 1, 'E-mail address not found',                          0, 113, '', '', '{}', ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
@@ -130,7 +149,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0, 1, 2, 3);
+            AND key_idx IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113);
 
             ${SUBQUERY_DELIMITER}
 
