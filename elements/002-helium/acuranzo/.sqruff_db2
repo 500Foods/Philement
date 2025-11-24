@@ -1,4 +1,0 @@
-[sqruff]
-dialect = ansi
-
-exclude_rules = LT01,LT02,CP02
