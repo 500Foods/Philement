@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1006.lua
--- Creates the actions table and populating it with the next migration.
+-- Creates the actions table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

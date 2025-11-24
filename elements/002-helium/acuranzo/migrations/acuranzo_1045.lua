@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1045.lua
--- Lookup 020 - Contact Status
+-- Defaults for Lookup 020 - Contact Status
 
 -- luacheck: no max line length
 -- luacheck: no unused args

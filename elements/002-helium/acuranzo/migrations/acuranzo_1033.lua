@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1033.lua
--- Lookup 008 - Note Status
+-- Defaults for Lookup 008 - Note Status
 
 -- luacheck: no max line length
 -- luacheck: no unused args

@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1000.lua
--- Bootstraps the migration system by creating the queries table and populating it with the next migration.
+-- Bootstraps the migration system by creating the queries table and supporting user-defined functions
 
 -- luacheck: no max line length
 -- luacheck: no unused args

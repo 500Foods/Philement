@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1003.lua
--- Creates the account_contacts table and populating it with the next migration.
+-- Creates the account_contacts table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

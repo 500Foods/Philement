@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1001.lua
--- Creates the lookups table and populating it with the next migration.
+-- Creates the lookups table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

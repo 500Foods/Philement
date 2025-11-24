@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1050.lua
--- Lookup 025 - Session Status
+-- Defaults for Lookup 025 - Session Status
 
 -- luacheck: no max line length
 -- luacheck: no unused args

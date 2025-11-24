@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1051.lua
--- Lookup 026 - Session Flag
+-- Defaults for Lookup 026 - Session Flag
 
 -- luacheck: no max line length
 -- luacheck: no unused args

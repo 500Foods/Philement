@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1032.lua
--- Lookup 007 - Rule Status
+-- Defaults for Lookup 007 - Rule Status
 
 -- luacheck: no max line length
 -- luacheck: no unused args

@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1009.lua
--- Creates the dictionaries table and populating it with the next migration.
+-- Creates the dictionaries table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

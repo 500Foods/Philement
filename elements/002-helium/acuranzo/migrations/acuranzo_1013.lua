@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1013.lua
--- Creates the lists table and populating it with the next migration.
+-- Creates the lists table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

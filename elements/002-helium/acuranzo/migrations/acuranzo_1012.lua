@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1012.lua
--- Creates the licenses table and populating it with the next migration.
+-- Creates the licenses table
 
 -- luacheck: no max line length
 -- luacheck: no unused args
