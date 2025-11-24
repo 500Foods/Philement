@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1037.lua
--- Lookup 010 - Template Status
+-- Defaults for Lookup 012 - Template Status
 
 -- luacheck: no max line length
 -- luacheck: no unused args

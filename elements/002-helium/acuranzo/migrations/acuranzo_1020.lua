@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1020.lua
--- Creates the templates table and populating it with the next migration.
+-- Creates the templates table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

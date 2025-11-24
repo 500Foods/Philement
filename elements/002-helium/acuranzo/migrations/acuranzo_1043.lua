@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1043.lua
--- Lookup 018 - Contact Type
+-- Defaults for Lookup 018 - Contact Type
 
 -- luacheck: no max line length
 -- luacheck: no unused args

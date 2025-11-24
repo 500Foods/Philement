@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1010.lua
--- Creates the documents table and populating it with the next migration.
+-- Creates the documents table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

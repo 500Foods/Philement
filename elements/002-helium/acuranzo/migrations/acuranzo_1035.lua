@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1031.lua
--- Lookup 010 - Workflow Status
+-- Defaults for Lookup 010 - Workflow Status
 
 -- luacheck: no max line length
 -- luacheck: no unused args

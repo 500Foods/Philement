@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1007.lua
--- Creates the connections table and populating it with the next migration.
+-- Creates the connections table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

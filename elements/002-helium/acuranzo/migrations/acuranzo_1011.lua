@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1011.lua
--- Creates the languages table and populating it with the next migration.
+-- Creates the languages table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1043.lua
--- Lookup 029 - Query Quadrant
+-- Defaults for Lookup 029 - Query Quadrant
 
 -- luacheck: no max line length
 -- luacheck: no unused args

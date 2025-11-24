@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1049.lua
--- Lookup 024 - Action Type
+-- Defaults for Lookup 024 - Action Type
 
 -- luacheck: no max line length
 -- luacheck: no unused args

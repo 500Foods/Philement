@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1014.lua
--- Creates the notes table and populating it with the next migration.
+-- Creates the notes table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1021.lua
--- Creates the tokens table and populating it with the next migration.
+-- Creates the tokens table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

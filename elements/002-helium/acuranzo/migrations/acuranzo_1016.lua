@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1016.lua
--- Creates the roles table and populating it with the next migration.
+-- Creates the roles table
 
 -- luacheck: no max line length
 -- luacheck: no unused args
