@@ -50,12 +50,10 @@ count_migrations() {
     local file="$1"
     local insert_count
     local query_delim
-    local subquery_delim
     
     insert_count=$(grep -c "table\.insert(queries" "${file}" || echo "0")
     query_delim=$(grep -c "QUERY_DELIMITER" "${file}" || echo "0")
-    subquery_delim=$(grep -c "SUBQUERY_DELIMITER" "${file}" || echo "0")
-    echo $((insert_count + query_delim + subquery_delim))
+    echo $((insert_count + query_delim))
 }
 
 # Function to check if file has diagram migration
@@ -72,8 +70,8 @@ has_diagram() {
 generate_migrations_table() {
     echo "## Migrations"
     echo ""
-    echo "| M# | Table | Version | Released | Migrations | Diagram | Description |"
-    echo "|----|-------|---------|----------|------------|---------|-------------|"
+    echo "| M# | Table | Version | Updated | Stmts | Diagram | Description |"
+    echo "|----|-------|---------|---------|-------|---------|-------------|"
     
     local total_migrations=0
     local total_diagrams=0
