@@ -1,7 +1,9 @@
 -- database_mysql.lua
--- MySQL-specific configuration for Helium schema
+
+-- luacheck: no max line length
 
 -- CHANGLOG
+-- 2.1.0 - 2025-11-23 - Added DROP_CHECK to test for non-empty tables prior to drop
 -- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
 
 -- NOTES
@@ -29,7 +31,8 @@ return {
     BASE64_START = "cast(from_base64(",
     BASE64_END = ") as char character set utf8mb4)",
 
-    -- JSON = "longtext characterset utf8mb4 collate utf8mb4_bin", -- because JSON_VALID doesn't pass our JSON properly
+    DROP_CHECK = " DO IF(EXISTS(SELECT 1 FROM ${SCHEMA}${TABLE}), CAST('Refusing to drop table ${SCHEMA}${TABLE} – it contains data' AS CHAR(0)), NULL)",
+
     JSON = "longtext",
     JIS = "${SCHEMA}json_ingest(",
     JIE = ")",

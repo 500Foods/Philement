@@ -131,7 +131,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0, 1);
+            AND key_idx IN (0, 1, 2, 3, 4);
 
             ${SUBQUERY_DELIMITER}
 
