@@ -1,19 +1,19 @@
--- Migration: acuranzo_1054.lua
--- Defaults for Lookup 029 - Query Quadrant
+-- Migration: acuranzo_1056.lua
+-- Defaults for Lookup 031 - List Types
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2025-11-22 - Initial creation
+-- 1.0.0 - 2025-11-24 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "lookups"
-cfg.MIGRATION = "1054"
-cfg.LOOKUP_ID = "029"
-cfg.LOOKUP_NAME = "Query Quadrant"
+cfg.MIGRATION = "1056"
+cfg.LOOKUP_ID = "031"
+cfg.LOOKUP_NAME = "List Types"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -57,7 +57,7 @@ table.insert(queries,{sql=[[
                 [==[
                     # ${LOOKUP_ID} - ${LOOKUP_NAME}
 
-                    Query Quadrant - a major grouping of tables, potentially spanning different databases.
+                    List Types - types of lists used in various system functions.
                 ]==],                           -- summary
                 ${JSON_INGEST_START}
                 [==[
@@ -78,10 +78,9 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, 0, 1, 'APP', 0, 0, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1, 1, 'ORG', 0, 1, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 2, 1, 'SCL', 0, 2, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 3, 1, 'PRJ', 0, 3, '', '', '{}', ${COMMON_VALUES});
+                (${LOOKUP_ID}, 0, 1, 'IP Blacklist',    0, 0, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 1, 1, 'IP Whitelist',    0, 1, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 2, 1, 'IP Recidivists',  0, 2, '', '', '{}', ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
@@ -130,7 +129,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0, 1, 2, 3);
+            AND key_idx IN (0, 1, 2);
 
             ${SUBQUERY_DELIMITER}
 

@@ -1,5 +1,5 @@
--- Migration: acuranzo_1054.lua
--- Defaults for Lookup 029 - Query Quadrant
+-- Migration: acuranzo_1060.lua
+-- Defaults for Lookup 035 - Role Scope
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "lookups"
-cfg.MIGRATION = "1054"
-cfg.LOOKUP_ID = "029"
-cfg.LOOKUP_NAME = "Query Quadrant"
+cfg.MIGRATION = "1055"
+cfg.LOOKUP_ID = "035"
+cfg.LOOKUP_NAME = "Role Scope"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -57,7 +57,7 @@ table.insert(queries,{sql=[[
                 [==[
                     # ${LOOKUP_ID} - ${LOOKUP_NAME}
 
-                    Query Quadrant - a major grouping of tables, potentially spanning different databases.
+                    Role Scope - how broadly a role is applied.
                 ]==],                           -- summary
                 ${JSON_INGEST_START}
                 [==[
@@ -78,10 +78,11 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, 0, 1, 'APP', 0, 0, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1, 1, 'ORG', 0, 1, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 2, 1, 'SCL', 0, 2, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 3, 1, 'PRJ', 0, 3, '', '', '{}', ${COMMON_VALUES});
+                (${LOOKUP_ID}, 0, 1, 'Organization',    0, 0, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 1, 1, 'System',          0, 1, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 2, 1, 'Project',         0, 2, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 3, 1, 'Team',            0, 3, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 4, 1, 'Person',          0, 4, '', '', '{}', ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
@@ -130,7 +131,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0, 1, 2, 3);
+            AND key_idx IN (0, 1, 2, 3, 4);
 
             ${SUBQUERY_DELIMITER}
 
