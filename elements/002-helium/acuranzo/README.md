@@ -1,19 +1,25 @@
 # Acuranzo Database Design
 
-This folder contains the migrations (aka database DDL and SQL) for createing a new insttance of an Acuranzo database. Current supported engines include SQLite, PostgreSQL, MySQL, and IBM DB2.
+This folder contains the migrations (aka database DDL and SQL) for creating a new instance of an Acuranzo database. Current supported engines include PostgreSQL, MySQL, SQLite, and IBM DB2.
 
 ## Design Notes
 
+1. The [migration_index.sh](migration_index.sh) script can be used to automatically update the Migrations table below.
 1. Some tables do not have a primary key, such as "sessions".  This is deliberate.
-2. Scripts assume that working Base64 Decode funtionality is present across all engines.
-3. Scripts assume that working JSON_INGEST functionality is present across all engines.
-4. Database engines currently supported use the labels 'postgresql', 'mysql', 'sqlite', and 'db2'.
+1. Scripts assume that working Base64 Decode funtionality is present across all engines.
+1. Scripts assume that working JSON_INGEST functionality is present across all engines.
+1. Database engines currently supported use the labels 'postgresql', 'mysql', 'sqlite', and 'db2'.
+1. Each Lua migration script is focused on one element, and contains both FORWARD and REVERSE migrations.
+1. Changes to the schema also include a DIAGRAM migration.
+1. Query and Subquery delimiters are required, particularly for DB2.
+1. Migrations are processed as individual transactions. Any errors at all rollback and stop the migration process.
+1. Migrations are loaded into the Hydrogen Payload, so it should be updated after changes are made.
 
 ## Database Files
 
 | File | Purpose |
 |------|---------|
-| [`database.lua`](migrations/database.lua) | Defines the Helium schema, supported database engines, and SQL defaults for migrations used in Hydrogen |
+| [`database.lua`](migrations/database.lua) | Converts migration files to engine-specific SQL using macros and fancy formatting tricks |
 | [`database_mysql.lua`](migrations/database_mysql.lua) | MySQL-specific database configuration |
 | [`database_postgresql.lua`](migrations/database_postgresql.lua) | PostgreSQL-specific database configuration |
 | [`database_sqlite.lua`](migrations/database_sqlite.lua) | SQLite-specific database configuration |
@@ -60,7 +66,7 @@ This folder contains the migrations (aka database DDL and SQL) for createing a n
 | [1034](migrations/acuranzo_1034.lua) | lookups | 1.0.0 | 2025-11-22 | 10 |  | Defaults for Lookup 009 - Entity Type |
 | [1035](migrations/acuranzo_1035.lua) | lookups | 1.0.0 | 2025-11-22 | 10 |  | Defaults for Lookup 010 - Workflow Status |
 | [1036](migrations/acuranzo_1036.lua) | lookups | 1.0.0 | 2025-11-22 | 10 |  | Defaults for Lookup 011 - Workflow Step Status |
-| [1037](migrations/acuranzo_1037.lua) | lookups | 1.0.0 | 2025-11-22 | 10 |  | Defaults for Lookup 010 - Template Status |
+| [1037](migrations/acuranzo_1037.lua) | lookups | 1.0.0 | 2025-11-22 | 10 |  | Defaults for Lookup 012 - Template Status |
 | [1038](migrations/acuranzo_1038.lua) | lookups | 1.0.0 | 2025-11-22 | 10 |  | Defaults for Lookup 013 - License Status |
 | [1039](migrations/acuranzo_1039.lua) | lookups | 1.0.0 | 2025-11-22 | 10 |  | Defaults for Lookup 014 - System Status |
 | [1040](migrations/acuranzo_1040.lua) | lookups | 1.0.0 | 2025-11-22 | 10 |  | Defaults for Lookup 015 - System Access Type |
