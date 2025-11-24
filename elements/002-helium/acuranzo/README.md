@@ -14,7 +14,7 @@ This folder contains the migrations (aka database DDL and SQL) for creating a ne
 1. Query and Subquery delimiters are required, particularly for DB2.
 1. Migrations are processed as individual transactions. Any errors at all rollback and stop the migration process.
 1. Migrations are loaded into the Hydrogen Payload, so it should be updated after changes are made.
-1. The Migrations count is intended to reflect all the subqueries included in each migration.
+1. The Stmts count reflects the number of queries and subqueries included in each migration.
 
 ## Database Files
 
