@@ -4,6 +4,9 @@
 # Generates a Migrations table section for README files based on migration folder contents
 # Usage: ./migration_index.sh <readme_file> <migrations_folder>
 
+# CHANGEHISTORY
+# 1.0.0 - 2025-11-24 - Initial version
+
 set -euo pipefail
 
 # Check arguments
