@@ -15,7 +15,7 @@
                 "Database": "${env.HYDROTST_DB_NAME}",
                 "Host":"localhost",
                 "Port": 55555,
-                "StmtCache":10000,
+                "StmtCache":10,
                 "User": "${env.HYDROTST_DB_USER}",
                 "Pass": "${env.HYDROTST_DB_PASS}",
                 "Bootstrap":"SELECT query_id \"id\", query_ref \"ref\", query_status_a27 \"status\", query_type_a28 \"type\", query_dialect_a30 \"engine\", query_queue_a58 \"queue\", query_timeout \"timeout\", name \"name\", code \"query\" FROM test.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",

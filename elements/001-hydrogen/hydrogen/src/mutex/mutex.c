@@ -214,7 +214,7 @@ MutexResult mutex_lock_with_timeout(
         set_current_mutex_op_ptr(NULL);
         // Log error (only if not already in a logging operation to avoid circular dependency)
         if (!log_is_in_logging_operation()) {
-            log_this(id->subsystem, "MUTEX ERR: %X as %s in %s() [%s:%d] - error %d (%s)", LOG_LEVEL_ERROR, 6, (unsigned int)(uintptr_t)mutex, id->name, id->function, id->file, id->line, result, strerror(result));
+            log_this(id->subsystem, "MUTEX ERR 1: %X as %s in %s() [%s:%d] - error %d (%s)", LOG_LEVEL_ERROR, 7, (unsigned int)(uintptr_t)mutex, id->name, id->function, id->file, id->line, result, strerror(result));
         }
         return MUTEX_ERROR;
     }
@@ -290,7 +290,7 @@ MutexResult mutex_unlock(pthread_mutex_t* mutex) {
     } else {
         // This is a serious error - log it (only if not already in a logging operation to avoid circular dependency)
         if (!log_is_in_logging_operation()) {
-            log_this(SR_MUTEXES, "MUTEX ERR: %X unlock failed - error %d (%s)", LOG_LEVEL_ERROR, 3, (unsigned int)(uintptr_t)mutex, result, strerror(result));
+            log_this(SR_MUTEXES, "MUTEX ERR 2: %X unlock failed - error %d (%s)", LOG_LEVEL_ERROR, 3, (unsigned int)(uintptr_t)mutex, result, strerror(result));
         }
         return MUTEX_ERROR;
     }
@@ -331,7 +331,7 @@ MutexResult mutex_unlock_with_id(pthread_mutex_t* mutex, MutexId* id) {
     } else {
         // This is a serious error - log it (only if not already in a logging operation to avoid circular dependency)
         if (!log_is_in_logging_operation()) {
-            log_this(id->subsystem, "MUTEX ERR: %X unlock failed - error %d (%s)", LOG_LEVEL_ERROR, 3, (unsigned int)(uintptr_t)mutex, result, strerror(result));
+            log_this(id->subsystem, "MUTEX ERR 3: %X unlock failed - error %d (%s)", LOG_LEVEL_ERROR, 3, (unsigned int)(uintptr_t)mutex, result, strerror(result));
         }
         return MUTEX_ERROR;
     }

@@ -545,7 +545,8 @@ bool validate_database_connections(const DatabaseConfig* db_config, const char**
             if (conn_valid) {
                 char* valid_msg = malloc(256);
                 if (valid_msg) {
-                    snprintf(valid_msg, 256, "  Go:      Database %s configuration valid", conn->name);
+                    snprintf(valid_msg, 256, "  Go:      Database %s configuration valid (Prepared Statement Cache: %d)", 
+                             conn->name, conn->prepared_statement_cache_size);
                     add_launch_message(messages, count, capacity, valid_msg);
                 }
             } else {

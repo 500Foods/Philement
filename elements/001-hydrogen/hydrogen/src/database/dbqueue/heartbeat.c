@@ -287,6 +287,10 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
         return false;
     }
 
+    // Override prepared statement cache size with value from DatabaseQueue if set
+    // No fallback logic - if it's 0, that's a configuration bug that should be exposed
+    config->prepared_statement_cache_size = db_queue->prepared_statement_cache_size;
+
     // Determine database engine type from connection string
     DatabaseEngine engine_type = database_queue_determine_engine_type(db_queue->connection_string);
 

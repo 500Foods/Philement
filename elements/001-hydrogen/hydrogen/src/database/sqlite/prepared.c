@@ -78,8 +78,15 @@ bool sqlite_evict_lru_prepared_statement(DatabaseHandle* connection, const SQLit
         connection->prepared_statement_lru_counter[i] = connection->prepared_statement_lru_counter[i + 1];
     }
 
+    // NULL out the last element to prevent dangling pointer issues
+    connection->prepared_statements[connection->prepared_statement_count - 1] = NULL;
+    if (connection->prepared_statement_lru_counter) {
+        connection->prepared_statement_lru_counter[connection->prepared_statement_count - 1] = 0;
+    }
+
     connection->prepared_statement_count--;
-    log_this(SR_DATABASE, "Evicted LRU prepared statement to make room for: %s", LOG_LEVEL_TRACE, 1, new_stmt_name);
+    log_this(connection->designator ? connection->designator : SR_DATABASE,
+              "Evicted LRU prepared statement to make room for: %s", LOG_LEVEL_TRACE, 1, new_stmt_name);
     return true;
 }
 
@@ -144,11 +151,8 @@ bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, cons
     prepared_stmt->created_at = time(NULL);
     prepared_stmt->usage_count = 0;
 
-    // Get cache size from database configuration (default to 1000 if not set)
-    size_t cache_size = 1000; // Default value
-    if (connection->config && connection->config->prepared_statement_cache_size > 0) {
-        cache_size = (size_t)connection->config->prepared_statement_cache_size;
-    }
+    // Get cache size from database configuration
+    size_t cache_size = (size_t)connection->config->prepared_statement_cache_size;
 
     // Initialize cache if this is the first prepared statement
     if (!connection->prepared_statements) {
@@ -161,18 +165,12 @@ bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, cons
         }
     }
 
-    // Add prepared statement to cache (handles LRU eviction if needed)
-    if (!sqlite_add_prepared_statement_to_cache(connection, prepared_stmt, cache_size)) {
-        free(prepared_stmt->name);
-        free(prepared_stmt->sql_template);
-        free(prepared_stmt);
-        sqlite3_finalize_ptr(sqlite_stmt);
-        return false;
-    }
-
+    // NOTE: Do NOT add to cache here - database_engine_execute() will handle caching
+    // via store_prepared_statement() to avoid double-caching
     *stmt = prepared_stmt;
 
-    log_this(SR_DATABASE, "SQLite prepared statement created and added to connection", LOG_LEVEL_TRACE, 0);
+    log_this(connection->designator ? connection->designator : SR_DATABASE,
+             "SQLite prepared statement created and added to connection", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
@@ -202,6 +200,11 @@ bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* s
                     connection->prepared_statement_lru_counter[j] = connection->prepared_statement_lru_counter[j + 1];
                 }
             }
+            // NULL out the last element to prevent dangling pointer issues
+            connection->prepared_statements[connection->prepared_statement_count - 1] = NULL;
+            if (connection->prepared_statement_lru_counter) {
+                connection->prepared_statement_lru_counter[connection->prepared_statement_count - 1] = 0;
+            }
             connection->prepared_statement_count--;
             break;
         }
@@ -212,7 +215,8 @@ bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* s
     free(stmt->sql_template);
     free(stmt);
 
-    log_this(SR_DATABASE, "SQLite prepared statement finalized and removed", LOG_LEVEL_TRACE, 0);
+    log_this(connection->designator ? connection->designator : SR_DATABASE,
+             "SQLite prepared statement finalized and removed", LOG_LEVEL_TRACE, 0);
     return true;
 }
 
