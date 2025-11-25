@@ -17,10 +17,16 @@ This is for the AI Model to use to resolve these failing tests.
 - Review INSTRUCTIONS.md
 - Review tests/README.md
 - Review tests/UNITY.md
+- Review tests/unity/mocks/README.md
 
 NOTE: Some tests are old and might have been difficult to get working when they were first created.
 Since then, many additional mock libraries have been added, and thousands of additional tests are
 now available and working that we can look at for examples of how to write far more complex tests.
+
+NOTE: In particular, tests that use malloc were initially disabled as the mock system for malloc was
+having problems of all kinds, but this is now working properly and there are many tests that use it.
+Comments referencing tests being disabled due to mallloc issues are likely out of data and should be
+revisited for implmentation.
 
 NOTE: Most tests are well-contained, meaning that the result of one test is not in any way dependeent
 on the presence or success/failure of another test, certainly in other files but also within the same
@@ -98,22 +104,6 @@ Tests that verify readiness with mock registry state remain disabled until bette
 - tests/unity/src/mdns/mdns_server_init_test_setup_hostname.c:92:    if (0) RUN_TEST(test_mdns_server_setup_hostname_malloc_failure);
 - tests/unity/src/mdns/mdns_server_init_test_allocate.c:64:    if (0) RUN_TEST(test_mdns_server_allocate_malloc_failure);
 
-## Database_Engine
-
-- tests/unity/src/database/database_engine_test_comprehensive.c:685:    if (0) RUN_TEST(test_database_engine_register_basic);
-- tests/unity/src/database/database_engine_test_comprehensive.c:686:    if (0) RUN_TEST(test_database_engine_register_null_engine);
-- tests/unity/src/database/database_engine_test_comprehensive.c:687:    if (0) RUN_TEST(test_database_engine_register_invalid_type);
-- tests/unity/src/database/database_engine_test_comprehensive.c:688:    if (0) RUN_TEST(test_database_engine_register_already_registered);
-- tests/unity/src/database/database_engine_test_comprehensive.c:689:    if (0) RUN_TEST(test_database_engine_register_already_registered_independent);
-- tests/unity/src/database/database_engine_test_transaction.c:429:    if (0) RUN_TEST(test_database_engine_begin_transaction_no_engine);
-- tests/unity/src/database/database_engine_test_transaction.c:433:    if (0) RUN_TEST(test_database_engine_commit_transaction_null_transaction);
-- tests/unity/src/database/database_engine_test_transaction.c:434:    if (0) RUN_TEST(test_database_engine_commit_transaction_no_engine);
-- tests/unity/src/database/database_engine_test_transaction.c:436:    if (0) RUN_TEST(test_database_engine_rollback_transaction_basic);
-- tests/unity/src/database/database_engine_test_transaction.c:438:    if (0) RUN_TEST(test_database_engine_rollback_transaction_null_transaction);
-- tests/unity/src/database/database_engine_test_transaction.c:439:    if (0) RUN_TEST(test_database_engine_rollback_transaction_no_engine);
-- tests/unity/src/database/database_engine_test_connect.c:300:    if (0) RUN_TEST(test_database_engine_connect_with_designator_basic);
-- tests/unity/src/database/database_engine_test_connect.c:301:    if (0) RUN_TEST(test_database_engine_connect_with_designator_null_designator);
-
 ## Database_Bootstrap
 
 - tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query.c:72:    if (0) RUN_TEST(test_database_queue_execute_bootstrap_query_lead_queue_no_connection);
@@ -131,46 +121,6 @@ Tests that verify readiness with mock registry state remain disabled until bette
 - tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:879:    if (0) RUN_TEST(test_migration_tracking_mixed);
 - tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:880:    if (0) RUN_TEST(test_bootstrap_completion_signaling);
 - tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:881:    if (0) RUN_TEST(test_empty_database_detection);
-
-## Database/DBQueue
-
-- tests/unity/src/database/dbqueue/process_test_missing_coverage.c:398:    if (0) RUN_TEST(test_database_queue_process_single_query_no_connection);
-- tests/unity/src/database/dbqueue/process_test_missing_coverage.c:400:    if (0) RUN_TEST(test_database_queue_manage_child_queues_scaling_down); // Disabled due to segfault in queue destruction
-- tests/unity/src/database/dbqueue/process_test_missing_coverage.c:404:    if (0) RUN_TEST(test_database_queue_worker_thread_main_loop_processing);
-- tests/unity/src/database/dbqueue/heartbeat_test_perform_heartbeat.c:118:    if (0) RUN_TEST(test_database_queue_perform_heartbeat_with_connection);
-- tests/unity/src/database/dbqueue/heartbeat_test_perform_heartbeat.c:119:    if (0) RUN_TEST(test_database_queue_perform_heartbeat_connection_states);
-- tests/unity/src/database/dbqueue/heartbeat_test_check_connection.c:144:    if (0) RUN_TEST(test_database_queue_check_connection_sqlite_format);
-
-## Database/Migration
-
-- tests/unity/src/database/migration/transaction_test_execute_transaction.c:495:    if (0) RUN_TEST(test_parse_sql_statements_strdup_failure);  // Disabled: malloc mocking not supported
-- tests/unity/src/database/migration/transaction_test_execute_transaction.c:496:    if (0) RUN_TEST(test_parse_sql_statements_realloc_failure);  // Disabled: malloc mocking not supported
-- tests/unity/src/database/migration/transaction_test_execute_transaction.c:503:    if (0) RUN_TEST(test_execute_db2_migration_calloc_failure);  // Disabled: malloc mocking not supported
-- tests/unity/src/database/migration/transaction_test_execute_transaction.c:508:    if (0) RUN_TEST(test_execute_postgresql_migration_calloc_failure);  // Disabled: malloc mocking not supported
-- tests/unity/src/database/migration/transaction_test_execute_transaction.c:529:    if (0) RUN_TEST(test_database_migrations_execute_transaction_parse_failure);  // Disabled: malloc mocking not supported
-- tests/unity/src/database/migration/lua_test_load_database_module.c:669:    if (0) RUN_TEST(test_database_migrations_lua_extract_queries_table_success);
-- tests/unity/src/database/migration/lua_test_load_database_module.c:679:    if (0) RUN_TEST(test_database_migrations_lua_execute_run_migration_success);
-- tests/unity/src/database/migration/execute_test_execute_auto.c:553:    if (0) RUN_TEST(test_database_migrations_execute_single_migration_with_mocks);
-
-## Database/MySQL
-
-- tests/unity/src/database/mysql/query_test_coverage_mysql.c:509:    if (0) RUN_TEST(test_mysql_execute_query_memory_allocation_failure); // Skipped - requires mock_system
-- tests/unity/src/database/mysql/query_test_coverage_mysql.c:516:    if (0) RUN_TEST(test_mysql_execute_prepared_affected_rows_fallback); // Targets line 520
-- tests/unity/src/database/mysql/query_test_coverage_mysql.c:518:    if (0) RUN_TEST(test_mysql_execute_prepared_stmt_execute_unavailable); // Skipped - mock limitation
-- tests/unity/src/database/mysql/query_test_coverage_mysql.c:519:    if (0) RUN_TEST(test_mysql_execute_prepared_memory_allocation_failure); // Skipped - requires mock_system
-- tests/unity/src/database/mysql/query_test_coverage_mysql.c:520:    if (0) RUN_TEST(test_mysql_execute_prepared_with_result_set); // Skipped - mock limitation
-- tests/unity/src/database/mysql/query_test_edge_cases_mysql.c:415:    if (0) RUN_TEST(test_mysql_execute_prepared_execution_failure);
-- tests/unity/src/database/mysql/query_test_edge_cases_mysql.c:418:    if (0) RUN_TEST(test_mysql_execute_prepared_null_column_data);
-
-## Database/PostgreSQL
-
-- tests/unity/src/database/postgresql/prepared_test_postgresql_force_failures.c:218:    if (0) RUN_TEST(test_force_cache_initialization_failure);
-- tests/unity/src/database/postgresql/prepared_test_postgresql_force_failures.c:219:    if (0) RUN_TEST(test_force_lru_eviction_failure);
-
-## Database/SQLite
-
-- tests/unity/src/database/sqlite/query_test_sqlite.c:787:    if (0) RUN_TEST(test_sqlite_execute_query_memory_allocation_failure);
-- tests/unity/src/database/sqlite/query_test_sqlite.c:809:    if (0) RUN_TEST(test_sqlite_execute_prepared_memory_allocation_failure);
 
 ## WebServer
 

@@ -145,18 +145,6 @@ void test_parse_sql_statements_empty_input(void) {
     TEST_ASSERT_EQUAL(0, statement_count);
 }
 
-// NOTE: These tests disabled - malloc mocking doesn't work because stdlib.h
-// is included in hydrogen.h before our mock macros can take effect
-void test_parse_sql_statements_strdup_failure(void) {
-    // DISABLED: malloc mock doesn't work due to include order in hydrogen.h
-    TEST_IGNORE_MESSAGE("malloc mocking not supported - stdlib.h included before mocks");
-}
-
-void test_parse_sql_statements_realloc_failure(void) {
-    // DISABLED: malloc mock doesn't work due to include order in hydrogen.h
-    TEST_IGNORE_MESSAGE("malloc mocking not supported - stdlib.h included before mocks");
-}
-
 void test_parse_sql_statements_single_no_delimiter(void) {
     const char* sql = "SELECT 1;";
     char** statements = NULL;
@@ -205,11 +193,6 @@ void test_execute_db2_migration_transaction_begin_failure(void) {
     bool result = execute_db2_migration(&test_connection, (char**)statements, statement_count, "test.sql", "test");
 
     TEST_ASSERT_FALSE(result);
-}
-
-void test_execute_db2_migration_calloc_failure(void) {
-    // DISABLED: malloc mock doesn't work due to include order in hydrogen.h
-    TEST_IGNORE_MESSAGE("malloc mocking not supported - stdlib.h included before mocks");
 }
 
 void test_execute_db2_migration_statement_failure(void) {
@@ -271,11 +254,6 @@ void test_execute_postgresql_migration_begin_failure(void) {
     bool result = execute_postgresql_migration(&test_connection, (char**)statements, statement_count, "test.sql", "test");
 
     TEST_ASSERT_FALSE(result);
-}
-
-void test_execute_postgresql_migration_calloc_failure(void) {
-    // DISABLED: malloc mock doesn't work due to include order in hydrogen.h
-    TEST_IGNORE_MESSAGE("malloc mocking not supported - stdlib.h included before mocks");
 }
 
 void test_execute_postgresql_migration_statement_failure(void) {
@@ -464,11 +442,6 @@ void test_database_migrations_execute_transaction_empty_sql(void) {
     TEST_ASSERT_FALSE(result);
 }
 
-void test_database_migrations_execute_transaction_parse_failure(void) {
-    // DISABLED: malloc mock doesn't work due to include order in hydrogen.h
-    TEST_IGNORE_MESSAGE("malloc mocking not supported - stdlib.h included before mocks");
-}
-
 void test_database_migrations_execute_transaction_no_statements(void) {
     const char* sql = "   \n   \n";  // Only whitespace
     bool result = execute_transaction(&test_connection, sql, strlen(sql), "test.sql", DB_ENGINE_POSTGRESQL, "test");
@@ -492,20 +465,16 @@ int main(void) {
     RUN_TEST(test_parse_sql_statements_empty_input);
     RUN_TEST(test_parse_sql_statements_empty_statements);
     RUN_TEST(test_parse_sql_statements_single_no_delimiter);
-    if (0) RUN_TEST(test_parse_sql_statements_strdup_failure);  // Disabled: malloc mocking not supported
-    if (0) RUN_TEST(test_parse_sql_statements_realloc_failure);  // Disabled: malloc mocking not supported
 
     // Test execute_db2_migration function
     RUN_TEST(test_execute_db2_migration_success);
     RUN_TEST(test_execute_db2_migration_transaction_begin_failure);
     RUN_TEST(test_execute_db2_migration_statement_failure);
     RUN_TEST(test_execute_db2_migration_commit_failure);
-    if (0) RUN_TEST(test_execute_db2_migration_calloc_failure);  // Disabled: malloc mocking not supported
 
     // Test execute_postgresql_migration function
     RUN_TEST(test_execute_postgresql_migration_success);
     RUN_TEST(test_execute_postgresql_migration_begin_failure);
-    if (0) RUN_TEST(test_execute_postgresql_migration_calloc_failure);  // Disabled: malloc mocking not supported
     RUN_TEST(test_execute_postgresql_migration_statement_failure);
     RUN_TEST(test_execute_postgresql_migration_commit_failure);
 
@@ -526,7 +495,6 @@ int main(void) {
     RUN_TEST(test_database_migrations_execute_transaction_success_sqlite);
     RUN_TEST(test_database_migrations_execute_transaction_null_sql);
     RUN_TEST(test_database_migrations_execute_transaction_empty_sql);
-    if (0) RUN_TEST(test_database_migrations_execute_transaction_parse_failure);  // Disabled: malloc mocking not supported
     RUN_TEST(test_database_migrations_execute_transaction_no_statements);
     RUN_TEST(test_database_migrations_execute_transaction_unsupported_engine);
 

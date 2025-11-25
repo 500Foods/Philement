@@ -141,7 +141,7 @@ int main(void) {
 
     RUN_TEST(test_database_queue_check_connection_postgresql_format);
     RUN_TEST(test_database_queue_check_connection_mysql_format);
-    if (0) RUN_TEST(test_database_queue_check_connection_sqlite_format);
+    RUN_TEST(test_database_queue_check_connection_sqlite_format);
     RUN_TEST(test_database_queue_check_connection_invalid_formats);
     RUN_TEST(test_database_queue_check_connection_edge_cases);
 

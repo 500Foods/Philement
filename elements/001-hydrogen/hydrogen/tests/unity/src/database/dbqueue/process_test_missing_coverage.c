@@ -83,7 +83,7 @@ void test_database_queue_process_single_query_success_and_failure(void) {
     DatabaseQuery* query = calloc(1, sizeof(DatabaseQuery));
     TEST_ASSERT_NOT_NULL(query);
     query->query_id = strdup("success_query");
-    query->query_template = strdup("SELECT 1 as test");
+    query->query_template = strdup("SELECT 1"); // No template - will trigger simulation path
     query->parameter_json = strdup("{}");
 
     // Submit the query
@@ -140,7 +140,7 @@ void test_database_queue_process_single_query_no_connection(void) {
     DatabaseQuery* query = calloc(1, sizeof(DatabaseQuery));
     TEST_ASSERT_NOT_NULL(query);
     query->query_id = strdup("no_conn_query");
-    query->query_template = NULL; // No template - will trigger simulation path
+    query->query_template = strdup("SELECT 1 as test");
     query->parameter_json = strdup("{}");
 
     // Submit the query
@@ -169,7 +169,7 @@ void test_database_queue_worker_thread_main_loop_shutdown_check(void) {
     TEST_ASSERT_NOT_NULL(queue);
 
     // Set long heartbeat interval to avoid interference
-    queue->heartbeat_interval_seconds = 1000;
+    queue->heartbeat_interval_seconds = 999999;
 
     // Start the worker thread
     bool start_result = database_queue_start_worker(queue);
@@ -368,23 +368,17 @@ void test_database_queue_worker_thread_main_loop_processing(void) {
     TEST_ASSERT_TRUE(start_result);
 
     // Give thread time to process the query (line 219 will be executed)
-    usleep(200000);  // 200ms - enough for one processing cycle
+    usleep(1500000);  // 1.5 seconds - enough for worker to wake up and process
 
     // Signal shutdown
     queue->shutdown_requested = true;
 
     // Give thread time to exit cleanly
-    usleep(1500000);  // 1.5 seconds
+    usleep(500000);  // 0.5 seconds - enough for shutdown
 
     // Verify queue is empty after processing
     size_t depth = database_queue_get_depth(queue);
     TEST_ASSERT_EQUAL(0, depth);
-
-    // Clean up mock connection
-    if (mock_connection) {
-        if (mock_connection->designator) free(mock_connection->designator);
-        free(mock_connection);
-    }
 
     database_queue_stop_worker(queue);
     database_queue_destroy(queue);
@@ -395,13 +389,13 @@ int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_database_queue_process_single_query_success_and_failure);
-    if (0) RUN_TEST(test_database_queue_process_single_query_no_connection);
+    RUN_TEST(test_database_queue_process_single_query_no_connection);
     RUN_TEST(test_database_queue_worker_thread_main_loop_shutdown_check);
-    if (0) RUN_TEST(test_database_queue_manage_child_queues_scaling_down); // Disabled due to segfault in queue destruction
+    RUN_TEST(test_database_queue_manage_child_queues_scaling_down);
     RUN_TEST(test_database_queue_start_worker_failure_path);
     RUN_TEST(test_database_queue_process_single_query_success_with_pending_results);
     RUN_TEST(test_database_queue_process_single_query_failure_with_pending_results);
-    if (0) RUN_TEST(test_database_queue_worker_thread_main_loop_processing);
+    RUN_TEST(test_database_queue_worker_thread_main_loop_processing);
 
     return UNITY_END();
 }

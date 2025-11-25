@@ -19,6 +19,7 @@
 #define database_engine_cleanup_result mock_database_engine_cleanup_result
 #define database_engine_cleanup_transaction mock_database_engine_cleanup_transaction
 #define database_engine_get mock_database_engine_get
+#define database_engine_health_check mock_database_engine_health_check
 #endif
 
 // Mock function prototypes - match signatures from database.h
@@ -29,6 +30,7 @@ bool mock_database_engine_execute(DatabaseHandle* connection, QueryRequest* requ
 void mock_database_engine_cleanup_result(QueryResult* result);
 void mock_database_engine_cleanup_transaction(Transaction* transaction);
 DatabaseEngineInterface* mock_database_engine_get(DatabaseEngine engine_type);
+bool mock_database_engine_health_check(DatabaseHandle* connection);
 
 // Mock control functions
 void mock_database_engine_reset_all(void);
@@ -39,5 +41,6 @@ void mock_database_engine_set_execute_result(bool success);
 void mock_database_engine_set_execute_query_result(QueryResult* result);
 void mock_database_engine_set_execute_json_data(const char* json_data);
 void mock_database_engine_set_affected_rows(int rows);
+void mock_database_engine_set_health_check_result(bool result);
 
 #endif // MOCK_DATABASE_ENGINE_H
