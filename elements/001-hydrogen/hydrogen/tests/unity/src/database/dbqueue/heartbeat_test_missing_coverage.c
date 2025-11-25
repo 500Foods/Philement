@@ -11,8 +11,10 @@
 // Enable mocks for testing failure scenarios
 #define USE_MOCK_SYSTEM
 #define USE_MOCK_LOGGING
+#define USE_MOCK_DATABASE_ENGINE
 #include <unity/mocks/mock_system.h>
 #include <unity/mocks/mock_logging.h>
+#include <unity/mocks/mock_database_engine.h>
 
 // Include source headers after mocks
 #include <src/database/database.h>
@@ -23,7 +25,6 @@
 
 // Forward declarations for mock functions
 bool mock_database_engine_connect_with_designator(DatabaseEngine engine_type, ConnectionConfig* config, DatabaseHandle** connection, const char* designator);
-bool mock_database_engine_health_check(DatabaseHandle* connection);
 void mock_database_engine_cleanup_connection(DatabaseHandle* connection);
 bool mock_database_engine_init(void);
 void mock_database_queue_signal_initial_connection_complete(DatabaseQueue* db_queue);
@@ -34,7 +35,6 @@ MutexResult mock_mutex_lock(pthread_mutex_t* mutex, const char* designator);
 
 // Mock state variables
 static bool mock_connect_success = true;
-static bool mock_health_check_success = true;
 static bool mock_engine_init_success = true;
 static bool mock_mutex_lock_success = true;
 static bool mock_signal_called = false;
@@ -63,10 +63,6 @@ bool mock_database_engine_connect_with_designator(DatabaseEngine engine_type, Co
     return false;
 }
 
-bool mock_database_engine_health_check(DatabaseHandle* connection) {
-    (void)connection;
-    return mock_health_check_success;
-}
 
 void mock_database_engine_cleanup_connection(DatabaseHandle* connection) {
     if (connection) {
@@ -139,10 +135,10 @@ void setUp(void) {
     // Reset all mocks to default state
     mock_system_reset_all();
     mock_logging_reset_all();
+    mock_database_engine_reset_all();
 
     // Reset our mock state
     mock_connect_success = true;
-    mock_health_check_success = true;
     mock_engine_init_success = true;
     mock_mutex_lock_success = true;
     mock_signal_called = false;
@@ -196,7 +192,7 @@ void test_health_check_failure_after_connection(void) {
     TEST_ASSERT_NOT_NULL(test_queue);
 
     // Set health check to fail
-    mock_health_check_success = false;
+    mock_database_engine_set_health_check_result(false);
 
     // Create a mock connection
     DatabaseHandle* mock_conn = calloc(1, sizeof(DatabaseHandle));

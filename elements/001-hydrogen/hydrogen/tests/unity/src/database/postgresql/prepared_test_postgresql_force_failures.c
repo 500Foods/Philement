@@ -126,9 +126,6 @@ void test_force_lru_eviction_failure(void) {
     TEST_ASSERT_NOT_NULL(stmt2);
 
     // Cleanup
-    free(stmt1->name);
-    free(stmt1->sql_template);
-    free(stmt1);
     free(stmt2->name);
     free(stmt2->sql_template);
     free(stmt2);
@@ -215,8 +212,8 @@ void test_force_null_config_scenario(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_force_cache_initialization_failure);
-    if (0) RUN_TEST(test_force_lru_eviction_failure);
+    RUN_TEST(test_force_cache_initialization_failure);
+    RUN_TEST(test_force_lru_eviction_failure);
     RUN_TEST(test_force_config_cache_size_zero);
     RUN_TEST(test_force_config_cache_size_negative);
     RUN_TEST(test_force_null_config_scenario);

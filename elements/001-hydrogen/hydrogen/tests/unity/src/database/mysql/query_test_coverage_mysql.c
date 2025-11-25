@@ -10,6 +10,7 @@
 
 // MySQL mocks are enabled by CMake build system
 #include <unity/mocks/mock_libmysqlclient.h>
+#define USE_MOCK_SYSTEM
 #include <unity/mocks/mock_system.h>
 
 // Include necessary headers for the module being tested
@@ -40,6 +41,7 @@ void test_mysql_execute_prepared_with_result_set(void);
 
 void setUp(void) {
     mock_libmysqlclient_reset_all();
+    mock_system_reset_all();
 
     // Initialize MySQL function pointers to use mocks
     load_libmysql_functions(NULL);
@@ -47,6 +49,7 @@ void setUp(void) {
 
 void tearDown(void) {
     mock_libmysqlclient_reset_all();
+    mock_system_reset_all();
 }
 
 // ============================================================================
@@ -198,7 +201,41 @@ void test_mysql_execute_query_memory_allocation_failure(void) {
     // Test memory allocation failure (lines 87-90)
     // Note: Cannot test memory allocation failure without mock_system
     // This test is skipped as it requires system-level memory mocking
-    TEST_IGNORE_MESSAGE("Cannot test memory allocation failure without mock_system infrastructure");
+    DatabaseHandle* connection = calloc(1, sizeof(DatabaseHandle));
+    TEST_ASSERT_NOT_NULL(connection);
+
+    MySQLConnection* mysql_conn = calloc(1, sizeof(MySQLConnection));
+    TEST_ASSERT_NOT_NULL(mysql_conn);
+    mysql_conn->connection = (void*)0x12345678;
+
+    connection->engine_type = DB_ENGINE_MYSQL;
+    connection->connection_handle = mysql_conn;
+    connection->designator = strdup("test_db");
+    TEST_ASSERT_NOT_NULL(connection->designator);
+
+    QueryRequest request = {0};
+    request.sql_template = strdup("SELECT 1");
+    TEST_ASSERT_NOT_NULL(request.sql_template);
+
+    QueryResult* result = NULL;
+
+    // Mock successful query execution
+    mock_libmysqlclient_set_mysql_query_result(0); // Success
+    mock_libmysqlclient_set_mysql_store_result_result(NULL); // No result set
+
+    // Make the first calloc (for QueryResult) fail
+    mock_system_set_malloc_failure(1);
+
+    bool success = mysql_execute_query(connection, &request, &result);
+
+    TEST_ASSERT_FALSE(success);
+    TEST_ASSERT_NULL(result);
+
+    // Cleanup
+    free(request.sql_template);
+    free(connection->designator);
+    free(mysql_conn);
+    free(connection);
 }
 
 void test_mysql_execute_query_non_select_query(void) {
@@ -422,10 +459,50 @@ void test_mysql_execute_prepared_stmt_execute_unavailable(void) {
 }
 
 void test_mysql_execute_prepared_memory_allocation_failure(void) {
-    // Test memory allocation failure in prepared statement (lines 286-288)
-    // Note: Cannot test memory allocation failure without mock_system
-    // This test is skipped as it requires system-level memory mocking
-    TEST_IGNORE_MESSAGE("Cannot test memory allocation failure without mock_system infrastructure");
+    // Test memory allocation failure in prepared statement (lines 361-363)
+    DatabaseHandle* connection = calloc(1, sizeof(DatabaseHandle));
+    TEST_ASSERT_NOT_NULL(connection);
+
+    MySQLConnection* mysql_conn = calloc(1, sizeof(MySQLConnection));
+    TEST_ASSERT_NOT_NULL(mysql_conn);
+    mysql_conn->connection = (void*)0x12345678;
+
+    connection->engine_type = DB_ENGINE_MYSQL;
+    connection->connection_handle = mysql_conn;
+    connection->designator = strdup("test_db");
+    TEST_ASSERT_NOT_NULL(connection->designator);
+
+    PreparedStatement stmt = {0};
+    stmt.name = strdup("test_stmt");
+    TEST_ASSERT_NOT_NULL(stmt.name);
+    stmt.sql_template = strdup("SELECT 1");
+    TEST_ASSERT_NOT_NULL(stmt.sql_template);
+    stmt.engine_specific_handle = (void*)0x87654321;
+
+    QueryRequest request = {0};
+    request.sql_template = strdup("SELECT 1");
+    TEST_ASSERT_NOT_NULL(request.sql_template);
+
+    QueryResult* result = NULL;
+
+    // Mock successful prepared statement execution
+    mock_libmysqlclient_set_mysql_store_result_result(NULL); // No result set
+
+    // Make the first calloc (for QueryResult) fail
+    mock_system_set_malloc_failure(1);
+
+    bool success = mysql_execute_prepared(connection, &stmt, &request, &result);
+
+    TEST_ASSERT_FALSE(success);
+    TEST_ASSERT_NULL(result);
+
+    // Cleanup
+    free(request.sql_template);
+    free(stmt.name);
+    free(stmt.sql_template);
+    free(connection->designator);
+    free(mysql_conn);
+    free(connection);
 }
 
 void test_mysql_execute_prepared_execution_failure_paths(void) {
@@ -437,7 +514,55 @@ void test_mysql_execute_prepared_execution_failure_paths(void) {
 void test_mysql_execute_prepared_affected_rows_fallback(void) {
     // Test prepared statement affected_rows fallback (line 520) - TRULY UNCOVERED LINE
     // This line is ##### in BOTH blackbox and unity coverage files
-    TEST_IGNORE_MESSAGE("Cannot reliably test affected_rows fallback - mock system limitations");
+    DatabaseHandle* connection = calloc(1, sizeof(DatabaseHandle));
+    TEST_ASSERT_NOT_NULL(connection);
+
+    MySQLConnection* mysql_conn = calloc(1, sizeof(MySQLConnection));
+    TEST_ASSERT_NOT_NULL(mysql_conn);
+    mysql_conn->connection = (void*)0x12345678;
+
+    connection->engine_type = DB_ENGINE_MYSQL;
+    connection->connection_handle = mysql_conn;
+    connection->designator = strdup("test_db");
+    TEST_ASSERT_NOT_NULL(connection->designator);
+
+    PreparedStatement stmt = {0};
+    stmt.name = strdup("test_stmt");
+    TEST_ASSERT_NOT_NULL(stmt.name);
+    stmt.sql_template = strdup("INSERT INTO test_table (id) VALUES (?)");
+    TEST_ASSERT_NOT_NULL(stmt.sql_template);
+    stmt.engine_specific_handle = (void*)0x87654321;
+
+    QueryRequest request = {0};
+    request.sql_template = strdup("INSERT INTO test_table (id) VALUES (?)");
+    TEST_ASSERT_NOT_NULL(request.sql_template);
+
+    QueryResult* result = NULL;
+
+    // Mock successful prepared statement execution with no result set (INSERT)
+    // Set affected rows to 5 to test the fallback assignment
+    mock_libmysqlclient_set_mysql_affected_rows_result(5);
+    mock_libmysqlclient_set_mysql_store_result_result(NULL); // No result set for INSERT
+
+    bool success = mysql_execute_prepared(connection, &stmt, &request, &result);
+
+    TEST_ASSERT_TRUE(success);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_TRUE(result->success);
+    TEST_ASSERT_EQUAL(0, result->row_count);
+    TEST_ASSERT_EQUAL(0, result->column_count);
+    TEST_ASSERT_EQUAL(5, result->affected_rows); // This should trigger line 520
+
+    // Cleanup
+    if (result->data_json) free(result->data_json);
+    free(result);
+
+    free(request.sql_template);
+    free(stmt.name);
+    free(stmt.sql_template);
+    free(connection->designator);
+    free(mysql_conn);
+    free(connection);
 }
 
 void test_mysql_execute_prepared_basic_execution(void) {
@@ -506,17 +631,16 @@ int main(void) {
     RUN_TEST(test_mysql_execute_query_invalid_parameters);
     RUN_TEST(test_mysql_execute_query_invalid_connection_handle);
     RUN_TEST(test_mysql_execute_query_affected_rows_fallback); // Targets line 214
-    if (0) RUN_TEST(test_mysql_execute_query_memory_allocation_failure); // Skipped - requires mock_system
+    RUN_TEST(test_mysql_execute_query_memory_allocation_failure); // Skipped - requires mock_system
     RUN_TEST(test_mysql_execute_query_non_select_query); // Targets lines 201-214
 
     // mysql_execute_prepared additional coverage tests
     RUN_TEST(test_mysql_execute_prepared_invalid_parameters); // Targets lines 225-228
     RUN_TEST(test_mysql_execute_prepared_invalid_connection_handle);
     RUN_TEST(test_mysql_execute_prepared_no_executable_sql); // Targets lines 244-263
-    if (0) RUN_TEST(test_mysql_execute_prepared_affected_rows_fallback); // Targets line 520
+    RUN_TEST(test_mysql_execute_prepared_affected_rows_fallback); // Targets line 520
     RUN_TEST(test_mysql_execute_prepared_basic_execution); // Targets lines 224-527 (basic execution)
-    if (0) RUN_TEST(test_mysql_execute_prepared_stmt_execute_unavailable); // Skipped - mock limitation
-    if (0) RUN_TEST(test_mysql_execute_prepared_memory_allocation_failure); // Skipped - requires mock_system
+    RUN_TEST(test_mysql_execute_prepared_memory_allocation_failure); // Skipped - requires mock_system
     if (0) RUN_TEST(test_mysql_execute_prepared_with_result_set); // Skipped - mock limitation
 
     return UNITY_END();
