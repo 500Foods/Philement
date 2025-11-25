@@ -16,7 +16,7 @@
 #include <src/database/sqlite/connection.h>
 
 // Forward declarations
-bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 bool sqlite_check_timeout_expired(time_t start_time, int timeout_seconds);
 PreparedStatementCache* sqlite_create_prepared_statement_cache(void);
 void sqlite_destroy_prepared_statement_cache(PreparedStatementCache* cache);
@@ -64,7 +64,7 @@ void test_prepare_statement_success_basic(void) {
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x5678);
     
     PreparedStatement* stmt = NULL;
-    bool result = sqlite_prepare_statement(&connection, "test_stmt", "SELECT * FROM users WHERE id = ?", &stmt);
+    bool result = sqlite_prepare_statement(&connection, "test_stmt", "SELECT * FROM users WHERE id = ?", &stmt, true);
     
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_NOT_NULL(stmt);
@@ -94,6 +94,11 @@ void test_prepare_statement_success_multiple(void) {
     DatabaseHandle connection = {0};
     connection.engine_type = DB_ENGINE_SQLITE;
     
+    // Initialize config to prevent NULL pointer dereference
+    ConnectionConfig config = {0};
+    config.prepared_statement_cache_size = 100;  // Set reasonable default
+    connection.config = &config;
+    
     SQLiteConnection sqlite_conn = {0};
     sqlite_conn.db = (void*)0x1234;
     connection.connection_handle = &sqlite_conn;
@@ -106,19 +111,19 @@ void test_prepare_statement_success_multiple(void) {
     
     // Create first statement
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x1111);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     
     // Create second statement
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x2222);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(2, connection.prepared_statement_count);
     
     // Create third statement
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x3333);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3, true));
     TEST_ASSERT_NOT_NULL(stmt3);
     TEST_ASSERT_EQUAL(3, connection.prepared_statement_count);
     
@@ -158,7 +163,7 @@ void test_prepare_statement_success_custom_cache_size(void) {
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x5678);
     
     PreparedStatement* stmt = NULL;
-    bool result = sqlite_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = sqlite_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_NOT_NULL(connection.prepared_statements);
@@ -186,7 +191,7 @@ void test_prepare_statement_success_default_cache_size(void) {
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x5678);
     
     PreparedStatement* stmt = NULL;
-    bool result = sqlite_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = sqlite_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_NOT_NULL(stmt);

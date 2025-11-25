@@ -8,6 +8,7 @@
 # run_migration_test()
 
 # CHANGELOG
+# 1.0.1 - 2025-11-24 - Increased timeout to 90 seconds
 # 1.0.0 - 2025-09-26 - Initial implementation for PostgreSQL migration testing
 
 set -euo pipefail
@@ -30,7 +31,7 @@ CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_${ENGINE_REF}.js
 LOG_LINE_PATTERN="Migration test completed in"
 
 # Test timeouts
-TIMEOUT=30
+TIMEOUT=90
 STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=10
 

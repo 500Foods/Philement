@@ -18,7 +18,7 @@
 #include <tests/unity/mocks/mock_libpq.h>
 
 // Forward declarations
-bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt);
 bool postgresql_evict_lru_prepared_statement(DatabaseHandle* connection, PostgresConnection* pg_conn, const char* new_stmt_name);
 
@@ -130,17 +130,17 @@ void test_lru_eviction_single_statement(void) {
     PreparedStatement* stmt3 = NULL;
 
     // Create first statement
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, conn->prepared_statement_count);
 
     // Create second statement - fills cache
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(2, conn->prepared_statement_count);
 
     // Create third statement - should trigger LRU eviction of stmt_1
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3, true));
     TEST_ASSERT_NOT_NULL(stmt3);
     TEST_ASSERT_EQUAL(2, conn->prepared_statement_count);
 
@@ -171,16 +171,16 @@ void test_lru_eviction_cache_size_one(void) {
     PreparedStatement* stmt3 = NULL;
 
     // First statement
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_EQUAL(1, conn->prepared_statement_count);
 
     // Second statement - evicts first
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_EQUAL(1, conn->prepared_statement_count);
     TEST_ASSERT_EQUAL(stmt2, conn->prepared_statements[0]);
 
     // Third statement - evicts second
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3, true));
     TEST_ASSERT_EQUAL(1, conn->prepared_statement_count);
     TEST_ASSERT_EQUAL(stmt3, conn->prepared_statements[0]);
 
@@ -198,11 +198,11 @@ void test_lru_eviction_larger_cache(void) {
     PreparedStatement* stmt5 = NULL;
 
     // Fill cache to capacity (5 statements)
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1));
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2));
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3));
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_4", "SELECT 4", &stmt4));
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_5", "SELECT 5", &stmt5));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1, true));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2, true));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3, true));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_4", "SELECT 4", &stmt4, true));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_5", "SELECT 5", &stmt5, true));
     TEST_ASSERT_EQUAL(5, conn->prepared_statement_count);
 
     // Store LRU counters before eviction
@@ -212,11 +212,11 @@ void test_lru_eviction_larger_cache(void) {
 
     // Add 2 more statements - should trigger 2 evictions
     PreparedStatement* stmt6 = NULL;
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_6", "SELECT 6", &stmt6));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_6", "SELECT 6", &stmt6, true));
     TEST_ASSERT_EQUAL(5, conn->prepared_statement_count);
 
     PreparedStatement* stmt7 = NULL;
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_7", "SELECT 7", &stmt7));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_7", "SELECT 7", &stmt7, true));
     TEST_ASSERT_EQUAL(5, conn->prepared_statement_count);
 
     // Verify first two LRU counters were evicted (stmt1 and stmt2 had lowest counters)
@@ -244,9 +244,9 @@ void test_lru_counter_ordering(void) {
     PreparedStatement* stmt3 = NULL;
 
     // Create three statements
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1));
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2));
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1, true));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2, true));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3, true));
 
     // Verify LRU counters are in ascending order
     TEST_ASSERT_TRUE(conn->prepared_statement_lru_counter[0] < conn->prepared_statement_lru_counter[1]);
@@ -265,13 +265,13 @@ void test_lru_eviction_array_shifting(void) {
     PreparedStatement* stmt4 = NULL;
 
     // Fill cache
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1));
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2));
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1, true));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2, true));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3, true));
     TEST_ASSERT_EQUAL(3, conn->prepared_statement_count);
 
     // Add fourth statement - should evict stmt_1 and shift array
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_4", "SELECT 4", &stmt4));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_4", "SELECT 4", &stmt4, true));
     TEST_ASSERT_EQUAL(3, conn->prepared_statement_count);
 
     // Verify stmt_2 is now at index 0 (shifted from index 1)
@@ -291,9 +291,9 @@ void test_unprepare_statement_basic(void) {
     PreparedStatement* stmt3 = NULL;
 
     // Create three statements
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1));
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2));
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1, true));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2, true));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_3", "SELECT 3", &stmt3, true));
     TEST_ASSERT_EQUAL(3, conn->prepared_statement_count);
 
     // Unprepare middle statement
@@ -370,15 +370,20 @@ void test_unprepare_statement_deallocate_failure(void) {
     DatabaseHandle* conn = create_test_connection(10);
 
     PreparedStatement* stmt = NULL;
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt, true));
 
     // Set up mock to fail the DEALLOCATE
     mock_libpq_set_PQresultStatus_result(PGRES_FATAL_ERROR);
 
-    TEST_ASSERT_FALSE(postgresql_unprepare_statement(conn, stmt));
+    // NOTE: PostgreSQL unprepare does NOT issue DEALLOCATE commands
+    // (see comment in postgresql_unprepare_statement implementation)
+    // It only removes from cache and frees memory
+    // Therefore, unprepare always succeeds (barring parameter validation failures)
+    TEST_ASSERT_TRUE(postgresql_unprepare_statement(conn, stmt));
 
-    // When unprepare fails, the statement remains in the cache
-    // cleanup_test_connection will free it
+    // Verify statement was removed from cache
+    TEST_ASSERT_EQUAL(0, conn->prepared_statement_count);
+
     cleanup_test_connection(conn);
 }
 

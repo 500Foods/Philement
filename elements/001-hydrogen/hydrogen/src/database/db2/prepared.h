@@ -11,7 +11,7 @@
 #include "types.h"
 
 // Prepared statement management
-bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt);
 
 // Utility functions for prepared statement cache

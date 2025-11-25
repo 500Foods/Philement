@@ -17,7 +17,7 @@
                 "Database": "${env.ACURANZO_DB_NAME}",
                 "User": "${env.ACURANZO_DB_USER}",
                 "Pass": "${env.ACURANZO_DB_PASS}",
-                "StmtCache":10000,
+                "StmtCache": 100,
                 "Bootstrap":"SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM test.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
                 "AutoMigration": true,
                 "TestMigration": true,

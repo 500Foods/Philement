@@ -9,7 +9,7 @@
 #include <src/database/database.h>
 #include <src/database/dbqueue/dbqueue.h>
 
- /* Local includes */
+/* Local includes */
 #include "types.h"
 #include "connection.h"
 #include "prepared.h"
@@ -114,7 +114,7 @@ bool sqlite_add_prepared_statement_to_cache(DatabaseHandle* connection, Prepared
 }
 
 // Prepared Statement Management Functions
-bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt) {
+bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache) {
     if (!connection || !name || !sql || !stmt || connection->engine_type != DB_ENGINE_SQLITE) {
         return false;
     }
@@ -152,7 +152,12 @@ bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, cons
     prepared_stmt->usage_count = 0;
 
     // Get cache size from database configuration
-    size_t cache_size = (size_t)connection->config->prepared_statement_cache_size;
+    size_t cache_size;
+    if (!connection->config || connection->config->prepared_statement_cache_size <= 0) {
+        cache_size = 1000; // Default cache size when config is NULL, 0, or negative
+    } else {
+        cache_size = (size_t)connection->config->prepared_statement_cache_size;
+    }
 
     // Initialize cache if this is the first prepared statement
     if (!connection->prepared_statements) {
@@ -165,8 +170,17 @@ bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, cons
         }
     }
 
-    // NOTE: Do NOT add to cache here - database_engine_execute() will handle caching
-    // via store_prepared_statement() to avoid double-caching
+    // Add to cache if requested (for unit tests) or let database_engine_execute handle it
+    if (add_to_cache) {
+        // Add statement to cache
+        if (!sqlite_add_prepared_statement_to_cache(connection, prepared_stmt, cache_size)) {
+            // Adding to cache failed, but statement is still valid
+            // Just log or continue - the statement can still be used
+            log_this(connection->designator ? connection->designator : SR_DATABASE,
+                     "Failed to add prepared statement to cache, but statement is still valid", LOG_LEVEL_TRACE, 0);
+        }
+    }
+    
     *stmt = prepared_stmt;
 
     log_this(connection->designator ? connection->designator : SR_DATABASE,

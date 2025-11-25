@@ -10,7 +10,7 @@
 #include <src/database/database.h>
 
 // Prepared statement management
-bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt);
 
 // Utility functions for prepared statement cache

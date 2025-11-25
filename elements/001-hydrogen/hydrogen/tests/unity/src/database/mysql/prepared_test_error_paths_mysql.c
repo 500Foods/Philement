@@ -20,7 +20,7 @@
 #include <src/database/database.h>
 
 // Forward declarations
-bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 bool mysql_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt);
 void mysql_update_prepared_lru_counter(DatabaseHandle* connection, const char* stmt_name);
 bool mysql_add_prepared_statement(PreparedStatementCache* cache, const char* name);
@@ -130,26 +130,26 @@ void test_prepare_statement_null_parameters(void) {
     PreparedStatement* stmt = NULL;
     
     // Test NULL connection
-    bool result = mysql_prepare_statement(NULL, "test", "SELECT 1", &stmt);
+    bool result = mysql_prepare_statement(NULL, "test", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     
     // Test NULL name
     DatabaseHandle connection = {0};
     connection.engine_type = DB_ENGINE_MYSQL;
-    result = mysql_prepare_statement(&connection, NULL, "SELECT 1", &stmt);
+    result = mysql_prepare_statement(&connection, NULL, "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     
     // Test NULL sql
-    result = mysql_prepare_statement(&connection, "test", NULL, &stmt);
+    result = mysql_prepare_statement(&connection, "test", NULL, &stmt, true);
     TEST_ASSERT_FALSE(result);
     
     // Test NULL stmt pointer
-    result = mysql_prepare_statement(&connection, "test", "SELECT 1", NULL);
+    result = mysql_prepare_statement(&connection, "test", "SELECT 1", NULL, true);
     TEST_ASSERT_FALSE(result);
     
     // Test wrong engine type
     connection.engine_type = DB_ENGINE_POSTGRESQL;
-    result = mysql_prepare_statement(&connection, "test", "SELECT 1", &stmt);
+    result = mysql_prepare_statement(&connection, "test", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
 }
 
@@ -170,7 +170,7 @@ void test_prepare_statement_add_to_cache_failure(void) {
     mock_libmysqlclient_set_mysql_stmt_prepare_result(0);
     
     PreparedStatement* stmt1 = NULL;
-    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     
@@ -180,7 +180,7 @@ void test_prepare_statement_add_to_cache_failure(void) {
     
     mock_libmysqlclient_set_mysql_stmt_init_result((void*)0x2222);
     PreparedStatement* stmt2 = NULL;
-    bool result = mysql_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2);
+    bool result = mysql_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true);
     
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt2);

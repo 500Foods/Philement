@@ -15,7 +15,7 @@
 #include <src/database/database.h>
 
 // Forward declaration
-bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 
 // External function pointers that need to be set
 extern SQLAllocHandle_t SQLAllocHandle_ptr;
@@ -82,19 +82,19 @@ void test_prepare_statement_lru_eviction_single(void) {
 
     // Create first statement
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x1111);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
 
     // Create second statement
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x2222);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(2, connection.prepared_statement_count);
 
     // Create third statement - should trigger LRU eviction
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x3333);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3, true));
     TEST_ASSERT_NOT_NULL(stmt3);
     TEST_ASSERT_EQUAL(2, connection.prepared_statement_count); // Should still be 2 after eviction
 
@@ -135,20 +135,20 @@ void test_prepare_statement_lru_eviction_multiple(void) {
 
     // Create first statement
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x1111);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
 
     // Create second statement - should evict stmt1
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x2222);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     TEST_ASSERT_EQUAL(stmt2, connection.prepared_statements[0]);
 
     // Create third statement - should evict stmt2
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x3333);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3, true));
     TEST_ASSERT_NOT_NULL(stmt3);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     TEST_ASSERT_EQUAL(stmt3, connection.prepared_statements[0]);
@@ -184,19 +184,19 @@ void test_prepare_statement_lru_eviction_boundary(void) {
 
     // Fill cache exactly to capacity
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x1111);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
 
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x2222);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
 
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x3333);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3, true));
 
     TEST_ASSERT_EQUAL(3, connection.prepared_statement_count);
 
     // Add one more - should trigger eviction
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x4444);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_4", "SELECT 4", &stmt4));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_4", "SELECT 4", &stmt4, true));
     TEST_ASSERT_NOT_NULL(stmt4);
     TEST_ASSERT_EQUAL(3, connection.prepared_statement_count);
 
@@ -239,13 +239,13 @@ void test_prepare_statement_lru_find_least_used(void) {
 
     // Create statements with specific LRU counters to test LRU logic
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x1111);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
 
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x2222);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
 
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x3333);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3, true));
 
     // The LRU counter is a global counter that increments with each new statement
     // We can't easily control the exact values, but we can verify the logic works
@@ -253,7 +253,7 @@ void test_prepare_statement_lru_find_least_used(void) {
 
     // Add fourth statement - should evict stmt1 (lowest LRU counter)
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x4444);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_4", "SELECT 4", &stmt4));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_4", "SELECT 4", &stmt4, true));
     TEST_ASSERT_NOT_NULL(stmt4);
     TEST_ASSERT_EQUAL(3, connection.prepared_statement_count);
 
@@ -304,7 +304,7 @@ void test_prepare_statement_lru_counter_increment(void) {
 
     // Create first statement
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x1111);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
 
@@ -314,7 +314,7 @@ void test_prepare_statement_lru_counter_increment(void) {
 
     // Create second statement
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x2222);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(2, connection.prepared_statement_count);
 

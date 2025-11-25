@@ -18,7 +18,7 @@
 #include <src/database/database.h>
 
 // Forward declarations
-bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 bool db2_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt);
 void db2_update_prepared_lru_counter(DatabaseHandle* connection, const char* stmt_name);
 bool db2_add_prepared_statement(PreparedStatementCache* cache, const char* name);
@@ -120,7 +120,7 @@ void test_prepare_statement_evict_lru_failure(void) {
     
     // Create first statement to fill cache
     PreparedStatement* stmt1 = NULL;
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     
@@ -129,7 +129,7 @@ void test_prepare_statement_evict_lru_failure(void) {
     
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x2222);
     PreparedStatement* stmt2 = NULL;
-    bool result = db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2);
+    bool result = db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true);
     
     // Should fail because eviction fails
     TEST_ASSERT_FALSE(result);
@@ -162,7 +162,7 @@ void test_prepare_statement_sqlprepare_failure(void) {
     mock_libdb2_set_SQLGetDiagRec_error("42000", 12345, "Syntax error in SQL statement");
     
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(&connection, "test_stmt", "INVALID SQL", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "INVALID SQL", &stmt, true);
     
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
@@ -186,7 +186,7 @@ void test_prepare_statement_sqlprepare_failure_no_free_handle(void) {
     SQLFreeHandle_ptr = NULL;
     
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(&connection, "test_stmt", "INVALID SQL", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "INVALID SQL", &stmt, true);
     
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
@@ -210,14 +210,14 @@ void test_prepare_statement_add_to_cache_failure(void) {
     // Create first statement normally
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x1111);
     PreparedStatement* stmt1 = NULL;
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     
     // Now try to add another with cache full and eviction fails
     SQLFreeHandle_ptr = NULL;
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x2222);
     
     PreparedStatement* stmt2 = NULL;
-    bool result = db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2);
+    bool result = db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true);
     
     // Should fail because eviction fails
     TEST_ASSERT_FALSE(result);

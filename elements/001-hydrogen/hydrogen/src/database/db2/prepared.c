@@ -129,7 +129,7 @@ bool db2_add_prepared_statement_to_cache(DatabaseHandle* connection, PreparedSta
 }
 
 // Prepared Statement Management Functions
-bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt) {
+bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache) {
     if (!connection || !name || !sql || !stmt || connection->engine_type != DB_ENGINE_DB2) {
         return false;
     }
@@ -210,8 +210,17 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
         }
     }
 
-    // NOTE: Do NOT add to cache here - database_engine_execute() will handle caching
-    // via store_prepared_statement() to avoid double-caching
+    // Add to cache if requested (for unit tests) or let database_engine_execute handle it
+    if (add_to_cache) {
+        // Add statement to cache
+        if (!db2_add_prepared_statement_to_cache(connection, prepared_stmt, cache_size)) {
+            // Adding to cache failed, but statement is still valid
+            // Just log or continue - the statement can still be used
+            log_this(connection->designator ? connection->designator : SR_DATABASE,
+                     "Failed to add prepared statement to cache, but statement is still valid", LOG_LEVEL_TRACE, 0);
+        }
+    }
+    
     *stmt = prepared_stmt;
 
     log_this(connection->designator ? connection->designator : SR_DATABASE, 
