@@ -15,12 +15,13 @@
 #include <src/database/database.h>
 
 // Forward declaration
-bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 
 // External function pointers that need to be set
 extern SQLAllocHandle_t SQLAllocHandle_ptr;
 extern SQLPrepare_t SQLPrepare_ptr;
 extern SQLFreeHandle_t SQLFreeHandle_ptr;
+extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
 
 // Function prototypes
 void test_prepare_statement_sqlprepare_error(void);
@@ -35,6 +36,7 @@ void setUp(void) {
     SQLAllocHandle_ptr = mock_SQLAllocHandle;
     SQLPrepare_ptr = mock_SQLPrepare;
     SQLFreeHandle_ptr = mock_SQLFreeHandle;
+    SQLGetDiagRec_ptr = mock_SQLGetDiagRec;
 }
 
 void tearDown(void) {
@@ -51,23 +53,24 @@ void test_prepare_statement_sqlprepare_error(void) {
     db2_conn.connection = (void*)0x1234;
     connection.connection_handle = &db2_conn;
 
+    // Initialize config to prevent NULL pointer dereference
+    ConnectionConfig config = {0};
+    config.prepared_statement_cache_size = 100;  // Set reasonable default
+    connection.config = &config;
+
     // Setup mocks
     mock_libdb2_set_SQLAllocHandle_result(SQL_SUCCESS);
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x5678);
 
-    // Make SQLPrepare fail (use -1 for error condition)
-    // Note: We can't easily control SQLPrepare result for failure testing
+    // Make SQLPrepare fail with error code -1 (simulating prepare failure)
+    mock_libdb2_set_SQLPrepare_result(-1);
 
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(&connection, "test_stmt", "INVALID SQL SYNTAX", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "INVALID SQL SYNTAX", &stmt, true);
 
-    TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_NOT_NULL(stmt);
-
-    // Cleanup
-    free(stmt->name);
-    free(stmt->sql_template);
-    free(stmt);
+    // Should fail due to SQLPrepare error
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NULL(stmt);
 }
 
 // Test: SQLPrepare with NULL statement handle
@@ -79,12 +82,17 @@ void test_prepare_statement_sqlprepare_invalid_handle(void) {
     db2_conn.connection = (void*)0x1234;
     connection.connection_handle = &db2_conn;
 
+    // Initialize config to prevent NULL pointer dereference
+    ConnectionConfig config = {0};
+    config.prepared_statement_cache_size = 100;  // Set reasonable default
+    connection.config = &config;
+
     // Setup mocks
     mock_libdb2_set_SQLAllocHandle_result(SQL_SUCCESS);
     mock_libdb2_set_SQLAllocHandle_output_handle(NULL); // NULL handle
 
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
 
     // Note: Mock framework limitations prevent proper NULL handle testing
     // In real scenarios, NULL handle would cause failure
@@ -106,25 +114,24 @@ void test_prepare_statement_sqlprepare_syntax_error(void) {
     db2_conn.connection = (void*)0x1234;
     connection.connection_handle = &db2_conn;
 
+    // Initialize config to prevent NULL pointer dereference
+    ConnectionConfig config = {0};
+    config.prepared_statement_cache_size = 100;  // Set reasonable default
+    connection.config = &config;
+
     // Setup mocks
     mock_libdb2_set_SQLAllocHandle_result(SQL_SUCCESS);
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x5678);
 
-    // Make SQLPrepare fail (simulating syntax error)
-    // Note: We can't easily control SQLPrepare result for failure testing
+    // Make SQLPrepare fail with syntax error (non-zero return code)
+    mock_libdb2_set_SQLPrepare_result(-1);
 
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELET * FORM users WHERE id = ?", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELET * FORM users WHERE id = ?", &stmt, true);
 
-    // Note: Mock framework limitations prevent proper syntax error testing
-    // In real scenarios, syntax errors would cause SQLPrepare to fail
-    TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_NOT_NULL(stmt);
-
-    // Cleanup
-    free(stmt->name);
-    free(stmt->sql_template);
-    free(stmt);
+    // Should fail due to SQL syntax error
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NULL(stmt);
 }
 
 int main(void) {

@@ -18,7 +18,7 @@
 #include <tests/unity/mocks/mock_system.h>
 
 // Forward declaration for the function being tested
-bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 
 // Helper function prototypes
 DatabaseHandle* create_mock_database_connection_for_errors(void);
@@ -106,7 +106,7 @@ void test_postgresql_prepared_statement_calloc_failure(void) {
     TEST_ASSERT_NOT_NULL(conn);
 
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
 
     // Should succeed (calloc doesn't fail in test environment)
     TEST_ASSERT_TRUE(result);
@@ -131,7 +131,7 @@ void test_postgresql_cache_allocation_failures(void) {
     TEST_ASSERT_NOT_NULL(conn);
 
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
 
     // Should succeed (malloc doesn't fail in test environment)
     TEST_ASSERT_TRUE(result);
@@ -156,7 +156,7 @@ void test_postgresql_strndup_failures(void) {
     TEST_ASSERT_NOT_NULL(conn);
 
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
 
     // Should succeed (strdup doesn't fail in test environment)
     TEST_ASSERT_TRUE(result);
@@ -188,7 +188,7 @@ void test_postgresql_lru_eviction_error_paths(void) {
         snprintf(name, sizeof(name), "stmt_%d", i + 1);
         snprintf(sql, sizeof(sql), "SELECT %d", i + 1);
 
-        TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, name, sql, &statements[i]));
+        TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, name, sql, &statements[i], true));
         TEST_ASSERT_NOT_NULL(statements[i]);
     }
 

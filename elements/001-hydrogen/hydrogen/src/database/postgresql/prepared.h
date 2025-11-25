@@ -13,7 +13,7 @@
 #include "connection.h"
 
 // Function prototypes for prepared statement management
-bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt);
 
 #endif // DATABASE_ENGINE_POSTGRESQL_PREPARED_H

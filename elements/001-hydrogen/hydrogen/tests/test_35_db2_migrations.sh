@@ -8,6 +8,7 @@
 # run_migration_test()
 
 # CHANGELOG
+# 1.0.1 - 2025-11-24 - Increased timeout to 90 seconds
 # 1.0.0 - 2025-09-26 - Initial implementation for DB2 migration testing
 
 set -euo pipefail

@@ -15,12 +15,13 @@
 #include <src/database/database.h>
 
 // Forward declaration
-bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 
 // External function pointers that need to be set
 extern SQLAllocHandle_t SQLAllocHandle_ptr;
 extern SQLPrepare_t SQLPrepare_ptr;
 extern SQLFreeHandle_t SQLFreeHandle_ptr;
+extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
 
 // External timeout function
 extern bool db2_check_timeout_expired(time_t start_time, int timeout_seconds);
@@ -38,6 +39,7 @@ void setUp(void) {
     SQLAllocHandle_ptr = mock_SQLAllocHandle;
     SQLPrepare_ptr = mock_SQLPrepare;
     SQLFreeHandle_ptr = mock_SQLFreeHandle;
+    SQLGetDiagRec_ptr = mock_SQLGetDiagRec;
 }
 
 void tearDown(void) {
@@ -53,6 +55,11 @@ void test_prepare_statement_timeout_detection(void) {
     DB2Connection db2_conn = {0};
     db2_conn.connection = (void*)0x1234;
     connection.connection_handle = &db2_conn;
+
+    // Initialize config to prevent NULL pointer dereference
+    ConnectionConfig config = {0};
+    config.prepared_statement_cache_size = 100;  // Set reasonable default
+    connection.config = &config;
 
     // Setup mocks
     mock_libdb2_set_SQLAllocHandle_result(SQL_SUCCESS);
@@ -71,7 +78,7 @@ void test_prepare_statement_timeout_detection(void) {
     // Note: This test depends on the actual implementation of db2_check_timeout_expired
     // which compares current time with start_time + timeout_seconds
 
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
 
     // The result depends on the timeout logic implementation
     // If timeout is detected, should return false and cleanup
@@ -97,6 +104,11 @@ void test_prepare_statement_timeout_cleanup(void) {
     db2_conn.connection = (void*)0x1234;
     connection.connection_handle = &db2_conn;
 
+    // Initialize config to prevent NULL pointer dereference
+    ConnectionConfig config = {0};
+    config.prepared_statement_cache_size = 100;  // Set reasonable default
+    connection.config = &config;
+
     // Setup mocks for success up to prepare
     mock_libdb2_set_SQLAllocHandle_result(SQL_SUCCESS);
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x5678);
@@ -110,7 +122,7 @@ void test_prepare_statement_timeout_cleanup(void) {
     // This is a simple test - in practice, timeout would be triggered by
     // a slow SQLPrepare operation or by manipulating the timeout check
 
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
 
     if (result == false) {
         // If timeout/cleanup occurred, verify proper cleanup
@@ -139,13 +151,18 @@ void test_prepare_statement_no_timeout_success(void) {
     db2_conn.connection = (void*)0x1234;
     connection.connection_handle = &db2_conn;
 
+    // Initialize config to prevent NULL pointer dereference
+    ConnectionConfig config = {0};
+    config.prepared_statement_cache_size = 100;  // Set reasonable default
+    connection.config = &config;
+
     // Setup mocks for success
     mock_libdb2_set_SQLAllocHandle_result(SQL_SUCCESS);
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x5678);
     // Note: We can't easily control SQLPrepare result for timeout testing
 
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT * FROM users WHERE id = ?", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT * FROM users WHERE id = ?", &stmt, true);
 
     // Should succeed without timeout
     TEST_ASSERT_TRUE(result);
