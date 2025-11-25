@@ -35,6 +35,7 @@ struct DatabaseQueue {
     DatabaseEngine engine_type;    // Database engine type (PostgreSQL, SQLite, MySQL, DB2)
     char* queue_type;              // Queue type: "Lead", "slow", "medium", "fast", "cache"
     char* bootstrap_query;         // Bootstrap query from config (only used by Lead queues)
+    int prepared_statement_cache_size; // Prepared statement cache size from config (default: 1000)
 
     // Single queue instance - type determined by queue_type
     Queue* queue;                  // The actual queue for this worker

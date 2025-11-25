@@ -660,8 +660,11 @@ bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* 
         return false;
     }
 
-    // Destroy the child queue
+    // Save queue_type string before destroying the child queue
     DatabaseQueue* child_queue = lead_queue->child_queues[target_index];
+    char* saved_queue_type = child_queue->queue_type ? strdup(child_queue->queue_type) : strdup("unknown");
+    
+    // Destroy the child queue
     database_queue_destroy(child_queue);
 
     // Compact the array by moving the last element to the removed position
@@ -673,7 +676,9 @@ bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* 
 
     mutex_unlock(&lead_queue->children_lock);
 
-    log_this(dqm_label, "Shutdown %s child queue for database %s", LOG_LEVEL_TRACE, 2, queue_type, lead_queue->database_name);
+    log_this(dqm_label, "Shutdown %s child queue for database %s", LOG_LEVEL_TRACE, 2, 
+             saved_queue_type, lead_queue->database_name);
+    free(saved_queue_type);
     free(dqm_label);
     return true;
 }

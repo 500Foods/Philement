@@ -702,11 +702,8 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
         return false;
     }
 
-    // Get cache size from connection config (default to 1000 if not set)
-    size_t cache_size = 1000; // Default value
-    if (connection->config && connection->config->prepared_statement_cache_size > 0) {
-        cache_size = (size_t)connection->config->prepared_statement_cache_size;
-    }
+    // Get cache size from connection config (set by config system)
+    size_t cache_size = (size_t)connection->config->prepared_statement_cache_size;
 
     // Initialize array if needed
     if (!connection->prepared_statements) {
@@ -724,11 +721,52 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
     // Check if we can store another statement (need strict < not <=)
     // Array indices are 0 to (cache_size - 1), so count must be < cache_size
     if (connection->prepared_statement_count >= cache_size) {
-        // For now, just don't store if we exceed capacity
-        // TODO: Implement dynamic resizing
+        // Cache is full - implement LRU eviction
         log_this(connection->designator ? connection->designator : SR_DATABASE,
-                 "Prepared statement cache full, not storing: %s", LOG_LEVEL_ALERT, 1, stmt->name);
-        return false;
+                 "Prepared statement cache full (%zu/%zu), evicting LRU to make room for: %s", 
+                 LOG_LEVEL_TRACE, 3, connection->prepared_statement_count, cache_size, stmt->name);
+        
+        // Find least recently used prepared statement (lowest LRU counter)
+        size_t lru_index = 0;
+        uint64_t min_lru_value = UINT64_MAX;
+        
+        for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+            if (connection->prepared_statement_lru_counter[i] < min_lru_value) {
+                min_lru_value = connection->prepared_statement_lru_counter[i];
+                lru_index = i;
+            }
+        }
+        
+        // Evict the LRU prepared statement
+        PreparedStatement* evicted_stmt = connection->prepared_statements[lru_index];
+        if (evicted_stmt) {
+            // Get engine interface to call unprepare
+            DatabaseEngineInterface* engine = database_engine_get_with_designator(connection->engine_type, 
+                                                                                   connection->designator ? connection->designator : SR_DATABASE);
+            if (engine && engine->unprepare_statement) {
+                // This will free the statement and remove it from the array
+                engine->unprepare_statement(connection, evicted_stmt);
+            } else {
+                // Fallback: manual cleanup
+                if (evicted_stmt->name) free(evicted_stmt->name);
+                if (evicted_stmt->sql_template) free(evicted_stmt->sql_template);
+                free(evicted_stmt);
+                
+                // Manually shift array elements
+                for (size_t i = lru_index; i < connection->prepared_statement_count - 1; i++) {
+                    connection->prepared_statements[i] = connection->prepared_statements[i + 1];
+                    connection->prepared_statement_lru_counter[i] = connection->prepared_statement_lru_counter[i + 1];
+                }
+                
+                // NULL out the last element
+                connection->prepared_statements[connection->prepared_statement_count - 1] = NULL;
+                connection->prepared_statement_lru_counter[connection->prepared_statement_count - 1] = 0;
+                connection->prepared_statement_count--;
+            }
+            
+            log_this(connection->designator ? connection->designator : SR_DATABASE,
+                     "Evicted LRU prepared statement to make room for: %s", LOG_LEVEL_TRACE, 1, stmt->name);
+        }
     }
 
     // cppcheck-suppress knownConditionTrueFalse
@@ -749,8 +787,8 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
     connection->prepared_statement_count++;
 
     log_this(connection->designator ? connection->designator : SR_DATABASE,
-             "Stored prepared statement: %s (total: %zu)", LOG_LEVEL_TRACE, 2,
-             stmt->name, connection->prepared_statement_count);
+             "Stored prepared statement: %s (total: %zu of %zu)", LOG_LEVEL_TRACE, 3,
+             stmt->name, connection->prepared_statement_count, cache_size);
 
     return true;
 }

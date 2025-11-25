@@ -150,10 +150,10 @@ void initialize_config_defaults_database(AppConfig* config) {
         config->databases.default_queues.cache.down = 1;
         config->databases.default_queues.cache.inactivity = 600;
 
-        // Set default prepared statement cache size for all connections
-        for (int i = 0; i < 5; i++) {
-            config->databases.connections[i].prepared_statement_cache_size = 1000;
-        }
+        // Set default prepared statement cache size for all connections (redundant, memset will overwrite)
+        // for (int i = 0; i < 5; i++) {
+        //     config->databases.connections[i].prepared_statement_cache_size = 1000;
+        // }
 
         // Clear all database connection slots
         for (int i = 0; i < 5; i++) {
