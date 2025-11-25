@@ -26,9 +26,12 @@ static char* mock_execute_json_data = NULL;
 static int mock_affected_rows = 0;
 static Transaction* mock_tx = NULL;
 
+
+static bool mock_health_check_result = true;
+
 bool mock_database_engine_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel level, Transaction** transaction) {
     (void)connection;
-    
+
     // Only create transaction if begin will succeed
     if (mock_begin_result) {
         if (!mock_tx) {
@@ -40,7 +43,7 @@ bool mock_database_engine_begin_transaction(DatabaseHandle* connection, Database
                 mock_tx->active = true;
             }
         }
-        
+
         if (transaction) {
             *transaction = mock_tx;
         }
@@ -81,7 +84,7 @@ bool mock_database_engine_rollback_transaction(DatabaseHandle* connection, Trans
 bool mock_database_engine_execute(DatabaseHandle* connection, QueryRequest* request, QueryResult** result) {
     (void)connection;
     (void)request;
-    
+
     // Create a fresh result for each call to avoid lifecycle issues
     QueryResult* fresh_result = calloc(1, sizeof(QueryResult));
     if (fresh_result) {
@@ -126,6 +129,14 @@ bool mock_database_engine_execute(DatabaseHandle* connection, QueryRequest* requ
     return mock_execute_success;
 }
 
+
+
+
+bool mock_database_engine_health_check(DatabaseHandle* connection) {
+    (void)connection;
+    return mock_health_check_result;
+}
+
 void mock_database_engine_cleanup_result(QueryResult* result) {
     // Actually free the result - we create fresh ones each time
     if (result) {
@@ -147,6 +158,16 @@ void mock_database_engine_cleanup_transaction(Transaction* transaction) {
     if (transaction) {
         transaction->active = false;
     }
+    mock_begin_result = true;
+    mock_commit_result = true;
+    mock_rollback_result = true;
+    mock_execute_success = true;
+    mock_affected_rows = 0;
+    mock_begin_result = true;
+    mock_commit_result = true;
+    mock_rollback_result = true;
+    mock_execute_success = true;
+    mock_affected_rows = 0;
 }
 
 void mock_database_engine_reset_all(void) {
@@ -155,6 +176,7 @@ void mock_database_engine_reset_all(void) {
     mock_rollback_result = true;
     mock_execute_success = true;
     mock_affected_rows = 0;
+    mock_health_check_result = true;
 
     // Note: mock_query_result is no longer static - results are freed by cleanup_result
     mock_query_result = NULL;
@@ -196,6 +218,7 @@ void mock_database_engine_set_execute_query_result(QueryResult* result) {
     mock_query_result = result;
 }
 
+
 void mock_database_engine_set_execute_json_data(const char* json_data) {
     if (mock_execute_json_data) {
         free(mock_execute_json_data);
@@ -203,8 +226,13 @@ void mock_database_engine_set_execute_json_data(const char* json_data) {
     mock_execute_json_data = json_data ? strdup(json_data) : NULL;
 }
 
+
 void mock_database_engine_set_affected_rows(int rows) {
     mock_affected_rows = rows;
+}
+
+void mock_database_engine_set_health_check_result(bool result) {
+    mock_health_check_result = result;
 }
 
 DatabaseEngineInterface* mock_database_engine_get(DatabaseEngine engine_type) {

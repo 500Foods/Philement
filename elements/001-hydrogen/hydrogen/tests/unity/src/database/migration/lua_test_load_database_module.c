@@ -666,7 +666,7 @@ int main(void) {
     RUN_TEST(test_database_migrations_lua_load_migration_file_non_function_return);
 
     // Test extract_queries_table function
-    if (0) RUN_TEST(test_database_migrations_lua_extract_queries_table_success);
+    RUN_TEST(test_database_migrations_lua_extract_queries_table_success);
     RUN_TEST(test_database_migrations_lua_extract_queries_table_no_queries);
     RUN_TEST(test_database_migrations_lua_extract_queries_table_function_not_on_stack);
     RUN_TEST(test_database_migrations_lua_extract_queries_table_no_database_table);
@@ -676,7 +676,7 @@ int main(void) {
     RUN_TEST(test_database_migrations_lua_extract_queries_table_non_table_return);
 
     // Test execute_run_migration function
-    if (0) RUN_TEST(test_database_migrations_lua_execute_run_migration_success);
+    RUN_TEST(test_database_migrations_lua_execute_run_migration_success);
     RUN_TEST(test_database_migrations_lua_execute_run_migration_no_database_table);
     RUN_TEST(test_database_migrations_lua_execute_run_migration_no_run_migration_function);
     RUN_TEST(test_database_migrations_lua_execute_run_migration_returns_non_string);

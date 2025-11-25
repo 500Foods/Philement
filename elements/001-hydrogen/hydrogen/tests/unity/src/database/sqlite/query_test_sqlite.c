@@ -784,7 +784,7 @@ int main(void) {
 
     // Test sqlite_execute_query - Error paths
     RUN_TEST(test_sqlite_execute_query_exec_failure_with_error_msg);
-    if (0) RUN_TEST(test_sqlite_execute_query_memory_allocation_failure);
+    RUN_TEST(test_sqlite_execute_query_memory_allocation_failure);
 
     // Test sqlite_execute_prepared - Parameter validation
     RUN_TEST(test_sqlite_execute_prepared_null_connection);
@@ -806,7 +806,7 @@ int main(void) {
     RUN_TEST(test_sqlite_execute_prepared_with_null_column);
 
     // Test sqlite_execute_prepared - Error paths
-    if (0) RUN_TEST(test_sqlite_execute_prepared_memory_allocation_failure);
+    RUN_TEST(test_sqlite_execute_prepared_memory_allocation_failure);
     RUN_TEST(test_sqlite_execute_prepared_step_error);
 
     // Test sqlite_execute_prepared - Additional coverage tests

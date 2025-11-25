@@ -100,6 +100,9 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
         // Update last request time for queue selection algorithm
         db_queue->last_request_time = time(NULL);
 
+        // Signal worker thread that work is available
+        sem_post(&db_queue->worker_semaphore);
+
         // log_this(SR_DATABASE, "Submitted query %s to %s queue %s", LOG_LEVEL_TRACE, 3, query->query_id, db_queue->queue_type, db_queue->database_name);
     }
 
