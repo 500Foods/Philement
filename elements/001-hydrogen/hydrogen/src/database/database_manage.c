@@ -201,14 +201,27 @@ bool database_add_database(const char* name, const char* engine, const char* con
         free_connection_config(parsed_config);
     }
 
-    // Create and start database queue
-    DatabaseQueue* db_queue = database_create_and_start_queue(name, conn_str, conn_config->bootstrap_query);
+    // Create Lead queue (but don't start it yet)
+    DatabaseQueue* db_queue = database_queue_create_lead(name, conn_str, conn_config->bootstrap_query);
     free(conn_str);
 
     if (!db_queue) {
+        log_this(SR_DATABASE, "Failed to create Lead database queue", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
+    // CRITICAL: Transfer prepared statement cache size BEFORE starting the worker thread
+    db_queue->prepared_statement_cache_size = conn_config->prepared_statement_cache_size;
+    log_this(SR_DATABASE, "Configured prepared statement cache size: %d", LOG_LEVEL_DEBUG, 1, 
+             conn_config->prepared_statement_cache_size);
+
+    // Now start the worker thread with the configuration already in place
+    if (!database_queue_start_worker(db_queue)) {
+        log_this(SR_DATABASE, "Failed to start Lead queue worker thread", LOG_LEVEL_ERROR, 0);
+        database_queue_destroy(db_queue);
+        return false;
+    }
+    
     // Register queue with global manager
     if (!database_register_queue(db_queue)) {
         return false;
