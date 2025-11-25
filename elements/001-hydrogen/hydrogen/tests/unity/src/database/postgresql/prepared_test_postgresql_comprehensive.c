@@ -17,7 +17,7 @@
 #include <tests/unity/mocks/mock_libpq.h>
 
 // Forward declaration for the function being tested
-bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 
 // Helper function prototypes
 DatabaseHandle* create_mock_database_connection_with_cache_size(size_t cache_size);
@@ -102,12 +102,12 @@ void test_postgresql_lru_eviction_actual_execution(void) {
     PreparedStatement* stmt2 = NULL;
 
     // Create first statement
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, conn->prepared_statement_count);
 
     // Create second statement
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(2, conn->prepared_statement_count);
 
@@ -140,7 +140,7 @@ void test_postgresql_prepare_error_handling(void) {
     TEST_ASSERT_NOT_NULL(conn);
 
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "INVALID SQL", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "INVALID SQL", &stmt, true);
 
     // Should fail due to PostgreSQL error
     TEST_ASSERT_FALSE(result);
@@ -163,7 +163,7 @@ void test_postgresql_cache_full_scenario(void) {
         snprintf(name, sizeof(name), "stmt_%d", i + 1);
         snprintf(sql, sizeof(sql), "SELECT %d", i + 1);
 
-        TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, name, sql, &statements[i]));
+        TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, name, sql, &statements[i], true));
         TEST_ASSERT_NOT_NULL(statements[i]);
         TEST_ASSERT_EQUAL(i + 1, conn->prepared_statement_count);
     }
@@ -192,8 +192,8 @@ void test_postgresql_multiple_cache_operations(void) {
     PreparedStatement* stmt2 = NULL;
 
     // First two should succeed
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1));
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1, true));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2, true));
 
     TEST_ASSERT_EQUAL(2, conn->prepared_statement_count);
 

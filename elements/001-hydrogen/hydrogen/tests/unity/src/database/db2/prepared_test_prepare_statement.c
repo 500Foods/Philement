@@ -15,12 +15,13 @@
 #include <src/database/database.h>
 
 // Forward declaration
-bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 
 // External function pointers that need to be set
 extern SQLAllocHandle_t SQLAllocHandle_ptr;
 extern SQLPrepare_t SQLPrepare_ptr;
 extern SQLFreeHandle_t SQLFreeHandle_ptr;
+extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
 
 // Function prototypes
 void test_prepare_statement_null_connection(void);
@@ -45,6 +46,7 @@ void setUp(void) {
     SQLAllocHandle_ptr = mock_SQLAllocHandle;
     SQLPrepare_ptr = mock_SQLPrepare;
     SQLFreeHandle_ptr = mock_SQLFreeHandle;
+    SQLGetDiagRec_ptr = mock_SQLGetDiagRec;
 }
 
 void tearDown(void) {
@@ -55,7 +57,7 @@ void tearDown(void) {
 // Test: NULL connection parameter
 void test_prepare_statement_null_connection(void) {
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(NULL, "test_stmt", "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(NULL, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -66,7 +68,7 @@ void test_prepare_statement_null_name(void) {
     connection.engine_type = DB_ENGINE_DB2;
     PreparedStatement* stmt = NULL;
     
-    bool result = db2_prepare_statement(&connection, NULL, "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(&connection, NULL, "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -77,7 +79,7 @@ void test_prepare_statement_null_sql(void) {
     connection.engine_type = DB_ENGINE_DB2;
     PreparedStatement* stmt = NULL;
     
-    bool result = db2_prepare_statement(&connection, "test_stmt", NULL, &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", NULL, &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -87,7 +89,7 @@ void test_prepare_statement_null_output(void) {
     DatabaseHandle connection = {0};
     connection.engine_type = DB_ENGINE_DB2;
     
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", NULL);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", NULL, true);
     TEST_ASSERT_FALSE(result);
 }
 
@@ -97,7 +99,7 @@ void test_prepare_statement_wrong_engine(void) {
     connection.engine_type = DB_ENGINE_POSTGRESQL;
     PreparedStatement* stmt = NULL;
     
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -109,7 +111,7 @@ void test_prepare_statement_null_db2_connection(void) {
     connection.connection_handle = NULL;
     PreparedStatement* stmt = NULL;
     
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -125,7 +127,7 @@ void test_prepare_statement_null_db2_connection_field(void) {
     
     PreparedStatement* stmt = NULL;
     
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -145,7 +147,7 @@ void test_prepare_statement_no_function_pointers(void) {
     SQLFreeHandle_ptr = NULL;
     
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -163,7 +165,7 @@ void test_prepare_statement_alloc_handle_failure(void) {
     mock_libdb2_set_SQLAllocHandle_result(-1); // SQL_ERROR
     
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -177,6 +179,11 @@ void test_prepare_statement_prepare_failure(void) {
     db2_conn.connection = (void*)0x1234;
     connection.connection_handle = &db2_conn;
     
+    // Initialize config to prevent NULL pointer dereference
+    ConnectionConfig config = {0};
+    config.prepared_statement_cache_size = 100;  // Set reasonable default
+    connection.config = &config;
+    
     // SQLAllocHandle succeeds
     mock_libdb2_set_SQLAllocHandle_result(SQL_SUCCESS);
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x5678);
@@ -186,7 +193,7 @@ void test_prepare_statement_prepare_failure(void) {
     // For now, we'll test the success path
     
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     
     // This will succeed with current mocks - we'd need to enhance mock_libdb2 to test failure
     TEST_ASSERT_TRUE(result);
@@ -223,7 +230,7 @@ void test_prepare_statement_success(void) {
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x5678);
     
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT * FROM users WHERE id = ?", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT * FROM users WHERE id = ?", &stmt, true);
     
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_NOT_NULL(stmt);
@@ -255,6 +262,11 @@ void test_prepare_statement_multiple(void) {
     db2_conn.connection = (void*)0x1234;
     connection.connection_handle = &db2_conn;
     
+    // Initialize config to prevent NULL pointer dereference
+    ConnectionConfig config = {0};
+    config.prepared_statement_cache_size = 100;  // Set reasonable default
+    connection.config = &config;
+    
     // Setup mocks
     mock_libdb2_set_SQLAllocHandle_result(SQL_SUCCESS);
     
@@ -264,19 +276,19 @@ void test_prepare_statement_multiple(void) {
     
     // Create first statement
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x1111);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     
     // Create second statement
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x2222);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(2, connection.prepared_statement_count);
     
     // Create third statement
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x3333);
-    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(db2_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3, true));
     TEST_ASSERT_NOT_NULL(stmt3);
     TEST_ASSERT_EQUAL(3, connection.prepared_statement_count);
     
@@ -312,7 +324,7 @@ void test_prepare_statement_custom_cache_size(void) {
     mock_libdb2_set_SQLAllocHandle_output_handle((void*)0x5678);
     
     PreparedStatement* stmt = NULL;
-    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = db2_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_NOT_NULL(connection.prepared_statements);

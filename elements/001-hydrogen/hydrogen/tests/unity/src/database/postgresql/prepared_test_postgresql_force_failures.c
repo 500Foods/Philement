@@ -17,7 +17,7 @@
 #include <tests/unity/mocks/mock_libpq.h>
 
 // Forward declaration for the function being tested
-bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 
 // Helper function prototypes
 DatabaseHandle* create_connection_for_failure_testing(void);
@@ -84,7 +84,7 @@ void test_force_cache_initialization_failure(void) {
     conn->config = NULL;
 
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
 
     // Should succeed (cache initialization doesn't fail in test environment)
     TEST_ASSERT_TRUE(result);
@@ -118,11 +118,11 @@ void test_force_lru_eviction_failure(void) {
     PreparedStatement* stmt2 = NULL;
 
     // Create first statement
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
 
     // Create second statement - should trigger eviction
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
 
     // Cleanup
@@ -148,7 +148,7 @@ void test_force_config_cache_size_zero(void) {
     conn->config->prepared_statement_cache_size = 0; // Zero cache size
 
     PreparedStatement* stmt = NULL;
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true));
     TEST_ASSERT_NOT_NULL(stmt);
 
     // Should use default cache size (1000) when config is 0
@@ -174,7 +174,7 @@ void test_force_config_cache_size_negative(void) {
     conn->config->prepared_statement_cache_size = -1; // Negative cache size
 
     PreparedStatement* stmt = NULL;
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true));
     TEST_ASSERT_NOT_NULL(stmt);
 
     // Should use default cache size (1000) when config is negative
@@ -198,7 +198,7 @@ void test_force_null_config_scenario(void) {
     TEST_ASSERT_NULL(conn->config);
 
     PreparedStatement* stmt = NULL;
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true));
     TEST_ASSERT_NOT_NULL(stmt);
 
     // Should use default cache size (1000) when config is NULL

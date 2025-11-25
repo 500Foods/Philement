@@ -16,7 +16,7 @@
 #include <src/database/mysql/prepared.h>
 
 // Forward declarations for functions being tested
-bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool mysql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 
 // External declarations for function pointers (defined in connection.c)
 extern mysql_stmt_init_t mysql_stmt_init_ptr;
@@ -78,7 +78,7 @@ void test_mysql_prepare_statement_null_mysql_connection(void) {
     connection.connection_handle = NULL;
     PreparedStatement* stmt = NULL;
 
-    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -94,7 +94,7 @@ void test_mysql_prepare_statement_null_mysql_connection_field(void) {
 
     PreparedStatement* stmt = NULL;
 
-    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -115,7 +115,7 @@ void test_mysql_prepare_statement_no_function_pointers(void) {
     mysql_stmt_close_ptr = NULL;
 
     PreparedStatement* stmt = NULL;
-    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -140,7 +140,7 @@ void test_mysql_prepare_statement_mysql_stmt_init_failure(void) {
     mock_libmysqlclient_set_mysql_stmt_init_result(NULL);
 
     PreparedStatement* stmt = NULL;
-    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -161,7 +161,7 @@ void test_mysql_prepare_statement_mysql_stmt_prepare_failure(void) {
     mock_libmysqlclient_set_mysql_stmt_prepare_result(1);
 
     PreparedStatement* stmt = NULL;
-    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -175,6 +175,11 @@ void test_mysql_prepare_statement_timeout_scenario(void) {
     mysql_conn.connection = (void*)0x1234;
     connection.connection_handle = &mysql_conn;
 
+    // Initialize config to prevent NULL pointer dereference
+    ConnectionConfig config = {0};
+    config.prepared_statement_cache_size = 100;  // Set reasonable default
+    connection.config = &config;
+
     // Mock mysql_stmt_init to succeed
     mock_libmysqlclient_set_mysql_stmt_init_result((void*)0x5678);
 
@@ -182,7 +187,7 @@ void test_mysql_prepare_statement_timeout_scenario(void) {
     mock_libmysqlclient_set_mysql_stmt_prepare_result(0);
 
     PreparedStatement* stmt = NULL;
-    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_NOT_NULL(stmt);
 
@@ -209,6 +214,11 @@ void test_mysql_prepare_statement_memory_allocation_failure(void) {
     mysql_conn.connection = (void*)0x1234;
     connection.connection_handle = &mysql_conn;
 
+    // Initialize config to prevent NULL pointer dereference
+    ConnectionConfig config = {0};
+    config.prepared_statement_cache_size = 100;  // Set reasonable default
+    connection.config = &config;
+
     // Mock mysql_stmt_init to succeed
     mock_libmysqlclient_set_mysql_stmt_init_result((void*)0x5678);
 
@@ -216,7 +226,7 @@ void test_mysql_prepare_statement_memory_allocation_failure(void) {
     mock_libmysqlclient_set_mysql_stmt_prepare_result(0);
 
     PreparedStatement* stmt = NULL;
-    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
 
     // This should succeed with current mocks since we can't easily mock calloc failure
     TEST_ASSERT_TRUE(result);
@@ -255,7 +265,7 @@ void test_mysql_prepare_statement_custom_cache_size(void) {
     mock_libmysqlclient_set_mysql_stmt_prepare_result(0);
 
     PreparedStatement* stmt = NULL;
-    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt);
+    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT 1", &stmt, true);
 
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_NOT_NULL(stmt);
@@ -299,17 +309,17 @@ void test_mysql_prepare_statement_lru_eviction(void) {
     PreparedStatement* stmt3 = NULL;
 
     // Create first statement
-    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
 
     // Create second statement
-    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(2, connection.prepared_statement_count);
 
     // Create third statement - should trigger LRU eviction
-    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3, true));
     TEST_ASSERT_NOT_NULL(stmt3);
     TEST_ASSERT_EQUAL(2, connection.prepared_statement_count); // Should still be 2 after eviction
 
@@ -351,12 +361,12 @@ void test_mysql_prepare_statement_lru_eviction_cleanup(void) {
     PreparedStatement* stmt2 = NULL;
 
     // Create first statement
-    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
 
     // Create second statement - should evict stmt1
-    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(mysql_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     TEST_ASSERT_EQUAL(stmt2, connection.prepared_statements[0]);
@@ -389,7 +399,7 @@ void test_mysql_prepare_statement_success_with_cache(void) {
     mock_libmysqlclient_set_mysql_stmt_prepare_result(0);
 
     PreparedStatement* stmt = NULL;
-    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT * FROM users WHERE id = ?", &stmt);
+    bool result = mysql_prepare_statement(&connection, "test_stmt", "SELECT * FROM users WHERE id = ?", &stmt, true);
 
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_NOT_NULL(stmt);

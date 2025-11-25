@@ -15,7 +15,7 @@
 #include <src/database/database.h>
 
 // Forward declaration for the function being tested
-bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 
 // Function prototypes for test functions
 void test_postgresql_prepare_statement_null_connection(void);
@@ -36,7 +36,7 @@ void tearDown(void) {
 // Test functions
 void test_postgresql_prepare_statement_null_connection(void) {
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(NULL, "test", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(NULL, "test", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -48,7 +48,7 @@ void test_postgresql_prepare_statement_null_name(void) {
     mock_conn.engine_type = DB_ENGINE_POSTGRESQL;
 
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(&mock_conn, NULL, "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(&mock_conn, NULL, "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -60,7 +60,7 @@ void test_postgresql_prepare_statement_null_sql(void) {
     mock_conn.engine_type = DB_ENGINE_POSTGRESQL;
 
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(&mock_conn, "test", NULL, &stmt);
+    bool result = postgresql_prepare_statement(&mock_conn, "test", NULL, &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }
@@ -71,7 +71,7 @@ void test_postgresql_prepare_statement_null_stmt(void) {
     memset(&mock_conn, 0, sizeof(DatabaseHandle));
     mock_conn.engine_type = DB_ENGINE_POSTGRESQL;
 
-    bool result = postgresql_prepare_statement(&mock_conn, "test", "SELECT 1", NULL);
+    bool result = postgresql_prepare_statement(&mock_conn, "test", "SELECT 1", NULL, true);
     TEST_ASSERT_FALSE(result);
 }
 
@@ -82,7 +82,7 @@ void test_postgresql_prepare_statement_wrong_engine(void) {
     mock_conn.engine_type = DB_ENGINE_SQLITE; // Wrong engine
 
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(&mock_conn, "test", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(&mock_conn, "test", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
 }

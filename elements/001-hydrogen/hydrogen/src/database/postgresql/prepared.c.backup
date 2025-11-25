@@ -113,7 +113,7 @@ bool postgresql_add_prepared_statement_to_cache(DatabaseHandle* connection, Prep
 }
 
 // Prepared Statement Management Functions
-bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache) {
+bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt) {
     if (!connection || !name || !sql || !stmt || connection->engine_type != DB_ENGINE_POSTGRESQL) {
         return false;
     }
@@ -162,12 +162,7 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
     // Since each thread owns its connection exclusively, no mutex needed
 
     // Get cache size from database configuration
-    size_t cache_size;
-    if (!connection->config || connection->config->prepared_statement_cache_size <= 0) {
-        cache_size = 1000; // Default cache size when config is NULL, 0, or negative
-    } else {
-        cache_size = (size_t)connection->config->prepared_statement_cache_size;
-    }
+    size_t cache_size = (size_t)connection->config->prepared_statement_cache_size;
 
     // Initialize cache if this is the first prepared statement
     if (!connection->prepared_statements) {
@@ -181,17 +176,8 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
         }
     }
 
-    // Add to cache if requested (for unit tests) or let database_engine_execute handle it
-    if (add_to_cache) {
-        // Add statement to cache
-        if (!postgresql_add_prepared_statement_to_cache(connection, prepared_stmt, cache_size)) {
-            // Adding to cache failed, but statement is still valid
-            // Just log or continue - the statement can still be used
-            log_this(connection->designator ? connection->designator : SR_DATABASE,
-                     "Failed to add prepared statement to cache, but statement is still valid", LOG_LEVEL_TRACE, 0);
-        }
-    }
-    
+    // NOTE: Do NOT add to cache here - database_engine_execute() will handle caching
+    // via store_prepared_statement() to avoid double-caching
     *stmt = prepared_stmt;
 
     log_this(connection->designator ? connection->designator : SR_DATABASE,
@@ -209,13 +195,27 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
         return false;
     }
 
-    // NOTE: We do NOT issue DEALLOCATE here because:
-    // 1. PostgreSQL automatically deallocates prepared statements when connection closes
-    // 2. Issuing DEALLOCATE during LRU eviction inside a transaction can cause transaction abort
-    //    if the statement doesn't exist (which happens frequently during cache churn)
-    // 3. Transaction abort invalidates ALL statements in that transaction, including newly prepared ones
-    //
-    // This is different from DB2/MySQL/SQLite which require explicit cleanup of handles
+    // Execute DEALLOCATE to explicitly deallocate the prepared statement
+    char deallocate_query[256];
+    snprintf(deallocate_query, sizeof(deallocate_query), "DEALLOCATE %s", stmt->name);
+
+    time_t start_time = time(NULL);
+    void* res = PQexec_ptr(pg_conn->connection, deallocate_query);
+
+    // Check if deallocate took too long
+    if (check_timeout_expired(start_time, 15)) {
+        log_this(SR_DATABASE, "PostgreSQL DEALLOCATE execution time exceeded 15 seconds", LOG_LEVEL_ERROR, 0);
+        if (res) PQclear_ptr(res);
+        return false;
+    }
+
+    if (PQresultStatus_ptr(res) != PGRES_COMMAND_OK) {
+        log_this(SR_DATABASE, "PostgreSQL DEALLOCATE failed", LOG_LEVEL_TRACE, 0);
+        log_this(SR_DATABASE, PQerrorMessage_ptr(pg_conn->connection), LOG_LEVEL_TRACE, 0);
+        PQclear_ptr(res);
+        return false;
+    }
+    PQclear_ptr(res);
 
     // Remove from connection's prepared statement array
     // Since each thread owns its connection exclusively, no mutex needed
@@ -224,10 +224,6 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
             // Shift remaining elements
             for (size_t j = i; j < connection->prepared_statement_count - 1; j++) {
                 connection->prepared_statements[j] = connection->prepared_statements[j + 1];
-                // Only update LRU counter if array exists
-                if (connection->prepared_statement_lru_counter) {
-                    connection->prepared_statement_lru_counter[j] = connection->prepared_statement_lru_counter[j + 1];
-                }
             }
             // NULL out the last element to prevent dangling pointer issues
             connection->prepared_statements[connection->prepared_statement_count - 1] = NULL;
@@ -244,7 +240,8 @@ bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatemen
     free(stmt->sql_template);
     free(stmt);
 
+
     log_this(connection->designator ? connection->designator : SR_DATABASE,
-             "PostgreSQL prepared statement removed from cache", LOG_LEVEL_TRACE, 0);
+             "PostgreSQL prepared statement deallocated and removed", LOG_LEVEL_TRACE, 0);
     return true;
 }

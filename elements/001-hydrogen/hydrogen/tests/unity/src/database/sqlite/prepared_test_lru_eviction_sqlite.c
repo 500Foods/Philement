@@ -15,7 +15,7 @@
 #include <src/database/sqlite/prepared.h>
 
 // Forward declarations
-bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 
 // External function pointers
 extern sqlite3_prepare_v2_t sqlite3_prepare_v2_ptr;
@@ -59,19 +59,19 @@ void test_prepare_statement_lru_eviction_single(void) {
     
     // Create first statement
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x1111);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     
     // Create second statement
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x2222);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(2, connection.prepared_statement_count);
     
     // Create third statement - should trigger LRU eviction
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x3333);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3, true));
     TEST_ASSERT_NOT_NULL(stmt3);
     TEST_ASSERT_EQUAL(2, connection.prepared_statement_count); // Should still be 2 after eviction
     
@@ -111,20 +111,20 @@ void test_prepare_statement_lru_eviction_multiple(void) {
     
     // Create first statement
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x1111);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     
     // Create second statement - should evict stmt1
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x2222);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     TEST_ASSERT_EQUAL(stmt2, connection.prepared_statements[0]);
     
     // Create third statement - should evict stmt2
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x3333);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3, true));
     TEST_ASSERT_NOT_NULL(stmt3);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     TEST_ASSERT_EQUAL(stmt3, connection.prepared_statements[0]);
@@ -159,19 +159,19 @@ void test_prepare_statement_lru_eviction_boundary(void) {
     
     // Fill cache exactly to capacity
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x1111);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x2222);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
     
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x3333);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_3", "SELECT 3", &stmt3, true));
     
     TEST_ASSERT_EQUAL(3, connection.prepared_statement_count);
     
     // Add one more - should trigger eviction
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x4444);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_4", "SELECT 4", &stmt4));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_4", "SELECT 4", &stmt4, true));
     TEST_ASSERT_NOT_NULL(stmt4);
     TEST_ASSERT_EQUAL(3, connection.prepared_statement_count);
     
@@ -211,7 +211,7 @@ void test_prepare_statement_lru_counter_increment(void) {
     
     // Create first statement
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x1111);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     
@@ -221,7 +221,7 @@ void test_prepare_statement_lru_counter_increment(void) {
     
     // Create second statement
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x2222);
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true));
     TEST_ASSERT_NOT_NULL(stmt2);
     TEST_ASSERT_EQUAL(2, connection.prepared_statement_count);
     

@@ -17,7 +17,7 @@
 #include <tests/unity/mocks/mock_libpq.h>
 
 // Forward declarations
-bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 bool postgresql_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt);
 
 // Mock function pointers
@@ -103,7 +103,7 @@ void test_prepare_statement_basic_functionality(void) {
     DatabaseHandle* conn = create_test_connection();
 
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
 
     // Should succeed (timeout handling moved to connection level)
     TEST_ASSERT_TRUE(result);
@@ -121,7 +121,7 @@ void test_prepare_statement_null_pg_connection(void) {
     pg_conn->connection = NULL;
     
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
     
     // Should fail due to NULL connection
     TEST_ASSERT_FALSE(result);
@@ -136,7 +136,7 @@ void test_unprepare_statement_basic_functionality(void) {
 
     // First create a statement successfully
     PreparedStatement* stmt = NULL;
-    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt));
+    TEST_ASSERT_TRUE(postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true));
     TEST_ASSERT_NOT_NULL(stmt);
 
     // Now unprepare the statement

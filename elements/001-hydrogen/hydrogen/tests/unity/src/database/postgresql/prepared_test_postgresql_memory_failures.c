@@ -18,7 +18,7 @@
 #include <tests/unity/mocks/mock_system.h>
 
 // Forward declaration for the function being tested
-bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 
 // Helper function prototypes
 DatabaseHandle* create_mock_database_connection(void);
@@ -92,7 +92,7 @@ void test_postgresql_prepare_statement_calloc_failure(void) {
 
     // Test with normal operation first (memory allocation should succeed)
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
 
     // Should succeed in normal operation
     TEST_ASSERT_TRUE(result);
@@ -116,7 +116,7 @@ void test_postgresql_prepare_statement_strdup_name_failure(void) {
 
     // Test with normal operation (strdup should succeed)
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
 
     // Should succeed in normal operation
     TEST_ASSERT_TRUE(result);
@@ -140,7 +140,7 @@ void test_postgresql_prepare_statement_strdup_sql_failure(void) {
 
     // Test with normal operation (strdup should succeed)
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
 
     // Should succeed in normal operation
     TEST_ASSERT_TRUE(result);
@@ -169,7 +169,7 @@ void test_postgresql_prepare_statement_prepared_statements_array_failure(void) {
 
     // Test with normal operation (malloc should succeed)
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
 
     // Should succeed in normal operation
     TEST_ASSERT_TRUE(result);
@@ -199,7 +199,7 @@ void test_postgresql_prepare_statement_lru_counter_array_failure(void) {
 
     // Test with normal operation (malloc should succeed)
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
 
     // Should succeed in normal operation
     TEST_ASSERT_TRUE(result);
@@ -229,7 +229,7 @@ void test_postgresql_prepare_statement_cache_initialization_failure(void) {
 
     // Test with normal operation (cache initialization should succeed)
     PreparedStatement* stmt = NULL;
-    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt);
+    bool result = postgresql_prepare_statement(conn, "test_stmt", "SELECT 1", &stmt, true);
 
     // Should succeed in normal operation
     TEST_ASSERT_TRUE(result);

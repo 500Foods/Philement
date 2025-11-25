@@ -155,7 +155,7 @@ struct DatabaseEngineInterface {
     bool (*rollback_transaction)(DatabaseHandle* connection, Transaction* transaction);
 
     // Prepared statement management
-    bool (*prepare_statement)(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+    bool (*prepare_statement)(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
     bool (*unprepare_statement)(DatabaseHandle* connection, PreparedStatement* stmt);
 
     // Engine-specific utilities

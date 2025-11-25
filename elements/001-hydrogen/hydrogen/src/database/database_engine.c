@@ -355,7 +355,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
                      request->prepared_statement_name);
 
             bool prepared = engine->prepare_statement(connection, request->prepared_statement_name,
-                                                    request->sql_template, &stmt);
+                                                    request->sql_template, &stmt, false);
             if (prepared && stmt) {
                 stmt_was_created = true;
                 

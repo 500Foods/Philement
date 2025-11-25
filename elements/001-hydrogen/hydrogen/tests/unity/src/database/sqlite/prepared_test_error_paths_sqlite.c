@@ -43,7 +43,7 @@ void test_update_lru_counter_loop_execution_found(void);
 void test_evict_lru_null_check(void);
 
 //Forward declarations
-bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt);
+bool sqlite_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache);
 bool sqlite_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt);
 void sqlite_update_prepared_lru_counter(DatabaseHandle* connection, const char* stmt_name);
 bool sqlite_add_prepared_statement(PreparedStatementCache* cache, const char* name);
@@ -146,39 +146,39 @@ void test_prepare_statement_null_parameters(void) {
     PreparedStatement* stmt = NULL;
     
     // Test NULL connection (line 110)
-    bool result = sqlite_prepare_statement(NULL, "test", "SELECT 1", &stmt);
+    bool result = sqlite_prepare_statement(NULL, "test", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     
     // Test NULL name
     DatabaseHandle connection = {0};
     connection.engine_type = DB_ENGINE_SQLITE;
-    result = sqlite_prepare_statement(&connection, NULL, "SELECT 1", &stmt);
+    result = sqlite_prepare_statement(&connection, NULL, "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     
     // Test NULL sql
-    result = sqlite_prepare_statement(&connection, "test", NULL, &stmt);
+    result = sqlite_prepare_statement(&connection, "test", NULL, &stmt, true);
     TEST_ASSERT_FALSE(result);
     
     // Test NULL stmt pointer
-    result = sqlite_prepare_statement(&connection, "test_stmt", "SELECT 2", NULL);
+    result = sqlite_prepare_statement(&connection, "test_stmt", "SELECT 2", NULL, true);
     TEST_ASSERT_FALSE(result);
     
     // Test wrong engine type
     connection.engine_type = DB_ENGINE_POSTGRESQL;
-    result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt);
+    result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     
     // Test NULL connection_handle (line 115)
     connection.engine_type = DB_ENGINE_SQLITE;
     connection.connection_handle = NULL;
-    result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt);
+    result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     
     // Test NULL db in sqlite_conn
     SQLiteConnection sqlite_conn = {0};
     sqlite_conn.db = NULL;
     connection.connection_handle = &sqlite_conn;
-    result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt);
+    result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
 }
 
@@ -200,19 +200,19 @@ void test_prepare_statement_no_function_pointers(void) {
     
     // Test with prepare pointer NULL
     sqlite3_prepare_v2_ptr = NULL;
-    bool result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt);
+    bool result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     sqlite3_prepare_v2_ptr = saved_prepare;
     
     // Test with finalize pointer NULL
     sqlite3_finalize_ptr = NULL;
-    result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt);
+    result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     sqlite3_finalize_ptr = saved_finalize;
     
     // Test with errmsg pointer NULL
     sqlite3_errmsg_ptr = NULL;
-    result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt);
+    result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt, true);
     TEST_ASSERT_FALSE(result);
     
     // Restore
@@ -233,7 +233,7 @@ void test_prepare_statement_prepare_failure(void) {
     mock_libsqlite3_set_sqlite3_errmsg_result("syntax error");
     
     PreparedStatement* stmt = NULL;
-    bool result = sqlite_prepare_statement(&connection, "test_stmt", "SELECT * FROM invalid", &stmt);
+    bool result = sqlite_prepare_statement(&connection, "test_stmt", "SELECT * FROM invalid", &stmt, true);
     
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
@@ -255,7 +255,7 @@ void test_prepare_statement_malloc_failure_stmt(void) {
     // to actually test malloc failure. For now, we verify the success path.
     
     PreparedStatement* stmt = NULL;
-    bool result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt);
+    bool result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt, true);
     
     // Should succeed with valid inputs
     TEST_ASSERT_TRUE(result);
@@ -286,7 +286,7 @@ void test_prepare_statement_cache_init_failure(void) {
     
     // Verify cache init succeeds normally (this was the old test)
     PreparedStatement* stmt = NULL;
-    bool result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt);
+    bool result = sqlite_prepare_statement(&connection, "test", "SELECT 1", &stmt, true);
     
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_NOT_NULL(stmt);
@@ -317,7 +317,7 @@ void test_prepare_statement_add_to_cache_failure(void) {
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x1111);
     
     PreparedStatement* stmt1 = NULL;
-    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1));
+    TEST_ASSERT_TRUE(sqlite_prepare_statement(&connection, "stmt_1", "SELECT 1", &stmt1, true));
     TEST_ASSERT_NOT_NULL(stmt1);
     TEST_ASSERT_EQUAL(1, connection.prepared_statement_count);
     
@@ -327,7 +327,7 @@ void test_prepare_statement_add_to_cache_failure(void) {
     
     mock_libsqlite3_set_sqlite3_prepare_v2_output_handle((void*)0x2222);
     PreparedStatement* stmt2 = NULL;
-    bool result = sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2);
+    bool result = sqlite_prepare_statement(&connection, "stmt_2", "SELECT 2", &stmt2, true);
     (void)result; // Mark as intentionally unused - behavior may vary
     
     // Should handle gracefully even without finalize
@@ -494,7 +494,7 @@ void test_prepare_statement_prepare_failure_with_error_logging(void) {
     mock_libsqlite3_set_sqlite3_errmsg_result("near \"INVALID\": syntax error");
     
     PreparedStatement* stmt = NULL;
-    bool result = sqlite_prepare_statement(&connection, "bad_stmt", "SELECT * FROM INVALID SYNTAX", &stmt);
+    bool result = sqlite_prepare_statement(&connection, "bad_stmt", "SELECT * FROM INVALID SYNTAX", &stmt, true);
     
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NULL(stmt);
