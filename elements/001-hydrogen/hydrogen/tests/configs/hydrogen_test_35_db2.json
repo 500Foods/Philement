@@ -20,7 +20,7 @@
                 "Pass": "${env.HYDROTST_DB_PASS}",
                 "Bootstrap":"SELECT query_id \"id\", query_ref \"ref\", query_status_a27 \"status\", query_type_a28 \"type\", query_dialect_a30 \"engine\", query_queue_a58 \"queue\", query_timeout \"timeout\", name \"name\", code \"query\" FROM test.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
                 "AutoMigration": true,
-                "TestMigration": true,
+                "TestMigration": false,
                 "Migrations":"PAYLOAD:acuranzo",
                 "Schema": "test",
                 "Queues": {

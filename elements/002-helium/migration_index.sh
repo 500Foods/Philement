@@ -55,7 +55,7 @@ count_migrations() {
     local query_delim
     
     insert_count=$(grep -c "table\.insert(queries" "${file}" || echo "0")
-    query_delim=$(grep -c "QUERY_DELIMITER" "${file}" || echo "0")
+    query_delim=$(grep -c "QUERY_DELIMITER" "${file}" || true)
     echo $((insert_count + query_delim))
 }
 

@@ -96,4 +96,7 @@ This folder contains the migrations (aka database DDL and SQL) for creating a ne
 | [1063](acuranzo/migrations/acuranzo_1063.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 038 - AI Chat Engines |
 | [1064](acuranzo/migrations/acuranzo_1064.lua) | lookups | 1.0.0 | 2025-11-25 | 6 |  | Defaults for Lookup 039 - AI Auditor Engines |
 | [1065](acuranzo/migrations/acuranzo_1065.lua) | lookups | 1.0.0 | 2025-11-25 | 6 |  | Defaults for Lookup 040 - Icons |
-| **66** | | | | **395** | **24** | |
+| [1066](acuranzo/migrations/acuranzo_1066.lua) | lookups | 1.0.0 | 2025-11-26 | 4 |  | Defaults for Lookup 041 - Themes |
+| [1067](acuranzo/migrations/acuranzo_1067.lua) | lookups | 1.0.0 | 2025-11-26 | 2 |  | Theme - Default |
+| [1068](acuranzo/migrations/acuranzo_1068.lua) | lookups | 1.0.0 | 2025-11-26 | 2 |  | Theme - Bluish |
+| **69** | | | | **403** | **24** | |
