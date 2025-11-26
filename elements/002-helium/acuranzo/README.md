@@ -91,4 +91,9 @@ This folder contains the migrations (aka database DDL and SQL) for creating a ne
 | [1058](acuranzo/migrations/acuranzo_1058.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 033 - Login Controls |
 | [1059](acuranzo/migrations/acuranzo_1059.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 034 - Role Status |
 | [1060](acuranzo/migrations/acuranzo_1060.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 035 - Role Scope |
-| **61** | | | | **365** | **24** | |
+| [1061](acuranzo/migrations/acuranzo_1061.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 036 - Role Type |
+| [1062](acuranzo/migrations/acuranzo_1062.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 037 - Access Status |
+| [1063](acuranzo/migrations/acuranzo_1063.lua) | lookups | 1.0.0 | 2025-11-24 | 6 |  | Defaults for Lookup 038 - AI Chat Engines |
+| [1064](acuranzo/migrations/acuranzo_1064.lua) | lookups | 1.0.0 | 2025-11-25 | 6 |  | Defaults for Lookup 039 - AI Auditor Engines |
+| [1065](acuranzo/migrations/acuranzo_1065.lua) | lookups | 1.0.0 | 2025-11-25 | 6 |  | Defaults for Lookup 040 - Icons |
+| **66** | | | | **395** | **24** | |
