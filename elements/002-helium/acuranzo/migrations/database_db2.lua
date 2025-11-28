@@ -19,7 +19,7 @@ return {
     PRIMARY = "PRIMARY KEY",
     SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
     TEXT = "VARCHAR(250)",
-    TEXT_BIG = "CLOB(5M)",
+    TEXT_BIG = "CLOB(1M)",
     TIMESTAMP_TZ = "TIMESTAMP",
     UNIQUE = "UNIQUE",
     VARCHAR_20 = "VARCHAR(20)",
@@ -31,7 +31,63 @@ return {
     BASE64_START = "${SCHEMA}BASE64DECODE(",
     BASE64_END = ")",
 
+    COMPRESS_START = "${SCHEMA}BROTLI_DECOMPRESS(",
+    COMPRESS_END = ")",
+
     DROP_CHECK = "BEGIN IF EXISTS(SELECT 1 FROM ${SCHEMA}${TABLE}) THEN SIGNAL SQLSTATE '75001' SET MESSAGE_TEXT='Refusing to drop table ${SCHEMA}${TABLE} – it contains data'; END IF; END",
+
+    BROTLI_DECOMPRESS_FUNCTION = [[
+        -- DB2 UDF for Brotli decompression (chunks, then wraps like BASE64DECODE)
+        -- Requires: libbrotlidec and brotli_decompress.so in sqllib/function
+        -- Installation handled via extras/brotli_udf_db2/
+
+        CREATE OR REPLACE FUNCTION ${SCHEMA}BROTLI_DECOMPRESS_CHUNK(input_data VARCHAR(32672))
+        RETURNS VARCHAR(32672)
+        LANGUAGE C
+        PARAMETER STYLE DB2SQL
+        NO SQL
+        DETERMINISTIC
+        NOT FENCED
+        THREADSAFE
+        RETURNS NULL ON NULL INPUT
+        EXTERNAL NAME 'brotli_decompress.so!BROTLI_DECOMPRESS_CHUNK'
+    ]],
+
+    BROTLI_DECOMPRESS_WRAPPER = [[
+        -- DB2 wrapper function for chunked Brotli decompression
+        CREATE OR REPLACE FUNCTION ${SCHEMA}BROTLI_DECOMPRESS(compressed CLOB(2G))
+        RETURNS CLOB(2G)
+        LANGUAGE SQL
+        DETERMINISTIC
+        READS SQL DATA
+
+        BEGIN ATOMIC
+            DECLARE result  CLOB(2G);
+            DECLARE pos     INTEGER   DEFAULT 1;
+            DECLARE len     INTEGER;
+            DECLARE step    INTEGER   DEFAULT 32672;
+            DECLARE piece   VARCHAR(32672);
+            DECLARE chunk   VARCHAR(32672);
+            SET result = CAST('' AS CLOB(1K));
+
+            SET len = LENGTH(compressed);
+
+            chunk_loop:
+            WHILE pos <= len DO
+                SET piece = CAST(SUBSTR(compressed, pos, step) AS VARCHAR(32672));
+                IF piece IS NULL OR LENGTH(piece) = 0 THEN
+                    LEAVE chunk_loop;
+                END IF;
+
+                SET chunk = ${SCHEMA}BROTLI_DECOMPRESS_CHUNK(piece);
+                SET result = result || CAST(chunk AS CLOB(32672));
+
+                SET pos = pos + step;
+            END WHILE chunk_loop;
+
+            RETURN result;
+        END
+    ]],
 
     JSON = "CLOB(1M)",
     JIS = "${SCHEMA}JSON_INGEST(",

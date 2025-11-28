@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 4.0.0 - 2025-11-27 - Added Brotli decompression UDF declarations for all database engines
 -- 3.1.0 - 2025-11-23 - Added DROP_CHECK to reverse migration
 -- 3.0.0 - 2025-10-30 - Another overhaul (thanks, MySQL) to have an alternate increment mechanism
 -- 2.0.0 - 2025-10-18 - Moved to latest migration format
@@ -43,6 +44,24 @@ if engine ~= 'sqlite' then table.insert(queries,{sql=[[
 
     -- Defined in database_<engine>.lua as a macro
     ${JSON_INGEST_FUNCTION}
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: Brotli decompression functions for all engines
+-- MySQL, PostgreSQL, SQLite: Single function declaration
+-- DB2: Both chunk function and wrapper function (like BASE64DECODE pattern)
+if engine ~= 'sqlite' then table.insert(queries,{sql=[[
+
+    -- Defined in database_<engine>.lua as a macro
+    ${BROTLI_DECOMPRESS_FUNCTION}
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: DB2 requires additional wrapper function for chunked decompression
+if engine == 'db2' then table.insert(queries,{sql=[[
+
+    -- Defined in database_db2.lua as a macro
+    ${BROTLI_DECOMPRESS_WRAPPER}
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
