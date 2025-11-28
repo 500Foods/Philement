@@ -1,0 +1,5 @@
+# brotli_decompress extension
+comment = 'Brotli decompression for Helium migrations'
+default_version = '1.0'
+module_pathname = '$libdir/brotli_decompress'
+relocatable = true
