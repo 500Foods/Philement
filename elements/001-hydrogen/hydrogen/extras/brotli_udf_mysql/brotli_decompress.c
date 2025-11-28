@@ -28,8 +28,9 @@ bool brotli_decompress_init(UDF_INIT *initid, UDF_ARGS *args, char *message) {
     }
     
     /* Allocate buffer for decompressed data (conservative estimate) */
-    initid->max_length = 16777216; /* 16MB max output */
+    initid->max_length = 67108864; /* 64MB max output */
     initid->maybe_null = 1;
+    initid->ptr = NULL; /* Initialize pointer for cleanup */
     
     return 0;
 }
@@ -38,7 +39,7 @@ bool brotli_decompress_init(UDF_INIT *initid, UDF_ARGS *args, char *message) {
 char *brotli_decompress(UDF_INIT *initid, UDF_ARGS *args,
                        char *result, unsigned long *length,
                        char *is_null, char *error) {
-    (void)initid; /* Unused */
+    (void)result; /* result buffer not used - we return allocated buffer */
     
     /* Handle NULL input */
     if (args->args[0] == NULL || args->lengths[0] == 0) {
@@ -59,10 +60,13 @@ char *brotli_decompress(UDF_INIT *initid, UDF_ARGS *args,
         return NULL;
     }
     
-    /* Initial buffer size (4x compressed size) */
-    size_t buffer_size = compressed_size * 4;
-    if (buffer_size > 16777216) {
-        buffer_size = 16777216; /* Limit to 16MB */
+    /* Initial buffer size (10x compressed size, min 64KB) */
+    size_t buffer_size = compressed_size * 10;
+    if (buffer_size < 65536) {
+        buffer_size = 65536; /* Min 64KB */
+    }
+    if (buffer_size > 67108864) {
+        buffer_size = 67108864; /* Limit to 64MB */
     }
     
     uint8_t *output = (uint8_t *)malloc(buffer_size);
@@ -92,10 +96,19 @@ char *brotli_decompress(UDF_INIT *initid, UDF_ARGS *args,
             /* Need more output space */
             size_t current_position = (size_t)(next_out - output);
             size_t new_buffer_size = buffer_size * 2;
-            if (new_buffer_size > 16777216) {
-                new_buffer_size = 16777216;
+            if (new_buffer_size > 67108864) {
+                new_buffer_size = 67108864;
             }
             
+            /* Check if we can't grow anymore - infinite loop prevention */
+            if (new_buffer_size == buffer_size) {
+                /* Already at max size and can't grow - data too large */
+                free(output);
+                BrotliDecoderDestroyInstance(decoder);
+                *error = 1;
+                return NULL;
+            }
+
             uint8_t *new_buffer = (uint8_t *)realloc(output, new_buffer_size);
             if (!new_buffer) {
                 free(output);
@@ -103,7 +116,7 @@ char *brotli_decompress(UDF_INIT *initid, UDF_ARGS *args,
                 *error = 1;
                 return NULL;
             }
-            
+
             output = new_buffer;
             buffer_size = new_buffer_size;
             next_out = output + current_position;
@@ -113,24 +126,30 @@ char *brotli_decompress(UDF_INIT *initid, UDF_ARGS *args,
             BrotliDecoderDestroyInstance(decoder);
             *error = 1;
             return NULL;
+        } else if (decode_result == BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT) {
+            /* No more input available */
+            free(output);
+            BrotliDecoderDestroyInstance(decoder);
+            *error = 1;
+            return NULL;
         }
     } while (decode_result != BROTLI_DECODER_RESULT_SUCCESS);
     
     BrotliDecoderDestroyInstance(decoder);
     
-    /* Copy to result buffer */
-    if (total_out > 0) {
-        memcpy(result, output, total_out);
-        *length = total_out;
-    } else {
-        *length = 0;
-    }
+    /* Set output length */
+    *length = total_out;
     
-    free(output);
-    return result;
+    /* Store pointer for cleanup and return the allocated buffer directly */
+    initid->ptr = (char *)output;
+    return (char *)output;
 }
 
 /* MySQL UDF cleanup function */
 void brotli_decompress_deinit(UDF_INIT *initid) {
-    (void)initid; /* Unused */
+    /* Free the allocated buffer if it exists */
+    if (initid->ptr) {
+        free(initid->ptr);
+        initid->ptr = NULL;
+    }
 }
