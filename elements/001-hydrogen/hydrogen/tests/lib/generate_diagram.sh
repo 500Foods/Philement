@@ -173,8 +173,14 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
         JSON_DATA=$(printf '%s' "${JSON_DATA}" | sed "s/^${JSON_INGEST_START}//; s/${JSON_INGEST_END}$//")
     fi
 
-    # Step 3: Handle BASE64 wrapper if present
+    # Step 3: Handle BROTLI_DECOMPRESS and BASE64 wrappers if present
     ESCAPED_ALREADY=false
+    
+    # Check for Brotli compression wrapper (outermost layer)
+    HAS_BROTLI=false
+    if printf '%s' "${JSON_DATA}" | grep -qiE 'BROTLI_DECOMPRESS'; then
+        HAS_BROTLI=true
+    fi
     
     # Generic base64 detection: Look for any function that suggests base64 encoding/decoding
     # Patterns: BASE64DECODE, DECODE, from_base64, CRYPTO_DECODE, CONVERT_FROM
@@ -182,10 +188,10 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
         
         # Strategy: Extract the FIRST quoted string (single or double quotes)
         # This works for all our database wrapper patterns:
-        # - DB2: BASE64DECODE('base64data')
-        # - PostgreSQL: CONVERT_FROM(DECODE('base64data', 'base64'), 'UTF8')
-        # - MySQL: cast(from_base64('base64data') as char...)
-        # - SQLite: CRYPTO_DECODE('base64data','base64')
+        # - DB2: BROTLI_DECOMPRESS(BASE64DECODE('base64data'))
+        # - PostgreSQL: brotli_decompress(CONVERT_FROM(DECODE('base64data', 'base64'), 'UTF8'))
+        # - MySQL: BROTLI_DECOMPRESS(cast(from_base64('base64data') as char...))
+        # - SQLite: BROTLI_DECOMPRESS(CRYPTO_DECODE('base64data','base64'))
         #
         # The base64 data is always the innermost/first quoted string
         BASE64_CONTENT=$(printf '%s' "${JSON_DATA}" | awk '
@@ -234,6 +240,24 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
             DECODE_STATUS=$?
             
             if [[ ${DECODE_STATUS} -eq 0 ]] && [[ -n "${DECODED_DATA}" ]]; then
+                
+                # If Brotli compression was used, decompress the decoded data
+                if [[ "${HAS_BROTLI}" == "true" ]]; then
+                    # Check if brotli command is available
+                    if command -v brotli >/dev/null 2>&1; then
+                        # Decompress using brotli (input from stdin, output to stdout)
+                        DECODED_DATA=$(printf '%s' "${DECODED_DATA}" | brotli -d 2>/dev/null || true)
+                        DECOMPRESS_STATUS=$?
+                        
+                        if [[ ${DECOMPRESS_STATUS} -ne 0 ]] || [[ -z "${DECODED_DATA}" ]]; then
+                            echo "Warning: Brotli decompression failed for ${DESIGN}_${migration_num}.lua" >&2
+                            continue
+                        fi
+                    else
+                        echo "Error: brotli command not found. Install with: apt-get install brotli" >&2
+                        exit 1
+                    fi
+                fi
                 
                 # Apply escape processing to decoded data before validation
                 DECODED_DATA=$(printf '%s' "${DECODED_DATA}" | awk '

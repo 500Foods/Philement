@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.0.0 - 2025-11-27 - Added Brotli compression for large base64-encoded strings (>1KB threshold)
 -- 2.2.0 - 2025-10-26 - Added more boilerplates for common_insert, common_create, common_diagram
 -- 2.1.2 - 2025-10-15 - Added info{} element to track version information
 -- 2.1.1 - 2025-10-15 - Changed replace_query to have a loop to check for nested macro replacements
@@ -16,8 +17,8 @@ local database = {
     -- Database.lua versioning information
     info = {
       script = "database.lua",
-      version = "2.1.2",
-      release = "2025-10-15"
+      version = "3.0.0",
+      release = "2025-11-27"
     },
 
     -- Lookup #27 - Query Status
@@ -253,6 +254,26 @@ local database = {
             end
         end
 
+        -- Brotli compression function
+        -- Requires lua-brotli library: luarocks install lua-brotli
+        local function brotli_compress(data)
+            local success, brotli = pcall(require, "brotli")
+            if not success then
+                error("Brotli compression library not available. Install with: luarocks install lua-brotli")
+            end
+
+            -- Compress with maximum quality (11) for best compression ratio
+            local compressed = brotli.compress(data, 11)
+            if not compressed then
+                error("Brotli compression failed")
+            end
+
+            return compressed
+        end
+
+        -- Size threshold for compression (1KB = 1024 bytes)
+        local COMPRESSION_THRESHOLD = 1024
+
         -- Base64 encode text blocks inside [={ markers
         local function base64_encode(data)
             local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
@@ -326,13 +347,32 @@ local database = {
                     return table.concat(lines, "\n")
                 end
 
-                -- Strip indentation and encode
+                -- Strip indentation
                 local stripped_content = strip_base_indent(content)
-                local encoded = "'" .. base64_encode(stripped_content) .. "'"
 
-                -- Wrap with database-specific BASE64 function if configured
+                -- Check if content exceeds compression threshold
+                local content_size = #stripped_content
+                local should_compress = content_size > COMPRESSION_THRESHOLD
+
+                -- Compress if needed, then encode
+                local data_to_encode = stripped_content
+                if should_compress then
+                    data_to_encode = brotli_compress(stripped_content)
+                end
+
+                local encoded = "'" .. base64_encode(data_to_encode) .. "'"
+
+                -- Wrap with database-specific functions if configured
                 local result
-                if cfg.BASE64_START and cfg.BASE64_END then
+                if should_compress and cfg.COMPRESS_START and cfg.COMPRESS_END then
+                    -- Nested wrappers: COMPRESS_START + BASE64_START + encoded + BASE64_END + COMPRESS_END
+                    if cfg.BASE64_START and cfg.BASE64_END then
+                        result = cfg.COMPRESS_START .. cfg.BASE64_START .. encoded .. cfg.BASE64_END .. cfg.COMPRESS_END
+                    else
+                        result = cfg.COMPRESS_START .. encoded .. cfg.COMPRESS_END
+                    end
+                elseif cfg.BASE64_START and cfg.BASE64_END then
+                    -- No compression, just base64 wrapper
                     result = cfg.BASE64_START .. encoded .. cfg.BASE64_END
                 else
                     result = encoded
