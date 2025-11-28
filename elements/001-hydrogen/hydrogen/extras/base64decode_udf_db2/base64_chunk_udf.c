@@ -142,3 +142,62 @@ void SQL_API_FN HYDROGEN_CHECK(
     strcpy(out_str, "Hydrogen");
     *out_ind = 0;
 }
+
+/* DB2SQL parameter style: VARCHAR(32672) -> BLOB(32672)
+   Parameter order: inputs, outputs, null indicators, trail args
+   Returns BLOB for binary data (preserves null bytes) */
+#ifdef __cplusplus
+extern "C"
+#endif
+void SQL_API_FN BASE64_DECODE_CHUNK_BINARY(
+    const SQLUDF_VARCHAR *in_str,    /* Input parameter */
+    SQLUDF_BLOB *out_blob,           /* Output parameter - binary data */
+    const SQLUDF_NULLIND *in_ind,    /* Input null indicator */
+    SQLUDF_NULLIND *out_ind,         /* Output null indicator */
+    SQLUDF_TRAIL_ARGS
+){
+    /* Initialize SQLSTATE to success */
+    strcpy(SQLUDF_STATE, "00000");
+    
+    if (*in_ind == -1){ *out_ind = -1; return; }
+    *out_ind = 0;
+    
+    /* Initialize output */
+    out_blob->length = 0;
+    
+    b64_init();
+
+    /* Get input length and filter to legal base64 chars */
+    size_t inlen = strlen(in_str);
+    if (inlen == 0) return;
+    
+    const unsigned char *src = (const unsigned char*)in_str;
+    char *work = (char*)malloc(inlen + 4);
+    if (!work){
+        strcpy(SQLUDF_STATE, "UDF02");
+        strcpy(SQLUDF_MSGTX, "Memory allocation failed");
+        *out_ind=-1; return;
+    }
+
+    size_t eff=0;
+    for (size_t i=0;i<inlen;++i){
+        unsigned char c = src[i];
+        if (c=='=' || b64_idx[c]>=0) work[eff++] = (char)c;
+    }
+
+    /* Decode only full quartets */
+    size_t full = (eff/4)*4;
+    size_t wrote = 0;
+    if (full > 0){
+        wrote = b64_decode_block(work, full, (unsigned char*)out_blob->data);
+        if (wrote == 0){
+            strcpy(SQLUDF_STATE, "UDF01");
+            strcpy(SQLUDF_MSGTX, "Invalid base64 input");
+            free(work); *out_ind=-1; return;
+        }
+    }
+
+    /* Set output length (binary data may contain null bytes) */
+    out_blob->length = wrote;
+    free(work);
+}

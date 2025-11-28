@@ -85,7 +85,7 @@ The UDF is automatically used by migration 1000 when processing migrations with 
 ```sql
 -- Example usage (generated automatically)
 INSERT INTO queries (code) VALUES (
-    BROTLI_DECOMPRESS(BASE64DECODE('base64_encoded_compressed_data'))
+    BROTLI_DECOMPRESS(BASE64DECODEBINARY('base64_encoded_compressed_data'))
 );
 ```
 
