@@ -1,4 +1,4 @@
-ke/*
+/*
  * SQLite Loadable Extension for Brotli Decompression
  * 
  * This extension decompresses Brotli-compressed data for use in the Helium migration system.
@@ -9,6 +9,7 @@ ke/*
  */
 
 #include <sqlite3ext.h>
+
 SQLITE_EXTENSION_INIT1
 
 #include <stdio.h>
@@ -138,7 +139,7 @@ static void brotli_decompress_func(
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-int sqlite3_brotli_decompress_init(
+int sqlite3_brotlidecompress_init(
     sqlite3 *db,
     char **pzErrMsg,
     const sqlite3_api_routines *pApi

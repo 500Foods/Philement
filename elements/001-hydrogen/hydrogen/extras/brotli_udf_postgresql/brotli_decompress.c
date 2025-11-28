@@ -12,28 +12,12 @@
 #include "postgres.h"
 #include "fmgr.h"
 #include "utils/builtins.h"
+#include "varatt.h"
 #include <string.h>
 #include <brotli/decode.h>
 
 #ifdef PG_MODULE_MAGIC
 PG_MODULE_MAGIC;
-#endif
-
-/* Ensure VARDATA/VARSIZE/SET_VARSIZE macros are available */
-#ifndef VARHDRSZ
-#define VARHDRSZ ((int32) sizeof(int32))
-#endif
-
-#ifndef VARDATA
-#define VARDATA(PTR) (((char *)(PTR)) + VARHDRSZ)
-#endif
-
-#ifndef VARSIZE
-#define VARSIZE(PTR) (*((int32 *)(PTR)))
-#endif
-
-#ifndef SET_VARSIZE
-#define SET_VARSIZE(PTR, len) (*((int32 *)(PTR)) = (len))
 #endif
 
 /* Function declaration */
@@ -71,7 +55,7 @@ brotli_decompress(PG_FUNCTION_ARGS)
         PG_RETURN_NULL();
     }
     
-    /* Get compressed data */
+    /* Get compressed data - PG_GETARG_BYTEA_P detoasts and returns flat varlena */
     compressed = PG_GETARG_BYTEA_P(0);
     compressed_data = (uint8_t *)VARDATA(compressed);
     compressed_size = VARSIZE(compressed) - VARHDRSZ;
@@ -90,6 +74,9 @@ brotli_decompress(PG_FUNCTION_ARGS)
     
     /* Initial buffer size (4x compressed size) */
     buffer_size = compressed_size * 4;
+    if (buffer_size < 256) {
+        buffer_size = 256;  /* Minimum buffer size */
+    }
     if (buffer_size > 1073741824) { /* Limit to 1GB */
         buffer_size = 1073741824;
     }
@@ -131,6 +118,13 @@ brotli_decompress(PG_FUNCTION_ARGS)
             ereport(ERROR,
                     (errcode(ERRCODE_DATA_CORRUPTED),
                      errmsg("Brotli decompression error: %s", err_str)));
+        } else if (decode_result == BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT) {
+            /* Incomplete compressed data */
+            BrotliDecoderDestroyInstance(decoder);
+            pfree(output);
+            ereport(ERROR,
+                    (errcode(ERRCODE_DATA_CORRUPTED),
+                     errmsg("Brotli decompression error: incomplete compressed data")));
         }
     } while (decode_result != BROTLI_DECODER_RESULT_SUCCESS);
     
