@@ -31,7 +31,7 @@ return {
     BASE64_START = "cast(FROM_BASE64(",
     BASE64_END = ") as char character set utf8mb4)",
 
-    COMPRESS_START = "BROTLI_DECOMPRESS(FROM_BASE64(",
+    COMPRESS_START = "brotli_decompress(FROM_BASE64(",
     COMPRESS_END = "))",
 
     DROP_CHECK = " DO IF(EXISTS(SELECT 1 FROM ${SCHEMA}${TABLE}), cast('Refusing to drop table ${SCHEMA}${TABLE} – it contains data' AS CHAR(0)), NULL)",
@@ -42,7 +42,7 @@ return {
     -- DROP FUNCTION IF EXISTS brotli_decompress;
     -- NOTE: Drop function added to migration 1000 so that this is a single statement for the preparation phase
     BROTLI_DECOMPRESS_FUNCTION = [[
-        CREATE FUNCTION BROTLI_DECOMPRESS RETURNS STRING SONAME 'brotli_decompress.so';
+        CREATE FUNCTION brotli_decompress RETURNS STRING SONAME 'brotli_decompress.so';
     ]],
 
     JSON = "longtext",

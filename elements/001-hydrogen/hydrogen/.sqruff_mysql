@@ -8,5 +8,9 @@ dialect = mysql
 # LT06 - Function name not immediately followed by "(" (no space allowed)
 # LT08 - Missing blank line after CTE closing bracket
 # LT12 - File must end with a single trailing newline (and not start with blank lines)
+# CP03 - Function names mus be consistently uppercase
 
-exclude_rules = LT01,LT02,LT05,LT06,LT08,LT12
+# NOTE: CP03 was added due to issues with using brotli_decompress UDF in MySQL,
+# which caused false positives due to inconsistent casing in function name usage.
+
+exclude_rules = LT01,LT02,LT05,LT06,LT08,LT12,CP03
