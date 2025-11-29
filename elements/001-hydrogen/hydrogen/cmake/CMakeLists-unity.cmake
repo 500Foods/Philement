@@ -44,6 +44,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_engine.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_dbqueue.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_generate_query_id.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_webserver_core.c
 )
 
 # Print-specific mock sources (only linked to print tests)
@@ -306,7 +307,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(TEST_OUTPUT_DIR "${CMAKE_BINARY_DIR}/unity/src")
     endif()
 
-    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, database, conduit, launch, or print test to include mock headers
+    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, database, conduit, launch, print, or webserver test to include mock headers
     string(FIND "${TEST_SOURCE}" "websocket" IS_WEBSOCKET_TEST)
     string(FIND "${TEST_SOURCE}" "terminal" IS_TERMINAL_TEST)
     string(FIND "${TEST_SOURCE}" "mdns" IS_MDNS_TEST)
@@ -318,6 +319,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     string(FIND "${TEST_SOURCE}" "conduit" IS_CONDUIT_TEST)
     string(FIND "${TEST_SOURCE}" "launch" IS_LAUNCH_TEST)
     string(FIND "${TEST_SOURCE}" "print" IS_PRINT_TEST)
+    string(FIND "${TEST_SOURCE}" "webserver" IS_WEBSERVER_TEST)
     string(FIND "${TEST_SOURCE}" "terminal_shell_test_error_paths" IS_TERMINAL_ERROR_PATHS_TEST)
     string(FIND "${TEST_SOURCE}" "terminal_shell_test_mock_failures" IS_TERMINAL_MOCK_FAILURES_TEST)
     if(IS_WEBSOCKET_TEST GREATER -1)
@@ -373,6 +375,9 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     elseif(IS_PRINT_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LOGGING -Dlog_this=mock_log_this")
+    elseif(IS_WEBSERVER_TEST GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_WEBSERVER_CORE -DUSE_MOCK_LOGGING -DUSE_MOCK_LIBMICROHTTPD -DUSE_MOCK_SYSTEM -Dlog_this=mock_log_this")
     else()
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LOGGING -DUSE_MOCK_LIBMICROHTTPD -DUSE_MOCK_SYSTEM -Dlog_this=mock_log_this")

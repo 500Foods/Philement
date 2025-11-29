@@ -28,14 +28,18 @@ const char* MHD_lookup_connection_value(struct MHD_Connection *connection,
                                          const char *key);
 
 struct MHD_Response* MHD_create_response_from_buffer(size_t size, void *buffer,
-                                                    enum MHD_ResponseMemoryMode mode);
+                                                     enum MHD_ResponseMemoryMode mode);
 struct MHD_Response* MHD_create_response_from_fd(size_t size, int fd);
 enum MHD_Result MHD_add_response_header(struct MHD_Response *response,
-                                       const char *header, const char *content);
+                                        const char *header, const char *content);
 enum MHD_Result MHD_queue_response(struct MHD_Connection *connection,
-                                  unsigned int status_code,
-                                  struct MHD_Response *response);
+                                   unsigned int status_code,
+                                   struct MHD_Response *response);
 void MHD_destroy_response(struct MHD_Response *response);
+struct MHD_Daemon* MHD_start_daemon(unsigned int flags, uint16_t port,
+                                   MHD_AcceptPolicyCallback apc, void *apc_cls,
+                                   MHD_AccessHandlerCallback dh, void *dh_cls, ...);
+void MHD_stop_daemon(struct MHD_Daemon *daemon);
 
 // Mock control functions
 void mock_mhd_reset_all(void);
@@ -46,6 +50,8 @@ void mock_mhd_set_connection_info(const union MHD_ConnectionInfo *info);
 void mock_mhd_set_create_response_should_fail(bool should_fail);
 void mock_mhd_set_add_header_should_fail(bool should_fail);
 void mock_mhd_set_queue_response_result(enum MHD_Result result);
+void mock_mhd_set_start_daemon_should_fail(bool should_fail);
+void mock_mhd_set_daemon_info_result(const union MHD_DaemonInfo *info);
 
 // Additional mock functions for session management
 bool session_manager_has_capacity(void);

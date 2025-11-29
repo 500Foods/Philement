@@ -194,9 +194,12 @@ static void test_handle_upload_data_empty_data(void) {
 
 static void test_handle_upload_data_null_connection_info(void) {
     // Test null connection info parameter
-    // Note: The function doesn't handle NULL gracefully (crashes), so we skip this test
-    // In a more complete implementation, we'd add NULL checks to the function
-    TEST_IGNORE_MESSAGE("Function doesn't handle NULL connection info gracefully - crashes");
+    enum MHD_Result result = handle_upload_data(NULL, MHD_POSTDATA_KIND, "file",
+                                              "test_file.gcode", "text/plain", "identity",
+                                              "test_data", 0, 9);
+
+    // Should return MHD_NO for NULL connection info
+    TEST_ASSERT_EQUAL(MHD_NO, result);
 }
 
 int main(void) {
@@ -207,7 +210,7 @@ int main(void) {
     RUN_TEST(test_handle_upload_data_print_field_false);
     RUN_TEST(test_handle_upload_data_unknown_field);
     RUN_TEST(test_handle_upload_data_empty_data);
-    if (0) RUN_TEST(test_handle_upload_data_null_connection_info);
+    RUN_TEST(test_handle_upload_data_null_connection_info);
 
     return UNITY_END();
 }

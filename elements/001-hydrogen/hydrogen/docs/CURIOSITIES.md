@@ -64,6 +64,17 @@ overall coverage number for each file. More on that in a bit. The main thing to 
 to get us our overall coverage data via very different means.But between them, we can get useful tests and a good deal more covedage than either
 approach provides separately.
 
+The objective for unit tests is to have coverage for every source file except for hydrogen.c - excepted due to how unit tests work. For source
+files with less than 100 instrumented lines of code, we expect a minimum of 50% coverage. For files with more than 100 instrumented lines of code
+we expect a minimum of 75% coverage. Test 99 also highlights source files with more than 1,000 lines of code (instrumented or not).
+
+Sometimes coverage is hard to obtain due to the nature of system level calls and so on. To get around that, three strategies are used. First,
+larger functions are split up using helper functions, where the helper functions are easier to test. Second, in more difficult situations,
+larger source files are split up into smaller files, sometimes less than 100 instrumented lines, to get in under the limit. Most of the time
+just using helper functions gets the job done. The third strategy is the liberal use of mock libraries to simulate the lower level system
+calls (malloc being the biggest culprit) and allow the tests to proceed. This is considerably more complex, but also considerably more
+powerful when it comes to implementing useful tests. Details can be found in [Mocks](../tests/unity/mocks/README.md).
+
 ## Build System
 
 Our current build environment uses cmake and gcc, typically being developed on Fedora 41 and occasionally Ubuntu 24 and other similar platforms.
@@ -126,3 +137,41 @@ manage them, we've set up a `Launch` and `Landing` mechansim for each. Launch((a
 passing a series of Go/No-Go checks for each. This allows us the opportunity to check our configuration options and other depenencies while still
 continuing forward despite whatever environment we find ourselves in. For example, we want "launch" the Swagger subsystem if we don't have what
 we need to "launch" the webserver. That sort of thing. Here are the subsystems currently being managed in our code.
+
+## Design Goals
+
+There are some curiosities in the design that are worth mentioning - things that might go against what one might expect.
+
+**SQL.** Naturally, SQL makes up a big part of the project given that the main funcitonality we're building is a REST API server that is a front-end to
+a variety of databases. HOWEVER, it is important to note that there is almost zero SQL embedded in the source code anywhere. Maybe a bit in the part
+related to database heartbeat checks, but generally our code is completely free of SQL. This is because we want, as much as possible, to have the
+database and its contents, queries, and so on be entirely customizable externally, by clients or others, so that our server can be an "atomic" tool.
+
+This means that we can supply a suite of Migrations (Helium project) to the system and it will happily trundle along and apply them regardless of their
+contents, database engine, and so on. We do have *some* queries that we rely upon, for login and so forth, which are essentially numbered queries in
+a table specified via the bootstrap query in the configuraiton file. These can be altered, by clients or others, to reference different tables or
+columns so long as they return what we need to get the job done (which is described in detail in the individual queries). This means that someone
+writing an API of some kind could implement their entire system separately and use the same infrastructure, so long as they buy into the same ideas.
+
+## Migrations
+
+As is typical for systems that use databases and queries, a "migration" system is needed to create and manage a database schema and its contents.
+These can often be problematic if not maintained in a friendly way (looking at YOU, Canvas LMS by Instructure). We've gone to some effort to make
+this a migration system loved by everyone (or equally loathed, either way is fine). The basic idea is that we are using Lua scripts as wrappers
+around SQL code. Database-engine-specific code can be used if desired. Or, better, a set of comprehensive macros can be used to write SQL that is
+engine-agnostic with just engine-specific code in special cases.
+
+The choice of Lua is kind of fun in particular as it expertly side-steps the issue of quote nesting. It has its own unique mechanism for having
+multiline strings wrapped in [[string]], [=[string]=], [==[stirng]==] and so on. This means we can write the SQL or CSS or JSON *exactly* the way
+we want to write it, and not have to think much about how it gets from the migration file into the actual database. Internally, we take these
+multiline strings and compress them with brotli, encode them with base64, and send them along to the database which deposits them without any
+kind of futzing about along the way.
+
+Each migration script is therefore focused largely on a single thing - creating a table, populating a lookup, supplying a CSS theme, and so on.
+Each migration script contains both a forward migration (changing the database schema, adding a record, etc.) and a reverse migration where the
+change is undone. Hydrogen has a "Test Migration" mode where it first applies all the forward migrations and then applies all the reverse
+migrations. Leaving the system with a database that has not been changed from the original state. This helps ensure that our migrations are doing
+the job they are supposed to be doing, and across all the supported database engines. Consistently. At scale. Handy.
+
+Each migration script that changes the schema also has a diagram migration. This is basically a bit of JSON that describles a table and its
+contents. These aree then collected up across all the migrations to generate a database diagram via Test 39.

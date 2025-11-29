@@ -105,8 +105,12 @@ static void test_init_web_server_already_initialized(void) {
 }
 
 static void test_init_web_server_null_config(void) {
-    // Test init_web_server with NULL config - skip since it causes segfault in current implementation
-    TEST_IGNORE_MESSAGE("Skipping NULL config test - current implementation doesn't handle NULL web_config properly");
+    // Test init_web_server with NULL config
+    bool result = init_web_server(NULL);
+
+    // Should return false for NULL config
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NULL(server_web_config);
 }
 
 static void test_init_web_server_ipv6_enabled(void) {
@@ -189,7 +193,7 @@ int main(void) {
 
     RUN_TEST(test_init_web_server_with_valid_config);
     RUN_TEST(test_init_web_server_already_initialized);
-    if (0) RUN_TEST(test_init_web_server_null_config);
+    RUN_TEST(test_init_web_server_null_config);
     RUN_TEST(test_init_web_server_ipv6_enabled);
     RUN_TEST(test_init_web_server_ipv6_disabled);
     RUN_TEST(test_init_web_server_port_unavailable);

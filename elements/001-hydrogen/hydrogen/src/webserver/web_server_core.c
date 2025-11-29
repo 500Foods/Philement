@@ -184,8 +184,14 @@ void add_cors_headers(struct MHD_Response *response) {
 }
 
 bool init_web_server(WebServerConfig *web_config) {
+    // Check for NULL config parameter
+    if (web_config == NULL) {
+        log_this(SR_WEBSERVER, "Cannot initialize web server with NULL configuration", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
     // Check all shutdown flags atomically
-    
+
     // Prevent initialization during shutdown
     if (server_stopping || web_server_shutdown) {
         log_this(SR_WEBSERVER, "Cannot initialize web server during shutdown", LOG_LEVEL_DEBUG, 0);

@@ -29,6 +29,12 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
                                  const char *key, const char *filename,
                                  const char *content_type, const char *transfer_encoding,
                                  const char *data, uint64_t off, size_t size) {
+    // Check for NULL connection info
+    if (coninfo_cls == NULL) {
+        log_this(SR_WEBSERVER, "NULL connection info passed to handle_upload_data", LOG_LEVEL_ERROR, 0);
+        return MHD_NO;
+    }
+
     struct ConnectionInfo *con_info = coninfo_cls;
     (void)kind; (void)content_type; (void)transfer_encoding; (void)off;  // Unused parameters
 
