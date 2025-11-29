@@ -186,7 +186,7 @@ bool database_queue_apply_single_reverse_migration(DatabaseQueue* lead_queue, lo
             log_this(dqm_label, "Failed to commit reverse migration %lld", LOG_LEVEL_ERROR, 1, migration_id);
             success = false;
         } else {
-            log_this(dqm_label, "Reverse migration %lld committed successfully", LOG_LEVEL_STATE, 1, migration_id);
+            log_this(dqm_label, "Migration %lld REVERSE was successful", LOG_LEVEL_STATE, 1, migration_id);
         }
     } else {
         // Rollback the transaction

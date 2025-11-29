@@ -28,21 +28,21 @@ return {
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
 
-    BASE64_START = "cast(from_base64(",
+    BASE64_START = "CAST(FROM_BASE64(",
     BASE64_END = ") as char character set utf8mb4)",
 
-    COMPRESS_START = "${SCHEMA}BROTLI_DECOMPRESS(",
-    COMPRESS_END = ")",
+    COMPRESS_START = "BROTLI_DECOMPRESS(FROM_BASE64(",
+    COMPRESS_END = "))",
 
     DROP_CHECK = " DO IF(EXISTS(SELECT 1 FROM ${SCHEMA}${TABLE}), CAST('Refusing to drop table ${SCHEMA}${TABLE} – it contains data' AS CHAR(0)), NULL)",
 
+    -- MySQL UDF for Brotli decompression
+    -- Requires: libbrotli-dev and brotli_decompress.so in plugin directory
+    -- Installation handled via extras/brotli_udf_mysql/
+    -- DROP FUNCTION IF EXISTS brotli_decompress;
+    -- NOTE: Drop function added to migration 1000 so that this is a single statement for the preparation phase
     BROTLI_DECOMPRESS_FUNCTION = [[
-        -- MySQL UDF for Brotli decompression
-        -- Requires: libbrotli-dev and brotli_decompress.so in plugin directory
-        -- Installation handled via extras/brotli_udf_mysql/
-        CREATE FUNCTION IF NOT EXISTS ${SCHEMA}BROTLI_DECOMPRESS
-        RETURNS STRING
-        SONAME 'brotli_decompress.so';
+        CREATE FUNCTION BROTLI_DECOMPRESS RETURNS STRING SONAME 'brotli_decompress.so';
     ]],
 
     JSON = "longtext",

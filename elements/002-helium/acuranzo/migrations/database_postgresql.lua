@@ -31,8 +31,8 @@ return {
     BASE64_START = "CONVERT_FROM(DECODE(",
     BASE64_END = ", 'base64'), 'UTF8')",
 
-    COMPRESS_START = "${SCHEMA}brotli_decompress(",
-    COMPRESS_END = ")",
+    COMPRESS_START = "${SCHEMA}brotli_decompress(DECODE(",
+    COMPRESS_END = ", 'base64'))",
 
     DROP_CHECK = "SELECT pg_catalog.pg_terminate_backend(pg_backend_pid()) FROM ${SCHEMA}${TABLE} LIMIT 1",
 
