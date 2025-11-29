@@ -214,41 +214,45 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                                          log_this(dqm_label, "Failed to create QTC entry: ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
                                      }
                                  }
-
-                             // Track migration status from type field (already extracted above for QTC)
-                             // query_type_obj and query_ref_obj are already defined and validated
-                             long long query_type_ll = (long long)query_type;
-                             long long query_ref_ll = (long long)query_ref;
-
-                             // Debug: Log extraction on first row
-                             if (i == 0) {
-                                 log_this(dqm_label, "First row extraction: query_type=%lld, query_ref=%lld",
-                                          LOG_LEVEL_DEBUG, 2, query_type_ll, query_ref_ll);
                              }
 
-                             // Track migration status based on type
-                             if (query_type_ll > 0 && query_ref_ll > 0) {
-                                 if (query_type_ll == 1000) {
-                                     // Track the highest version found for loaded migrations (type = 1000)
-                                     if (query_ref_ll > latest_loaded_migration) {
-                                         latest_loaded_migration = query_ref_ll;
-                                         if (i < 3) {
-                                             log_this(dqm_label, "Updated LOAD: row %zu, type=%lld, ref=%lld, new LOAD=%lld",
-                                                      LOG_LEVEL_DEBUG, 4, i, query_type_ll, query_ref_ll, latest_loaded_migration);
+                             // Track migration status from type and ref fields (independent of QTC)
+                             // query_type_obj and query_ref_obj are already extracted above
+                             if (query_type_obj && json_is_integer(query_type_obj) &&
+                                 query_ref_obj && json_is_integer(query_ref_obj)) {
+                                 
+                                 long long query_type_ll = (long long)json_integer_value(query_type_obj);
+                                 long long query_ref_ll = (long long)json_integer_value(query_ref_obj);
+
+                                 // Debug: Log extraction on first row
+                                 if (i == 0) {
+                                     log_this(dqm_label, "First row extraction: query_type=%lld, query_ref=%lld",
+                                              LOG_LEVEL_DEBUG, 2, query_type_ll, query_ref_ll);
+                                 }
+
+                                 // Track migration status based on type
+                                 if (query_type_ll > 0 && query_ref_ll > 0) {
+                                     if (query_type_ll == 1000) {
+                                         // Track the highest version found for loaded migrations (type = 1000)
+                                         if (query_ref_ll > latest_loaded_migration) {
+                                             latest_loaded_migration = query_ref_ll;
+                                             if (i < 3) {
+                                                 log_this(dqm_label, "Updated LOAD: row %zu, type=%lld, ref=%lld, new LOAD=%lld",
+                                                          LOG_LEVEL_DEBUG, 4, i, query_type_ll, query_ref_ll, latest_loaded_migration);
+                                             }
                                          }
-                                     }
-                                 } else if (query_type_ll == 1003) {
-                                     // Track the highest version found for applied migrations (type = 1003)
-                                     if (query_ref_ll > latest_applied_migration) {
-                                         latest_applied_migration = query_ref_ll;
-                                         if (i < 3) {
-                                             log_this(dqm_label, "Updated APPLY: row %zu, type=%lld, ref=%lld, new APPLY=%lld",
-                                                      LOG_LEVEL_DEBUG, 4, i, query_type_ll, query_ref_ll, latest_applied_migration);
+                                     } else if (query_type_ll == 1003) {
+                                         // Track the highest version found for applied migrations (type = 1003)
+                                         if (query_ref_ll > latest_applied_migration) {
+                                             latest_applied_migration = query_ref_ll;
+                                             if (i < 3) {
+                                                 log_this(dqm_label, "Updated APPLY: row %zu, type=%lld, ref=%lld, new APPLY=%lld",
+                                                          LOG_LEVEL_DEBUG, 4, i, query_type_ll, query_ref_ll, latest_applied_migration);
+                                             }
                                          }
                                      }
                                  }
                              }
-                         }
                          }
                      }
                      json_decref(root);

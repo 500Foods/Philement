@@ -9,14 +9,12 @@
 
 // Enable mocks BEFORE including source headers
 #include <unity/mocks/mock_logging.h>
+#include <unity/mocks/mock_webserver_core.h>
 
 // Include source headers (functions will be mocked)
 #include <src/webserver/web_server_core.h>
 
 // Note: Global state variables are defined in the source file
-
-// Mock the payload functions that resolve_webroot_path calls
-// Note: Mock functions are provided by the mock libraries
 
 void setUp(void) {
     // Reset all mocks to default state
@@ -72,10 +70,10 @@ void test_resolve_webroot_path_payload_prefix(void) {
 
     // Verify
     TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_EQUAL_STRING("/mock/payload/terminal/", result);
+    TEST_ASSERT_EQUAL_STRING("/payload/terminal/", result);
 
-    // Verify logging calls
-    TEST_ASSERT_EQUAL(0, mock_logging_get_call_count()); // No error logging expected
+    // Verify logging calls - real function logs the resolution process
+    TEST_ASSERT_EQUAL(2, mock_logging_get_call_count());
 
     // Cleanup
     free(result);
@@ -93,7 +91,7 @@ void test_resolve_webroot_path_payload_prefix_no_slash(void) {
 
     // Verify
     TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_EQUAL_STRING("/mock/payload/swagger", result);
+    TEST_ASSERT_EQUAL_STRING("/payload/swagger", result);
 
     // Cleanup
     free(result);
@@ -129,7 +127,7 @@ void test_resolve_webroot_path_filesystem_relative(void) {
 
     // Verify
     TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_EQUAL_STRING("/mock/webroot/relative/path", result);
+    TEST_ASSERT_EQUAL_STRING("./relative/path", result);
 
     // Cleanup
     free(result);
@@ -147,7 +145,7 @@ void test_resolve_webroot_path_empty_payload_path(void) {
 
     // Verify
     TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_EQUAL_STRING("/mock/payload/", result);
+    TEST_ASSERT_EQUAL_STRING("/payload/", result);
 
     // Cleanup
     free(result);
@@ -182,7 +180,7 @@ void test_resolve_webroot_path_null_subdir_for_payload_prefix(void) {
 
     // Verify
     TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_EQUAL_STRING("/mock/payload/", result);
+    TEST_ASSERT_EQUAL_STRING("/payload/", result);
 
     // Cleanup
     free(result);
@@ -200,7 +198,7 @@ void test_resolve_webroot_path_empty_string(void) {
 
     // Verify
     TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_EQUAL_STRING("/mock/webroot/", result);
+    TEST_ASSERT_EQUAL_STRING("./", result);
 
     // Cleanup
     free(result);
@@ -210,14 +208,14 @@ int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_resolve_webroot_path_null_input);
-    if (0) RUN_TEST(test_resolve_webroot_path_payload_prefix);
-    if (0) RUN_TEST(test_resolve_webroot_path_payload_prefix_no_slash);
+    RUN_TEST(test_resolve_webroot_path_payload_prefix);
+    RUN_TEST(test_resolve_webroot_path_payload_prefix_no_slash);
     RUN_TEST(test_resolve_webroot_path_filesystem_absolute);
-    if (0) RUN_TEST(test_resolve_webroot_path_filesystem_relative);
-    if (0) RUN_TEST(test_resolve_webroot_path_empty_payload_path);
+    RUN_TEST(test_resolve_webroot_path_filesystem_relative);
+    RUN_TEST(test_resolve_webroot_path_empty_payload_path);
     RUN_TEST(test_resolve_webroot_path_null_payload_for_payload_prefix);
-    if (0) RUN_TEST(test_resolve_webroot_path_null_subdir_for_payload_prefix);
-    if (0) RUN_TEST(test_resolve_webroot_path_empty_string);
+    RUN_TEST(test_resolve_webroot_path_null_subdir_for_payload_prefix);
+    RUN_TEST(test_resolve_webroot_path_empty_string);
 
     return UNITY_END();
 }

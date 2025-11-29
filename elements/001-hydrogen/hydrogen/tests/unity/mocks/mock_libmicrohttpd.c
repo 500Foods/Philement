@@ -16,6 +16,8 @@ static const union MHD_ConnectionInfo* mock_mhd_connection_info = NULL;
 static bool mock_mhd_create_response_should_fail = false;
 static bool mock_mhd_add_header_should_fail = false;
 static enum MHD_Result mock_mhd_queue_response_result = MHD_YES;
+static bool mock_mhd_start_daemon_should_fail = false;
+static const union MHD_DaemonInfo* mock_mhd_daemon_info_result = NULL;
 static bool mock_mhd_is_terminal_websocket_request_result = true;
 
 // For key-based lookup
@@ -55,13 +57,29 @@ const char* MHD_lookup_connection_value(struct MHD_Connection *connection,
  */
 __attribute__((weak))
 const union MHD_ConnectionInfo* MHD_get_connection_info(struct MHD_Connection *connection,
-                                                       enum MHD_ConnectionInfoType info_type,
-                                                       ...) {
+                                                        enum MHD_ConnectionInfoType info_type,
+                                                        ...) {
     (void)connection; // Suppress unused parameter warning
     (void)info_type;  // Suppress unused parameter warning
 
     // Return the mock connection info
     return mock_mhd_connection_info;
+}
+
+/*
+ * Mock implementation of MHD_get_daemon_info
+ * Matches the actual microhttpd.h signature
+ */
+__attribute__((weak))
+const union MHD_DaemonInfo* MHD_get_daemon_info(struct MHD_Daemon *daemon,
+                                               enum MHD_DaemonInfoType info_type,
+                                               ...) {
+    (void)daemon;     // Suppress unused parameter warning
+    (void)info_type;  // Suppress unused parameter warning
+
+
+    // Return the mock daemon info
+    return mock_mhd_daemon_info_result;
 }
 
 /*
@@ -128,6 +146,32 @@ void MHD_destroy_response(struct MHD_Response *response) {
 }
 
 /*
+ * Mock implementation of MHD_start_daemon
+ */
+__attribute__((weak))
+struct MHD_Daemon* MHD_start_daemon(unsigned int flags, uint16_t port,
+                                   MHD_AcceptPolicyCallback apc, void *apc_cls,
+                                   MHD_AccessHandlerCallback dh, void *dh_cls, ...) {
+    (void)flags; (void)port; (void)apc; (void)apc_cls; (void)dh; (void)dh_cls;
+
+    if (mock_mhd_start_daemon_should_fail) {
+        return NULL;
+    }
+
+    // Return a dummy non-NULL pointer to simulate success
+    return (struct MHD_Daemon*)0xCAFEBABE;
+}
+
+/*
+ * Mock implementation of MHD_stop_daemon
+ */
+__attribute__((weak))
+void MHD_stop_daemon(struct MHD_Daemon *daemon) {
+    (void)daemon;
+    // Mock cleanup - do nothing, just accept any daemon pointer
+}
+
+/*
  * Reset all mock state
  */
 void mock_mhd_reset_all(void) {
@@ -139,6 +183,8 @@ void mock_mhd_reset_all(void) {
     mock_mhd_create_response_should_fail = false;
     mock_mhd_add_header_should_fail = false;
     mock_mhd_queue_response_result = MHD_YES;
+    mock_mhd_start_daemon_should_fail = false;
+    mock_mhd_daemon_info_result = NULL;
     mock_mhd_is_terminal_websocket_request_result = true;
 
     // Reset key-based lookups
@@ -364,4 +410,18 @@ bool is_terminal_websocket_request(struct MHD_Connection *connection, const char
  */
 void mock_mhd_set_is_terminal_websocket_request_result(bool result) {
     mock_mhd_is_terminal_websocket_request_result = result;
+}
+
+/*
+ * Set whether MHD_start_daemon should fail
+ */
+void mock_mhd_set_start_daemon_should_fail(bool should_fail) {
+    mock_mhd_start_daemon_should_fail = should_fail;
+}
+
+/*
+ * Set the result that MHD_get_daemon_info should return
+ */
+void mock_mhd_set_daemon_info_result(const union MHD_DaemonInfo *info) {
+    mock_mhd_daemon_info_result = info;
 }

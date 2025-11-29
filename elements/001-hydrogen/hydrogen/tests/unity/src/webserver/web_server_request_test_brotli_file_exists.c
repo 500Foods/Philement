@@ -117,15 +117,15 @@ static void test_brotli_file_exists_special_characters(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_brotli_file_exists_null_file_path);
-    if (0) RUN_TEST(test_brotli_file_exists_null_br_file_path);
-    if (0) RUN_TEST(test_brotli_file_exists_empty_file_path);
-    if (0) RUN_TEST(test_brotli_file_exists_zero_buffer_size);
-    if (0) RUN_TEST(test_brotli_file_exists_nonexistent_file);
-    if (0) RUN_TEST(test_brotli_file_exists_creates_correct_br_path);
-    if (0) RUN_TEST(test_brotli_file_exists_path_construction);
-    if (0) RUN_TEST(test_brotli_file_exists_buffer_overflow_protection);
-    if (0) RUN_TEST(test_brotli_file_exists_special_characters);
+    RUN_TEST(test_brotli_file_exists_null_file_path);
+    RUN_TEST(test_brotli_file_exists_null_br_file_path);
+    RUN_TEST(test_brotli_file_exists_empty_file_path);
+    RUN_TEST(test_brotli_file_exists_zero_buffer_size);
+    RUN_TEST(test_brotli_file_exists_nonexistent_file);
+    RUN_TEST(test_brotli_file_exists_creates_correct_br_path);
+    RUN_TEST(test_brotli_file_exists_path_construction);
+    RUN_TEST(test_brotli_file_exists_buffer_overflow_protection);
+    RUN_TEST(test_brotli_file_exists_special_characters);
 
     return UNITY_END();
 }
