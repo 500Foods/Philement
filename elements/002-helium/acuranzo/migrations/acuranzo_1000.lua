@@ -171,7 +171,7 @@ if engine == 'db2' then table.insert(queries,{sql=[[
 --       Installation handled via extras/brotli_udf_mysql/
 if engine == 'mysql' then table.insert(queries,{sql=[[
 
-    DROP FUNCTION IF EXISTS BROTLI_DECOMPRESS;
+    DROP FUNCTION IF EXISTS brotli_decompress;
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
