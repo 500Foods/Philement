@@ -14,10 +14,13 @@ This is for the AI Model to use to resolve these failing tests.
 
 ### Review Background information
 
+DO THIS BEFORE DOING ANYTHING ELSE.
+
 - Review INSTRUCTIONS.md
 - Review tests/README.md
 - Review tests/UNITY.md
 - Review tests/unity/mocks/README.md
+- Review docs/CURIOSITIES.md
 
 NOTE: Some tests are old and might have been difficult to get working when they were first created.
 Since then, many additional mock libraries have been added, and thousands of additional tests are
@@ -27,6 +30,10 @@ NOTE: In particular, tests that use malloc were initially disabled as the mock s
 having problems of all kinds, but this is now working properly and there are many tests that use it.
 Comments referencing tests being disabled due to mallloc issues are likely out of data and should be
 revisited for implmentation.
+
+NOTE: Some tests were written long ago, before app_config was a thing, so be sure to use code like
+that found in src/config/config_defaults.c if app_config is part of the test. Look for examples in
+the many other tests that use this same approach to initialize app_config to a known state.
 
 NOTE: Most tests are well-contained, meaning that the result of one test is not in any way dependeent
 on the presence or success/failure of another test, certainly in other files but also within the same
@@ -50,6 +57,9 @@ file. The files are used primarily to group the tests and the dependencies. But 
 - Fix the test
 - Run the test again with `mku <testname>` to confirm a working test
 - Do not leave the test in a non-buildable state or with any tests failing or segfaulting
+
+NOTE: If you encounter a segfault, please take the time to run gdb against the file and get a backtrace to precisely
+locate the source of the problem before continuing to troubleshoot.
 
 ### After fixing or removing test
 
@@ -103,106 +113,6 @@ Tests that verify readiness with mock registry state remain disabled until bette
 - tests/unity/src/mdns/mdns_server_init_test_setup_hostname.c:91:    if (0) RUN_TEST(test_mdns_server_setup_hostname_gethostname_failure);
 - tests/unity/src/mdns/mdns_server_init_test_setup_hostname.c:92:    if (0) RUN_TEST(test_mdns_server_setup_hostname_malloc_failure);
 - tests/unity/src/mdns/mdns_server_init_test_allocate.c:64:    if (0) RUN_TEST(test_mdns_server_allocate_malloc_failure);
-
-## Database_Bootstrap
-
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query.c:72:    if (0) RUN_TEST(test_database_queue_execute_bootstrap_query_lead_queue_no_connection);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:867:    if (0) RUN_TEST(test_lead_queue_no_connection);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:869:    if (0) RUN_TEST(test_query_id_allocation_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:870:    if (0) RUN_TEST(test_sql_template_allocation_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:871:    if (0) RUN_TEST(test_parameters_json_allocation_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:872:    if (0) RUN_TEST(test_query_execution_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:873:    if (0) RUN_TEST(test_successful_execution_no_qtc);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:874:    if (0) RUN_TEST(test_successful_execution_with_qtc);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:875:    if (0) RUN_TEST(test_qtc_creation_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:876:    if (0) RUN_TEST(test_qtc_entry_creation_failure);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:877:    if (0) RUN_TEST(test_migration_tracking_available);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:878:    if (0) RUN_TEST(test_migration_tracking_installed);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:879:    if (0) RUN_TEST(test_migration_tracking_mixed);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:880:    if (0) RUN_TEST(test_bootstrap_completion_signaling);
-- tests/unity/src/database/database_bootstrap_test_execute_bootstrap_query_full.c:881:    if (0) RUN_TEST(test_empty_database_detection);
-
-## WebServer
-
-- tests/unity/src/webserver/web_server_core_test_resolve_filesystem_path.c:292:    if (0) RUN_TEST(test_resolve_filesystem_path_absolute_path);
-- tests/unity/src/webserver/web_server_core_test_resolve_filesystem_path.c:293:    if (0) RUN_TEST(test_resolve_filesystem_path_relative_path_with_webroot);
-- tests/unity/src/webserver/web_server_core_test_resolve_filesystem_path.c:294:    if (0) RUN_TEST(test_resolve_filesystem_path_relative_path_no_webroot);
-- tests/unity/src/webserver/web_server_core_test_resolve_filesystem_path.c:297:    if (0) RUN_TEST(test_resolve_filesystem_path_with_parent_directory);
-- tests/unity/src/webserver/web_server_core_test_resolve_filesystem_path.c:298:    if (0) RUN_TEST(test_resolve_filesystem_path_with_tilde);
-- tests/unity/src/webserver/web_server_core_test_shutdown.c:178:    if (0) RUN_TEST(test_shutdown_web_server_null_daemon);
-- tests/unity/src/webserver/web_server_core_test_shutdown.c:179:    if (0) RUN_TEST(test_shutdown_web_server_with_running_daemon);
-- tests/unity/src/webserver/web_server_core_test_shutdown.c:180:    if (0) RUN_TEST(test_shutdown_web_server_already_shutdown);
-- tests/unity/src/webserver/web_server_core_test_shutdown.c:181:    if (0) RUN_TEST(test_shutdown_web_server_atomic_failure);
-- tests/unity/src/webserver/web_server_core_test_run_web_server.c:292:    if (0) RUN_TEST(test_run_web_server_getifaddrs_failure);
-- tests/unity/src/webserver/web_server_core_test_run_web_server.c:293:    if (0) RUN_TEST(test_run_web_server_mhd_start_daemon_failure);
-- tests/unity/src/webserver/web_server_core_test_run_web_server.c:294:    if (0) RUN_TEST(test_run_web_server_mhd_get_daemon_info_failure);
-- tests/unity/src/webserver/web_server_core_test_run_web_server.c:295:    if (0) RUN_TEST(test_run_web_server_successful_startup);
-- tests/unity/src/webserver/web_server_core_test_init_web_server.c:192:    if (0) RUN_TEST(test_init_web_server_null_config);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:87:    if (0) RUN_TEST(test_handle_request_null_connection);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:88:    if (0) RUN_TEST(test_handle_request_null_url);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:89:    if (0) RUN_TEST(test_handle_request_null_method);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:90:    if (0) RUN_TEST(test_handle_request_unsupported_method);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:91:    if (0) RUN_TEST(test_handle_request_options_method);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:92:    if (0) RUN_TEST(test_handle_request_get_method_root_path);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:93:    if (0) RUN_TEST(test_handle_request_get_method_api_endpoint);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:94:    if (0) RUN_TEST(test_handle_request_get_method_static_file);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:95:    if (0) RUN_TEST(test_handle_request_post_method_without_endpoint);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:96:    if (0) RUN_TEST(test_handle_request_post_method_with_registered_endpoint);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:97:    if (0) RUN_TEST(test_handle_request_connection_thread_registration);
-- tests/unity/src/webserver/web_server_request_test_handle_request.c:98:    if (0) RUN_TEST(test_handle_request_swagger_request_handling);
-- tests/unity/src/webserver/web_server_upload_test_handle_upload_data.c:210:    if (0) RUN_TEST(test_handle_upload_data_null_connection_info);
-- tests/unity/src/webserver/web_server_core_test_add_cors_headers.c:79:    if (0) RUN_TEST(test_add_cors_headers_with_various_null_combinations);
-- tests/unity/src/webserver/web_server_core_test_resolve_webroot_path.c:213:    if (0) RUN_TEST(test_resolve_webroot_path_payload_prefix);
-- tests/unity/src/webserver/web_server_core_test_resolve_webroot_path.c:214:    if (0) RUN_TEST(test_resolve_webroot_path_payload_prefix_no_slash);
-- tests/unity/src/webserver/web_server_core_test_resolve_webroot_path.c:216:    if (0) RUN_TEST(test_resolve_webroot_path_filesystem_relative);
-- tests/unity/src/webserver/web_server_core_test_resolve_webroot_path.c:217:    if (0) RUN_TEST(test_resolve_webroot_path_empty_payload_path);
-- tests/unity/src/webserver/web_server_core_test_resolve_webroot_path.c:219:    if (0) RUN_TEST(test_resolve_webroot_path_null_subdir_for_payload_prefix);
-- tests/unity/src/webserver/web_server_core_test_resolve_webroot_path.c:220:    if (0) RUN_TEST(test_resolve_webroot_path_empty_string);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:98:    if (0) RUN_TEST(test_handle_system_info_request_function_exists);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:99:    if (0) RUN_TEST(test_handle_system_health_request_function_exists);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:100:    if (0) RUN_TEST(test_handle_system_prometheus_request_function_exists);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:101:    if (0) RUN_TEST(test_handle_system_test_request_function_exists);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:102:    if (0) RUN_TEST(test_handle_system_test_request_with_get_method);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:103:    if (0) RUN_TEST(test_handle_system_test_request_with_post_method);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:104:    if (0) RUN_TEST(test_handle_system_test_request_null_method);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:105:    if (0) RUN_TEST(test_handle_system_test_request_invalid_method);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:106:    if (0) RUN_TEST(test_handle_system_test_request_empty_upload_data);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:107:    if (0) RUN_TEST(test_handle_system_test_request_with_upload_data);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:108:    if (0) RUN_TEST(test_system_endpoints_url_routing);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:109:    if (0) RUN_TEST(test_system_endpoints_service_name_extraction);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:110:    if (0) RUN_TEST(test_system_endpoints_endpoint_name_extraction);
-- tests/unity/src/webserver/web_server_request_test_system_endpoints.c:111:    if (0) RUN_TEST(test_system_endpoints_prefix_validation);
-- tests/unity/src/webserver/web_server_request_test_request_completed.c:78:    if (0) RUN_TEST(test_request_completed_null_parameters);
-- tests/unity/src/webserver/web_server_request_test_request_completed.c:79:    if (0) RUN_TEST(test_request_completed_null_con_cls);
-- tests/unity/src/webserver/web_server_request_test_request_completed.c:80:    if (0) RUN_TEST(test_request_completed_null_con_info_in_con_cls);
-- tests/unity/src/webserver/web_server_request_test_request_completed.c:81:    if (0) RUN_TEST(test_request_completed_with_valid_con_info);
-- tests/unity/src/webserver/web_server_request_test_request_completed.c:82:    if (0) RUN_TEST(test_request_completed_cleanup_postprocessor);
-- tests/unity/src/webserver/web_server_request_test_request_completed.c:83:    if (0) RUN_TEST(test_request_completed_cleanup_file_pointer);
-- tests/unity/src/webserver/web_server_request_test_request_completed.c:84:    if (0) RUN_TEST(test_request_completed_cleanup_filenames);
-- tests/unity/src/webserver/web_server_request_test_request_completed.c:85:    if (0) RUN_TEST(test_request_completed_thread_cleanup);
-- tests/unity/src/webserver/web_server_request_test_request_completed.c:86:    if (0) RUN_TEST(test_request_completed_multiple_calls_safe);
-- tests/unity/src/webserver/web_server_request_test_request_completed.c:87:    if (0) RUN_TEST(test_request_completed_termination_codes);
-- tests/unity/src/webserver/web_server_request_test_serve_file.c:168:    if (0) RUN_TEST(test_serve_file_system_dependencies);
-- tests/unity/src/webserver/web_server_request_test_serve_file.c:169:    if (0) RUN_TEST(test_serve_file_content_type_logic);
-- tests/unity/src/webserver/web_server_request_test_serve_file.c:170:    if (0) RUN_TEST(test_serve_file_brotli_logic);
-- tests/unity/src/webserver/web_server_request_test_serve_file.c:171:    if (0) RUN_TEST(test_serve_file_cors_headers);
-- tests/unity/src/webserver/web_server_request_test_serve_file.c:172:    if (0) RUN_TEST(test_serve_file_error_handling);
-- tests/unity/src/webserver/web_server_request_test_brotli_file_exists.c:120:    if (0) RUN_TEST(test_brotli_file_exists_null_file_path);
-- tests/unity/src/webserver/web_server_request_test_brotli_file_exists.c:121:    if (0) RUN_TEST(test_brotli_file_exists_null_br_file_path);
-- tests/unity/src/webserver/web_server_request_test_brotli_file_exists.c:122:    if (0) RUN_TEST(test_brotli_file_exists_empty_file_path);
-- tests/unity/src/webserver/web_server_request_test_brotli_file_exists.c:123:    if (0) RUN_TEST(test_brotli_file_exists_zero_buffer_size);
-- tests/unity/src/webserver/web_server_request_test_brotli_file_exists.c:124:    if (0) RUN_TEST(test_brotli_file_exists_nonexistent_file);
-- tests/unity/src/webserver/web_server_request_test_brotli_file_exists.c:125:    if (0) RUN_TEST(test_brotli_file_exists_creates_correct_br_path);
-- tests/unity/src/webserver/web_server_request_test_brotli_file_exists.c:126:    if (0) RUN_TEST(test_brotli_file_exists_path_construction);
-- tests/unity/src/webserver/web_server_request_test_brotli_file_exists.c:127:    if (0) RUN_TEST(test_brotli_file_exists_buffer_overflow_protection);
-- tests/unity/src/webserver/web_server_request_test_brotli_file_exists.c:128:    if (0) RUN_TEST(test_brotli_file_exists_special_characters);
-- tests/unity/src/webserver/web_server_upload_test_generate_uuid.c:66:    if (0) RUN_TEST(test_generate_uuid_null_buffer);
-- tests/unity/src/webserver/web_server_upload_test_generate_uuid.c:67:    if (0) RUN_TEST(test_generate_uuid_basic_functionality);
-- tests/unity/src/webserver/web_server_upload_test_generate_uuid.c:68:    if (0) RUN_TEST(test_generate_uuid_multiple_calls);
-- tests/unity/src/webserver/web_server_upload_test_generate_uuid.c:69:    if (0) RUN_TEST(test_generate_uuid_uniqueness_over_time);
-- tests/unity/src/webserver/web_server_upload_test_generate_uuid.c:70:    if (0) RUN_TEST(test_generate_uuid_no_null_termination);
-- tests/unity/src/webserver/web_server_upload_test_generate_uuid.c:71:    if (0) RUN_TEST(test_generate_uuid_consistent_format);
-- tests/unity/src/webserver/web_server_upload_test_generate_uuid.c:72:    if (0) RUN_TEST(test_generate_uuid_version_and_variant_bits);
 
 ## WebSocket
 

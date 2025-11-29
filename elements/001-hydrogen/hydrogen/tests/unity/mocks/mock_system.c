@@ -60,6 +60,7 @@ typedef long ssize_t;
 #undef waitpid
 #undef kill
 #undef close
+#undef gettimeofday
 
 // Function prototypes - these are defined in the header when USE_MOCK_SYSTEM is set
 void *mock_malloc(size_t size);
@@ -86,6 +87,7 @@ pid_t mock_waitpid(pid_t pid, int *wstatus, int options);
 int mock_kill(pid_t pid, int sig);
 int mock_close(int fd);
 int mock_sem_init(sem_t *sem, int pshared, unsigned int value);
+int mock_gettimeofday(struct timeval *tv, void *tz);
 void mock_system_set_malloc_failure(int should_fail);
 void mock_system_set_calloc_failure(int should_fail);
 void mock_system_set_realloc_failure(int should_fail);
@@ -130,6 +132,9 @@ const char *mock_gethostname_result = NULL;
 int mock_nanosleep_should_fail = 0;
 int mock_clock_gettime_should_fail = 0;
 int mock_poll_should_fail = 0;
+time_t mock_gettimeofday_sec = 0;
+suseconds_t mock_gettimeofday_usec = 0;
+int mock_gettimeofday_should_fail = 0;
 int mock_recvfrom_should_fail = 0;
 void *mock_dlopen_result = NULL;
 int mock_dlopen_should_fail = 0;
@@ -268,6 +273,21 @@ int mock_poll(struct pollfd *fds, nfds_t nfds, int timeout) {
     return 0;
 }
 
+// Mock implementation of gettimeofday
+int mock_gettimeofday(struct timeval *tv, void *tz) {
+    (void)tz;  // Suppress unused parameter
+    
+    if (mock_gettimeofday_should_fail) {
+        return -1;
+    }
+    
+    if (tv) {
+        tv->tv_sec = mock_gettimeofday_sec;
+        tv->tv_usec = mock_gettimeofday_usec;
+    }
+    return 0;
+}
+
 // Mock implementation of recvfrom
 ssize_t mock_recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen) {
     (void)sockfd;  // Suppress unused parameter
@@ -319,6 +339,15 @@ void mock_system_set_clock_gettime_failure(int should_fail) {
 
 void mock_system_set_poll_failure(int should_fail) {
     mock_poll_should_fail = should_fail;
+}
+
+void mock_system_set_gettimeofday_time(time_t sec, suseconds_t usec) {
+    mock_gettimeofday_sec = sec;
+    mock_gettimeofday_usec = usec;
+}
+
+void mock_system_set_gettimeofday_failure(int should_fail) {
+    mock_gettimeofday_should_fail = should_fail;
 }
 
 void mock_system_set_recvfrom_failure(int should_fail) {
@@ -412,6 +441,9 @@ void mock_system_reset_all(void) {
     mock_nanosleep_should_fail = 0;
     mock_clock_gettime_should_fail = 0;
     mock_poll_should_fail = 0;
+    mock_gettimeofday_sec = 0;
+    mock_gettimeofday_usec = 0;
+    mock_gettimeofday_should_fail = 0;
     mock_recvfrom_should_fail = 0;
     mock_dlopen_result = NULL;
     mock_dlopen_should_fail = 0;

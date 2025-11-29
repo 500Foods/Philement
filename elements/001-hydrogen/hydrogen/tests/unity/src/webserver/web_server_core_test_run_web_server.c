@@ -23,6 +23,8 @@
 struct ifaddrs;
 
 // Mock external functions
+static int mock_getifaddrs_should_fail = 0;
+
 __attribute__((weak))
 int getifaddrs(struct ifaddrs **ifap);
 __attribute__((weak))
@@ -30,9 +32,16 @@ void freeifaddrs(struct ifaddrs *ifa);
 
 __attribute__((weak))
 int getifaddrs(struct ifaddrs **ifap) {
-    // Mock implementation - return success
+    // Mock implementation - can be controlled to fail
+    if (mock_getifaddrs_should_fail) {
+        return -1;
+    }
     *ifap = NULL;
     return 0;
+}
+
+static void mock_getifaddrs_set_failure(int should_fail) {
+    mock_getifaddrs_should_fail = should_fail;
 }
 
 __attribute__((weak))
@@ -80,6 +89,7 @@ void setUp(void) {
     mock_mhd_reset_all();
     mock_logging_reset_all();
     mock_system_reset_all();
+    mock_getifaddrs_set_failure(0);
 
     // Reset global state
     webserver_daemon = NULL;
@@ -94,6 +104,7 @@ void tearDown(void) {
     mock_mhd_reset_all();
     mock_logging_reset_all();
     mock_system_reset_all();
+    mock_getifaddrs_set_failure(0);
 
     // Reset global state
     webserver_daemon = NULL;
@@ -190,14 +201,14 @@ void test_run_web_server_shutdown_during_startup(void) {
 void test_run_web_server_getifaddrs_failure(void) {
     // Test: getifaddrs failure
 
-    // Setup - need to create a custom mock that fails
+    // Setup
     server_stopping = 0;
     web_server_shutdown = 0;
     server_starting = 1;
     webserver_daemon = NULL;
 
-    // Note: In a real test, we'd need to modify the mock to return -1
-    // For now, this test assumes the default mock behavior
+    // Mock getifaddrs to fail
+    mock_getifaddrs_set_failure(1);
 
     // Execute
     void* result = run_web_server(NULL);
@@ -205,6 +216,7 @@ void test_run_web_server_getifaddrs_failure(void) {
     // Verify
     TEST_ASSERT_NULL(result);
     TEST_ASSERT_TRUE(mock_logging_get_call_count() >= 1);
+    TEST_ASSERT_EQUAL_STRING("WebServer", mock_logging_get_last_subsystem());
 }
 
 void test_run_web_server_mhd_start_daemon_failure(void) {
@@ -216,8 +228,22 @@ void test_run_web_server_mhd_start_daemon_failure(void) {
     server_starting = 1;
     webserver_daemon = NULL;
 
+    // Create mock config (required for run_web_server)
+    WebServerConfig *config = calloc(1, sizeof(WebServerConfig));
+    TEST_ASSERT_NOT_NULL(config);
+    config->port = 8080;
+    config->enable_ipv6 = false;
+    config->thread_pool_size = 4;
+    config->max_connections = 100;
+    config->max_connections_per_ip = 10;
+    config->connection_timeout = 30;
+    config->web_root = strdup("/tmp");
+    config->upload_path = strdup("/tmp/upload");
+    config->upload_dir = strdup("/tmp/upload");
+    server_web_config = config;
+
     // Mock MHD_start_daemon to return NULL (failure)
-    // This is already the default in our mock
+    mock_mhd_set_start_daemon_should_fail(true);
 
     // Execute
     void* result = run_web_server(NULL);
@@ -226,6 +252,13 @@ void test_run_web_server_mhd_start_daemon_failure(void) {
     TEST_ASSERT_NULL(result);
     TEST_ASSERT_TRUE(mock_logging_get_call_count() >= 1);
     TEST_ASSERT_EQUAL_STRING("WebServer", mock_logging_get_last_subsystem());
+
+    // Cleanup
+    free(config->web_root);
+    free(config->upload_path);
+    free(config->upload_dir);
+    free(config);
+    server_web_config = NULL;
 }
 
 void test_run_web_server_mhd_get_daemon_info_failure(void) {
@@ -237,8 +270,23 @@ void test_run_web_server_mhd_get_daemon_info_failure(void) {
     server_starting = 1;
     webserver_daemon = NULL;
 
-    // Mock MHD_get_daemon_info to return NULL (failure)
-    // This is already the default in our mock
+    // Create mock config (required for run_web_server)
+    WebServerConfig *config = calloc(1, sizeof(WebServerConfig));
+    TEST_ASSERT_NOT_NULL(config);
+    config->port = 8080;
+    config->enable_ipv6 = false;
+    config->thread_pool_size = 4;
+    config->max_connections = 100;
+    config->max_connections_per_ip = 10;
+    config->connection_timeout = 30;
+    config->web_root = strdup("/tmp");
+    config->upload_path = strdup("/tmp/upload");
+    config->upload_dir = strdup("/tmp/upload");
+    server_web_config = config;
+
+    // Mock MHD_start_daemon to succeed, but MHD_get_daemon_info to fail
+    mock_mhd_set_start_daemon_should_fail(false);  // Let start_daemon succeed
+    // MHD_get_daemon_info returns NULL by default (failure)
 
     // Execute
     void* result = run_web_server(NULL);
@@ -246,6 +294,14 @@ void test_run_web_server_mhd_get_daemon_info_failure(void) {
     // Verify
     TEST_ASSERT_NULL(result);
     TEST_ASSERT_TRUE(mock_logging_get_call_count() >= 1);
+    TEST_ASSERT_EQUAL_STRING("WebServer", mock_logging_get_last_subsystem());
+
+    // Cleanup
+    free(config->web_root);
+    free(config->upload_path);
+    free(config->upload_dir);
+    free(config);
+    server_web_config = NULL;
 }
 
 void test_run_web_server_successful_startup(void) {
@@ -259,17 +315,25 @@ void test_run_web_server_successful_startup(void) {
 
     // Create mock config
     WebServerConfig *config = calloc(1, sizeof(WebServerConfig));
-    TEST_ASSERT_NOT_NULL(config); // Ensure allocation succeeded
+    TEST_ASSERT_NOT_NULL(config);
     config->port = 8080;
     config->enable_ipv6 = false;
     config->thread_pool_size = 4;
     config->max_connections = 100;
     config->max_connections_per_ip = 10;
     config->connection_timeout = 30;
+    config->web_root = strdup("/tmp");
+    config->upload_path = strdup("/tmp/upload");
+    config->upload_dir = strdup("/tmp/upload");
+    server_web_config = config;
 
-    // Note: In a real test, we'd need to create more sophisticated mocks
-    // that return success for all the MHD functions. For now, this test
-    // demonstrates the structure but may fail due to mock limitations.
+    // Mock successful startup
+    mock_mhd_set_start_daemon_should_fail(false);
+
+    // Create mock daemon info for successful MHD_get_daemon_info
+    static union MHD_DaemonInfo daemon_info;
+    daemon_info.port = 8080;  // Mock bound port
+    mock_mhd_set_daemon_info_result(&daemon_info);
 
     // Execute
     void* result = run_web_server(NULL);
@@ -277,9 +341,14 @@ void test_run_web_server_successful_startup(void) {
     // Verify
     TEST_ASSERT_NULL(result); // Thread function returns NULL
     TEST_ASSERT_TRUE(mock_logging_get_call_count() >= 1);
+    TEST_ASSERT_EQUAL_STRING("WebServer", mock_logging_get_last_subsystem());
 
     // Cleanup
+    free(config->web_root);
+    free(config->upload_path);
+    free(config->upload_dir);
     free(config);
+    server_web_config = NULL;
 }
 
 int main(void) {
@@ -289,10 +358,10 @@ int main(void) {
     RUN_TEST(test_run_web_server_not_starting_phase);
     RUN_TEST(test_run_web_server_daemon_already_exists);
     RUN_TEST(test_run_web_server_shutdown_during_startup);
-    if (0) RUN_TEST(test_run_web_server_getifaddrs_failure);
-    if (0) RUN_TEST(test_run_web_server_mhd_start_daemon_failure);
-    if (0) RUN_TEST(test_run_web_server_mhd_get_daemon_info_failure);
-    if (0) RUN_TEST(test_run_web_server_successful_startup);
+    RUN_TEST(test_run_web_server_getifaddrs_failure);
+    RUN_TEST(test_run_web_server_mhd_start_daemon_failure);
+    RUN_TEST(test_run_web_server_mhd_get_daemon_info_failure);
+    RUN_TEST(test_run_web_server_successful_startup);
 
     return UNITY_END();
 }

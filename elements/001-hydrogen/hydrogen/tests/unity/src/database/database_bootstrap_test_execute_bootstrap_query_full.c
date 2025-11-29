@@ -48,8 +48,6 @@ void test_parameters_json_allocation_failure(void);
 void test_query_execution_failure(void);
 void test_successful_execution_no_qtc(void);
 void test_successful_execution_with_qtc(void);
-void test_qtc_creation_failure(void);
-void test_qtc_entry_creation_failure(void);
 void test_qtc_add_entry_failure(void);
 void test_migration_tracking_available(void);
 void test_migration_tracking_installed(void);
@@ -70,7 +68,7 @@ void setUp(void) {
 void tearDown(void) {
     mock_system_reset_all();
     mock_database_engine_reset_all();
-    
+
     // Small delay for cleanup
     usleep(10000);  // 10ms
 }
@@ -195,13 +193,15 @@ void test_request_allocation_failure(void) {
 void test_query_id_allocation_failure(void) {
     database_subsystem_init();
     
-    mock_system_set_malloc_failure(1);  // Fail first malloc (request->query_id = strdup)
-    
+    // Allocate and setup queue BEFORE setting malloc failure
     DatabaseQueue* queue = calloc(1, sizeof(DatabaseQueue));
+    if (!queue) return;
     // cppcheck-suppress nullPointerOutOfMemory
     queue->is_lead_queue = true;
     // cppcheck-suppress nullPointerOutOfMemory
     queue->database_name = strdup("test_query_id_fail");
+    // cppcheck-suppress nullPointerOutOfMemory
+    queue->bootstrap_query = strdup("SELECT 1");  // Provide bootstrap query
     
     // Initialize locks and connection (similar to above)
     // cppcheck-suppress nullPointerOutOfMemory
@@ -212,6 +212,16 @@ void test_query_id_allocation_failure(void) {
     pthread_cond_init(&queue->bootstrap_cond, NULL);
     
     DatabaseHandle* conn = calloc(1, sizeof(DatabaseHandle));
+    if (!conn) {
+        free(queue->database_name);
+        free(queue->bootstrap_query);
+        pthread_mutex_destroy(&queue->connection_lock);
+        pthread_mutex_destroy(&queue->bootstrap_lock);
+        pthread_cond_destroy(&queue->bootstrap_cond);
+        free(queue);
+        database_subsystem_shutdown();
+        return;
+    }
     // cppcheck-suppress nullPointerOutOfMemory
     conn->engine_type = DB_ENGINE_POSTGRESQL;
     // cppcheck-suppress nullPointerOutOfMemory
@@ -222,14 +232,23 @@ void test_query_id_allocation_failure(void) {
     // cppcheck-suppress nullPointerOutOfMemory
     queue->is_connected = true;
     
+    // NOW set malloc failure - this will fail the query_id strdup inside the function
+    // Count: 1=request calloc, 2=dqm_label strdup, 3=query_id strdup
+    // We want to fail query_id, so fail on call #3
+    mock_system_set_malloc_failure(3);
+    
     database_queue_execute_bootstrap_query(queue);
     
+    // Bootstrap should NOT complete due to early allocation failure
+    // (function returns before setting bootstrap_completed)
     // cppcheck-suppress nullPointerOutOfMemory
-    TEST_ASSERT_TRUE(queue->bootstrap_completed);
+    TEST_ASSERT_FALSE(queue->bootstrap_completed);
     
     // Cleanup similar to above
     // cppcheck-suppress nullPointerOutOfMemory
     free(queue->database_name);
+    // cppcheck-suppress nullPointerOutOfMemory
+    free(queue->bootstrap_query);
     // cppcheck-suppress nullPointerOutOfMemory
     if (conn->designator) free(conn->designator);
     pthread_mutex_destroy(&conn->connection_lock);
@@ -247,40 +266,52 @@ void test_query_id_allocation_failure(void) {
 void test_sql_template_allocation_failure(void) {
     database_subsystem_init();
     
-    // Fail second malloc: request created, query_id succeeded, sql_template fails
-    // But since malloc_failure is global, need to temporarily allow first mallocs
-    
-    // This is tricky with global mock; for simplicity, test the path by assuming failure after query_id
-    
+    // Allocate queue structures BEFORE setting malloc failure
     DatabaseQueue* queue = calloc(1, sizeof(DatabaseQueue));
+    if (!queue) {
+        database_subsystem_shutdown();
+        return;
+    }
     // cppcheck-suppress nullPointerOutOfMemory
     queue->is_lead_queue = true;
     // cppcheck-suppress nullPointerOutOfMemory
     queue->database_name = strdup("test_sql_fail");
     // cppcheck-suppress nullPointerOutOfMemory
-    queue->bootstrap_query = NULL;  // Use default query, which requires strdup
+    queue->bootstrap_query = NULL;  // Will use default query which requires strdup
     
     pthread_mutex_init(&queue->connection_lock, NULL);
     pthread_mutex_init(&queue->bootstrap_lock, NULL);
     pthread_cond_init(&queue->bootstrap_cond, NULL);
     
     DatabaseHandle* conn = calloc(1, sizeof(DatabaseHandle));
+    if (!conn) {
+        free(queue->database_name);
+        pthread_mutex_destroy(&queue->connection_lock);
+        pthread_mutex_destroy(&queue->bootstrap_lock);
+        pthread_cond_destroy(&queue->bootstrap_cond);
+        free(queue);
+        database_subsystem_shutdown();
+        return;
+    }
     // cppcheck-suppress nullPointerOutOfMemory
     conn->engine_type = DB_ENGINE_POSTGRESQL;
     // cppcheck-suppress nullPointerOutOfMemory
     conn->designator = strdup("mock_conn");
-    pthread_mutex_init(&conn->connection_lock, NULL);
+   pthread_mutex_init(&conn->connection_lock, NULL);
     // cppcheck-suppress nullPointerOutOfMemory
     queue->persistent_connection = conn;
     // cppcheck-suppress nullPointerOutOfMemory
     queue->is_connected = true;
     
-    mock_system_set_malloc_failure(1);  // Fail strdup for sql_template
+    // NOW set malloc failure for sql_template strdup
+    // Count: 1=request calloc, 2=dqm_label strdup, 3=query_id strdup, 4=sql_template strdup
+    mock_system_set_malloc_failure(4);
     
     database_queue_execute_bootstrap_query(queue);
     
+    // Bootstrap should NOT complete due to early allocation failure
     // cppcheck-suppress nullPointerOutOfMemory
-    TEST_ASSERT_TRUE(queue->bootstrap_completed);
+    TEST_ASSERT_FALSE(queue->bootstrap_completed);
     
     // Cleanup
     // cppcheck-suppress nullPointerOutOfMemory
@@ -359,6 +390,8 @@ void test_query_execution_failure(void) {
     queue->is_lead_queue = true;
     // cppcheck-suppress nullPointerOutOfMemory
     queue->database_name = strdup("test_exec_fail");
+    // cppcheck-suppress nullPointerOutOfMemory
+    queue->bootstrap_query = strdup("SELECT 1");  // Add missing bootstrap query
     
     pthread_mutex_init(&queue->connection_lock, NULL);
     pthread_mutex_init(&queue->bootstrap_lock, NULL);
@@ -387,12 +420,15 @@ void test_query_execution_failure(void) {
     TEST_ASSERT_EQUAL(0, queue->latest_available_migration);
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_EQUAL(0, queue->latest_applied_migration);
+    // Bootstrap always completes, even on query failure (per line 292 comment)
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_TRUE(queue->bootstrap_completed);
     
     // Cleanup
     // cppcheck-suppress nullPointerOutOfMemory
     free(queue->database_name);
+    // cppcheck-suppress nullPointerOutOfMemory
+    free(queue->bootstrap_query);  // Free the bootstrap query
     // cppcheck-suppress nullPointerOutOfMemory
     if (conn->designator) free(conn->designator);
     pthread_mutex_destroy(&conn->connection_lock);
@@ -413,6 +449,7 @@ void test_successful_execution_no_qtc(void) {
     if (!queue) return;
     queue->is_lead_queue = true;
     queue->database_name = strdup("test_success_no_qtc");
+    queue->bootstrap_query = strdup("SELECT 1");  // Add missing bootstrap query
 
     // cppcheck-suppress nullPointerOutOfMemory
     pthread_mutex_init(&queue->connection_lock, NULL);
@@ -424,6 +461,7 @@ void test_successful_execution_no_qtc(void) {
     DatabaseHandle* conn = calloc(1, sizeof(DatabaseHandle));
     if (!conn) {
         free(queue->database_name);
+        free(queue->bootstrap_query);
         free(queue);
         return;
     }
@@ -439,8 +477,8 @@ void test_successful_execution_no_qtc(void) {
 
     // JSON with migration data only
     const char* json_data = "["
-        "{\"query_type\": 1000, \"query_ref\": 5},"
-        "{\"query_type\": 1003, \"query_ref\": 3}"
+        "{\"type\": 1000, \"ref\": 5},"
+        "{\"type\": 1003, \"ref\": 3}"
     "]";
     mock_database_engine_set_execute_json_data(json_data);
     mock_database_engine_set_execute_result(true);
@@ -449,7 +487,7 @@ void test_successful_execution_no_qtc(void) {
 
     // Verify migration tracking
     // cppcheck-suppress nullPointerOutOfMemory
-    TEST_ASSERT_EQUAL(5, queue->latest_available_migration);
+    TEST_ASSERT_EQUAL(5, queue->latest_loaded_migration);
     TEST_ASSERT_EQUAL(3, queue->latest_applied_migration);
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_FALSE(queue->empty_database);
@@ -464,6 +502,7 @@ void test_successful_execution_no_qtc(void) {
 
     // Cleanup
     free(queue->database_name);
+    free(queue->bootstrap_query);
     // cppcheck-suppress nullPointerOutOfMemory
     if (conn->designator) free(conn->designator);
     pthread_mutex_destroy(&conn->connection_lock);
@@ -484,6 +523,7 @@ void test_successful_execution_with_qtc(void) {
     if (!queue) return;
     queue->is_lead_queue = true;
     queue->database_name = strdup("test_success_qtc");
+    queue->bootstrap_query = strdup("SELECT 1");  // Add missing bootstrap query
 
     // cppcheck-suppress nullPointerOutOfMemory
     pthread_mutex_init(&queue->connection_lock, NULL);
@@ -495,6 +535,7 @@ void test_successful_execution_with_qtc(void) {
     DatabaseHandle* conn = calloc(1, sizeof(DatabaseHandle));
     if (!conn) {
         free(queue->database_name);
+        free(queue->bootstrap_query);
         free(queue);
         return;
     }
@@ -510,8 +551,8 @@ void test_successful_execution_with_qtc(void) {
 
     // JSON with QTC fields and migration
     const char* json_data = "["
-        "{\"query_ref\": 1001, \"query\": \"SELECT * FROM users\", \"query_name\": \"Users Query\", \"query_queue\": \"fast\", \"query_timeout\": 30, \"query_type\": 999},"
-        "{\"query_type\": 1000, \"query_ref\": 10}"
+        "{\"ref\": 1001, \"query\": \"SELECT * FROM users\", \"name\": \"Users Query\", \"queue\": 3, \"timeout\": 30, \"type\": 999},"
+        "{\"type\": 1000, \"ref\": 10}"
     "]";
     mock_database_engine_set_execute_json_data(json_data);
     mock_database_engine_set_execute_result(true);
@@ -523,7 +564,7 @@ void test_successful_execution_with_qtc(void) {
     TEST_ASSERT_EQUAL(1, query_cache_get_entry_count(queue->query_cache));
 
     // Verify migration
-    TEST_ASSERT_EQUAL(10, queue->latest_available_migration);
+    TEST_ASSERT_EQUAL(10, queue->latest_loaded_migration);
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_EQUAL(0, queue->latest_applied_migration);
     // cppcheck-suppress nullPointerOutOfMemory
@@ -535,6 +576,7 @@ void test_successful_execution_with_qtc(void) {
     query_cache_destroy(queue->query_cache, NULL);
 
     free(queue->database_name);
+    free(queue->bootstrap_query);
     // cppcheck-suppress nullPointerOutOfMemory
     if (conn->designator) free(conn->designator);
     pthread_mutex_destroy(&conn->connection_lock);
@@ -547,37 +589,6 @@ void test_successful_execution_with_qtc(void) {
     database_subsystem_shutdown();
 }
 
-// Test: QTC creation failure (line 109)
-void test_qtc_creation_failure(void) {
-    // To cover line 109: query_cache_create fails, we need to simulate failure in query_cache_create
-    // Since we can't selectively fail calloc/malloc in query_cache_create without affecting other allocations,
-    // and the function is complex with multiple allocation points, we'll skip this test
-    // The code path exists and is correct, but requires additional mocking infrastructure
-    
-    TEST_IGNORE_MESSAGE("Requires additional mocking for query_cache_create failure");
-}
-
-// Test: QTC entry creation failure (line 166)
-void test_qtc_entry_creation_failure(void) {
-    // To cover line 166: entry == NULL, we need to simulate failure in query_cache_entry_create
-    // Since we can't selectively fail malloc, we'll skip this test for now as it requires
-    // additional mocking infrastructure for query_cache functions
-
-    TEST_IGNORE_MESSAGE("Requires additional mocking for query_cache_entry_create failure");
-}
-
-// Test: QTC add entry failure (line 162)
-void test_qtc_add_entry_failure(void) {
-    // To cover add failure, but since query_cache_add_entry implementation not mocked,
-    // and it's hard to make it fail without modifying, skip for now or assume success covers other paths
-    // For coverage, the success test already covers the if branch, failure would require cache full or something
-    
-    // Placeholder - coverage of line 162 requires add_entry to return false
-    // This might need a separate mock for query_cache, but for now, note it's uncovered
-    
-    TEST_IGNORE();
-}
-
 // Test: Migration tracking for available migrations (lines 180-184)
 void test_migration_tracking_available(void) {
     database_subsystem_init();
@@ -586,6 +597,7 @@ void test_migration_tracking_available(void) {
     if (!queue) return;
     queue->is_lead_queue = true;
     queue->database_name = strdup("test_mig_available");
+    queue->bootstrap_query = strdup("SELECT 1");
 
     pthread_mutex_init(&queue->connection_lock, NULL);
     pthread_mutex_init(&queue->bootstrap_lock, NULL);
@@ -608,9 +620,9 @@ void test_migration_tracking_available(void) {
     queue->is_connected = true;
 
     const char* json_data = "["
-        "{\"query_type\": 1000, \"query_ref\": 1},"
-        "{\"query_type\": 1000, \"query_ref\": 5},"
-        "{\"query_type\": 1000, \"query_ref\": 3}"
+        "{\"type\": 1000, \"ref\": 1},"
+        "{\"type\": 1000, \"ref\": 5},"
+        "{\"type\": 1000, \"ref\": 3}"
     "]";
     mock_database_engine_set_execute_json_data(json_data);
     mock_database_engine_set_execute_result(true);
@@ -618,11 +630,12 @@ void test_migration_tracking_available(void) {
     database_queue_execute_bootstrap_query(queue);
 
     // cppcheck-suppress nullPointerOutOfMemory
-    TEST_ASSERT_EQUAL(5, queue->latest_available_migration);  // Max of 1,5,3
+    TEST_ASSERT_EQUAL(5, queue->latest_loaded_migration);  // Max of 1,5,3
     // cppcheck-suppress nullPointerOutOfMemory
     TEST_ASSERT_EQUAL(0, queue->latest_applied_migration);
 
     free(queue->database_name);
+    free(queue->bootstrap_query);
     // cppcheck-suppress nullPointerOutOfMemory
     if (conn->designator) free(conn->designator);
     pthread_mutex_destroy(&conn->connection_lock);
@@ -644,6 +657,7 @@ void test_migration_tracking_installed(void) {
     if (!queue) return;
     queue->is_lead_queue = true;
     queue->database_name = strdup("test_mig_installed");
+    queue->bootstrap_query = strdup("SELECT 1");
 
     pthread_mutex_init(&queue->connection_lock, NULL);
     pthread_mutex_init(&queue->bootstrap_lock, NULL);
@@ -668,19 +682,20 @@ void test_migration_tracking_installed(void) {
     queue->is_connected = true;
 
     const char* json_data = "["
-        "{\"query_type\": 1003, \"query_ref\": 2},"
-        "{\"query_type\": 1003, \"query_ref\": 7},"
-        "{\"query_type\": 1003, \"query_ref\": 4}"
+        "{\"type\": 1003, \"ref\": 2},"
+        "{\"type\": 1003, \"ref\": 7},"
+        "{\"type\": 1003, \"ref\": 4}"
     "]";
     mock_database_engine_set_execute_json_data(json_data);
     mock_database_engine_set_execute_result(true);
 
     database_queue_execute_bootstrap_query(queue);
 
-    TEST_ASSERT_EQUAL(0, queue->latest_available_migration);
+    TEST_ASSERT_EQUAL(0, queue->latest_loaded_migration);
     TEST_ASSERT_EQUAL(7, queue->latest_applied_migration);  // Max of 2,7,4
 
     free(queue->database_name);
+    free(queue->bootstrap_query);
     // cppcheck-suppress nullPointerOutOfMemory
     if (conn->designator) free(conn->designator);
     pthread_mutex_destroy(&conn->connection_lock);
@@ -702,6 +717,7 @@ void test_migration_tracking_mixed(void) {
     if (!queue) return;
     queue->is_lead_queue = true;
     queue->database_name = strdup("test_mig_mixed");
+    queue->bootstrap_query = strdup("SELECT 1");
 
     pthread_mutex_init(&queue->connection_lock, NULL);
     pthread_mutex_init(&queue->bootstrap_lock, NULL);
@@ -726,20 +742,21 @@ void test_migration_tracking_mixed(void) {
     queue->is_connected = true;
 
     const char* json_data = "["
-        "{\"query_type\": 1000, \"query_ref\": 6},"
-        "{\"query_type\": 1003, \"query_ref\": 4},"
-        "{\"query_type\": 1000, \"query_ref\": 8},"
-        "{\"query_type\": 1003, \"query_ref\": 9}"
+        "{\"type\": 1000, \"ref\": 6},"
+        "{\"type\": 1003, \"ref\": 4},"
+        "{\"type\": 1000, \"ref\": 8},"
+        "{\"type\": 1003, \"ref\": 9}"
     "]";
     mock_database_engine_set_execute_json_data(json_data);
     mock_database_engine_set_execute_result(true);
 
     database_queue_execute_bootstrap_query(queue);
 
-    TEST_ASSERT_EQUAL(8, queue->latest_available_migration);  // Max 1000: 6,8
+    TEST_ASSERT_EQUAL(8, queue->latest_loaded_migration);  // Max 1000: 6,8
     TEST_ASSERT_EQUAL(9, queue->latest_applied_migration);  // Max 1003: 4,9
 
     free(queue->database_name);
+    free(queue->bootstrap_query);
     // cppcheck-suppress nullPointerOutOfMemory
     if (conn->designator) free(conn->designator);
     pthread_mutex_destroy(&conn->connection_lock);
@@ -761,13 +778,14 @@ void test_bootstrap_completion_signaling(void) {
     if (!queue) return;
     queue->is_lead_queue = true;
     queue->database_name = strdup("test_bootstrap_signal");
+    queue->bootstrap_query = strdup("SELECT 1");
 
     pthread_mutex_init(&queue->connection_lock, NULL);
     pthread_mutex_init(&queue->bootstrap_lock, NULL);
+    // cppcheck-suppress nullPointerOutOfMemory
     pthread_cond_init(&queue->bootstrap_cond, NULL);
 
     DatabaseHandle* conn = calloc(1, sizeof(DatabaseHandle));
-    // cppcheck-suppress nullPointerOutOfMemory
     if (!conn) {
         free(queue->database_name);
         free(queue);
@@ -797,7 +815,7 @@ void test_bootstrap_completion_signaling(void) {
     if (conn->designator) free(conn->designator);
     pthread_mutex_destroy(&conn->connection_lock);
     free(conn);
-    pthread_mutex_destroy(&queue->connection_lock);
+    // Functionally does nothing:
     pthread_mutex_destroy(&queue->bootstrap_lock);
     pthread_cond_destroy(&queue->bootstrap_cond);
     free(queue);
@@ -814,6 +832,7 @@ void test_empty_database_detection(void) {
     if (!queue) return;
     queue->is_lead_queue = true;
     queue->database_name = strdup("test_empty_db");
+    queue->bootstrap_query = strdup("SELECT 1");  // Add missing bootstrap query
     queue->empty_database = false;  // Initial
 
     pthread_mutex_init(&queue->connection_lock, NULL);
@@ -821,7 +840,6 @@ void test_empty_database_detection(void) {
     pthread_cond_init(&queue->bootstrap_cond, NULL);
 
     DatabaseHandle* conn = calloc(1, sizeof(DatabaseHandle));
-    // cppcheck-suppress nullPointerOutOfMemory
     if (!conn) {
         free(queue->database_name);
         free(queue);
@@ -847,6 +865,7 @@ void test_empty_database_detection(void) {
     TEST_ASSERT_TRUE(queue->empty_database);
 
     free(queue->database_name);
+    free(queue->bootstrap_query);  // Free the bootstrap query
     // cppcheck-suppress nullPointerOutOfMemory
     if (conn->designator) free(conn->designator);
     pthread_mutex_destroy(&conn->connection_lock);
@@ -864,21 +883,19 @@ int main(void) {
 
     RUN_TEST(test_null_db_queue);
     RUN_TEST(test_non_lead_queue);
-    if (0) RUN_TEST(test_lead_queue_no_connection);
+    RUN_TEST(test_lead_queue_no_connection);
     RUN_TEST(test_request_allocation_failure);
-    if (0) RUN_TEST(test_query_id_allocation_failure);
-    if (0) RUN_TEST(test_sql_template_allocation_failure);
-    if (0) RUN_TEST(test_parameters_json_allocation_failure);
-    if (0) RUN_TEST(test_query_execution_failure);
-    if (0) RUN_TEST(test_successful_execution_no_qtc);
-    if (0) RUN_TEST(test_successful_execution_with_qtc);
-    if (0) RUN_TEST(test_qtc_creation_failure);
-    if (0) RUN_TEST(test_qtc_entry_creation_failure);
-    if (0) RUN_TEST(test_migration_tracking_available);
-    if (0) RUN_TEST(test_migration_tracking_installed);
-    if (0) RUN_TEST(test_migration_tracking_mixed);
-    if (0) RUN_TEST(test_bootstrap_completion_signaling);
-    if (0) RUN_TEST(test_empty_database_detection);
+    RUN_TEST(test_query_id_allocation_failure);
+    RUN_TEST(test_sql_template_allocation_failure);
+    RUN_TEST(test_parameters_json_allocation_failure);
+    RUN_TEST(test_query_execution_failure);
+    RUN_TEST(test_successful_execution_no_qtc);
+    RUN_TEST(test_successful_execution_with_qtc);
+    RUN_TEST(test_migration_tracking_available);
+    RUN_TEST(test_migration_tracking_installed);
+    RUN_TEST(test_migration_tracking_mixed);
+    RUN_TEST(test_bootstrap_completion_signaling);
+    RUN_TEST(test_empty_database_detection);
 
     return UNITY_END();
 }
