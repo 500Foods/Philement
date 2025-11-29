@@ -34,8 +34,10 @@ The implementation includes:
 
 This DB2 Command Line Processor script creates and registers the UDFs in the database:
 
-- **BASE64_DECODE_CHUNK**: Core C UDF for decoding Base64 chunks
-- **BASE64DECODE**: SQL wrapper function that handles large CLOB inputs by processing them in 32,672-character chunks
+- **BASE64_DECODE_CHUNK**: Core C UDF for decoding Base64 chunks (text output)
+- **BASE64DECODE**: SQL wrapper function that handles large CLOB inputs by processing them in 32,672-character chunks (text output)
+- **BASE64_DECODE_CHUNK_BINARY**: Core C UDF for decoding Base64 chunks (binary output, used with Brotli decompression)
+- **BASE64DECODEBINARY**: SQL wrapper function for decoding large CLOB inputs (binary output, used with Brotli decompression)
 - **HYDROGEN_CHECK**: Test UDF returning "Hydrogen"
 - **ScalarUDF**: Official DB2 sample UDF for salary calculations
 
@@ -60,6 +62,49 @@ Requires DB2DIR environment variable pointing to DB2 installation directory.
 3. Install: `make install`
 4. Register: `make register DB=your_db SCHEMA=your_schema`
 5. Test: `make test DB=your_db`
+
+## Usage in Migration Scripts
+
+The Base64 decode UDFs are automatically created and used by the Helium migration system during migration 1000 (`acuranzo_1000.lua`). They enable the storage of large SQL strings (such as DDL statements, JSON data, or configuration) in a compressed and base64-encoded format to reduce database size and improve migration performance.
+
+### Automatic Function Creation
+
+Migration 1000 creates the following functions in your database schema:
+
+- `BASE64_DECODE_CHUNK`: C UDF for decoding individual 32KB chunks
+- `BASE64DECODE`: SQL wrapper function for decoding large CLOB inputs (text data)
+- `BASE64DECODEBINARY`: SQL wrapper function for decoding large CLOB inputs (binary data, used with Brotli decompression)
+
+### How Migrations Use These Functions
+
+The migration system automatically detects SQL strings larger than 1KB and:
+
+1. Compresses them using Brotli (if >1KB)
+2. Base64-encodes the result
+3. Wraps the encoded data with the appropriate UDF calls
+
+#### Example Generated SQL (Text Data)
+
+```sql
+INSERT INTO queries (code) VALUES (
+    SCHEMA.BASE64DECODE('SGVsbG8gV29ybGQ=')
+);
+```
+
+#### Example Generated SQL (Compressed Data)
+
+```sql
+INSERT INTO queries (code) VALUES (
+    SCHEMA.BROTLI_DECOMPRESS(SCHEMA.BASE64DECODEBINARY('H4sIAAAAAAAA/0XOwQ2AIBAE0F8h')))
+);
+```
+
+### Migration System Integration
+
+- **Transparent to Authors**: Migration writers use normal SQL syntax with `[=[multiline strings]=]` markers
+- **Automatic Processing**: The Lua migration engine handles compression and encoding automatically
+- **Performance Benefits**: 70-80% size reduction for text content, faster migration execution
+- **Schema Prefixing**: Functions are created with your database schema prefix for proper namespacing
 
 ## Dependencies
 

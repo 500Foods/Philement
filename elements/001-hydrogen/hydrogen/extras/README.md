@@ -8,7 +8,20 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
 - [brotli_udf_db2](brotli_udf_db2/README.md) Brotli Decompress UDF for IBM DB2 (LUW)
 - [brotli_udf_mysql](brotli_udf_mysql/README.md) Brotli Decompress UDF for MySQL/MariaDB
 - [brotli_udf_postgresql](brotli_udf_postgresql/README.md) Brotli Decompress UDF for PostgreSQL
-- [brotil_udf_sqlite](brotli_udf_sqlite/README.md) Base64 Brotli Decompress UDF for SQLite
+- [brotli_udf_sqlite](brotli_udf_sqlite/README.md) Base64 Brotli Decompress UDF for SQLite
+
+### Available UDF Functions
+
+| Database Engine | Base64 Functions | Brotli Functions | Test/Check Functions |
+|----------------|------------------|------------------|---------------------|
+| **DB2** | `BASE64_DECODE_CHUNK`<br>`BASE64DECODE`<br>`BASE64_DECODE_CHUNK_BINARY`<br>`BASE64DECODEBINARY` | `BROTLI_DECOMPRESS_CHUNK`<br>`BROTLI_DECOMPRESS` | `HYDROGEN_CHECK`<br>`ScalarUDF`<br>`HELIUM_BROTLI_CHECK` |
+| **MySQL** | `FROM_BASE64`¹ | `BROTLI_DECOMPRESS` | - |
+| **PostgreSQL** | `DECODE(..., 'base64')`<br>`CONVERT_FROM(..., 'UTF8')`² | `brotli_decompress` | - |
+| **SQLite** | `CRYPTO_DECODE`³ | `BROTLI_DECOMPRESS` | - |
+
+¹ *Native MySQL function*  
+² *Native PostgreSQL functions*  
+³ *Available via sqlean crypto extension*
 
 ## Build Scripts
 
