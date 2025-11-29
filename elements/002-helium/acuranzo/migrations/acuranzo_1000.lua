@@ -40,28 +40,11 @@ table.insert(queries,{sql=[[
 ]]})
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- NOTE: SQLite has no JSON handling peculiarities, so no custom function is defined
+--       Defined as macros in individual database_<engine>.lua files
 if engine ~= 'sqlite' then table.insert(queries,{sql=[[
 
     -- Defined in database_<engine>.lua as a macro
     ${JSON_INGEST_FUNCTION}
-
-]]}) end
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
--- NOTE: Brotli decompression functions for all engines
--- MySQL, PostgreSQL, SQLite: Single function declaration
--- DB2: Both chunk function and wrapper function (like BASE64DECODE pattern)
-if engine ~= 'sqlite' then table.insert(queries,{sql=[[
-
-    -- Defined in database_<engine>.lua as a macro
-    ${BROTLI_DECOMPRESS_FUNCTION}
-
-]]}) end
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
--- NOTE: DB2 requires additional wrapper function for chunked decompression
-if engine == 'db2' then table.insert(queries,{sql=[[
-
-    -- Defined in database_db2.lua as a macro
-    ${BROTLI_DECOMPRESS_WRAPPER}
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -114,7 +97,7 @@ if engine == 'db2' then table.insert(queries,{sql=[[
             SET aligned = LENGTH(piece) - MOD(LENGTH(piece), 4);
             IF aligned > 0 THEN
             SET chunk  = SUBSTR(piece, 1, aligned);
-            SET result = result || CAST(TEST.BASE64_DECODE_CHUNK(chunk) AS CLOB(32672));
+            SET result = result || CAST(${SCHEMA}BASE64_DECODE_CHUNK(chunk) AS CLOB(32672));
             END IF;
 
             SET pos = pos + step;
@@ -124,6 +107,82 @@ if engine == 'db2' then table.insert(queries,{sql=[[
     END
 
 ]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: We do it all again for a binary version of the Base64 decode function
+--       so that we can properly handle the output of the Brotli decompress function
+if engine == 'db2' then table.insert(queries,{sql=[[
+
+    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64_DECODE_CHUNK_BINARY(input_base64 VARCHAR(32672))
+    RETURNS BLOB(32672)
+    LANGUAGE C
+    PARAMETER STYLE DB2SQL
+    NO SQL
+    DETERMINISTIC
+    NOT FENCED
+    THREADSAFE
+    RETURNS NULL ON NULL INPUT
+    EXTERNAL NAME 'base64_chunk_udf.so!BASE64_DECODE_CHUNK_BINARY'
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: We do it all again for a binary version of the Base64 decode function
+--       so that we can properly handle the output of the Brotli decompress function
+if engine == 'db2' then table.insert(queries,{sql=[[
+
+    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64DECODEBINARY(encoded CLOB(2G))
+    RETURNS BLOB(2G)
+    LANGUAGE SQL
+    DETERMINISTIC
+    READS SQL DATA
+    BEGIN ATOMIC
+    DECLARE result  BLOB(2G);
+    DECLARE pos     INTEGER   DEFAULT 1;
+    DECLARE len     INTEGER;
+    DECLARE step    INTEGER   DEFAULT 32672;
+    DECLARE piece   VARCHAR(32672);
+    DECLARE aligned INTEGER;
+    DECLARE chunk   VARCHAR(32672);
+    SET result = CAST('' AS BLOB(1K));
+    SET len = LENGTH(encoded);
+
+    chunk_loop:
+    WHILE pos <= len DO
+        SET piece = CAST(SUBSTR(encoded, pos, step) AS VARCHAR(32672));
+        IF piece IS NULL OR LENGTH(piece) = 0 THEN
+        LEAVE chunk_loop;
+        END IF;
+
+        SET aligned = LENGTH(piece) - MOD(LENGTH(piece), 4);
+        IF aligned > 0 THEN
+        SET chunk  = SUBSTR(piece, 1, aligned);
+        SET result = result || CAST(${SCHEMA}BASE64_DECODE_CHUNK_BINARY(chunk) AS BLOB(32672));
+        END IF;
+
+        SET pos = pos + step;
+    END WHILE chunk_loop;
+
+    RETURN result;
+    END
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: MySQL UDF for Brotli decompression
+--       Requires: libbrotli-dev and brotli_decompress.so in plugin directory
+--       Installation handled via extras/brotli_udf_mysql/
+if engine == 'mysql' then table.insert(queries,{sql=[[
+
+    DROP FUNCTION IF EXISTS BROTLI_DECOMPRESS;
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: Brotli decompression functions for all engines
+--       MySQL, PostgreSQL, SQLite: Single function declaration
+--       Defined as macros in individual database_<engine>.lua files
+table.insert(queries,{sql=[[
+
+    ${BROTLI_DECOMPRESS_FUNCTION}
+
+]]})
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 

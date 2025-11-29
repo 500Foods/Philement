@@ -33,8 +33,8 @@ return {
     BASE64_START = "CRYPTO_DECODE(",
     BASE64_END = ",'base64')",
 
-    COMPRESS_START = "BROTLI_DECOMPRESS(",
-    COMPRESS_END = ")",
+    COMPRESS_START = "BROTLI_DECOMPRESS(CRYPTO_DECODE(",
+    COMPRESS_END = ",'base64'))",
 
     DROP_CHECK = "SELECT 'Refusing to drop table ${SCHEMA}${TABLE} – it contains data' WHERE EXISTS (SELECT 1 FROM ${SCHEMA}${TABLE})",
 
