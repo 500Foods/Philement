@@ -366,11 +366,7 @@ local database = {
                 local result
                 if should_compress and cfg.COMPRESS_START and cfg.COMPRESS_END then
                     -- Nested wrappers: COMPRESS_START + BASE64_START + encoded + BASE64_END + COMPRESS_END
-                    if cfg.BASE64_START and cfg.BASE64_END then
-                        result = cfg.COMPRESS_START .. cfg.BASE64_START .. encoded .. cfg.BASE64_END .. cfg.COMPRESS_END
-                    else
-                        result = cfg.COMPRESS_START .. encoded .. cfg.COMPRESS_END
-                    end
+                    result = cfg.COMPRESS_START .. encoded .. cfg.COMPRESS_END
                 elseif cfg.BASE64_START and cfg.BASE64_END then
                     -- No compression, just base64 wrapper
                     result = cfg.BASE64_START .. encoded .. cfg.BASE64_END

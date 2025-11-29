@@ -59,6 +59,7 @@ typedef struct SQLiteConnection {
     char* db_path;
     PreparedStatementCache* prepared_statements;
     void* crypto_handle;  // Handle for crypto.so library
+    void* brotli_handle;  // Handle for brotli_decompress.so library
 } SQLiteConnection;
 
 #endif // SQLITE_TYPES_H

@@ -14,6 +14,8 @@ cfg.TABLE = "lookups"
 cfg.MIGRATION = "1068"
 cfg.LOOKUP_ID = "041"
 cfg.LOOKUP_NAME = "Themes"
+cfg.THEME_ID = "001"
+cfg.THEME_NAME = "Theme-Bluish"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -36,7 +38,7 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID},  1, 1, 'Theme-Bluish', 0, 0, [==[
+                (${LOOKUP_ID},  ${THEME_ID}, 1, '${THEME_NAME}', 0, 0, [==[
                     /* Theme-Bluish
                     **
                     ** Each Theme is defined as a CSS block, starting with the theme name as the CSS selector.
@@ -388,13 +390,20 @@ table.insert(queries,{sql=[[
 
                 ]==], '', '{}', ${COMMON_VALUES});
 
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+
         ]=]
                                                                             AS code,
-        'Populate Lookup ${LOOKUP_ID} in ${TABLE} table'                    AS name,
+        'Populate theme ${THEME_NAME} in ${TABLE} table'                    AS name,
         [=[
-            # Forward Migration ${MIGRATION}: Poulate Lookup ${LOOKUP_ID} - ${LOOKUP_NAME}
+            # Forward Migration ${MIGRATION}: Populate theme ${THEME_NAME} in Lookup ${LOOKUP_ID} - ${LOOKUP_NAME}
 
-            This migration creates the lookup values for Lookup ${LOOKUP_ID} - ${LOOKUP_NAME}
+            This migration adds the theme to the lookups table.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
@@ -423,7 +432,14 @@ table.insert(queries,{sql=[[
         [=[
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (1);
+            AND key_idx IN (${THEME_ID});
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_FORWARD_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
 
         ]=]
                                                                             AS code,

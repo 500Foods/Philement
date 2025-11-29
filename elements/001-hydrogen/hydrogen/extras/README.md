@@ -2,6 +2,14 @@
 
 This folder contains utility scripts and one-off diagnostic tools for the Hydrogen project.
 
+## Database Extensions
+
+- [base64decode_udf_db2](base64decode_udf_db2/README.md) Base64 Decode UDF for IBM DB2 (LUW)
+- [brotli_udf_db2](brotli_udf_db2/README.md) Brotli Decompress UDF for IBM DB2 (LUW)
+- [brotli_udf_mysql](brotli_udf_mysql/README.md) Brotli Decompress UDF for MySQL/MariaDB
+- [brotli_udf_postgresql](brotli_udf_postgresql/README.md) Brotli Decompress UDF for PostgreSQL
+- [brotil_udf_sqlite](brotli_udf_sqlite/README.md) Base64 Brotli Decompress UDF for SQLite
+
 ## Build Scripts
 
 ### `make-all.sh`
@@ -249,16 +257,6 @@ Typical development workflow using these tools:
 2. **Full testing:** Use `make-all.sh` for comprehensive compilation testing
 3. **Cleanup:** Use `make-clean.sh` to reset build environment
 4. **Payload debugging:** Use one-off tools when investigating payload issues
-
-## Database Extensions
-
-### DB2 Base64 Decode UDF
-
-**Location:** `base64decode_udf_db2/`
-**Purpose:** DB2 User-Defined Functions for Base64 decoding
-**Description:** Provides chunked Base64 decoding capabilities for DB2 databases, including both C-implemented UDFs and SQL wrappers for large data handling.
-
-See [base64decode_udf_db2/README.md](base64decode_udf_db2/README.md) for detailed documentation.
 
 ## Error Handling
 

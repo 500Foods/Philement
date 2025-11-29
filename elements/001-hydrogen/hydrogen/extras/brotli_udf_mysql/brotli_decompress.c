@@ -16,14 +16,9 @@
 #include <brotli/decode.h>
 
 /* MySQL UDF initialization function */
-bool brotli_decompress_init(UDF_INIT *initid, UDF_ARGS *args, char *message) {
+bool brotli_decompress_init(UDF_INIT *initid, const UDF_ARGS *args, char *message) {
     if (args->arg_count != 1) {
         strcpy(message, "BROTLI_DECOMPRESS requires exactly 1 argument");
-        return 1;
-    }
-    
-    if (args->arg_type[0] != STRING_RESULT) {
-        strcpy(message, "BROTLI_DECOMPRESS argument must be a string");
         return 1;
     }
     

@@ -177,13 +177,8 @@ Key differences:
 - **Memory:** SQLite uses `sqlite3_malloc()`/`sqlite3_free()` instead of standard `malloc()`/`free()`
 - **Init Function:** SQLite requires specific naming: `sqlite3_<filename>_init()`
 
-## License
-
-See [LICENSE.md](../../LICENSE.md) in the project root.
-
 ## See Also
 
 - [MySQL Brotli UDF](../brotli_udf_mysql/) - MySQL version of this extension
-- [Helium Migration System](../../../002-helium/) - Uses this extension for data migration
 - [Brotli Library Documentation](https://github.com/google/brotli)
 - [SQLite Loadable Extensions](https://www.sqlite.org/loadext.html)
