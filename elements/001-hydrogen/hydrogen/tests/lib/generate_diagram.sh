@@ -4,7 +4,11 @@
 # Generate SVG database diagram from migration JSON
 
 # CHANGELOG
-# 2.0.0 - 2025-11-17 - Implemented before/after comparison with automatic highlighting, fixed diagram numbering bug, improved base64 extraction to handle all database engine wrappers
+# 2.1.0 - 2025-11-29 - Fixed Brotli decompression support 
+#                       (1) Use direct piping (base64 -d | brotli -d) to capture decompressed text without null byte issues, 
+#                       (2) Correctly assign decompressed data back to JSON_DATA for further processing, 
+#                       (3) Added comprehensive debug output for troubleshooting base64 extraction
+# 2.0.0 - 2025-11-17 - Implemented before/after comparison with automatic highlighting, fixed diagram numbering bug, improved base64 extraction to handle all database engine wrappers, added Brotli decompression support
 # 1.2.0 - 2025-11-15 - Fixed Base64 decoding to handle BASE64DECODE wrapper functions
 # 1.1.0 - 2025-09-30 - Passing metadata
 # 1.0.0 - 2025-09-28 - Initial creation
@@ -118,7 +122,7 @@ fi
 # Create temporary files for before and after states
 TEMP_BEFORE_JSON=$(mktemp)
 TEMP_AFTER_JSON=$(mktemp)
-# trap 'rm -f "${TEMP_BEFORE_JSON}" "${TEMP_AFTER_JSON}"' EXIT
+trap 'rm -f "${TEMP_BEFORE_JSON}" "${TEMP_AFTER_JSON}"' EXIT
 
 # Initialize both as empty arrays
 echo "[]" > "${TEMP_BEFORE_JSON}"
@@ -176,6 +180,24 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
     # Step 3: Handle BROTLI_DECOMPRESS and BASE64 wrappers if present
     ESCAPED_ALREADY=false
     
+    # BROTLI COMPRESSION SUPPORT (Added 2025-11-17)
+    # The migration system now supports Brotli compression for large multiline strings (>1KB)
+    # Each database engine wraps the compressed data differently:
+    #
+    # - MySQL:      BROTLI_DECOMPRESS(FROM_BASE64('base64data'))
+    # - PostgreSQL: brotli_decompress(DECODE('base64data', 'base64'))
+    # - SQLite:     BROTLI_DECOMPRESS(CRYPTO_DECODE('base64data','base64'))
+    # - DB2:        BROTLI_DECOMPRESS(BASE64DECODEBINARY('base64data'))
+    #
+    # Strategy: Extract the FIRST quoted string (which is always the base64 data),
+    # decode it, then decompress with brotli if BROTLI_DECOMPRESS wrapper is present.
+    #
+    # Note: Non-compressed data uses simpler wrappers without BROTLI_DECOMPRESS:
+    # - MySQL:      CAST(FROM_BASE64('data') as char character set utf8mb4)
+    # - PostgreSQL: CONVERT_FROM(DECODE('data', 'base64'), 'UTF8')
+    # - SQLite:     CRYPTO_DECODE('data','base64')
+    # - DB2:        BASE64DECODE('data')
+    
     # Check for Brotli compression wrapper (outermost layer)
     HAS_BROTLI=false
     if printf '%s' "${JSON_DATA}" | grep -qiE 'BROTLI_DECOMPRESS'; then
@@ -232,85 +254,62 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
         ')
         
         if [[ -n "${BASE64_CONTENT}" ]]; then
+            # Debug: Show what was extracted
+            BASE64_LENGTH=${#BASE64_CONTENT}
+            echo "  DEBUG: Extracted base64 content length: ${BASE64_LENGTH} chars" >&2
+            if [[ ${BASE64_LENGTH} -gt 40 ]]; then
+                echo "  DEBUG: First 40 chars: ${BASE64_CONTENT:0:40}" >&2
+                echo "  DEBUG: Last 40 chars: ${BASE64_CONTENT: -40}" >&2
+            fi
+            
             # Remove any whitespace/newlines from Base64 string before decoding
             BASE64_CLEAN=$(printf '%s' "${BASE64_CONTENT}" | tr -d '\n\r\t ')
+            CLEAN_LENGTH=${#BASE64_CLEAN}
+            echo "  DEBUG: After cleaning: ${CLEAN_LENGTH} chars (removed $((BASE64_LENGTH - CLEAN_LENGTH)) whitespace)" >&2
             
-            # Decode the Base64 string
-            DECODED_DATA=$(printf '%s' "${BASE64_CLEAN}" | base64 -d 2>/dev/null || true)
-            DECODE_STATUS=$?
-            
-            if [[ ${DECODE_STATUS} -eq 0 ]] && [[ -n "${DECODED_DATA}" ]]; then
+            # If Brotli compression was used, decompress directly via pipe
+            if [[ "${HAS_BROTLI}" == "true" ]]; then
+                # Check if brotli command is available
+                if ! command -v brotli >/dev/null 2>&1; then
+                    echo "Error: brotli command not found. Install with: apt-get install brotli" >&2
+                    exit 1
+                fi
+
+                # Pipe through base64 decode and brotli decompress
+                # Only capture the final decompressed TEXT output (no null bytes)
+                # This approach avoids issues with shell substitution truncating at null bytes
+                DECODED_DATA=$(printf '%s' "${BASE64_CLEAN}" | base64 -d | brotli -d 2>/dev/null)
+                DECOMPRESS_STATUS=$?
+                DECOMPRESSED_SIZE=${#DECODED_DATA}
+
+                if [[ ${DECOMPRESS_STATUS} -ne 0 ]] || [[ -z "${DECODED_DATA}" ]]; then
+                    echo "Warning: Brotli decompression failed for ${DESIGN}_${migration_num}.lua" >&2
+                    echo "  You can manually test with: printf '%s' '${BASE64_CLEAN:0:60}...' | base64 -d | brotli -d" >&2
+                    echo "  This migration will be skipped in the diagram" >&2
+                    continue
+                fi
+
+                echo "  Brotli decompressed to ${DECOMPRESSED_SIZE} chars" >&2
+                JSON_DATA="${DECODED_DATA}"
+            else
+                # No Brotli compression, just decode base64
+                DECODED_DATA=$(printf '%s' "${BASE64_CLEAN}" | base64 -d 2>/dev/null)
+                DECODE_STATUS=$?
                 
-                # If Brotli compression was used, decompress the decoded data
-                if [[ "${HAS_BROTLI}" == "true" ]]; then
-                    # Check if brotli command is available
-                    if command -v brotli >/dev/null 2>&1; then
-                        # Decompress using brotli (input from stdin, output to stdout)
-                        DECODED_DATA=$(printf '%s' "${DECODED_DATA}" | brotli -d 2>/dev/null || true)
-                        DECOMPRESS_STATUS=$?
-                        
-                        if [[ ${DECOMPRESS_STATUS} -ne 0 ]] || [[ -z "${DECODED_DATA}" ]]; then
-                            echo "Warning: Brotli decompression failed for ${DESIGN}_${migration_num}.lua" >&2
-                            continue
-                        fi
-                    else
-                        echo "Error: brotli command not found. Install with: apt-get install brotli" >&2
-                        exit 1
-                    fi
+                if [[ ${DECODE_STATUS} -ne 0 ]] || [[ -z "${DECODED_DATA}" ]]; then
+                    echo "Warning: Base64 decoding failed for ${DESIGN}_${migration_num}.lua" >&2
+                    continue
                 fi
                 
-                # Apply escape processing to decoded data before validation
-                DECODED_DATA=$(printf '%s' "${DECODED_DATA}" | awk '
-                BEGIN {
-                    in_string = 0
-                    escaped = 0
-                    result = ""
-                }
-                {
-                    line = $0
-                    for (i = 1; i <= length(line); i++) {
-                        char = substr(line, i, 1)
-                        if (escaped) {
-                            result = result char
-                            escaped = 0
-                        } else if (char == "\\") {
-                            result = result char
-                            escaped = 1
-                        } else if (char == "\"") {
-                            result = result char
-                            in_string = !in_string
-                        } else if (in_string && char == "\t") {
-                            result = result "\\t"
-                        } else {
-                            result = result char
-                        }
-                    }
-                    if (in_string) {
-                        result = result "\\n"
-                    } else {
-                        result = result "\n"
-                    }
-                }
-                END {
-                    if (length(result) > 0 && substr(result, length(result), 1) == "\n") {
-                        result = substr(result, 1, length(result) - 1)
-                    }
-                    printf "%s", result
-                }
-                ')
-                
-                # Now verify the processed data is valid JSON
-                if printf '%s' "${DECODED_DATA}" | jq empty >/dev/null 2>&1; then
-                    JSON_DATA="${DECODED_DATA}"
-                    ESCAPED_ALREADY=true
-                fi
+                # Use the decoded data as the JSON_DATA for further processing
+                JSON_DATA="${DECODED_DATA}"
             fi
         fi
     else
         # No BASE64DECODE wrapper, check if content itself is Base64
         # Remove whitespace and check if it looks like Base64
         BASE64_TEST=$(printf '%s' "${JSON_DATA}" | tr -d '\n\r\t ')
-        
+
         if printf '%s' "${BASE64_TEST}" | grep -qE '^[A-Za-z0-9+/]{20,}={0,2}$'; then
             if DECODED_DATA=$(printf '%s' "${BASE64_TEST}" | base64 -d 2>/dev/null) && [[ -n "${DECODED_DATA}" ]] && printf '%s' "${DECODED_DATA}" | jq empty >/dev/null 2>&1; then
                 JSON_DATA="${DECODED_DATA}"
@@ -461,3 +460,4 @@ if [[ -n "${METADATA}" ]]; then
 fi
 
 echo "Diagram generation complete." >&2
+
