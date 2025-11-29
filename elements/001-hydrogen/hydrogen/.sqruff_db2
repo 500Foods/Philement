@@ -1,3 +1,14 @@
 [sqruff]
 dialect = ansi
+
+# Excluded rules
+# AL02 - Alias should be used for this expression / column
+# LT01 - Line too long
+# LT02 - Select targets should be on separate lines
+# LT05 - Commas should be at the end of the line, not the beginning
+# LT06 - Operators should be surrounded by whitespace
+# LT08 - Indentation not consistent / not a multiple of the configured tab size
+# LT12 - Unnecessary trailing whitespace
+# CP02 - Incorrect or missing final newline at end of file
+
 exclude_rules = AL02,LT01,LT02,LT05,LT06,LT08,LT12,CP02

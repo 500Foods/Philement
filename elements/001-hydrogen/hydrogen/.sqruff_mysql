@@ -1,3 +1,12 @@
 [sqruff]
-dialect = mysql
+dialect = mysql  
+
+# Excluded rules
+# LT01 - Inappropriate spacing (extra/missing/trailing whitespace)
+# LT02 - Incorrect indentation / unexpected line breaks
+# LT05 - Line is too long (max line length violated)
+# LT06 - Function name not immediately followed by "(" (no space allowed)
+# LT08 - Missing blank line after CTE closing bracket
+# LT12 - File must end with a single trailing newline (and not start with blank lines)
+
 exclude_rules = LT01,LT02,LT05,LT06,LT08,LT12
