@@ -28,13 +28,13 @@ return {
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
 
-    BASE64_START = "CAST(FROM_BASE64(",
+    BASE64_START = "cast(FROM_BASE64(",
     BASE64_END = ") as char character set utf8mb4)",
 
     COMPRESS_START = "BROTLI_DECOMPRESS(FROM_BASE64(",
     COMPRESS_END = "))",
 
-    DROP_CHECK = " DO IF(EXISTS(SELECT 1 FROM ${SCHEMA}${TABLE}), CAST('Refusing to drop table ${SCHEMA}${TABLE} – it contains data' AS CHAR(0)), NULL)",
+    DROP_CHECK = " DO IF(EXISTS(SELECT 1 FROM ${SCHEMA}${TABLE}), cast('Refusing to drop table ${SCHEMA}${TABLE} – it contains data' AS CHAR(0)), NULL)",
 
     -- MySQL UDF for Brotli decompression
     -- Requires: libbrotli-dev and brotli_decompress.so in plugin directory

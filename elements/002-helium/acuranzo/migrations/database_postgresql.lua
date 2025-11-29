@@ -43,7 +43,7 @@ return {
         CREATE OR REPLACE FUNCTION ${SCHEMA}brotli_decompress(compressed bytea)
         RETURNS text
         AS 'brotli_decompress', 'brotli_decompress'
-        LANGUAGE C STRICT IMMUTABLE;
+        LANGUAGE c STRICT IMMUTABLE;
     ]],
 
     JSON = "jsonb",
