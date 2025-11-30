@@ -70,7 +70,7 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
     root = get_system_status_json(ws_context ? &metrics : NULL);
 #endif
     if (!root) {
-        log_this(SR_API, "Failed to generate system status", LOG_LEVEL_ERROR,4,3,2,1,0);
+        log_this(SR_API, "Failed to generate system status", LOG_LEVEL_ERROR, 0);
         return MHD_NO;
     }
 
