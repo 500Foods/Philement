@@ -56,29 +56,6 @@ void test_init_terminal_support_shutdown_state(void);
 void test_init_terminal_support_success_payload_mode(void);
 void test_cleanup_terminal_support_success(void);
 
-int main(void) {
-    UNITY_BEGIN();
-
-    // handle_terminal_request tests
-    RUN_TEST(test_handle_terminal_request_null_parameters);
-    RUN_TEST(test_handle_terminal_request_redirect);
-    RUN_TEST(test_handle_terminal_request_index_page);
-    RUN_TEST(test_handle_terminal_request_file_not_found);
-    RUN_TEST(test_handle_terminal_request_success);
-
-    // init_terminal_support tests
-    RUN_TEST(test_init_terminal_support_null_config);
-    RUN_TEST(test_init_terminal_support_disabled_config);
-    RUN_TEST(test_init_terminal_support_already_initialized);
-    RUN_TEST(test_init_terminal_support_shutdown_state);
-    RUN_TEST(test_init_terminal_support_success_payload_mode);
-
-    // cleanup_terminal_support tests
-    RUN_TEST(test_cleanup_terminal_support_success);
-
-    return UNITY_END();
-}
-
 /*
  * TEST SUITE: handle_terminal_request
  */
@@ -185,4 +162,27 @@ void test_cleanup_terminal_support_success(void) {
     // Test cleanup (safe to call even if not initialized)
     cleanup_terminal_support(&test_config);
     TEST_PASS();
+}
+
+int main(void) {
+    UNITY_BEGIN();
+
+    // handle_terminal_request tests
+    RUN_TEST(test_handle_terminal_request_null_parameters);
+    RUN_TEST(test_handle_terminal_request_redirect);
+    RUN_TEST(test_handle_terminal_request_index_page);
+    RUN_TEST(test_handle_terminal_request_file_not_found);
+    RUN_TEST(test_handle_terminal_request_success);
+
+    // init_terminal_support tests
+    RUN_TEST(test_init_terminal_support_null_config);
+    RUN_TEST(test_init_terminal_support_disabled_config);
+    RUN_TEST(test_init_terminal_support_already_initialized);
+    RUN_TEST(test_init_terminal_support_shutdown_state);
+    RUN_TEST(test_init_terminal_support_success_payload_mode);
+
+    // cleanup_terminal_support tests
+    RUN_TEST(test_cleanup_terminal_support_success);
+
+    return UNITY_END();
 }

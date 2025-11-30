@@ -59,11 +59,11 @@ int buffer_message_data(struct lws *wsi, const void *in, size_t len)
         return 0;
     }
 
-    // Null terminate and reset the message buffer
+    // Null terminate the message buffer
     ws_context->message_buffer[ws_context->message_length] = '\0';
-    ws_context->message_length = 0; // Reset for next message
-
-    return 1; // Final fragment
+    
+    // Return the message length (the reset will happen after processing)
+    return (int)ws_context->message_length;
 }
 
 int parse_and_handle_message(struct lws *wsi)
@@ -109,20 +109,32 @@ int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, cons
     ws_context->total_requests++;
     
     int buffer_result = buffer_message_data(wsi, in, len);
-    if (buffer_result == -1) {
+    if (buffer_result <= 0) {
+        // -1 for error, 0 for incomplete fragment
         pthread_mutex_unlock(&ws_context->mutex);
-        return -1;
-    } else if (buffer_result == 0) {
-        pthread_mutex_unlock(&ws_context->mutex);
-        return 0;
+        return buffer_result;
     }
+
+    // buffer_result now contains the message length
+    // Save it before unlocking the mutex
+    size_t saved_message_length = (size_t)buffer_result;
 
     pthread_mutex_unlock(&ws_context->mutex);
 
     // Comment out verbose message logging to reduce log size
     // log_this(SR_WEBSOCKET, "Processing complete message: %s", LOG_LEVEL_STATE, 1, ws_context->message_buffer);
 
-    return parse_and_handle_message(wsi);
+    int result = parse_and_handle_message(wsi);
+    
+    // Reset message length after processing is complete
+    pthread_mutex_lock(&ws_context->mutex);
+    ws_context->message_length = 0;
+    pthread_mutex_unlock(&ws_context->mutex);
+    
+    // Suppress unused variable warning
+    (void)saved_message_length;
+    
+    return result;
 }
 
 int handle_message_type(struct lws *wsi, const char *type)
