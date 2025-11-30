@@ -252,7 +252,7 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
                 }
 
                 // Log the actual data values for debugging
-                // log_this(designator, "PostgreSQL execute_query: Row %zu, Column %zu (%s,4,3,2,1,0): %s", LOG_LEVEL_TRACE, 4,
+                // log_this(designator, "PostgreSQL execute_query: Row %zu, Column %zu (%s): %s", LOG_LEVEL_TRACE, 4,
                 //     row,
                 //     col,
                 //     db_result->column_names[col],

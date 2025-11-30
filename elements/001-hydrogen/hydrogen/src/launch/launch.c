@@ -414,8 +414,8 @@ int startup_hydrogen(const char* config_path) {
             log_this(SR_STARTUP, "― Swagger not running", LOG_LEVEL_DEBUG, 0);
         }
         if (is_subsystem_running_by_name(SR_TERMINAL)) {
-            log_this(SR_STARTUP, "― Terminal running:      http://localhost:%d%s", LOG_LEVEL_ALERT, 2, app_config->websocket.port, app_config->terminal.web_path);
-        } else {
+            log_this(SR_STARTUP, "― Terminal running:      http://localhost:%d%s (Websocket port: %d)", LOG_LEVEL_ALERT, 3, app_config->webserver.port, app_config->terminal.web_path, app_config->websocket.port);
+        } else {                                                                                                                                                                                            
             log_this(SR_STARTUP, "― Terminal not running", LOG_LEVEL_DEBUG, 0);
         }
         
