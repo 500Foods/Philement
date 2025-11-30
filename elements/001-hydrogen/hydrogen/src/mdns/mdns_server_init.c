@@ -7,6 +7,7 @@
 
 #include <src/hydrogen.h>
 
+#include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -40,6 +41,7 @@ mdns_server_t *mdns_server_allocate(void) {
         log_this(SR_MDNS_SERVER, "Out of memory", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
+    memset(mdns_server_instance, 0, sizeof(mdns_server_t));
     return mdns_server_instance;
 }
 
