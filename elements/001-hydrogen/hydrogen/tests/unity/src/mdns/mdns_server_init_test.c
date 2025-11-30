@@ -7,17 +7,7 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
-// Include mock headers for testing error conditions BEFORE source headers
-#ifndef USE_MOCK_NETWORK
-#define USE_MOCK_NETWORK
-#endif
-#ifndef USE_MOCK_SYSTEM
-#define USE_MOCK_SYSTEM
-#endif
-#include <unity/mocks/mock_network.h>
-#include <unity/mocks/mock_system.h>
-
-// Include necessary headers for the module being tested (AFTER mocks to ensure overrides work)
+// Include necessary headers for the module being tested
 #include <src/mdns/mdns_keys.h>
 #include <src/mdns/mdns_server.h>
 #include <src/network/network.h>
@@ -42,10 +32,6 @@ void test_mdns_server_init_with_ipv6(void);
 void test_mdns_server_init_multiple_services(void);
 void test_mdns_server_init_empty_services(void);
 void test_mdns_server_init_null_services_array(void);
-void test_mdns_server_init_network_failure(void);
-void test_mdns_server_init_malloc_failure(void);
-void test_mdns_server_init_socket_failure(void);
-void test_mdns_server_init_hostname_failure(void);
 void test_mdns_server_init_edge_cases(void);
 void test_mdns_server_init_many_services_with_txt(void);
 
@@ -58,15 +44,11 @@ void test_mdns_server_init_services(void);
 void test_mdns_server_init_service_info(void);
 
 void setUp(void) {
-    // Reset all mocks to default state
-    mock_network_reset_all();
-    mock_system_reset_all();
+    // Set up test fixtures, if any
 }
 
 void tearDown(void) {
     // Clean up test fixtures, if any
-    mock_network_reset_all();
-    mock_system_reset_all();
 }
 
 // Test basic successful initialization
@@ -398,6 +380,7 @@ void test_mdns_server_init_empty_services(void) {
     }
 }
 
+
 // Test initialization with NULL services array when num_services > 0
 void test_mdns_server_init_null_services_array(void) {
     mdns_server_t *server = mdns_server_init(
@@ -463,89 +446,6 @@ void test_mdns_server_init_null_services_array(void) {
     }
 }
 
-// Test initialization with network info failure
-void test_mdns_server_init_network_failure(void) {
-    // Mock network info to return NULL
-    mock_network_set_get_network_info_result(NULL);
-
-    mdns_server_t *server = mdns_server_init(
-        "TestApp", "test123", "TestPrinter", "TestModel", "TestManufacturer",
-        "1.0.0", "1.0.0", "http://config.test", NULL, 0, 0
-    );
-
-    TEST_ASSERT_NULL(server);  // Should return NULL due to network failure
-}
-
-// Test initialization with malloc failure
-void test_mdns_server_init_malloc_failure(void) {
-    // Mock malloc to fail
-    mock_system_set_malloc_failure(1);
-
-    mdns_server_t *server = mdns_server_init(
-        "TestApp", "test123", "TestPrinter", "TestModel", "TestManufacturer",
-        "1.0.0", "1.0.0", "http://config.test", NULL, 0, 0
-    );
-
-    TEST_ASSERT_NULL(server);  // Should return NULL due to malloc failure
-}
-
-// Test initialization with socket creation failure
-void test_mdns_server_init_socket_failure(void) {
-    // Mock socket creation to fail
-    mock_network_set_create_multicast_socket_result(-1);
-
-    mdns_server_t *server = mdns_server_init(
-        "TestApp", "test123", "TestPrinter", "TestModel", "TestManufacturer",
-        "1.0.0", "1.0.0", "http://config.test", NULL, 0, 0
-    );
-
-    TEST_ASSERT_NULL(server);  // Should return NULL due to socket failure
-}
-
-// Test initialization with hostname failure
-void test_mdns_server_init_hostname_failure(void) {
-    // Mock gethostname to fail
-    mock_system_set_gethostname_failure(1);
-
-    mdns_server_t *server = mdns_server_init(
-        "TestApp", "test123", "TestPrinter", "TestModel", "TestManufacturer",
-        "1.0.0", "1.0.0", "http://config.test", NULL, 0, 0
-    );
-
-    // Should still succeed with fallback hostname "unknown"
-    TEST_ASSERT_NOT_NULL(server);
-    if (server) {
-        TEST_ASSERT_EQUAL_STRING("unknown.local", server->hostname);
-
-        // Fast cleanup
-        if (server->interfaces) {
-            for (size_t i = 0; i < server->num_interfaces; i++) {
-                if (server->interfaces[i].sockfd_v4 >= 0) close(server->interfaces[i].sockfd_v4);
-                if (server->interfaces[i].sockfd_v6 >= 0) close(server->interfaces[i].sockfd_v6);
-            }
-        }
-        free(server->hostname);
-        free(server->service_name);
-        free(server->device_id);
-        free(server->friendly_name);
-        free(server->model);
-        free(server->manufacturer);
-        free(server->sw_version);
-        free(server->hw_version);
-        free(server->config_url);
-        free(server->secret_key);
-
-        for (size_t i = 0; i < server->num_interfaces; i++) {
-            free(server->interfaces[i].if_name);
-            for (size_t j = 0; j < server->interfaces[i].num_addresses; j++) {
-                free(server->interfaces[i].ip_addresses[j]);
-            }
-            free(server->interfaces[i].ip_addresses);
-        }
-        free(server->interfaces);
-        free(server);
-    }
-}
 
 // Test various edge cases and error conditions
 void test_mdns_server_init_edge_cases(void) {
@@ -812,10 +712,6 @@ int main(void) {
     RUN_TEST(test_mdns_server_init_multiple_services);
     RUN_TEST(test_mdns_server_init_empty_services);
     RUN_TEST(test_mdns_server_init_null_services_array);
-    if (0) RUN_TEST(test_mdns_server_init_network_failure);
-    if (0) RUN_TEST(test_mdns_server_init_malloc_failure);
-    if (0) RUN_TEST(test_mdns_server_init_socket_failure);
-    if (0) RUN_TEST(test_mdns_server_init_hostname_failure);
     RUN_TEST(test_mdns_server_init_edge_cases);
     RUN_TEST(test_mdns_server_init_many_services_with_txt);
 

@@ -326,11 +326,6 @@ void *websocket_server_run(void *arg)
         return NULL;
     }
 
-    // Handle shutdown timeout if needed
-    if (handle_shutdown_timeout() != 0) {
-        // Shutdown timeout handling failed
-    }
-
     cleanup_server_thread();
     return NULL;
 }
