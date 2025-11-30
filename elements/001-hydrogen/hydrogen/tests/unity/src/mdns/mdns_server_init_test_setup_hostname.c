@@ -3,13 +3,14 @@
  * Tests mdns_server_setup_hostname function
  */
 
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+
 #include <src/hydrogen.h>
 #include <unity.h>
 
 // Include mock headers for testing error conditions BEFORE source headers
-#ifndef USE_MOCK_SYSTEM
-#define USE_MOCK_SYSTEM
-#endif
 #include <unity/mocks/mock_system.h>
 
 // Include necessary headers for the module being tested (AFTER mocks to ensure overrides work)
@@ -70,14 +71,14 @@ void test_mdns_server_setup_hostname_gethostname_failure(void) {
 
 // Test mdns_server_setup_hostname function with malloc failure
 void test_mdns_server_setup_hostname_malloc_failure(void) {
-    // Mock malloc to fail - this should cause hostname setup to fail
-    mock_system_set_malloc_failure(1);
+    // Mock malloc to fail on second call - first is for server allocation, second is inside setup_hostname
+    mock_system_set_malloc_failure(2);
 
-    mdns_server_t *server = malloc(sizeof(mdns_server_t));
+    mdns_server_t *server = malloc(sizeof(mdns_server_t));  // Call #1 - succeeds
     TEST_ASSERT_NOT_NULL(server);
 
     if (server) {
-        int result = mdns_server_setup_hostname(server);
+        int result = mdns_server_setup_hostname(server);  // Call #2 inside this function - fails
         TEST_ASSERT_EQUAL(-1, result);
 
         free(server);
@@ -88,8 +89,8 @@ int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_mdns_server_setup_hostname_success);
-    if (0) RUN_TEST(test_mdns_server_setup_hostname_gethostname_failure);
-    if (0) RUN_TEST(test_mdns_server_setup_hostname_malloc_failure);
+    RUN_TEST(test_mdns_server_setup_hostname_gethostname_failure);
+    RUN_TEST(test_mdns_server_setup_hostname_malloc_failure);
 
     return UNITY_END();
 }

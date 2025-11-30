@@ -3,16 +3,13 @@
  * Tests mdns_server_allocate function
  */
 
+// USE_MOCK_SYSTEM, USE_MOCK_NETWORK, USE_MOCK_THREADS defined by CMake
+#include <unity/mocks/mock_system.h>
+
 #include <src/hydrogen.h>
 #include <unity.h>
 
-// Include mock headers for testing error conditions BEFORE source headers
-#ifndef USE_MOCK_SYSTEM
-#define USE_MOCK_SYSTEM
-#endif
-#include <unity/mocks/mock_system.h>
-
-// Include necessary headers for the module being tested (AFTER mocks to ensure overrides work)
+// Include necessary headers for the module being tested
 #include <src/mdns/mdns_server.h>
 
 // Forward declarations for helper functions being tested
@@ -47,21 +44,18 @@ void test_mdns_server_allocate(void) {
 
 // Test mdns_server_allocate function with malloc failure
 void test_mdns_server_allocate_malloc_failure(void) {
-    // Mock malloc to fail - set this in the test itself
+    // Mock malloc to fail
     mock_system_set_malloc_failure(1);
 
     mdns_server_t *server = mdns_server_allocate();
     TEST_ASSERT_NULL(server);  // Should return NULL due to malloc failure
-
-    // Reset the mock for other tests
-    mock_system_set_malloc_failure(0);
 }
 
 int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_mdns_server_allocate);
-    if (0) RUN_TEST(test_mdns_server_allocate_malloc_failure);
+    RUN_TEST(test_mdns_server_allocate_malloc_failure);
 
     return UNITY_END();
 }

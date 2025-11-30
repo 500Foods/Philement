@@ -15,11 +15,13 @@
 
 // Undefine the macros in this file so we can call the real functions
 #undef pthread_create
+#undef pthread_detach
 #undef pthread_setcancelstate
 #undef pthread_setcanceltype
 
 // Function prototypes - these are defined in the header when USE_MOCK_PTHREAD is set
 int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+int mock_pthread_detach(pthread_t thread);
 int mock_pthread_setcancelstate(int state, int *oldstate);
 int mock_pthread_setcanceltype(int type, int *oldtype);
 void mock_pthread_testcancel(void);
@@ -29,6 +31,7 @@ int mock_pthread_mutex_unlock(pthread_mutex_t *mutex);
 int mock_pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
 int mock_pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr);
 void mock_pthread_set_create_failure(int should_fail);
+void mock_pthread_set_detach_failure(int should_fail);
 void mock_pthread_set_setcancelstate_failure(int should_fail);
 void mock_pthread_set_setcanceltype_failure(int should_fail);
 void mock_pthread_set_testcancel_should_exit(int should_exit);
@@ -41,6 +44,7 @@ void mock_pthread_reset_all(void);
 // Global variables to store mock state - shared across all object files
 // CRITICAL: These MUST NOT be static to be visible across compilation units
 int mock_pthread_create_should_fail = 0;
+int mock_pthread_detach_should_fail = 0;
 int mock_pthread_setcancelstate_should_fail = 0;
 int mock_pthread_setcanceltype_should_fail = 0;
 int mock_pthread_testcancel_should_exit = 0;
@@ -66,6 +70,17 @@ int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*s
     }
 
     return 0;
+}
+
+// Mock implementation of pthread_detach
+int mock_pthread_detach(pthread_t thread) {
+    (void)thread; // Suppress unused parameter
+
+    if (mock_pthread_detach_should_fail) {
+        return -1;
+    }
+
+    return 0; // Success
 }
 
 // Mock implementation of pthread_setcancelstate
@@ -171,6 +186,10 @@ void mock_pthread_set_create_failure(int should_fail) {
     mock_pthread_create_should_fail = should_fail;
 }
 
+void mock_pthread_set_detach_failure(int should_fail) {
+    mock_pthread_detach_should_fail = should_fail;
+}
+
 void mock_pthread_set_setcancelstate_failure(int should_fail) {
     mock_pthread_setcancelstate_should_fail = should_fail;
 }
@@ -201,6 +220,7 @@ void mock_pthread_set_cond_init_failure(int should_fail) {
 
 void mock_pthread_reset_all(void) {
     mock_pthread_create_should_fail = 0;
+    mock_pthread_detach_should_fail = 0;
     mock_pthread_setcancelstate_should_fail = 0;
     mock_pthread_setcanceltype_should_fail = 0;
     mock_pthread_testcancel_should_exit = 0;

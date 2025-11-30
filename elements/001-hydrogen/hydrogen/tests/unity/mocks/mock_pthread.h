@@ -15,6 +15,7 @@
 
 // Override pthread functions with our mocks
 #define pthread_create mock_pthread_create
+#define pthread_detach mock_pthread_detach
 #define pthread_setcancelstate mock_pthread_setcancelstate
 #define pthread_setcanceltype mock_pthread_setcanceltype
 #define pthread_testcancel mock_pthread_testcancel
@@ -26,6 +27,7 @@
 
 // Always declare mock function prototypes for the .c file
 int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+int mock_pthread_detach(pthread_t thread);
 int mock_pthread_setcancelstate(int state, int *oldstate);
 int mock_pthread_setcanceltype(int type, int *oldtype);
 void mock_pthread_testcancel(void);
@@ -37,6 +39,7 @@ int mock_pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
 
 // Mock control functions for tests - always available
 void mock_pthread_set_create_failure(int should_fail);
+void mock_pthread_set_detach_failure(int should_fail);
 void mock_pthread_set_setcancelstate_failure(int should_fail);
 void mock_pthread_set_setcanceltype_failure(int should_fail);
 void mock_pthread_set_testcancel_should_exit(int should_exit);
@@ -49,6 +52,7 @@ void mock_pthread_reset_all(void);
 // Extern declarations for global mock state variables (defined in mock_pthread.c)
 // These MUST be global (not static) to be shared across all object files
 extern int mock_pthread_create_should_fail;
+extern int mock_pthread_detach_should_fail;
 extern int mock_pthread_setcancelstate_should_fail;
 extern int mock_pthread_setcanceltype_should_fail;
 extern int mock_pthread_testcancel_should_exit;
