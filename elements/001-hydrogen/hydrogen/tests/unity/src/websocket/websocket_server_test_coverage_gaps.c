@@ -3,20 +3,22 @@
  * Tests specific uncovered lines in websocket_server.c to improve test coverage
  */
 
+// Mocks are defined manually for this test
+#define USE_MOCK_SYSTEM
+#define USE_MOCK_PTHREAD
+
 // Standard project header plus Unity Framework header
 #include <src/hydrogen.h>
 #include <unity.h>
 
-// Include necessary headers for the websocket module
-#include <src/websocket/websocket_server.h>
-#include <src/websocket/websocket_server_internal.h>
-
-// Enable mocks for comprehensive testing
-#define USE_MOCK_SYSTEM
-#define USE_MOCK_PTHREAD
+// Include mock headers after hydrogen.h but before websocket headers
 #include <unity/mocks/mock_pthread.h>
 #include <unity/mocks/mock_libwebsockets.h>
 #include <unity/mocks/mock_system.h>
+
+// Include necessary headers for the websocket module
+#include <src/websocket/websocket_server.h>
+#include <src/websocket/websocket_server_internal.h>
 
 // Forward declarations for functions being tested
 int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
@@ -505,35 +507,24 @@ void test_custom_lws_log_null_line(void) {
     // Should return early without crashing
 }
 
-// Test pthread_create failure in start_websocket_server (line 403)
+// Test pthread_create failure in start_websocket_server (line 472)
 void test_start_websocket_server_pthread_create_failure(void) {
-    // Test the pthread_create failure path
+    // Reset all mocks
     mock_system_reset_all();
     mock_pthread_reset_all();
+    mock_lws_reset_all();
+
+    // Set up a valid context
+    mock_lws_set_create_context_result((struct lws_context *)0xDEADBEEF);
 
     // Make pthread_create fail
     mock_pthread_set_create_failure(1);
 
-    // This should trigger the pthread_create failure path (line 403)
+    // This should trigger the pthread_create failure path (line 472)
     int result = start_websocket_server();
 
-    // Should return -1 on failure
+    // Should return -1 on pthread_create failure
     TEST_ASSERT_EQUAL_INT(-1, result);
-
-    // Reset the mock for other tests
-    mock_pthread_set_create_failure(0);
-
-    // Also reset the websocket context to avoid interference with other tests
-    if (ws_context) {
-        ws_context->shutdown = 0;
-        ws_context->server_thread = 0;  // Reset thread ID
-    }
-
-    // Force cleanup to prevent crashes in subsequent tests
-    if (ws_context && ws_context->server_thread) {
-        // Mark as shutdown to prevent the thread from running
-        ws_context->shutdown = 1;
-    }
 }
 
 void test_start_websocket_server_null_context(void) {
@@ -630,7 +621,7 @@ int main(void) {
     RUN_TEST(test_custom_lws_log_empty_message);
 
     // Test coverage gaps in start_websocket_server
-    if (0) RUN_TEST(test_start_websocket_server_pthread_create_failure);
+    RUN_TEST(test_start_websocket_server_pthread_create_failure);
     RUN_TEST(test_start_websocket_server_null_context);
 
     // Test coverage gaps in websocket_server_run logic

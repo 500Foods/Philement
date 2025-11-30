@@ -811,7 +811,7 @@ int main(void) {
     RUN_TEST(test_mdns_server_init_with_ipv6);
     RUN_TEST(test_mdns_server_init_multiple_services);
     RUN_TEST(test_mdns_server_init_empty_services);
-    if (0) RUN_TEST(test_mdns_server_init_null_services_array); // Disabled due to double free issues - needs investigation
+    RUN_TEST(test_mdns_server_init_null_services_array);
     if (0) RUN_TEST(test_mdns_server_init_network_failure);
     if (0) RUN_TEST(test_mdns_server_init_malloc_failure);
     if (0) RUN_TEST(test_mdns_server_init_socket_failure);

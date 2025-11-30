@@ -627,8 +627,8 @@ int main(void) {
     // Session Creation
     RUN_TEST(test_create_terminal_session_null_manager);
     RUN_TEST(test_create_terminal_session_null_command);
-    if (0) RUN_TEST(test_create_terminal_session_capacity_exceeded);
-    if (0) RUN_TEST(test_create_terminal_session_success);
+    RUN_TEST(test_create_terminal_session_capacity_exceeded);
+    RUN_TEST(test_create_terminal_session_success);
 
     // Session Retrieval
     RUN_TEST(test_get_terminal_session_null_manager);
@@ -649,7 +649,7 @@ int main(void) {
     // Expired Session Cleanup
     RUN_TEST(test_cleanup_expired_sessions_no_manager);
     RUN_TEST(test_cleanup_expired_sessions_no_sessions);
-    if (0) RUN_TEST(test_cleanup_expired_sessions_with_expired);
+    RUN_TEST(test_cleanup_expired_sessions_with_expired);
 
     // Session Resizing
     RUN_TEST(test_resize_terminal_session_null_session);
@@ -672,11 +672,11 @@ int main(void) {
     // Session Listing
     RUN_TEST(test_list_active_sessions_null_manager);
     RUN_TEST(test_list_active_sessions_no_sessions);
-    if (0) RUN_TEST(test_list_active_sessions_with_sessions);
+    RUN_TEST(test_list_active_sessions_with_sessions);
 
     // Session Termination
     RUN_TEST(test_terminate_all_sessions_no_manager);
-    if (0) RUN_TEST(test_terminate_all_sessions_with_sessions);
+    RUN_TEST(test_terminate_all_sessions_with_sessions);
 
     // Capacity Checking
     RUN_TEST(test_session_manager_has_capacity_no_manager);
