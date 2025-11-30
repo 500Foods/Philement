@@ -274,9 +274,10 @@ if [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
 
     if [[ -n "${latest_test10_dir}" ]]; then
         # Use user's ultra-efficient awk command to count from diagnostic files
+        # Only count the FIRST occurrence of the summary line per file to handle duplicate outputs
         coverage_table_count=$("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -exec "${AWK}" "
-        /Tests/ && /Failures/ && /Ignored/ {sum += \$1}
-        ENDFILE {if (!/Tests/ || !/Failures/ || !/Ignored/) sum += 0}
+        /Tests/ && /Failures/ && /Ignored/ && !found {sum += \$1; found=1}
+        ENDFILE {found=0}
         END {print sum}
         " {} + 2>/dev/null || echo "0")
     fi
@@ -322,10 +323,14 @@ else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Test count discrepancies found"
 fi
 
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Additional test analysis"
+# Only perform additional analysis if counts don't match
+if [[ "${test10_total_executed}" -eq "${coverage_table_count}" ]] && [[ "${coverage_table_count}" -eq "${raw_runtest_count}" ]]; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "All test counts match - skipping detailed analysis"
+else
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Additional test analysis (counts don't match)"
 
-# Always show fast A, B, C, D sections since they're useful and fast
-if [[ -d "tests/unity/src" ]] && [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
+    # Show fast A, B, C, D sections only when investigating discrepancies
+    if [[ -d "tests/unity/src" ]] && [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
     # Find the most recent Test 10 diagnostic directory
     latest_test10_dir=$("${FIND}" "${BUILD_DIR}/tests/diagnostics" -name "test_10_*" -type d 2>/dev/null | sort -r | head -1 || true)
 
@@ -426,13 +431,10 @@ if [[ -d "tests/unity/src" ]] && [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "D) Test diagnostic files (${d_fast_duration_display}): ${diag_file_count_display} diagnostic files found"
             print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  All counts consistent - no detailed comparison needed"
         else
-            # Detailed analysis needed - do the expensive comparison
+
+            # Only do expensive detailed failure analysis if counts don't match
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "D) Detailed count comparison needed - performing expensive analysis..."
-            
-            # Only now do the expensive batch processing for section D
-            declare -A cached_runtest_counts
-            declare -A cached_ignore_counts
-            
+
             # Use parallel xargs to count RUN_TEST occurrences
             temp_results_file=$(mktemp)
             export GREP
@@ -444,8 +446,10 @@ if [[ -d "tests/unity/src" ]] && [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
                     echo \"\${basename_file}:\${test_count}:\${ignore_count}\"
                 done
             " _ > "${temp_results_file}" 2>/dev/null
-            
+
             # Populate cache arrays
+            declare -A cached_runtest_counts
+            declare -A cached_ignore_counts
             while IFS=: read -r basename_file test_count ignore_count; do
                 if [[ "${test_count}" =~ ^[0-9]+$ ]] && [[ "${ignore_count}" =~ ^[0-9]+$ ]]; then
                     cached_runtest_counts["${basename_file}"]=${test_count}
@@ -453,7 +457,7 @@ if [[ -d "tests/unity/src" ]] && [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
                 fi
             done < "${temp_results_file}"
             rm -f "${temp_results_file}"
-            
+
             # Now do the diagnostic comparison
             diag_counts_output=$("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -exec "${AWK}" "
             BEGIN {
@@ -477,12 +481,12 @@ if [[ -d "tests/unity/src" ]] && [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
                 }
             }
             " {} + 2>/dev/null || true)
-            
+
             discrepancy_files=""
             while IFS= read -r line; do
                 [[ -z "${line}" ]] && continue
                 IFS=: read -r test_name diag_count <<< "${line}"
-                
+
                 if [[ -n "${cached_runtest_counts["${test_name}"]:-}" ]]; then
                     source_count=${cached_runtest_counts["${test_name}"]}
                     ignore_count=${cached_ignore_counts["${test_name}"]:-0}
@@ -508,7 +512,154 @@ if [[ -d "tests/unity/src" ]] && [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
                 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  None found"
             fi
         fi
-fi
+
+        # E) Always check for RUN_TEST count mismatches between source and diagnostics
+        e_start=$(date +%s.%3N)
+        runtest_mismatches=""
+        total_mismatches=0
+
+        # Get RUN_TEST counts from source files
+        source_runtest_file=$(mktemp)
+        "${FIND}" "tests/unity/src" -name "*.c" -type f -exec bash -c "
+            for file; do
+                basename_file=\$(basename \"\$file\" .c)
+                test_count=\$(\"${GREP}\" -c \"RUN_TEST(\" \"\$file\" 2>/dev/null || echo \"0\")
+                ignore_count=\$(\"${GREP}\" -c \"if (0) RUN_TEST(\" \"\$file\" 2>/dev/null || echo \"0\")
+                net_count=\$((test_count - ignore_count))
+                echo \"\$basename_file:\$net_count\"
+            done
+        " _ {} \; > "${source_runtest_file}" 2>/dev/null
+
+        # Get counts from diagnostic files
+        diag_runtest_file=$(mktemp)
+        "${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -exec "${AWK}" "
+        BEGIN {
+            test_name = \"\"
+            diag_count = 0
+        }
+        FNR == 1 {
+            test_name = FILENAME
+            sub(/^.*\//, \"\", test_name)
+            sub(/\.txt\$/, \"\", test_name)
+            diag_count = 0
+        }
+        /[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored/ {
+            diag_count = \$1
+            print test_name \":\" diag_count
+            nextfile
+        }
+        ENDFILE {
+            if (diag_count == 0) {
+                print test_name \":0\"
+            }
+        }
+        " {} + > "${diag_runtest_file}" 2>/dev/null
+
+        # Compare the counts
+        while IFS=: read -r test_name source_count; do
+            diag_count=$(grep "^${test_name}:" "${diag_runtest_file}" | cut -d: -f2 || echo "")
+            if [[ -n "${diag_count}" ]] && [[ "${source_count}" != "${diag_count}" ]]; then
+                runtest_mismatches="${runtest_mismatches}${test_name}: source=${source_count}, diag=${diag_count}"$'\n'
+                total_mismatches=$((total_mismatches + 1))
+            fi
+        done < "${source_runtest_file}"
+
+        rm -f "${source_runtest_file}" "${diag_runtest_file}"
+
+        e_end=$(date +%s.%3N)
+        e_duration=$(echo "${e_end} - ${e_start}" | bc 2>/dev/null || echo "0")
+        e_duration_display=$(format_duration "${e_duration}")
+
+        if [[ ${total_mismatches} -gt 0 ]]; then
+            total_mismatches_display=$(format_number "${total_mismatches}")
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "E) Test files with RUN_TEST count mismatches (${e_duration_display}): ${total_mismatches_display} matches"
+            while IFS= read -r mismatch; do
+                [[ -z "${mismatch}" ]] && continue
+                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${mismatch}"
+            done <<< "${runtest_mismatches}"
+            # This indicates a problem - mark as failure
+            EXIT_CODE=1
+        else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "E) Test files with RUN_TEST count mismatches (${e_duration_display}):"
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  None found - all RUN_TEST counts match between source and diagnostics"
+        fi
+
+        # F) Check for duplicate RUN_TEST calls within the same file
+        f_start=$(date +%s.%3N)
+        duplicate_runtest_files=""
+        total_duplicate_files=0
+
+        while IFS= read -r file; do
+            [[ -z "${file}" ]] && continue
+            basename_file=$(basename "${file}" .c)
+
+            # Get all RUN_TEST function names from this file
+            runtest_names=$("${GREP}" "RUN_TEST(" "${file}" 2>/dev/null | "${SED}" 's/.*RUN_TEST(\([^)]*\).*/\1/' | "${SED}" 's/^[[:space:]]*//' | "${SED}" 's/[[:space:]]*$//' | sort || true)
+
+            # Check for duplicates
+            duplicates=$(echo "${runtest_names}" | uniq -d || true)
+            if [[ -n "${duplicates}" ]]; then
+                duplicate_list=$(echo "${duplicates}" | tr '\n' ',' | "${SED}" 's/,$//' || true)
+                duplicate_runtest_files="${duplicate_runtest_files}${basename_file}: ${duplicate_list}"$'\n'
+                total_duplicate_files=$((total_duplicate_files + 1))
+            fi
+        done < <("${FIND}" "tests/unity/src" -name "*.c" -type f 2>/dev/null || true)
+
+        f_end=$(date +%s.%3N)
+        f_duration=$(echo "${f_end} - ${f_start}" | bc 2>/dev/null || echo "0")
+        f_duration_display=$(format_duration "${f_duration}")
+
+        if [[ ${total_duplicate_files} -gt 0 ]]; then
+            total_duplicate_files_display=$(format_number "${total_duplicate_files}")
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "F) Test files with duplicate RUN_TEST calls (${f_duration_display}): ${total_duplicate_files_display} matches"
+            while IFS= read -r duplicate_file; do
+                [[ -z "${duplicate_file}" ]] && continue
+                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${duplicate_file}"
+            done <<< "${duplicate_runtest_files}"
+            # This indicates a problem - mark as failure
+            EXIT_CODE=1
+        else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "F) Test files with duplicate RUN_TEST calls (${f_duration_display}):"
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  None found - no duplicate RUN_TEST calls within the same file"
+        fi
+
+        # G) Check for duplicate Unity summary lines in diagnostic files
+        g_start=$(date +%s.%3N)
+        duplicate_summary_files=""
+        total_duplicate_summary_files=0
+
+        while IFS= read -r diag_file; do
+            [[ -z "${diag_file}" ]] && continue
+            basename_file=$(basename "${diag_file}" .txt)
+
+            # Count occurrences of the summary line pattern
+            summary_count=$("${GREP}" -c "Tests [0-9]* Failures [0-9]* Ignored" "${diag_file}" 2>/dev/null || echo "0")
+
+            if [[ "${summary_count}" -gt 1 ]]; then
+                duplicate_summary_files="${duplicate_summary_files}${basename_file}: ${summary_count} summary lines"$'\n'
+                total_duplicate_summary_files=$((total_duplicate_summary_files + 1))
+            fi
+        done < <("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f 2>/dev/null || true)
+
+        g_end=$(date +%s.%3N)
+        g_duration=$(echo "${g_end} - ${g_start}" | bc 2>/dev/null || echo "0")
+        g_duration_display=$(format_duration "${g_duration}")
+
+        if [[ ${total_duplicate_summary_files} -gt 0 ]]; then
+            total_duplicate_summary_files_display=$(format_number "${total_duplicate_summary_files}")
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "G) Test files with duplicate Unity summary lines (${g_duration_display}): ${total_duplicate_summary_files_display} matches"
+            while IFS= read -r duplicate_summary_file; do
+                [[ -z "${duplicate_summary_file}" ]] && continue
+                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${duplicate_summary_file}"
+            done <<< "${duplicate_summary_files}"
+            # This indicates a problem - mark as failure
+            EXIT_CODE=1
+        else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "G) Test files with duplicate Unity summary lines (${g_duration_display}):"
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  None found - all diagnostic files have single summary lines"
+        fi
+        fi
+    fi
 fi
 
 # Only do expensive detailed failure analysis if counts don't match

@@ -22,6 +22,7 @@ typedef struct TerminalConfig {
     char* shell_command;          /**< Shell command to execute */
     int max_sessions;             /**< Maximum concurrent terminal sessions */
     int idle_timeout_seconds;     /**< Session idle timeout in seconds */
+    int buffer_size;              /**< PTY read buffer size in bytes */
 
     // NEW: WebRoot support for PAYLOAD:/ paths or filesystem paths
     char* webroot;                 /** NEW: PAYLOAD:/terminal or /filesystem/path */

@@ -232,6 +232,7 @@ bool process_terminal_websocket_message(TerminalWSConnection *connection,
                 if (input_len > 0) {
                     int bytes_sent = send_data_to_session(connection->session, input_data, input_len);
                     if (bytes_sent < 0) {
+                        log_this(SR_TERMINAL, "Failed to write to PTY for session %s", LOG_LEVEL_ERROR, 1, connection->session_id);
                         json_decref(json_msg);
                         return false;
                     }
@@ -286,8 +287,14 @@ bool send_terminal_websocket_output(TerminalWSConnection *connection,
         return false;
     }
 
+    // Get the WebSocket instance from the terminal session
+    struct lws *wsi = NULL;
+    if (connection->session && connection->session->websocket_connection) {
+        wsi = (struct lws *)connection->session->websocket_connection;
+    }
+
     // Send response via libwebsockets
-    if (connection->wsi) {
+    if (wsi) {
         // Create JSON response for WebSocket
         json_t *ws_json_response = json_object();
         if (ws_json_response) {
@@ -304,11 +311,29 @@ bool send_terminal_websocket_output(TerminalWSConnection *connection,
                 if (buf) {
                     memcpy(&buf[LWS_SEND_BUFFER_PRE_PADDING], ws_response_str, response_len);
 
-                    int result = lws_write(connection->wsi, &buf[LWS_SEND_BUFFER_PRE_PADDING], response_len, LWS_WRITE_TEXT);
+                    // Request writeable callback first to ensure buffer is ready
+                    lws_callback_on_writable(wsi);
+                    
+                    // Brief delay to allow buffer to be serviced
+                    usleep(100); // 100 microseconds
+                    
+                    int result = lws_write(wsi, &buf[LWS_SEND_BUFFER_PRE_PADDING], response_len, LWS_WRITE_TEXT);
                     if (result < 0) {
-                        log_this(SR_TERMINAL, "Failed to send WebSocket data for session %s", LOG_LEVEL_ERROR, 1, connection->session_id);
-                    } else {
-                        log_this(SR_TERMINAL, "Sent %d bytes of WebSocket data for session %s", LOG_LEVEL_DEBUG, 2, result, connection->session_id);
+                        // WebSocket send buffer full or connection issue
+                        // For terminal output, dropping frames is acceptable - don't crash the session
+                        log_this(SR_TERMINAL, "WebSocket send failed (buffer full), dropping frame for session %s", LOG_LEVEL_DEBUG, 1, connection->session_id);
+                        free(buf);
+                        free(ws_response_str);
+                        // Add backpressure delay
+                        usleep(10000); // 10ms backpressure delay
+                        return true; // Don't kill the session, just drop the frame
+                    } else if (result < (int)response_len) {
+                        // Partial write - this is problematic for WebSocket text frames
+                        log_this(SR_TERMINAL, "WebSocket partial write (%d/%zu bytes), may cause corruption for session %s", LOG_LEVEL_ALERT, 3, result, response_len, connection->session_id);
+                        free(buf);
+                        free(ws_response_str);
+                        usleep(10000); // 10ms backpressure delay
+                        return true; // Don't kill session but note the issue
                     }
 
                     free(buf);
@@ -390,11 +415,6 @@ int read_pty_with_select(TerminalWSConnection *connection, char *buffer, size_t 
         return -1;
     }
 
-    // Debug: Check PTY state before select
-    log_this(SR_TERMINAL, "I/O bridge checking PTY for session %s: running=%d, master_fd=%d", LOG_LEVEL_DEBUG, 3,
-        connection->session_id,
-        connection->session->pty_shell->running,
-        connection->session->pty_shell->master_fd);
 
     // Set up select for non-blocking read
     fd_set readfds;
@@ -411,21 +431,22 @@ int read_pty_with_select(TerminalWSConnection *connection, char *buffer, size_t 
 
     if (result > 0 && FD_ISSET(connection->session->pty_shell->master_fd, &readfds)) {
         // Data available from PTY
-        log_this(SR_TERMINAL, "I/O bridge reading from PTY for session %s", LOG_LEVEL_DEBUG, 1, connection->session_id);
-        int bytes_read = pty_read_data(connection->session->pty_shell, buffer, buffer_size);
-        log_this(SR_TERMINAL, "I/O bridge read result for session %s: bytes_read=%d", LOG_LEVEL_DEBUG, 1, connection->session_id, bytes_read);
-        return bytes_read;
+        return pty_read_data(connection->session->pty_shell, buffer, buffer_size);
     } else if (result == 0) {
         // Timeout
         return 0;
-    } else if (errno == EINTR) {
-        // Interrupted by signal
-        return -2;
-    } else {
-        // Error in select
-        log_this(SR_TERMINAL, "Select error in I/O bridge: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
-        return -1;
+    } else if (result < 0) {
+        if (errno == EINTR) {
+            // Interrupted by signal
+            return -2;
+        } else {
+            // Error in select
+            log_this(SR_TERMINAL, "Select error in I/O bridge: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
+            return -1;
+        }
     }
+    // result == 0, timeout
+    return 0;
 }
 
 /**
@@ -446,9 +467,9 @@ bool process_pty_read_result(TerminalWSConnection *connection, const char *buffe
 
     if (bytes_read > 0) {
         // Send data to client
-        log_this(SR_TERMINAL, "I/O bridge sending %d bytes to WebSocket for session %s", LOG_LEVEL_DEBUG, 1, bytes_read, connection->session_id);
         if (!send_terminal_websocket_output(connection, buffer, (size_t)bytes_read)) {
-            log_this(SR_TERMINAL, "Failed to send PTY output to WebSocket client", LOG_LEVEL_ERROR, 0);
+            log_this(SR_TERMINAL, "Failed to send PTY output to WebSocket client for session %s", LOG_LEVEL_ERROR, 1, connection->session_id);
+            return false;
         }
         return true;
     } else if (bytes_read == 0) {
@@ -482,7 +503,16 @@ static void *terminal_io_bridge_thread(void *arg) {
 
     log_this(SR_TERMINAL, "I/O bridge thread started for session %s", LOG_LEVEL_STATE, 1, connection->session_id);
 
-    char buffer[4096];
+    // Use configured buffer size (default 1KB, configurable via JSON)
+    int buffer_size = app_config ? app_config->terminal.buffer_size : 1024;
+    if (buffer_size < 256) buffer_size = 256;   // Minimum 256 bytes
+    if (buffer_size > 4096) buffer_size = 4096; // Maximum 4KB to avoid overwhelming WebSocket
+    
+    char *buffer = malloc((size_t)buffer_size);
+    if (!buffer) {
+        log_this(SR_TERMINAL, "Failed to allocate I/O buffer for session %s", LOG_LEVEL_ERROR, 1, connection->session_id);
+        return NULL;
+    }
 
     while (should_continue_io_bridge(connection)) {
         // Skip iteration if PTY shell is not available yet
@@ -492,14 +522,23 @@ static void *terminal_io_bridge_thread(void *arg) {
         }
 
         // Perform select and read from PTY
-        int bytes_read = read_pty_with_select(connection, buffer, sizeof(buffer));
+        int bytes_read = read_pty_with_select(connection, buffer, (size_t)buffer_size);
 
         // Process the read result
         if (!process_pty_read_result(connection, buffer, bytes_read)) {
             break; // Exit on error
         }
+        
+        // Add small delay when processing rapid output (like from vi)
+        // This prevents overwhelming the WebSocket send buffer
+        if (bytes_read > 512) {
+            usleep(5000); // 5ms delay for larger chunks
+        } else if (bytes_read > 0) {
+            usleep(1000); // 1ms delay for small chunks
+        }
     }
 
+    free(buffer);
     log_this(SR_TERMINAL, "I/O bridge thread terminated for session %s", LOG_LEVEL_STATE, 1, connection->session_id);
     return NULL;
 }

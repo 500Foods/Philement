@@ -276,14 +276,14 @@ void initialize_config_defaults_swagger(AppConfig* config) {
     }
 }
 
-// H. WebSocket Configuration Defaults 
+// H. WebSocket Configuration Defaults
 void initialize_config_defaults_websocket(AppConfig* config) {
     if (config) {
         config->websocket.enable_ipv4 = false;
         config->websocket.enable_ipv6 = false;
         config->websocket.lib_log_level = 2;
         config->websocket.port = 5001;
-        config->websocket.max_message_size = 2048;
+        config->websocket.max_message_size = 8192;  // 8KB to accommodate terminal output with JSON overhead
 
         // Connection timeouts
         config->websocket.connection_timeouts.shutdown_wait_seconds = 2;
@@ -305,10 +305,11 @@ void initialize_config_defaults_terminal(AppConfig* config) {
         config->terminal.enabled = true;
         config->terminal.max_sessions = 4;
         config->terminal.idle_timeout_seconds = 300; // 5 minutes
+        config->terminal.buffer_size = 1024;  // 1KB PTY read buffer (conservative for WebSocket)
 
         // String fields
         config->terminal.web_path = strdup("/terminal");
-        config->terminal.shell_command = strdup("/bin/bash");
+        config->terminal.shell_command = strdup("/bin/zsh");  // Default to zsh
 
         // NEW: WebRoot defaults for terminal
         config->terminal.webroot = strdup("PAYLOAD:/terminal");
