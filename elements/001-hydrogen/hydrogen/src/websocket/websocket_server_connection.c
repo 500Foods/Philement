@@ -51,7 +51,7 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
 
     pthread_mutex_unlock(&ws_context->mutex);
 
-    log_this(SR_WEBSOCKET, "New connection established (active: %d, total: %d,4,3,2,1,0)", LOG_LEVEL_STATE, 2, ws_context->active_connections, ws_context->total_connections);
+    log_this(SR_WEBSOCKET, "New connection established (active: %d, total: %d)", LOG_LEVEL_STATE, 2, ws_context->active_connections, ws_context->total_connections);
 
     return 0;
 }

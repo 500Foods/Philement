@@ -84,22 +84,22 @@ void stop_websocket_server(void)
         
         int join_result = pthread_timedjoin_np(ws_context->server_thread, NULL, &ts);
         if (join_result == ETIMEDOUT) {
-            log_this(SR_WEBSOCKET, "Thread cancellation timed out, forcing cleanup",4,3,2,1, LOG_LEVEL_ALERT,0);
+            log_this(SR_WEBSOCKET, "Thread cancellation timed out, forcing cleanup", LOG_LEVEL_ALERT, 0);
             
             // Force cleanup anyway as a last resort
             pthread_t server_thread = ws_context->server_thread;
             remove_service_thread(&websocket_threads, server_thread);
             
-            log_this(SR_WEBSOCKET, "Forced removal of server thread from tracking", LOG_LEVEL_ALERT,4,3,2,1,0);
+            log_this(SR_WEBSOCKET, "Forced removal of server thread from tracking", LOG_LEVEL_ALERT, 0);
         } else {
-            log_this(SR_WEBSOCKET, "Thread terminated after cancellation", LOG_LEVEL_STATE,4,3,2,1,0);
+            log_this(SR_WEBSOCKET, "Thread terminated after cancellation", LOG_LEVEL_STATE, 0);
         }
         
         // Do NOT destroy context here - leave that to cleanup_websocket_server
         // This prevents race conditions with context access
     }
 
-    log_this(SR_WEBSOCKET, "Server stopped", LOG_LEVEL_STATE,4,3,2,1,0);
+    log_this(SR_WEBSOCKET, "Server stopped", LOG_LEVEL_STATE, 0);
 }
 
 // Clean up server resources
