@@ -13,9 +13,6 @@ static bool mock_session_manager_has_capacity_result = true;
 static struct TerminalSession* mock_create_terminal_session_result = NULL;
 static bool mock_start_terminal_websocket_bridge_result = true;
 static int mock_send_data_to_session_result = 0;
-static void* mock_calloc_result = NULL;
-static void* mock_json_object_result = NULL;
-static char* mock_json_dumps_result = NULL;
 
 // Mock implementations
 bool mock_process_terminal_websocket_message(struct TerminalWSConnection *connection,
@@ -42,10 +39,9 @@ bool mock_session_manager_has_capacity(void) {
 }
 
 struct TerminalSession* mock_create_terminal_session(const char *shell_command, int rows, int cols) {
-    (void)shell_command;  // Suppress unused parameter warning
-    (void)rows;          // Suppress unused parameter warning
-    (void)cols;          // Suppress unused parameter warning
-
+    (void)shell_command;
+    (void)rows;
+    (void)cols;
     return mock_create_terminal_session_result;
 }
 
@@ -62,23 +58,6 @@ int mock_send_data_to_session(struct TerminalSession *session, const char *data,
 
     return mock_send_data_to_session_result;
 }
-
-
-
-// Note: mock_calloc is now defined in mock_system.c to avoid conflicts
-// This function is kept for backward compatibility but should not be used
-
-void* mock_json_object(void) {
-    return mock_json_object_result;
-}
-
-char* mock_json_dumps(void* json, int flags) {
-    (void)json;   // Suppress unused parameter warning
-    (void)flags;  // Suppress unused parameter warning
-
-    return mock_json_dumps_result;
-}
-
 
 // Mock control functions
 void mock_terminal_websocket_set_process_result(bool result) {
@@ -105,24 +84,6 @@ void mock_terminal_websocket_set_send_data_to_session_result(int result) {
     mock_send_data_to_session_result = result;
 }
 
-
-
-void mock_terminal_websocket_set_calloc_result(void* result) {
-    mock_calloc_result = result;
-}
-
-void mock_terminal_websocket_set_json_object_result(void* result) {
-    mock_json_object_result = result;
-}
-
-void mock_terminal_websocket_set_json_dumps_result(const char* result) {
-    if (mock_json_dumps_result) {
-        free(mock_json_dumps_result);
-    }
-    mock_json_dumps_result = result ? strdup(result) : NULL;
-}
-
-
 void mock_terminal_websocket_reset_all(void) {
     mock_process_result = true;
     mock_is_terminal_websocket_request_result = true;
@@ -130,10 +91,4 @@ void mock_terminal_websocket_reset_all(void) {
     mock_create_terminal_session_result = NULL;
     mock_start_terminal_websocket_bridge_result = true;
     mock_send_data_to_session_result = 0;
-    mock_calloc_result = NULL;
-    mock_json_object_result = NULL;
-    if (mock_json_dumps_result) {
-        free(mock_json_dumps_result);
-        mock_json_dumps_result = NULL;
-    }
 }

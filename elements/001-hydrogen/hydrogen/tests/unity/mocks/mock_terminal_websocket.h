@@ -27,9 +27,7 @@ struct TerminalSession;
 #define create_terminal_session mock_create_terminal_session
 #define start_terminal_websocket_bridge mock_start_terminal_websocket_bridge
 #define send_data_to_session mock_send_data_to_session
-#define calloc mock_calloc
-#define json_object mock_json_object
-#define json_dumps mock_json_dumps
+// Note: calloc is mocked in mock_system, json_object and json_dumps are from jansson library
 
 // Always declare mock function prototypes for the .c file
 bool mock_process_terminal_websocket_message(struct TerminalWSConnection *connection,
@@ -40,9 +38,6 @@ bool mock_session_manager_has_capacity(void);
 struct TerminalSession* mock_create_terminal_session(const char *shell_command, int rows, int cols);
 bool mock_start_terminal_websocket_bridge(struct TerminalWSConnection *ws_conn);
 int mock_send_data_to_session(struct TerminalSession *session, const char *data, size_t data_size);
-void* mock_calloc(size_t num, size_t size);
-void* mock_json_object(void);
-char* mock_json_dumps(void* json, int flags);
 
 // Mock control functions for tests
 void mock_terminal_websocket_set_process_result(bool result);
@@ -51,10 +46,6 @@ void mock_terminal_websocket_set_session_manager_has_capacity_result(bool result
 void mock_terminal_websocket_set_create_terminal_session_result(struct TerminalSession* result);
 void mock_terminal_websocket_set_start_terminal_websocket_bridge_result(bool result);
 void mock_terminal_websocket_set_send_data_to_session_result(int result);
-void mock_terminal_websocket_set_send_data_to_session_result(int result);
-void mock_terminal_websocket_set_calloc_result(void* result);
-void mock_terminal_websocket_set_json_object_result(void* result);
-void mock_terminal_websocket_set_json_dumps_result(const char* result);
 void mock_terminal_websocket_reset_all(void);
 
 #endif // USE_MOCK_TERMINAL_WEBSOCKET

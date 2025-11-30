@@ -194,17 +194,13 @@ void test_setup_pty_select_valid_fd(void) {
     fd_set readfds;
     struct timeval timeout;
 
-    // Note: Complex system call mocking is challenging in this environment
-    // This test validates the function signature and basic structure
-
+    // Call setup_pty_select
     int result = setup_pty_select(test_fd, &readfds, &timeout);
 
-    // Should return a valid select result (accepting any integer as valid for this test environment)
+    // Should return a valid select result
+    // Note: select() modifies the timeout structure, so we can't verify timeout values after the call
+    // The test validates that the function executes without crashing and returns a valid result
     TEST_ASSERT_TRUE(result >= -1);
-
-    // Verify timeout was set correctly
-    TEST_ASSERT_EQUAL_INT(1, timeout.tv_sec);
-    TEST_ASSERT_EQUAL_INT(0, timeout.tv_usec);
 }
 
 // Test setup_pty_select with invalid file descriptor
@@ -235,7 +231,7 @@ int main(void) {
     RUN_TEST(test_perform_pty_read_success);
     RUN_TEST(test_perform_pty_read_eof);
     RUN_TEST(test_perform_pty_read_error);
-    if (0) RUN_TEST(test_setup_pty_select_valid_fd); // Temporarily disabled due to test environment limitations
+    RUN_TEST(test_setup_pty_select_valid_fd);
     RUN_TEST(test_setup_pty_select_invalid_fd);
 
     return UNITY_END();

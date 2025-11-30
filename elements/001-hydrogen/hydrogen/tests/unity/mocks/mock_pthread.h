@@ -46,6 +46,19 @@ void mock_pthread_set_mutex_init_failure(int should_fail);
 void mock_pthread_set_cond_init_failure(int should_fail);
 void mock_pthread_reset_all(void);
 
+// Extern declarations for global mock state variables (defined in mock_pthread.c)
+// These MUST be global (not static) to be shared across all object files
+extern int mock_pthread_create_should_fail;
+extern int mock_pthread_setcancelstate_should_fail;
+extern int mock_pthread_setcanceltype_should_fail;
+extern int mock_pthread_testcancel_should_exit;
+extern int mock_pthread_cond_timedwait_should_fail;
+extern int mock_pthread_mutex_lock_should_fail;
+extern int mock_pthread_mutex_init_should_fail;
+extern int mock_pthread_mutex_init_call_count;
+extern int mock_pthread_cond_init_should_fail;
+extern int mock_pthread_cond_init_call_count;
+
 #endif // USE_MOCK_PTHREAD
 
 #endif // MOCK_PTHREAD_H

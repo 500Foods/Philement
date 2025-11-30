@@ -38,17 +38,18 @@ void mock_pthread_set_mutex_init_failure(int should_fail);
 void mock_pthread_set_cond_init_failure(int should_fail);
 void mock_pthread_reset_all(void);
 
-// Static variables to store mock state
-static int mock_pthread_create_should_fail = 0;
-static int mock_pthread_setcancelstate_should_fail = 0;
-static int mock_pthread_setcanceltype_should_fail = 0;
-static int mock_pthread_testcancel_should_exit = 0;
-static int mock_pthread_cond_timedwait_should_fail = 0;
-static int mock_pthread_mutex_lock_should_fail = 0;
-static int mock_pthread_mutex_init_should_fail = 0;
-static int mock_pthread_cond_init_should_fail = 0;
-static int mock_pthread_mutex_init_call_count = 0;
-static int mock_pthread_cond_init_call_count = 0;
+// Global variables to store mock state - shared across all object files
+// CRITICAL: These MUST NOT be static to be visible across compilation units
+int mock_pthread_create_should_fail = 0;
+int mock_pthread_setcancelstate_should_fail = 0;
+int mock_pthread_setcanceltype_should_fail = 0;
+int mock_pthread_testcancel_should_exit = 0;
+int mock_pthread_cond_timedwait_should_fail = 0;
+int mock_pthread_mutex_lock_should_fail = 0;
+int mock_pthread_mutex_init_should_fail = 0;
+int mock_pthread_cond_init_should_fail = 0;
+int mock_pthread_mutex_init_call_count = 0;
+int mock_pthread_cond_init_call_count = 0;
 
 // Mock implementation of pthread_create
 int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg) {

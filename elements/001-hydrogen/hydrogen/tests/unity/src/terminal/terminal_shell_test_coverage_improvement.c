@@ -187,8 +187,11 @@ void test_pty_write_data_empty_data(void) {
 void test_pty_write_data_success(void) {
     PtyShell *shell = create_mock_shell();
 
-    // This will attempt to write to the mock file descriptor
-    // In test environment, this will likely fail with EBADF, but exercises the code path
+    // Use an invalid file descriptor to ensure write fails
+    shell->master_fd = 99999; // Invalid file descriptor
+
+    // This will attempt to write to the invalid file descriptor
+    // Should fail with EBADF
     int result = pty_write_data(shell, "test", 4);
 
     // We expect this to fail in test environment (invalid file descriptor)
@@ -242,8 +245,11 @@ void test_pty_read_data_success(void) {
     PtyShell *shell = create_mock_shell();
     char buffer[100];
 
-    // This will attempt to read from the mock file descriptor
-    // In test environment, this will likely fail with EBADF, but exercises the code path
+    // Use an invalid file descriptor to ensure read fails
+    shell->master_fd = 99999; // Invalid file descriptor
+
+    // This will attempt to read from the invalid file descriptor
+    // Should fail with EBADF
     int result = pty_read_data(shell, buffer, sizeof(buffer));
 
     // We expect this to fail in test environment (invalid file descriptor)
@@ -257,8 +263,11 @@ void test_pty_read_data_no_data_available(void) {
     PtyShell *shell = create_mock_shell();
     char buffer[100];
 
-    // This will attempt to read from the mock file descriptor
-    // In test environment, this will likely fail, but exercises the EAGAIN/EWOULDBLOCK path
+    // Use an invalid file descriptor to ensure read fails
+    shell->master_fd = 99999; // Invalid file descriptor
+
+    // This will attempt to read from the invalid file descriptor
+    // Should fail with EBADF, but exercises the read logic
     int result = pty_read_data(shell, buffer, sizeof(buffer));
 
     // We expect this to fail in test environment
@@ -290,8 +299,11 @@ void test_pty_set_size_not_running(void) {
 void test_pty_set_size_success(void) {
     PtyShell *shell = create_mock_shell();
 
-    // This will attempt to set size on the mock file descriptor
-    // In test environment, this will likely fail with EBADF, but exercises the code path
+    // Use an invalid file descriptor to ensure ioctl fails
+    shell->master_fd = 99999; // Invalid file descriptor
+
+    // This will attempt to set size on the invalid file descriptor
+    // Should fail with EBADF
     bool result = pty_set_size(shell, 24, 80);
 
     // We expect this to fail in test environment (invalid file descriptor)
@@ -442,27 +454,27 @@ int main(void) {
 
     // pty_spawn_shell tests
     RUN_TEST(test_pty_spawn_shell_null_parameters);
-    if (0) RUN_TEST(test_pty_spawn_shell_success);
+    RUN_TEST(test_pty_spawn_shell_success);
 
     // pty_write_data tests
     RUN_TEST(test_pty_write_data_null_shell);
     RUN_TEST(test_pty_write_data_not_running);
     RUN_TEST(test_pty_write_data_null_data);
     RUN_TEST(test_pty_write_data_empty_data);
-    if (0) RUN_TEST(test_pty_write_data_success);
+    RUN_TEST(test_pty_write_data_success);
 
     // pty_read_data tests
     RUN_TEST(test_pty_read_data_null_shell);
     RUN_TEST(test_pty_read_data_not_running);
     RUN_TEST(test_pty_read_data_null_buffer);
     RUN_TEST(test_pty_read_data_empty_size);
-    if (0) RUN_TEST(test_pty_read_data_success);
-    if (0) RUN_TEST(test_pty_read_data_no_data_available);
+    RUN_TEST(test_pty_read_data_success);
+    RUN_TEST(test_pty_read_data_no_data_available);
 
     // pty_set_size tests
     RUN_TEST(test_pty_set_size_null_shell);
     RUN_TEST(test_pty_set_size_not_running);
-    if (0) RUN_TEST(test_pty_set_size_success);
+    RUN_TEST(test_pty_set_size_success);
 
     // pty_is_running tests
     RUN_TEST(test_pty_is_running_null_shell);
