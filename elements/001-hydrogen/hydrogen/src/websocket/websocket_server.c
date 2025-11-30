@@ -395,58 +395,59 @@ int run_service_loop(void)
 int handle_shutdown_timeout(void)
 {
     const int max_shutdown_wait = 40;  // 2 seconds total (40 * 50ms)
-    int shutdown_wait = 0;  // cppcheck-suppress variableScope
 
     // During shutdown, wait for connections to close with timeout
     if (!server_running || ws_context->shutdown) {
-        pthread_mutex_lock(&ws_context->mutex);
+        for (int shutdown_wait = 0; shutdown_wait < max_shutdown_wait; shutdown_wait++) {
+            pthread_mutex_lock(&ws_context->mutex);
 
-        // If no active connections or timeout reached
-        if (ws_context->active_connections == 0 || shutdown_wait >= max_shutdown_wait) {
-            // Force close any remaining connections
-            if (ws_context->active_connections > 0) {
-                log_this(SR_WEBSOCKET, "Forcing close of %d remaining connections", LOG_LEVEL_ALERT, 1, ws_context->active_connections);
-                lws_cancel_service(ws_context->lws_context);
-                ws_context->active_connections = 0;  // Force reset
+            // If no active connections, we're done
+            if (ws_context->active_connections == 0) {
+                pthread_mutex_unlock(&ws_context->mutex);
+                return 0;
             }
+
+            // Wait on condition with timeout instead of sleep polling
+            struct timespec ts;
+            clock_gettime(CLOCK_REALTIME, &ts);
+            ts.tv_nsec += 50000000; // 50ms in nanoseconds
+            if (ts.tv_nsec >= 1000000000) {
+                ts.tv_sec += 1;
+                ts.tv_nsec -= 1000000000;
+            }
+
+            // Log first wait for debugging
+            if (shutdown_wait == 0) {
+                log_this(SR_WEBSOCKET, "Waiting for %d connections to close", LOG_LEVEL_STATE, 1, ws_context->active_connections);
+            }
+
+            // Wait for condition or timeout
+            int wait_result = pthread_cond_timedwait(&ws_context->cond, &ws_context->mutex, &ts);
+            (void)wait_result;  /* Mark unused variable */
+
+            // Log periodic updates
+            if ((shutdown_wait + 1) % 10 == 0) {
+                log_this(SR_WEBSOCKET, "Still waiting for %d connections to close (wait: %d/%d)", LOG_LEVEL_STATE, 3,
+                    ws_context->active_connections,
+                    shutdown_wait + 1,
+                    max_shutdown_wait);
+            }
+
             pthread_mutex_unlock(&ws_context->mutex);
-            return 0;
+
+            // Add cancellation point during shutdown wait
+            pthread_testcancel();
         }
 
-        // Wait on condition with timeout instead of sleep polling
-        struct timespec ts;
-        clock_gettime(CLOCK_REALTIME, &ts);
-        ts.tv_nsec += 50000000; // 50ms in nanoseconds
-        if (ts.tv_nsec >= 1000000000) {
-            ts.tv_sec += 1;
-            ts.tv_nsec -= 1000000000;
+        // Timeout reached, force close remaining connections
+        pthread_mutex_lock(&ws_context->mutex);
+        if (ws_context->active_connections > 0) {
+            log_this(SR_WEBSOCKET, "Forcing close of %d remaining connections", LOG_LEVEL_ALERT, 1, ws_context->active_connections);
+            lws_cancel_service(ws_context->lws_context);
+            ws_context->active_connections = 0;  // Force reset
         }
-
-        // Log first wait for debugging
-        if (shutdown_wait == 0) {
-            log_this(SR_WEBSOCKET, "Waiting for %d connections to close", LOG_LEVEL_STATE, 1, ws_context->active_connections);
-        }
-
-        // Wait for condition or timeout
-        int wait_result = pthread_cond_timedwait(&ws_context->cond, &ws_context->mutex, &ts);
-        (void)wait_result;  /* Mark unused variable */
-
-        // Increment counter and log periodic updates
-        shutdown_wait++;
-        if (shutdown_wait % 10 == 0) {
-            log_this(SR_WEBSOCKET, "Still waiting for %d connections to close (wait: %d/%d)", LOG_LEVEL_STATE, 3,
-                ws_context->active_connections,
-                shutdown_wait,
-                max_shutdown_wait);
-        }
-
         pthread_mutex_unlock(&ws_context->mutex);
-
-        // Add cancellation point during shutdown wait
-        pthread_testcancel();
-
-        // Recursively handle timeout (for multiple iterations)
-        return handle_shutdown_timeout();
+        return 0;
     }
 
     return 0;

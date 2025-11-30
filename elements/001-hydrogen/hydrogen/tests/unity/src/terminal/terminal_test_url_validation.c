@@ -51,8 +51,8 @@ int main(void) {
     RUN_TEST(test_is_terminal_request_no_match);
     RUN_TEST(test_is_terminal_request_partial_match);
 
-    // terminal_url_validator tests - disabled due to static global variable
-    if (0) RUN_TEST(test_terminal_url_validator_disabled);
+    // terminal_url_validator tests
+    RUN_TEST(test_terminal_url_validator_disabled);
 
     return UNITY_END();
 }
@@ -138,3 +138,16 @@ void test_is_terminal_request_partial_match(void) {
 /*
  * TEST SUITE: terminal_url_validator
  */
+
+void test_terminal_url_validator_disabled(void) {
+    // Test that validator returns false when global config is NULL (default state)
+    // This tests the case where terminal support is not initialized/disabled
+    bool result = terminal_url_validator("/terminal");
+    TEST_ASSERT_FALSE(result);
+
+    result = terminal_url_validator("/terminal/somefile.html");
+    TEST_ASSERT_FALSE(result);
+
+    result = terminal_url_validator("/");
+    TEST_ASSERT_FALSE(result);
+}

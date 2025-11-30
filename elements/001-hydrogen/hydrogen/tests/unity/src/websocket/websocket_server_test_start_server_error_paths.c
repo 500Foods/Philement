@@ -135,7 +135,7 @@ int main(void) {
     // start_websocket_server and get_websocket_port tests for better coverage
     RUN_TEST(test_start_websocket_server_null_context);
     RUN_TEST(test_start_websocket_server_uninitialized_context);
-    if (0) RUN_TEST(test_start_websocket_server_successful_start);
+    RUN_TEST(test_start_websocket_server_successful_start);
     RUN_TEST(test_get_websocket_port_with_context);
     RUN_TEST(test_get_websocket_port_null_context);
 

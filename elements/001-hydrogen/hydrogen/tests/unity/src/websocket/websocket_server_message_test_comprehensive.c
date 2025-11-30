@@ -185,11 +185,11 @@ void test_ws_handle_receive_unauthenticated(void) {
 
 // Test ws_handle_receive with message too large
 void test_ws_handle_receive_message_too_large(void) {
-    // Set message length close to max (but leave room for null terminator)
-    test_context.message_length = test_context.max_message_size - 10;
+    // Set message length close to max
+    test_context.message_length = test_context.max_message_size - 5;
 
-    // Test with data that would exceed max size
-    int result = ws_handle_receive((void*)0x12345678, &test_session, "xx", 2);
+    // Test with data that would exceed max size (5 + 10 > max_message_size)
+    int result = ws_handle_receive((void*)0x12345678, &test_session, "1234567890", 10);
 
     // Should return -1 due to message too large and reset buffer
     TEST_ASSERT_EQUAL_INT(-1, result);
@@ -482,7 +482,7 @@ int main(void) {
     RUN_TEST(test_ws_handle_receive_invalid_session);
     RUN_TEST(test_ws_handle_receive_invalid_context);
     RUN_TEST(test_ws_handle_receive_unauthenticated);
-    if (0) RUN_TEST(test_ws_handle_receive_message_too_large);
+    RUN_TEST(test_ws_handle_receive_message_too_large);
     RUN_TEST(test_ws_handle_receive_non_final_fragment);
     RUN_TEST(test_ws_handle_receive_valid_message);
     RUN_TEST(test_ws_handle_receive_json_parsing_error);
