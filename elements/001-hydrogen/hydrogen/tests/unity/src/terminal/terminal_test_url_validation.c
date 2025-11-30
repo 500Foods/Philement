@@ -37,26 +37,6 @@ void test_is_terminal_request_no_match(void);
 void test_is_terminal_request_partial_match(void);
 void test_terminal_url_validator_disabled(void);
 
-int main(void) {
-    UNITY_BEGIN();
-
-    // is_terminal_request tests
-    RUN_TEST(test_is_terminal_request_null_parameters);
-    RUN_TEST(test_is_terminal_request_disabled_config);
-    RUN_TEST(test_is_terminal_request_null_web_path);
-    RUN_TEST(test_is_terminal_request_null_url);
-    RUN_TEST(test_is_terminal_request_exact_match);
-    RUN_TEST(test_is_terminal_request_with_slash);
-    RUN_TEST(test_is_terminal_request_subdirectory);
-    RUN_TEST(test_is_terminal_request_no_match);
-    RUN_TEST(test_is_terminal_request_partial_match);
-
-    // terminal_url_validator tests
-    RUN_TEST(test_terminal_url_validator_disabled);
-
-    return UNITY_END();
-}
-
 /*
  * TEST SUITE: is_terminal_request
  */
@@ -150,4 +130,24 @@ void test_terminal_url_validator_disabled(void) {
 
     result = terminal_url_validator("/");
     TEST_ASSERT_FALSE(result);
+}
+
+int main(void) {
+    UNITY_BEGIN();
+
+    // is_terminal_request tests
+    RUN_TEST(test_is_terminal_request_null_parameters);
+    RUN_TEST(test_is_terminal_request_disabled_config);
+    RUN_TEST(test_is_terminal_request_null_web_path);
+    RUN_TEST(test_is_terminal_request_null_url);
+    RUN_TEST(test_is_terminal_request_exact_match);
+    RUN_TEST(test_is_terminal_request_with_slash);
+    RUN_TEST(test_is_terminal_request_subdirectory);
+    RUN_TEST(test_is_terminal_request_no_match);
+    RUN_TEST(test_is_terminal_request_partial_match);
+
+    // terminal_url_validator tests
+    RUN_TEST(test_terminal_url_validator_disabled);
+
+    return UNITY_END();
 }

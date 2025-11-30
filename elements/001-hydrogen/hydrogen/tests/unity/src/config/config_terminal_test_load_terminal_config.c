@@ -50,7 +50,7 @@ void test_load_terminal_config_null_root(void) {
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_TRUE(config.terminal.enabled);  // Default is enabled
     TEST_ASSERT_EQUAL_STRING("/terminal", config.terminal.web_path);  // Default value
-    TEST_ASSERT_EQUAL_STRING("/bin/bash", config.terminal.shell_command);  // Default value
+    TEST_ASSERT_EQUAL_STRING("/bin/zsh", config.terminal.shell_command);  // Default value
     TEST_ASSERT_EQUAL(4, config.terminal.max_sessions);  // Default value
 
     cleanup_terminal_config(&config.terminal);
@@ -67,9 +67,10 @@ void test_load_terminal_config_empty_json(void) {
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_TRUE(config.terminal.enabled);  // Default is enabled
     TEST_ASSERT_EQUAL_STRING("/terminal", config.terminal.web_path);  // Default value
-    TEST_ASSERT_EQUAL_STRING("/bin/bash", config.terminal.shell_command);  // Default value
+    TEST_ASSERT_EQUAL_STRING("/bin/zsh", config.terminal.shell_command);  // Default value
     TEST_ASSERT_EQUAL_STRING("PAYLOAD:/terminal", config.terminal.webroot);  // Default value
     TEST_ASSERT_EQUAL_STRING("*", config.terminal.cors_origin);  // Default value
+    TEST_ASSERT_EQUAL_STRING("terminal.html", config.terminal.index_page);  // Default value
     TEST_ASSERT_EQUAL(4, config.terminal.max_sessions);  // Default value
     TEST_ASSERT_EQUAL(300, config.terminal.idle_timeout_seconds);  // Default value
 
@@ -94,6 +95,7 @@ void test_load_terminal_config_basic_fields(void) {
     json_object_set(terminal_section, "IdleTimeoutSeconds", json_integer(600));
     json_object_set(terminal_section, "WebRoot", json_string("/var/www/terminal"));
     json_object_set(terminal_section, "CORSOrigin", json_string("https://terminal.example.com"));
+    json_object_set(terminal_section, "IndexPage", json_string("custom-index.html"));
 
     json_object_set(root, "Terminal", terminal_section);
 
@@ -107,6 +109,7 @@ void test_load_terminal_config_basic_fields(void) {
     TEST_ASSERT_EQUAL(600, config.terminal.idle_timeout_seconds);
     TEST_ASSERT_EQUAL_STRING("/var/www/terminal", config.terminal.webroot);
     TEST_ASSERT_EQUAL_STRING("https://terminal.example.com", config.terminal.cors_origin);
+    TEST_ASSERT_EQUAL_STRING("custom-index.html", config.terminal.index_page);
 
     json_decref(root);
     cleanup_terminal_config(&config.terminal);
@@ -158,6 +161,7 @@ void test_cleanup_terminal_config_empty_config(void) {
     TEST_ASSERT_NULL(config.shell_command);
     TEST_ASSERT_NULL(config.webroot);
     TEST_ASSERT_NULL(config.cors_origin);
+    TEST_ASSERT_NULL(config.index_page);
     TEST_ASSERT_EQUAL(0, config.max_sessions);
     TEST_ASSERT_EQUAL(0, config.idle_timeout_seconds);
 }
@@ -168,9 +172,10 @@ void test_cleanup_terminal_config_with_data(void) {
     // Initialize with some test data
     config.enabled = true;
     config.web_path = strdup("/terminal");
-    config.shell_command = strdup("/bin/bash");
+    config.shell_command = strdup("/bin/zsh");
     config.webroot = strdup("PAYLOAD:/terminal");
     config.cors_origin = strdup("*");
+    config.index_page = strdup("terminal.html");
     config.max_sessions = 4;
     config.idle_timeout_seconds = 300;
 
@@ -183,6 +188,7 @@ void test_cleanup_terminal_config_with_data(void) {
     TEST_ASSERT_NULL(config.shell_command);
     TEST_ASSERT_NULL(config.webroot);
     TEST_ASSERT_NULL(config.cors_origin);
+    TEST_ASSERT_NULL(config.index_page);
     TEST_ASSERT_EQUAL(0, config.max_sessions);
     TEST_ASSERT_EQUAL(0, config.idle_timeout_seconds);
 }
@@ -201,9 +207,10 @@ void test_dump_terminal_config_basic(void) {
     // Initialize with test data
     config.enabled = true;
     config.web_path = strdup("/terminal");
-    config.shell_command = strdup("/bin/bash");
+    config.shell_command = strdup("/bin/zsh");
     config.webroot = strdup("PAYLOAD:/terminal");
     config.cors_origin = strdup("*");
+    config.index_page = strdup("terminal.html");
     config.max_sessions = 4;
     config.idle_timeout_seconds = 300;
 

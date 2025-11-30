@@ -11,14 +11,15 @@
         "EnableIPv6": true,
         "Port": 5261,
         "Protocol": "terminal",
-        "Key": "${env.WEBSOCKET_KEY}"
+        "Key": "${env.WEBSOCKET_KEY}",
+        "MaxMessageSize": 8192
     },
     "Terminal": {
         "Enabled": true,
-        "ShellCommand": "/bin/bash",
+        "ShellCommand": "/bin/zsh",
         "MaxSessions": 10,
         "IdleTimeoutSeconds": 300,
-        "BufferSize": 2048
+        "BufferSize": 1024
     },
     "API": {
         "Enabled": true,
