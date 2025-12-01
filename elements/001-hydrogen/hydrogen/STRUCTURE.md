@@ -2,6 +2,19 @@
 
 This document provides a comprehensive overview of the Hydrogen project's file organization and architecture.
 
+## Table of Contents
+
+- [Root Files](#root-files)
+- [Core Application](#core-application)
+- [Source Code Organization](#source-code-organization)
+- [Documentation](#documentation)
+- [Examples](#examples)
+- [Payloads](#payloads)
+- [Testing Framework](#testing-framework)
+- [Build Tools & Utilities](#build-tools--utilities)
+- [Directory Structure Overview](#directory-structure-overview)
+- [Architecture Overview](#architecture-overview)
+
 ## Root Files
 
 <details>
@@ -20,7 +33,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 </details>
 
 <details>
-<summary><b>Images / Statistics</b></summary>
+<summary><b>Statistics</b></summary>
 
 - [README.md](images/README.md) - Documentation for generated SVG visualization files
 - [CLOC_CODE.svg](images/CLOC_CODE.svg) - Reformatted output from cloc (auto-generated)
@@ -28,13 +41,24 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [COVERAGE.svg](images/COVERAGE.svg) - Visual coverage analysis report (auto-generated)
 - [COMPLETE.svg](images/COMPLETE.svg) - Complete test suite results visualization (auto-generated)
 
+</details>
+
+<details>
+<summary><b>Database Diagrams</b></summary>
+
+- [images/acuranzo/](./images/acuranzo/) - Acuranzo database schema diagrams ([README](images/acuranzo/README.md))
+- [images/gaius/](./images/gaius/) - Gaius database schema diagrams ([README](images/gaius/README.md))
+- [images/glm/](./images/glm/) - GLM database schema diagrams ([README](images/glm/README.md))
+- [images/helium/](./images/helium/) - Helium database schema diagrams ([README](images/helium/README.md))
+
+</details>
+
 ## Core Application
 
 <details>
 <summary><b>Main Entry Point</b></summary>
 
 - [src/hydrogen.c](src/hydrogen.c) - Main entry point and core system initialization
-- [src/not_hydrogen.c](src/hydrogen_not.c) - Error handler test file
 
 </details>
 
@@ -94,6 +118,66 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/config/config_webserver.h](src/config/config_webserver.h) - Web server configuration interface definitions
 - [src/config/config_websocket.c](src/config/config_websocket.c) - WebSocket configuration implementation
 - [src/config/config_websocket.h](src/config/config_websocket.h) - WebSocket configuration interface definitions
+
+</details>
+
+<details>
+<summary><b>Database Management</b></summary>
+
+- [src/database/database.c](src/database/database.c) - Core database system implementation
+- [src/database/database.h](src/database/database.h) - Database system interface definitions
+- [src/database/database_bootstrap.c](src/database/database_bootstrap.c) - Database bootstrap functionality
+- [src/database/database_bootstrap.h](src/database/database_bootstrap.h) - Database bootstrap interface
+- [src/database/database_cache.c](src/database/database_cache.c) - Database query caching
+- [src/database/database_cache.h](src/database/database_cache.h) - Database cache interface
+- [src/database/database_connstring.c](src/database/database_connstring.c) - Connection string handling
+- [src/database/database_connstring.h](src/database/database_connstring.h) - Connection string interface
+- [src/database/database_engine.c](src/database/database_engine.c) - Database engine abstraction
+- [src/database/database_engine.h](src/database/database_engine.h) - Database engine interface
+- [src/database/database_execute.c](src/database/database_execute.c) - Query execution system
+- [src/database/database_execute.h](src/database/database_execute.h) - Query execution interface
+- [src/database/database_manage.c](src/database/database_manage.c) - Database management operations
+- [src/database/database_manage.h](src/database/database_manage.h) - Database management interface
+- [src/database/database_params.c](src/database/database_params.c) - Parameter binding system
+- [src/database/database_params.h](src/database/database_params.h) - Parameter binding interface
+- [src/database/database_pending.c](src/database/database_pending.c) - Pending operations handling
+- [src/database/database_pending.h](src/database/database_pending.h) - Pending operations interface
+- [src/database/database_queue_select.c](src/database/database_queue_select.c) - Queue-based select operations
+- [src/database/database_queue_select.h](src/database/database_queue_select.h) - Queue select interface
+- [src/database/database_serialize.c](src/database/database_serialize.c) - Data serialization
+- [src/database/database_serialize.h](src/database/database_serialize.h) - Serialization interface
+- [src/database/database_types.h](src/database/database_types.h) - Database type definitions
+- [src/database/prepared_cache.h](src/database/prepared_cache.h) - Prepared statement cache
+- [src/database/db2/](src/database/db2/) - DB2-specific database implementation
+- [src/database/dbqueue/](src/database/dbqueue/) - Database queue system
+- [src/database/migration/](src/database/migration/) - Database migration system
+- [src/database/mysql/](src/database/mysql/) - MySQL-specific database implementation
+- [src/database/postgresql/](src/database/postgresql/) - PostgreSQL-specific database implementation
+- [src/database/sqlite/](src/database/sqlite/) - SQLite-specific database implementation
+
+</details>
+
+<details>
+<summary><b>Global State Management</b></summary>
+
+- [src/globals.c](src/globals.c) - Global variable definitions
+- [src/globals.h](src/globals.h) - Global variable declarations
+
+</details>
+
+<details>
+<summary><b>Request Handlers</b></summary>
+
+- [src/handlers/handlers.c](src/handlers/handlers.c) - HTTP request handler implementations
+- [src/handlers/handlers.h](src/handlers/handlers.h) - HTTP request handler interface definitions
+
+</details>
+
+<details>
+<summary><b>Mutex Management</b></summary>
+
+- [src/mutex/mutex.c](src/mutex/mutex.c) - Mutex utility functions implementation
+- [src/mutex/mutex.h](src/mutex/mutex.h) - Mutex utility functions interface definitions
 
 </details>
 
@@ -441,6 +525,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 ## Testing Framework
 
 - [tests/README.md](tests/README.md) - Testing documentation and procedures
+- [tests/UNITY.md](tests/UNITY.md) - Unity unit testing framework documentation
 - [tests/test_00_all.sh](tests/test_00_all.sh) - Orchestration script
 
 <details>
@@ -470,7 +555,11 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_20_api_prefix.sh](tests/test_20_api_prefix.sh) - API prefix tests
 - [tests/test_21_system_endpoints.sh](tests/test_21_system_endpoints.sh) - System endpoint tests
 - [tests/test_22_swagger.sh](tests/test_22_swagger.sh) - Swagger functionality tests
-- [tests/test_23_websockets.sh](tests/test_23_websockets.sh) - Swagger functionality tests
+- [tests/test_23_websockets.sh](tests/test_23_websockets.sh) - WebSocket functionality tests
+- [tests/test_24_uploads.sh](tests/test_24_uploads.sh) - File upload functionality tests
+- [tests/test_25_mdns.sh](tests/test_25_mdns.sh) - mDNS service discovery tests
+- [tests/test_26_terminal.sh](tests/test_26_terminal.sh) - Terminal interface tests
+- [tests/test_41_conduit.sh](tests/test_41_conduit.sh) - Conduit Query endpoint test
 
 ### Database Tests
 
@@ -480,6 +569,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_33_mysql_migrations.sh](tests/test_33_mysql_migrations.sh) - MySQL migration performance test
 - [tests/test_34_sqlite_migrations.sh](tests/test_34_sqlite_migrations.sh) - SQLite migration performance test
 - [tests/test_35_db2_migrations.sh](tests/test_35_db2_migrations.sh) - DB2 migration performance test
+- [tests/test_38_luacheck.sh](tests/test_38_luacheck.sh) - Lua code analysis with luacheck
+- [tests/test_39_database_diagrams.sh](tests/test_39_database_diagrams.sh) - Database diagram generation
 
 ### Linting Tests
 
@@ -543,6 +634,21 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [extras/one-offs/debug_payload.c](extras/one-offs/debug_payload.c) - Payload debug analysis tool
 - [extras/one-offs/find_all_markers.c](extras/one-offs/find_all_markers.c) - Multiple marker detection tool
 - [extras/one-offs/test_payload_detection.c](extras/one-offs/test_payload_detection.c) - Payload validation testing tool
+
+</details>
+
+<details>
+<summary><b>Database UDFs</b></summary>
+
+Database User-Defined Functions (UDFs) for extending database capabilities:
+
+- [extras/base64decode_udf_db2/](extras/base64decode_udf_db2/) - Base64 decoding UDF for DB2
+- [extras/brotli_udf_db2/](extras/brotli_udf_db2/) - Brotli compression UDF for DB2
+- [extras/brotli_udf_mysql/](extras/brotli_udf_mysql/) - Brotli compression UDF for MySQL/MariaDB
+- [extras/brotli_udf_postgresql/](extras/brotli_udf_postgresql/) - Brotli compression UDF for PostgreSQL
+- [extras/brotli_udf_sqlite/](extras/brotli_udf_sqlite/) - Brotli compression UDF for SQLite
+
+Each UDF directory contains C source code, compiled shared libraries, Makefiles, and test scripts for the respective database engine.
 
 </details>
 
@@ -647,5 +753,29 @@ The Hydrogen project follows a modular architecture with clear separation of con
 - `debug`: Debug build with symbols
 - `perf`: Performance-optimized build
 - `release`: Production build
+- `coverage`: Build with coverage instrumentation for testing
 - `valgrind`: Memory debugging build
 - `default`: Standard development build
+
+### CMake Configuration
+
+The build system uses modular CMake configuration files:
+
+- [cmake/CMakeLists.txt](cmake/CMakeLists.txt) - Main CMake configuration
+- [cmake/CMakeLists-base.cmake](cmake/CMakeLists-base.cmake) - Base build configuration
+- [cmake/CMakeLists-cache.cmake](cmake/CMakeLists-cache.cmake) - Cache configuration
+- [cmake/CMakeLists-coverage.cmake](cmake/CMakeLists-coverage.cmake) - Coverage build configuration
+- [cmake/CMakeLists-debug.cmake](cmake/CMakeLists-debug.cmake) - Debug build configuration
+- [cmake/CMakeLists-examples.cmake](cmake/CMakeLists-examples.cmake) - Examples build configuration
+- [cmake/CMakeLists-init.cmake](cmake/CMakeLists-init.cmake) - Initialization configuration
+- [cmake/CMakeLists-ninja.cmake](cmake/CMakeLists-ninja.cmake) - Ninja build system configuration
+- [cmake/CMakeLists-output.cmake](cmake/CMakeLists-output.cmake) - Output configuration
+- [cmake/CMakeLists-package.cmake](cmake/CMakeLists-package.cmake) - Packaging configuration
+- [cmake/CMakeLists-perf.cmake](cmake/CMakeLists-perf.cmake) - Performance build configuration
+- [cmake/CMakeLists-regular.cmake](cmake/CMakeLists-regular.cmake) - Regular build configuration
+- [cmake/CMakeLists-release.cmake](cmake/CMakeLists-release.cmake) - Release build configuration
+- [cmake/CMakeLists-targets.cmake](cmake/CMakeLists-targets.cmake) - Build targets configuration
+- [cmake/CMakeLists-unity.cmake](cmake/CMakeLists-unity.cmake) - Unity testing configuration
+- [cmake/CMakeLists-valgrind.cmake](cmake/CMakeLists-valgrind.cmake) - Valgrind build configuration
+- [cmake/CMakeLists-version.cmake](cmake/CMakeLists-version.cmake) - Version configuration
+- [cmake/CMakePresets.json](cmake/CMakePresets.json) - CMake presets configuration
