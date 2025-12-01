@@ -329,5 +329,3 @@ local table_name = "${DATABASE_TABLE}"
 - **[Test 38: Luacheck](../tests/docs/test_38_luacheck.md)** validates Lua syntax and coding standards
 - Migration test mode runs forward and reverse operations to ensure reliability
 - Automatic diagram generation from JSON metadata in migrations
-
-For detailed migration examples, see the [Helium project documentation](../../002-helium/README.md).
