@@ -5,6 +5,7 @@
 Titanium is a lightweight, high-performance video streaming component designed for resource-constrained devices like Raspberry Pi-based 3D printers. It provides efficient camera capture, hardware-accelerated encoding, and WebRTC streaming capabilities while maintaining minimal CPU and memory footprint.
 
 **Key Features:**
+
 - Direct V4L2 camera access with hardware acceleration
 - Custom H.264 encoding optimized for low latency
 - WebRTC P2P streaming with Mirage proxy integration
@@ -16,18 +17,21 @@ Titanium is a lightweight, high-performance video streaming component designed f
 ### Core Components
 
 **Camera Subsystem:**
+
 - Direct V4L2 kernel interface for camera capture
 - Hardware-accelerated encoding using VideoCore (RPi)
 - Ring buffer for smooth frame handling
 - Real-time thread scheduling for consistent performance
 
 **Streaming Engine:**
+
 - Custom WebRTC implementation (minimal signaling overhead)
 - SRTP encryption for secure P2P communication
 - Adaptive bitrate based on network conditions
 - Fallback to MJPEG for compatibility
 
 **Resource Manager:**
+
 - CPU affinity assignment to protect print operations
 - Memory limits with emergency reserves
 - Automatic quality reduction under load
@@ -37,7 +41,7 @@ Titanium is a lightweight, high-performance video streaming component designed f
 
 Titanium integrates seamlessly with Hydrogen's ecosystem:
 
-```
+```structure
 3D Printer (Hydrogen + Titanium)
     ↓ WebRTC Signaling
 Mirage Proxy Server
@@ -46,6 +50,7 @@ Remote Client (WebAssembly Plugin)
 ```
 
 **Hydrogen Integration Points:**
+
 - Queue system for stream coordination
 - Configuration management for camera settings
 - WebSocket extensions for video control
@@ -64,11 +69,13 @@ Remote Client (WebAssembly Plugin)
 ### Hardware Compatibility
 
 **Raspberry Pi 4:**
+
 - H.264 hardware encoding up to 1080p30
 - USB camera support via V4L2
 - CPU usage: 15-25% for 720p streaming
 
 **Raspberry Pi 5:**
+
 - Improved VideoCore VII performance
 - Better thermal management for sustained streaming
 - CPU usage: 10-20% for 720p streaming
@@ -76,24 +83,28 @@ Remote Client (WebAssembly Plugin)
 ## Implementation Strategy
 
 ### Phase 1: MJPEG Foundation
+
 - Direct V4L2 camera capture
 - Hardware MJPEG encoding
 - HTTP streaming for local access
 - Basic configuration and controls
 
 ### Phase 2: H.264 Acceleration
+
 - VideoCore H.264 encoder integration
 - RTP packetization for network transport
 - Quality and bitrate controls
 - Performance monitoring
 
 ### Phase 3: WebRTC Integration
+
 - Minimal WebRTC signaling implementation
 - STUN/TURN server integration
 - P2P connection establishment
 - Encryption and security
 
 ### Phase 4: Mirage Proxy Integration
+
 - Signaling through Mirage tunnels
 - Authentication and authorization
 - Multi-device stream management
@@ -104,6 +115,7 @@ Remote Client (WebAssembly Plugin)
 ### Print Protection Features
 
 **Automatic Resource Management:**
+
 ```c
 // Monitor system resources during printing
 if (print_active && cpu_usage > 60) {
@@ -116,6 +128,7 @@ if (thermal_anomaly_detected) {
 ```
 
 **Priority-Based Streaming:**
+
 - **High Priority**: Print monitoring (always active)
 - **Medium Priority**: Remote access when requested
 - **Low Priority**: Background streaming (suspend during critical operations)
@@ -123,11 +136,13 @@ if (thermal_anomaly_detected) {
 ### Camera Placement Considerations
 
 **3D Printer Use Cases:**
+
 - **Build Chamber**: Wide-angle view of entire print area
 - **Nozzle Camera**: Close-up view of print head and first layer
 - **Multi-Camera**: Different angles for comprehensive monitoring
 
 **Lighting Optimization:**
+
 - IR illumination for low-light conditions
 - Automatic exposure adjustment for different materials
 - Motion-triggered quality boosts
@@ -139,40 +154,48 @@ if (thermal_anomaly_detected) {
 Several mature WebRTC and video streaming libraries can accelerate Titanium plugin development:
 
 **PeerJS (Simple WebRTC Wrapper):**
+
 ```javascript
 import Peer from 'peerjs';
 
 const peer = new Peer();
 peer.call('titanium-camera-123', localStream);
 ```
+
 - Simple API for WebRTC connections
 - Built-in signaling (can be adapted for Mirage)
 
 **Simple-Peer (Lightweight WebRTC):**
+
 ```javascript
 import SimplePeer from 'simple-peer';
 
 const peer = new SimplePeer({initiator: true});
 peer.signal(mirageSignalingData);
 ```
+
 - Minimal WebRTC implementation
 - Manual signaling control (ideal for Mirage integration)
 
 **WebRTC.rs (Rust → WebAssembly):**
+
 ```rust
 use webrtc::peer_connection::RTCPeerConnection;
 let peer = RTCPeerConnection::new().await?;
 ```
+
 - High-performance Rust WebRTC
 - Compiles to WebAssembly
 - Memory-safe and efficient
 
 **Video.js with WebRTC Plugin:**
+
 ```html
 <video-js>
   <source src="webrtc://titanium-stream" type="application/webrtc">
 </video-js>
 ```
+
 - Mature video player framework
 - WebRTC streaming support
 - Extensive customization options
@@ -180,6 +203,7 @@ let peer = RTCPeerConnection::new().await?;
 ### Plugin Architecture
 
 **Titanium WebRTC Component:**
+
 ```javascript
 class TitaniumVideoPlayer {
   constructor(options) {
@@ -202,6 +226,7 @@ class TitaniumVideoPlayer {
 ```
 
 **Web Component Wrapper:**
+
 ```javascript
 class TitaniumVideo extends HTMLElement {
   connectedCallback() {
@@ -217,12 +242,14 @@ customElements.define('titanium-video', TitaniumVideo);
 ### Browser Compatibility
 
 **Supported Browsers:**
+
 - Chrome/Chromium (full WebRTC support)
 - Firefox (full WebRTC support)
 - Safari (WebRTC with limitations)
 - Mobile browsers (adaptive quality)
 
 **Progressive Enhancement:**
+
 - WebRTC P2P for modern browsers
 - HLS/DASH fallback for older browsers
 - MJPEG streaming for basic compatibility
@@ -278,6 +305,7 @@ customElements.define('titanium-video', TitaniumVideo);
 ## Development Roadmap
 
 ### Immediate Tasks (Week 1-4)
+
 - [ ] V4L2 camera capture implementation
 - [ ] Basic MJPEG streaming
 - [ ] Hardware encoding integration
@@ -285,6 +313,7 @@ customElements.define('titanium-video', TitaniumVideo);
 - [ ] Basic WebRTC signaling
 
 ### Medium Term (Month 2-3)
+
 - [ ] Full WebRTC P2P streaming
 - [ ] Mirage proxy integration
 - [ ] WebAssembly plugin development
@@ -292,6 +321,7 @@ customElements.define('titanium-video', TitaniumVideo);
 - [ ] 3D printer testing
 
 ### Long Term (Month 4-6)
+
 - [ ] Multi-camera support
 - [ ] Advanced video analytics
 - [ ] Cloud storage integration
@@ -301,18 +331,21 @@ customElements.define('titanium-video', TitaniumVideo);
 ## Testing Strategy
 
 ### Unit Testing
+
 - Camera capture functionality
 - Encoding performance
 - Memory usage validation
 - Error handling scenarios
 
 ### Integration Testing
+
 - WebRTC connection establishment
 - Mirage proxy compatibility
 - Multi-client streaming
 - Network condition simulation
 
 ### 3D Printer Validation
+
 - Print quality impact assessment
 - Thermal management testing
 - Long-duration reliability
@@ -321,11 +354,13 @@ customElements.define('titanium-video', TitaniumVideo);
 ## Performance Benchmarks
 
 ### Baseline Performance (RPi 4)
+
 - **720p30 MJPEG**: 8% CPU, 45MB RAM
 - **720p30 H.264**: 18% CPU, 85MB RAM
 - **1080p30 H.264**: 28% CPU, 110MB RAM
 
 ### Target Performance (RPi 5)
+
 - **720p30 H.264**: 12% CPU, 75MB RAM
 - **1080p30 H.264**: 20% CPU, 95MB RAM
 - **1080p60 H.264**: 30% CPU, 125MB RAM
