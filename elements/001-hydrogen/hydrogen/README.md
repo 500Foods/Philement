@@ -62,6 +62,7 @@ Hydrogen is currently designed for technical users who:
 - [**Shutdown Architecture**](docs/shutdown_architecture.md) - Graceful shutdown procedures
 - [**Thread Monitoring**](docs/thread_monitoring.md) - Thread management and monitoring
 - [**WebSocket Implementation**](docs/web_socket.md) - WebSocket server architecture
+- [**Mirage Proxy**](docs/MIRAGE.md) - WebSocket tunneling for remote device access
 - [**mDNS Server**](docs/mdns_server.md) - Service discovery implementation
 - [**Print Queue System**](docs/print_queue.md) - 3D printing queue management
 - [**OIDC Integration**](docs/oidc_integration.md) - OpenID Connect authentication
