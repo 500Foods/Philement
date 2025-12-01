@@ -98,7 +98,7 @@ The SVG data for a handful of these icons are currently used in the database dia
 
 ## Repository Information
 
-<div style="display: flex; background: none !important; border: none !impoertant; flex-direction: column; align-items: start; gap: 0px;">
+<div style="display: flex; background: none !important; border: none !important; flex-direction: column; align-items: start; gap: 0px;">
   <img src="images/CLOC_CODE.svg" alt="CLOC Code Analysis" style="margin: -25px 0px 0px -20px;">
   <img src="images/CLOC_STAT.svg" alt="CLOC Extended Statistics" style="margin: -25px 0px 0px -20px;">
 </div>
