@@ -269,7 +269,10 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
         log_this(SR_TERMINAL, "Shell spawned successfully - PID: %d, PTY: %s", LOG_LEVEL_STATE, 2, pid, slave_name);
 
         // Wait briefly to ensure shell starts successfully
-        usleep(10000); // 10ms
+        // Increased from 10ms to 100ms to handle race condition where
+        // fast-exiting processes (like /bin/false) may not have terminated
+        // and had their status updated within the original 10ms window
+        usleep(100000); // 100ms
 
         // Check if process is still running
         int status;

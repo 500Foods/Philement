@@ -129,7 +129,7 @@ This test is part of the Hydrogen testing framework and runs automatically with:
 
 ## Related Documentation
 
-- [Test Framework Overview](../README.md)
+- [Test Framework Overview](../TESTING.md)
 - [Database Tests](../docs/test_30_database.md)
 - [System Endpoint Tests](../docs/test_21_system_endpoints.md)
 - [Conduit Service](../../docs/plans/CONDUIT.md)

@@ -8,7 +8,7 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
-#include "../../../../src/database/database_cache.h"
+#include <src/database/database_cache.h>
 
 // Test function prototypes
 void test_query_cache_create_destroy(void);

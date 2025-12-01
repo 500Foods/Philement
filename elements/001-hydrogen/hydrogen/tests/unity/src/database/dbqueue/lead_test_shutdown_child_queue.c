@@ -8,7 +8,7 @@
 #include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/dbqueue/dbqueue.h"
+#include <src/database/dbqueue/dbqueue.h>
 
 // Forward declarations for functions being tested
 bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* queue_type);

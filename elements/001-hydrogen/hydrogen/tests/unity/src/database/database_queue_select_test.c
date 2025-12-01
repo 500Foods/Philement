@@ -9,8 +9,8 @@
 #include <unity.h>
 
 // Include source headers
-#include "../../../../src/database/dbqueue/dbqueue.h"
-#include "../../../../src/database/database_queue_select.h"
+#include <src/database/dbqueue/dbqueue.h>
+#include <src/database/database_queue_select.h>
 
 // Test function prototypes
 void test_select_optimal_queue_null_parameters(void);

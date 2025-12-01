@@ -8,8 +8,8 @@
 #include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/database/database.h"
-#include "../../../../src/database/database_execute.h"
+#include <src/database/database.h>
+#include <src/database/database_execute.h>
 
 // Forward declarations for functions being tested
 time_t calculate_queue_query_age(DatabaseQueue* db_queue);

@@ -3,7 +3,7 @@
 ## ESSENTIAL PREREQUISITES
 
 - [INSTRUCTIONS.md](../../INSTRUCTIONS.md) - C development standards and build processes
-- [tests/README.md](../../tests/README.md) - Testing framework overview
+- [tests/TESTING.md](../../tests/TESTING.md) - Testing framework overview
 - [docs/reference/database_architecture.md](../reference/database_architecture.md) - Architecture specs
 - [src/queue/queue.c](../../src/queue/queue.c) - Queue infrastructure to extend
 - [src/config/config_databases.c](../../src/config/config_databases.c) - Existing config system

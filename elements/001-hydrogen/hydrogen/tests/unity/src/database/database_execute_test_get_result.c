@@ -8,7 +8,7 @@
 #include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/database/database.h"
+#include <src/database/database.h>
 
 // Forward declarations for functions being tested
 bool database_get_result(const char* query_id, const char* result_buffer, size_t buffer_size);

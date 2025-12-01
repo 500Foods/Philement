@@ -5,8 +5,8 @@
 Hydrogen project. Use elements/001-hydrogen/hydrogen as the base for the project and everything we're doing here.
 
 Review INSTRUCTIONS.md
-Review tests/README.md
-Review tests/UNITY.md
+Review tests/TESTING.md
+Review tests/TESTING_UNITY.md
 Review docs/plans/DATABASE_PLAN.md
 
 ## Purpose

@@ -9,10 +9,10 @@
 #include <unity.h>
 
 // Include necessary headers
-#include "../../../../src/terminal/terminal.h"
-#include "../../../../src/terminal/terminal_session.h"
-#include "../../../../src/webserver/web_server_core.h"
-#include "../../../../src/webserver/web_server_compression.h"
+#include <src/terminal/terminal.h>
+#include <src/terminal/terminal_session.h>
+#include <src/webserver/web_server_core.h>
+#include <src/webserver/web_server_compression.h>
 
 // System headers
 #include <sys/stat.h>

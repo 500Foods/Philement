@@ -4,7 +4,7 @@
 
 - [**INSTRUCTIONS.md**](../..//INSTRUCTIONS.md) - Critical development guide with C programming requirements, build configurations, and Hydrogen development patterns
 - [**README.md**](../..//README.md) - Project overview, architecture, and testing status information
-- [**tests/README.md**](../../tests/README.md) - Complete testing framework documentation and test suite structure
+- [**tests/TESTING.md**](../../tests/TESTING.md) - Complete testing framework documentation and test suite structure
 
 ## RECOMMENDED: Understanding context and inspiration
 

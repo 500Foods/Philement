@@ -195,7 +195,7 @@ The Hydrogen project provides a standardized template (test_template.sh) to help
 2. Follow the naming pattern: `hydrogen_test_[scenario].json`
 
 3. When using custom configurations:
-   - Use unique port numbers (see Port Configuration in tests/README.md)
+   - Use unique port numbers (see Port Configuration in tests/TESTING.md)
    - Document special requirements
    - Maintain relative paths for portability
    - Set appropriate logging levels
@@ -226,7 +226,7 @@ The Hydrogen project provides a standardized template (test_template.sh) to help
    - Include example usage
    - Explain configuration requirements
 
-See [tests/README.md](../tests/README.md) for detailed examples and the complete test template documentation.
+See [tests/TESTING.md](../tests/TESTING.md) for detailed examples and the complete test template documentation.
 
 ## Testing Guidelines
 

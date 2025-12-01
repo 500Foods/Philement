@@ -171,7 +171,7 @@ For deeper understanding of how these metrics are generated and integrated into 
 - **[Coverage Analysis System](../../tests/docs/coverage.md)** - Comprehensive coverage calculation and reporting architecture
 - **[Testing Framework](../../docs/testing.md)** - Overview of the complete testing approach and philosophy
 - **[Test Framework Libraries](../../tests/docs/LIBRARIES.md)** - All modular testing libraries and their functions
-- **[Blackbox Testing Guide](../../tests/README.md)** - Primary documentation for blackbox/integration testing framework
-- **[Unity Unit Testing](../../tests/UNITY.md)** - Primary introduction to unit testing details and framework
+- **[Blackbox Testing Guide](../../tests/TESTING.md)** - Primary documentation for blackbox/integration testing framework
+- **[Unity Unit Testing](../../tests/TESTING_UNITY.md)** - Primary introduction to unit testing details and framework
 
 These documents provide the technical foundation that makes the metrics system possible and show how deeply integrated metrics generation is with the overall build and testing infrastructure.

@@ -241,10 +241,6 @@ int main(void) {
     RUN_TEST(test_pty_spawn_shell_premature_termination);
     RUN_TEST(test_pty_is_running_process_terminated_pid_returned);
 
-    // Allow time for any async logging to complete. This test for some reason
-    // has issues with claiming it is failing, yet when it runs it never seems to
-    // fail. The idea is to have a sleep for a short time to mitigate any issues.
-    sleep(5);
-
     return UNITY_END();
+
 }

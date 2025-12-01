@@ -8,7 +8,7 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
-#include "../../../../../src/api/conduit/conduit_service.h"
+#include <src/api/conduit/conduit_service.h>
 
 // Test function prototypes
 void test_conduit_service_test_init_success(void);

@@ -80,7 +80,7 @@ Hydrogen is currently designed for technical users who:
 - [**Build Scripts & Utilities**](extras/README.md) - Build scripts and diagnostic tools
 - [**API Implementation**](src/api/README.md) - API implementation details
 - [**Payload System**](payloads/README.md) - Payload system with encryption
-- [**Testing Suite**](tests/README.md) - Test framework and procedures
+- [**Testing Suite**](tests/TESTING.md) - Test framework and procedures
 
 ## Attributions
 

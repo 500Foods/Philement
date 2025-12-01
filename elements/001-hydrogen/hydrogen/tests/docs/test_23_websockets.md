@@ -165,7 +165,7 @@ This test verifies the WebSocket server functionality in the Hydrogen system, en
 
 ## Related Documentation
 
-- **Main Test Suite:** [tests/README.md](../README.md)
+- **Main Test Suite:** [tests/TESTING.md](../TESTING.md)
 - **Project Overview:** [SITEMAP.md](../../SITEMAP.md)
 - **WebSocket Documentation:** [docs/web_socket.md](../../docs/web_socket.md)
 - **Configuration Guide:** [docs/configuration.md](../../docs/configuration.md)

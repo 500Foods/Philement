@@ -8,7 +8,7 @@
 #include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/database/database.h"
+#include <src/database/database.h>
 
 // Forward declarations for functions being tested
 void database_get_queue_counts_by_type(int* lead_count, int* slow_count, int* medium_count, int* fast_count, int* cache_count);
