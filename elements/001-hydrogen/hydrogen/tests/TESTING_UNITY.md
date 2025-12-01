@@ -7,7 +7,7 @@ IMPORTANT: The main purpose of the Unity Framework Testing in this project is to
 
 ## MOCKS
 
-A separate document specifically about the Mocks avaialble and how to use them can be found in [unity/mocks/README.md](unity/mocks/README.md).
+A separate document specifically about the Mocks available and how to use them can be found in [unity/mocks/README.md](unity/mocks/README.md).
 
 ## GENERAL FILE/FOLDER CONVENTIONS
 
@@ -19,7 +19,7 @@ Other folders use the same file and folder conventions:
 - Unity gcov results are in build/unity/src/
 - Blacbox gcov results are in build/coverage/src/
 
-gcov files are named <source.c.gcov>`
+gcov files are named <source.c.gcov>
 
 ## Source Code Organization and Naming Convention
 
@@ -40,7 +40,8 @@ tests/unity/src/
 │   ├── payload_test_validate_payload_key.c     # Tests validate_payload_key() function
 │   ├── payload_test_free_payload.c             # Tests free_payload() function
 │   ├── payload_test_cleanup_openssl.c          # Tests cleanup_openssl() function
-│   └── payload_test_data_structure.c           # Tests PayloadData structure
+│   ├── payload_test_data_structure.c           # Tests PayloadData structure
+│   └── payload.c
 ├── swagger/
 │   ├── swagger_test_is_swagger_request.c       # Tests is_swagger_request() function
 │   ├── swagger_test_init_swagger_support.c     # Tests init_swagger_support() function
@@ -72,12 +73,12 @@ Each Unity test file should follow this structure:
  * This file contains unit tests for <module> functionality
  */
 
-// Standard project header plus Unity Framework header
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+/ Standard project header plus Unity Framework header
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "path/to/module.h"
+#include <src/path/to/module.h>
 
 // Forward declarations for functions being tested
 bool function_to_test(const SomeType* input);
@@ -108,11 +109,11 @@ void test_function_name_edge_cases(void) {
 
 int main(void) {
     UNITY_BEGIN();
-    
+
     RUN_TEST(test_function_name_basic_functionality);
     RUN_TEST(test_function_name_null_parameter);
     RUN_TEST(test_function_name_edge_cases);
-    
+
     return UNITY_END();
 }
 ```
@@ -198,12 +199,12 @@ void timeout_handler(int sig) {
 void test_function_with_potential_hang(void) {
     signal(SIGALRM, timeout_handler);
     alarm(2);  // 2-second timeout
-    
+
     bool result = potentially_slow_function();
-    
+
     alarm(0);  // Cancel alarm
     signal(SIGALRM, SIG_DFL);
-    
+
     TEST_ASSERT_FALSE(test_timeout);  // Ensure we didn't timeout
     TEST_ASSERT_TRUE(result);
 }
@@ -223,19 +224,19 @@ void test_function_with_potential_hang(void) {
 // Example pattern for testing configuration structures
 void test_config_structure_validation(void) {
     SwaggerConfig config = {0};
-    
+
     // Test initialization state
     TEST_ASSERT_FALSE(config.enabled);
     TEST_ASSERT_NULL(config.prefix);
-    
+
     // Test assignment
     config.enabled = true;
     config.prefix = strdup("/swagger");
-    
+
     // Test validation
     TEST_ASSERT_TRUE(config.enabled);
     TEST_ASSERT_EQUAL_STRING("/swagger", config.prefix);
-    
+
     // Cleanup
     free(config.prefix);
 }
@@ -590,7 +591,7 @@ void test_calculate_startup_time_before_ready(void) {
 // Bad: Assuming always positive without considering implementation
 void test_calculate_startup_time_before_ready(void) {
     set_server_start_time();
-    double startup_time = calculate_startup_time();
+    double startup_time = calculate_start_time();
     TEST_ASSERT_GREATER_THAN(0.0, startup_time);  // May fail if ready time not set
 }
 ```
@@ -664,18 +665,18 @@ The project currently provides the following mock libraries:
 
 ```c
 // Include necessary headers
-#include "../../../../src/hydrogen.h"
-#include "unity.h"
+#include <src/hydrogen.h>
+#include <unity.h>
 
 // Enable mocks BEFORE including source headers
 #define USE_MOCK_NETWORK
 #define USE_MOCK_SYSTEM
-#include "../../../../tests/unity/mocks/mock_network.h"
-#include "../../../../tests/unity/mocks/mock_system.h"
+#include <unity/mocks/mock_network.h>
+#include <unity/mocks/mock_system.h>
 
 // Include source headers (functions will be mocked)
-#include "../../../../src/network/network.h"
-#include "../../../../src/mdns/mdns_server.h"
+#include <src/network/network.h>
+#include <src/mdns/mdns_server.h>
 
 // Test setup
 void setUp(void) {
@@ -796,7 +797,7 @@ set(UNITY_MOCK_SOURCES
 
 ```c
 #define USE_MOCK_NEWFEATURE
-#include "../../../../tests/unity/mocks/mock_newfeature.h"
+#include <unity/mocks/mock_newfeature.h>
 ```
 
 ### Mock Integration in Build System
@@ -872,4 +873,3 @@ void test_mock_cleanup(void) {
     mock_system_reset_all();
     // Verify function works normally again
 }
-```

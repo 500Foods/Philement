@@ -15,7 +15,7 @@
 #define UNITY_TEST_MODE
 
 // Include mock headers FIRST to ensure macro redefinition works
-#include "../../mocks/mock_logging.h"
+#include <unity/mocks/mock_logging.h>
 
 // Standard project header plus Unity Framework header
 #include <src/hydrogen.h>

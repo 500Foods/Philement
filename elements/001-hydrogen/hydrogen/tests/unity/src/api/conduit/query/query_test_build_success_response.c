@@ -2,8 +2,8 @@
  * Unity Test File: Test build_success_response function
  * This file contains unit tests for src/api/conduit/query/query.c build_success_response function
  */
-
-#include "../../../../../src/hydrogen.h"
+                         
+#include <src/hydrogen.h>
 #include "unity.h"
 
 // Include necessary headers for the module being tested

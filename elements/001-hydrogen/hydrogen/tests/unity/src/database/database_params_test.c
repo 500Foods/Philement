@@ -8,7 +8,7 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
-#include "../../../../src/database/database_params.h"
+#include <src/database/database_params.h>
 
 // Function prototypes for test functions
 void test_parameter_type_to_string(void);

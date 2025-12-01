@@ -524,8 +524,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 ## Testing Framework
 
-- [tests/README.md](tests/README.md) - Testing documentation and procedures
-- [tests/UNITY.md](tests/UNITY.md) - Unity unit testing framework documentation
+- [tests/TESTING.md](tests/TESTING.md) - Testing documentation and procedures
+- [tests/TESTING_UNITY.md](tests/TESTING_UNITY.md) - Unity unit testing framework documentation
 - [tests/test_00_all.sh](tests/test_00_all.sh) - Orchestration script
 
 <details>

@@ -7,7 +7,7 @@ It includes test scripts, configuration files, support utilities, and detailed d
 
 The Hydrogen testing framework is designed to ensure the robustness and correctness of the server through a structured suite of blackbox (aka integration) tests. These tests cover various aspects including compilation, startup/shutdown sequences, API functionality, system endpoints, and code quality checks.
 
-NOTE: A separate document covers the [Unity Unit Test Framework](./UNITY.md).
+NOTE: A separate document covers the [Unity Unit Test Framework](./TESTING_UNITY.md).
 
 ## Core Components
 
@@ -41,7 +41,7 @@ NOTE: A separate document covers the [Unity Unit Test Framework](./UNITY.md).
 
 Below is a comprehensive list of all test scripts currently available in the suite, organized by category.
 With the exception of Test 01 (Compilation) and Test 11 (Unity) these are all considered "blackbox" tests in that they simply run the server and test it from an external point of view.
-Test 01 is just the script that bulids everything, so not really a test in itself, though it does do a number of checks for important things.  
+Test 01 is just the script that bulids everything, so not really a test in itself, though it does do a number of checks for important things.
 And Test 11 is all about Unity unit tests, where we have custom code written to call our app's functions directly, which is described in more detail below.
 
 ### Test Suite Management - Orchestration

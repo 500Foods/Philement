@@ -46,4 +46,4 @@ These libraries were created as part of the test suite migration to replace supp
 
 ## Related Documentation
 
-- [README.md](../README.md) - Main documentation for the Hydrogen test suite.
+- [TESTING.md](../TESTING.md) - Main documentation for the Hydrogen test suite.

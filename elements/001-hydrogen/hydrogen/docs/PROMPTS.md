@@ -11,8 +11,8 @@ Everything we're doing here assumes this as the project root.
 For example,  tests/ is in elements/001-hydrogen/hydrogen/tests
 
 Review INSTRUCTIONS.md.
-Review tests/README.md
-Review tests/UNITY.md
+Review tests/TESTING.md
+Review tests/TESTING_UNITY.md
 Review tests/unity/mocks/README.md
 
 We're working on improving overall unit test coverage for our C project. For Unity Framework unit tests, the primary goal is to increase our test coverage over what we have from existing Unity and Blackbox tests.  If code is already covered by one or both of those, we don't really need to write new unit tests for it.

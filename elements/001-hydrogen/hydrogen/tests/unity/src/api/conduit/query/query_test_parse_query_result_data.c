@@ -3,7 +3,7 @@
  * This file contains unit tests for src/api/conduit/query/query.c parse_query_result_data function
  */
 
-#include "../../../../../src/hydrogen.h"
+#include <src/hydrogen.h>
 #include "unity.h"
 
 // Include necessary headers for the module being tested
