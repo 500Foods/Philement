@@ -102,8 +102,8 @@ tests/          Test framework
 - RELEASES.md - release history and update instructions
 - SITEMAP.md - links to all markdown docs
 - STRUCTURE.md - links to all files
-- tests/README.md - blackbox/integration tests tests
-- tests/UNITY.md - Unity unit tests
+- tests/TESTING.md - blackbox/integration tests tests
+- tests/TESTING_UNITY.md - Unity unit tests
 - cmake/README.md - cmake build information
 
 ## C CODING REQUIREMENTS

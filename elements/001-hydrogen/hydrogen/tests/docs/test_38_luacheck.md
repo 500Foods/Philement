@@ -80,6 +80,6 @@ This test is part of the Hydrogen testing framework and runs automatically with:
 
 ## Related Documentation
 
-- [Test Framework Overview](../README.md)
+- [Test Framework Overview](../TESTING.md)
 - [Static Analysis Tests](../docs/test_90_markdownlint.md)
 - [Shell Script Linting](../docs/test_92_shellcheck.md)

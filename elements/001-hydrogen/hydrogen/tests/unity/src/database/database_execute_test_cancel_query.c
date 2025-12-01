@@ -8,7 +8,7 @@
 #include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/database/database.h"
+#include <src/database/database.h>
 
 // Forward declarations for functions being tested
 bool database_cancel_query(const char* query_id);

@@ -9,9 +9,9 @@
 #include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/migration/migration.h"
-#include "../../../../../src/utils/utils_time.h"
+#include <src/database/database.h>
+#include <src/database/migration/migration.h>
+#include <src/utils/utils_time.h>
 
 // Forward declarations for functions being tested
 bool database_queue_lead_process_queries(DatabaseQueue* lead_queue);

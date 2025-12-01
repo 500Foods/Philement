@@ -8,7 +8,7 @@
 
 // Enable mock_system for malloc failure testing
 #define USE_MOCK_SYSTEM
-#include "../../../../../tests/unity/mocks/mock_system.h"
+#include <tests/unity/mocks/mock_system.h>
 
 #include <unity.h>
 

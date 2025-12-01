@@ -9,13 +9,13 @@
 #include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../../src/database/database.h"
-#include "../../../../../src/database/migration/migration.h"
-#include "../../../../../src/utils/utils_time.h"
+#include <src/database/database.h>
+#include <src/database/migration/migration.h>
+#include <src/utils/utils_time.h>
 
 // Local includes
-#include "../../../../unity/mocks/mock_launch.h"
-#include "../../../../unity/mocks/mock_landing.h"
+#include <unity/mocks/mock_launch.h>
+#include <unity/mocks/mock_landing.h>
 
 // Forward declarations for functions being tested
 bool database_queue_lead_run_migration_test(DatabaseQueue* lead_queue);

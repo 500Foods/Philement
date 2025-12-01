@@ -9,7 +9,7 @@
 #include <unity.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/database/database.h"
+#include <src/database/database.h>
 
 // Forward declarations for functions being tested
 char* database_escape_parameter(const char* parameter);

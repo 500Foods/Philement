@@ -7,8 +7,8 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
-#include "../../../../src/database/database_pending.h"
-#include "../../../../src/database/database.h"
+#include <src/database/database_pending.h>
+#include <src/database/database.h>
 
 // Function prototypes for Unity tests
 void test_pending_result_manager_create_destroy(void);
