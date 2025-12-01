@@ -386,7 +386,7 @@ size_t count_format_specifiers(const char* format) {
         }
 
         // Skip flags
-        while (*ptr == '-' || *ptr == '+' || *ptr == ' ' || *ptr == '#' || *ptr == '0') ptr++;
+        while (*ptr == '-' || *ptr == '+' || *ptr == ' ' || *ptr == '#' || *ptr == '0' || *ptr == '\'') ptr++;
 
         // Skip width
         if (*ptr == '*') ptr++;
@@ -407,10 +407,6 @@ size_t count_format_specifiers(const char* format) {
 
         // Check for conversion specifier
         if (strchr("diouxXeEfFgGaAcspn", *ptr)) {
-            count++;
-            ptr++;
-        } else if (*ptr) {
-            // Invalid specifier, but count it anyway to be safe
             count++;
             ptr++;
         }

@@ -212,7 +212,7 @@ create_terminal_interface() {
                 }
             });
 
-            term.writeln('\x1b[32mHydrogen Terminal Ready\x1b[0m\r\n$ ');
+            term.writeln('\x1b[32mInitializing session...\x1b[0m');
 
             updateHeaderInfo();
         }
