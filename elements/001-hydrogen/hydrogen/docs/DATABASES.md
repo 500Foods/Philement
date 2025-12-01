@@ -38,7 +38,7 @@ For more details on Lua scripting, sqruff usage, and the migration system, see [
 
 - **JSON.** PG doesn't like passing in NULL as a JSON value but instead requires '{}' which is unique to PG it seems.
 
-- **JSON.** As with MySQL/MariaDB and DB2, sending pretty-printed JSON with newlines and so on doesn't work particularly well, so a special [JSON_INGEST UDF](../extras/json_ingest_udf_postgresql/README.md) is provided to strip out newlines and basically take the JSON as we've laid it out in the Lua migration scripts and work with it.
+- **JSON.** As with MySQL/MariaDB and DB2, sending pretty-printed JSON with newlines and so on doesn't work particularly well, so a special JSON_INGEST function is provided to strip out newlines and basically take the JSON as we've laid it out in the Lua migration scripts and work with it.
 
 - **BASE64.** Nothing special here as there are Base64 encode/decode functions available and the output can easily be converted to strings as needed.
 
@@ -48,7 +48,7 @@ For more details on Lua scripting, sqruff usage, and the migration system, see [
 
 - **FLAVORS.** MySQL and MariaDB parted ways a good long time ago, but are often treated as the same engine, using the same C libraries and command-line commands. As we are in fact doing. But they are not the same and it is something to keep in mind when problems arise. While every effort is made to try to ensure that they work as one in terms of our implementation, MariaDB is what is used for dev work, so incompatibilities may well be present when using MySQL or even older or newer versions of MariaDB.
 
-- **JSON.** As with PostgreSQL and DB2, sending pretty-printed JSON with newlines and so on doesn't work particularly well, so a special [JSON_INGEST UDF](../extras/json_ingest_udf_mysql/README.md) is provided to strip out newlines and basically take the JSON as we've laid it out in the Lua migration scripts and work with it.
+- **JSON.** As with PostgreSQL and DB2, sending pretty-printed JSON with newlines and so on doesn't work particularly well, so a special JSON_INGEST function is provided to strip out newlines and basically take the JSON as we've laid it out in the Lua migration scripts and work with it.
 
 - **BASE64.** Nothing special here as there are Base64 encode/decode functions available and the output can easily be converted to strings as needed.
 
@@ -58,7 +58,7 @@ For more details on Lua scripting, sqruff usage, and the migration system, see [
 
 ## SQLite
 
-- **JSON.** No direct support for JSON is provided, so we're basically just storing it as text. This is a bit of a nuisance when it comes to writing queries to extract values from JSON.
+- **JSON.** No direct support for JSON datatypes is provided, so we're basically just storing it as text. The JSON parser used by SQLite for extracting data is able to use JSON as we've stored it - far more robust than the other engines in this regard.
 
 - **BASE64.** There are no built-in Base64 encode/decode functions, but they are easily made available through sqlean - a set of SQLite extensions that has these tucked into its crypto library. So that's an additional dependency specifically for SQLite.
 
@@ -70,7 +70,7 @@ For more details on Lua scripting, sqruff usage, and the migration system, see [
 
 - **TEXT.** As mentioned earlier, DB2 has a curious restriction where static strings in SQL statements are limited to 32 KB. This has implications for our migrations, where the CSS in themes, and potentially some JSON, could extend beyond 32 KB. This is particularly the case when factoring in the 33.333% overhead of Base64 encoding. A 25 KB file would thus be more than 32 KB. This limitation does not apply to parameter passing, so during normal operation, larger strings can be processed via parameters without issue. In the case of migrations, there are not currently any parameters, nor are there any mechanisms to support parameters easily. And even if there were, we'd still have to somehow get the parameter value into the database, where we'd face the exact same issue. So for now, we're limited to using Brotli+Base64 compression+encoding which, when applied to the typical CSS or JSON we're using, should allow for uncompressed+unencoded files in the range of 150 KB - 200 KB. Which is likely far larger than any individual CSS or JSON file in our project, at least at the migration stage.
 
-- **JSON.** As with PostgreSQL and MySQL/MariaDB, sending pretty-printed JSON with newlines and so on doesn't work particularly well, so a special [JSON_INGEST UDF](../extras/json_ingest_udf_db2/README.md) is provided to strip out newlines and basically take the JSON as we've laid it out in the Lua migration scripts and work with it.
+- **JSON.** As with PostgreSQL and MySQL/MariaDB, sending pretty-printed JSON with newlines and so on doesn't work particularly well, so a special JSON_INGEST function is provided to strip out newlines and basically take the JSON as we've laid it out in the Lua migration scripts and work with it.
 
 - **BASE64.** Less fun here. There are some versions of DB2 (z-Series, for example) that have Base64 features natively. LUW doesn't seem to be one of those. So we've written a C-based UDF for Base64 decode to provide support for this, found in the [extras/base64decode_udf_db2](../extras/base64decode_udf_db2/README.md) folder. This should be treated as a dependency as the migration scripts rely upon it heavily. Some effort went into this to ensure that it works with our CLOB(1M) size, so not restricted to a 32KB VARCHAR that UDFs might typically default to. This should work on all DB2 variants > 9.7 or so, but has only been officially tested on 11 and 12 so far. Be sure to look over the README carefully if building this for other databases.
 
