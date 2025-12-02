@@ -2,13 +2,55 @@
 
 This folder contains utility scripts and one-off diagnostic tools for the Hydrogen project.
 
+## Contents
+
+- [Database Extensions](#database-extensions)
+  - [Available UDF Functions](#available-udf-functions)
+- [Build Scripts](#build-scripts)
+  - [`make-all.sh`](#make-allsh)
+  - [`make-clean.sh`](#make-cleansh)
+  - [`make-trial.sh`](#make-trialsh)
+- [Integration with Build System](#integration-with-build-system)
+- [Development Workflow](#development-workflow)
+- [Error Handling](#error-handling)
+- [Utility Scripts](#utility-scripts)
+  - [`add_coverage.sh`](#add_coveragesh)
+  - [`comment-analysis.sh`](#comment-analysissh)
+  - [`filter-log.sh`](#filter-logsh)
+  - [`make-email.sh`](#make-emailsh)
+  - [`migrate_paths.sh`](#migrate_pathssh)
+  - [`run-unity-test.sh`](#run-unity-testsh)
+- [Payload Tools](#payload-tools)
+  - [`debug_payload.c`](#debug_payloadc)
+  - [`find_all_markers.c`](#find_all_markersc)
+  - [`test_payload_detection.c`](#test_payload_detectionc)
+- [Payload Marker Format](#payload-marker-format)
+- [MKU Tab Completion](#mku-tab-completion)
+  - [Overview](#overview)
+  - [Files](#files)
+  - [Important Setup Notes](#important-setup-notes)
+  - [Installation](#installation)
+  - [How It Works](#how-it-works)
+  - [Cache Management](#cache-management)
+  - [Usage](#usage)
+  - [Commands](#commands)
+  - [Features](#features)
+  - [Troubleshooting](#troubleshooting)
+  - [Technical Details](#technical-details)
+
 ## Database Extensions
 
-- [base64decode_udf_db2](base64decode_udf_db2/README.md) Base64 Decode UDF for IBM DB2 (LUW)
+This is a collection of user-defined-functions (UDFs), all written in C and used consistently across DB2, MySQL/MariaDB, PostgreSQL, and SQLite.
+
+Brotli is a popular compression algorithm that is particularly good at compressing text files like the JSON and CSS files that are found throughout the migration system.
+
+MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 decoding but it is less standard on DB2 (LUW) so we have one for that as well.
+
 - [brotli_udf_db2](brotli_udf_db2/README.md) Brotli Decompress UDF for IBM DB2 (LUW)
+- [base64decode_udf_db2](base64decode_udf_db2/README.md) Base64 Decode UDF for IBM DB2 (LUW)
 - [brotli_udf_mysql](brotli_udf_mysql/README.md) Brotli Decompress UDF for MySQL/MariaDB
 - [brotli_udf_postgresql](brotli_udf_postgresql/README.md) Brotli Decompress UDF for PostgreSQL
-- [brotli_udf_sqlite](brotli_udf_sqlite/README.md) Base64 Brotli Decompress UDF for SQLite
+- [brotli_udf_sqlite](brotli_udf_sqlite/README.md) Brotli Decompress UDF for SQLite
 
 ### Available UDF Functions
 
@@ -70,7 +112,135 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
 ./make-trial.sh
 ```
 
+## Integration with Build System
+
+These scripts integrate with the CMake build system:
+
+- `make-trial.sh` corresponds to `cmake --build . --target trial`
+- `make-clean.sh` provides functionality beyond `cmake --build . --target clean_all`
+- `make-all.sh` provides legacy Makefile compatibility
+
+## Development Workflow
+
+Typical development workflow using these tools:
+
+1. **Development cycle:** Use `make-trial.sh` for quick iteration
+2. **Full testing:** Use `make-all.sh` for comprehensive compilation testing
+3. **Cleanup:** Use `make-clean.sh` to reset build environment
+4. **Payload debugging:** Use one-off tools when investigating payload issues
+
+## Error Handling
+
+All scripts include proper error handling and return appropriate exit codes:
+
+- `0`: Success
+- `1`: General error or failure
+- Scripts provide colored output for better visibility of results
+
 ## Utility Scripts
+
+### `add_coverage.sh`
+
+**Purpose:** Coverage Analysis Tool
+**Description:** Identifies lines with missing coverage in both gcov files by comparing Unity test coverage and blackbox test coverage. This script:
+
+- Parses two .gcov files (assumed to be for the same source file)
+- Finds lines that are uncovered (##### or -----) in *both* files
+- Prints those line numbers along with the corresponding source code snippet
+- Helps identify areas that need additional test coverage
+
+**Usage:**
+
+```bash
+./add_coverage.sh <unit_tests.gcov> <black_box_tests.gcov>
+```
+
+**Features:**
+
+- ✅ Cross-references coverage data from different test suites
+- ✅ Shows exact line numbers and source code of uncovered lines
+- ✅ Helps prioritize test development efforts
+- ✅ Provides clear output for code review and quality improvement
+
+### `comment-analysis.sh`
+
+**Purpose:** Comment Density Analysis
+**Description:** Analyzes comment density in Test C/Headers, Core C/Headers, and Bourne Shell files. This script:
+
+- Uses cloc to analyze code structure and comment ratios
+- Outputs files sorted by descending comment-to-code percentage
+- Shows only files with >50% comment ratios for balance assessment
+- Generates comprehensive reports with the TABLES program
+- Provides visual analysis of code documentation quality
+
+**Usage:**
+
+```bash
+# Analyze current directory
+./comment-analysis.sh
+
+# Analyze specific directory
+./comment-analysis.sh /path/to/project
+
+# Output to file
+./comment-analysis.sh /path/to/project output.txt
+```
+
+**Features:**
+
+- ✅ Multi-language support (C, C++, Shell)
+- ✅ Category-based analysis (Test vs Core code)
+- ✅ Filtering for high-comment files (>50% threshold)
+- ✅ Professional table formatting with statistics
+- ✅ Integration with cloc and jq for robust analysis
+- ✅ Timestamped reports for tracking progress
+
+**Requirements:**
+
+- `cloc` for code analysis
+- `tables` for report formatting
+- `jq` for JSON processing
+
+### `migrate_paths.sh`
+
+**Purpose:** Include Path Migration Tool
+**Description:** Migrates C/C++ include paths from relative to cmake-style includes. This script:
+
+- Converts relative includes to cmake-style absolute includes
+- Handles common patterns like `#include "../hydrogen.h"` → `#include <src/hydrogen.h>`
+- Processes individual files or entire directories recursively
+- Creates backups before making changes
+- Supports migration of Unity test includes
+
+**Usage:**
+
+```bash
+# Migrate a single file
+./migrate_paths.sh src/websocket/websocket_server_message.c
+
+# Migrate an entire directory
+./migrate_paths.sh src/
+
+# Migrate test directory
+./migrate_paths.sh tests/unity/src/
+```
+
+**Migration Patterns:**
+
+1. `#include "unity.h"` → `#include <unity.h>`
+2. `#include "../hydrogen.h"` → `#include <src/hydrogen.h>`
+3. `#include "../../../../src/something"` → `#include <src/something>`
+4. `#include "../../../../tests/unity/something"` → `#include <unity/something>`
+5. `#include <config/something>` → `#include <src/config/something>`
+
+**Features:**
+
+- ✅ Automatic backup creation with timestamps
+- ✅ Recursive directory processing
+- ✅ Color-coded output for better visibility
+- ✅ Comprehensive error handling
+- ✅ Support for C/C++/H/HPP files
+- ✅ Dry-run capability for safety
 
 ### `run-unity-test.sh`
 
@@ -151,9 +321,58 @@ test_file.c:173:another_test:FAIL
 ./hydrogen | ./filter-log.sh
 ```
 
-## One-Off Diagnostic Tools
+### `make-email.sh`
 
-The `one-offs/` directory contains specialized C programs for debugging and testing payload embedding functionality. These came about during various development debugging sessions where
+**Purpose:** Email Notification Script
+**Description:** Sends email notification with test results and SVG charts. This script:
+
+- Generates HTML email with build statistics and test results
+- Embeds SVG charts (COMPLETE.svg, CLOC_CODE.svg, CLOC_STAT.svg) for visual analysis
+- Uses mutt for email delivery with proper HTML formatting
+- Requires HYDROGEN_DEV_EMAIL environment variable for recipients
+- Extracts metrics from JSON files and formats them for readability
+
+**Usage:**
+
+```bash
+# Set recipient email first
+export HYDROGEN_DEV_EMAIL="recipient@example.com"
+
+# Run email notification script
+./make-email.sh
+```
+
+**Features:**
+
+- ✅ Automatic detection of available SVG charts
+- ✅ HTML email formatting with responsive design
+- ✅ Build version and timestamp information
+- ✅ Test statistics with formatted numbers (thousands separators)
+- ✅ Error handling for missing dependencies (mutt)
+- ✅ Support for multiple recipients (comma-separated)
+- ✅ Clean temporary file management
+
+**Requirements:**
+
+- `mutt` must be installed for email delivery
+- `HYDROGEN_DEV_EMAIL` environment variable must be set
+- SVG charts should be available in `images/` directory
+- Metrics JSON file should be available in `docs/metrics/`
+
+**Example Email Content:**
+
+The script generates a professional HTML email with:
+
+- Hydrogen build number and version information
+- Test pass/fail statistics with formatted numbers
+- Elapsed time information
+- Embedded SVG charts showing test results and code metrics
+- Responsive dark theme styling
+- Timestamp and footer information
+
+## Payload Tools
+
+The `payload/` directory contains specialized C programs for debugging and testing payload embedding functionality. These came about during various development debugging sessions where
 some particular feature needed to be tested in a standalone fashion. The code tends to be
 either non-trivial or non-obvious, so these were kept for future posterity.
 
@@ -253,31 +472,6 @@ All payload detection tools use the standard Hydrogen payload format:
 ```
 
 The 8-byte size field contains the payload size in bytes, stored in big-endian format. The payload data is located immediately before the marker, starting at `(marker_offset - payload_size)`.
-
-## Integration with Build System
-
-These scripts integrate with the CMake build system:
-
-- `make-trial.sh` corresponds to `cmake --build . --target trial`
-- `make-clean.sh` provides functionality beyond `cmake --build . --target clean_all`
-- `make-all.sh` provides legacy Makefile compatibility
-
-## Development Workflow
-
-Typical development workflow using these tools:
-
-1. **Development cycle:** Use `make-trial.sh` for quick iteration
-2. **Full testing:** Use `make-all.sh` for comprehensive compilation testing
-3. **Cleanup:** Use `make-clean.sh` to reset build environment
-4. **Payload debugging:** Use one-off tools when investigating payload issues
-
-## Error Handling
-
-All scripts include proper error handling and return appropriate exit codes:
-
-- `0`: Success
-- `1`: General error or failure
-- Scripts provide colored output for better visibility of results
 
 ## MKU Tab Completion
 
