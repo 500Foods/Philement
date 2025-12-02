@@ -31,7 +31,6 @@
 # 2.0.1 - 2025-07-01 - Updated to use predefined CMake build variants instead of parsing Makefile
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 
-#
 # ASAN BUILD SKIPPING RATIONALE
 #
 # We skip ASAN (AddressSanitizer) builds in this crash handler test for several important reasons:
@@ -267,13 +266,14 @@ analyze_core_with_gdb() {
     }
 
     # Clean up temp file if it exists
-    [[ -f "${temp_output:-}" ]] && rm -f "${temp_output}" || true
+    [[ -f "${temp_output:-}" ]] && rm -f "${temp_output}"
     
     # Check for crash handler patterns in gdb output
     local has_backtrace=0
     local has_test_crash=0
 
     # Check for ASAN builds first
+    # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
     if detect_asan_build "${binary}"; then
         echo "DEBUG: ASAN build - looking for ASAN-specific patterns"
         # For ASAN builds, look for ASAN-specific patterns
@@ -354,10 +354,13 @@ wait_for_crash_completion() {
         fi
 
         # Check if process is stuck or unresponsive
-        if [[ ${elapsed} -gt 3 ]] && [[ ${elapsed} -lt ${timeout} ]]; then
-            local process_status=$(ps -p "${pid}" -o stat= 2>/dev/null || echo "")
-            # echo "DEBUG: wait_for_crash_completion: PID ${pid} status: ${process_status}"
-        fi
+        # if [[ ${elapsed} -gt 3 ]] && [[ ${elapsed} -lt ${timeout} ]]; then
+        #     # Variable is declared but intentionally unused - it's here for potential future debugging
+        #     # shellcheck disable=SC2034 # process_status is declared but unused (available for debugging)
+        #     local process_status
+        #     process_status=$(ps -p "${pid}" -o stat= 2>/dev/null || echo "")
+        #     # echo "DEBUG: wait_for_crash_completion: PID ${pid} status: ${process_status}"
+        # fi
 
         sleep 0.1
     done
@@ -377,6 +380,7 @@ run_crash_test_parallel() {
     true > "${result_file}"
     
     # Start hydrogen server in background with appropriate ASAN options
+    # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
     if detect_asan_build "${binary}"; then
         # For ASAN builds, use more permissive options to avoid early termination
         ASAN_OPTIONS="detect_leaks=0:abort_on_error=0:halt_on_error=0:allocator_may_return_null=1" "${binary}" "${TEST_CONFIG}" > "${log_file}" 2>&1 &
@@ -394,8 +398,10 @@ run_crash_test_parallel() {
 
     # ASAN builds may need more time to start
     local effective_startup_timeout=${STARTUP_TIMEOUT}
+    # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
     if detect_asan_build "${binary}"; then
         effective_startup_timeout=$((STARTUP_TIMEOUT * 2))  # Double timeout for ASAN builds
+        # shellcheck disable=SC2154 # STARTUP_TIMEOUT is defined in framework.sh
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ASAN build detected - using extended startup timeout: ${effective_startup_timeout}s"
     fi
 
@@ -413,13 +419,16 @@ run_crash_test_parallel() {
             break
         fi
 
+        # shellcheck disable=SC2310 # We want to continue even if grep fails to find startup message
         if "${GREP}" -q "STARTUP COMPLETE" "${log_file}" 2>/dev/null; then
             startup_complete=true
             break
         fi
 
         # For ASAN builds, also check for ASAN initialization messages
+        # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
         if detect_asan_build "${binary}"; then
+            # shellcheck disable=SC2310 # We want to continue even if grep fails to find ASAN message
             if "${GREP}" -q "AddressSanitizer" "${log_file}" 2>/dev/null; then
                 # ASAN is initializing, give it more time
                 continue
@@ -438,6 +447,7 @@ run_crash_test_parallel() {
     fi
     
     # Send appropriate signal based on build type
+    # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
     if detect_asan_build "${binary}"; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ASAN build detected - using SIGABRT instead of SIGUSR1"
         # For ASAN builds, use SIGABRT which ASAN handles differently
@@ -448,11 +458,13 @@ run_crash_test_parallel() {
     fi
     
     # Wait for process to crash
-    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    # We want to continue even if the test fails to validate crash behavior
     # echo "DEBUG: Waiting for crash completion for PID ${hydrogen_pid} with timeout ${CRASH_TIMEOUT}"
+    # shellcheck disable=SC2310 # We want to continue even if crash completion check fails
     if ! wait_for_crash_completion "${hydrogen_pid}" "${CRASH_TIMEOUT}"; then
         echo "CRASH_FAILED: Process ${hydrogen_pid} did not crash within ${CRASH_TIMEOUT} seconds" > "${result_file}"
         # Check if process is still running
+        # shellcheck disable=SC2310 # We want to continue even if process check fails
         if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
             echo "Process ${hydrogen_pid} is still running - killing it" >> "${result_file}"
             kill -9 "${hydrogen_pid}" 2>/dev/null || true
@@ -473,9 +485,11 @@ run_crash_test_parallel() {
     # Perform GDB analysis if core file exists
     local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
 
-    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    # We want to continue even if core file verification fails
+    # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
     if verify_core_file "${binary}" "${hydrogen_pid}"; then
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        # We want to continue even if core file content verification fails
+        # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
         if verify_core_file_content "${core_file}" "${binary}"; then
             analyze_core_with_gdb "${binary}" "${core_file}" "${gdb_output_file}"
             echo "GDB_RESULT=$?" >> "${result_file}"
@@ -570,7 +584,8 @@ analyze_parallel_results() {
     local log_result=1
     
     # Verify debug symbols
-    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    # We want to continue even if debug symbol verification fails
+    # shellcheck disable=SC2310 # We want to continue even if debug symbol verification fails
     if verify_debug_symbols "${binary}"; then
         debug_result=0
     fi
@@ -579,6 +594,7 @@ analyze_parallel_results() {
     local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
 
     # Special handling for ASAN builds
+    # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
     if detect_asan_build "${binary}"; then
         echo "DEBUG: ASAN build detected - different crash behavior expected"
         # ASAN builds handle crashes differently - they should still crash but via ASAN's mechanism
@@ -593,9 +609,11 @@ analyze_parallel_results() {
         else
             echo "DEBUG: ASAN build crashed successfully"
             # If ASAN build did crash, verify normally but with more lenient expectations
+            # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
             if verify_core_file "${binary}" "${hydrogen_pid}"; then
                 core_result=0
                 # For ASAN builds, core file content verification is optional
+                # shellcheck disable=SC2310 # We want to continue even if core file content verification fails
                 verify_core_file_content "${core_file}" "${binary}" || true
             else
                 # ASAN builds may not produce core files, which is acceptable
@@ -604,12 +622,17 @@ analyze_parallel_results() {
         fi
     else
         # Normal handling for non-debug builds
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        # We want to continue even if core file verification fails
+        # shellcheck disable=SC2310 # We want to continue even if core file verification fails
+        # shellcheck disable=SC2310 # We want to continue even if core file verification fails
+        # shellcheck disable=SC2310 # We want to continue even if core file verification fails
+        # shellcheck disable=SC2310 # We want to continue even if core file verification fails
         if verify_core_file "${binary}" "${hydrogen_pid}"; then
             core_result=0
 
             # If core file exists, verify its contents
-            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            # We want to continue even if core file content verification fails
+            # shellcheck disable=SC2310 # We want to continue even if core file content verification fails
             if ! verify_core_file_content "${core_file}" "${binary}"; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Core file exists but content verification failed"
                 core_result=1
@@ -628,8 +651,11 @@ analyze_parallel_results() {
     fi
     
     # Verify crash handler log messages
+    # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
+    # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
     if detect_asan_build "${binary}"; then
         # For ASAN builds, look for SIGABRT or ASAN-related messages
+        # shellcheck disable=SC2310 # We want to continue even if grep fails to find crash messages
         if "${GREP}" -q -e "Received SIGABRT" -e "Signal 6 received" -e "AddressSanitizer" "${log_file}" 2>/dev/null; then
             # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ASAN crash handler messages in log"
             log_result=0
@@ -639,6 +665,8 @@ analyze_parallel_results() {
         fi
     else
         # For non-ASAN builds, look for normal SIGUSR1 messages
+        # shellcheck disable=SC2310 # We want to continue even if grep fails to find crash messages
+        # shellcheck disable=SC2310 # We want to continue even if grep fails to find crash messages
         if "${GREP}" -q -e "Received SIGUSR1" -e "Signal 11 received" "${log_file}" 2>/dev/null; then
             # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found crash handler messages in log"
             log_result=0
@@ -660,6 +688,7 @@ analyze_parallel_results() {
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Test Configuration File"
 
 # shellcheck disable=SC2310 # We want to continue even if the test fails
+# shellcheck disable=SC2310 # We want to continue even if config validation fails
 if validate_config_file "${TEST_CONFIG}"; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using minimal configuration for crash testing"
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Configuration validation passed"
@@ -673,6 +702,7 @@ fi
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify Core Dump Configuration"
 
 # shellcheck disable=SC2310 # We want to continue even if the test fails
+# shellcheck disable=SC2310 # We want to continue even if core dump config verification fails
 if ! verify_core_dump_config; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Core dump configuration issues detected"
     EXIT_CODE=1
@@ -831,6 +861,7 @@ for build in "${BUILDS[@]}"; do
 
     # Analyze the parallel test results
     #echo "DEBUG: Calling analyze_parallel_results for ${build_name}"
+    # shellcheck disable=SC2310 # We want to continue with other builds even if one fails
     if ! analyze_parallel_results "${build}"; then
         # echo "DEBUG: analyze_parallel_results failed for ${build_name}"
         EXIT_CODE=1
@@ -923,6 +954,7 @@ fi
 
 # echo "DEBUG: Successful builds calculation complete"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ${successful_builds}/${#BUILDS[@]} builds passed all crash handler tests"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "NOTE: ASAN builds are excluded from these tests"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

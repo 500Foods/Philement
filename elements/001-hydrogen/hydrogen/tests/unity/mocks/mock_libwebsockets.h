@@ -32,6 +32,7 @@ struct lws;
 #define lws_is_final_fragment mock_lws_is_final_fragment
 #define lws_write mock_lws_write
 #define lws_get_protocol mock_lws_get_protocol
+#define lws_callback_on_writable mock_lws_callback_on_writable
 
 // Always declare mock function prototypes for the .c file
 int mock_lws_hdr_copy(struct lws *wsi, char *dest, int len, enum lws_token_indexes token);
@@ -48,6 +49,7 @@ int mock_lws_get_peer_simple(struct lws *wsi, char *name, int namelen);
 int mock_lws_is_final_fragment(struct lws *wsi);
 int mock_lws_write(struct lws *wsi, unsigned char *buf, size_t len, enum lws_write_protocol protocol);
 const struct lws_protocols *mock_lws_get_protocol(struct lws *wsi);
+int mock_lws_callback_on_writable(struct lws *wsi);
 
 // Mock control functions for tests
 void mock_lws_set_hdr_copy_result(int result);
