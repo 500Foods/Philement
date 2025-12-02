@@ -254,6 +254,13 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 log_this(SR_WEBSOCKET, "Allowing protocol filtering during vhost creation", LOG_LEVEL_DEBUG, 0);
                 return 0;  // Allow during vhost creation
             }
+
+            // For terminal protocol connections, we need to ensure session data exists
+            // before proceeding to avoid null pointer dereferences
+            if (!session) {
+                log_this(SR_WEBSOCKET, "Protocol filtering callback with no session data", LOG_LEVEL_DEBUG, 0);
+                return 0;  // Allow but don't proceed to terminal handling
+            }
             {
                 // Debug: Log what we have for authentication
                 void *user_data = lws_wsi_user(wsi);
