@@ -169,6 +169,12 @@ int mock_lws_write(struct lws *wsi, unsigned char *buf, size_t len, enum lws_wri
     return mock_lws_write_result;
 }
 
+int mock_lws_callback_on_writable(struct lws *wsi)
+{
+    (void)wsi;
+    return 0; // Success
+}
+
 const struct lws_protocols *mock_lws_get_protocol(struct lws *wsi)
 {
     (void)wsi;

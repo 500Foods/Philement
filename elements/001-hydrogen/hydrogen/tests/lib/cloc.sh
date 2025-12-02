@@ -12,6 +12,8 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 6.6.1 - 2025-12-02 - Fixed ShellCheck SC2312 and SC2310 issues with explicit error handling
+# 6.6.0 - 2025-12-02 - Added file size reporting section to extended statistics table
 # 6.5.1 - 2025-11-20 - Updated coverage target thresholds in extended statistics table to 70/75/80 from 60/70/80
 # 6.5.0 - 2025-11-17 - Added "Coverage Combined" row to extended statistics table
 # 6.4.0 - 2025-10-15 - Added "Instrumented Tests" row to extended statistics table
@@ -37,12 +39,100 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="6.5.1"
+CLOC_VERSION="6.6.1"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
+
+# Function to calculate file sizes for the size reporting section
+calculate_file_sizes() {
+    local project_root="${1}"
+
+    # Initialize all sizes to 0
+    local naked_size="0.000"
+    local release_size="0.000"
+    local payload_size="0.000"
+    local installer_size="0.000"
+    local repo_size="0.000"
+
+    # Calculate Hydrogen Binary size (first item)
+    if [[ -f "${project_root}/hydrogen_release" ]]; then
+        release_size=$(stat -c "%s" "${project_root}/hydrogen_release" 2>/dev/null || echo "0")
+        if release_size_calc=$(bc -l <<< "scale=0; ${release_size} / 1024" 2>/dev/null); then
+            release_size=$(printf "%.0f" "${release_size_calc}")
+        else
+            release_size="0"
+        fi
+    fi
+
+    # Calculate Hydrogen Naked size
+    if [[ -f "${project_root}/hydrogen_naked" ]]; then
+        naked_size=$(stat -c "%s" "${project_root}/hydrogen_naked" 2>/dev/null || echo "0")
+        if naked_size_calc=$(bc -l <<< "scale=0; ${naked_size} / 1024" 2>/dev/null); then
+            naked_size=$(printf "%.0f" "${naked_size_calc}")
+        else
+            naked_size="0"
+        fi
+    fi
+
+    # Calculate Payload size
+    if [[ -f "${project_root}/payloads/payload.tar.br.enc" ]]; then
+        payload_size=$(stat -c "%s" "${project_root}/payloads/payload.tar.br.enc" 2>/dev/null || echo "0")
+        if payload_size_calc=$(bc -l <<< "scale=0; ${payload_size} / 1024" 2>/dev/null); then
+            payload_size=$(printf "%.0f" "${payload_size_calc}")
+        else
+            payload_size="0"
+        fi
+    fi
+
+    # Calculate Installer size (find the latest installer file)
+    local latest_installer=""
+    if [[ -d "${project_root}/installer" ]]; then
+        # Find the most recent installer file by date in filename
+        latest_installer=$(find "${project_root}/installer" -name "hydrogen_installer_*.sh" -type f 2>/dev/null | sort | tail -n 1)
+        if [[ -n "${latest_installer}" && -f "${latest_installer}" ]]; then
+            installer_size=$(stat -c "%s" "${latest_installer}" 2>/dev/null || echo "0")
+            if installer_size_calc=$(bc -l <<< "scale=0; ${installer_size} / 1024" 2>/dev/null); then
+                installer_size=$(printf "%.0f" "${installer_size_calc}")
+            else
+                installer_size="0"
+            fi
+        fi
+    fi
+
+    # Calculate Repository size (excluding build/ and tests/unity/framework folders)
+    if [[ -d "${project_root}" ]]; then
+        # Use du to calculate size, excluding specified directories
+        local repo_bytes="0"
+        if command -v du >/dev/null 2>&1; then
+            # Calculate size excluding build/ and tests/unity/framework directories
+            repo_bytes=$(find "${project_root}" -type f \
+                -not \( -path "${project_root}/build/*" -o -path "${project_root}/tests/unity/framework/*" \) \
+                -exec stat -c "%s" {} + 2>/dev/null | awk '{sum += $1} END {print sum}' 2>/dev/null || echo "0")
+            if [[ "${repo_bytes}" -gt 0 ]]; then
+                # Convert to MB (not GB)
+                if repo_size_calc=$(bc -l <<< "scale=0; ${repo_bytes} / (1024*1024)" 2>/dev/null); then
+                    repo_size=$(printf "%.0f" "${repo_size_calc}")
+                else
+                    repo_size="0"
+                fi
+            fi
+        fi
+    fi
+
+    # Return the sizes as a JSON object for easy parsing
+    cat << EOF
+{
+    "naked_size": "${naked_size}",
+    "release_size": "${release_size}",
+    "payload_size": "${payload_size}",
+    "installer_size": "${installer_size}",
+    "repo_size": "${repo_size}"
+}
+EOF
+}
 
 # Function to generate cloc exclude list based on .lintignore and default excludes
 generate_cloc_exclude_list() {
@@ -194,7 +284,7 @@ EOF
                     (if $core.C then
                         {
                             section: "primary",
-                            language: "Core C/Headers",
+                            language: "Core Code C/Headers",
                             files: ($core.C.nFiles // 0),
                             blank: ($core.C.blank // 0),
                             comment: ($core.C.comment // 0),
@@ -207,7 +297,7 @@ EOF
                     (if $test.C then
                         {
                             section: "primary",
-                            language: "Test C/Headers",
+                            language: "Unit Test C/Headers",
                             files: ($test.C.nFiles // 0),
                             blank: ($test.C.blank // 0),
                             comment: ($test.C.comment // 0),
@@ -491,6 +581,18 @@ EOF
                 unity_ratio="N/A"
             fi
 
+            # Calculate file sizes for the new size reporting section
+            local file_sizes_json
+            # shellcheck disable=SC2310 # Function failure should not exit script
+            if ! file_sizes_json=$(calculate_file_sizes "${base_dir}" 2>/dev/null); then
+                file_sizes_json='{"naked_size": "0.000", "release_size": "0.000", "payload_size": "0.000", "installer_size": "0.000", "repo_size": "0.000"}'
+            fi
+            local naked_size release_size payload_size installer_size repo_size
+            naked_size=$(echo "${file_sizes_json}" | jq -r '.naked_size' 2>/dev/null || echo "0.000")
+            release_size=$(echo "${file_sizes_json}" | jq -r '.release_size' 2>/dev/null || echo "0.000")
+            payload_size=$(echo "${file_sizes_json}" | jq -r '.payload_size' 2>/dev/null || echo "0.000")
+            installer_size=$(echo "${file_sizes_json}" | jq -r '.installer_size' 2>/dev/null || echo "0.000")
+            repo_size=$(echo "${file_sizes_json}" | jq -r '.repo_size' 2>/dev/null || echo "0.000")
 
             # Compute all bc-based checks before creating JSON to avoid nested command substitutions
             local codedoc_color docscode_color codecomment_color commentscode_color coverage_unity_color coverage_black_color coverage_combined_color unity_color
@@ -713,6 +815,36 @@ EOF
          "metric": "Unity Ratio",
          "value": "${unity_ratio}",
          "description": "Test/Core C/Headers         ${unity_color}Target: 100 % - 200 %{RESET}"
+     },
+     {
+         "section": "file_sizes",
+         "metric": "Hydrogen Binary",
+         "value": "${release_size} KB",
+         "description": "Hydrogen Release Executable with Payload"
+     },
+     {
+         "section": "file_sizes",
+         "metric": "Hydrogen Naked",
+         "value": "${naked_size} KB",
+         "description": "Hydrogen Release Executable without Payload"
+     },
+     {
+         "section": "file_sizes",
+         "metric": "Hydrogen Payload",
+         "value": "${payload_size} KB",
+         "description": "Payload with Swagger, Migrations, Terminal, OIDC"
+     },
+     {
+         "section": "file_sizes",
+         "metric": "Hydrogen Installer",
+         "value": "${installer_size} KB",
+         "description": "Base64-Encoded Bash Installer Script"
+     },
+     {
+         "section": "file_sizes",
+         "metric": "Hydrogen Repository",
+         "value": "${repo_size} MB",
+         "description": "Repository -Build -Unity Framework"
      }
 ]
 EOF
