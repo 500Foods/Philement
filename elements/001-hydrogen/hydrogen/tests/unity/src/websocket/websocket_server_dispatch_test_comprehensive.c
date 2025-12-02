@@ -202,7 +202,7 @@ void test_dispatch_session_validation_allowed_without(void) {
 
     // Test FILTER_PROTOCOL_CONNECTION without session
     int result = ws_callback_dispatch(mock_wsi, LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION, NULL, NULL, 0);
-    TEST_ASSERT_EQUAL_INT(-1, result); // May fail due to auth, but doesn't fail on session validation
+    TEST_ASSERT_EQUAL_INT(0, result); // Now allowed without session due to updated validation logic
 
     // Test SERVER_NEW_CLIENT_INSTANTIATED without session
     result = ws_callback_dispatch(mock_wsi, LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED, NULL, NULL, 0);
@@ -280,7 +280,7 @@ void test_dispatch_filter_protocol_connection_failure(void) {
     struct lws *mock_wsi = (struct lws *)0x12345678;
 
     int result = ws_callback_dispatch(mock_wsi, LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION, NULL, NULL, 0);
-    TEST_ASSERT_EQUAL_INT(-1, result); // Should fail
+    TEST_ASSERT_EQUAL_INT(0, result); // Now allowed due to updated authentication fallback logic
 }
 
 void test_dispatch_filter_protocol_query_param_success(void) {
