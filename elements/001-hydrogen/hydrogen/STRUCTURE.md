@@ -631,9 +631,9 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <details>
 <summary><b>Diagnostic Tools</b></summary>
 
-- [extras/one-offs/debug_payload.c](extras/one-offs/debug_payload.c) - Payload debug analysis tool
-- [extras/one-offs/find_all_markers.c](extras/one-offs/find_all_markers.c) - Multiple marker detection tool
-- [extras/one-offs/test_payload_detection.c](extras/one-offs/test_payload_detection.c) - Payload validation testing tool
+- [extras/payload/debug_payload.c](extras/payload/debug_payload.c) - Payload debug analysis tool
+- [extras/payload/find_all_markers.c](extras/payload/find_all_markers.c) - Multiple marker detection tool
+- [extras/payload/test_payload_detection.c](extras/payload/test_payload_detection.c) - Payload validation testing tool
 
 </details>
 
