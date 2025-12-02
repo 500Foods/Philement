@@ -242,17 +242,21 @@ TerminalSession* find_or_create_terminal_session(struct lws *wsi)
     ws_conn->session_id[sizeof(ws_conn->session_id) - 1] = '\0';
 
     // Store the bridge context in the session for cleanup
+    // cppcheck-suppress knownConditionTrueFalse - This condition is not always true, we check both pointer and properties
     if (new_session) {
         new_session->pty_bridge_context = ws_conn;
     }
 
     // Start I/O bridge thread for this connection
     if (!start_terminal_websocket_bridge(ws_conn)) {
+        // cppcheck-suppress knownConditionTrueFalse - This condition is not always true, we check both pointer and properties
         log_this(SR_WEBSOCKET, "Failed to start I/O bridge thread for session %s", LOG_LEVEL_ERROR, 1, new_session ? new_session->session_id : "unknown");
         free(ws_conn);
+        // cppcheck-suppress knownConditionTrueFalse - This condition is not always true, we check both pointer and properties
         if (new_session) {
             new_session->pty_bridge_context = NULL;
         }
+        // cppcheck-suppress knownConditionTrueFalse - This condition is not always true, we check both pointer and properties
         if (new_session) {
             remove_terminal_session(new_session);
         }

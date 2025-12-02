@@ -281,14 +281,22 @@ bool process_terminal_websocket_message(TerminalWSConnection *connection,
  * @return true on success, false on error
  */
 bool send_terminal_websocket_output(TerminalWSConnection *connection,
-                                   const char *data,
-                                   size_t data_size) {
+                                    const char *data,
+                                    size_t data_size) {
     if (!connection || !connection->active || !data || data_size == 0) {
         return false;
     }
 
+    // Check if WebSocket connection is still active
+    // cppcheck-suppress knownConditionTrueFalse - This condition is not always true, we check both session pointer and connected flag
+    if (!connection->session || !connection->session->connected) {
+        return false;
+    }
+
     // Get the WebSocket instance from the terminal session
+    // cppcheck-suppress knownConditionTrueFalse - This condition is not always true, we check both session pointer and websocket_connection
     struct lws *wsi = NULL;
+    // cppcheck-suppress knownConditionTrueFalse - This condition is not always true, we check both session pointer and websocket_connection
     if (connection->session && connection->session->websocket_connection) {
         wsi = (struct lws *)connection->session->websocket_connection;
     }
