@@ -41,7 +41,7 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
         COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
         COMMAND ${CMAKE_C_COMPILER}
             ${HYDROGEN_BASE_CFLAGS}
-            -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+            -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer -fPIE
             -DHYDROGEN_COVERAGE_BUILD
             -DVERSION='"${HYDROGEN_VERSION}"'
             -DRELEASE='"${HYDROGEN_RELEASE}"'
@@ -69,7 +69,7 @@ add_custom_target(hydrogen_coverage_objects DEPENDS ${HYDROGEN_COVERAGE_OBJECT_F
 add_executable(hydrogen_coverage ${HYDROGEN_COVERAGE_OBJECT_FILES})
 add_dependencies(hydrogen_coverage hydrogen_coverage_objects)
 target_link_libraries(hydrogen_coverage PRIVATE ${HYDROGEN_BASE_LIBS})
-target_link_options(hydrogen_coverage PRIVATE --coverage -lgcov -rdynamic)
+target_link_options(hydrogen_coverage PRIVATE --coverage -lgcov -rdynamic -pie)
 set_target_properties(hydrogen_coverage PROPERTIES
     OUTPUT_NAME hydrogen_coverage
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
