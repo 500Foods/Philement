@@ -278,3 +278,144 @@ All scripts include proper error handling and return appropriate exit codes:
 - `0`: Success
 - `1`: General error or failure
 - Scripts provide colored output for better visibility of results
+
+## MKU Tab Completion
+
+### Overview
+
+The `mku` command provides tab completion for Unity unit tests, making it easy to run specific tests from your 600+ test suite. Instead of remembering long test names, you can type `mku <TAB>` and see all available options, or type partial names like `mku terminal<TAB>` to see terminal-related tests.
+
+### Files
+
+- **`mku_completion.sh`** - Main completion setup script (implementation)
+- **`mku_completion_cache.sh`** - Pre-generated completion cache (build system integration)
+
+### Important Setup Notes
+
+**The completion script needs path updates:** Before using `mku_completion.sh`, you must update the Philement path references inside the file. Search for `"~/Philement/elements/001-hydrogen/hydrogen"` and replace with your actual Philement installation path.
+
+**Cache management:** The cache script (`mku_completion_cache.sh`) is automatically called by `make-trial.sh` to ensure the cache stays up-to-date with your current test files.
+
+### Installation
+
+#### Option 1: Manual Setup (For Development)
+
+1. **Update path references** in `mku_completion.sh`:
+
+   ```bash
+   # Find and replace ~/Philement/elements/001-hydrogen/hydrogen 
+   # with your actual Philement installation path
+   ```
+
+2. Add this line to your `~/.zshrc` file:
+
+   ```bash
+   source /path/to/hydrogen/extras/mku_completion.sh
+   ```
+
+#### Option 2: Using the Cache File
+
+If you want faster startup (skips directory scanning), use the cached version:
+
+```bash
+source /path/to/hydrogen/extras/mku_completion_cache.sh
+```
+
+### How It Works
+
+#### Build System Integration
+
+The completion system integrates with the Hydrogen build process:
+
+1. **Automatic Cache Updates**: `make-trial.sh` calls the cache generation logic to keep test names current
+2. **Manual Cache Control**: Use `mkr` to rebuild cache after adding new tests
+3. **Path Resolution**: The completion script dynamically finds your Hydrogen project location
+
+#### Cache Management
+
+- **Location**: `~/.mku_cache` (stores all 600+ test names)
+- **Automatic Updates**: Cache rebuilds when test files change
+- **Manual Updates**: Run `mkr` to refresh cache manually
+- **Performance**: Cache loading is nearly instant
+
+### Usage
+
+Once installed, tab completion works automatically:
+
+```bash
+# Show all available tests (611 total)
+mku <TAB>
+
+# Show tests matching "terminal"
+mku terminal <TAB>
+# Results: config_terminal_test_load_terminal_config
+#         landing_terminal_test_check_terminal_landing_readiness
+#         terminal_session_test_additional_coverage
+#         etc.
+
+# Run a specific test
+mku config_terminal_test_load_terminal_config
+
+# Show help if no test name provided
+mku
+# Available tests (use mku <test_name>):
+# Found 611 tests. Examples:
+# config_terminal_test_load_terminal_config
+# landing_terminal_test_check_terminal_landing_readiness
+# ...
+```
+
+### Commands
+
+- **`mku <test_name>`** - Run the specified Unity test
+- **`mku`** (no args) - Show available tests and usage information  
+- **`mkr`** - Rebuild the completion cache (use after adding new tests)
+
+### Features
+
+- ✅ **Tab Completion**: Automatic completion for 600+ test names
+- ✅ **Smart Filtering**: Type partial names to narrow down options
+- ✅ **Case Insensitive**: Completion works regardless of capitalization
+- ✅ **Fast Performance**: Uses caching to avoid repeated directory scans
+- ✅ **Works Everywhere**: Functions from any directory
+- ✅ **Helpful Messages**: Clear error messages and usage information
+- ✅ **Build Integration**: Automatically stays current with `make-trial.sh`
+
+### Troubleshooting
+
+**Tab completion not working?**
+
+1. Make sure you're using zsh (tab completion requires zsh)
+2. Reload your shell: `source ~/.zshrc`
+3. Check that the completion script path is correct
+4. Verify Philement paths are updated in `mku_completion.sh`
+5. Try rebuilding cache: `mkr`
+
+**Cache out of date?**
+
+```bash
+# Rebuild cache with current test files
+mkr
+```
+
+**Tests not found?**
+
+1. Ensure you're in the Hydrogen project directory or have built the project
+2. Check that Unity test files exist in `tests/unity/src/`
+3. Rebuild cache: `mkr`
+4. Run `make-trial.sh` to update cache automatically
+
+**Path Issues?**
+
+1. Edit `mku_completion.sh`
+2. Replace `~/Philement/elements/001-hydrogen/hydrogen` with your actual path
+3. Reload shell: `source ~/.zshrc`
+
+### Technical Details
+
+- **Shell Requirement**: Zsh with compinit
+- **Cache Location**: `~/.mku_cache`
+- **Build Integration**: Called automatically by `make-trial.sh`
+- **Path Resolution**: Dynamic project root detection
+- **Performance**: Cache loading is nearly instant
+- **Updates**: Cache automatically rebuilds when test files change
