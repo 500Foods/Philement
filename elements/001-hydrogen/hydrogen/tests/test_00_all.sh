@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 7.0.1 - 2025-12-01 - Added build number to Test Suite Results title
 # 7.0.0 - 2025-12-01 - Added email generation at end of test suite, more summary data into JSON output
 # 6.6.2 - 2025-10-21 - Fixed formatting issue when calling cloc_tables.sh by adding LANG to: env -i "LANG=$LANG" bash -c <command>
 # 6.6.1 - 2025-10-16 - Added Luacheck to commands to search for
@@ -606,6 +607,10 @@ UNITY_COVERAGE=$(get_unity_coverage)
 BLACKBOX_COVERAGE=$(get_blackbox_coverage)
 COMBINED_COVERAGE=$(get_combined_coverage)
 
+# Get build number from hydrogen version
+VERSION_FULL=$(../hydrogen --version 2>/dev/null || echo "Hydrogen ver 1.0.0.2010 rel 20251201")
+BUILD_NUMBER=$(echo "${VERSION_FULL}" | grep -oE "ver [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | grep -oE "[0-9]+$" || echo "2010")
+
 # Run coverage table before displaying test results
 
 # Save coverage table output to file and display to console using tee
@@ -654,7 +659,7 @@ TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "${TOTAL_RUNNING_TIME}")
 # Create layout JSON string
 # shellcheck disable=SC2154 # TC_ORC_DSP defined externally in framework.sh
 layout_json_content='{
-    "title": "{BOLD}{WHITE}Test Suite Results {RED}——— {BOLD}{CYAN}Unity{WHITE} '"${UNITY_COVERAGE}"'% {RED}——— {BOLD}{CYAN}Blackbox{WHITE} '"${BLACKBOX_COVERAGE}"'% {RED}——— {BOLD}{CYAN}Combined{WHITE} '"${COMBINED_COVERAGE}"'%{RESET}",
+    "title": "{BOLD}{WHITE}Test Suite Results for Build '"${BUILD_NUMBER}"' {RED}——— {BOLD}{CYAN}Unity{WHITE} '"${UNITY_COVERAGE}"'% {RED}——— {BOLD}{CYAN}Blackbox{WHITE} '"${BLACKBOX_COVERAGE}"'% {RED}——— {BOLD}{CYAN}Combined{WHITE} '"${COMBINED_COVERAGE}"'%{RESET}",
     "footer": "{CYAN}Elapsed{WHITE} '"${TOTAL_ELAPSED_FORMATTED}"' {RED}——— {CYAN}Cumulative{WHITE} '"${TOTAL_RUNNING_TIME_FORMATTED}"' {RED}——— {CYAN}Generated{WHITE} '"${TIMESTAMP_DISPLAY}"'{RESET}",
     "footer_position": "right",
     "columns": [
@@ -892,6 +897,6 @@ fi
 } > "${metrics_file}"
 
 
-(${PROJECT_DIR}/extras/make-email.sh > /dev/null 2>&1) || true
+("${PROJECT_DIR}/extras/make-email.sh" > /dev/null 2>&1) || true
 
 exit "${OVERALL_EXIT_CODE}"
