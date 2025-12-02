@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 6.5.1 - 2025-11-20 - Updated coverage target thresholds in extended statistics table to 70/75/80 from 60/70/80
 # 6.5.0 - 2025-11-17 - Added "Coverage Combined" row to extended statistics table
 # 6.4.0 - 2025-10-15 - Added "Instrumented Tests" row to extended statistics table
 # 6.3.1 - 2025-09-30 - Fixed decimal .0 problem
@@ -36,7 +37,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="6.5.0"
+CLOC_VERSION="6.5.1"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
@@ -548,7 +549,7 @@ EOF
             
             if [[ "${coverage_unity_fmt}" != "N/A" ]]; then
                 local coverage_unity_check
-                coverage_unity_check=$(echo "${coverage_unity_fmt} >= 60" | bc -l 2>/dev/null || echo 0)
+                coverage_unity_check=$(echo "${coverage_unity_fmt} >= 70" | bc -l 2>/dev/null || echo 0)
                 if (( coverage_unity_check )); then
                     coverage_unity_color="{GREEN}"
                 else
@@ -560,7 +561,7 @@ EOF
             
             if [[ "${coverage_black_fmt}" != "N/A" ]]; then
                 local coverage_black_check
-                coverage_black_check=$(echo "${coverage_black_fmt} >= 70" | bc -l 2>/dev/null || echo 0)
+                coverage_black_check=$(echo "${coverage_black_fmt} >= 75" | bc -l 2>/dev/null || echo 0)
                 if (( coverage_black_check )); then
                     coverage_black_color="{GREEN}"
                 else
@@ -693,13 +694,13 @@ EOF
          "section": "coverage_percentages",
          "metric": "Coverage Unity %",
          "value": "${coverage_unity_fmt} %",
-         "description": "Unity test coverage                  ${coverage_unity_color}Target: 60 %{RESET}"
+         "description": "Unity test coverage                  ${coverage_unity_color}Target: 70 %{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Blackbox %",
          "value": "${coverage_black_fmt} %",
-         "description": "Blackbox test coverage               ${coverage_black_color}Target: 70 %{RESET}"
+         "description": "Blackbox test coverage               ${coverage_black_color}Target: 75 %{RESET}"
      },
      {
          "section": "coverage_percentages",
