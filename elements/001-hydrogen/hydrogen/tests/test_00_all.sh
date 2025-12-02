@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 7.0.0 - 2025-12-01 - Added email generation at end of test suite, more summary data into JSON output
 # 6.6.2 - 2025-10-21 - Fixed formatting issue when calling cloc_tables.sh by adding LANG to: env -i "LANG=$LANG" bash -c <command>
 # 6.6.1 - 2025-10-16 - Added Luacheck to commands to search for
 # 6.6.0 - 2025-09-26 - Added JSON generation so that we have easier access to the table data later when we want to analyze historical trends
@@ -40,7 +41,7 @@ TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
 TEST_COUNTER=0
-TEST_VERSION="6.6.2"
+TEST_VERSION="7.0.0"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -890,5 +891,7 @@ fi
 
 } > "${metrics_file}"
 
+
+(${PROJECT_DIR}/extras/make-email.sh > /dev/null 2>&1) || true
 
 exit "${OVERALL_EXIT_CODE}"
