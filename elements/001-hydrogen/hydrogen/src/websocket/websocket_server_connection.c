@@ -71,6 +71,9 @@ int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *ses
             // Stop the PTY bridge thread
             stop_pty_bridge_thread(terminal_session);
 
+            // Clear the WebSocket connection to prevent use of invalid wsi
+            terminal_session->websocket_connection = NULL;
+
             // Clear the session from session data
             session->terminal_session = NULL;
         }
