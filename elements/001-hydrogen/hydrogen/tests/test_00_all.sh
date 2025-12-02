@@ -818,6 +818,17 @@ if [[ -f "${RESULTS_DIR}/coverage_data.json" ]]; then
     coverage_json="${RESULTS_DIR}/coverage_data.json"
 fi
 
+# Calculate summary statistics for JSON output
+TOTAL_TESTS=0
+TOTAL_PASSED=0
+TOTAL_FAILED=0
+
+for i in "${!TEST_SUBTESTS[@]}"; do
+    TOTAL_TESTS=$((TOTAL_TESTS + TEST_SUBTESTS[i]))
+    TOTAL_PASSED=$((TOTAL_PASSED + TEST_PASSED[i]))
+    TOTAL_FAILED=$((TOTAL_FAILED + TEST_FAILED[i]))
+done
+
 # Combine all JSON data into one file
 if [[ -f "${data_json}" ]] && [[ -f "${cloc_json_main}" ]] && [[ -f "${cloc_json_stats}" ]] && [[ -f "${coverage_json}" ]]; then
     # Read the JSON content from each file
@@ -834,6 +845,18 @@ if [[ -f "${data_json}" ]] && [[ -f "${cloc_json_main}" ]] && [[ -f "${cloc_json
         "generated": "${current_date}",
         "timestamp": "${TIMESTAMP_DISPLAY}",
         "version": "1.0.0"
+    },
+    "summary": {
+        "total_tests": ${TOTAL_TESTS},
+        "total_passed": ${TOTAL_PASSED},
+        "total_failed": ${TOTAL_FAILED},
+        "total_elapsed": "${TOTAL_ELAPSED}",
+        "total_running_time": "${TOTAL_RUNNING_TIME}",
+        "elapsed_formatted": "${TOTAL_ELAPSED_FORMATTED}",
+        "running_time_formatted": "${TOTAL_RUNNING_TIME_FORMATTED}",
+        "unity_coverage": "${UNITY_COVERAGE}",
+        "blackbox_coverage": "${BLACKBOX_COVERAGE}",
+        "combined_coverage": "${COMBINED_COVERAGE}"
     },
     "test_results": {
         "data": ${test_results_json}
