@@ -370,7 +370,9 @@ void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     FILE *mem = fopen("/proc/self/mem", "r");
     if (!mem) {
         log_this(SR_CRASH, "Failed to open /proc/self/mem: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
+        // cppcheck-suppress doubleFree - out is closed and set to NULL to prevent double free
         fclose(out);
+        out = NULL; // Prevent double free
         _exit(128 + sig);
     }
 
@@ -382,9 +384,9 @@ void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     size_t load_segment_count = 0;
 
     for (size_t i = 0; i < mapping_count; i++) {
-        CoreMapping *m = &mappings[i];
+        const CoreMapping *m = &mappings[i];
         if (m->perms[0] == 'r') {  // readable mapping
-            load_segments[load_segment_count++].m = m;
+            load_segments[load_segment_count++].m = (CoreMapping *)m;
         }
     }
 
@@ -401,7 +403,7 @@ void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     size_t filenames_total_len = 0;
 
     for (size_t i = 0; i < mapping_count; i++) {
-        CoreMapping *m = &mappings[i];
+        const CoreMapping *m = &mappings[i];
         if (m->path[0] == '\0' || m->path[0] == '[') continue;
 
         file_entries[file_count].start = m->start;
@@ -472,7 +474,7 @@ void crash_handler(int sig, siginfo_t *info, void *ucontext) {
 
     // Write PT_LOAD headers
     for (size_t i = 0; i < load_segment_count; i++) {
-        CoreMapping *m = load_segments[i].m;
+        const CoreMapping *m = load_segments[i].m;
         Elf64_Phdr *ph = &load_segments[i].phdr;
 
         // Align file offset to page size
