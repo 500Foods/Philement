@@ -135,6 +135,11 @@ tests/          Test framework
 - SC2312: Invoke commands separately to avoid masking return values (or use `|| true` to ignore)
 - SC2248: Add double quotes even when variables don't contain special characters
 - Run tests/test_92_cppcheck.sh whenever Bash code is changed
+
+IMPORTANT: Test 92 can be used to check all of the scripts at one time, useful for
+finding errors. When using Test 92 to identify code that needs fixes, please make an
+attempt to fix the code properly rather than just adding directives. Directives can
+be added, with justifications, but only after all other options have been exhausted.
   
 ## MARKDOWN CODING REQUIREMENTS
 
