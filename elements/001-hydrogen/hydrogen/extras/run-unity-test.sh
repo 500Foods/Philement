@@ -91,11 +91,25 @@ done < <(find "${UNITY_SRC_DIR}" -name "*.c" -print0 || true)
 # Check if test file was found
 if [[ -z "${TEST_SOURCE_FILE}" ]]; then
     print_error "Test source file '${TEST_NAME}.c' not found in ${UNITY_SRC_DIR}"
-    print_info "Available tests:"
-    # shellcheck disable=SC2312 # Like it the way it is, thanks
-    find "${UNITY_SRC_DIR}" -name "*.c" -exec basename {} \; | sed 's/\.c$//' | sort | while read -r test; do
-        echo "  - ${test}"
-    done
+    print_info "Matching tests (showing tests containing '${TEST_NAME}'):"
+
+    # Show only tests that match the search pattern
+    matching_tests=$(find "${UNITY_SRC_DIR}" -name "*.c" -exec basename {} \; | sed 's/\.c$//' | grep -i "${TEST_NAME}" | sort)
+
+    if [[ -z "${matching_tests}" ]]; then
+        print_info "No tests found matching '${TEST_NAME}'. Here are some similar tests:"
+        # Show some similar tests using fuzzy matching
+        find "${UNITY_SRC_DIR}" -name "*.c" -exec basename {} \; | sed 's/\.c$//' | sort | head -20 | while read -r test; do
+            echo "  - ${test}"
+        done
+    else
+        echo "${matching_tests}" | while read -r test; do
+            echo "  - ${test}"
+        done
+    fi
+
+    print_info "Use 'mku <test_name>' to run a specific test"
+    print_info "Use 'mku' without arguments to see this help"
     exit 1
 fi
 
