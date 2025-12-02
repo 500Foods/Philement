@@ -94,18 +94,18 @@ if [[ -z "${TEST_SOURCE_FILE}" ]]; then
     print_info "Matching tests (showing tests containing '${TEST_NAME}'):"
 
     # Show only tests that match the search pattern
-    matching_tests=$(find "${UNITY_SRC_DIR}" -name "*.c" -exec basename {} \; | sed 's/\.c$//' | grep -i "${TEST_NAME}" | sort)
+    matching_tests=$(find "${UNITY_SRC_DIR}" -name "*.c" -exec basename {} \; | sed 's/\.c$//' | grep -i "${TEST_NAME}" | sort) || true
 
     if [[ -z "${matching_tests}" ]]; then
         print_info "No tests found matching '${TEST_NAME}'. Here are some similar tests:"
         # Show some similar tests using fuzzy matching
         find "${UNITY_SRC_DIR}" -name "*.c" -exec basename {} \; | sed 's/\.c$//' | sort | head -20 | while read -r test; do
             echo "  - ${test}"
-        done
+        done || true
     else
         echo "${matching_tests}" | while read -r test; do
             echo "  - ${test}"
-        done
+        done || true
     fi
 
     print_info "Use 'mku <test_name>' to run a specific test"

@@ -287,20 +287,20 @@ The `mku` command provides tab completion for Unity unit tests, making it easy t
 
 ### Files
 
-- **`mku_completion.sh`** - Main completion setup script (implementation)
-- **`mku_completion_cache.sh`** - Pre-generated completion cache (build system integration)
+- **`mku_completion.zsh`** - Main completion setup script (implementation)
+- **`mku_completion_cache.zsh`** - Pre-generated completion cache (build system integration)
 
 ### Important Setup Notes
 
-**The completion script needs path updates:** Before using `mku_completion.sh`, you must update the Philement path references inside the file. Search for `"~/Philement/elements/001-hydrogen/hydrogen"` and replace with your actual Philement installation path.
+**The completion script needs path updates:** Before using `mku_completion.zsh`, you must update the Philement path references inside the file. Search for `"~/Philement/elements/001-hydrogen/hydrogen"` and replace with your actual Philement installation path.
 
-**Cache management:** The cache script (`mku_completion_cache.sh`) is automatically called by `make-trial.sh` to ensure the cache stays up-to-date with your current test files.
+**Cache management:** The cache script (`mku_completion_cache.zsh`) is automatically called by `make-trial.sh` to ensure the cache stays up-to-date with your current test files.
 
 ### Installation
 
 #### Option 1: Manual Setup (For Development)
 
-1. **Update path references** in `mku_completion.sh`:
+1. **Update path references** in `mku_completion.zsh`:
 
    ```bash
    # Find and replace ~/Philement/elements/001-hydrogen/hydrogen 
@@ -310,7 +310,7 @@ The `mku` command provides tab completion for Unity unit tests, making it easy t
 2. Add this line to your `~/.zshrc` file:
 
    ```bash
-   source /path/to/hydrogen/extras/mku_completion.sh
+   source /path/to/hydrogen/extras/mku_completion.zsh
    ```
 
 #### Option 2: Using the Cache File
@@ -318,7 +318,7 @@ The `mku` command provides tab completion for Unity unit tests, making it easy t
 If you want faster startup (skips directory scanning), use the cached version:
 
 ```bash
-source /path/to/hydrogen/extras/mku_completion_cache.sh
+source /path/to/hydrogen/extras/mku_completion_cache.zsh
 ```
 
 ### How It Works
@@ -388,7 +388,7 @@ mku
 1. Make sure you're using zsh (tab completion requires zsh)
 2. Reload your shell: `source ~/.zshrc`
 3. Check that the completion script path is correct
-4. Verify Philement paths are updated in `mku_completion.sh`
+4. Verify Philement paths are updated in `mku_completion.zsh`
 5. Try rebuilding cache: `mkr`
 
 **Cache out of date?**
@@ -407,7 +407,7 @@ mkr
 
 **Path Issues?**
 
-1. Edit `mku_completion.sh`
+1. Edit `mku_completion.zsh`
 2. Replace `~/Philement/elements/001-hydrogen/hydrogen` with your actual path
 3. Reload shell: `source ~/.zshrc`
 
