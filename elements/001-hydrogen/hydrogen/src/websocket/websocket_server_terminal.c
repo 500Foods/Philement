@@ -158,7 +158,7 @@ TerminalSession* find_or_create_terminal_session(struct lws *wsi)
         existing_session->connected = true;
         // Store the WebSocket connection in the terminal session
         existing_session->websocket_connection = wsi;
-        
+
         // Start I/O bridge if not already started
         if (!existing_session->pty_bridge_context) {
             TerminalWSConnection *ws_conn = calloc(1, sizeof(TerminalWSConnection));
@@ -172,9 +172,9 @@ TerminalSession* find_or_create_terminal_session(struct lws *wsi)
                 ws_conn->incoming_capacity = 0;
                 strncpy(ws_conn->session_id, existing_session->session_id, sizeof(ws_conn->session_id) - 1);
                 ws_conn->session_id[sizeof(ws_conn->session_id) - 1] = '\0';
-                
+
                 existing_session->pty_bridge_context = ws_conn;
-                
+
                 if (!start_terminal_websocket_bridge(ws_conn)) {
                     log_this(SR_WEBSOCKET, "Failed to start I/O bridge for reused session %s", LOG_LEVEL_ERROR, 1, existing_session->session_id);
                     free(ws_conn);
@@ -182,7 +182,7 @@ TerminalSession* find_or_create_terminal_session(struct lws *wsi)
                 }
             }
         }
-        
+
         log_this(SR_WEBSOCKET, "Reusing existing terminal session: %s", LOG_LEVEL_STATE, 1, existing_session->session_id);
         return existing_session;
     }
@@ -190,6 +190,12 @@ TerminalSession* find_or_create_terminal_session(struct lws *wsi)
     // Get terminal configuration from global config
     if (!app_config || !app_config->terminal.enabled) {
         log_this(SR_WEBSOCKET, "Terminal subsystem not enabled", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
+    // Additional null check for session_data before proceeding
+    if (!session_data) {
+        log_this(SR_WEBSOCKET, "Session data is null when trying to create terminal session", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -236,19 +242,27 @@ TerminalSession* find_or_create_terminal_session(struct lws *wsi)
     ws_conn->session_id[sizeof(ws_conn->session_id) - 1] = '\0';
 
     // Store the bridge context in the session for cleanup
-    new_session->pty_bridge_context = ws_conn;
+    if (new_session) {
+        new_session->pty_bridge_context = ws_conn;
+    }
 
     // Start I/O bridge thread for this connection
     if (!start_terminal_websocket_bridge(ws_conn)) {
-        log_this(SR_WEBSOCKET, "Failed to start I/O bridge thread for session %s", LOG_LEVEL_ERROR, 1, new_session->session_id);
+        log_this(SR_WEBSOCKET, "Failed to start I/O bridge thread for session %s", LOG_LEVEL_ERROR, 1, new_session ? new_session->session_id : "unknown");
         free(ws_conn);
-        new_session->pty_bridge_context = NULL;
-        remove_terminal_session(new_session);
-        session_data->terminal_session = NULL;
+        if (new_session) {
+            new_session->pty_bridge_context = NULL;
+        }
+        if (new_session) {
+            remove_terminal_session(new_session);
+        }
+        if (session_data) {
+            session_data->terminal_session = NULL;
+        }
         return NULL;
     }
 
-    log_this(SR_WEBSOCKET, "Created new terminal connection for session: %s", LOG_LEVEL_STATE, 1, new_session->session_id);
+    log_this(SR_WEBSOCKET, "Created new terminal connection for session: %s", LOG_LEVEL_STATE, 1, new_session ? new_session->session_id : "unknown");
 
     return new_session;
 }
