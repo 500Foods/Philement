@@ -572,6 +572,10 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_38_luacheck.sh](tests/test_38_luacheck.sh) - Lua code analysis with luacheck
 - [tests/test_39_database_diagrams.sh](tests/test_39_database_diagrams.sh) - Database diagram generation
 
+### Build and Installer Tests
+
+- [tests/test_80_installer.sh](tests/test_80_installer.sh) - Standalone installer building test
+
 ### Linting Tests
 
 - [tests/test_90_markdownlint.sh](tests/test_90_markdownlint.sh) - Markdown linting (markdownlint)
