@@ -246,7 +246,7 @@ if [[ -n "${CLOC_PID}" ]]; then
         # Generate SVGs from the table files using Oh.sh
         # shellcheck disable=SC2154 # OH defined in framework.sh
         if [[ -f "${CLOC_OUTPUT}" ]]; then
-            ("${OH}" -i "${CLOC_OUTPUT}" -o "${PROJECT_DIR}/images/CLOC_CODE.svg" 2>/dev/null) &
+            ("${OH}" -i "${CLOC_OUTPUT}" --width 74 -o "${PROJECT_DIR}/images/CLOC_CODE.svg" 2>/dev/null) &
         fi
 
         # Check for stats table file

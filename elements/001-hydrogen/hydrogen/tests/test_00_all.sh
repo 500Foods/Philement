@@ -608,8 +608,8 @@ BLACKBOX_COVERAGE=$(get_blackbox_coverage)
 COMBINED_COVERAGE=$(get_combined_coverage)
 
 # Get build number from hydrogen version
-VERSION_FULL=$(../hydrogen --version 2>/dev/null || echo "Hydrogen ver 1.0.0.2010 rel 20251201")
-BUILD_NUMBER=$(echo "${VERSION_FULL}" | grep -oE "ver [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | grep -oE "[0-9]+$" || echo "2010")
+VERSION_FULL=$("${PROJECT_DIR}"/hydrogen --version 2>/dev/null || echo "?")
+BUILD_NUMBER=$(echo "${VERSION_FULL}" | grep -oE "ver [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | grep -oE "[0-9]+$" || echo "?")
 
 # Run coverage table before displaying test results
 
