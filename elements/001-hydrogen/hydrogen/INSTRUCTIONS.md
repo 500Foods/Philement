@@ -82,6 +82,7 @@ tests/          Test framework
 - tests/test_33_mysql_migrations.sh - MySQL migration performance test
 - tests/test_34_sqlite_migrations.sh - SQLite migration performance test
 - tests/test_35_db2_migrations.sh - DB2 migration performance test
+- tests/test_80_installer.sh - Standalone installer building test
 - tests/test_38_luacheck.sh - Lua code analysis with luacheck
 - tests/test_39_database_diagrams.sh - Database diagram generation
 - tests/test_41_conduit.sh - Conduit Query endpoint test
