@@ -46,3 +46,11 @@ src/api/conduit/query/query.c
 
 View missing coverage:
 cd elements/001-hydrogen/hydrogen && ./extras/add_coverage.sh build/unity/src/api/conduit/query/query.c.gcov build/coverage/src/api/conduit/query/query.c.gcov
+
+## Update Release Notes
+
+Hydrogen project is in elements/001-hydrogen/hydrogen folder.
+Review INSTRUCTIONS.md
+Review docs/CURIOSITIES.md
+
+Time to update our release notes again. Review RELEASES.md and follow the instructions in the comments at the top very closely. It would probably work best if you started a new subtask for each date, but I'd like yuo to create new release notes for each date that has changes, since the last release note listed in RELEASES.md. When you're done, also update the RELEASES.md file itself to include them all.
