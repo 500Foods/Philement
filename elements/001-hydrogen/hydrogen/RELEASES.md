@@ -61,7 +61,23 @@ Remember:
 - Group by topic to maintain clarity
 -->
 
+- December 2025
+  - [2025-Dec-03 (Wed)](docs/releases/2025-12/2025-12-03.md): Installer system refactoring and standalone test implementation
+  - [2025-Dec-02 (Tue)](docs/releases/2025-12/2025-12-02.md): Core handling enhancements, payload tools reorganization, and testing improvements
+  - [2025-Dec-01 (Mon)](docs/releases/2025-12/2025-12-01.md): Installer updates, testing enhancements, and utility scripts
+
 - November 2025
+  - [2025-Nov-30 (Sun)](docs/releases/2025-11/2025-11-30.md): Terminal I/O enhancements and comprehensive testing
+  - [2025-Nov-29 (Sat)](docs/releases/2025-11/2025-11-29.md): Test fixes and installer update
+  - [2025-Nov-28 (Fri)](docs/releases/2025-11/2025-11-28.md): Brotli UDF enhancements and migration fixes
+  - [2025-Nov-27 (Thu)](docs/releases/2025-11/2025-11-27.md): Brotli decompression UDFs and installer updates
+  - [2025-Nov-26 (Wed)](docs/releases/2025-11/2025-11-26.md): Theme migrations, DB2 parameter handling, and automated updates
+  - [2025-Nov-25 (Tue)](docs/releases/2025-11/2025-11-25.md): Database migration and diagram enhancements
+  - [2025-Nov-24 (Mon)](docs/releases/2025-11/2025-11-24.md): Database query and migration updates
+  - [2025-Nov-23 (Sun)](docs/releases/2025-11/2025-11-23.md): Database parameter handling and migration improvements
+  - [2025-Nov-22 (Sat)](docs/releases/2025-11/2025-11-22.md): Database connection and query enhancements
+  - [2025-Nov-21 (Fri)](docs/releases/2025-11/2025-11-21.md): Database migration and testing updates
+  - [2025-Nov-20 (Thu)](docs/releases/2025-11/2025-11-20.md): Database query and migration enhancements
   - [2025-Nov-18 (Tue)](docs/releases/2025-11/2025-11-18.md): Database JSON handling and query enhancements
   - [2025-Nov-16 (Sun)](docs/releases/2025-11/2025-11-16.md): Database diagram testing and migration load testing
   - [2025-Nov-15 (Sat)](docs/releases/2025-11/2025-11-15.md): SQLite connection and type enhancements
