@@ -284,7 +284,7 @@ EOF
                     (if $core.C then
                         {
                             section: "primary",
-                            language: "Core Code C/Headers",
+                            language: "Core C/Headers",
                             files: ($core.C.nFiles // 0),
                             blank: ($core.C.blank // 0),
                             comment: ($core.C.comment // 0),
@@ -297,7 +297,7 @@ EOF
                     (if $test.C then
                         {
                             section: "primary",
-                            language: "Unit Test C/Headers",
+                            language: "Test C/Headers",
                             files: ($test.C.nFiles // 0),
                             blank: ($test.C.blank // 0),
                             comment: ($test.C.comment // 0),
