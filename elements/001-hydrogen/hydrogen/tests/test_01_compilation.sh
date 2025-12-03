@@ -7,6 +7,7 @@
 # download_unity_framework()
 
 # CHANGELOG
+# 4.3.0 - 2025-12-03 - Extracted installer building functionality to standalone Test 80 (INS)
 # 4.2.0 - 2025-11-22 - Enhanced payload check to verify migration file timestamps - regenerates if any migration files are newer than payload
 # 4.1.0 - 2025-10-01 - Major optimization: Reduced rebuild time from 10-15s to ~1s with VERSION/RELEASE caching, simplified payload check, optimized source detection, and installer skip
 # 4.0.9 - 2025-10-01 - Fixed build skip logic to actually skip cmake command when nothing changed
@@ -40,206 +41,11 @@ TEST_NAME="Compilation"
 TEST_ABBR="CMP"
 TEST_NUMBER="01"
 TEST_COUNTER=0
-TEST_VERSION="4.2.0"
+TEST_VERSION="4.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
-
-# Function to build installer
-build_installer() {
-    local installer_output
-    local release_date
-    local config_sha
-    local license_sha
-    local exe_sha
-    local signature
-    local installer_dir
-
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Build Hydrogen Installer"
-
-    # Set installer directory relative to project root
-    installer_dir="${PROJECT_DIR}/installer"
-
-    # Get release date in yyyymmdd format
-    release_date=$(date +%Y%m%d)
-    
-    # Check if we can skip installer build (if hydrogen_release hasn't changed)
-    local installer_output="${installer_dir}/hydrogen_installer_${release_date}.sh"
-    if [[ -f "${installer_output}" ]] && [[ -f "${PROJECT_DIR}/hydrogen_release" ]]; then
-        # Compare modification times
-        if [[ "${installer_output}" -nt "${PROJECT_DIR}/hydrogen_release" ]]; then
-            local installer_size
-            installer_size=$(get_file_size "${installer_output}")
-            local formatted_size
-            formatted_size=$(format_file_size "${installer_size}")
-            print_optimization_status "Installer Build" "SKIP" "Installer already up to date"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Installer already exists: ${installer_output} (${formatted_size} bytes)"
-            PASS_COUNT=$(( PASS_COUNT + 1 ))
-            return 0
-        fi
-    fi
-    
-    print_optimization_status "Installer Build" "BUILD" "Building installer.."
-
-
-    # Generate SHA256 hashes for files
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "sha256sum examples/configs/hydrogen_default.json LICENSE.md hydrogen_release"
-    config_sha=$(sha256sum "${PROJECT_DIR}/examples/configs/hydrogen_default.json" | cut -d' ' -f1)
-    license_sha=$(sha256sum "${PROJECT_DIR}/LICENSE.md" | cut -d' ' -f1)
-    exe_sha=$(sha256sum "${PROJECT_DIR}/hydrogen_release" | cut -d' ' -f1)
-
-    # Base64 encode and line wrap files (76 chars)
-    local config_b64
-    local license_b64
-    local exe_b64
-
-    config_b64=$(base64 -w 76 "${PROJECT_DIR}/examples/configs/hydrogen_default.json")
-    license_b64=$(base64 -w 76 "${PROJECT_DIR}/LICENSE.md")
-    exe_b64=$(base64 -w 76 "${PROJECT_DIR}/hydrogen_release")
-
-    # Add '# ' prefix to each line
-    config_b64=${config_b64//$'\n'/$'\n'# }
-    config_b64="# ${config_b64}"
-    license_b64=${license_b64//$'\n'/$'\n'# }
-    license_b64="# ${license_b64}"
-    exe_b64=${exe_b64//$'\n'/$'\n'# }
-    exe_b64="# ${exe_b64}"
-
-    # Get version and release from the executable directly
-    local version release
-    if [[ -f "${PROJECT_DIR}/hydrogen_release" ]]; then
-        # Extract version and release from executable output
-        local version_output
-        version_output=$("${PROJECT_DIR}/hydrogen_release" --version 2>/dev/null | head -1 || echo "")
-
-        if [[ -n "${version_output}" ]]; then
-            # Parse output like "Hydrogen ver 1.0.0.1721 rel 20250907"
-            if [[ "${version_output}" =~ ver[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-                version="${BASH_REMATCH[1]}"
-            fi
-            if [[ "${version_output}" =~ rel[[:space:]]+([0-9]+) ]]; then
-                release="${BASH_REMATCH[1]}"
-            fi
-
-            if [[ -z "${version}" ]]; then
-                version="1.0.1"
-            fi
-            if [[ -z "${release}" ]]; then
-                release=$(date +%Y%m%d)
-            fi
-        else
-            version="1.0.1"
-            release=$(date +%Y%m%d)
-        fi
-    else
-        version="1.0.1"
-        release=$(date +%Y%m%d)
-    fi
-
-    local public_key="${HYDROGEN_INSTALLER_LOCK:-}"
-
-    # Copy installer template
-    cp "${installer_dir}/installer_wrapper.sh" "${installer_output}"
-
-    # Replace placeholders
-    sed -i "s/HYDROGEN_VERSION/${version}/g" "${installer_output}"
-    sed -i "s/HYDROGEN_RELEASE/${release_date}/g" "${installer_output}"
-    sed -i "s/HYDROGEN_INSTALLER_LOCK/${public_key}/g" "${installer_output}"
-
-    # Insert base64 content with sha256 hashes (single marker per section)
-    # Order: executable, config, license
-
-    # Use sed with r command to read from files directly (avoids argument list too long)
-    local exe_content_file="/tmp/exe_content_$$.txt"
-    local config_content_file="/tmp/config_content_$$.txt"
-    local license_content_file="/tmp/license_content_$$.txt"
-
-    # Create content files
-    echo -e "### HYDROGEN EXECUTABLE: ${exe_sha}\n#\n${exe_b64}" > "${exe_content_file}"
-    echo -e "### HYDROGEN CONFIGURATION: ${config_sha}\n#\n${config_b64}" > "${config_content_file}"
-    echo -e "### HYDROGEN LICENSE: ${license_sha}\n#\n${license_b64}" > "${license_content_file}"
-
-    # Replace markers with content using sed r command (read file then delete marker)
-    sed -i "/### HYDROGEN EXECUTABLE/{
-        r ${exe_content_file}
-        d
-    }" "${installer_output}"
-    sed -i "/### HYDROGEN CONFIGURATION/{
-        r ${config_content_file}
-        d
-    }" "${installer_output}"
-    sed -i "/### HYDROGEN LICENSE/{
-        r ${license_content_file}
-        d
-    }" "${installer_output}"
-
-    # Clean up temp files
-    rm -f "${exe_content_file}" "${config_content_file}" "${license_content_file}"
-
-    # Set executable permissions
-    chmod +x "${installer_output}"
-
-    # Generate signature using openssl (if keys are available) - AFTER file is complete
-    local signature_text=""
-    if [[ -n "${HYDROGEN_INSTALLER_KEY:-}" ]]; then
-        local key_file="/tmp/private_key_$$.pem"
-        # Decode the base64 private key and write to file
-        echo "${HYDROGEN_INSTALLER_KEY}" | base64 -d > "${key_file}"
-
-        # Debug: Check if key file was created and has content
-        if [[ ! -f "${key_file}" ]] || [[ ! -s "${key_file}" ]]; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Failed to create or decode private key file"
-            echo -e "\n### HYDROGEN SIGNATURE" >> "${installer_output}"
-        else
-            # Sign the entire installer file content
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Generating signature with openssl..."
-            if signature=$(openssl dgst -sha256 -sign "${key_file}" "${installer_output}" 2>/dev/null | base64 -w 76); then
-                if [[ -n "${signature}" ]]; then
-                    signature_text=${signature//$'\n'/$'\n'# }
-                    signature_text="# ${signature_text}"
-                    # Use a temporary file to avoid sed command issues with newlines
-                    local sig_file="/tmp/signature_content_$$.txt"
-                    echo -e "#\n${signature_text}" > "${sig_file}"
-                    sed -i "/### HYDROGEN SIGNATURE/r ${sig_file}" "${installer_output}"
-                    rm -f "${sig_file}"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Signature generated successfully"
-                else
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Signature generation returned empty result"
-                    sed -i "s|### HYDROGEN SIGNATURE|### HYDROGEN SIGNATURE\n#}" "${installer_output}"
-                fi
-            else
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "openssl command failed"
-                sed -i "s|### HYDROGEN SIGNATURE|### HYDROGEN SIGNATURE\n#}" "${installer_output}"
-            fi
-            # Clean up key file
-            rm -f "${key_file}"
-        fi
-    else
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HYDROGEN_INSTALLER_KEY not available, skipping signature generation"
-        echo -e "\n### HYDROGEN SIGNATURE" >> "${installer_output}"
-    fi
-
-    # Clean up old installers, keep only most recent 5
-    local installer_count=0
-    installer_count=$(find "${installer_dir}" -maxdepth 1 -name "hydrogen_installer_*.sh" -type f 2>/dev/null | wc -l || true)
-
-    if [[ "${installer_count}" -gt 5 ]]; then
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Cleaning up old installers, keeping 5 most recent"
-        find "${installer_dir}" -maxdepth 1 -name "hydrogen_installer_*.sh" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n -5 | cut -d' ' -f2- | xargs rm -f || true
-    fi
-
-    # Check if installer was created successfully
-    if [[ -f "${installer_output}" ]]; then
-        installer_size=$(get_file_size "${installer_output}")
-        formatted_size=$(format_file_size "${installer_size}")
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Installer created successfully: ${installer_output} (${formatted_size} bytes)"
-        PASS_COUNT=$(( PASS_COUNT + 1 ))
-    else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to create installer file"
-        EXIT_CODE=1
-    fi
-}
 
 # Function to download Unity framework if missing
 download_unity_framework() {
@@ -791,9 +597,6 @@ if [[ -f "hydrogen_release" ]]; then
         formatted_size=$(format_file_size "${release_size}")
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Release executable has embedded payload (${formatted_size} bytes total)"
         PASS_COUNT=$(( PASS_COUNT + 1 ))
-
-        # Generate installer
-        build_installer
     else
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Release executable appears to be missing embedded payload marker"
         EXIT_CODE=1
