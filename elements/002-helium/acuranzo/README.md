@@ -30,7 +30,7 @@ This folder contains the migrations (aka database DDL and SQL) for creating a ne
 
 | M# | Table | Version | Updated | Stmts | Diagram | Description |
 |----|-------|---------|---------|-------|---------|-------------|
-| [1000](acuranzo/migrations/acuranzo_1000.lua) | queries | 3.1.0 | 2025-11-23 | 9 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
+| [1000](acuranzo/migrations/acuranzo_1000.lua) | queries | 4.0.0 | 2025-11-27 | 13 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
 | [1001](acuranzo/migrations/acuranzo_1001.lua) | lookups | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the lookups table |
 | [1002](acuranzo/migrations/acuranzo_1002.lua) | account_access | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_access table |
 | [1003](acuranzo/migrations/acuranzo_1003.lua) | account_contacts | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_contacts table |
@@ -97,6 +97,6 @@ This folder contains the migrations (aka database DDL and SQL) for creating a ne
 | [1064](acuranzo/migrations/acuranzo_1064.lua) | lookups | 1.0.0 | 2025-11-25 | 6 |  | Defaults for Lookup 039 - AI Auditor Engines |
 | [1065](acuranzo/migrations/acuranzo_1065.lua) | lookups | 1.0.0 | 2025-11-25 | 6 |  | Defaults for Lookup 040 - Icons |
 | [1066](acuranzo/migrations/acuranzo_1066.lua) | lookups | 1.0.0 | 2025-11-26 | 4 |  | Defaults for Lookup 041 - Themes |
-| [1067](acuranzo/migrations/acuranzo_1067.lua) | lookups | 1.0.0 | 2025-11-26 | 2 |  | Theme - Default |
-| [1068](acuranzo/migrations/acuranzo_1068.lua) | lookups | 1.0.0 | 2025-11-26 | 2 |  | Theme - Bluish |
-| **69** | | | | **403** | **24** | |
+| [1067](acuranzo/migrations/acuranzo_1067.lua) | lookups | 1.0.1 | 2025-11-28 | 4 |  | Theme - Default |
+| [1068](acuranzo/migrations/acuranzo_1068.lua) | lookups | 1.0.0 | 2025-11-26 | 4 |  | Theme - Bluish |
+| **69** | | | | **411** | **24** | |
