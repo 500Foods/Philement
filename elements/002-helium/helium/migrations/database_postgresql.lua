@@ -31,7 +31,20 @@ return {
     BASE64_START = "CONVERT_FROM(DECODE(",
     BASE64_END = ", 'base64'), 'UTF8')",
 
+    COMPRESS_START = "${SCHEMA}brotli_decompress(DECODE(",
+    COMPRESS_END = ", 'base64'))",
+
     DROP_CHECK = "SELECT pg_catalog.pg_terminate_backend(pg_backend_pid()) FROM ${SCHEMA}${TABLE} LIMIT 1",
+
+    BROTLI_DECOMPRESS_FUNCTION = [[
+        -- PostgreSQL C extension for Brotli decompression
+        -- Requires: libbrotlidec and brotli_decompress.so in PostgreSQL lib directory
+        -- Installation handled via extras/brotli_udf_postgresql/
+        CREATE OR REPLACE FUNCTION ${SCHEMA}brotli_decompress(compressed bytea)
+        RETURNS text
+        AS 'brotli_decompress', 'brotli_decompress'
+        LANGUAGE c STRICT IMMUTABLE;
+    ]],
 
     JSON = "jsonb",
     JIS = "${SCHEMA}json_ingest (",
