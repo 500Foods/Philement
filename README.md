@@ -75,14 +75,14 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-12-03 22:34:59 UTC
+Last updated at 2025-12-04 03:34:00 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 JSON                           109             67              0         248513
 C                              875          35915          34317         126102
 SVG                            109            212           2646         100735
-Markdown                       421          11484             62          33485
+Markdown                       421          11490             62          33491
 Text                            65             64              0          22112
 Bourne Shell                    90           4228          65350          19624
 Lua                             81           1741           1433          12534
@@ -99,16 +99,14 @@ Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 -------------------------------------------------------------------------------
-SUM:                          1993          56426         109776         572811
+SUM:                          1993          56432         109776         572817
 -------------------------------------------------------------------------------
-238 Files were skipped (duplicate, binary, or without source code):
+234 Files were skipped (duplicate, binary, or without source code):
   svg: 172
   lua: 12
   gitignore: 4
   jpg: 3
   png: 3
-  b64: 2
-  br: 2
   clp: 2
   dproj: 2
   json: 2
@@ -119,8 +117,8 @@ SUM:                          1993          56426         109776         572811
   sqruff_sqlite: 2
   3mf: 1
   backup: 1
+  br: 1
   control: 1
-  dat: 1
   detailed: 1
   disabled: 1
   gcode: 1
