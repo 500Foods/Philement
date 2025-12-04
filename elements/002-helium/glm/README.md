@@ -6,6 +6,16 @@ The goal of including a migration here is to provide a path forward from an agin
 
 As this gets implemented, it, like the other schemas here, will be structured to support DB2, MySQL/MariaDB, PostgreSQL, and SQLite engines.
 
+## Database Files
+
+| File | Purpose |
+|------|---------|
+| [`database.lua`](migrations/database.lua) | Converts migration files to engine-specific SQL using macros and fancy formatting tricks |
+| [`database_mysql.lua`](migrations/database_mysql.lua) | MySQL-specific database configuration |
+| [`database_postgresql.lua`](migrations/database_postgresql.lua) | PostgreSQL-specific database configuration |
+| [`database_sqlite.lua`](migrations/database_sqlite.lua) | SQLite-specific database configuration |
+| [`database_db2.lua`](migrations/database_db2.lua) | IBM DB2-specific database configuration |
+
 ## Migrations
 
 | M# | Table | Version | Updated | Stmts | Diagram | Description |
