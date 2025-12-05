@@ -9,7 +9,6 @@
 
 // Include necessary headers for the module being tested
 #include <src/launch/launch.h>
-#include <src/launch/launch_database.c>
 
 // Mock includes for comprehensive testing
 #define USE_MOCK_LIBPQ

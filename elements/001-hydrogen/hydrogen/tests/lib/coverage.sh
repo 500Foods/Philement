@@ -15,6 +15,7 @@
 # calculate_blackbox_coverage()
 
 # CHANGELOG
+# 3.5.0 - 2025-12-05 - Updated timestamp checks to use nanosecond precision to prevent regeneration when timestamps are equal
 # 3.4.0 - 2025-10-15 - Added calculate_test_instrumented_lines() function for counting test file instrumentation
 # 3.3.0 - 2025-10-06 - Added instructions for updating discrepancy counts
 # 3.2.0 - 2025-09-17 - Added DISCREPANCY to calculation
@@ -48,7 +49,7 @@ DISCREPANCY_COVERAGE=74
 
 # Library metadata
 COVERAGE_NAME="Coverage Library"
-COVERAGE_VERSION="3.3.0"
+COVERAGE_VERSION="3.5.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${COVERAGE_NAME} ${COVERAGE_VERSION}" "info" 2> /dev/null || true
 
@@ -140,7 +141,7 @@ validate_coverage_consistency() {
                     total_lines=$((total_lines + file_total))
                     covered_lines=$((covered_lines + file_covered))
                 fi
-            done < <("${FIND}" "${build_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
+            done < <("${FIND}" "${build_dir}" -name "*.c.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
         fi
     done
     
@@ -250,13 +251,21 @@ calculate_coverage_generic() {
         local gcno="${subdir}/${base}.gcno"
         local gcov_file="${subdir}/${base}.gcov"
         
-        # Timestamp check, adapting for gcno optional in blackbox style
+        # Timestamp check, adapting for gcno optional in blackbox style (using nanosecond precision)
         if [[ "${use_gcno}" == true ]]; then
-            if [[ -f "${gcov_file}" && "${gcov_file}" -nt "${gcno}" && "${gcov_file}" -nt "${gcda}" ]]; then
+            local gcov_mtime gcno_mtime gcda_mtime
+            gcov_mtime=$(stat -c %Y "${gcov_file}" 2>/dev/null || echo "0")
+            gcno_mtime=$(stat -c %Y "${gcno}" 2>/dev/null || echo "0")
+            gcda_mtime=$(stat -c %Y "${gcda}" 2>/dev/null || echo "0")
+            if [[ -f "${gcov_file}" ]] && [[ ${gcov_mtime} -ge ${gcno_mtime} ]] && [[ ${gcov_mtime} -ge ${gcda_mtime} ]]; then
                 continue
             fi
         else
-            if [[ -f "${gcov_file}" && "${gcov_file}" -nt "${gcda}" ]] && { [[ ! -f "${gcno}" ]] || [[ "${gcov_file}" -nt "${gcno}" ]]; }; then
+            local gcov_mtime gcda_mtime gcno_mtime
+            gcov_mtime=$(stat -c %Y "${gcov_file}" 2>/dev/null || echo "0")
+            gcda_mtime=$(stat -c %Y "${gcda}" 2>/dev/null || echo "0")
+            gcno_mtime=$(stat -c %Y "${gcno}" 2>/dev/null || echo "0")
+            if [[ -f "${gcov_file}" ]] && [[ ${gcov_mtime} -ge ${gcda_mtime} ]] && { [[ ! -f "${gcno}" ]] || [[ ${gcov_mtime} -ge ${gcno_mtime} ]]; }; then
                 continue
             fi
         fi
@@ -350,7 +359,7 @@ calculate_coverage_generic() {
             
             gcov_files_to_process+=("${gcov_file}")
         fi
-    done < <("${FIND}" "${dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
+    done < <("${FIND}" "${dir}" -name "*.c.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
     
     # Count total files
     local instrumented_files=${#gcov_files_to_process[@]}
@@ -492,8 +501,12 @@ calculate_test_instrumented_lines() {
         local gcno="${subdir}/${base}.gcno"
         local gcov_file="${subdir}/${base}.gcov"
 
-        # Check if gcov file needs updating
-        if [[ -f "${gcov_file}" && "${gcov_file}" -nt "${gcno}" ]] && { [[ ! -f "${gcda}" ]] || [[ "${gcov_file}" -nt "${gcda}" ]]; }; then
+        # Check if gcov file needs updating (using nanosecond precision)
+        local gcov_mtime gcno_mtime gcda_mtime
+        gcov_mtime=$(stat -c %Y "${gcov_file}" 2>/dev/null || echo "0")
+        gcno_mtime=$(stat -c %Y "${gcno}" 2>/dev/null || echo "0")
+        gcda_mtime=$(stat -c %Y "${gcda}" 2>/dev/null || echo "0")
+        if [[ -f "${gcov_file}" ]] && [[ ${gcov_mtime} -ge ${gcno_mtime} ]] && { [[ ! -f "${gcda}" ]] || [[ ${gcov_mtime} -ge ${gcda_mtime} ]]; }; then
             continue
         fi
 

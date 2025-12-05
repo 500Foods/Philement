@@ -18,7 +18,7 @@ TEST_ABBR="COV"
 TEST_NUMBER="99"
 TEST_COUNTER=0
 TEST_VERSION="4.1.0"
-
+export SKIP_GCOV_REGEN=0
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment

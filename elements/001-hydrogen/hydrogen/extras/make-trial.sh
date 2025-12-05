@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
 # CHANGELOG
-# 2025-07-15: Added Unity test compilation to catch errors in test code during trial builds
+# 2025-12-05: Added dependency check to prevent .c file includes in Unity tests and mocks, resolving gcov regeneration issue
 # 2025-09-24: Added QUICK parameter to skip cleaning and cmake configuration
+# 2025-07-15: Added Unity test compilation to catch errors in test code during trial builds
 
 pushd . >/dev/null 2>&1 || return
 
@@ -127,7 +128,27 @@ if [[ -n "${UNITY_ERRORS}" ]]; then
     exit 1
 fi
 
+# Dependency Check - Ensure no .c files are included in Unity tests and mocks
+echo "$(date +%H:%M:%S.%3N || true) - Dependency Check"
 popd >/dev/null 2>&1 || return
+
+# Check for improper .c includes in Unity tests
+UNITY_C_INCLUDES=$(grep -r "\.c" tests/unity/src 2>/dev/null | grep -i include || true)
+MOCKS_C_INCLUDES=$(grep -r "\.c" tests/unity/mocks 2>/dev/null | grep -i include || true)
+
+if [[ -n "${UNITY_C_INCLUDES}" ]]; then
+    echo "❌ Found improper .c includes in Unity tests:"
+    echo "${UNITY_C_INCLUDES}"
+    exit 1
+fi
+
+if [[ -n "${MOCKS_C_INCLUDES}" ]]; then
+    echo "❌ Found improper .c includes in Unity mocks:"
+    echo "${MOCKS_C_INCLUDES}"
+    exit 1
+fi
+
+echo "$(date +%H:%M:%S.%3N || true) - Dependency Check Passed"
 
 # Remove hydrogen_naked if it exists (byproduct of release builds)
 if [[ -f "hydrogen_naked" ]]; then
