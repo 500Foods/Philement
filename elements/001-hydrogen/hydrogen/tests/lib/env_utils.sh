@@ -11,11 +11,26 @@
 # convert_to_relative_path()
 
 # CHANGELOG
+# 2.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 1.2.2 - 2025-08-08 - Removeed validate_config_files
 # 1.2.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.2.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.1.0 - 2025-07-02 - Updated with additional functions for test_35_env_variables.sh migration
 # 1.0.0 - 2025-07-02 - Initial creation for test_12_env_payload.sh migration
+
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
 
 set -euo pipefail
 
@@ -25,7 +40,7 @@ export ENV_UTILS_GUARD="true"
 
 # Library metadata
 ENV_UTILS_NAME="Environment Utilities Library"
-ENV_UTILS_VERSION="1.2.2"
+ENV_UTILS_VERSION="2.0.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${ENV_UTILS_NAME} ${ENV_UTILS_VERSION}" "info"
 
@@ -100,10 +115,7 @@ validate_rsa_key() {
 # Function to get the full path to a configuration file
 get_config_path() {
     local config_file="$1"
-    local script_dir
-    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    local config_path="${script_dir}/../configs/${config_file}"
-    
+    local config_path="${HYDROGEN_ROOT}/tests/configs/${config_file}"
     echo "${config_path}"
 }
 

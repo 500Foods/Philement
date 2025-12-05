@@ -4,9 +4,24 @@
 # Generates the two cloc tables (main code table and extended statistics) without test framework overhead
 
 # CHANGELOG
+# 2.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 1.2.0 - 2025-10-15 - Added test instrumented lines calculation and display
 # 1.1.0 - 2025-09-23 - Updated to use CLOC Library 6.0.0 with table section breaks
 # 1.0.0 - 2025-09-16 - Initial creation, extracted from test_98_code_size.sh
+
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
 
 set -euo pipefail
 
@@ -15,19 +30,17 @@ TEST_NAME="Cloc Tables"
 TEST_ABBR="CLT"
 TEST_NUMBER="CT"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="2.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 if [[ -z "${FRAMEWORK_GUARD:-}" ]]; then
-    framework_path="$(dirname "${BASH_SOURCE[0]}")/framework.sh"
+    framework_path="${HYDROGEN_ROOT}/tests/lib/framework.sh"
     if [[ -f "${framework_path}" ]]; then
         source "${framework_path}" >/dev/null 2>&1
         setup_test_environment >/dev/null 2>&1
     else
-        # If framework.sh doesn't exist, set up minimal environment
-        export RESULTS_DIR="${script_dir}/../results"
-        mkdir -p "${RESULTS_DIR}" 2>/dev/null || true
-        export DATE="date"
+        echo "❌ Error: Framework file not found at ${framework_path}"
+        exit 1
     fi
 fi
 
@@ -39,23 +52,13 @@ CLOC_DATA=$(mktemp)
 
 # Calculate test instrumented lines count BEFORE running cloc analysis
 # Find project root by going up from current script location until we find the project structure
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Try to find project root by looking for the hydrogen directory
-if [[ -d "${script_dir}/../../hydrogen" ]]; then
-    project_root="${script_dir}/../.."
-elif [[ -d "${script_dir}/../hydrogen" ]]; then
-    project_root="${script_dir}/.."
-else
-    # Fallback: assume we're in tests/lib and project root is ../..
-    project_root="${script_dir}/../.."
-fi
-# Normalize path and ensure it exists
-project_root="$(cd "${project_root}" 2>/dev/null && pwd || echo "${script_dir}/../..")"
+script_dir="${HYDROGEN_ROOT}/tests"
+project_root="${HYDROGEN_ROOT}"
 unity_build_dir="${project_root}/build/unity"
 timestamp=$("${DATE}" +"%Y-%m-%d %H:%M:%S")
 
 # shellcheck source=tests/lib/coverage.sh # Source coverage functions
-[[ -n "${COVERAGE_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/coverage.sh"
+[[ -n "${COVERAGE_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/coverage.sh"
 
 test_lines=$(calculate_test_instrumented_lines "${unity_build_dir}" "${timestamp}")
 

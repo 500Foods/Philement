@@ -15,6 +15,7 @@
 # calculate_blackbox_coverage()
 
 # CHANGELOG
+# 4.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 3.5.0 - 2025-12-05 - Updated timestamp checks to use nanosecond precision to prevent regeneration when timestamps are equal
 # 3.4.0 - 2025-10-15 - Added calculate_test_instrumented_lines() function for counting test file instrumentation
 # 3.3.0 - 2025-10-06 - Added instructions for updating discrepancy counts
@@ -24,6 +25,20 @@
 # 2.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 2.0.0 - 2025-07-11 - Refactored into modular components
 # 1.0.0 - 2025-07-11 - Initial version with Unity and blackbox coverage functions
+
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
 
 set -euo pipefail
 
@@ -49,12 +64,12 @@ DISCREPANCY_COVERAGE=74
 
 # Library metadata
 COVERAGE_NAME="Coverage Library"
-COVERAGE_VERSION="3.5.0"
+COVERAGE_VERSION="4.0.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${COVERAGE_NAME} ${COVERAGE_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
-PROJECT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+PROJECT_DIR="${HYDROGEN_ROOT}"
 SCRIPT_DIR="${PROJECT_DIR}/tests"
 LIB_DIR="${SCRIPT_DIR}/lib"
 BUILD_DIR="${PROJECT_DIR}/build"

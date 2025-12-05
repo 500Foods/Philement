@@ -21,6 +21,7 @@
 # print_test_completion()
 
 # CHANGELOG
+# 4.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 3.9.0 - 2025-08-18 - Inlining some functions for performance 
 # 3.8.0 - 2025-08-17 - Converted OUTPUT_COLLECTION from array to simple string for improved performance
 # 3.7.0 - 2025-08-10 - Simplifid some log output naming, cleared out mktemp calls
@@ -41,6 +42,20 @@
 # 2.0.0 - 2025-07-02 - Complete rewrite with numbered output system
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
+
 set -euo pipefail
 
 # Guard clause to prevent multiple sourcing
@@ -49,7 +64,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="3.9.0"
+LOG_OUTPUT_VERSION="4.0.0"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
