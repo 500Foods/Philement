@@ -17,6 +17,7 @@
 # collect_timing_data()
 
 # CHANGELOG
+# 2.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 1.3.0 - 2025-09-19 - Added timing and file download functions from test_22_swagger.sh
 #                    - Added handle_timing_file(), test_file_download(), collect_timing_data()
 #                    - Support for test script refactoring and code reuse
@@ -24,6 +25,20 @@
 # 1.2.0 - 2025-07-30 - Added common should_exclude_file() from other scripts
 # 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
+
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
 
 set -euo pipefail
 
@@ -33,7 +48,7 @@ export FILE_UTILS_GUARD="true"
 
 # Library metadata
 FILE_UTILS_NAME="File Utilities Library"
-FILE_UTILS_VERSION="1.3.0"
+FILE_UTILS_VERSION="2.0.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${FILE_UTILS_NAME} ${FILE_UTILS_VERSION}" "info"
 
@@ -117,9 +132,7 @@ get_file_size() {
 # This centralizes config file access and handles the configs/ subdirectory
 get_config_path() {
     local config_file="$1"
-    local script_dir
-    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    local config_path="${script_dir}/../configs/${config_file}"
+    local config_path="${HYDROGEN_ROOT}/tests/configs/${config_file}"
     echo "${config_path}"
 }
 

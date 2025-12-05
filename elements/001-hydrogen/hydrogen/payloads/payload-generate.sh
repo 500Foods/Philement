@@ -14,6 +14,7 @@
 # - Cleans up all temporary files
 
 # CHANGELONG
+# 4.0.0 - 2024-12-05 - Added env var dependency checks
 # 3.0.0 - 2025-09-30 - Added Helium migration files to payload
 # 2.2.0 - Added terminal payload generation with xterm.js
 # 2.1.0 - Added swagger/ directory structure within tar file for better organization
@@ -22,18 +23,32 @@
 # 1.1.0 - Added RSA+AES hybrid encryption support
 # 1.0.0 - Initial release with basic payload generation
 
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
+
 set -e
 
 # Display script information
-echo "payload-generate.sh version 3.0.0"
+echo "payload-generate.sh version 4.0.0"
 echo "Encrypted Payload Generator for Hydrogen"
 
 # Helium project Migrations to include (same as test_31_migrations.sh)
 DESIGNS=("helium" "acuranzo")
-HELIUM_DIR="../../../../elements/002-helium"
+HELIUM_DIR="${HELIUM_ROOT}"
 
 # Path configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="${HYDROGEN_ROOT}/payloads"
 readonly SCRIPT_DIR
 readonly SWAGGERUI_DIR="${SCRIPT_DIR}/swaggerui"
 readonly XTERMJS_DIR="${SCRIPT_DIR}/xtermjs"

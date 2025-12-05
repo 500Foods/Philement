@@ -5,14 +5,29 @@
 # This script scans the API code and extracts OpenAPI annotations
 # to generate an OpenAPI 3.1.0 specification file for API documentation
 
-# CHANGELOG
+# CHANGELOG        
+# 2.0.0 - 2025-12-05 - Added HYDROGEN_ROOT environment variable check for proper path handling
 # 1.3.0 - 2025-10-20 - Added parameter processing support for query, path, header, and body parameters
 # 1.2.0 - 2024-01-01 - Improved modularity, fixed shellcheck warnings, enhanced error handling
 # 1.1.0 - 2024-01-01 - Added support for multiple HTTP methods and improved tag handling
 # 1.0.0 - 2024-01-01 - Initial release with basic OpenAPI generation
 
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi   
+
 # Display script information
-echo "swagger-generate.sh version 1.3.0"
+echo "swagger-generate.sh version 2.0.0"
 echo "OpenAPI JSON Generator for Hydrogen REST API"
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
@@ -60,10 +75,10 @@ convert_to_relative_path() {
 set -e
 
 # Path configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="${HYDROGEN_ROOT}/payloads"
 readonly SCRIPT_DIR
 
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PROJECT_ROOT="${HYDROGEN_ROOT}"
 readonly PROJECT_ROOT
 
 readonly API_DIR="${PROJECT_ROOT}/src/api"

@@ -11,6 +11,23 @@
 # 3. Build the specific test using CMake
 # 4. Run the test and show results
 
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
+
+# Get the directory where this script is located
+PROJECT_ROOT="${HYDROGEN_ROOT}"
+
 set -e  # Exit on any error
 
 # Color codes for output
@@ -55,10 +72,6 @@ if [[ $# -eq 0 ]]; then
 fi
 
 TEST_NAME="$1"
-
-# Find the project root directory (where this script is located)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # Define important paths
 TESTS_DIR="${PROJECT_ROOT}/tests"

@@ -9,8 +9,23 @@
 # identify_uncovered_files()
 
 # CHANGELOG
+# 2.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 1.1.0 - 2025-08-10 - Added caching to calculate_combined_coverage()
 # 1.0.0 - 2025-07-21 - Initial version with combined coverage functions
+
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
 
 # Guard clause to prevent multiple sourcing
 [[ -n "${COVERAGE_COMBINED_GUARD:-}" ]] && return 0
@@ -18,12 +33,12 @@ export COVERAGE_COMBINED_GUARD="true"
 
 # Library metadata
 COVERAGE_COMBINED_NAME="Coverage Combined Library"
-COVERAGE_COMBINED_VERSION="1.0.0"
+COVERAGE_COMBINED_VERSION="2.0.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${COVERAGE_COMBINED_NAME} ${COVERAGE_COMBINED_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
-PROJECT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+PROJECT_DIR="${HYDROGEN_ROOT}"
 SCRIPT_DIR="${PROJECT_DIR}/tests"
 LIB_DIR="${SCRIPT_DIR}/lib"
 BUILD_DIR="${PROJECT_DIR}/build"

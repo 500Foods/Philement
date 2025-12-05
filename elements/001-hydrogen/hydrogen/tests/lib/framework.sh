@@ -18,6 +18,7 @@
 # evaluate_test_result_silent()
 
 # CHANGELOG
+# 3.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 2.8.1 - 2025-08-18 - Upgraded elapsed_time() to use $EPOCHREALTIME for more performance
 # 2.8.0 - 2025-08-08 - Cleaned out some mktemp calls
 # 2.7.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
@@ -31,6 +32,19 @@
 # 2.0.0 - 2025-07-02 - Updated to integrate with numbered output system
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
 set -euo pipefail
 
 # Let's get this party started... Maybe
@@ -68,7 +82,7 @@ fi
 
 # Library metadata
 FRAMEWORK_NAME="Framework Library"
-FRAMEWORK_VERSION="2.8.0"
+FRAMEWORK_VERSION="3.0.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Use this once
@@ -249,7 +263,7 @@ setup_orchestration_environment() {
     COLLECT_OUTPUT_MODE=true
     
     # Global folder variables
-    PROJECT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+    PROJECT_DIR="${HYDROGEN_ROOT}"
     pushd "${PROJECT_DIR}" >/dev/null 2>&1 || return
     
     CMAKE_DIR="${PROJECT_DIR}/cmake"
@@ -347,7 +361,7 @@ setup_test_environment() {
         TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
 
         # Global folder variables
-        PROJECT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+        PROJECT_DIR="${HYDROGEN_ROOT}"
         pushd "${PROJECT_DIR}" >/dev/null 2>&1 || return
 
         CMAKE_DIR="${PROJECT_DIR}/cmake"

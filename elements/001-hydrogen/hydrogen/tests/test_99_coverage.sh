@@ -4,11 +4,26 @@
 # Collects and analyzes coverage data from Unity and blackbox tests
 
 # CHANGELOG
+# 5.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 4.1.0 - 2025-10-10 - Sorted list of uncovered files
 # 4.0.0 - 2025-00-14 - Overhaul #2 - all about the test count stuff at the end
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 2.0.0 - Initial version with comprehensive coverage analysis
+
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
 
 set -euo pipefail
 
@@ -17,10 +32,10 @@ TEST_NAME="Test Suite Coverage {BLUE}(coverage_table){RESET}"
 TEST_ABBR="COV"
 TEST_NUMBER="99"
 TEST_COUNTER=0
-TEST_VERSION="4.1.0"
+TEST_VERSION="5.0.0"
 export SKIP_GCOV_REGEN=0
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
 setup_test_environment
 
 # Function to format numbers with thousands separators

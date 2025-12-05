@@ -14,10 +14,25 @@
 # collect_gcov_files()
 
 # CHANGELOG
+# 3.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 2.1.0 - 2025-08-10 - Added caching to analyze_all_gcov_coverage_batch()
 # 2.0.0 - 2025-08-04 - GCOV Optimization Adventure
 # 1.1.0 - 2025-07-30 - Removed cleanup_coverage_data - not needed
 # 1.0.0 - 2025-07-21 - Initial version with common coverage functions
+
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
 
 set -euo pipefail
 
@@ -27,12 +42,12 @@ export COVERAGE_COMMON_GUARD="true"
 
 # Library metadata
 COVERAGE_COMMON_NAME="Coverage Common Library"
-COVERAGE_COMMON_VERSION="2.1.0"
+COVERAGE_COMMON_VERSION="3.0.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${COVERAGE_COMMON_NAME} ${COVERAGE_COMMON_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
-PROJECT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+PROJECT_DIR="${HYDROGEN_ROOT}"
 # SCRIPT_DIR="${PROJECT_DIR}/tests"
 # LIB_DIR="${SCRIPT_DIR}/lib"
 BUILD_DIR="${PROJECT_DIR}/build"

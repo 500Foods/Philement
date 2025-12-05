@@ -5,7 +5,21 @@
 # 2025-09-24: Added QUICK parameter to skip cleaning and cmake configuration
 # 2025-07-15: Added Unity test compilation to catch errors in test code during trial builds
 
-pushd . >/dev/null 2>&1 || return
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
+
+pushd . >/dev/null 2>&1 || exit 1
 
 # Check if QUICK parameter is supplied
 QUICK_MODE=false
@@ -24,11 +38,34 @@ if [[ "${QUICK_MODE}" != "true" ]]; then
     echo "$(date +%H:%M:%S.%3N || true) - Configuring CMake"
     cd cmake && cmake -S . -B ../build --preset default >/dev/null 2>&1
 else
-    cd cmake || return
+    cd cmake || exit 1
 fi
 
+# Dependency Check - Ensure no .c files are included in Unity tests and mocks
+echo "$(date +%H:%M:%S.%3N || true) - Dependency Check"
+popd >/dev/null 2>&1 || exit 1
+
+# Check for improper .c includes in Unity tests
+UNITY_C_INCLUDES=$(grep -r "\.c" tests/unity/src 2>/dev/null | grep -i include || true)
+MOCKS_C_INCLUDES=$(grep -r "\.c" tests/unity/mocks 2>/dev/null | grep -i include || true)
+
+if [[ -n "${UNITY_C_INCLUDES}" ]]; then
+    echo "❌ Found improper .c includes in Unity tests:"
+    echo "${UNITY_C_INCLUDES}"
+    exit 1
+fi
+
+if [[ -n "${MOCKS_C_INCLUDES}" ]]; then
+    echo "❌ Found improper .c includes in Unity mocks:"
+    echo "${MOCKS_C_INCLUDES}"
+    exit 1
+fi
+
+echo "$(date +%H:%M:%S.%3N || true) - Dependency Check Passed"
+cd cmake || exit 1
+
 # Build mku completions mechanism
-project_root=$(cd ".." && pwd 2>/dev/null) || return 0
+project_root=$(cd ".." && pwd 2>/dev/null) || exit 0
 unity_src_dir="${project_root}/tests/unity/src"
 mapfile -t tests < <(find "${unity_src_dir}" -name "*.c" -exec basename {} .c \; | sort -u || true)
 
@@ -65,7 +102,7 @@ _mku() {
 
     # Use cached project root path to avoid repeated directory checks
     if [[ -z "\$_MKU_PROJECT_ROOT" ]]; then
-        _MKU_PROJECT_ROOT="/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen"
+        _MKU_PROJECT_ROOT="${HYDROGEN_ROOT}"
         [[ ! -d "\$_MKU_PROJECT_ROOT" ]] && return 1
     fi
 
@@ -128,28 +165,6 @@ if [[ -n "${UNITY_ERRORS}" ]]; then
     exit 1
 fi
 
-# Dependency Check - Ensure no .c files are included in Unity tests and mocks
-echo "$(date +%H:%M:%S.%3N || true) - Dependency Check"
-popd >/dev/null 2>&1 || return
-
-# Check for improper .c includes in Unity tests
-UNITY_C_INCLUDES=$(grep -r "\.c" tests/unity/src 2>/dev/null | grep -i include || true)
-MOCKS_C_INCLUDES=$(grep -r "\.c" tests/unity/mocks 2>/dev/null | grep -i include || true)
-
-if [[ -n "${UNITY_C_INCLUDES}" ]]; then
-    echo "❌ Found improper .c includes in Unity tests:"
-    echo "${UNITY_C_INCLUDES}"
-    exit 1
-fi
-
-if [[ -n "${MOCKS_C_INCLUDES}" ]]; then
-    echo "❌ Found improper .c includes in Unity mocks:"
-    echo "${MOCKS_C_INCLUDES}"
-    exit 1
-fi
-
-echo "$(date +%H:%M:%S.%3N || true) - Dependency Check Passed"
-
 # Remove hydrogen_naked if it exists (byproduct of release builds)
 if [[ -f "hydrogen_naked" ]]; then
     rm -f "hydrogen_naked"
@@ -159,9 +174,12 @@ fi
 # Check if build was successful
 if (echo "${UNITY_BUILD_OUTPUT}" | grep -q "completed successfully" || echo "${UNITY_BUILD_OUTPUT}" | grep -q "no work to do") && [[ -z "${ERRORS}" ]]; then
     echo "$(date +%H:%M:%S.%3N || true) - Build Successful"
-    
+
+    # Return to project root for final checks
+    popd >/dev/null 2>&1 || exit 1
+
     # Binary is already created in root directory by hydrogen target
-    
+
     # Run shutdown test
     echo "$(date +%H:%M:%S.%3N || true) - Running Shutdown Test"
 

@@ -5,12 +5,28 @@
 # This script downloads xterm.js from GitHub and creates terminal interface assets
 
 # Change Log:
-# Version 1.1.0 - Added copying of generated terminal files to tests/artifacts/terminal directory as payload-terminal.css and payload-terminal.html
+# 2.0.0 - 2025-12-05 - Updated with proper path handling using HYDROGEN_ROOT environment variable
+# 1.1.0 - 2025-11-30 - Added copying of generated terminal files to tests/artifacts/terminal directory as payload-terminal.css and payload-terminal.html
+# 1.0.0 - 2025-08-31 - Initial release to download xterm.js and create terminal interface files
+
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi                       
 
 set -e
 
 # Display script information
-echo "terminal-generate.sh version 1.1.0"
+echo "terminal-generate.sh version 2.0.0"
 echo "xterm.js Payload Generator for Hydrogen Terminal"
 
 # xterm.js versions to use (latest available)
@@ -18,7 +34,8 @@ readonly XTERM_JS_VERSION="latest"
 readonly XTERM_ATTACH_VERSION="latest"
 readonly XTERM_FIT_VERSION="latest"
 
-XTERMJS_DIR="xtermjs"
+XTERMJS_DIR="${HYDROGEN_ROOT}/payloads/xtermjs"
+ARTIFACTS_DIR="${HYDROGEN_ROOT}/tests/artifacts/terminal"
 readonly XTERMJS_VERSION_FILE="${XTERMJS_DIR}/xtermjs_version.txt"
 
 # Function to download xterm.js from CDN
@@ -365,15 +382,15 @@ copy_to_artifacts() {
     echo "📋 Copying terminal files to artifacts directory..."
 
     # Ensure the target directory exists
-    mkdir -p "../tests/artifacts/terminal"
+    mkdir -p "${ARTIFACTS_DIR}"
 
     # Copy terminal.css as payload-terminal.css
-    cp "${XTERMJS_DIR}/terminal.css" "../tests/artifacts/terminal/payload-terminal.css"
+    cp "${XTERMJS_DIR}/terminal.css" "${ARTIFACTS_DIR}/payload-terminal.css"
 
     # Copy terminal.html as payload-terminal.html
-    cp "${XTERMJS_DIR}/terminal.html" "../tests/artifacts/terminal/payload-terminal.html"
+    cp "${XTERMJS_DIR}/terminal.html" "${ARTIFACTS_DIR}/payload-terminal.html"
 
-    echo "✅ Files copied to tests/artifacts/terminal/"
+    echo "✅ Files copied to Artifacts directory"
 }
 
 # Function to validate files
