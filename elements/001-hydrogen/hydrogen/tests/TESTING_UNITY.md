@@ -543,6 +543,64 @@ void tearDown(void) {
 
 **Key Lesson**: Not all code needs or benefits from unit tests. System-dependent code is often better validated through integration testing that exercises the complete system in realistic conditions.
 
+## GCOV Regeneration Issues
+
+### The Problem: Test 80 Causes Source File GCOV Regeneration
+
+**Symptom**: When Test 80 (Code Size Analysis) runs after Test 10 (Unity), it caused `rc/launch/launch_database.c.gcov` to be regenerated with a different (smaller) coverage result, even though the underlying `.gcda` and `.gcno` files hadn't changed.
+
+**Symptom**: Test 00 reports a count discrepancy between coverage_table.sh and Test 99 (ultimately Test 10) when the instrumented unity lines in coverage_table.sh don't match the extended CLOC coverage lines reported in the extended table, even when the total blackbox and unity instrumented lines match the total instrumented lines in coverage_table.sh, which is normally the cause of this meessage.
+
+**Root Cause**: The `calculate_test_instrumented_lines` function processes test files (like `launch_database_test_enhanced_coverage.gcno`) to count test instrumentation. When gcov processes these test files, it analyzes **all linked source files** (including `launch_database.c`), causing their `.gcov` files to be regenerated.
+
+**Why Only launch_database.c?**: This file was unique because it had multiple dedicated test files that directly link against it. Other source files don't have corresponding test files, so they aren't affected. This meant that when gcov processed the test files, they triggered a regen of the source C file based on whatever gcov coverage came from the tests, invalidating the original Test 10 coverage, so ironically *lowering* the actual coverage reported.
+
+### The Fix: Proper Header-Only Includes
+
+**Solution Applied**: Removed improper `#include "launch_database.c"` includes from test files and added missing declarations to `src/launch/launch.h`.
+
+**Before (Problematic)**:
+
+```c
+#include "launch_database.c"  // ❌ Direct .c include creates gcov dependency
+```
+
+**After (Correct)**:
+
+```c
+#include "launch.h"  // ✅ Header-only include, no gcov dependency
+```
+
+### Prevention: Dependency Check in make-trial.sh
+
+**Added Dependency Check**: The trial build now includes a "Dependency Check" section that validates no `.c` files are included in Unity tests or mocks:
+
+```bash
+# Check for improper .c includes in Unity tests
+UNITY_C_INCLUDES=$(grep -r "\.c" tests/unity/src 2>/dev/null | grep -i include || true)
+MOCKS_C_INCLUDES=$(grep -r "\.c" tests/unity/mocks 2>/dev/null | grep -i include || true)
+
+if [[ -n "${UNITY_C_INCLUDES}" ]]; then
+    echo "❌ Found improper .c includes in Unity tests:"
+    echo "${UNITY_C_INCLUDES}"
+    exit 1
+fi
+```
+
+**Benefits**:
+
+- **Early Detection**: Catches improper includes during trial builds (`mkt`)
+- **Prevents GCOV Issues**: Stops the root cause before it affects coverage calculations
+- **Maintains Coverage Integrity**: Ensures test coverage data remains consistent between Test 10 and Test 80
+
+### Why This Matters
+
+**Coverage Data Integrity**: GCOV regeneration "resets" coverage data, causing inconsistent results between test runs. This makes coverage analysis unreliable and debugging difficult.
+
+**Test Isolation**: Unity tests should only depend on header files, not implementation files. Direct `.c` includes violate this principle and create unintended side effects.
+
+**Build Consistency**: Trial builds should catch architectural issues before they affect the full test suite.
+
 ## Performance and Timing Best Practices
 
 Based on lessons learned from implementing previous tests.

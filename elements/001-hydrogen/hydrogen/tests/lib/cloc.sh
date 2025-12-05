@@ -533,6 +533,7 @@ EOF
                 instrumented_unity="19009"
                 covered_unity="8942"
             fi
+            
             # Get test instrumented lines - check environment variable first, then file
             instrumented_tests="${TEST_INSTRUMENTED_LINES:-}"
             if [[ -z "${instrumented_tests}" ]]; then

@@ -84,6 +84,7 @@ extern volatile sig_atomic_t web_server_shutdown;
 extern volatile sig_atomic_t network_system_shutdown;
 extern volatile sig_atomic_t print_system_shutdown;
 extern volatile sig_atomic_t terminal_system_shutdown;
+extern volatile sig_atomic_t database_stopping;
 
 // Forward deeclarations
 void free_webserver_resources(void);

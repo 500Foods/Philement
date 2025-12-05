@@ -8,7 +8,6 @@
 
 // Include necessary headers for the module being tested
 #include <src/launch/launch.h>
-#include <src/launch/launch_database.c>
 
 // Standard library includes
 #include <string.h>
