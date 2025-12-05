@@ -62,6 +62,7 @@ Remember:
 -->
 
 - December 2025
+  - [2025-Dec-05 (Fri)](docs/releases/2025-12/2025-12-05.md): Test renumbering - Test 80 to Test 70
   - [2025-Dec-03 (Wed)](docs/releases/2025-12/2025-12-03.md): Installer system refactoring and standalone test implementation
   - [2025-Dec-02 (Tue)](docs/releases/2025-12/2025-12-02.md): Core handling enhancements, payload tools reorganization, and testing improvements
   - [2025-Dec-01 (Mon)](docs/releases/2025-12/2025-12-01.md): Installer updates, testing enhancements, and utility scripts

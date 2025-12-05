@@ -291,7 +291,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_33_mysql_migrations.md](tests/docs/test_33_mysql_migrations.md): MySQL migration performance test
 - [test_34_sqlite_migrations.md](tests/docs/test_34_sqlite_migrations.md): SQLite migration performance test
 - [test_35_db2_migrations.md](tests/docs/test_35_db2_migrations.md): DB2 migration performance test
-- [test_80_installer.md](tests/docs/test_80_installer.md): Standalone installer building test
+- [test_70_installer.md](tests/docs/test_70_installer.md): Standalone installer building test
 - [test_90_markdownlint.md](tests/docs/test_90_markdownlint.md): Markdown linting tests
 - [test_91_cppcheck.md](tests/docs/test_91_cppcheck.md): C/C++ static analysis tests
 - [test_92_shellcheck.md](tests/docs/test_92_shellcheck.md): Shell script linting tests
@@ -300,5 +300,5 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_95_stylelint.md](tests/docs/test_95_stylelint.md): CSS linting tests
 - [test_96_htmlhint.md](tests/docs/test_96_htmlhint.md): HTML validation tests
 - [test_97_xmlstarlet.md](tests/docs/test_97_xmlstarlet.md): XML/SVG validation tests
-- [test_98_code_size.md](tests/docs/test_98_code_size.md): Code size analysis and metrics
+- [test_80_code_size.md](tests/docs/test_80_code_size.md): Code size analysis and metrics
 - [test_99_coverage.md](tests/docs/test_99_coverage.md): Build system coverage information

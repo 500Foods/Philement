@@ -17,7 +17,7 @@ set -euo pipefail
 # Test configuration
 TEST_NAME="Database Diagrams"
 TEST_ABBR="ERD"
-TEST_NUMBER="39"
+TEST_NUMBER="71"
 TEST_COUNTER=0
 TEST_VERSION="2.0.0"
 

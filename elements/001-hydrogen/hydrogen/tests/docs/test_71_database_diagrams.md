@@ -1,8 +1,8 @@
-# Test 39: Database Diagram Generation
+# Test 71: Database Diagram Generation
 
 ## Overview
 
-Test 39 generates SVG database diagrams for all supported database engine and design combinations. This test creates visual representations of database schemas using migration files from the Helium project.
+Test 71 generates SVG database diagrams for all supported database engine and design combinations. This test creates visual representations of database schemas using migration files from the Helium project.
 
 ## Purpose
 
@@ -15,7 +15,7 @@ Test 39 generates SVG database diagrams for all supported database engine and de
 
 - **Test Name**: Database Diagrams
 - **Test Abbreviation**: ERD
-- **Test Number**: 39
+- **Test Number**: 71
 - **Version**: 1.1.0
 
 ## What It Does
@@ -85,7 +85,7 @@ This test is part of the Hydrogen testing framework and runs automatically with:
 
 ```bash
 # Run this specific test
-./tests/test_39_database_diagrams.sh
+./tests/test_71_database_diagrams.sh
 
 # Run as part of full test suite
 ./tests/test_00_all.sh

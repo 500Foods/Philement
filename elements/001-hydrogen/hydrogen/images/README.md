@@ -26,7 +26,7 @@ In addition to the files described in detail in the sections that follow, there 
 
   # Or run code size test
   cd tests
-  ./test_98_code_size.sh
+  ./test_80_code_size.sh
   ```
 
 - **When Generated**: During full test suite execution (`test_00_all.sh`) or individual code size testing
@@ -44,7 +44,7 @@ In addition to the files described in detail in the sections that follow, there 
 
   # Or run code size test
   cd tests
-  ./test_98_code_size.sh
+  ./test_80_code_size.sh
   ```
 
 - **When Generated**: During full test suite execution (`test_00_all.sh`) or individual code size testing
@@ -147,7 +147,7 @@ cd tests
 ```bash
 # Generate only code statistics
 cd tests
-./test_98_code_size.sh
+./test_80_code_size.sh
 
 # Generate only test results and coverage
 cd tests
@@ -169,7 +169,7 @@ These SVG files are automatically referenced in:
 If SVG files are missing:
 
 1. Ensure `Oh` tool is installed
-2. Run the appropriate test (`test_00_all.sh` or `test_98_code_size.sh`)
+2. Run the appropriate test (`test_00_all.sh` or `test_80_code_size.sh`)
 3. Check test output for SVG generation errors
 
 ### Outdated Images
