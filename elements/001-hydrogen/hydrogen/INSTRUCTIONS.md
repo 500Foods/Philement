@@ -82,9 +82,9 @@ tests/          Test framework
 - tests/test_33_mysql_migrations.sh - MySQL migration performance test
 - tests/test_34_sqlite_migrations.sh - SQLite migration performance test
 - tests/test_35_db2_migrations.sh - DB2 migration performance test
-- tests/test_80_installer.sh - Standalone installer building test
-- tests/test_38_luacheck.sh - Lua code analysis with luacheck
-- tests/test_39_database_diagrams.sh - Database diagram generation
+- tests/test_70_installer.sh - Standalone installer building test
+- tests/test_98_luacheck.sh - Lua code analysis with luacheck
+- tests/test_71_database_diagrams.sh - Database diagram generation
 - tests/test_41_conduit.sh - Conduit Query endpoint test
 - tests/test_90_markdownlint.sh - Lint for Markdown
 - tests/test_91_cppcheck.sh - Lint for C
@@ -94,7 +94,7 @@ tests/          Test framework
 - tests/test_95_stylelint.sh - Lint for CSS
 - tests/test_96_htmlhint.sh - Lint for HTML
 - tests/test_97_xmlstarlet.sh - Lint for XML/SVG (xmlstarlet)
-- tests/test_98_code_size.sh - Checks limits on source code, runs cloc
+- tests/test_80_code_size.sh - Checks limits on source code, runs cloc
 - tests/test_99_coverage.sh - Shows Unity and Blackbox test coverage
 
 ## CRITICAL DOCUMENTATION

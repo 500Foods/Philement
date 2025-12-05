@@ -1,21 +1,21 @@
--- Migration: acuranzo_1068.lua
--- Theme - Bluish
+-- Migration: acuranzo_1069.lua
+-- Theme - Whiteout
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2025-11-26 - Initial creation
+-- 1.0.0 - 2025-12-04 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "lookups"
-cfg.MIGRATION = "1068"
+cfg.MIGRATION = "1069"
 cfg.LOOKUP_ID = "041"
 cfg.LOOKUP_NAME = "Themes"
-cfg.THEME_ID = "001"
-cfg.THEME_NAME = "Theme-Bluish"
+cfg.THEME_ID = "002"
+cfg.THEME_NAME = "Theme-Whiteout"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -39,7 +39,7 @@ table.insert(queries,{sql=[[
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
                 (${LOOKUP_ID},  ${THEME_ID}, 1, '${THEME_NAME}', 0, 0, [==[
-                    /* Theme-Bluish
+                    /* Theme-Whiteout
                     **
                     ** Each Theme is defined as a CSS block, starting with the theme name as the CSS selector.
                     ** The entire theme is defined by way of CSS variables, which are then used to populate
@@ -82,51 +82,45 @@ table.insert(queries,{sql=[[
                     ** delete or comment out any fonts that aren't being used.
                     */
 
-                    /* @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap'); */
+                    /* Examples of Monospace Fonts */
+                    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
                     /* @import url(""https://fonts.googleapis.com/css2?family=Noto+Sans+Mono&display=swap""); */
-                    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+                    /* @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap'); */
                     /* @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap'); */
                     /* @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap'); */
                     /* @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap'); */
 
                     /* Examples of Variable Fonts */
-                    /* @import url(""https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap""); */
-                    @import url(""https://fonts.googleapis.com/css2?family=Cairo:ital,wght@0,300..800;1,300..800&display=swap"");
+                    @import url(""https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"");
+                    /* @import url(""https://fonts.googleapis.com/css2?family=Cairo:ital,wght@0,300..800;1,300..800&display=swap""); */
                     /* @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap'); */
                     /* @import url(""https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap""); */
                     /* @import url('https://fonts.googleapis.com/css2?family=Dosis:wght@200..800&display=swap'); */
 
-                    .Theme-Bluish {
+                    .Theme-Whiteout {
 
-                        /* Theme Colors
-                        **
-                        ** Any valid CSS color identification can be used here. Some colors are deliberately
-                        ** not transparent so as to hide what is underneath, such as in scrollbars or table
-                        ** headers, that kind of thing. Initially, these were used to replace the standard
-                        ** suite of Bootstrap names (btn-primary, etc.) but more have been added since then.
-                        */
-                        --ACZ-color-input: white;
-
-                        --ACZ-color-0:  rgba(  47,  47,  95, 0.50);     /* highlighting */
-                        --ACZ-color-1:  rgba(  47,  47, 192, 0.50);     /* main panel bg */
-                        --ACZ-color-2:  rgba(  15,  15, 191, 0.50);     /* btn-primary */
-                        --ACZ-color-3:  rgba(  15,  15, 191, 0.25);     /* btn-primary:hover */
-                        --ACZ-color-4:  rgba(   0,   0, 127, 0.50);     /* btn-secondary */
-                        --ACZ-color-5:  rgba(   0,   0, 127, 1.00);     /* btn-secondary:hover */
-                        --ACZ-color-6:  rgba(   0,   0, 175, 1.00);     /* btn-dark tt-border */
-                        --ACZ-color-7:  rgba(   0,   0,  87, 0.95);     /* btn-dark:hover tt-text */
-                        --ACZ-color-8:  rgba( 255, 255,   0, 1.00);     /* btn-warning tb-nav-text-ok  */
-                        --ACZ-color-9:  rgba( 255, 215,   0, 1.00);     /* btn-warning:hover tb-nav-text-cancel */
-                        --ACZ-color-10: rgba( 223, 223, 255, 0.50);     /* btn-info */
-                        --ACZ-color-11: rgba( 191, 191, 255, 1.00);     /* btn-info:hover tt-bg */
-                        --ACZ-color-12: rgba(   0,   0, 255, 0.10);     /* tb-zebra-stripes */
-                        --ACZ-color-13: rgba( 128, 128, 255, 0.25);     /* tb-cell:hover */
+                        /* Theme Colors */
+                        --ACZ-color-1:  rgba(  63,  63, 127, 0.25)      /* highlighting */
+                        --ACZ-color-2:  rgba( 191, 191, 191, 0.50);     /* btn-primary */
+                        --ACZ-color-3:  rgba( 111, 111, 111, 1.00);     /* btn-primary :hover */
+                        --ACZ-color-4:  rgba( 127, 127, 127, 0.50);     /* btn-secondary */
+                        --ACZ-color-5:  rgba( 127, 127, 127, 1.00);     /* btn-secondary :hover */
+                        --ACZ-color-6:  rgba( 175, 175, 175, 1.00);     /* btn-dark */
+                        --ACZ-color-7:  rgba(  87,  87,  87, 1.00);     /* btn-dark :hover */
+                        --ACZ-color-8:  gold;                           /* btn-warning */
+                        --ACZ-color-9:  orange;                         /* btn-warning :hover */
+                        --ACZ-color-10: rgba( 191, 191, 223, 0.50);     /* btn-info */
+                        --ACZ-color-11: rgba( 191, 191, 191, 1.00);     /* btn-info :hover */
+                        --ACZ-color-12: rgba(  25,  25,  25, 0.10);     /* zebra stripe rows */
+                        --ACZ-color-13: rgba( 128, 128, 255, 0.25);     /* tabulator cell hover */
                         --ACZ-color-14: rgba(   0,   0,   0, 1.00);     /* chat <pre> background, chat system text */
-                        --ACZ-color-15: rgba(   0,   0,  63, 0.50);     /* */
-                        --ACZ-color-16: rgba(   0,   0,  63, 1.00);     /* tb-nav-text-disabled */
+                        --ACZ-color-15: rgba(  63,  63,  63, 0.50);     /* */
+                        --ACZ-color-16: rgba(  63,  63,  63, 1.00);     /* */
                         --ACZ-color-17: rgba(  96,  96, 255, 1.00);     /* scrollbar track */
                         --ACZ-color-18: rgba( 255, 255,   0, 0.70);     /* PDF crop rectangle */
                         --ACZ-color-19: rgba( 239, 239, 255, 1.00);     /* tb-cell-selected */
+
+                        --ACZ-color-input: white;
 
                         --ACZ-color-A: red;
                         --ACZ-color-B: green;
@@ -135,41 +129,65 @@ table.insert(queries,{sql=[[
                         --ACZ-color-E: orange;
                         --ACZ-color-F: maroon;
                         --ACZ-color-G: beige;
-                        --ACZ-color-H: black;
 
-                        /* Borders
-                        **
-                        ** The main choice here is likely whether the border lines should be visible at all.
-                        ** replacing the color (the last part) with 'transparent' will make the border invisible
-                        ** but not mess with the spacing of the elements, which is recommended.
-                        **
-                        ** Updating the rounding values won't impact the spacing or alignment but can dramatically
-                        ** change the look of the page. The default values have been chosen to ensure a consistent
-                        ** appearance when the borders are visible, particularly with many nested <div> elements.
-                        */
-                        --ACZ-border-1: 1px solid var(--ACZ-color-15);
-                        --ACZ-border-2: 1px solid var(--ACZ-color-16);
-                        --ACZ-border-3: 2px solid var(--ACZ-color-15);
-                        --ACZ-border-4: 1px solid var(--ACZ-color-5);
+                        /* Progress Spinner */
+                        --ACZ-progress-color-1: var(--ACZ-color-8); /* active dot     */
+                        --ACZ-progress-color-2: var(--ACZ-color-6); /* active rings   */
+                        --ACZ-progress-color-3: var(--ACZ-color-5); /* inactive dot   */
+                        --ACZ-progress-color-4: var(--ACZ-color-5); /* inactive rings */
 
-                        /* Rounded corners are set with different radii in order to have a consistent width when
-                        ** elements are nested. Generally the difference is the padding between nesting levels. */
-                        --ACZ-border-radius-0: 10px;
-                        --ACZ-border-radius-1:  8px;
-                        --ACZ-border-radius-2:  6px;
-                        --ACZ-border-radius-3:  4px;
-                        --ACZ-border-radius-4:  2px;
-                        --ACZ-border-radius-n:  5px;  /* Navigator buttons */
+                        --ACZ-progress-opacity-1: 1.0;
+                        --ACZ-progress-opacity-2: 0.8;
+                        --ACZ-progress-opacity-3: 0.4;
+                        --ACZ-progress-opacity-4: 0.4;
 
-                        /* Fonts
-                        **
-                        ** Using the fonts declared via @import statements above, the other attributes
-                        ** can then be defined. Most of these should not be changed as this will affect
-                        ** how elements are aligned, how much room is available before text is wrapped
-                        ** and that sort of thing.
-                        */
-                        --ACZ-font-family: 'Cairo';
-                        --ACZ-font-family-mono: 'JetBrains Mono';
+                        /* Spacing and sizing */
+                        --ACZ-margin-1: 3px;
+                        --ACZ-margin-2: 6px;
+                        --ACZ-margin-3: 6px 12px 6px 12px; /* SunEditor Footer */
+
+                        --ACZ-elem-height-1: 52px;
+                        --ACZ-elem-height-2: 44px;
+                        --ACZ-elem-height-3: 60px;
+                        --ACZ-elem-height-4: 36px; /* BigButton */
+                        --ACZ-elem-height-5: 25px; /* SmallButton, SunEditor footer min-height */
+                        --ACZ-elem-height-6: 30px; /* RegButton */
+
+                        --ACZ-iconimage-size: 20px;
+                        --ACZ-iconimage-filter: drop-shadow(0px 0px 1px white) drop-shadow(0px 0px 1px white);
+
+                        /* Borders */
+                        --ACZ-border-1: 1px solid transparent;
+                        --ACZ-border-2: 1px solid transparent;
+                        --ACZ-border-3: 2px solid transparent;
+
+                        --ACZ-border-radius-0: 0px;
+                        --ACZ-border-radius-1: 0px;
+                        --ACZ-border-radius-2: 0px;
+                        --ACZ-border-radius-3: 0px;
+                        --ACZ-border-radius-4: 0px;  /* Navigator buttons */
+
+                        /* Transitions */
+                        --ACZ-transition-delay: 500ms;
+                        --ACZ-transition-short: 200ms;
+                        --ACZ-transition-std:   all var(--ACZ-transition-delay) ease;
+                        --ACZ-transition-quick: all var(--ACZ-transition-delay) linear, background 100ms;
+                        --ACZ-transition-login: all var(--ACZ-transition-delay) linear, width 0ms, transform 0ms;
+                        --ACZ-transition-panel: all var(--ACZ-transition-delay) linear, width 0ms, transform 0ms;
+                        --ACZ-animation-delay-1: 300ms;
+                        --ACZ-animation-delay-2: 10ms;
+
+                        /* Page Mask */
+                        --ACZ-mask-opacity: 0.8;
+
+                        /* Shadows */
+                        --ACZ-shadow-1: drop-shadow(0px 0px 1px black);
+                        --ACZ-shadow-2: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 2px black);
+                        --ACZ-shadow-3: drop-shadow(0px 0px 3px rgba(0, 0, 0, 0.75));  /* <strong> in chats */
+
+                        /* Fonts */
+                        --ACZ-font-family: ""Roboto"";
+                        --ACZ-font-family-mono: ""Roboto Mono"";
                         --ACZ-line-height: 1.25;
 
                         --ACZ-font-size-1: 10px;
@@ -183,7 +201,7 @@ table.insert(queries,{sql=[[
                         --ACZ-font-size-lookups: 12px;
                         --ACZ-font-size-logs:    12px;
                         --ACZ-font-size-chats:   12px;
-                        --ACZ-font-size-chats2:  calc(var(--ACZ-font-size-chats) - 4px);
+                        --ACZ-font-size-chats2: calc(var(--ACZ-font-size-chats) - 4px);
 
                         /* Tooltips
                         **
@@ -224,8 +242,8 @@ table.insert(queries,{sql=[[
                         --ACZ-transition-delay: 750ms;
                         --ACZ-transition-short: 200ms;
                         --ACZ-animation-delay-1: 300ms;
-                        --ACZ-animation-delay-2: 100ms;  /* Minimal value used primarily to ensure page updates happen */
-                        --ACZ-transition-std:   all var(--ACZ-transition-delay) ease-in-out;
+                        --ACZ-animation-delay-2: 10ms;  /* Minimal value used primarily to ensure page updates happen */
+                        --ACZ-transition-std:   all var(--ACZ-transition-delay) ease;
                         --ACZ-transition-quick: all var(--ACZ-transition-delay) linear, background 100ms;
                         --ACZ-transition-login: all var(--ACZ-transition-delay) linear, width 0ms, transform 0ms;
                         --ACZ-transition-panel: all var(--ACZ-transition-delay) linear, width 0ms, transform 0ms;
@@ -252,7 +270,7 @@ table.insert(queries,{sql=[[
                         --ACZ-shadow-1: drop-shadow(0px 0px 1px var(--ACZ-color-14));
                         --ACZ-shadow-2: drop-shadow(0px 0px 1px var(--ACZ-color-14)) drop-shadow(0px 0px 2px var(--ACZ-color-14));
                         --ACZ-shadow-3: drop-shadow(0px 0px 3px rgb(from var(--ACZ-color-14) r g b / 0.75)); /* emphasis in chats */
-                        --ACZ-shadow-4: drop-shadow(1px 0px 0px #339) drop-shadow(0px 1px 0px #339) drop-shadow(-1px 0px 0px #339)  drop-shadow(0px -1px 0px #339);
+                        --ACZ-shadow-4: drop-shadow(1px 0px 0px #333) drop-shadow(0px 1px 0px #333) drop-shadow(-1px 0px 0px #333)  drop-shadow(0px -1px 0px #333);
 
                         /* Scrollbars
                         **
@@ -269,20 +287,20 @@ table.insert(queries,{sql=[[
                         --ACZ-scroll-width-1: 10px;
                         --ACZ-scroll-width-2: 16px;
                         --ACZ-scroll-width-3: 22px;
-                        --ACZ-scroll-width-4: 17px;
+                        --ACZ-scroll-width-4: 18px;
                         --ACZ-scroll-width-5: 4px;
 
                         --ACZ-scroll-opacity-1: 0.75;
                         --ACZ-scroll-opacity-2: 1.00;
                         --ACZ-scroll-opacity-3: 0.25;
 
-                        --ACZ-scroll-color-track:  rgb(from var(--ACZ-color-11) r g b / 0.4);
-                        --ACZ-scroll-color-thumb:  rgb(from var(--ACZ-color-4 ) r g b / 0.7);
+                        --ACZ-scroll-color-track:  rgb(from var(--ACZ-color-11) r g b / 0.3);
+                        --ACZ-scroll-color-thumb:  rgb(from var(--ACZ-color-5 ) r g b / 0.7);
                         --ACZ-scroll-color-hover:  rgb(from var(--ACZ-color-5 ) r g b / 0.9);
                         --ACZ-scroll-color-border: rgb(from var(--ACZ-color-3 ) r g b / 0.0);
 
                         --ACZ-scroll-radius-1: 5px; /* General, CodeMirror overlay */
-                        --ACZ-scroll-radius-2: 87px; /* Tabulator */
+                        --ACZ-scroll-radius-2: 7px; /* Tabulator */
 
                         /* Progress Spinner
                         **
@@ -306,16 +324,8 @@ table.insert(queries,{sql=[[
                         ** to get things to align a little more perfectly. These help ensure that when
                         ** editing, for example, the editor is lined up in the same spot as the original.
                         */
-                        --ACZ-tb-padding-left: 4px;
+                        --ACZ-tb-padding-left: 2px;
                         --ACZ-tb-padding-top: 3px;
-                        --ACZ-tb-padding-edit-left: 2px;
-                        --ACZ-tb-padding-edit-top: 2px;
-
-                        /* Shepherd Tweaks
-                        **
-                        ** Seems to be an issue with the Cairo font not having a correct baseline?
-                        */
-                        --ACZ-shepherd-top: -12px;
 
                         /* CodeMirror Syntax Highlighting
                         **
@@ -365,12 +375,8 @@ table.insert(queries,{sql=[[
                     **         will require a change to the source code. Doable, but not yet
                     **         implemented.
                     */
-                    .Theme-Bluish body {
-                        --s: 20px;
-                        background:
-                            linear-gradient(135deg, #0000 18.75%, #B0B0FF 0 31.25%, #0000 0),
-                            repeating-linear-gradient(45deg, #B0B0FF -6.25% 6.25%, #C0C0FF 0 18.75%);
-                        background-size: var(--s) var(--s);
+                    .Theme-Whiteout body {
+                        background: white;
                     }
                 ]==], '', '{}', ${COMMON_VALUES});
 

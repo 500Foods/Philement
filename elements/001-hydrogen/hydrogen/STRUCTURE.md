@@ -569,12 +569,12 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_33_mysql_migrations.sh](tests/test_33_mysql_migrations.sh) - MySQL migration performance test
 - [tests/test_34_sqlite_migrations.sh](tests/test_34_sqlite_migrations.sh) - SQLite migration performance test
 - [tests/test_35_db2_migrations.sh](tests/test_35_db2_migrations.sh) - DB2 migration performance test
-- [tests/test_38_luacheck.sh](tests/test_38_luacheck.sh) - Lua code analysis with luacheck
-- [tests/test_39_database_diagrams.sh](tests/test_39_database_diagrams.sh) - Database diagram generation
+- [tests/test_98_luacheck.sh](tests/test_98_luacheck.sh) - Lua code analysis with luacheck
+- [tests/test_71_database_diagrams.sh](tests/test_71_database_diagrams.sh) - Database diagram generation
 
 ### Build and Installer Tests
 
-- [tests/test_80_installer.sh](tests/test_80_installer.sh) - Standalone installer building test
+- [tests/test_70_installer.sh](tests/test_70_installer.sh) - Standalone installer building test
 
 ### Linting Tests
 
@@ -586,7 +586,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_95_stylelint.sh](tests/test_95_stylelint.sh) - CSS linting (stylelint)
 - [tests/test_96_htmlhint.sh](tests/test_96_htmlhint.sh) - HTML validation (htmlhint)
 - [tests/test_97_xmlstarlet.sh](tests/test_97_xmlstarlet.sh) - XML/SVG validation (xmlstarlet)
-- [tests/test_98_code_size.sh](tests/test_98_code_size.sh) - Code size analysis and metrics
+- [tests/test_80_code_size.sh](tests/test_80_code_size.sh) - Code size analysis and metrics
 - [tests/test_99_coverage.sh](tests/test_99_coverage.sh) - Build system coverage
 
 </details>

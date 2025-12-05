@@ -1,8 +1,8 @@
-# Test 80: Installer
+# Test 70: Installer
 
 ## Purpose
 
-Test 80 (Installer) is a standalone test that builds installer scripts from the Hydrogen release executable and associated files. This test was extracted from Test 01 to provide focused testing of the installer building functionality, allowing for independent validation and faster iterative development of installer-related features.
+Test 70 (Installer) is a standalone test that builds installer scripts from the Hydrogen release executable and associated files. This test was extracted from Test 01 to provide focused testing of the installer building functionality, allowing for independent validation and faster iterative development of installer-related features.
 
 ## Overview
 
@@ -108,11 +108,11 @@ The test provides detailed error reporting for:
 
 ```bash
 # Run installer test independently
-./tests/test_80_installer.sh
+./tests/test_70_installer.sh
 
 # Or from project root
 cd elements/001-hydrogen/hydrogen
-./tests/test_80_installer.sh
+./tests/test_70_installer.sh
 ```
 
 ### Integration Testing
@@ -122,7 +122,7 @@ cd elements/001-hydrogen/hydrogen
 ./tests/test_00_all.sh
 
 # Run with specific tests
-./tests/test_00_all.sh 80_installer
+./tests/test_00_all.sh 70_installer
 ```
 
 ### Manual Verification

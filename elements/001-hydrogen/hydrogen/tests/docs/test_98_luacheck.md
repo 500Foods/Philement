@@ -1,8 +1,8 @@
-# Test 38: Lua Code Analysis (luacheck)
+# Test 98: Lua Code Analysis (luacheck)
 
 ## Overview
 
-Test 38 performs static analysis on Lua source files using the `luacheck` tool. This test ensures code quality and consistency in Lua scripts used for database migrations and other purposes in the Hydrogen project.
+Test 98 performs static analysis on Lua source files using the `luacheck` tool. This test ensures code quality and consistency in Lua scripts used for database migrations and other purposes in the Hydrogen project.
 
 ## Purpose
 
@@ -14,7 +14,7 @@ Test 38 performs static analysis on Lua source files using the `luacheck` tool. 
 
 - **Test Name**: Lua Lint
 - **Test Abbreviation**: LUA
-- **Test Number**: 38
+- **Test Number**: 98
 - **Version**: 1.0.0
 
 ## What It Does
@@ -72,7 +72,7 @@ This test is part of the Hydrogen testing framework and runs automatically with:
 
 ```bash
 # Run this specific test
-./tests/test_38_luacheck.sh
+./tests/test_98_luacheck.sh
 
 # Run as part of full test suite
 ./tests/test_00_all.sh
