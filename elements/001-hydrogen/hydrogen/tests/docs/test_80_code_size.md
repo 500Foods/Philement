@@ -1,8 +1,8 @@
-# Test 03 Code Size Analysis Script Documentation
+# Test 80 Code Size Analysis Script Documentation
 
 ## Overview
 
-The `test_03_code_size.sh` script performs comprehensive code size analysis including source code analysis, line counting, large file detection, code line count analysis with cloc, and file count summary.
+The `test_80_code_size.sh` script performs comprehensive code size analysis including source code analysis, line counting, large file detection, code line count analysis with cloc, and file count summary.
 
 ## Purpose
 

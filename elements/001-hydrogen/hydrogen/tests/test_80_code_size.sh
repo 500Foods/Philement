@@ -22,7 +22,7 @@ set -euo pipefail
 # Test configuration
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
-TEST_NUMBER="98"
+TEST_NUMBER="80"
 TEST_COUNTER=0
 TEST_VERSION="3.5.0"
 

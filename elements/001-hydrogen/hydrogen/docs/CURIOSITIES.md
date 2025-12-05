@@ -133,7 +133,7 @@ Code quality is enforced through comprehensive linting, established from project
 ### Additional Quality Tools
 
 - **[Test 31: Migrations](../tests/docs/test_31_migrations.md)**: SQL validation with sqruff across database engines
-- **[Test 38: Luacheck](../tests/docs/test_38_luacheck.md)**: Lua code analysis with luacheck
+- **[Test 98: Luacheck](../tests/docs/test_98_luacheck.md)**: Lua code analysis with luacheck
 - **[Test 90: Markdownlint](../tests/docs/test_90_markdownlint.md)**: Lints Markdown documentation using markdownlint
 - **[Test 91: Cppcheck](../tests/docs/test_91_cppcheck.md)**: Performs C/C++ static analysis using cppcheck
 - **[Test 92: Shellcheck](../tests/docs/test_92_shellcheck.md)**: Validates shell scripts using shellcheck
@@ -142,7 +142,7 @@ Code quality is enforced through comprehensive linting, established from project
 - **[Test 95: Stylelint](../tests/docs/test_95_stylelint.md)**: Validates CSS files using stylelint
 - **[Test 96: HTMLHint](../tests/docs/test_96_htmlhint.md)**: Validates HTML files using htmlhint
 - **[Test 97: XMLStarlet](../tests/docs/test_97_xmlstarlet.md)**: Validates XML/SVG files using xmlstarlet
-- **[Test 98: Code Size](../tests/docs/test_98_code_size.md)**: Analyzes code size metrics and file distribution
+- **[Test 80: Code Size](../tests/docs/test_80_code_size.md)**: Analyzes code size metrics and file distribution
 - **[Test 99: Coverage](../tests/docs/test_99_coverage.md)**: Performs comprehensive coverage analysis
 
 ### SQL Linting Philosophy
@@ -326,6 +326,6 @@ local table_name = "${DATABASE_TABLE}"
 
 ### Testing & Validation
 
-- **[Test 38: Luacheck](../tests/docs/test_38_luacheck.md)** validates Lua syntax and coding standards
+- **[Test 98: Luacheck](../tests/docs/test_98_luacheck.md)** validates Lua syntax and coding standards
 - Migration test mode runs forward and reverse operations to ensure reliability
 - Automatic diagram generation from JSON metadata in migrations

@@ -14,7 +14,7 @@ set -euo pipefail
 # Test configuration
 TEST_NAME="Lua Lint"
 TEST_ABBR="LUA"
-TEST_NUMBER="38"
+TEST_NUMBER="98"
 TEST_COUNTER=0
 TEST_VERSION="1.0.0"
 

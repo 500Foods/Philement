@@ -70,7 +70,6 @@ table.insert(queries,{sql=[[
                     ** se = SunEditor
                     */
 
-
                     /* Font Imports
                     **
                     ** Webfonts, like Google Fonts, can be used but they need to be declared here at the top
@@ -99,7 +98,6 @@ table.insert(queries,{sql=[[
                     /* @import url(""https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap""); */
                     /* @import url('https://fonts.googleapis.com/css2?family=Dosis:wght@200..800&display=swap'); */
 
-
                     .Theme-Default {
 
                         /* Theme Colors
@@ -111,26 +109,26 @@ table.insert(queries,{sql=[[
                         */
                         --ACZ-color-input: white;
 
-                        --ACZ-color-0:  rgba(63, 63, 127, 0.25);        /* highlighting */
-                        --ACZ-color-1:  rgba(63, 63, 127, 0.25);        /* highlighting */
-                        --ACZ-color-2:  rgba(0, 0, 0, 0.50);            /* btn-primary, selected cells */
-                        --ACZ-color-3:  rgba(100, 100, 100, 0.25);      /* btn-primary:hover */
-                        --ACZ-color-4:  rgba(127, 127, 127, 0.50);      /* btn-secondary */
-                        --ACZ-color-5:  rgba(127, 127, 127);              /* btn-secondary:hover */
-                        --ACZ-color-6:  rgba(175, 175, 175);              /* btn-dark */
-                        --ACZ-color-7:  rgba(87, 87, 87);                 /* btn-dark:hover */
-                        --ACZ-color-8:  yellow;                           /* btn-warning */
-                        --ACZ-color-9:  gold;                             /* btn-warning:hover */
-                        --ACZ-color-10: rgba(223, 223, 223, 0.50);      /* btn-info */
-                        --ACZ-color-11: rgba(223, 223, 223);              /* btn-info:hover */
-                        --ACZ-color-12: rgba(255, 255, 255, 0.10);      /* zebra stripe rows */
-                        --ACZ-color-13: rgba(128, 128, 128, 0.25);      /* tabulator cell hover */
-                        --ACZ-color-14: rgba(   0,   0,   0, 1.00);       /* chat <pre> background, chat system text */
-                        --ACZ-color-15: rgba(63,63,63,0.5);
-                        --ACZ-color-16: rgba(63,63,63,1);
-                        --ACZ-color-17: rgba(  96,  96, 255, 1.00);       /* scrollbar track */
+                        --ACZ-color-0:  rgba(  63,  63, 127, 0.25);     /* highlighting */
+                        --ACZ-color-1:  rgba(  63,  63, 127, 0.25);     /* highlighting */
+                        --ACZ-color-2:  rgba(   0,   0,   0, 0.50);     /* btn-primary, selected cells */
+                        --ACZ-color-3:  rgba( 100, 100, 100, 0.25);     /* btn-primary:hover */
+                        --ACZ-color-4:  rgba( 127, 127, 127, 0.50);     /* btn-secondary */
+                        --ACZ-color-5:  rgba( 127, 127, 127, 1.00);     /* btn-secondary:hover */
+                        --ACZ-color-6:  rgba( 175, 175, 175, 1.00);     /* btn-dark */
+                        --ACZ-color-7:  rgba(  87,  87,  87, 1.00);     /* btn-dark:hover */
+                        --ACZ-color-8:  yellow;                         /* btn-warning */
+                        --ACZ-color-9:  gold;                           /* btn-warning:hover */
+                        --ACZ-color-10: rgba( 223, 223, 223, 0.50);     /* btn-info */
+                        --ACZ-color-11: rgba( 223, 223, 223, 1.00);     /* btn-info:hover */
+                        --ACZ-color-12: rgba( 255, 255, 255, 0.10);     /* zebra stripe rows */
+                        --ACZ-color-13: rgba( 128, 128, 128, 0.25);     /* tabulator cell hover */
+                        --ACZ-color-14: rgba(   0,   0,   0, 1.00);     /* chat <pre> background, chat system text */
+                        --ACZ-color-15: rgba(  63,  63,  63, 0.50);     /* */
+                        --ACZ-color-16: rgba(  63,  63,  63, 1.00);     /* */
+                        --ACZ-color-17: rgba(  96,  96, 255, 1.00);     /* scrollbar track */
                         --ACZ-color-18: rgba( 255, 255,   0, 0.70);     /* PDF crop rectangle */
-                        --ACZ-color-19: rgba( 239, 239, 255, 1.00);       /* tb-cell-selected */
+                        --ACZ-color-19: rgba( 239, 239, 255, 1.00);     /* tb-cell-selected */
 
                         --ACZ-color-A: red;
                         --ACZ-color-B: green;
@@ -139,7 +137,6 @@ table.insert(queries,{sql=[[
                         --ACZ-color-E: orange;
                         --ACZ-color-F: maroon;
                         --ACZ-color-G: beige;
-
 
                         /* Borders
                         **
@@ -160,7 +157,6 @@ table.insert(queries,{sql=[[
                         --ACZ-border-radius-2: 6px;
                         --ACZ-border-radius-3: 4px;
                         --ACZ-border-radius-4: 5px;  /* Navigator buttons */
-
 
                         /* Fonts
                         **
@@ -186,7 +182,6 @@ table.insert(queries,{sql=[[
                         --ACZ-font-size-chats:   12px;
                         --ACZ-font-size-chats2: calc(var(--ACZ-font-size-chats) - 4px);
 
-
                         /* Tooltips
                         **
                         ** There is a separate Tippy CSS file that references these values.
@@ -197,7 +192,6 @@ table.insert(queries,{sql=[[
                         --ACZ-tooltips-border-width: 2px;
                         --ACZ-tooltips-border-radius: var(--ACZ-border-radius-0);
                         --ACZ-tooltips-font-size: var(--ACZ-font-size-3);
-
 
                         /* Spacing and sizing
                         **
@@ -218,7 +212,6 @@ table.insert(queries,{sql=[[
                         --ACZ-iconimage-size: 20px;
                         --ACZ-iconimage-filter: drop-shadow(0px 0px 1px white) drop-shadow(0px 0px 1px white);
 
-
                         /* Transitions
                         **
                         ** The first number is what controls most of the fades so changing this will have the
@@ -234,7 +227,6 @@ table.insert(queries,{sql=[[
                         --ACZ-transition-login: all var(--ACZ-transition-delay) linear, width 0ms, transform 0ms;
                         --ACZ-transition-panel: all var(--ACZ-transition-delay) linear, width 0ms, transform 0ms;
 
-
                         /* Opacity/Page Mask
                         **
                         ** When modal forms like the theme selector are shown, an overlay or page mask is used
@@ -248,7 +240,6 @@ table.insert(queries,{sql=[[
                         --ACZ-opacity-1: 0.50; /* text in disabled buttons */
                         --ACZ-opacity-2: 0.25; /* login button disabled */
 
-
                         /* Shadows
                         **
                         ** These are generally placed behind icons or menus, so as to separate them from the background
@@ -259,7 +250,6 @@ table.insert(queries,{sql=[[
                         --ACZ-shadow-2: drop-shadow(0px 0px 1px var(--ACZ-color-14)) drop-shadow(0px 0px 2px var(--ACZ-color-14));
                         --ACZ-shadow-3: drop-shadow(0px 0px 3px rgb(from var(--ACZ-color-14) r g b / 0.75)); /* emphasis in chats */
                         --ACZ-shadow-4: drop-shadow(1px 0px 0px #333) drop-shadow(0px 1px 0px #333) drop-shadow(-1px 0px 0px #333)  drop-shadow(0px -1px 0px #333);
-
 
                         /* Scrollbars
                         **
@@ -291,7 +281,6 @@ table.insert(queries,{sql=[[
                         --ACZ-scroll-radius-1: 5px; /* General, CodeMirror overlay */
                         --ACZ-scroll-radius-2: 7px; /* Tabulator */
 
-
                         /* Progress Spinner
                         **
                         ** Lots of attention is given to this as it is a key part of the UI.
@@ -307,7 +296,6 @@ table.insert(queries,{sql=[[
                         --ACZ-progress-opacity-3: 0.4;
                         --ACZ-progress-opacity-4: 0.4;
 
-
                         /* Tabulator Tweaks
                         **
                         ** For the most part, Tabulator can get by using the colors for theming, but
@@ -317,7 +305,6 @@ table.insert(queries,{sql=[[
                         */
                         --ACZ-tb-padding-left: 2px;
                         --ACZ-tb-padding-top: 3px;
-
 
                         /* CodeMirror Syntax Highlighting
                         **
@@ -347,9 +334,7 @@ table.insert(queries,{sql=[[
                         --ACZ-font-color-error:        var(--ACZ-color-input);
                         --ACZ-font-color-bracket:      var(--ACZ-color-input);
                         --ACZ-font-color-punctuation:  var(--ACZ-color-input);
-
                     }
-
 
                     /* Background
                     **

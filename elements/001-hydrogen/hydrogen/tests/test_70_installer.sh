@@ -14,7 +14,7 @@ set -euo pipefail
 # Test configuration
 TEST_NAME="Installer Generator"
 TEST_ABBR="INS"
-TEST_NUMBER="80"
+TEST_NUMBER="70"
 TEST_COUNTER=0
 TEST_VERSION="1.3.0"
 
