@@ -4,6 +4,7 @@
 # Displays comprehensive coverage data from Unity and blackbox tests in a formatted table
 
 # CHANGELOG
+# 5.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 4.1.0 - 2025-09-17 - Added CYAN color flag for files where Unity Framework tests exceed Unity lines of coverage found
 # 4.0.0 - 2025-08-13 - Added Tests column showing Unity test count per source file with caching
 # 3.0.0 - 2025-08-04 - GCOV Optimization Adventure
@@ -16,6 +17,20 @@
 # 1.0.2 - Added MAGENTA color flag for files with >0 coverage but <50% coverage when >100 instrumented lines
 # 1.0.1 - Added YELLOW color flag for files with no coverage in either test type
 # 1.0.0 - Initial version
+
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
 
 set -euo pipefail
 
@@ -31,9 +46,8 @@ TEST_COUNTER=0
 TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
 # shellcheck disable=SC2310 # We want to continue even if the test fails
-#source "$(dirname "${BASH_SOURCE[0]}")/framework.sh"
 setup_test_environment &>/dev/null || true
 
 # Test Parameters

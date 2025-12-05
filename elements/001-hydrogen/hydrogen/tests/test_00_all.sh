@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 8.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variables
 # 7.0.1 - 2025-12-01 - Added build number to Test Suite Results title
 # 7.0.0 - 2025-12-01 - Added email generation at end of test suite, more summary data into JSON output
 # 6.6.2 - 2025-10-21 - Fixed formatting issue when calling cloc_tables.sh by adding LANG to: env -i "LANG=$LANG" bash -c <command>
@@ -35,6 +36,20 @@
 # 3.0.1 - 2025-07-03 - Enhanced --help to list test names, suppressed non-table output, updated history
 # 3.0.0 - 2025-07-02 - Complete rewrite to use lib/ scripts, simplified orchestration approach
 
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
+
 set -euo pipefail
 
 # Test configuration
@@ -42,11 +57,11 @@ TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
 TEST_COUNTER=0
-TEST_VERSION="7.0.0"
+TEST_VERSION="8.0.0"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
-source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
 setup_orchestration_environment
 
 # Commands used throughout the build system
@@ -616,7 +631,7 @@ BUILD_NUMBER=$(echo "${VERSION_FULL}" | grep -oE "ver [0-9]+\.[0-9]+\.[0-9]+\.[0
 # Save coverage table output to file and display to console using tee
 coverage_table_file="${RESULTS_DIR}/coverage_table.txt"
 # shellcheck disable=SC2154 # COVERAGE defined externally in framework.sh
-/usr/bin/env -i bash "${COVERAGE}" | tee "${coverage_table_file}" || true
+/usr/bin/env -i HYDROGEN_ROOT="${HYDROGEN_ROOT}" HELIUM_ROOT="${HELIUM_ROOT}" bash -c "${COVERAGE}" | tee "${coverage_table_file}" || true
 
 # Calculate total elapsed time
 # shellcheck disable=SC2154 # DATE defined externally in framework.sh   
@@ -808,7 +823,7 @@ mkdir -p "${metrics_dir}"
 cloc_output=""
 cloc_json_main=""
 cloc_json_stats=""
-if cloc_output=$(env -i LANG="${LANG}" bash -c "${SCRIPT_DIR}/lib/cloc_tables.sh"); then
+if cloc_output=$(env -i LANG="${LANG}" HYDROGEN_ROOT="${HYDROGEN_ROOT}" HELIUM_ROOT="${HELIUM_ROOT}" bash -c "${SCRIPT_DIR}/lib/cloc_tables.sh"); then
     # Capture CLOC JSON data if available
     cloc_json_main="${RESULTS_DIR}/cloc_main_data.json"
     cloc_json_stats="${RESULTS_DIR}/cloc_stats_data.json"
