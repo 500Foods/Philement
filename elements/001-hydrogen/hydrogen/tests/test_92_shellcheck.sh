@@ -31,7 +31,7 @@ TEST_VERSION="4.1.1"
 setup_test_environment
 
 # Test settings
-LINT_OUTPUT_LIMIT=10
+LINT_OUTPUT_LIMIT=25
 SHELLCHECK_CACHE_DIR="${HOME}/.cache/shellcheck"
 mkdir -p "${SHELLCHECK_CACHE_DIR}"
 

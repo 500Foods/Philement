@@ -249,7 +249,8 @@ print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "test -d src && test -f src/hyd
 
 if [[ -d "src" ]] && [[ -f "src/hydrogen.c" ]]; then
     src_count=$("${FIND}" . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" -o -path "./tests/unity/mocks/*" -o -path "./extras/*" -o -path "./examples/*" -o -path "./tests/unity/unity_config.h" \) \( -name "*.c" -o -name "*.h" \) | wc -l || true)
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Project search found ${src_count} source files"
+    src_count_fmt=$(format_number "${src_count}")
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Project search found ${src_count_fmt} source files"
     TEST_NAME="${TEST_NAME} {BLUE}(source code: ${src_count} files){RESET}"
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Source files not found - src/hydrogen.c missing"
