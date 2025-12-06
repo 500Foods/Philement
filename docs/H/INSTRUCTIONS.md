@@ -1,10 +1,16 @@
 # RECIPE FOR SUCCESS
 
-Hydrogen is a C project that implements a comprehensive suite of capabilities
+Hydrogen is a C project that implements a comprehensive suite of capabilities.
 
 - REST API with Swagger provided by embedded payload
 - Web, WebSocket, SMTP, mDNS, and other services are included
 - Blackbox (Integration) and Unity unit tests with gcov for coverage reporting
+
+The base for the project is in elements/001-hydrogen/hydrogen/
+The source code is in elements/001-hydrogen/hydrogen/src/
+The cmake files are in elements/001-hydrogen/hydrogen/cmake/
+The tests are in elements/001-hydrogen/hydrogen/tests/
+The documentation for the project is in docs/H/
 
 ## ⚠️ CRITICAL INSTRUCTIONS
 
@@ -20,13 +26,12 @@ Hydrogen is a C project that implements a comprehensive suite of capabilities
 - Follow the C and Bash coding requirements strictly to avoid linting errors detected by cppcheck and shellcheck
 - Use the repository structure diagram to quickly understand the codebase organization
 
-## REPOSITORY STRUCTURE
+## PROJECT STRUCTURE - from elements/001-hydrogen/hydrogen
 
 ```directory
 build/          Temporary build artifacts
 cmake/          cmake/CMakeLists.tst for all builds
 configs/        JSON configuration files
-docs/           Documentation including release notes
 examples/       Example code
 extras/         Helpful scripts and code snippets
 payloads/       Payload definitions
@@ -100,13 +105,12 @@ tests/          Test framework
 
 ## CRITICAL DOCUMENTATION
 
-- README.md - contains TOC for all docs
-- RELEASES.md - release history and update instructions
-- SITEMAP.md - links to all markdown docs
-- STRUCTURE.md - links to all files
-- tests/TESTING.md - blackbox/integration tests tests
-- tests/TESTING_UNITY.md - Unity unit tests
-- cmake/README.md - cmake build information
+- /docs/H/README.md - contains TOC for all docs
+- /docs/H/RELEASES.md - release history and update instructions
+- /docs/H/SITEMAP.md - links to all markdown docs
+- /docs/H/STRUCTURE.md - links to all files
+- /docs/H/tests/TESTING.md - blackbox/integration tests tests
+- /docs/H/tests/TESTING_UNITY.md - Unity unit tests
 
 ## C CODING REQUIREMENTS
 

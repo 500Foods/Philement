@@ -39,6 +39,11 @@ setup_test_environment
 # Test configuration
 TARGET_README="README.md"
 
+# Set paths for webroot and include directories
+export PHILEMENT_ROOT="$(realpath ../../../)"
+export HYDROGEN_ROOT="$(pwd)"
+export HYDROGEN_DOCS_ROOT="$(realpath ../../../docs/H)"
+
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Execute Markdown Link Check"
 
 # Create temporary file to capture output
@@ -46,11 +51,11 @@ MARKDOWN_CHECK="${LOG_PREFIX}_markdown_links_check.ansi"
 
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running markdown link check on ${TARGET_README}..."
 # shellcheck disable=SC2153,SC2154 # SITEMAP_EXTERNAL defined in framework.sh
-print_command "${TEST_NUMBER}" "${TEST_COUNTER}" ".${SITEMAP} ${TARGET_README} --noreport --quiet"
+print_command "${TEST_NUMBER}" "${TEST_COUNTER}" ".${SITEMAP} ${TARGET_README} --webroot '${PHILEMENT_ROOT}' --include '${HYDROGEN_ROOT}' --include '${HYDROGEN_DOCS_ROOT}' --noreport --quiet"
 
-# Run github-sitemap.sh with --noreport and --quiet to minimize output
+# Run github-sitemap.sh with webroot and include options
 SITEMAP_EXIT_CODE=0
-if ! "${SITEMAP}" "${TARGET_README}" --noreport --quiet > "${MARKDOWN_CHECK}" 2>&1; then
+if ! "${SITEMAP}" "${TARGET_README}" --webroot "${PHILEMENT_ROOT}" --include "${HYDROGEN_ROOT}" --include "${HYDROGEN_DOCS_ROOT}" --noreport --quiet > "${MARKDOWN_CHECK}" 2>&1; then
     SITEMAP_EXIT_CODE=$?
 else
     SITEMAP_EXIT_CODE=0
@@ -156,6 +161,8 @@ parse_sitemap_output() {
     { prev_line = $0 }
 
     END {
+        # Calculate total issues as sum of missing and orphaned
+        issues_found = (missing_count + 0) + (orphaned_count + 0)
         print issues_found ":" missing_count ":" orphaned_count ":" total_links
     }
     ' "${file}")

@@ -22,6 +22,10 @@ set -euo pipefail
 # Application version
 declare -r APPVERSION="1.4.4"
 
+# Global variables
+declare -a global_ignore_patterns=()
+declare -A checked_files=()
+
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
 PRINTF=$(command -v gprintf 2>/dev/null || command -v printf)
 DATE=$(command -v date) 
@@ -40,6 +44,8 @@ TABLE_THEME="Red"
 QUIET=false
 NOREPORT=false
 HELP=false
+WEBROOT=""
+declare -a INCLUDE_DIRS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -65,13 +71,31 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             ;;
+        --webroot)
+            if [[ -n "$2" ]]; then
+                WEBROOT="$2"
+                shift 2
+            else
+                echo "Error: --webroot requires a path" >&2
+                exit 1
+            fi
+            ;;
+        --include)
+            if [[ -n "$2" ]]; then
+                INCLUDE_DIRS+=("$2")
+                shift 2
+            else
+                echo "Error: --include requires a directory path" >&2
+                exit 1
+            fi
+            ;;
         *) if [[ -z "${INPUT_FILE}" ]]; then INPUT_FILE="$1"; shift; else echo "Error: Unknown option: $1" >&2; exit 1; fi ;;
     esac
 done
 
 # Check if help is requested
 if [[ "${HELP}" == "true" ]]; then
-    echo "Usage: $0 <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>] [--ignore <file>]" || true
+    echo "Usage: $0 <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>] [--ignore <file>] [--webroot <path>] [--include <dir>]..." || true
     echo "Options:"
     echo "  --debug      Enable debug logging"
     echo "  --quiet      Display only tables, suppress other output"
@@ -79,6 +103,8 @@ if [[ "${HELP}" == "true" ]]; then
     echo "  --help       Display this help message"
     echo "  --theme      Set table theme to 'Red' or 'Blue' (default: Red)"
     echo "  --ignore     Specify a file with ignore patterns (like .lintignore)"
+    echo "  --webroot    Set the web root path for absolute link resolution"
+    echo "  --include    Include directory in search (can be specified multiple times)"
     exit 0
 fi
 
@@ -104,7 +130,6 @@ fi
 
 # Initialize variables
 declare -A file_exists_cache
-declare -A checked_files
 declare -A file_summary
 declare -a missing_links=()
 declare -a orphaned_files=()
@@ -131,10 +156,14 @@ if ! cd "${input_dir}" 2>/dev/null; then
     exit 1
 fi
 repo_root="${input_dir}"
+if [[ -n "${WEBROOT}" ]]; then
+    repo_root="${WEBROOT}"
+elif [[ -n "${PHILEMENT_ROOT:-}" ]]; then
+    repo_root="${PHILEMENT_ROOT}"
+fi
 debug_log "Set repo root to ${repo_root} for input file ${INPUT_FILE}"
 
 # Load ignore patterns once and export for parallel processes
-declare -a global_ignore_patterns
 load_ignore_patterns() {
     debug_log "Loading ignore patterns"
     
@@ -176,7 +205,26 @@ load_ignore_patterns
 build_file_cache() {
     debug_log "Building file existence cache"
     local cache_count=0
-    
+
+    # Determine find paths
+    local find_paths=()
+    if [[ ${#INCLUDE_DIRS[@]} -gt 0 ]]; then
+        for dir in "${INCLUDE_DIRS[@]}"; do
+            if [[ "${dir}" == /* ]]; then
+                find_paths+=("${dir}")
+            else
+                find_paths+=("${repo_root}/${dir}")
+            fi
+        done
+        debug_log "Using include directories: ${find_paths[*]}"
+    elif [[ -n "${HYDROGEN_ROOT:-}" && -n "${HYDROGEN_DOCS_ROOT:-}" ]]; then
+        find_paths=("${HYDROGEN_ROOT}" "${HYDROGEN_DOCS_ROOT}")
+        debug_log "Using specific roots: ${HYDROGEN_ROOT} and ${HYDROGEN_DOCS_ROOT}"
+    else
+        find_paths=("${repo_root}")
+        debug_log "Using repo root: ${repo_root}"
+    fi
+
     # Single find command with optimized output
     while IFS= read -r -d '' entry; do
         local path="${entry%:*}"
@@ -187,7 +235,7 @@ build_file_cache() {
         else
             rel_path="${path}"
         fi
-        
+
         local excluded=false
         for pattern in "${global_ignore_patterns[@]}"; do
             shopt -s extglob
@@ -199,13 +247,13 @@ build_file_cache() {
             fi
             shopt -u extglob
         done
-        
+
         if [[ "${excluded}" == false ]]; then
             file_exists_cache["${path}"]="${type}"
             cache_count=$(( cache_count + 1 ))
         fi
-    done < <("${FIND}" "${repo_root}" \( -name .git -o -name build -o -name node_modules -o -path '*/tests/logs' -o -path '*/tests/results' -o -path '*/tests/diagnostics' -o -path '*/tests/unity/framework' \) -prune -o \( -type f -printf '%p:f\0' \) -o \( -type d -printf '%p:d\0' \) 2>/dev/null || true)
-    
+    done < <("${FIND}" "${find_paths[@]}" \( -name .git -o -name build -o -name node_modules -o -path '*/tests/logs' -o -path '*/tests/results' -o -path '*/tests/diagnostics' -o -path '*/tests/unity/framework' \) -prune -o \( -type f -printf '%p:f\0' \) -o \( -type d -printf '%p:d\0' \) 2>/dev/null || true)
+
     debug_log "Built file existence cache with ${cache_count} entries"
 }
 

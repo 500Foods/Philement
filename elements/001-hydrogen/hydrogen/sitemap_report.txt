@@ -1,0 +1,1297 @@
+Missing link in elements/001-hydrogen/hydrogen/README.md: src/README.md
+Missing link in elements/001-hydrogen/hydrogen/README.md: tests/unity/framework/Unity/README.md
+Missing link in elements/001-hydrogen/hydrogen/README.md: tests/unity/framework/CMock/README.md
+Missing link in elements/001-hydrogen/hydrogen/payloads/README.md: ../docs/SECRETS.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: ./TESTING_UNITY.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_00_all.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_01_compilation.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_02_secrets.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_03_shell.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_04_check_links.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_10_unity.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_11_leaks_like_a_sieve.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_12_env_variables.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_13_crash_handler.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_14_library_dependencies.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_15_json_error_handling.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_16_shutdown.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_17_startup_shutdown.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_18_signals.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_19_socket_rebind.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_20_api_prefix.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_21_system_endpoints.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_22_swagger.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_23_websockets.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_24_uploads.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_25_mdns.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_26_terminal.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_30_database.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_32_postgres_migrations.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_33_mysql_migrations.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_34_sqlite_migrations.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_35_db2_migrations.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_98_luacheck.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_71_database_diagrams.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_41_conduit.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_90_markdownlint.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_91_cppcheck.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_92_shellcheck.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_93_jsonlint.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_94_eslint.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_95_stylelint.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_96_htmlhint.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_97_xmlstarlet.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_80_code_size.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_99_coverage.md
+Missing link in elements/001-hydrogen/hydrogen/tests/README.md: ../docs/testing.md
+Missing link in docs/H/CURIOSITIES.md: /elements/001-hydrogen/deuterium/README.md
+Missing link in docs/H/CURIOSITIES.md: /elements/001-hydrogen/tritium/README.md
+Missing link in docs/H/DATABASES.md: ../tests/docs/test_31_migrations.md
+Missing link in docs/H/DATABASES.md: ../tests/docs/test_71_database_diagrams.md
+Missing link in docs/H/DATABASES.md: ../tests/docs/test_32_postgres_migrations.md
+Missing link in docs/H/DATABASES.md: ../tests/docs/test_33_mysql_migrations.md
+Missing link in docs/H/DATABASES.md: ../tests/docs/test_34_sqlite_migrations.md
+Missing link in docs/H/DATABASES.md: ../tests/docs/test_35_db2_migrations.md
+Missing link in docs/H/DATABASES.md: ../CURIOSITIES.md
+Missing link in docs/H/DATABASES.md: ../extras/brotli_udf_postgresql/README.md
+Missing link in docs/H/DATABASES.md: ../extras/brotli_udf_mysql/README.md
+Missing link in docs/H/DATABASES.md: ../extras/brotli_udf_sqlite/README.md
+Missing link in docs/H/DATABASES.md: ../extras/base64decode_udf_db2/README.md
+Missing link in docs/H/DATABASES.md: ../extras/brotli_udf_db2/README.md
+Missing link in docs/H/STRUCTURE.md: docs/PROMPTS.md
+Missing link in docs/H/STRUCTURE.md: docs/CURIOSITIES.md
+Missing link in docs/H/STRUCTURE.md: docs/SETUP.md
+Missing link in docs/H/STRUCTURE.md: docs/SECRETS.md
+Missing link in docs/H/STRUCTURE.md: images/README.md
+Missing link in docs/H/STRUCTURE.md: images/CLOC_CODE.svg
+Missing link in docs/H/STRUCTURE.md: images/CLOC_STAT.svg
+Missing link in docs/H/STRUCTURE.md: images/COVERAGE.svg
+Missing link in docs/H/STRUCTURE.md: images/COMPLETE.svg
+Missing link in docs/H/STRUCTURE.md: ./images/acuranzo/
+Missing link in docs/H/STRUCTURE.md: images/acuranzo/README.md
+Missing link in docs/H/STRUCTURE.md: ./images/gaius/
+Missing link in docs/H/STRUCTURE.md: images/gaius/README.md
+Missing link in docs/H/STRUCTURE.md: ./images/glm/
+Missing link in docs/H/STRUCTURE.md: images/glm/README.md
+Missing link in docs/H/STRUCTURE.md: ./images/helium/
+Missing link in docs/H/STRUCTURE.md: images/helium/README.md
+Missing link in docs/H/STRUCTURE.md: src/hydrogen.c
+Missing link in docs/H/STRUCTURE.md: src/api/api_service.c
+Missing link in docs/H/STRUCTURE.md: src/api/api_service.h
+Missing link in docs/H/STRUCTURE.md: src/api/api_utils.c
+Missing link in docs/H/STRUCTURE.md: src/api/api_utils.h
+Missing link in docs/H/STRUCTURE.md: src/api/README.md
+Missing link in docs/H/STRUCTURE.md: src/api/oidc/
+Missing link in docs/H/STRUCTURE.md: src/api/system/
+Missing link in docs/H/STRUCTURE.md: src/config/config.c
+Missing link in docs/H/STRUCTURE.md: src/config/config.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_forward.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_api.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_api.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_databases.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_databases.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_logging.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_logging.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_mail_relay.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_mail_relay.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_mdns_client.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_mdns_client.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_mdns_server.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_mdns_server.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_network.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_network.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_notify.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_notify.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_oidc.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_oidc.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_print.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_print.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_print_priorities.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_resources.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_resources.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_server.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_server.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_swagger.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_swagger.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_terminal.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_terminal.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_utils.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_utils.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_webserver.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_webserver.h
+Missing link in docs/H/STRUCTURE.md: src/config/config_websocket.c
+Missing link in docs/H/STRUCTURE.md: src/config/config_websocket.h
+Missing link in docs/H/STRUCTURE.md: src/database/database.c
+Missing link in docs/H/STRUCTURE.md: src/database/database.h
+Missing link in docs/H/STRUCTURE.md: src/database/database_bootstrap.c
+Missing link in docs/H/STRUCTURE.md: src/database/database_bootstrap.h
+Missing link in docs/H/STRUCTURE.md: src/database/database_cache.c
+Missing link in docs/H/STRUCTURE.md: src/database/database_cache.h
+Missing link in docs/H/STRUCTURE.md: src/database/database_connstring.c
+Missing link in docs/H/STRUCTURE.md: src/database/database_connstring.h
+Missing link in docs/H/STRUCTURE.md: src/database/database_engine.c
+Missing link in docs/H/STRUCTURE.md: src/database/database_engine.h
+Missing link in docs/H/STRUCTURE.md: src/database/database_execute.c
+Missing link in docs/H/STRUCTURE.md: src/database/database_execute.h
+Missing link in docs/H/STRUCTURE.md: src/database/database_manage.c
+Missing link in docs/H/STRUCTURE.md: src/database/database_manage.h
+Missing link in docs/H/STRUCTURE.md: src/database/database_params.c
+Missing link in docs/H/STRUCTURE.md: src/database/database_params.h
+Missing link in docs/H/STRUCTURE.md: src/database/database_pending.c
+Missing link in docs/H/STRUCTURE.md: src/database/database_pending.h
+Missing link in docs/H/STRUCTURE.md: src/database/database_queue_select.c
+Missing link in docs/H/STRUCTURE.md: src/database/database_queue_select.h
+Missing link in docs/H/STRUCTURE.md: src/database/database_serialize.c
+Missing link in docs/H/STRUCTURE.md: src/database/database_serialize.h
+Missing link in docs/H/STRUCTURE.md: src/database/database_types.h
+Missing link in docs/H/STRUCTURE.md: src/database/prepared_cache.h
+Missing link in docs/H/STRUCTURE.md: src/database/db2/
+Missing link in docs/H/STRUCTURE.md: src/database/dbqueue/
+Missing link in docs/H/STRUCTURE.md: src/database/migration/
+Missing link in docs/H/STRUCTURE.md: src/database/mysql/
+Missing link in docs/H/STRUCTURE.md: src/database/postgresql/
+Missing link in docs/H/STRUCTURE.md: src/database/sqlite/
+Missing link in docs/H/STRUCTURE.md: src/globals.c
+Missing link in docs/H/STRUCTURE.md: src/globals.h
+Missing link in docs/H/STRUCTURE.md: src/handlers/handlers.c
+Missing link in docs/H/STRUCTURE.md: src/handlers/handlers.h
+Missing link in docs/H/STRUCTURE.md: src/mutex/mutex.c
+Missing link in docs/H/STRUCTURE.md: src/mutex/mutex.h
+Missing link in docs/H/STRUCTURE.md: src/launch/launch.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch.h
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_api.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_database.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_logging.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_mail_relay.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_mdns_client.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_mdns_server.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_network.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_notify.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_oidc.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_payload.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_plan.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_print.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_readiness.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_registry.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_resources.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_review.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_swagger.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_terminal.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_threads.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_webserver.c
+Missing link in docs/H/STRUCTURE.md: src/launch/launch_websocket.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing.h
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_api.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_database.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_logging.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_mail_relay.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_mdns_client.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_mdns_server.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_network.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_payload.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_plan.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_print.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_readiness.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_registry.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_review.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_swagger.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_terminal.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_threads.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_webserver.c
+Missing link in docs/H/STRUCTURE.md: src/landing/landing_websocket.c
+Missing link in docs/H/STRUCTURE.md: src/logging/logging.c
+Missing link in docs/H/STRUCTURE.md: src/logging/logging.h
+Missing link in docs/H/STRUCTURE.md: src/logging/log_queue_manager.c
+Missing link in docs/H/STRUCTURE.md: src/logging/log_queue_manager.h
+Missing link in docs/H/STRUCTURE.md: src/network/network.h
+Missing link in docs/H/STRUCTURE.md: src/network/network_linux.c
+Missing link in docs/H/STRUCTURE.md: src/mdns/mdns_server.h
+Missing link in docs/H/STRUCTURE.md: src/mdns/mdns_server.c
+Missing link in docs/H/STRUCTURE.md: src/mdns/mdns_server_announce.c
+Missing link in docs/H/STRUCTURE.md: src/mdns/mdns_keys.c
+Missing link in docs/H/STRUCTURE.md: src/mdns/mdns_keys.h
+Missing link in docs/H/STRUCTURE.md: src/oidc/oidc_service.c
+Missing link in docs/H/STRUCTURE.md: src/oidc/oidc_service.h
+Missing link in docs/H/STRUCTURE.md: src/oidc/oidc_clients.c
+Missing link in docs/H/STRUCTURE.md: src/oidc/oidc_clients.h
+Missing link in docs/H/STRUCTURE.md: src/oidc/oidc_keys.c
+Missing link in docs/H/STRUCTURE.md: src/oidc/oidc_keys.h
+Missing link in docs/H/STRUCTURE.md: src/oidc/oidc_tokens.c
+Missing link in docs/H/STRUCTURE.md: src/oidc/oidc_tokens.h
+Missing link in docs/H/STRUCTURE.md: src/oidc/oidc_users.c
+Missing link in docs/H/STRUCTURE.md: src/oidc/oidc_users.h
+Missing link in docs/H/STRUCTURE.md: src/payload/payload.c
+Missing link in docs/H/STRUCTURE.md: src/payload/payload.h
+Missing link in docs/H/STRUCTURE.md: src/print/print_queue_manager.c
+Missing link in docs/H/STRUCTURE.md: src/print/print_queue_manager.h
+Missing link in docs/H/STRUCTURE.md: src/print/beryllium.c
+Missing link in docs/H/STRUCTURE.md: src/print/beryllium.h
+Missing link in docs/H/STRUCTURE.md: src/queue/queue.c
+Missing link in docs/H/STRUCTURE.md: src/queue/queue.h
+Missing link in docs/H/STRUCTURE.md: src/registry/registry.c
+Missing link in docs/H/STRUCTURE.md: src/registry/registry.h
+Missing link in docs/H/STRUCTURE.md: src/registry/registry_integration.c
+Missing link in docs/H/STRUCTURE.md: src/registry/registry_integration.h
+Missing link in docs/H/STRUCTURE.md: src/state/state.c
+Missing link in docs/H/STRUCTURE.md: src/state/state.h
+Missing link in docs/H/STRUCTURE.md: src/state/state_types.h
+Missing link in docs/H/STRUCTURE.md: src/status/status.c
+Missing link in docs/H/STRUCTURE.md: src/status/status.h
+Missing link in docs/H/STRUCTURE.md: src/status/status_core.c
+Missing link in docs/H/STRUCTURE.md: src/status/status_core.h
+Missing link in docs/H/STRUCTURE.md: src/status/status_formatters.c
+Missing link in docs/H/STRUCTURE.md: src/status/status_formatters.h
+Missing link in docs/H/STRUCTURE.md: src/status/status_process.c
+Missing link in docs/H/STRUCTURE.md: src/status/status_process.h
+Missing link in docs/H/STRUCTURE.md: src/status/status_system.c
+Missing link in docs/H/STRUCTURE.md: src/status/status_system.h
+Missing link in docs/H/STRUCTURE.md: src/swagger/swagger.c
+Missing link in docs/H/STRUCTURE.md: src/swagger/swagger.h
+Missing link in docs/H/STRUCTURE.md: src/threads/threads.c
+Missing link in docs/H/STRUCTURE.md: src/threads/threads.h
+Missing link in docs/H/STRUCTURE.md: src/utils/utils.c
+Missing link in docs/H/STRUCTURE.md: src/utils/utils.h
+Missing link in docs/H/STRUCTURE.md: src/utils/utils_dependency.c
+Missing link in docs/H/STRUCTURE.md: src/utils/utils_dependency.h
+Missing link in docs/H/STRUCTURE.md: src/utils/utils_logging.c
+Missing link in docs/H/STRUCTURE.md: src/utils/utils_logging.h
+Missing link in docs/H/STRUCTURE.md: src/utils/utils_queue.c
+Missing link in docs/H/STRUCTURE.md: src/utils/utils_queue.h
+Missing link in docs/H/STRUCTURE.md: src/utils/utils_time.c
+Missing link in docs/H/STRUCTURE.md: src/utils/utils_time.h
+Missing link in docs/H/STRUCTURE.md: src/webserver/web_server_core.c
+Missing link in docs/H/STRUCTURE.md: src/webserver/web_server_core.h
+Missing link in docs/H/STRUCTURE.md: src/webserver/web_server_compression.c
+Missing link in docs/H/STRUCTURE.md: src/webserver/web_server_compression.h
+Missing link in docs/H/STRUCTURE.md: src/webserver/web_server.h
+Missing link in docs/H/STRUCTURE.md: src/websocket/websocket_server.c
+Missing link in docs/H/STRUCTURE.md: src/websocket/websocket_server.h
+Missing link in docs/H/STRUCTURE.md: src/websocket/websocket_server_internal.h
+Missing link in docs/H/STRUCTURE.md: src/websocket/websocket_server_auth.c
+Missing link in docs/H/STRUCTURE.md: src/websocket/websocket_server_connection.c
+Missing link in docs/H/STRUCTURE.md: src/websocket/websocket_server_context.c
+Missing link in docs/H/STRUCTURE.md: src/websocket/websocket_server_dispatch.c
+Missing link in docs/H/STRUCTURE.md: src/websocket/websocket_server_message.c
+Missing link in docs/H/STRUCTURE.md: src/websocket/websocket_server_status.c
+Missing link in docs/H/STRUCTURE.md: docs/README.md
+Missing link in docs/H/STRUCTURE.md: docs/developer_onboarding.md
+Missing link in docs/H/STRUCTURE.md: docs/coding_guidelines.md
+Missing link in docs/H/STRUCTURE.md: docs/api.md
+Missing link in docs/H/STRUCTURE.md: docs/testing.md
+Missing link in docs/H/STRUCTURE.md: docs/metrics/README.md
+Missing link in docs/H/STRUCTURE.md: docs/configuration.md
+Missing link in docs/H/STRUCTURE.md: docs/data_structures.md
+Missing link in docs/H/STRUCTURE.md: docs/service.md
+Missing link in docs/H/STRUCTURE.md: docs/system_info.md
+Missing link in docs/H/STRUCTURE.md: docs/ai_integration.md
+Missing link in docs/H/STRUCTURE.md: docs/mdns_server.md
+Missing link in docs/H/STRUCTURE.md: docs/oidc_integration.md
+Missing link in docs/H/STRUCTURE.md: docs/print_queue.md
+Missing link in docs/H/STRUCTURE.md: docs/shutdown_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/thread_monitoring.md
+Missing link in docs/H/STRUCTURE.md: docs/web_socket.md
+Missing link in docs/H/STRUCTURE.md: docs/api/system/system_health.md
+Missing link in docs/H/STRUCTURE.md: docs/api/system/system_info.md
+Missing link in docs/H/STRUCTURE.md: docs/api/system/system_version.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/api.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/configuration.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/data_structures.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/database_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/database_configuration.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/launch_system_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/logging_configuration.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/mdns_client_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/mdns_configuration.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/network_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/oidc_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/print_queue_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/print_subsystem.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/printqueue_configuration.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/resources_configuration.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/smtp_configuration.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/smtp_relay_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/subsystem_registry_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/swagger_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/swagger_configuration.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/system_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/system_info.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/terminal_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/web_socket.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/webserver_configuration.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/webserver_subsystem.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/websocket_architecture.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/websocket_configuration.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/websocket_subsystem.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/launch/payload_subsystem.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/launch/threads_subsystem.md
+Missing link in docs/H/STRUCTURE.md: docs/reference/launch/webserver_subsystem.md
+Missing link in docs/H/STRUCTURE.md: docs/deployment/docker.md
+Missing link in docs/H/STRUCTURE.md: docs/development/ai_development.md
+Missing link in docs/H/STRUCTURE.md: docs/development/coding_guidelines.md
+Missing link in docs/H/STRUCTURE.md: docs/guides/quick-start.md
+Missing link in docs/H/STRUCTURE.md: docs/guides/print-queue.md
+Missing link in docs/H/STRUCTURE.md: docs/guides/use-cases/home-workshop.md
+Missing link in docs/H/STRUCTURE.md: docs/guides/use-cases/print-farm.md
+Missing link in docs/H/STRUCTURE.md: examples/README.md
+Missing link in docs/H/STRUCTURE.md: examples/C/auth_code_flow.c
+Missing link in docs/H/STRUCTURE.md: examples/C/client_credentials.c
+Missing link in docs/H/STRUCTURE.md: examples/C/password_flow.c
+Missing link in docs/H/STRUCTURE.md: examples/JavaScript/auth_code_flow.html
+Missing link in docs/H/STRUCTURE.md: payloads/README.md
+Missing link in docs/H/STRUCTURE.md: payloads/payload-generate.sh
+Missing link in docs/H/STRUCTURE.md: payloads/swagger-generate.sh
+Missing link in docs/H/STRUCTURE.md: payloads/swagger.json
+Missing link in docs/H/STRUCTURE.md: tests/test_00_all.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_01_compilation.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_02_secrets.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_04_check_links.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_10_unity.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_11_leaks_like_a_sieve.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_12_env_variables.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_13_crash_handler.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_14_library_dependencies.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_15_json_error_handling.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_16_shutdown.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_17_startup_shutdown.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_18_signals.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_19_socket_rebind.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_20_api_prefix.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_21_system_endpoints.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_22_swagger.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_23_websockets.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_24_uploads.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_25_mdns.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_26_terminal.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_41_conduit.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_30_database.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_31_migrations.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_32_postgres_migrations.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_33_mysql_migrations.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_34_sqlite_migrations.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_35_db2_migrations.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_98_luacheck.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_71_database_diagrams.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_70_installer.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_90_markdownlint.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_91_cppcheck.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_92_shellcheck.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_93_jsonlint.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_94_eslint.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_95_stylelint.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_96_htmlhint.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_97_xmlstarlet.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_80_code_size.sh
+Missing link in docs/H/STRUCTURE.md: tests/test_99_coverage.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/
+Missing link in docs/H/STRUCTURE.md: tests/lib/cloc.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/coverage.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/coverage-combined.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/coverage-common.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/coverage_table.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/env_utils.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/file_utils.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/framework.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/github-sitemap.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/lifecycle.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/log_output.sh
+Missing link in docs/H/STRUCTURE.md: tests/lib/network_utils.sh
+Missing link in docs/H/STRUCTURE.md: extras/README.md
+Missing link in docs/H/STRUCTURE.md: extras/make-all.sh
+Missing link in docs/H/STRUCTURE.md: extras/make-clean.sh
+Missing link in docs/H/STRUCTURE.md: extras/make-trial.sh
+Missing link in docs/H/STRUCTURE.md: extras/filter-log.sh
+Missing link in docs/H/STRUCTURE.md: installer/README.md
+Missing link in docs/H/STRUCTURE.md: installer/installer_wrapper.sh
+Missing link in docs/H/STRUCTURE.md: installer/hydrogen_installer_*.sh
+Missing link in docs/H/STRUCTURE.md: extras/payload/debug_payload.c
+Missing link in docs/H/STRUCTURE.md: extras/payload/find_all_markers.c
+Missing link in docs/H/STRUCTURE.md: extras/payload/test_payload_detection.c
+Missing link in docs/H/STRUCTURE.md: extras/base64decode_udf_db2/
+Missing link in docs/H/STRUCTURE.md: extras/brotli_udf_db2/
+Missing link in docs/H/STRUCTURE.md: extras/brotli_udf_mysql/
+Missing link in docs/H/STRUCTURE.md: extras/brotli_udf_postgresql/
+Missing link in docs/H/STRUCTURE.md: extras/brotli_udf_sqlite/
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists.txt
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-base.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-cache.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-coverage.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-debug.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-examples.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-init.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-ninja.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-output.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-package.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-perf.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-regular.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-release.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-targets.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-unity.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-valgrind.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-version.cmake
+Missing link in docs/H/STRUCTURE.md: cmake/CMakePresets.json
+Missing link in docs/H/SETUP.md: ../tests/lib/github-sitemap.sh
+Missing link in docs/H/SETUP.md: ../tests/docs/github-sitemap.md
+Missing link in docs/H/SECRETS.md: ../README.md
+Missing link in docs/H/SECRETS.md: ../payloads/README.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-12/2025-12-05.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-12/2025-12-03.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-12/2025-12-02.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-12/2025-12-01.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-30.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-29.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-28.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-27.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-26.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-25.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-24.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-23.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-22.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-21.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-20.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-18.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-16.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-15.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-14.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-13.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-11.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-10.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-09.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-08.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-07.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-06.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-05.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-04.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-11/2025-11-03.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-30.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-29.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-25.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-23.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-22.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-21.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-20.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-19.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-18.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-17.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-16.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-15.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-13.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-12.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-11.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-10.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-09.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-08.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-07.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-06.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-05.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-04.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-02.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-10/2025-10-01.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-30.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-29.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-28.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-26.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-25.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-24.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-23.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-22.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-21.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-20.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-19.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-18.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-17.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-16.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-15.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-14.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-13.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-12.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-11.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-10.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-09.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-08.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-07.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-06.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-05.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-04.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-03.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-09/2025-09-01.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-31.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-30.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-29.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-28.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-27.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-26.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-25.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-24.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-23.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-22.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-21.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-20.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-19.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-18.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-17.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-16.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-15.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-14.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-13.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-12.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-11.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-10.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-09.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-08.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-07.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-05.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-04.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-03.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-02.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-08/2025-08-01.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-31.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-30.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-29.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-28.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-27.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-25.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-24.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-23.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-22.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-21.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-20.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-19.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-18.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-17.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-16.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-15.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-14.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-13.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-12.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-11.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-10.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-09.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-07.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-06.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-04.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-03.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-02.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-07/2025-07-01.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-30.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-29.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-28.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-25.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-23.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-20.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-19.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-18.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-17.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-16.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-09.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-03.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-06/2025-06-01.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-05/2025-05-06.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-04/2025-04-19.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-04/2025-04-05.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-04/2025-04-04.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-04/2025-04-03.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-04/2025-04-02.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-04/2025-04-01.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-31.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-30.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-29.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-28.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-27.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-26.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-25.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-24.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-23.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-22.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-21.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-20.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-19.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-18.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-17.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-16.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-15.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-14.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-13.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-12.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-11.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-10.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-09.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-08.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-07.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-06.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-05.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-04.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-03.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-02.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-03/2025-03-01.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-28.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-27.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-26.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-25.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-24.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-23.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-22.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-21.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-20.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-19.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-18.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-17.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-16.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-15.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-14.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-13.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-12.md
+Missing link in docs/H/RELEASES.md: docs/releases/2025-02/2025-02-08.md
+Missing link in docs/H/RELEASES.md: docs/releases/2024-07/2024-07-18.md
+Missing link in docs/H/RELEASES.md: docs/releases/2024-07/2024-07-15.md
+Missing link in docs/H/RELEASES.md: docs/releases/2024-07/2024-07-11.md
+Missing link in docs/H/RELEASES.md: docs/releases/2024-07/2024-07-08.md
+Missing link in docs/H/SITEMAP.md: docs/SECRETS.md
+Missing link in docs/H/SITEMAP.md: docs/SETUP.md
+Missing link in docs/H/SITEMAP.md: cmake/README.md
+Missing link in docs/H/SITEMAP.md: docs/README.md
+Missing link in docs/H/SITEMAP.md: docs/ai_integration.md
+Missing link in docs/H/SITEMAP.md: docs/api.md
+Missing link in docs/H/SITEMAP.md: docs/coding_guidelines.md
+Missing link in docs/H/SITEMAP.md: docs/configuration.md
+Missing link in docs/H/SITEMAP.md: docs/data_structures.md
+Missing link in docs/H/SITEMAP.md: docs/database.md
+Missing link in docs/H/SITEMAP.md: docs/developer_onboarding.md
+Missing link in docs/H/SITEMAP.md: docs/mdns_server.md
+Missing link in docs/H/SITEMAP.md: docs/oidc_integration.md
+Missing link in docs/H/SITEMAP.md: docs/print_queue.md
+Missing link in docs/H/SITEMAP.md: docs/service.md
+Missing link in docs/H/SITEMAP.md: docs/shutdown_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/system_info.md
+Missing link in docs/H/SITEMAP.md: docs/testing.md
+Missing link in docs/H/SITEMAP.md: docs/thread_monitoring.md
+Missing link in docs/H/SITEMAP.md: docs/web_socket.md
+Missing link in docs/H/SITEMAP.md: docs/metrics/README.md
+Missing link in docs/H/SITEMAP.md: docs/api/system/system_health.md
+Missing link in docs/H/SITEMAP.md: docs/api/system/system_info.md
+Missing link in docs/H/SITEMAP.md: docs/api/system/system_version.md
+Missing link in docs/H/SITEMAP.md: docs/deployment/docker.md
+Missing link in docs/H/SITEMAP.md: docs/development/ai_development.md
+Missing link in docs/H/SITEMAP.md: docs/development/coding_guidelines.md
+Missing link in docs/H/SITEMAP.md: docs/guides/print-queue.md
+Missing link in docs/H/SITEMAP.md: docs/guides/quick-start.md
+Missing link in docs/H/SITEMAP.md: docs/guides/use-cases/home-workshop.md
+Missing link in docs/H/SITEMAP.md: docs/guides/use-cases/print-farm.md
+Missing link in docs/H/SITEMAP.md: docs/plans/DATABASE_PLAN.md
+Missing link in docs/H/SITEMAP.md: docs/plans/TERMINAL_PLAN.md
+Missing link in docs/H/SITEMAP.md: docs/reference/api.md
+Missing link in docs/H/SITEMAP.md: docs/reference/configuration.md
+Missing link in docs/H/SITEMAP.md: docs/reference/data_structures.md
+Missing link in docs/H/SITEMAP.md: docs/reference/database_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/database_configuration.md
+Missing link in docs/H/SITEMAP.md: docs/reference/lead_dqm.md
+Missing link in docs/H/SITEMAP.md: docs/reference/launch_system_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/logging_configuration.md
+Missing link in docs/H/SITEMAP.md: docs/reference/mdns_client_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/mdns_configuration.md
+Missing link in docs/H/SITEMAP.md: docs/reference/network_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/oidc_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/print_queue_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/print_subsystem.md
+Missing link in docs/H/SITEMAP.md: docs/reference/printqueue_configuration.md
+Missing link in docs/H/SITEMAP.md: docs/reference/resources_configuration.md
+Missing link in docs/H/SITEMAP.md: docs/reference/smtp_configuration.md
+Missing link in docs/H/SITEMAP.md: docs/reference/smtp_relay_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/subsystem_registry_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/swagger_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/swagger_configuration.md
+Missing link in docs/H/SITEMAP.md: docs/reference/system_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/system_info.md
+Missing link in docs/H/SITEMAP.md: docs/reference/terminal_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/web_socket.md
+Missing link in docs/H/SITEMAP.md: docs/reference/webserver_configuration.md
+Missing link in docs/H/SITEMAP.md: docs/reference/webserver_subsystem.md
+Missing link in docs/H/SITEMAP.md: docs/reference/websocket_architecture.md
+Missing link in docs/H/SITEMAP.md: docs/reference/websocket_configuration.md
+Missing link in docs/H/SITEMAP.md: docs/reference/websocket_subsystem.md
+Missing link in docs/H/SITEMAP.md: docs/reference/launch/payload_subsystem.md
+Missing link in docs/H/SITEMAP.md: docs/reference/launch/threads_subsystem.md
+Missing link in docs/H/SITEMAP.md: docs/reference/launch/webserver_subsystem.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2024-07/2024-07-08.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2024-07/2024-07-11.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2024-07/2024-07-15.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2024-07/2024-07-18.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-08.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-12.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-13.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-14.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-15.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-16.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-17.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-18.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-19.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-20.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-21.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-22.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-23.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-24.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-25.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-26.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-27.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-02/2025-02-28.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-01.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-02.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-03.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-04.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-05.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-06.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-07.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-08.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-09.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-10.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-11.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-12.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-13.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-14.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-15.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-16.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-17.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-18.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-19.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-20.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-21.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-22.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-23.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-24.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-25.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-26.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-27.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-28.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-29.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-30.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-03/2025-03-31.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-04/2025-04-01.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-04/2025-04-02.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-04/2025-04-03.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-04/2025-04-04.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-04/2025-04-05.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-05/2025-05-06.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-01.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-03.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-09.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-16.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-17.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-18.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-19.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-20.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-23.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-25.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-28.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-29.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-06/2025-06-30.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-07/2025-07-01.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-07/2025-07-02.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-07/2025-07-03.md
+Missing link in docs/H/SITEMAP.md: docs/releases/2025-07/2025-07-04.md
+Missing link in docs/H/SITEMAP.md: examples/README.md
+Missing link in docs/H/SITEMAP.md: extras/README.md
+Missing link in docs/H/SITEMAP.md: installer/README.md
+Missing link in docs/H/SITEMAP.md: images/README.md
+Missing link in docs/H/SITEMAP.md: images/CLOC_CODE.svg
+Missing link in docs/H/SITEMAP.md: images/CLOC_STAT.svg
+Missing link in docs/H/SITEMAP.md: images/COMPLETE.svg
+Missing link in docs/H/SITEMAP.md: images/COVERAGE.svg
+Missing link in docs/H/SITEMAP.md: images/acuranzo/README.md
+Missing link in docs/H/SITEMAP.md: images/helium/README.md
+Missing link in docs/H/SITEMAP.md: payloads/README.md
+Missing link in docs/H/SITEMAP.md: src/api/README.md
+Missing link in docs/H/SITEMAP.md: tests/docs/cloc.md
+Missing link in docs/H/SITEMAP.md: tests/docs/coverage.md
+Missing link in docs/H/SITEMAP.md: tests/docs/coverage-common.md
+Missing link in docs/H/SITEMAP.md: tests/docs/coverage-combined.md
+Missing link in docs/H/SITEMAP.md: tests/docs/coverage_table.md
+Missing link in docs/H/SITEMAP.md: tests/docs/cloc_tables.md
+Missing link in docs/H/SITEMAP.md: tests/docs/migrations.md
+Missing link in docs/H/SITEMAP.md: tests/docs/get_migration_wrapper.md
+Missing link in docs/H/SITEMAP.md: tests/docs/profile_test_suite.md
+Missing link in docs/H/SITEMAP.md: tests/docs/env_utils.md
+Missing link in docs/H/SITEMAP.md: tests/docs/file_utils.md
+Missing link in docs/H/SITEMAP.md: tests/docs/framework.md
+Missing link in docs/H/SITEMAP.md: tests/docs/github-sitemap.md
+Missing link in docs/H/SITEMAP.md: tests/docs/LIBRARIES.md
+Missing link in docs/H/SITEMAP.md: tests/docs/lifecycle.md
+Missing link in docs/H/SITEMAP.md: tests/docs/log_output.md
+Missing link in docs/H/SITEMAP.md: tests/docs/network_utils.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_00_all.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_01_compilation.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_02_secrets.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_04_check_links.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_10_unity.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_11_leaks_like_a_sieve.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_12_env_variables.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_13_crash_handler.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_14_library_dependencies.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_15_json_error_handling.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_16_shutdown.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_17_startup_shutdown.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_18_signals.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_19_socket_rebind.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_20_api_prefix.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_21_system_endpoints.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_22_swagger.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_23_websockets.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_24_uploads.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_25_mdns.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_26_terminal.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_30_database.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_31_migrations.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_32_postgres_migrations.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_33_mysql_migrations.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_34_sqlite_migrations.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_35_db2_migrations.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_70_installer.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_90_markdownlint.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_91_cppcheck.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_92_shellcheck.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_93_jsonlint.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_94_eslint.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_95_stylelint.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_96_htmlhint.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_97_xmlstarlet.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_80_code_size.md
+Missing link in docs/H/SITEMAP.md: tests/docs/test_99_coverage.md
+Missing link in docs/H/metrics/README.md: ../../tests/docs/test_00_all.md
+Missing link in docs/H/metrics/README.md: ../../tests/docs/coverage.md
+Missing link in docs/H/metrics/README.md: ../../tests/docs/cloc.md
+Missing link in docs/H/metrics/README.md: ../../docs/testing.md
+Missing link in docs/H/metrics/README.md: ../../tests/docs/LIBRARIES.md
+Missing link in docs/H/metrics/README.md: ../../tests/TESTING.md
+Missing link in docs/H/metrics/README.md: ../../tests/TESTING_UNITY.md
+Missing link in docs/H/core/README.md: /docs/guides/quick-start.md
+Missing link in docs/H/core/README.md: /docs/configuration.md
+Missing link in docs/H/core/README.md: /docs/api.md
+Missing link in docs/H/core/README.md: /docs/reference/webserver_configuration.md
+Missing link in docs/H/core/README.md: /docs/reference/websocket_configuration.md
+Missing link in docs/H/core/README.md: /docs/reference/printqueue_configuration.md
+Missing link in docs/H/core/README.md: /docs/reference/resources_configuration.md
+Missing link in docs/H/core/README.md: /docs/reference/mdns_configuration.md
+Missing link in docs/H/core/README.md: /docs/reference/network_architecture.md
+Missing link in docs/H/core/README.md: /docs/reference/swagger_configuration.md
+Missing link in docs/H/core/README.md: /docs/reference/api.md
+Missing link in docs/H/core/README.md: /docs/reference/swagger_architecture.md
+Missing link in docs/H/core/README.md: /docs/reference/logging_configuration.md
+Missing link in docs/H/core/README.md: /docs/reference/terminal_configuration.md
+Missing link in docs/H/core/README.md: /docs/reference/monitoring.md
+Missing link in docs/H/core/README.md: /docs/reference/smtp_configuration.md
+Missing link in docs/H/core/README.md: /docs/reference/database_configuration.md
+Missing link in docs/H/core/README.md: /docs/developer_onboarding.md
+Missing link in docs/H/core/README.md: /docs/coding_guidelines.md
+Missing link in docs/H/core/README.md: /docs/testing.md
+Missing link in docs/H/core/README.md: /RELEASES.md
+Missing link in docs/H/core/README.md: /docs/reference/system_architecture.md
+Missing link in docs/H/core/README.md: /docs/reference/subsystem_registry_architecture.md
+Missing link in docs/H/core/README.md: /docs/reference/launch_system_architecture.md
+Missing link in docs/H/core/README.md: /docs/thread_monitoring.md
+Missing link in docs/H/core/README.md: /docs/shutdown_architecture.md
+Missing link in docs/H/core/README.md: /docs/reference/webserver_subsystem.md
+Missing link in docs/H/core/README.md: /docs/reference/websocket_subsystem.md
+Missing link in docs/H/core/README.md: /docs/reference/print_subsystem.md
+Missing link in docs/H/core/README.md: /docs/web_socket.md
+Missing link in docs/H/core/README.md: /docs/reference/security_configuration.md
+Missing link in docs/H/core/README.md: /docs/oidc_integration.md
+Missing link in docs/H/core/README.md: /docs/SECRETS.md
+Missing link in docs/H/core/README.md: /docs/guides/use-cases/home-workshop.md
+Missing link in docs/H/core/README.md: /docs/guides/use-cases/print-farm.md
+Missing link in docs/H/core/README.md: /docs/reference/faq.md
+Missing link in docs/H/core/README.md: /docs/reference/troubleshooting.md
+Missing link in docs/H/core/README.md: /docs/reference/glossary.md
+Missing link in docs/H/core/developer_onboarding.md: /payloads/README.md
+Missing link in docs/H/core/api.md: /payloads/README.md
+Missing link in docs/H/plans/DATABASE_PLAN.md: ../../INSTRUCTIONS.md
+Missing link in docs/H/plans/DATABASE_PLAN.md: ../../tests/TESTING.md
+Missing link in docs/H/plans/DATABASE_PLAN.md: ../reference/database_architecture.md
+Missing link in docs/H/plans/DATABASE_PLAN.md: ../../src/queue/queue.c
+Missing link in docs/H/plans/DATABASE_PLAN.md: ../../src/config/config_databases.c
+Missing link in docs/H/plans/DATABASE_PLAN.md: ../../cmake/README.md
+Missing link in docs/H/plans/CONDUIT.md: ../../src/database/
+Missing link in elements/001-hydrogen/hydrogen/src/api/README.md: /docs/developer_onboarding.md
+Missing link in elements/001-hydrogen/hydrogen/src/api/README.md: /payloads/README.md
+Missing link in elements/001-hydrogen/hydrogen/src/api/README.md: /docs/api.md
+Missing link in elements/001-hydrogen/hydrogen/src/api/README.md: /RELEASES.md
+Missing link in elements/001-hydrogen/hydrogen/src/api/README.md: /tests/test_21_system_endpoints.sh
+Missing link in docs/H/core/reference/logging_configuration.md: /docs/reference/system_architecture.md
+Missing link in docs/H/core/reference/smtp_configuration.md: /docs/reference/notifications.md
+Missing link in docs/H/tests/test_10_unity.md: ../unity/README.md
+Missing link in docs/H/tests/test_10_unity.md: ../../docs/testing.md
+Missing link in docs/H/tests/test_10_unity.md: ../../docs/coding_guidelines.md
+Missing link in docs/H/core/reference/database_configuration.md: /docs/reference/oidc_configuration.md
+Missing link in docs/H/core/reference/database_configuration.md: /docs/reference/logging_configuration.md
+Missing link in docs/H/core/reference/database_configuration.md: /docs/reference/system_architecture.md
+Missing link in docs/H/core/reference/resources_configuration.md: /docs/reference/monitoring.md
+Missing link in docs/H/core/reference/resources_configuration.md: /docs/reference/performance.md
+Missing link in docs/H/tests/test_98_luacheck.md: ../TESTING.md
+Missing link in docs/H/tests/test_98_luacheck.md: ../docs/test_90_markdownlint.md
+Missing link in docs/H/tests/test_98_luacheck.md: ../docs/test_92_shellcheck.md
+Missing link in docs/H/tests/coverage_table.md: ../../docs/metrics/README.md
+Missing link in docs/H/tests/TESTING.md: docs/test_00_all.md
+Missing link in docs/H/tests/TESTING.md: docs/test_01_compilation.md
+Missing link in docs/H/tests/TESTING.md: docs/test_02_secrets.md
+Missing link in docs/H/tests/TESTING.md: docs/test_03_shell.md
+Missing link in docs/H/tests/TESTING.md: docs/test_04_check_links.md
+Missing link in docs/H/tests/TESTING.md: docs/test_10_unity.md
+Missing link in docs/H/tests/TESTING.md: docs/test_11_leaks_like_a_sieve.md
+Missing link in docs/H/tests/TESTING.md: docs/test_12_env_variables.md
+Missing link in docs/H/tests/TESTING.md: docs/test_13_crash_handler.md
+Missing link in docs/H/tests/TESTING.md: docs/test_14_library_dependencies.md
+Missing link in docs/H/tests/TESTING.md: docs/test_15_json_error_handling.md
+Missing link in docs/H/tests/TESTING.md: docs/test_16_shutdown.md
+Missing link in docs/H/tests/TESTING.md: docs/test_17_startup_shutdown.md
+Missing link in docs/H/tests/TESTING.md: docs/test_18_signals.md
+Missing link in docs/H/tests/TESTING.md: docs/test_19_socket_rebind.md
+Missing link in docs/H/tests/TESTING.md: docs/test_20_api_prefix.md
+Missing link in docs/H/tests/TESTING.md: docs/test_21_system_endpoints.md
+Missing link in docs/H/tests/TESTING.md: docs/test_22_swagger.md
+Missing link in docs/H/tests/TESTING.md: docs/test_23_websockets.md
+Missing link in docs/H/tests/TESTING.md: docs/test_24_uploads.md
+Missing link in docs/H/tests/TESTING.md: docs/test_25_mdns.md
+Missing link in docs/H/tests/TESTING.md: docs/test_26_terminal.md
+Missing link in docs/H/tests/TESTING.md: docs/test_30_database.md
+Missing link in docs/H/tests/TESTING.md: docs/test_32_postgres_migrations.md
+Missing link in docs/H/tests/TESTING.md: docs/test_33_mysql_migrations.md
+Missing link in docs/H/tests/TESTING.md: docs/test_34_sqlite_migrations.md
+Missing link in docs/H/tests/TESTING.md: docs/test_35_db2_migrations.md
+Missing link in docs/H/tests/TESTING.md: docs/test_98_luacheck.md
+Missing link in docs/H/tests/TESTING.md: docs/test_71_database_diagrams.md
+Missing link in docs/H/tests/TESTING.md: docs/test_41_conduit.md
+Missing link in docs/H/tests/TESTING.md: docs/test_90_markdownlint.md
+Missing link in docs/H/tests/TESTING.md: docs/test_91_cppcheck.md
+Missing link in docs/H/tests/TESTING.md: docs/test_92_shellcheck.md
+Missing link in docs/H/tests/TESTING.md: docs/test_93_jsonlint.md
+Missing link in docs/H/tests/TESTING.md: docs/test_94_eslint.md
+Missing link in docs/H/tests/TESTING.md: docs/test_95_stylelint.md
+Missing link in docs/H/tests/TESTING.md: docs/test_96_htmlhint.md
+Missing link in docs/H/tests/TESTING.md: docs/test_97_xmlstarlet.md
+Missing link in docs/H/tests/TESTING.md: docs/test_80_code_size.md
+Missing link in docs/H/tests/TESTING.md: docs/test_99_coverage.md
+Missing link in docs/H/tests/TESTING.md: ../docs/testing.md
+Missing link in docs/H/tests/TESTING_UNITY.md: unity/mocks/README.md
+Missing link in docs/H/plans/TERMINAL_PLAN.md: ../..//INSTRUCTIONS.md
+Missing link in docs/H/plans/TERMINAL_PLAN.md: ../..//README.md
+Missing link in docs/H/plans/TERMINAL_PLAN.md: ../../tests/TESTING.md
+Missing link in docs/H/plans/TERMINAL_PLAN.md: ../../STRUCTURE.md
+Missing link in docs/H/plans/TERMINAL_PLAN.md: ../web_socket.md
+Missing link in docs/H/plans/TERMINAL_PLAN.md: ../api.md
+Missing link in docs/H/plans/TERMINAL_PLAN.md: ../data_structures.md
+Missing link in docs/H/plans/TERMINAL_PLAN.md: ../../cmake/README.md
+Missing link in docs/H/core/SECRETS.md: ../payloads/README.md
+Missing link in docs/H/core/coding_guidelines.md: /docs/security_best_practices.md
+Missing link in docs/H/core/reference/system_architecture.md: /payloads/README.md
+Missing link in docs/H/core/reference/system_info.md: /docs/reference/thread_monitoring.md
+Missing link in docs/H/core/reference/configuration.md: /docs/reference/service.md
+Missing link in docs/H/core/reference/webserver_configuration.md: /docs/reference/api_configuration.md
+Missing link in docs/H/core/reference/mdns_configuration.md: /docs/reference/network_configuration.md
+Missing link in docs/H/tests/LIBRARIES.md: ../lib/github-sitemap.sh
+Missing link in docs/H/tests/LIBRARIES.md: ../lib/cloc.sh
+Missing link in docs/H/tests/LIBRARIES.md: ../lib/log_output.sh
+Missing link in docs/H/tests/LIBRARIES.md: ../lib/file_utils.sh
+Missing link in docs/H/tests/LIBRARIES.md: ../lib/framework.sh
+Missing link in docs/H/tests/LIBRARIES.md: ../lib/env_utils.sh
+Missing link in docs/H/tests/LIBRARIES.md: ../lib/lifecycle.sh
+Missing link in docs/H/tests/LIBRARIES.md: ../lib/network_utils.sh
+Missing link in docs/H/tests/LIBRARIES.md: ../TESTING.md
+Missing link in docs/H/core/reference/network_configuration.md: /docs/reference/system_architecture.md
+Missing link in docs/H/core/reference/subsystem_registry_architecture.md: /docs/reference/state_management.md
+Missing link in docs/H/core/reference/print_queue_architecture.md: /docs/reference/beryllium.md
+Missing link in docs/H/core/reference/websocket_architecture.md: ../../src/websocket/websocket_server_shutdown.c
+Missing link in docs/H/core/reference/websocket_architecture.md: ../../src/websocket/websocket_server_context.c
+Missing link in docs/H/core/reference/websocket_architecture.md: ../../src/websocket/websocket_server_internal.h
+Missing link in docs/H/tests/coverage-common.md: ../../docs/metrics/README.md
+Missing link in docs/H/tests/coverage-combined.md: ../../docs/metrics/README.md
+Missing link in docs/H/tests/cloc_tables.md: ../../docs/metrics/README.md
+Missing link in docs/H/tests/migrations.md: ../../tests/docs/test_31_migrations.md
+Missing link in docs/H/tests/migrations.md: ../../tests/docs/test_32_postgres_migrations.md
+Missing link in docs/H/tests/migrations.md: ../../tests/docs/test_33_mysql_migrations.md
+Missing link in docs/H/tests/migrations.md: ../../tests/docs/test_34_sqlite_migrations.md
+Missing link in docs/H/tests/migrations.md: ../../tests/docs/test_35_db2_migrations.md
+Missing link in docs/H/tests/get_migration_wrapper.md: ../../tests/docs/test_31_migrations.md
+Missing link in docs/H/tests/get_migration_wrapper.md: ../../tests/docs/test_32_postgres_migrations.md
+Missing link in docs/H/tests/get_migration_wrapper.md: ../../tests/docs/test_33_mysql_migrations.md
+Missing link in docs/H/tests/get_migration_wrapper.md: ../../tests/docs/test_34_sqlite_migrations.md
+Missing link in docs/H/tests/get_migration_wrapper.md: ../../tests/docs/test_35_db2_migrations.md
+Missing link in docs/H/core/development/coding_guidelines.md: /docs/reference/service.md
+
+=== Link Check Summary ===
+Files processed: 127
+Total missing links: 1016
+Orphaned files: 273
+
+=== Orphaned Markdown Files ===
+File: docs/H/releases/2025-02/2025-02-16.md
+File: docs/H/releases/2025-02/2025-02-28.md
+File: docs/H/releases/2025-11/2025-11-18.md
+File: docs/H/releases/2025-06/2025-06-09.md
+File: docs/H/core/reference/oidc_configuration.md
+File: docs/H/releases/2025-09/2025-09-13.md
+File: docs/H/core/CURIOSITIES.md
+File: docs/H/releases/2025-02/2025-02-25.md
+File: docs/H/releases/2025-02/2025-02-18.md
+File: docs/H/releases/2025-10/2025-10-17.md
+File: docs/H/core/reference/launch_system_architecture.md
+File: docs/H/releases/2025-08/2025-08-11.md
+File: docs/H/releases/2025-08/2025-08-30.md
+File: docs/H/releases/2025-10/2025-10-09.md
+File: docs/H/releases/2025-07/2025-07-21.md
+File: docs/H/releases/2025-09/2025-09-28.md
+File: docs/H/releases/2025-07/2025-07-14.md
+File: docs/H/releases/2025-10/2025-10-20.md
+File: docs/H/releases/2025-12/2025-12-05.md
+File: docs/H/releases/2025-07/2025-07-01.md
+File: docs/H/releases/2025-08/2025-08-23.md
+File: docs/H/releases/2025-09/2025-09-01.md
+File: docs/H/releases/2025-02/2025-02-17.md
+File: docs/H/tests/test_13_crash_handler.md
+File: docs/H/releases/2025-10/2025-10-11.md
+File: docs/H/releases/2025-06/2025-06-20.md
+File: docs/H/releases/2025-03/2025-03-09.md
+File: docs/H/releases/2025-11/2025-11-29.md
+File: docs/H/releases/2025-09/2025-09-30.md
+File: docs/H/releases/2025-09/2025-09-07.md
+File: docs/H/core/reference/service.md
+File: docs/H/releases/2025-12/2025-12-03.md
+File: docs/H/releases/2025-03/2025-03-16.md
+File: docs/H/releases/2025-08/2025-08-08.md
+File: docs/H/releases/2025-09/2025-09-06.md
+File: docs/H/releases/2025-11/2025-11-28.md
+File: docs/H/releases/2025-10/2025-10-08.md
+File: docs/H/releases/2025-11/2025-11-26.md
+File: docs/H/releases/2025-08/2025-08-31.md
+File: docs/H/core/reference/launch/threads_subsystem.md
+File: docs/H/releases/2025-03/2025-03-02.md
+File: docs/H/releases/2025-03/2025-03-20.md
+File: docs/H/core/deployment/docker.md
+File: docs/H/releases/2025-10/2025-10-10.md
+File: docs/H/tests/test_19_socket_rebind.md
+File: docs/H/tests/test_22_swagger.md
+File: docs/H/releases/2025-03/2025-03-11.md
+File: docs/H/releases/2025-06/2025-06-23.md
+File: docs/H/releases/2025-10/2025-10-22.md
+File: elements/001-hydrogen/hydrogen/tests/unity/README.md
+File: docs/H/releases/2025-03/2025-03-31.md
+File: docs/H/releases/2025-03/2025-03-30.md
+File: docs/H/releases/2025-08/2025-08-22.md
+File: docs/H/releases/2025-10/2025-10-25.md
+File: docs/H/releases/2025-11/2025-11-06.md
+File: docs/H/releases/2025-02/2025-02-21.md
+File: docs/H/releases/2025-03/2025-03-21.md
+File: docs/H/releases/2025-10/2025-10-16.md
+File: docs/H/releases/2025-07/2025-07-16.md
+File: docs/H/tests/test_34_sqlite_migrations.md
+File: docs/H/releases/2025-10/2025-10-30.md
+File: docs/H/releases/2025-07/2025-07-07.md
+File: docs/H/tests/test_25_mdns.md
+File: docs/H/tests/test_41_conduit.md
+File: docs/H/releases/2025-03/2025-03-14.md
+File: docs/H/releases/2025-11/2025-11-27.md
+File: docs/H/releases/2025-12/2025-12-02.md
+File: docs/H/releases/2025-07/2025-07-04.md
+File: docs/H/releases/2025-03/2025-03-03.md
+File: docs/H/releases/2025-07/2025-07-25.md
+File: docs/H/releases/2025-09/2025-09-29.md
+File: docs/H/tests/test_23_websockets.md
+File: docs/H/releases/2025-08/2025-08-13.md
+File: docs/H/releases/2025-08/2025-08-12.md
+File: docs/H/releases/2024-07/2024-07-11.md
+File: docs/H/releases/2025-11/2025-11-14.md
+File: docs/H/releases/2025-07/2025-07-17.md
+File: docs/H/releases/2025-08/2025-08-07.md
+File: docs/H/releases/2025-03/2025-03-10.md
+File: docs/H/releases/2025-07/2025-07-31.md
+File: docs/H/releases/2025-07/2025-07-10.md
+File: docs/H/releases/2025-08/2025-08-09.md
+File: docs/H/core/reference/notifications.md
+File: docs/H/releases/2025-08/2025-08-14.md
+File: docs/H/releases/2025-03/2025-03-22.md
+File: docs/H/releases/2025-11/2025-11-07.md
+File: docs/H/releases/2025-09/2025-09-15.md
+File: docs/H/releases/2025-02/2025-02-20.md
+File: docs/H/releases/2025-09/2025-09-18.md
+File: docs/H/releases/2025-08/2025-08-15.md
+File: docs/H/releases/2025-10/2025-10-12.md
+File: docs/H/releases/2025-08/2025-08-19.md
+File: docs/H/tests/test_21_system_endpoints.md
+File: docs/H/releases/2025-12/2025-12-01.md
+File: docs/H/releases/2025-07/2025-07-24.md
+File: docs/H/releases/2025-09/2025-09-04.md
+File: docs/H/releases/2025-04/2025-04-05.md
+File: docs/H/releases/2024-07/2024-07-08.md
+File: docs/H/releases/2025-07/2025-07-30.md
+File: docs/H/tests/test_17_startup_shutdown.md
+File: docs/H/releases/2025-02/2025-02-27.md
+File: docs/H/core/security_best_practices.md
+File: docs/H/releases/2025-08/2025-08-04.md
+File: docs/H/releases/2025-03/2025-03-23.md
+File: docs/H/releases/2025-06/2025-06-03.md
+File: docs/H/releases/2025-10/2025-10-29.md
+File: docs/H/tests/test_30_database.md
+File: docs/H/releases/2025-11/2025-11-20.md
+File: docs/H/releases/2025-07/2025-07-23.md
+File: docs/H/releases/2025-06/2025-06-19.md
+File: docs/H/releases/2025-07/2025-07-11.md
+File: docs/H/core/SETUP.md
+File: docs/H/releases/2025-10/2025-10-02.md
+File: docs/H/core/reference/performance.md
+File: docs/H/tests/test_32_postgres_migrations.md
+File: docs/H/releases/2025-03/2025-03-01.md
+File: docs/H/releases/2025-04/2025-04-02.md
+File: docs/H/releases/2025-07/2025-07-13.md
+File: docs/H/releases/2025-03/2025-03-17.md
+File: docs/H/releases/2025-08/2025-08-18.md
+File: docs/H/releases/2025-10/2025-10-13.md
+File: docs/H/releases/2025-08/2025-08-05.md
+File: docs/H/releases/2025-11/2025-11-04.md
+File: docs/H/core/reference/api_configuration.md
+File: docs/H/releases/2025-09/2025-09-05.md
+File: docs/H/releases/2025-03/2025-03-24.md
+File: docs/H/releases/2025-09/2025-09-19.md
+File: docs/H/releases/2025-10/2025-10-23.md
+File: docs/H/core/database.md
+File: docs/H/core/reference/troubleshooting.md
+File: docs/H/releases/2025-03/2025-03-29.md
+File: docs/H/releases/2025-03/2025-03-07.md
+File: docs/H/core/reference/terminal_architecture.md
+File: docs/H/core/reference/launch/payload_subsystem.md
+File: docs/H/releases/2025-06/2025-06-28.md
+File: docs/H/releases/2025-09/2025-09-14.md
+File: docs/H/tests/test_16_shutdown.md
+File: docs/H/releases/2025-11/2025-11-15.md
+File: docs/H/releases/2025-07/2025-07-12.md
+File: docs/H/releases/2025-04/2025-04-03.md
+File: docs/H/releases/2025-08/2025-08-02.md
+File: docs/H/tests/test_18_signals.md
+File: docs/H/releases/2025-08/2025-08-24.md
+File: docs/H/releases/2025-06/2025-06-30.md
+File: docs/H/releases/2025-08/2025-08-29.md
+File: docs/H/core/reference/swagger_architecture.md
+File: docs/H/releases/2025-09/2025-09-08.md
+File: docs/H/releases/2025-06/2025-06-01.md
+File: docs/H/releases/2025-09/2025-09-11.md
+File: docs/H/releases/2025-07/2025-07-29.md
+File: docs/H/releases/2025-11/2025-11-08.md
+File: docs/H/releases/2025-08/2025-08-17.md
+File: docs/H/releases/2025-02/2025-02-26.md
+File: docs/H/releases/2024-07/2024-07-15.md
+File: docs/H/releases/2025-10/2025-10-06.md
+File: docs/H/releases/2025-06/2025-06-18.md
+File: docs/H/releases/2025-10/2025-10-01.md
+File: docs/H/releases/2025-06/2025-06-29.md
+File: docs/H/releases/2025-07/2025-07-22.md
+File: docs/H/releases/2025-09/2025-09-09.md
+File: docs/H/releases/2025-11/2025-11-05.md
+File: docs/H/tests/test_70_installer.md
+File: docs/H/releases/2025-03/2025-03-06.md
+File: docs/H/releases/2025-03/2025-03-28.md
+File: docs/H/releases/2025-03/2025-03-25.md
+File: docs/H/releases/2025-06/2025-06-17.md
+File: docs/H/tests/test_71_database_diagrams.md
+File: docs/H/releases/2025-10/2025-10-18.md
+File: docs/H/core/reference/lead_dqm.md
+File: docs/H/releases/2025-03/2025-03-04.md
+File: docs/H/releases/2025-07/2025-07-09.md
+File: docs/H/releases/2025-09/2025-09-10.md
+File: docs/H/core/reference/print_subsystem.md
+File: docs/H/releases/2025-03/2025-03-27.md
+File: docs/H/releases/2025-03/2025-03-13.md
+File: docs/H/releases/2025-09/2025-09-20.md
+File: docs/H/releases/2025-08/2025-08-16.md
+File: docs/H/releases/2025-09/2025-09-16.md
+File: docs/H/releases/2025-02/2025-02-22.md
+File: docs/H/releases/2025-04/2025-04-04.md
+File: docs/H/releases/2025-08/2025-08-28.md
+File: docs/H/releases/2024-07/2024-07-18.md
+File: docs/H/core/reference/launch/registry_subsystem.md
+File: docs/H/releases/2025-09/2025-09-22.md
+File: docs/H/releases/2025-11/2025-11-10.md
+File: docs/H/releases/2025-10/2025-10-05.md
+File: docs/H/releases/2025-08/2025-08-03.md
+File: docs/H/core/reference/mdns_client_architecture.md
+File: docs/H/releases/2025-11/2025-11-23.md
+File: docs/H/releases/2025-08/2025-08-25.md
+File: docs/H/releases/2025-07/2025-07-03.md
+File: docs/H/releases/2025-08/2025-08-01.md
+File: docs/H/releases/2025-02/2025-02-08.md
+File: docs/H/releases/2025-02/2025-02-23.md
+File: docs/H/tests/test_24_uploads.md
+File: docs/H/releases/2025-02/2025-02-13.md
+File: docs/H/releases/2025-03/2025-03-05.md
+File: docs/H/core/PROMPTS.md
+File: docs/H/releases/2025-08/2025-08-20.md
+File: docs/H/releases/2025-09/2025-09-21.md
+File: docs/H/releases/2025-03/2025-03-12.md
+File: docs/H/releases/2025-10/2025-10-19.md
+File: docs/H/releases/2025-10/2025-10-07.md
+File: docs/H/releases/2025-07/2025-07-27.md
+File: docs/H/releases/2025-11/2025-11-24.md
+File: docs/H/tests/test_02_secrets.md
+File: docs/H/releases/2025-09/2025-09-17.md
+File: docs/H/releases/2025-02/2025-02-15.md
+File: docs/H/releases/2025-10/2025-10-04.md
+File: docs/H/releases/2025-05/2025-05-06.md
+File: docs/H/releases/2025-07/2025-07-28.md
+File: docs/H/tests/test_15_json_error_handling.md
+File: docs/H/releases/2025-06/2025-06-16.md
+File: docs/H/releases/2025-09/2025-09-24.md
+File: docs/H/releases/2025-11/2025-11-21.md
+File: docs/H/core/reference/state_management.md
+File: docs/H/releases/2025-11/2025-11-11.md
+File: docs/H/releases/2025-09/2025-09-23.md
+File: docs/H/releases/2025-09/2025-09-03.md
+File: docs/H/tests/test_03_shell.md
+File: docs/H/releases/2025-07/2025-07-19.md
+File: docs/H/releases/2025-11/2025-11-09.md
+File: docs/H/releases/2025-03/2025-03-26.md
+File: docs/H/releases/2025-08/2025-08-21.md
+File: docs/H/tests/test_26_terminal.md
+File: docs/H/core/reference/thread_monitoring.md
+File: docs/H/releases/2025-07/2025-07-02.md
+File: docs/H/releases/2025-04/2025-04-19.md
+File: docs/H/releases/2025-03/2025-03-19.md
+File: docs/H/releases/2025-08/2025-08-27.md
+File: docs/H/releases/2025-11/2025-11-25.md
+File: docs/H/core/DATABASES.md
+File: docs/H/releases/2025-10/2025-10-15.md
+File: docs/H/tests/test_04_check_links.md
+File: docs/H/tests/test_33_mysql_migrations.md
+File: docs/H/tests/test_12_env_variables.md
+File: docs/H/releases/2025-11/2025-11-03.md
+File: docs/H/releases/2025-10/2025-10-21.md
+File: docs/H/releases/2025-02/2025-02-14.md
+File: docs/H/tests/test_35_db2_migrations.md
+File: docs/H/releases/2025-11/2025-11-13.md
+File: docs/H/releases/2025-06/2025-06-25.md
+File: docs/H/releases/2025-03/2025-03-15.md
+File: docs/H/releases/2025-02/2025-02-24.md
+File: docs/H/releases/2025-07/2025-07-18.md
+File: docs/H/releases/2025-02/2025-02-12.md
+File: docs/H/core/guides/print-queue.md
+File: docs/H/core/reference/webserver_subsystem.md
+File: docs/H/releases/2025-09/2025-09-12.md
+File: docs/H/releases/2025-11/2025-11-16.md
+File: docs/H/releases/2025-07/2025-07-06.md
+File: docs/H/releases/2025-07/2025-07-20.md
+File: docs/H/core/reference/glossary.md
+File: docs/H/releases/2025-11/2025-11-30.md
+File: docs/H/tests/test_11_leaks_like_a_sieve.md
+File: docs/H/releases/2025-03/2025-03-08.md
+File: docs/H/core/reference/launch/webserver_subsystem.md
+File: docs/H/releases/2025-08/2025-08-26.md
+File: docs/H/releases/2025-04/2025-04-01.md
+File: docs/H/tests/test_20_api_prefix.md
+File: docs/H/releases/2025-09/2025-09-25.md
+File: docs/H/tests/test_14_library_dependencies.md
+File: docs/H/core/development/ai_development.md
+File: docs/H/core/reference/faq.md
+File: docs/H/releases/2025-02/2025-02-19.md
+File: docs/H/releases/2025-11/2025-11-22.md
+File: docs/H/core/reference/beryllium.md
+File: docs/H/core/reference/monitoring.md
+File: docs/H/releases/2025-08/2025-08-10.md
+File: docs/H/releases/2025-09/2025-09-26.md
+File: docs/H/core/reference/websocket_subsystem.md
+File: docs/H/releases/2025-07/2025-07-15.md
+File: docs/H/releases/2025-03/2025-03-18.md
+
