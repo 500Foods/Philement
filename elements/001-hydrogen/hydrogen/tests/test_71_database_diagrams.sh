@@ -104,14 +104,14 @@ generate_database_diagram() {
         return 0
     fi
 
-    # Run generate_diagram.sh and capture both SVG output and metadata
+    # Run get_diagram.sh and capture both SVG output and metadata
     local error_file
     error_file=$(mktemp)
     local error_output=""
     local metadata=""
 
     # Capture both stdout (SVG) and stderr (metadata + errors)
-    if "${SCRIPT_DIR}/lib/generate_diagram.sh" "${engine}" "${design}" "${schema}" "${migration_num}" > "${output_file}" 2> "${error_file}"; then
+    if "${SCRIPT_DIR}/lib/get_diagram.sh" "${engine}" "${design}" "${schema}" "${migration_num}" > "${output_file}" 2> "${error_file}"; then
         # Success - check for metadata in error output
         error_output=$(cat "${error_file}")
         rm -f "${error_file}"
