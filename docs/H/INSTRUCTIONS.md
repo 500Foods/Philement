@@ -59,6 +59,7 @@ tests/          Test framework
 - tests/test_00_all.sh - Orchestrator that runs all the tests
 - tests/test_01_compilation.sh - Builds all targets
 - tests/test_02_secrets.sh - Checks that PAYLOAD_LOCK and PAYLOAD_KEY are usable
+- tests/test_03_shell.sh - Validates environment variables used in Hydrogen configuration
 - tests/test_04_check_links.sh - Cross-checks all Markdown files for missing links and orphaned files
 - tests/test_10_unity.sh - Runs battery of Unity unit tests
 - tests/test_11_leaks_like_a_sieve.sh - Uses ASAN to test for memory leaks

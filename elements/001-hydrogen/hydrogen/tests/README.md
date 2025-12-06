@@ -52,6 +52,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 
 - **[test_01_compilation.sh](docs/test_01_compilation.md)**: Verifies successful compilation and build processes.
 - **[test_02_secrets.sh](docs/test_02_secrets.md)**: Checks validity of key environment variables
+- **[test_03_shell.sh](docs/test_03_shell.md)**: Validates environment variables used in Hydrogen configuration
 - **[test_04_check_links.sh](docs/test_04_check_links.md)**: Validates links in documentation files.
 
 ### Core Functional Tests

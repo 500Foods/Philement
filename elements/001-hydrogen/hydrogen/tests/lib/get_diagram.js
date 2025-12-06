@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// generate_diagram.js
+// get_diagram.js
 // Converts JSON table definition into SVG database diagram
 
 // CHANGELOG

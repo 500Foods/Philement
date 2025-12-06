@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# generate_diagram.sh
+# get_diagram.sh
 # Generate SVG database diagram from migration JSON
 
 # CHANGELOG
@@ -410,7 +410,7 @@ fi
 # Generate diagram and capture both stdout (SVG) and stderr (metadata)
 # Use unique temporary file to avoid conflicts in parallel execution
 METADATA_TMP=$(mktemp)
-SVG_OUTPUT=$(echo "${COMBINED_JSON}" | node "${LIB_DIR}/generate_diagram.js" "${ENGINE}" 2>"${METADATA_TMP}")
+SVG_OUTPUT=$(echo "${COMBINED_JSON}" | node "${LIB_DIR}/get_diagram.js" "${ENGINE}" 2>"${METADATA_TMP}")
 
 # Extract metadata from stderr if available
 METADATA=""

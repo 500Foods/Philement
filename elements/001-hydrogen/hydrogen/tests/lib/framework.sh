@@ -6,6 +6,7 @@
 # LIBRARY FUNCTIONS
 # format_time_duration()
 # format_file_size()
+# format_number()
 # get_elapsed_time()
 # get_elapsed_time_decimal()
 # set_test_number()
@@ -168,6 +169,13 @@ format_file_size() {
     local file_size="$1"
     "${PRINTF}" "%'d" "${file_size}" 2>/dev/null || echo "${file_size}"
 }
+
+# Function to format file size with thousands separators
+format_number() {
+    local any_number="$1"
+    "${PRINTF}" "%'d" "${any_number}" 2>/dev/null || echo "${any_number}"
+}
+
 
 # Function to calculate elapsed time in SSS.ZZZ format for console output
 get_elapsed_time() {
