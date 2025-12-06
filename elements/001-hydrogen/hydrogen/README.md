@@ -1,105 +1,31 @@
 # Hydrogen
 
-## Overview
+The main TOC for the Hydrogen project can be found in [**/docs/H/README.md**](/docs/H/README.md). But since you're here, these might be of interest to you.
 
-Hydrogen is a high-performance, multithreaded server.
+- [**cmake**](cmake/README.md) - Describes the collection of cmake includes
+- [**examples**](examples/README.md) - Sample apps for interacting with a Hydrogen instance
+- [**extras**](extras/README.md) - Utilities, UDFs, and other odds and ends
+  - [Base64 UDF for DB2](extras/base64decode_udf_db2/README.md) - Decode base64 in DB2
+  - [Brotli UDF for DB2](extras/brotli_udf_db2/README.md) - Decompress brotli in DB2
+  - [Brotli UDF for MySQL](extras/brotli_udf_mysql/README.md) - Decompress brotli in MySQL/MariaDB
+  - [Brotli UDF for PostgreSQL](extras/brotli_udf_postgresql/README.md) - Decompress brotli in PostgreSQL
+  - [Brotli UDF for SQLite](extras/brotli_udf_sqlite/README.md) - Decompress brotli in SQLite
+- [**images**](images/README.md) - Generated SVGs for build statistics, database diagrams
+  - [acuranzo](./images/acuranzo/README.md) - Database diagrams for Acuranzo instances
+  - [gaius](./images/gaius/README.md) - Database diagrams for GAIUS instances
+  - [glm](./images/glm/README.md) - Database diagrams for GLM instances
+  - [helium](./images/helium/README.md) - Database diagrams for Helium instances
+- [**installer**](installer/README.md) - Bash installation script intended for end users
+- [**payloads**](payloads/README.md) - Tools for building Hydrogen payload files
+- [**src**](src/README.md) - The main C source code for the Hydrogen project
+- [**tests**](tests/README.md) - Blackbox test guidelines
 
-- Web Server: Delivers static content and exposes a comprehensive REST API
-- WebSocket Server: Enables real-time bidirectional communication with guaranteed message delivery
-- mDNS Client/Server: Handles service discovery and auto-configuration
-- Queue System: Provides thread-safe data management across all components
-- Print Server: Offers complete 3D printer control and monitoring capabilities
-- OIDC Provider: Implements OpenID Connect protocol for secure authentication and authorization
+## Unity Framework
 
-Its modular architecture and emphasis on performance make it an ideal elemental core for both Philement projects and broader applications.
+- [**tests/unity**](tests/UNITY.md) - Unity Framework unit test guidelines
+- [**tests/unity/framework/Unity**](tests/unity/framework/Unity/README.md) - Unity Framework documentation
+- [**tests/unity/framework/CMock**](tests/unity/framework/CMock/README.md) - CMockFramework documentation
 
-## Intended Audience & Requirements
+## License
 
-Hydrogen is currently designed for technical users who:
-
-- Are comfortable working with Linux-based systems
-- Have experience with command-line interfaces and system configuration
-- Understand basic networking concepts and server administration
-- Are familiar with development tools and building software from source
-
-**Platform Support:**
-
-- Primary Platform: Linux-based systems - Fedora and Ubuntu to start with.
-
-## Table of Contents
-
-### Getting Started
-
-- [**Curiosities**](docs/CURIOSITIES.md) - Conventions and Curiosities worth noting before proceeding
-- [**Databases**](docs/DATABASES.md) - Considerations around using PostgreSQL, MySQL/MariaDB, SQLite, and DB2
-- [**AI Instructions**](INSTRUCTIONS.md) - Development guide optimized for AI assistance
-- [**AI Prompts**](docs/PROMPTS.md) - Development guide optimized for AI assistance
-- [**Project Structure**](STRUCTURE.md) - Complete file organization and architecture overview
-- [**Build Environment**](docs/SETUP.md) - Build and runtime requirements, environment setup
-- [**Secrets Management**](docs/SECRETS.md) - Environment variables and security configuration
-- [**Release Notes**](RELEASES.md) - Detailed version history and changes
-- [**Markdown Site Map**](SITEMAP.md) - Index to all Markdown files in this repository
-- [**TO-DO List**](docs/plans/TODO.md) - Summary of references to TODO in the code that still need work
-
-### Core Documentation
-
-- [**Documentation Hub**](docs/README.md) - Start here for comprehensive overview
-- [**Developer Onboarding**](docs/developer_onboarding.md) - Visual architecture overview and code navigation
-- [**Quick Start Guide**](docs/guides/quick-start.md) - Get up and running quickly
-- [**AI Integration**](docs/ai_integration.md) - AI capabilities and implementations
-- [**Build Metrics**](docs/metrics/README.md) - Daily build metrics and quality tracking
-
-### Technical References
-
-- [**API Documentation**](docs/api.md) - REST API reference and implementation details
-- [**Configuration Guide**](docs/configuration.md) - System configuration and settings
-- [**Data Structures**](docs/data_structures.md) - Core data structures and interfaces
-- [**Testing Framework**](docs/testing.md) - Testing documentation and procedures
-
-### Architecture & Design
-
-- [**Service Architecture**](docs/service.md) - Service management and lifecycle
-- [**Shutdown Architecture**](docs/shutdown_architecture.md) - Graceful shutdown procedures
-- [**Thread Monitoring**](docs/thread_monitoring.md) - Thread management and monitoring
-- [**WebSocket Implementation**](docs/web_socket.md) - WebSocket server architecture
-- [**Mirage Proxy**](docs/MIRAGE.md) - WebSocket tunneling for remote device access
-- [**mDNS Server**](docs/mdns_server.md) - Service discovery implementation
-- [**Print Queue System**](docs/print_queue.md) - 3D printing queue management
-- [**OIDC Integration**](docs/oidc_integration.md) - OpenID Connect authentication
-- [**System Information**](docs/system_info.md) - System monitoring and reporting
-
-### Implementation Notes
-
-- [**Database**](docs/plans/DATABASE_PLAN.md) - Implementation plan for Database subsystem
-- [**Migrations**](docs/plans/MIGRATIONS.md) - Performance improvements to the Migration system
-- [**Conduit**](docs/plans/CONDUIT.md) - Implementation plan for Conduit Service endpoints
-
-### Examples & Implementation
-
-- [**Examples Overview**](examples/README.md) - Code examples and implementations
-- [**Build Scripts & Utilities**](extras/README.md) - Build scripts and diagnostic tools
-- [**API Implementation**](src/api/README.md) - API implementation details
-- [**Payload System**](payloads/README.md) - Payload system with encryption
-- [**Testing Suite**](tests/TESTING.md) - Test framework and procedures
-
-## Attributions
-
-### Icons
-
-This project uses [Font Awesome Free](https://fontawesome.com) icons. Font Awesome Free is free for use with attribution. The embedded comments in the Font Awesome Free files contain the full attribution details required by the licenses (MIT, SIL OFL 1.1, and CC BY 4.0).
-
-The SVG data for a handful of these icons are currently used in the database diagrams. The code for these is found in  tests/lib/generate_database.js.
-
-## Latest Test Results
-
-<div style="display: flex; flex-direction: column; align-items: start; gap: 0px;">
-  <img src="images/COMPLETE.svg" alt="Complete Test Results" style="margin: -25px 0px 0px -20px;">
-  <img src="images/COVERAGE.svg" alt="Coverage Test Results" style="margin: -25px 0px 0px -20px;">
-</div>
-
-## Repository Information
-
-<div style="display: flex; background: none !important; border: none !important; flex-direction: column; align-items: start; gap: 0px;">
-  <img src="images/CLOC_CODE.svg" alt="CLOC Code Analysis" style="margin: -25px 0px 0px -20px;">
-  <img src="images/CLOC_STAT.svg" alt="CLOC Extended Statistics" style="margin: -25px 0px 0px -20px;">
-</div>
+- [**LICENSE**](LICENSE.md) - This project is covered by the standard MIT License

@@ -36,6 +36,7 @@
 # cmake --build . --target ccache_stats      : Show ccache statistics and performance metrics
 
 # CHANGELOG
+# 2025-12-05: Cleaned up the README.md file to better reflect the current state of the Hydrogen build system
 # 2025-12-02: Fixed coverage build GDB debugging: removed -no-pie to enable PIE for proper core dump analysis
 # 2025-11-05: Fixed coverage build GDB debugging: replaced -no-pie with -rdynamic to export dynamic symbols for proper crash dump analysis
 # 2025-10-10: Updated target_include_directories so we can use <src/...> and <unity...> instead of things like "../../../../src/hydrogen.h"
