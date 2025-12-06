@@ -30,57 +30,61 @@ Hydrogen is currently designed for technical users who:
 
 ### Getting Started
 
-- [**Curiosities**](docs/CURIOSITIES.md) - Conventions and Curiosities worth noting before proceeding
-- [**Databases**](docs/DATABASES.md) - Considerations around using PostgreSQL, MySQL/MariaDB, SQLite, and DB2
-- [**AI Instructions**](INSTRUCTIONS.md) - Development guide optimized for AI assistance
-- [**AI Prompts**](docs/PROMPTS.md) - Development guide optimized for AI assistance
-- [**Project Structure**](STRUCTURE.md) - Complete file organization and architecture overview
-- [**Build Environment**](docs/SETUP.md) - Build and runtime requirements, environment setup
-- [**Secrets Management**](docs/SECRETS.md) - Environment variables and security configuration
-- [**Release Notes**](RELEASES.md) - Detailed version history and changes
-- [**Markdown Site Map**](SITEMAP.md) - Index to all Markdown files in this repository
-- [**TO-DO List**](docs/plans/TODO.md) - Summary of references to TODO in the code that still need work
+- [**Curiosities**](/docs/H/CURIOSITIES.md) - Conventions and Curiosities worth noting before proceeding
+- [**Databases**](/docs/H/DATABASES.md) - Considerations around using PostgreSQL, MySQL/MariaDB, SQLite, and DB2
+- [**AI Instructions**](/docs/H/INSTRUCTIONS.md) - Development guide optimized for AI assistance
+- [**AI Prompts**](/docs/H/PROMPTS.md) - Development guide optimized for AI assistance
+- [**Project Structure**](/docs/H/STRUCTURE.md) - Complete file organization and architecture overview
+- [**Build Environment**](/docs/H/SETUP.md) - Build and runtime requirements, environment setup
+- [**Secrets Management**](/docs/H/SECRETS.md) - Environment variables and security configuration
+- [**Release Notes**](/docs/H/RELEASES.md) - Detailed version history and changes
+- [**Markdown Site Map**](/docs/H/SITEMAP.md) - Index to all Markdown files in this repository
+
+### Generated Content
+
+- [**Build Metrics**](/docs/H/plans/README.md) - Planning documents, TO-DO lists, that kind of thing
+- [**Build Metrics**](/docs/H/metrics/README.md) - Daily build metrics and quality tracking
+- [**Build Metrics**](/docs/H/releases/README.md) - Release notes
 
 ### Core Documentation
 
-- [**Documentation Hub**](docs/README.md) - Start here for comprehensive overview
-- [**Developer Onboarding**](docs/developer_onboarding.md) - Visual architecture overview and code navigation
-- [**Quick Start Guide**](docs/guides/quick-start.md) - Get up and running quickly
-- [**AI Integration**](docs/ai_integration.md) - AI capabilities and implementations
-- [**Build Metrics**](docs/metrics/README.md) - Daily build metrics and quality tracking
+- [**Documentation Hub**](/docs/H/core/README.md) - Start here for comprehensive overview
+- [**Developer Onboarding**](/docs/H/core/developer_onboarding.md) - Visual architecture overview and code navigation
+- [**Quick Start Guide**](/docs/H/core/guides/quick-start.md) - Get up and running quickly
+- [**AI Integration**](/docs/H/core/ai_integration.md) - AI capabilities and implementations
 
 ### Technical References
 
-- [**API Documentation**](docs/api.md) - REST API reference and implementation details
-- [**Configuration Guide**](docs/configuration.md) - System configuration and settings
-- [**Data Structures**](docs/data_structures.md) - Core data structures and interfaces
-- [**Testing Framework**](docs/testing.md) - Testing documentation and procedures
+- [**API Documentation**](/docs/H/core/api.md) - REST API reference and implementation details
+- [**Configuration Guide**](/docs/H/core/configuration.md) - System configuration and settings
+- [**Data Structures**](/docs/H/core/data_structures.md) - Core data structures and interfaces
+- [**Testing Framework**](/docs/H/core/testing.md) - Testing documentation and procedures
 
 ### Architecture & Design
 
-- [**Service Architecture**](docs/service.md) - Service management and lifecycle
-- [**Shutdown Architecture**](docs/shutdown_architecture.md) - Graceful shutdown procedures
-- [**Thread Monitoring**](docs/thread_monitoring.md) - Thread management and monitoring
-- [**WebSocket Implementation**](docs/web_socket.md) - WebSocket server architecture
-- [**Mirage Proxy**](docs/MIRAGE.md) - WebSocket tunneling for remote device access
-- [**mDNS Server**](docs/mdns_server.md) - Service discovery implementation
-- [**Print Queue System**](docs/print_queue.md) - 3D printing queue management
-- [**OIDC Integration**](docs/oidc_integration.md) - OpenID Connect authentication
-- [**System Information**](docs/system_info.md) - System monitoring and reporting
+- [**Service Architecture**](/docs/H/core/service.md) - Service management and lifecycle
+- [**Shutdown Architecture**]/docs/H/core/shutdown_architecture.md) - Graceful shutdown procedures
+- [**Thread Monitoring**](/docs/H/core/thread_monitoring.md) - Thread management and monitoring
+- [**WebSocket Implementation**](/docs/H/core/web_socket.md) - WebSocket server architecture
+- [**Mirage Proxy**](/docs/H/core/MIRAGE.md) - WebSocket tunneling for remote device access
+- [**mDNS Server**](/docs/H/core/mdns_server.md) - Service discovery implementation
+- [**Print Queue System**](/docs/H/core/print_queue.md) - 3D printing queue management
+- [**OIDC Integration**](/docs/H/core/oidc_integration.md) - OpenID Connect authentication
+- [**System Information**](/docs/H/core/system_info.md) - System monitoring and reporting
 
 ### Implementation Notes
 
-- [**Database**](docs/plans/DATABASE_PLAN.md) - Implementation plan for Database subsystem
-- [**Migrations**](docs/plans/MIGRATIONS.md) - Performance improvements to the Migration system
-- [**Conduit**](docs/plans/CONDUIT.md) - Implementation plan for Conduit Service endpoints
+- [**Database**](/docs/H/plans/DATABASE_PLAN.md) - Implementation plan for Database subsystem
+- [**Migrations**](/docs/H/plans/MIGRATIONS.md) - Performance improvements to the Migration system
+- [**Conduit**](/docs/H/plans/CONDUIT.md) - Implementation plan for Conduit Service endpoints
 
 ### Examples & Implementation
 
-- [**Examples Overview**](examples/README.md) - Code examples and implementations
-- [**Build Scripts & Utilities**](extras/README.md) - Build scripts and diagnostic tools
-- [**API Implementation**](src/api/README.md) - API implementation details
-- [**Payload System**](payloads/README.md) - Payload system with encryption
-- [**Testing Suite**](tests/TESTING.md) - Test framework and procedures
+- [**Examples Overview**](/elements/001-hydrogen/hydrogen/examples/README.md) - Code examples and implementations
+- [**Build Scripts & Utilities**](/elements/001-hydrogen/hydrogen/extras/README.md) - Build scripts and diagnostic tools
+- [**API Implementation**](/elements/001-hydrogen/hydrogen/src/api/README.md) - API implementation details
+- [**Payload System**](/elements/001-hydrogen/hydrogen/payloads/README.md) - Payload system with encryption
+- [**Testing Suite**](/elements/001-hydrogen/hydrogen/tests/README.md) - Test framework and procedures
 
 ## Attributions
 
@@ -93,13 +97,13 @@ The SVG data for a handful of these icons are currently used in the database dia
 ## Latest Test Results
 
 <div style="display: flex; flex-direction: column; align-items: start; gap: 0px;">
-  <img src="images/COMPLETE.svg" alt="Complete Test Results" style="margin: -25px 0px 0px -20px;">
-  <img src="images/COVERAGE.svg" alt="Coverage Test Results" style="margin: -25px 0px 0px -20px;">
+  <img src="/elements/001-hydrogen/hydrogen/images/COMPLETE.svg" alt="Complete Test Results" style="margin: -25px 0px 0px -20px;">
+  <img src="/elements/001-hydrogen/hydrogen/images/COVERAGE.svg" alt="Coverage Test Results" style="margin: -25px 0px 0px -20px;">
 </div>
 
 ## Repository Information
 
 <div style="display: flex; background: none !important; border: none !important; flex-direction: column; align-items: start; gap: 0px;">
-  <img src="images/CLOC_CODE.svg" alt="CLOC Code Analysis" style="margin: -25px 0px 0px -20px;">
-  <img src="images/CLOC_STAT.svg" alt="CLOC Extended Statistics" style="margin: -25px 0px 0px -20px;">
+  <img src="/elements/001-hydrogen/hydrogen/images/CLOC_CODE.svg" alt="CLOC Code Analysis" style="margin: -25px 0px 0px -20px;">
+  <img src="/elements/001-hydrogen/hydrogen/images/CLOC_STAT.svg" alt="CLOC Extended Statistics" style="margin: -25px 0px 0px -20px;">
 </div>
