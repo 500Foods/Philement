@@ -40,9 +40,12 @@ setup_test_environment
 TARGET_README="README.md"
 
 # Set paths for webroot and include directories
-export PHILEMENT_ROOT="$(realpath ../../../)"
-export HYDROGEN_ROOT="$(pwd)"
-export HYDROGEN_DOCS_ROOT="$(realpath ../../../docs/H)"
+PHILEMENT_ROOT="$(realpath ../../../)"
+export PHILEMENT_ROOT
+HYDROGEN_ROOT="$(pwd)"
+export HYDROGEN_ROOT
+HYDROGEN_DOCS_ROOT="$(realpath ../../../docs/H)"
+export HYDROGEN_DOCS_ROOT
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Execute Markdown Link Check"
 

@@ -29,7 +29,7 @@ TEST_VERSION="3.2.0"
 setup_test_environment
 
 # Test Setup
-CACHE_DIR="${HOME}/.cache/cppcheck"
+CACHE_DIR="${HOME}/.cache/hydrogen/cppcheck"
 mkdir -p "${CACHE_DIR}"
 
 # Function to run cppcheck and get cache statistics

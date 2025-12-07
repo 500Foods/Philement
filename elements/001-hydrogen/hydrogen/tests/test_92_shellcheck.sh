@@ -32,7 +32,7 @@ setup_test_environment
 
 # Test settings
 LINT_OUTPUT_LIMIT=25
-SHELLCHECK_CACHE_DIR="${HOME}/.cache/shellcheck"
+SHELLCHECK_CACHE_DIR="${HOME}/.cache/hydrogen/shellcheck"
 mkdir -p "${SHELLCHECK_CACHE_DIR}"
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Shell Script Linting (shellcheck)"

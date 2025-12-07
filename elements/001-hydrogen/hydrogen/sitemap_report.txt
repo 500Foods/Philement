@@ -1,6 +1,4 @@
 Missing link in elements/001-hydrogen/hydrogen/README.md: src/README.md
-Missing link in elements/001-hydrogen/hydrogen/README.md: tests/unity/framework/Unity/README.md
-Missing link in elements/001-hydrogen/hydrogen/README.md: tests/unity/framework/CMock/README.md
 Missing link in elements/001-hydrogen/hydrogen/payloads/README.md: ../docs/SECRETS.md
 Missing link in elements/001-hydrogen/hydrogen/tests/README.md: ./TESTING_UNITY.md
 Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_00_all.md
@@ -44,8 +42,6 @@ Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_97_xml
 Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_80_code_size.md
 Missing link in elements/001-hydrogen/hydrogen/tests/README.md: docs/test_99_coverage.md
 Missing link in elements/001-hydrogen/hydrogen/tests/README.md: ../docs/testing.md
-Missing link in docs/H/CURIOSITIES.md: /elements/001-hydrogen/deuterium/README.md
-Missing link in docs/H/CURIOSITIES.md: /elements/001-hydrogen/tritium/README.md
 Missing link in docs/H/DATABASES.md: ../tests/docs/test_31_migrations.md
 Missing link in docs/H/DATABASES.md: ../tests/docs/test_71_database_diagrams.md
 Missing link in docs/H/DATABASES.md: ../tests/docs/test_32_postgres_migrations.md
@@ -432,7 +428,6 @@ Missing link in docs/H/STRUCTURE.md: cmake/CMakeLists-version.cmake
 Missing link in docs/H/STRUCTURE.md: cmake/CMakePresets.json
 Missing link in docs/H/SETUP.md: ../tests/lib/github-sitemap.sh
 Missing link in docs/H/SETUP.md: ../tests/docs/github-sitemap.md
-Missing link in docs/H/SECRETS.md: ../README.md
 Missing link in docs/H/SECRETS.md: ../payloads/README.md
 Missing link in docs/H/RELEASES.md: docs/releases/2025-12/2025-12-05.md
 Missing link in docs/H/RELEASES.md: docs/releases/2025-12/2025-12-03.md
@@ -924,6 +919,7 @@ Missing link in docs/H/core/reference/database_configuration.md: /docs/reference
 Missing link in docs/H/core/reference/database_configuration.md: /docs/reference/system_architecture.md
 Missing link in docs/H/core/reference/resources_configuration.md: /docs/reference/monitoring.md
 Missing link in docs/H/core/reference/resources_configuration.md: /docs/reference/performance.md
+Missing link in docs/H/core/reference/subsystem_registry_architecture.md: /docs/reference/state_management.md
 Missing link in docs/H/tests/test_98_luacheck.md: ../TESTING.md
 Missing link in docs/H/tests/test_98_luacheck.md: ../docs/test_90_markdownlint.md
 Missing link in docs/H/tests/test_98_luacheck.md: ../docs/test_92_shellcheck.md
@@ -971,7 +967,6 @@ Missing link in docs/H/tests/TESTING.md: docs/test_99_coverage.md
 Missing link in docs/H/tests/TESTING.md: ../docs/testing.md
 Missing link in docs/H/tests/TESTING_UNITY.md: unity/mocks/README.md
 Missing link in docs/H/plans/TERMINAL_PLAN.md: ../..//INSTRUCTIONS.md
-Missing link in docs/H/plans/TERMINAL_PLAN.md: ../..//README.md
 Missing link in docs/H/plans/TERMINAL_PLAN.md: ../../tests/TESTING.md
 Missing link in docs/H/plans/TERMINAL_PLAN.md: ../../STRUCTURE.md
 Missing link in docs/H/plans/TERMINAL_PLAN.md: ../web_socket.md
@@ -995,7 +990,6 @@ Missing link in docs/H/tests/LIBRARIES.md: ../lib/lifecycle.sh
 Missing link in docs/H/tests/LIBRARIES.md: ../lib/network_utils.sh
 Missing link in docs/H/tests/LIBRARIES.md: ../TESTING.md
 Missing link in docs/H/core/reference/network_configuration.md: /docs/reference/system_architecture.md
-Missing link in docs/H/core/reference/subsystem_registry_architecture.md: /docs/reference/state_management.md
 Missing link in docs/H/core/reference/print_queue_architecture.md: /docs/reference/beryllium.md
 Missing link in docs/H/core/reference/websocket_architecture.md: ../../src/websocket/websocket_server_shutdown.c
 Missing link in docs/H/core/reference/websocket_architecture.md: ../../src/websocket/websocket_server_context.c
@@ -1017,7 +1011,7 @@ Missing link in docs/H/core/development/coding_guidelines.md: /docs/reference/se
 
 === Link Check Summary ===
 Files processed: 127
-Total missing links: 1016
+Total missing links: 1010
 Orphaned files: 273
 
 === Orphaned Markdown Files ===

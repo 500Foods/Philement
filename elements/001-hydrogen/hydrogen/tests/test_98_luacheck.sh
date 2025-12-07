@@ -23,7 +23,7 @@ TEST_VERSION="1.0.0"
 setup_test_environment
 
 # Test Setup
-CACHE_DIR="${HOME}/.cache/luacheck"
+CACHE_DIR="${HOME}/.cache/hydrogen/luacheck"
 mkdir -p "${CACHE_DIR}"
 
 # Function to run luacheck and get cache statistics
