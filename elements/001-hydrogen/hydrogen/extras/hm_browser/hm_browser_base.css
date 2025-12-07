@@ -1,0 +1,179 @@
+/*
+ * Hydrogen Metrics Browser - Base CSS
+ * Core styles, variables, and layout foundation
+ */
+
+:root {
+  --bg-color: #000409;
+  --text-color: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --accent-color: #4a90e2;
+  --accent-secondary: #7ed321;
+  --chart-bg: rgba(0, 4, 9, 0.8);
+  --panel-bg: rgba(10, 15, 25, 0.9);
+  --border-color: rgba(100, 150, 255, 0.3);
+  --hover-color: rgba(100, 150, 255, 0.2);
+  --active-color: rgba(100, 150, 255, 0.4);
+  --success-color: #4caf50;
+  --warning-color: #ff9800;
+  --error-color: #f44336;
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --transition-speed: 3s;
+  --slow-transition-speed: 8s;
+  --panel-transition-speed: 3s; /* Deliberately slow for debugging */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Main Layout Container */
+#main-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Main Chart Container */
+#chart-container {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background-color: var(--chart-bg);
+  overflow: hidden;
+}
+
+/* SVG Chart */
+#metrics-chart {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Ensure SVG fills container properly */
+#metrics-chart {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background-color: var(--chart-bg);
+  min-height: 500px;
+  transition: width var(--panel-transition-speed) ease;
+}
+
+/* Ensure chart axes are visible */
+.x-axis line, .y-axis line {
+  stroke: var(--border-color);
+  stroke-width: 1;
+}
+
+.x-axis path, .y-axis path {
+  display: none;
+}
+
+.x-axis text, .y-axis text {
+  fill: var(--text-secondary);
+  font-size: 0.8rem;
+  font-family: var(--font-family);
+}
+
+/* Chart lines styling */
+.metric-line {
+  stroke-width: 2;
+  fill: none;
+  transition: stroke-width 0.2s ease;
+}
+
+.metric-line:hover {
+  stroke-width: 3;
+}
+
+/* Legend styling */
+.legend-title {
+  font-family: var(--font-family);
+  font-weight: 600;
+  fill: var(--text-color);
+}
+
+.legend-label {
+  font-family: var(--font-family);
+  fill: var(--text-color);
+}
+
+/* Add transition to main layout when panel toggles */
+#main-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* SVG Chart Title Styling */
+.chart-title {
+  font-family: var(--font-family);
+  font-weight: 600;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+  fill: var(--text-color) !important;
+}
+
+.chart-title:hover {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  fill: var(--accent-color) !important;
+}
+
+/* SVG Overlay - Transparent when panel is visible, visible when collapsed */
+.svg-overlay {
+  fill: transparent !important;
+  cursor: pointer !important;
+  opacity: 0 !important;
+  transition: opacity var(--panel-transition-speed) ease;
+}
+
+/* When panel is collapsed, make overlay visible */
+.control-panel.collapsed ~ #chart-container .svg-overlay {
+  fill: rgba(0, 0, 0, 0.1) !important;
+  opacity: 1 !important;
+}
+
+/* Debug borders - commented out for production */
+/*
+#metrics-chart {
+  border: 2px solid rgba(255, 0, 0, 0.8) !important;
+}
+
+#chart-container {
+  border: 2px solid rgba(0, 0, 0, 0.8) !important;
+}
+
+#main-layout {
+  border: 2px solid rgba(0, 255, 0, 0.8) !important;
+}
+*/

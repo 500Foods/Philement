@@ -101,7 +101,7 @@ tests/          Test framework
 - tests/test_96_htmlhint.sh - Lint for HTML
 - tests/test_97_xmlstarlet.sh - Lint for XML/SVG (xmlstarlet)
 - tests/test_80_code_size.sh - Checks limits on source code, runs cloc
-- tests/test_99_coverage.sh - Shows Unity and Blackbox test coverage
+- tests/test_89_coverage.sh - Shows Unity and Blackbox test coverage
 
 ## CRITICAL DOCUMENTATION
 

@@ -24,7 +24,7 @@ fi
 set -euo pipefail
 
 # Test configuration
-TEST_NAME="Shell Environment Variables"
+TEST_NAME="Shell Variables"
 TEST_ABBR="ZSH"
 TEST_NUMBER="03"
 TEST_COUNTER=0
@@ -108,7 +108,7 @@ declare -a ENV_WHITELIST=(
     "BUILD_TIMESTAMP_FILE" "CMAKE_CONFIG_STAMP" "CMAKE_DIR" "EXIT_CODE" "PAYLOAD_DIR"     
     "SRC_DIR" "UNITY_SRC_DIR" 
     # First found in tests/test_03_shell.sh
-    "ALL_FOUND_VARS" "CONFIG_VARS" "EXTRAS_VARS" "SCRIPT_VARS" "PAYLOAD_VARS"
+    "ALL_FOUND_VARS" "CONFIG_VARS" "EXTRAS_VARS" "SCRIPT_VARS" "PAYLOAD_VARS" "WHITELIST_COUNT"
     # First found in tests/test_04/check_links.sh
     "ISSUES_FOUND" "MARKDOWN_CHECK" "MISSING_LINKS_COUNT" "ORPHANED_FILES_COUNT" "SITEMAP"     
     "SITEMAP_EXIT_CODE" "TARGET_README" "TOTAL_EXTRACTED_ISSUES" "TOTAL_LINKS" 
@@ -167,6 +167,8 @@ declare -a ENV_WHITELIST=(
     "API_DIR" "OUTPUT_FILE" "PATH4" "PATHS_FILE" "RED" "TAGS_FILE"     
     # First found in payloads/terminal-generate.sh
     "ARTIFACTS_DIR" "XTERMJS_DIR" "XTERMJS_VERSION_FILE" "XTERM_ATTACH_VERSION" "XTERM_FIT_VERSION" "XTERM_JS_VERSION" 
+    # First found in extras/hm_browser.sh
+    "DEFAULT_CONFIG" "DEFAULT_OUTPUT" "OUTPUT_DIR"
 
 )
 
@@ -313,7 +315,13 @@ done
 
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Search complete"
 
-TEST_NAME="${TEST_NAME} {BLUE}(${TEST_ABBR}){RESET}"
+# Count whitelist variables
+WHITELIST_COUNT=${#ENV_WHITELIST[@]}
+
+# Update test name to include whitelist count
+if [[ "${WHITELIST_COUNT}" -gt 0 ]]; then
+    TEST_NAME="Shell Variables {BLUE}(whitelist: $("${PRINTF}" "%'d" "${WHITELIST_COUNT}" || true) vars){RESET}"
+fi
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
