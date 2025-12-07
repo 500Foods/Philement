@@ -29,7 +29,7 @@ setup_test_environment
 
 # Test setup
 LINT_OUTPUT_LIMIT=10
-CACHE_DIR="${HOME}/.cache/markdownlint"
+CACHE_DIR="${HOME}/.cache/hydrogen/markdownlint"
 mkdir -p "${CACHE_DIR}"
 
 # Function to get file hash (using md5sum or equivalent)
@@ -40,15 +40,48 @@ get_file_hash() {
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Markdown Linting"
 
-# Get .lintignore filtered list of markdown files to check
+# Set paths for webroot and include directories (similar to test_04)
+PHILEMENT_ROOT="$(realpath ../../../)"
+export PHILEMENT_ROOT
+HYDROGEN_ROOT="$(pwd)"
+export HYDROGEN_ROOT
+HYDROGEN_DOCS_ROOT="$(realpath ../../../docs/H)"
+export HYDROGEN_DOCS_ROOT
+
+# Get .lintignore filtered list of markdown files to check from multiple directories
 MD_FILES=()
 cd "${PROJECT_DIR}" || return &>/dev/null
+
+# Search in current directory, HYDROGEN_ROOT, and HYDROGEN_DOCS_ROOT
 mapfile -t md_file_list < <("${FIND}" . -type f -name "*.md" || true)
-for file in "${md_file_list[@]}"; do
-    rel_file="${file#./}"
+mapfile -t hydrogen_root_files < <("${FIND}" "${HYDROGEN_ROOT}" -type f -name "*.md" 2>/dev/null || true)
+mapfile -t hydrogen_docs_files < <("${FIND}" "${HYDROGEN_DOCS_ROOT}" -type f -name "*.md" 2>/dev/null || true)
+
+# Combine all file lists
+all_md_files=("${md_file_list[@]}" "${hydrogen_root_files[@]}" "${hydrogen_docs_files[@]}")
+
+for file in "${all_md_files[@]}"; do
+    # Skip empty entries
+    [[ -z "${file}" ]] && continue
+
+    # Convert to relative paths for consistency
+    if [[ "${file}" == "${HYDROGEN_ROOT}"* ]]; then
+        rel_file="${file#"${HYDROGEN_ROOT}"/}"
+    elif [[ "${file}" == "${HYDROGEN_DOCS_ROOT}"* ]]; then
+        rel_file="${file#"${HYDROGEN_DOCS_ROOT}"/}"
+    elif [[ "${file}" == ./* ]]; then
+        rel_file="${file#./}"
+    else
+        rel_file="${file}"
+    fi
+
+    # Skip if file is empty or doesn't exist
+    [[ -z "${rel_file}" ]] && continue
+    [[ ! -f "${file}" ]] && continue
+
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! should_exclude_file "${rel_file}"; then
-        MD_FILES+=("${rel_file}")
+        MD_FILES+=("${file}")
     fi
 done
 

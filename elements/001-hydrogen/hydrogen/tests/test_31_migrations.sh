@@ -27,7 +27,7 @@ TEST_VERSION="1.3.0"
 setup_test_environment
 
 # Test Setup
-CACHE_DIR="${HOME}/.cache/sqruff"
+CACHE_DIR="${HOME}/.cache/hydrogen/sqruff"
 mkdir -p "${CACHE_DIR}"
 
 # Helium project path (relative to workspace root) - points to parent to allow appending design names

@@ -63,7 +63,7 @@ Hydrogen is currently designed for technical users who:
 ### Architecture & Design
 
 - [**Service Architecture**](/docs/H/core/service.md) - Service management and lifecycle
-- [**Shutdown Architecture**]/docs/H/core/shutdown_architecture.md) - Graceful shutdown procedures
+- [**Shutdown Architecture**](/docs/H/core/shutdown_architecture.md) - Graceful shutdown procedures
 - [**Thread Monitoring**](/docs/H/core/thread_monitoring.md) - Thread management and monitoring
 - [**WebSocket Implementation**](/docs/H/core/web_socket.md) - WebSocket server architecture
 - [**Mirage Proxy**](/docs/H/core/MIRAGE.md) - WebSocket tunneling for remote device access

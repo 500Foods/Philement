@@ -131,7 +131,7 @@ Code quality is enforced through comprehensive linting, established from project
 - Prevents accumulation of technical debt
 
 ### Additional Quality Tools
-                          
+
 - **[Test 31: Migrations](/docs/H/tests/test_31_migrations.md)**: SQL validation with sqruff across database engines
 - **[Test 98: Luacheck](/docs/H/tests/test_98_luacheck.md)**: Lua code analysis with luacheck
 - **[Test 90: Markdownlint](/docs/H/tests/test_90_markdownlint.md)**: Lints Markdown documentation using markdownlint
