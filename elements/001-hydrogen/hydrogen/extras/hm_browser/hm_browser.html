@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Hydrogen Metrics Browser - Interactive D3 visualization for Hydrogen project metrics">
+  <title>Hydrogen Metrics Browser</title>
+
+  <!-- CSS Dependencies -->
+  <link rel="stylesheet" href="hm_browser_base.css">
+  <link rel="stylesheet" href="hm_browser_control_panel.css">
+  <link rel="stylesheet" href="hm_browser_color_picker.css">
+  <link rel="stylesheet" href="hm_browser_states.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- JavaScript Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
+
+  <!-- Application Modules -->
+  <script src="hm_browser_core.js"></script>
+  <script src="hm_browser_data.js"></script>
+  <script src="hm_browser_chart.js"></script>
+  <script src="hm_browser_ui.js"></script>
+
+  <!-- Main Application Script -->
+  <script src="hm_browser.js" defer></script>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading metrics data...</div>
+  </div>
+
+  <!-- Error Message Container -->
+  <div id="error-message" class="error-message" style="display: none;">
+    <div class="error-title">Error Loading Data</div>
+    <div class="error-details" id="error-details"></div>
+    <button class="retry-btn" id="retry-btn">Retry</button>
+  </div>
+
+  <!-- Main Layout Container -->
+  <div id="main-layout">
+    <!-- Control Panel (Left Side) -->
+    <div class="control-panel" id="control-panel">
+    <div class="panel-header">
+      <h3>
+        <i class="fas fa-chart-line"></i>
+        <span>Metrics Browser</span>
+      </h3>
+      <button class="close-btn" id="close-panel" aria-label="Close panel" onclick="console.log('X button clicked'); HMB.toggleControlPanel();">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Date Range Controls -->
+    <div class="date-range">
+      <label for="start-date">Start Date</label>
+      <input type="text" id="start-date" placeholder="Select start date">
+
+      <label for="end-date" style="margin-top: 10px;">End Date</label>
+      <input type="text" id="end-date" placeholder="Select end date">
+    </div>
+
+    <!-- Metrics Selection Section -->
+    <div class="metrics-selection">
+      <div class="section-header">
+        <h4>Available Metrics <span class="metric-count" id="metric-count">(0)</span></h4>
+      </div>
+      <div class="metrics-filter-controls">
+        <input type="text" id="metrics-filter" placeholder="Filter metrics..." class="filter-input">
+        <button id="clear-filter" class="btn btn-secondary" title="Clear filter">
+          <i class="fas fa-times"></i>
+        </button>
+        <button id="apply-filter" class="btn btn-primary" title="Apply filter">
+          <i class="fas fa-filter"></i>
+        </button>
+      </div>
+
+      <!-- Metric Selection Dropdown -->
+      <div class="metric-dropdown">
+        <select id="metric-select" class="form-control">
+          <option value="">-- Select a Metric --</option>
+        </select>
+      </div>
+
+      <!-- Metric Configuration Options -->
+      <div class="metric-configuration">
+        <div class="config-option">
+          <select id="metric-axis" class="form-control">
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
+        </div>
+
+        <div class="config-option">
+          <select id="metric-type" class="form-control">
+            <option value="line">Line</option>
+            <option value="bar">Bar</option>
+          </select>
+        </div>
+
+        <div class="config-option">
+          <div class="color-control">
+            <div class="color-swatch" id="color-preview"></div>
+            <input type="text" id="metric-color" placeholder="#RRGGBB" maxlength="7">
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Metric Button -->
+      <button class="btn primary" id="add-selected-metric" disabled>
+        <i class="fas fa-plus"></i> Add Metric
+      </button>
+    </div>
+
+    <!-- Selected Metrics List -->
+    <div class="selected-metrics-section">
+      <div class="section-header">
+        <h4>Selected Metrics <span class="selected-count" id="selected-count">(0)</span></h4>
+      </div>
+      <div class="selected-metrics-list" id="selected-metrics">
+        <!-- Selected metrics will be populated here -->
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="controls">
+      <button class="btn primary" id="update-chart">
+        <i class="fas fa-sync"></i> Update Chart
+      </button>
+      <button class="btn success" id="export-svg">
+        <i class="fas fa-download"></i> Export SVG
+      </button>
+    </div>
+
+    <!-- Data Loading Progress Bar - moved to control panel -->
+    <div id="data-loading-progress" class="data-loading-progress" style="display: none;">
+      <div class="progress-header">
+        <span class="progress-label">Loading Data</span>
+        <span class="progress-percentage" id="progress-percentage">0%</span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      <div class="progress-details" id="progress-text">0 of 30 days</div>
+    </div>
+
+  </div>
+
+    <!-- Chart Container (Right Side) -->
+    <div id="chart-container">
+      <!-- SVG Container for D3 Chart -->
+      <svg id="metrics-chart" onclick="console.log('SVG chart clicked'); HMB.toggleControlPanel(); event.stopPropagation();"></svg>
+
+      <!-- D3 Tooltip -->
+      <div class="d3-tooltip" id="d3-tooltip"></div>
+    </div>
+  </div>
+
+  <!-- Configuration Modal (Hidden by default) -->
+  <div class="modal" id="config-modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Metric Configuration</h3>
+        <button class="close-btn" id="close-modal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="metric-config-form">
+          <div class="form-group">
+            <label for="metric-path">Metric Path</label>
+            <input type="text" id="metric-path" readonly>
+          </div>
+
+          <div class="form-group">
+            <label for="metric-label">Display Label</label>
+            <input type="text" id="metric-label">
+          </div>
+
+          <div class="form-group">
+            <label for="modal-metric-axis">Axis</label>
+            <select id="modal-metric-axis">
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="modal-metric-type">Chart Type</label>
+            <select id="modal-metric-type">
+              <option value="line">Line</option>
+              <option value="bar">Bar</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="modal-metric-color">Color</label>
+            <div class="color-preview" id="modal-color-preview"></div>
+            <input type="text" id="modal-metric-color" placeholder="#RRGGBB">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="cancel-config">Cancel</button>
+        <button class="btn primary" id="save-config">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vanilla Color Picker Implementation -->
+  <div id="vanilla-color-picker" class="vanilla-color-picker" style="display: none;">
+    <div class="color-picker-header">
+      <h4>Select Color</h4>
+      <button id="close-color-picker" class="close-btn" aria-label="Close color picker">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="color-picker-container">
+      <div class="color-picker-saturation" id="color-picker-saturation">
+        <div class="color-picker-cursor" id="color-picker-cursor"></div>
+      </div>
+      <div class="color-picker-hue" id="color-picker-hue">
+        <div class="color-picker-hue-cursor" id="color-picker-hue-cursor"></div>
+      </div>
+      <div class="color-picker-controls">
+        <input type="text" id="color-picker-hex" class="color-picker-hex" maxlength="7" placeholder="#RRGGBB">
+        <div class="color-picker-preview" id="color-picker-preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script for initializing the application -->
+  <script>
+    // Initialize the application when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Hydrogen Metrics Browser initialized');
+      // The main application will be loaded via hm_browser.js
+    });
+  </script>
+</body>
+</html>

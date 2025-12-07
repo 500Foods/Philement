@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `test_80_code_size.sh` script performs comprehensive code size analysis including source code analysis, line counting, large file detection, code line count analysis with cloc, and file count summary.
+The `test_99_code_size.sh` script performs comprehensive code size analysis including source code analysis, line counting, large file detection, code line count analysis with cloc, and file count summary.
 
 ## Purpose
 

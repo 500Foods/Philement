@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `test_99_coverage.sh` script provides comprehensive code coverage analysis by running blackbox tests with coverage instrumentation and generating detailed coverage reports.
+The `test_89_coverage.sh` script provides comprehensive code coverage analysis by running blackbox tests with coverage instrumentation and generating detailed coverage reports.
 
 ## Purpose
 

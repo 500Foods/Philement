@@ -17,12 +17,26 @@
 # 2.0.0 - 2025-07-18 - Performance optimization: 46% speed improvement (3.136s to 1.705s), background cloc analysis, batch wc -l processing, parallel file type counting, largest-to-smallest file sorting
 # 1.0.0 - Initial version
 
+# Check for required HYDROGEN_ROOT environment variable
+if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HELIUM_ROOT environment variable
+if [[ -z "${HELIUM_ROOT:-}" ]]; then
+    echo "❌ Error: HELIUM_ROOT environment variable is not set"
+    echo "Please set HELIUM_ROOT to the Helium project's root directory"
+    exit 1
+fi
+
 set -euo pipefail
 
 # Test configuration
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
-TEST_NUMBER="80"
+TEST_NUMBER="99"
 TEST_COUNTER=0
 TEST_VERSION="3.5.0"
 

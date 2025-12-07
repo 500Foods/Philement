@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # CHANGELOG
+# 1.0.1 - 2025-12-07 - Updated to use HYDROGEN_DOCS_ROOT to locate metrics
 # 1.0.0 - 2025-12-02 - Initial version of make-email.sh script
 
 # About this Script
@@ -13,6 +14,13 @@
 if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
     echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
     echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
+    exit 1
+fi                         
+
+# Check for required HYDROGEN_DOCS_ROOT environment variable
+if [[ -z "${HYDROGEN_DOCS_ROOT:-}" ]]; then
+    echo "❌ Error: HYDROGEN_DOCS_ROOT environment variable is not set"
+    echo "Please set HYDROGEN_DOCS_ROOT to the Hydrogen project's root directory"
     exit 1
 fi                         
 
@@ -46,7 +54,7 @@ if [[ -z "${HYDROGEN_DEV_EMAIL:-}" ]]; then
 fi
 
 # Try to use the metrics JSON file first (more reliable data source)
-METRICS_JSON="docs/metrics/$(date +%Y-%m)/$(date +%Y-%m-%d).json" || true
+METRICS_JSON="${HYDROGEN_DOCS_ROOT}/metrics/$(date +%Y-%m)/$(date +%Y-%m-%d).json" || true
 # TOTAL_TESTS=$(jq '.summary.total_tests' "${METRICS_JSON}" 2>/dev/null || echo "0")
 TOTAL_PASSED=$(jq '.summary.total_passed' "${METRICS_JSON}" 2>/dev/null || echo "0")
 TOTAL_FAILED=$(jq '.summary.total_failed' "${METRICS_JSON}" 2>/dev/null || echo "0")

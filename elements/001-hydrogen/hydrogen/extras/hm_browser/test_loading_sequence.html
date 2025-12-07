@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hydrogen Metrics Browser - Loading Test</title>
+
+  <!-- CSS Dependencies -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="hm_browser.css">
+
+  <!-- JavaScript Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
+
+  <!-- Application Modules -->
+  <script src="hm_browser_core.js"></script>
+  <script src="hm_browser_data.js"></script>
+  <script src="hm_browser_chart.js"></script>
+  <script src="hm_browser_ui.js"></script>
+  <script src="hm_browser.js"></script>
+
+  <style>
+    /* Test-specific styles */
+    .test-info {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: Arial, sans-serif;
+      z-index: 10000;
+      max-width: 300px;
+    }
+
+    .test-step {
+      margin: 5px 0;
+      font-size: 12px;
+      padding: 3px;
+      border-radius: 3px;
+    }
+
+    .test-step.completed {
+      background: rgba(0, 255, 0, 0.2);
+      color: #0f0;
+    }
+
+    .test-step.failed {
+      background: rgba(255, 0, 0, 0.2);
+      color: #f00;
+    }
+
+    .test-step.pending {
+      background: rgba(255, 255, 0, 0.2);
+      color: #ff0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading metrics data...</div>
+  </div>
+
+  <!-- Error Message Container -->
+  <div id="error-message" class="error-message" style="display: none;">
+    <div class="error-title">Error Loading Data</div>
+    <div class="error-details" id="error-details"></div>
+    <button class="retry-btn" id="retry-btn">Retry</button>
+  </div>
+
+  <!-- Data Loading Progress Bar -->
+  <div id="data-loading-progress" class="data-loading-progress" style="display: none;">
+    <div class="progress-header">
+      <span class="progress-label">Loading Data</span>
+      <span class="progress-percentage" id="progress-percentage">0%</span>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="progress-details" id="progress-text">0 of 30 days</div>
+  </div>
+
+  <!-- Test Info Panel -->
+  <div class="test-info">
+    <h4>Loading Sequence Test</h4>
+    <div id="test-steps">
+      <div class="test-step pending" id="test-step-1">1. Initial loading overlay shown</div>
+      <div class="test-step pending" id="test-step-2">2. Metrics discovery phase started</div>
+      <div class="test-step pending" id="test-step-3">3. Initial loading overlay hidden</div>
+      <div class="test-step pending" id="test-step-4">4. Progress bar shown for background loading</div>
+      <div class="test-step pending" id="test-step-5">5. UI activated with available metrics</div>
+      <div class="test-step pending" id="test-step-6">6. Background data loading completed</div>
+      <div class="test-step pending" id="test-step-7">7. Progress bar hidden</div>
+    </div>
+  </div>
+
+  <!-- Main Layout Container -->
+  <div id="main-layout">
+    <!-- Control Panel (Left Side) -->
+    <div class="control-panel" id="control-panel">
+      <div class="panel-header">
+        <h3>
+          <i class="fas fa-chart-line"></i>
+          <span>Metrics Browser</span>
+        </h3>
+      </div>
+
+      <!-- Date Range Controls -->
+      <div class="date-range">
+        <label for="start-date">Start Date</label>
+        <input type="text" id="start-date" placeholder="Select start date">
+
+        <label for="end-date" style="margin-top: 10px;">End Date</label>
+        <input type="text" id="end-date" placeholder="Select end date">
+      </div>
+
+      <!-- Metrics Selection Section -->
+      <div class="metrics-selection">
+        <div class="section-header">
+          <h4>Available Metrics <span class="metric-count" id="metric-count">(0)</span></h4>
+        </div>
+        <div class="metrics-filter-controls">
+          <input type="text" id="metrics-filter" placeholder="Filter metrics..." class="filter-input">
+          <button id="clear-filter" class="btn btn-secondary" title="Clear filter">
+            <i class="fas fa-times"></i>
+          </button>
+          <button id="apply-filter" class="btn btn-primary" title="Apply filter">
+            <i class="fas fa-filter"></i>
+          </button>
+        </div>
+
+        <!-- Metric Selection Dropdown -->
+        <div class="metric-dropdown">
+          <select id="metric-select" class="form-control">
+            <option value="">-- Select a Metric --</option>
+          </select>
+        </div>
+
+        <!-- Metric Configuration Options -->
+        <div class="metric-configuration">
+          <div class="config-option">
+            <select id="metric-axis" class="form-control">
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+
+          <div class="config-option">
+            <select id="metric-type" class="form-control">
+              <option value="line">Line</option>
+              <option value="bar">Bar</option>
+            </select>
+          </div>
+
+          <div class="config-option">
+            <div class="color-control">
+              <div class="color-swatch" id="color-preview"></div>
+              <input type="text" id="metric-color" placeholder="#RRGGBB" maxlength="7">
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Metric Button -->
+        <button class="btn primary" id="add-selected-metric" disabled>
+          <i class="fas fa-plus"></i> Add Metric
+        </button>
+      </div>
+
+      <!-- Selected Metrics List -->
+      <div class="selected-metrics-section">
+        <div class="section-header">
+          <h4>Selected Metrics <span class="selected-count" id="selected-count">(0)</span></h4>
+        </div>
+        <div class="selected-metrics-list" id="selected-metrics">
+          <!-- Selected metrics will be populated here -->
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="controls">
+        <button class="btn primary" id="update-chart">
+          <i class="fas fa-sync"></i> Update Chart
+        </button>
+        <button class="btn success" id="export-svg">
+          <i class="fas fa-download"></i> Export SVG
+        </button>
+      </div>
+    </div>
+
+    <!-- Chart Container (Right Side) -->
+    <div id="chart-container">
+      <!-- SVG Container for D3 Chart -->
+      <svg id="metrics-chart"></svg>
+
+      <!-- D3 Tooltip -->
+      <div class="d3-tooltip" id="d3-tooltip"></div>
+    </div>
+  </div>
+
+  <script>
+    // Test monitoring script
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Test page loaded, starting monitoring...');
+
+      // Monitor the loading sequence
+      const testSteps = {
+        1: { element: 'loading-overlay', check: () => document.getElementById('loading-overlay').style.display === 'flex', completed: false },
+        2: { element: null, check: () => window.HMB && window.HMB.state && window.HMB.state.metricsData && window.HMB.state.metricsData.length > 0, completed: false },
+        3: { element: 'loading-overlay', check: () => document.getElementById('loading-overlay').style.display === 'none', completed: false },
+        4: { element: 'data-loading-progress', check: () => document.getElementById('data-loading-progress').style.display === 'block', completed: false },
+        5: { element: 'metric-count', check: () => document.getElementById('metric-count').textContent.includes('(') && parseInt(document.getElementById('metric-count').textContent.replace(/\D/g, '')) > 0, completed: false },
+        6: { element: 'progress-percentage', check: () => document.getElementById('progress-percentage').textContent === '100%', completed: false },
+        7: { element: 'data-loading-progress', check: () => document.getElementById('data-loading-progress').style.display === 'none', completed: false }
+      };
+
+      // Check test steps every 500ms
+      const testInterval = setInterval(() => {
+        let allCompleted = true;
+
+        for (const stepId in testSteps) {
+          const step = testSteps[stepId];
+          const stepElement = document.getElementById(`test-step-${stepId}`);
+
+          if (stepElement) {
+            if (step.completed) {
+              stepElement.className = 'test-step completed';
+              stepElement.textContent = `${stepId}. ${stepElement.textContent.replace(/^\d+\.\s/, '')} ✓`;
+            } else if (step.check()) {
+              step.completed = true;
+              stepElement.className = 'test-step completed';
+              stepElement.textContent = `${stepId}. ${stepElement.textContent.replace(/^\d+\.\s/, '')} ✓`;
+              console.log(`Test step ${stepId} completed`);
+            } else {
+              stepElement.className = 'test-step pending';
+              allCompleted = false;
+            }
+          }
+        }
+
+        if (allCompleted) {
+          clearInterval(testInterval);
+          console.log('All test steps completed successfully!');
+          document.getElementById('test-steps').innerHTML += '<div class="test-step completed" style="margin-top: 10px; font-weight: bold;">All tests passed! ✓</div>';
+        }
+      }, 500);
+
+      // Log key events
+      const originalShowLoading = HMB.showLoading;
+      HMB.showLoading = function() {
+        console.log('showLoading called');
+        updateTestStep(1, true);
+        return originalShowLoading.apply(this, arguments);
+      };
+
+      const originalHideLoading = HMB.hideLoading;
+      HMB.hideLoading = function() {
+        console.log('hideLoading called');
+        updateTestStep(3, true);
+        return originalHideLoading.apply(this, arguments);
+      };
+
+      const originalShowProgressBar = HMB.showProgressBar;
+      HMB.showProgressBar = function() {
+        console.log('showProgressBar called');
+        updateTestStep(4, true);
+        return originalShowProgressBar.apply(this, arguments);
+      };
+
+      const originalHideProgressBar = HMB.hideProgressBar;
+      HMB.hideProgressBar = function() {
+        console.log('hideProgressBar called');
+        updateTestStep(7, true);
+        return originalHideProgressBar.apply(this, arguments);
+      };
+
+      function updateTestStep(stepId, completed) {
+        const stepElement = document.getElementById(`test-step-${stepId}`);
+        if (stepElement) {
+          if (completed) {
+            stepElement.className = 'test-step completed';
+            stepElement.textContent = `${stepId}. ${stepElement.textContent.replace(/^\d+\.\s/, '')} ✓`;
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

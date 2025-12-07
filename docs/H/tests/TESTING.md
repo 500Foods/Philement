@@ -85,12 +85,19 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_33_mysql_migrations.sh](docs/test_33_mysql_migrations.md)**: MySQL migration performance test
 - **[test_34_sqlite_migrations.sh](docs/test_34_sqlite_migrations.md)**: SQLite migration performance test
 - **[test_35_db2_migrations.sh](docs/test_35_db2_migrations.md)**: DB2 migration performance test
-- **[test_98_luacheck.sh](docs/test_98_luacheck.md)**: Lua code analysis with luacheck
-- **[test_71_database_diagrams.sh](docs/test_71_database_diagrams.md)**: Database diagram generation
+
+### API
+
 - **[test_41_conduit.sh](docs/test_41_conduit.md)**: Conduit Query endpoint test
+
+### Deliverables
+
+- **[test_70_installer.sh](docs/test_70_installer.md)**: Bash script for end-user installation
+- **[test_71_database_diagrams.sh](docs/test_71_database_diagrams.md)**: Database diagram generation
 
 ### Static Analysis & Code Quality Tests
 
+- **[test_89_coverage.sh](docs/test_89_coverage.md)**: Performs comprehensive coverge analysis.
 - **[test_90_markdownlint.sh](docs/test_90_markdownlint.md)**: Lints Markdown documentation using markdownlint.
 - **[test_91_cppcheck.sh](docs/test_91_cppcheck.md)**: Performs C/C++ static analysis using cppcheck.
 - **[test_92_shellcheck.sh](docs/test_92_shellcheck.md)**: Validates shell scripts using shellcheck with exception justification checks.
@@ -99,8 +106,8 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_95_stylelint.sh](docs/test_95_stylelint.md)**: Validates CSS files using stylelint.
 - **[test_96_htmlhint.sh](docs/test_96_htmlhint.md)**: Validates HTML files using htmlhint.
 - **[test_97_xmlstarlet.sh](docs/test_97_xmlstarlet.md)**: Validates XML/SVG files using xmlstarlet.
-- **[test_80_code_size.sh](docs/test_80_code_size.md)**: Analyzes code size metrics and file distribution.
-- **[test_99_coverage.sh](docs/test_99_coverage.md)**: Performs comprehensive coverge analysis.
+- **[test_98_luacheck.sh](docs/test_98_luacheck.md)**: Lua code analysis with luacheck
+- **[test_99_code_size.sh](docs/test_99_code_size.md)**: Analyzes code size metrics and file distribution.
 
 ## Configuration Files
 

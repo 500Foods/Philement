@@ -1,0 +1,92 @@
+{
+  "title": "Hydrogen Metrics Auto Report",
+  "description": "Automated metrics visualization for Hydrogen project",
+  "version": "1.0.0",
+  "mode": "auto",
+  "dateRange": {
+    "start": "30_days_ago",
+    "end": "today",
+    "mode": "relative"
+  },
+  "chartSettings": {
+    "width": 1920,
+    "height": 1080,
+    "margin": {
+      "top": 50,
+      "right": 80,
+      "bottom": 50,
+      "left": 80
+    },
+    "animationDuration": 500,
+    "transitionDuration": 200,
+    "showGrid": true,
+    "showLegend": true,
+    "showTooltip": false,
+    "responsive": false,
+    "outputFormat": "svg",
+    "outputFile": "hydrogen_metrics_report.svg"
+  },
+  "metrics": [
+    {
+      "path": "summary.total_tests",
+      "label": "Total Tests",
+      "axis": "left",
+      "type": "line",
+      "color": "#4a90e2",
+      "lineWidth": 2,
+      "pointRadius": 3,
+      "showPoints": true,
+      "interpolation": "linear"
+    },
+    {
+      "path": "summary.total_passed",
+      "label": "Tests Passed",
+      "axis": "left",
+      "type": "bar",
+      "color": "#7ed321",
+      "barWidth": 0.8,
+      "opacity": 0.7
+    },
+    {
+      "path": "summary.combined_coverage",
+      "label": "Coverage %",
+      "axis": "right",
+      "type": "line",
+      "color": "#f5a623",
+      "lineWidth": 2,
+      "pointRadius": 3,
+      "showPoints": true,
+      "interpolation": "monotone"
+    }
+  ],
+  "uiSettings": {
+    "theme": "dark",
+    "showControlPanel": false,
+    "headlessMode": true,
+    "autoExport": true,
+    "verboseLogging": false
+  },
+  "dataSources": {
+    "local": {
+      "basePath": "/docs/H/metrics",
+      "fallbackDays": 30,
+      "cacheEnabled": false
+    }
+  },
+  "exportSettings": {
+    "svg": {
+      "filename": "hydrogen_metrics_report",
+      "includeStyles": true,
+      "includeScripts": false,
+      "quality": "high",
+      "backgroundColor": "#000409",
+      "embedFonts": false
+    }
+  },
+  "performance": {
+    "maxConcurrentRequests": 5,
+    "requestTimeout": 10000,
+    "retryAttempts": 3,
+    "retryDelay": 1000
+  }
+}

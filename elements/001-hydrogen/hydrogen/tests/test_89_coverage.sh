@@ -30,9 +30,10 @@ set -euo pipefail
 # Test configuration
 TEST_NAME="Test Suite Coverage {BLUE}(coverage_table){RESET}"
 TEST_ABBR="COV"
-TEST_NUMBER="99"
+TEST_NUMBER="89"
 TEST_COUNTER=0
 TEST_VERSION="5.0.0"
+
 export SKIP_GCOV_REGEN=0
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
