@@ -278,23 +278,23 @@ process_file_batch() {
     # Fast file existence check
     file_exists() {
         local path="$1"
-        # Check exact path first
+        # Check exact path first in local cache
         if [[ -n "${local_cache[${path}]}" ]]; then
             return 0
         fi
-        
+
         # If path ends with /, try without the trailing slash (for directory links)
         if [[ "${path}" == */ ]]; then
             local path_no_slash="${path%/}"
             [[ -n "${local_cache[${path_no_slash}]}" ]] && return 0
         fi
-        
+
         # If path doesn't end with /, try with trailing slash (for directory links)
         if [[ "${path}" != */ ]]; then
             local path_with_slash="${path}/"
             [[ -n "${local_cache[${path_with_slash}]}" ]] && return 0
         fi
-        
+
         return 1
     }
     
@@ -490,8 +490,42 @@ process_file_batch() {
                     # Treat ignored missing links as checked to avoid reporting them
                     links_checked=$(( links_checked + 1 ))
                 else
-                    links_missing=$(( links_missing + 1 ))
-                    missing_list+=("${rel_file}:${actual_link}")
+                    # Check if the file exists in PHILEMENT_ROOT even if not in include dirs
+                    local file_in_philement=false
+                    if [[ -n "${PHILEMENT_ROOT:-}" ]]; then
+                        # Check if link_file is already an absolute path starting with PHILEMENT_ROOT
+                        if [[ "${link_file}" == "${PHILEMENT_ROOT}"* ]]; then
+                            # It's already a full path, check it directly
+                            #echo "Checking for CURIOSITIES link (direct): ${link_file}"
+                            if [[ -e "${link_file}" ]]; then
+                                # echo "Found CURIOSITIES link (direct): ${link_file}"
+                                file_in_philement=true
+                            else
+                                file_in_philement=false
+                                # echo "CURIOSITIES link NOT found (direct): ${link_file}"
+                            fi
+                        else
+                            # Construct path relative to PHILEMENT_ROOT
+                            local philement_path="${PHILEMENT_ROOT}${link_file}"
+                            # echo "Checking for CURIOSITIES link (constructed): ${link_file} -> ${philement_path}"
+                            if [[ -e "${philement_path}" ]]; then
+                                # echo "Found CURIOSITIES link (constructed): ${philement_path}"
+                                file_in_philement=true
+                            else
+                                file_in_philement=false
+                                # echo "CURIOSITIES link NOT found (constructed): ${philement_path}"
+                            fi
+                        fi
+                    fi
+    
+                    if [[ "${file_in_philement}" == "true" ]]; then
+                        # File exists in PHILEMENT_ROOT, treat as found
+                        links_checked=$(( links_checked + 1 ))
+                    else
+                        # File is truly missing
+                        links_missing=$(( links_missing + 1 ))
+                        missing_list+=("${rel_file}:${actual_link}")
+                    fi
                 fi
             fi
         done < <(extract_links "${abs_file}" || true)

@@ -47,7 +47,7 @@ declare -a ENV_WHITELIST=(
     "REALPATH" "PWD" "DEBUG" "STRACE" "GIT" "CURL" "TAR" "TIMEOUT" "MUTT_CMD"
     # Common directory variables
     "BUILD_DIR" "LIB_DIR" "DIAGS_DIR" "DIAG_TEST_DIR" "PROJECT_DIR" "TEST_DIR"  "CONFIG_DIR"   
-    "LOGS_DIR" "HYDROGEN_BIN" "HYDROGEN_BIN_BASE" "RESULTS_DIR" "SCRIPT_DIR" 
+    "LOGS_DIR" "HYDROGEN_BIN" "HYDROGEN_BIN_BASE" "RESULTS_DIR" "SCRIPT_DIR" "WEBROOT"
     # First found in tests/lib/framework.sh
     "EPOCHREALTIME" "FRAMEWORK_NAME" "FRAMEWORK_VERSION" "LOG_OUTPUT_NAME" "LOG_OUTPUT_VERSION"  
     "TESTS_DIR" "TEST_ABBR" "TEST_COUNTER" "TEST_NAME" "TEST_NUMBER" "TEST_START_TIME" "TEST_VERSION"
@@ -174,8 +174,11 @@ declare -a ENV_WHITELIST=(
 # Format: name|tests|brief_desc|long_desc
 declare -a ENV_VARS=(
     # Needed for project build
+    "PHILEMENT_ROOT|all|Hydrogen project root|Root directory path of the Hydrogen project. Required for all test scripts and build processes."
     "HYDROGEN_ROOT|all|Hydrogen project root|Root directory path of the Hydrogen project. Required for all test scripts and build processes."
+    "HYDROGEN_DOCS_ROOT|all|Hydrogen project root|Root directory path of the Hydrogen project. Required for all test scripts and build processes."
     "HELIUM_ROOT|all|Helium project root|Root directory path of the Helium project. Required for payload generation and cross-project operations."
+    "HELIUM_DOCS_ROOT|all|Helium project root|Root directory path of the Helium project. Required for payload generation and cross-project operations."
                               
     # Key project parameters
     "HYDROGEN_DEV_EMAIL|02,12|Developer email|The email address of the developer responsible for this Hydrogen instance. Used for notifications and support contact."
