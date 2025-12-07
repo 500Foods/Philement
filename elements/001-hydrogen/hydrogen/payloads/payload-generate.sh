@@ -382,8 +382,18 @@ download_swaggerui() {
     # Process static files (to be compressed with brotli)
     cp "${EXTRACTED_DIR}/dist/swagger-ui-bundle.js" "${SWAGGERUI_DIR}/"
     cp "${EXTRACTED_DIR}/dist/swagger-ui-standalone-preset.js" "${SWAGGERUI_DIR}/"
-    cp "${EXTRACTED_DIR}/dist/swagger-ui.css" "${SWAGGERUI_DIR}/"
     cp "${EXTRACTED_DIR}/dist/oauth2-redirect.html" "${SWAGGERUI_DIR}/"
+
+    # Replace swagger-ui.css with custom dark theme instead of using the default
+    echo -e "${CYAN}${INFO} Applying custom dark theme...${NC}"
+    if [[ -f "${SCRIPT_DIR}/swagger-ui-custom.css" ]]; then
+        cp "${SCRIPT_DIR}/swagger-ui-custom.css" "${SWAGGERUI_DIR}/swagger-ui.css"
+        echo -e "${GREEN}${PASS} Custom dark theme applied successfully${NC}"
+    else
+        # Fall back to default theme if custom CSS not found
+        cp "${EXTRACTED_DIR}/dist/swagger-ui.css" "${SWAGGERUI_DIR}/"
+        echo -e "${YELLOW}${WARN} Warning: swagger-ui-custom.css not found, using default theme${NC}"
+    fi
 
     # Copy swagger.json (both compressed and uncompressed)
     if [[ -f "${SCRIPT_DIR}/swagger.json" ]]; then

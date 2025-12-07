@@ -1,0 +1,85 @@
+{
+  "title": "Hydrogen Metrics Browser",
+  "description": "Interactive visualization of Hydrogen project metrics",
+  "version": "1.0.0",
+  "dateRange": {
+    "start": "30_days_ago",
+    "end": "today",
+    "mode": "relative"
+  },
+  "chartSettings": {
+    "width": 1920,
+    "height": 1080,
+    "margin": {
+      "top": 50,
+      "right": 80,
+      "bottom": 50,
+      "left": 80
+    },
+    "animationDuration": 1000,
+    "transitionDuration": 300,
+    "showGrid": true,
+    "showLegend": true,
+    "showTooltip": true,
+    "responsive": true
+  },
+  "metrics": [
+    {
+      "path": "summary.total_tests",
+      "label": "Total Tests",
+      "axis": "left",
+      "type": "line",
+      "color": "#4a90e2",
+      "lineWidth": 2,
+      "pointRadius": 4,
+      "showPoints": true,
+      "interpolation": "monotone"
+    },
+    {
+      "path": "summary.combined_coverage",
+      "label": "Combined Coverage %",
+      "axis": "right",
+      "type": "line",
+      "color": "#7ed321",
+      "lineWidth": 2,
+      "pointRadius": 4,
+      "showPoints": true,
+      "interpolation": "monotone"
+    }
+  ],
+  "uiSettings": {
+    "theme": "dark",
+    "fontFamily": "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    "fontSize": "14px",
+    "showControlPanel": true,
+    "defaultPanelPosition": "top-right",
+    "clickToEdit": true,
+    "doubleClickToZoom": true
+  },
+  "dataSources": {
+    "browser": {
+      "baseUrl": "https://raw.githubusercontent.com/500Foods/Philement/main/docs/H/metrics",
+      "fallbackDays": 30,
+      "cacheEnabled": true,
+      "cacheTTL": 3600
+    },
+    "local": {
+      "basePath": "/docs/H/metrics",
+      "fallbackDays": 30
+    }
+  },
+  "exportSettings": {
+    "svg": {
+      "filename": "hydrogen_metrics_chart",
+      "includeStyles": true,
+      "includeScripts": false,
+      "quality": "high",
+      "backgroundColor": "#000409"
+    },
+    "png": {
+      "filename": "hydrogen_metrics_chart",
+      "scale": 2,
+      "quality": 0.92
+    }
+  }
+}

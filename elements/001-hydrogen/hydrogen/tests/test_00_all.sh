@@ -804,17 +804,12 @@ if [[ -f "${UNITY_FAILURES_FILE}" ]] && [[ -s "${UNITY_FAILURES_FILE}" ]]; then
     echo ""
 fi
 
-# Generate SVGs from generated tables
-# shellcheck disable=SC2154 # OH defined externally in framework.sh
-("${OH}" --width 108 -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
-# shellcheck disable=SC2154 # OH defined externally in framework.sh
-("${OH}" --width 108 -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
-
 # Create metrics file with four ANSI tables
 # shellcheck disable=SC2154 # DATE defined externally in framework.sh
 current_date=$("${DATE}" +%Y-%m-%d)
 current_month=$("${DATE}" +%Y-%m)
-metrics_dir="${PROJECT_DIR}/docs/metrics/${current_month}"
+# shellcheck disable=SC2154 # DATE defined externally 
+metrics_dir="${HYDROGEN_DOCS_ROOT}/metrics/${current_month}"
 metrics_file="${metrics_dir}/${current_date}.txt"
 metrics_json_file="${metrics_dir}/${current_date}.json"
 
@@ -823,7 +818,7 @@ mkdir -p "${metrics_dir}"
 cloc_output=""
 cloc_json_main=""
 cloc_json_stats=""
-if cloc_output=$(env -i LANG="${LANG}" HYDROGEN_ROOT="${HYDROGEN_ROOT}" HELIUM_ROOT="${HELIUM_ROOT}" bash -c "${SCRIPT_DIR}/lib/cloc_tables.sh"); then
+if cloc_output=$(env -i LANG="${LANG}" HYDROGEN_ROOT="${HYDROGEN_ROOT}" HYDROGEN_DOCS_ROOT="${HYDROGEN_DOCS_ROOT}" HELIUM_ROOT="${HELIUM_ROOT}" bash -c "${SCRIPT_DIR}/lib/cloc_tables.sh"); then
     # Capture CLOC JSON data if available
     cloc_json_main="${RESULTS_DIR}/cloc_main_data.json"
     cloc_json_stats="${RESULTS_DIR}/cloc_stats_data.json"
@@ -911,6 +906,11 @@ fi
 
 } > "${metrics_file}"
 
+# Generate SVGs from generated tables
+# shellcheck disable=SC2154 # OH defined externally in framework.sh
+("${OH}" --width 108 -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
+# shellcheck disable=SC2154 # OH defined externally in framework.sh
+("${OH}" --width 108 -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
 
 ("${PROJECT_DIR}/extras/make-email.sh" > /dev/null 2>&1) || true
 

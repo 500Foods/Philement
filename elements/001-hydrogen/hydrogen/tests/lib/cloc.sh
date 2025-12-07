@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 7.1.0 - 2025-12-07 - Added HYDROGEN_DOCS_ROOT support for documentation folder inclusion
 # 7.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 6.6.1 - 2025-12-02 - Fixed ShellCheck SC2312 and SC2310 issues with explicit error handling
 # 6.6.0 - 2025-12-02 - Added file size reporting section to extended statistics table
@@ -37,7 +38,13 @@ if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
     echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
     echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
     exit 1
-fi                         
+fi
+
+# Check for HYDROGEN_DOCS_ROOT environment variable (optional but recommended)
+if [[ -z "${HYDROGEN_DOCS_ROOT:-}" ]]; then
+    echo "ℹ️  Warning: HYDROGEN_DOCS_ROOT environment variable is not set"
+    echo "Documentation files will not be included in CLOC analysis"
+fi
 
 # Check for required HELIUM_ROOT environment variable
 if [[ -z "${HELIUM_ROOT:-}" ]]; then
@@ -54,7 +61,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="7.0.0"
+CLOC_VERSION="7.1.0"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
@@ -214,7 +221,14 @@ run_cloc_analysis() {
     core_json=$(mktemp) || return 1
     test_json=$(mktemp) || return 1
 
-    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" . --quiet --json --exclude-list-file="${exclude_list}" --not-match-d="build" --not-match-d='tests/lib/node_modules' --not-match-d='tests/unity' --not-match-f='hydrogen_installer' --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${core_json}" 2>&1); then
+    # Build the list of directories to analyze
+    local cloc_targets=(".")
+    if [[ -n "${HYDROGEN_DOCS_ROOT:-}" && -d "${HYDROGEN_DOCS_ROOT}" ]]; then
+        cloc_targets+=("${HYDROGEN_DOCS_ROOT}")
+    fi
+
+    # Run cloc on all target directories
+    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" "${cloc_targets[@]}" --quiet --json --exclude-list-file="${exclude_list}" --not-match-d="build" --not-match-d='tests/lib/node_modules' --not-match-d='tests/unity' --not-match-f='hydrogen_installer' --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${core_json}" 2>&1); then
         if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" tests/unity --not-match-d='tests/unity/framework' --quiet --json --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${test_json}" 2>&1); then
             # Extract cloc version from core JSON
             local cloc_header
