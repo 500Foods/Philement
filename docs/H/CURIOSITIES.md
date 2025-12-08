@@ -110,7 +110,7 @@ Test scripts double as build tools:
 
 - **[Test 01: Compilation](/docs/H/tests/test_01_compilation.md)** - Full project build including all Unity tests
 - **[Test 10: Unity](/docs/H/tests/test_10_unity.md)** - Executes unit test suite
-- **[Test 99: Coverage](/docs/H/tests/test_99_coverage.md)** - Generates coverage reports
+- **[Test 89: Coverage](/docs/H/tests/test_89_coverage.md)** - Generates coverage reports
 
 ## Code Quality & Linting
 
@@ -133,7 +133,7 @@ Code quality is enforced through comprehensive linting, established from project
 ### Additional Quality Tools
 
 - **[Test 31: Migrations](/docs/H/tests/test_31_migrations.md)**: SQL validation with sqruff across database engines
-- **[Test 98: Luacheck](/docs/H/tests/test_98_luacheck.md)**: Lua code analysis with luacheck
+- **[Test 89: Coverage](/docs/H/tests/test_89_coverage.md)**: Performs comprehensive coverage analysis
 - **[Test 90: Markdownlint](/docs/H/tests/test_90_markdownlint.md)**: Lints Markdown documentation using markdownlint
 - **[Test 91: Cppcheck](/docs/H/tests/test_91_cppcheck.md)**: Performs C/C++ static analysis using cppcheck
 - **[Test 92: Shellcheck](/docs/H/tests/test_92_shellcheck.md)**: Validates shell scripts using shellcheck
@@ -142,8 +142,8 @@ Code quality is enforced through comprehensive linting, established from project
 - **[Test 95: Stylelint](/docs/H/tests/test_95_stylelint.md)**: Validates CSS files using stylelint
 - **[Test 96: HTMLHint](/docs/H/tests/test_96_htmlhint.md)**: Validates HTML files using htmlhint
 - **[Test 97: XMLStarlet](/docs/H/tests/test_97_xmlstarlet.md)**: Validates XML/SVG files using xmlstarlet
-- **[Test 80: Code Size](/docs/H/tests/test_80_code_size.md)**: Analyzes code size metrics and file distribution
-- **[Test 99: Coverage](/docs/H/tests/test_99_coverage.md)**: Performs comprehensive coverage analysis
+- **[Test 98: Luacheck](/docs/H/tests/test_98_luacheck.md)**: Lua code analysis with luacheck
+- **[Test 80: Code Size](/docs/H/tests/test_99_code_size.md)**: Analyzes code size metrics and file distribution
 
 ### SQL Linting Philosophy
 
