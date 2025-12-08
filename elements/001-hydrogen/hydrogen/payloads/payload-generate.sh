@@ -14,6 +14,7 @@
 # - Cleans up all temporary files
 
 # CHANGELONG
+# 4.1.0 - 2025-12-08 - Added Hydrogen Build Metrics Browser files to swagger folder in payload
 # 4.0.0 - 2024-12-05 - Added env var dependency checks
 # 3.0.0 - 2025-09-30 - Added Helium migration files to payload
 # 2.2.0 - Added terminal payload generation with xterm.js
@@ -40,7 +41,7 @@ fi
 set -e
 
 # Display script information
-echo "payload-generate.sh version 4.0.0"
+echo "payload-generate.sh version 4.1.0"
 echo "Encrypted Payload Generator for Hydrogen"
 
 # Helium project Migrations to include (same as test_31_migrations.sh)
@@ -567,6 +568,15 @@ create_tarball() {
     mv "${SWAGGERUI_DIR}/favicon-32x32.png" "${SWAGGERUI_DIR}/swagger/"
     mv "${SWAGGERUI_DIR}/favicon-16x16.png" "${SWAGGERUI_DIR}/swagger/"
 
+    # Copy and compress HBM browser files to swagger directory
+    echo -e "${CYAN}${INFO} Copying and compressing HBM browser files to swagger directory...${NC}"
+    for hbm_file in "${HYDROGEN_ROOT}/extras/hbm_browser/hbm_browser"*; do
+        if [[ -f "${hbm_file}" ]]; then
+            filename=$(basename "${hbm_file}")
+            brotli --quality=11 --lgwin=24 -f "${hbm_file}" -o "${SWAGGERUI_DIR}/swagger/${filename}.br"
+        fi
+    done
+
     # Create tar file with swagger directory structure
     # - Compressed static assets (.br files)
     # - Uncompressed dynamic files and swagger.json
@@ -584,6 +594,12 @@ create_tarball() {
         "swagger/favicon-32x32.png"
         "swagger/favicon-16x16.png"
     )
+
+    # Add HBM browser files
+    while IFS= read -r -d '' hbm_file; do
+        local rel_path="swagger/${hbm_file##*/}"
+        TAR_FILES+=("${rel_path}")
+    done < <("${FIND}" "${SWAGGERUI_DIR}/swagger" -name "hbm_browser*.br" -type f -print0 2>/dev/null || true)
 
     # Add terminal files if they exist
     if [[ -d "${SWAGGERUI_DIR}/terminal" ]]; then
