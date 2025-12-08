@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hydrogen Metrics Browser - Chart Test</title>
+
+  <!-- CSS Dependencies -->
+  <link rel="stylesheet" href="hm_browser_base.css">
+  <link rel="stylesheet" href="hm_browser_control_panel.css">
+  <link rel="stylesheet" href="hm_browser_color_picker.css">
+  <link rel="stylesheet" href="hm_browser_states.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- JavaScript Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
+
+  <!-- Application Modules -->
+  <script src="hm_browser_core.js"></script>
+  <script src="hm_browser_data.js"></script>
+  <script src="hm_browser_chart.js"></script>
+  <script src="hm_browser_ui.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+
+    .test-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .test-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .test-section h3 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .test-results {
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+
+    .success {
+      color: green;
+    }
+
+    .error {
+      color: red;
+    }
+
+    #test-chart {
+      width: 100%;
+      height: 400px;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>Hydrogen Metrics Browser - Chart Fix Test</h1>
+
+    <div class="test-section">
+      <h3>Test 1: Basic Initialization</h3>
+      <button id="test-init" class="btn primary">Test Initialization</button>
+      <div id="test-init-results" class="test-results"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>Test 2: Data Loading</h3>
+      <button id="test-data-load" class="btn primary">Test Data Loading</button>
+      <div id="test-data-results" class="test-results"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>Test 3: Chart Rendering</h3>
+      <button id="test-chart-render" class="btn primary">Test Chart Rendering</button>
+      <div id="test-chart-results" class="test-results"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>Test 4: Full Integration</h3>
+      <button id="test-full" class="btn primary">Test Full Integration</button>
+      <div id="test-full-results" class="test-results"></div>
+    </div>
+
+    <div id="chart-container" style="width: 100%; height: 500px; margin-top: 20px;">
+      <svg id="test-chart"></svg>
+    </div>
+  </div>
+
+  <script>
+    // Test functions
+    document.getElementById('test-init').addEventListener('click', function() {
+      const resultsDiv = document.getElementById('test-init-results');
+      resultsDiv.innerHTML = 'Testing initialization...<br>';
+
+      try {
+        // Test basic initialization
+        if (typeof HMB !== 'undefined') {
+          resultsDiv.innerHTML += '<span class="success">✓ HMB namespace exists</span><br>';
+
+          // Test state initialization
+          if (HMB.state) {
+            resultsDiv.innerHTML += '<span class="success">✓ HMB.state exists</span><br>';
+          } else {
+            resultsDiv.innerHTML += '<span class="error">✗ HMB.state is missing</span><br>';
+          }
+
+          // Test config
+          if (HMB.config) {
+            resultsDiv.innerHTML += '<span class="success">✓ HMB.config exists</span><br>';
+          } else {
+            resultsDiv.innerHTML += '<span class="error">✗ HMB.config is missing</span><br>';
+          }
+        } else {
+          resultsDiv.innerHTML += '<span class="error">✗ HMB namespace is missing</span><br>';
+        }
+      } catch (error) {
+        resultsDiv.innerHTML += '<span class="error">✗ Error during initialization test: ' + error.message + '</span><br>';
+      }
+    });
+
+    document.getElementById('test-data-load').addEventListener('click', function() {
+      const resultsDiv = document.getElementById('test-data-results');
+      resultsDiv.innerHTML = 'Testing data loading...<br>';
+
+      try {
+        // Test data loading functions
+        if (typeof HMB.loadInitialData === 'function') {
+          resultsDiv.innerHTML += '<span class="success">✓ loadInitialData function exists</span><br>';
+
+          // Test with a simple mock
+          HMB.state = HMB.state || {};
+          HMB.state.metricsData = [];
+          HMB.state.availableMetrics = [];
+          HMB.state.selectedMetrics = [];
+
+          // Add some mock data
+          const mockData = {
+            date: '2025-12-07',
+            data: {
+              summary: {
+                total_tests: 1241,
+                combined_coverage: 80.72
+              }
+            }
+          };
+
+          HMB.state.metricsData.push(mockData);
+          resultsDiv.innerHTML += '<span class="success">✓ Added mock data to state</span><br>';
+
+          // Test metric extraction
+          const metrics = HMB.extractNumericValues(mockData.data);
+          if (metrics && metrics.length > 0) {
+            resultsDiv.innerHTML += '<span class="success">✓ Extracted ' + metrics.length + ' metrics</span><br>';
+            metrics.forEach(metric => {
+              resultsDiv.innerHTML += '  - ' + metric.path + ': ' + metric.value + '<br>';
+            });
+          } else {
+            resultsDiv.innerHTML += '<span class="error">✗ No metrics extracted</span><br>';
+          }
+        } else {
+          resultsDiv.innerHTML += '<span class="error">✗ loadInitialData function is missing</span><br>';
+        }
+      } catch (error) {
+        resultsDiv.innerHTML += '<span class="error">✗ Error during data loading test: ' + error.message + '</span><br>';
+      }
+    });
+
+    document.getElementById('test-chart-render').addEventListener('click', function() {
+      const resultsDiv = document.getElementById('test-chart-results');
+      resultsDiv.innerHTML = 'Testing chart rendering...<br>';
+
+      try {
+        // Test chart rendering functions
+        if (typeof HMB.renderChart === 'function') {
+          resultsDiv.innerHTML += '<span class="success">✓ renderChart function exists</span><br>';
+        } else {
+          resultsDiv.innerHTML += '<span class="error">✗ renderChart function is missing</span><br>';
+        }
+
+        if (typeof HMB.drawMetrics === 'function') {
+          resultsDiv.innerHTML += '<span class="success">✓ drawMetrics function exists</span><br>';
+        } else {
+          resultsDiv.innerHTML += '<span class="error">✗ drawMetrics function is missing</span><br>';
+        }
+
+        if (typeof HMB.getAxisDomain === 'function') {
+          resultsDiv.innerHTML += '<span class="success">✓ getAxisDomain function exists</span><br>';
+        } else {
+          resultsDiv.innerHTML += '<span class="error">✗ getAxisDomain function is missing</span><br>';
+        }
+
+        // Test with mock data
+        HMB.state = HMB.state || {};
+        HMB.state.selectedMetrics = [
+          {
+            path: 'summary.total_tests',
+            label: 'Total Tests',
+            axis: 'left',
+            type: 'line',
+            color: '#4a90e2'
+          },
+          {
+            path: 'summary.combined_coverage',
+            label: 'Combined Coverage %',
+            axis: 'right',
+            type: 'line',
+            color: '#7ed321'
+          }
+        ];
+
+        HMB.state.filteredData = [
+          {
+            date: '2025-12-01',
+            data: { summary: { total_tests: 1200, combined_coverage: 78.5 } }
+          },
+          {
+            date: '2025-12-02',
+            data: { summary: { total_tests: 1220, combined_coverage: 79.2 } }
+          },
+          {
+            date: '2025-12-03',
+            data: { summary: { total_tests: 1241, combined_coverage: 80.72 } }
+          }
+        ];
+
+        resultsDiv.innerHTML += '<span class="success">✓ Set up mock chart data</span><br>';
+
+        // Test axis domain calculation
+        const leftMetrics = HMB.state.selectedMetrics.filter(m => m.axis === 'left');
+        const domain = HMB.getAxisDomain(leftMetrics);
+        resultsDiv.innerHTML += '<span class="success">✓ Left axis domain: [' + domain[0] + ', ' + domain[1] + ']</span><br>';
+
+      } catch (error) {
+        resultsDiv.innerHTML += '<span class="error">✗ Error during chart rendering test: ' + error.message + '</span><br>';
+      }
+    });
+
+    document.getElementById('test-full').addEventListener('click', function() {
+      const resultsDiv = document.getElementById('test-full-results');
+      resultsDiv.innerHTML = 'Testing full integration...<br>';
+
+      try {
+        // Set up the chart container properly
+        HMB.config = {
+          title: 'Test Chart',
+          chartSettings: {
+            width: 800,
+            height: 400,
+            margin: { top: 50, right: 80, bottom: 50, left: 50 }
+          }
+        };
+
+        HMB.state = {
+          selectedMetrics: [
+            {
+              path: 'summary.total_tests',
+              label: 'Total Tests',
+              axis: 'left',
+              type: 'line',
+              color: '#4a90e2'
+            }
+          ],
+          filteredData: [
+            { date: '2025-12-01', data: { summary: { total_tests: 1200 } } },
+            { date: '2025-12-02', data: { summary: { total_tests: 1220 } } },
+            { date: '2025-12-03', data: { summary: { total_tests: 1241 } } }
+          ],
+          elements: {
+            controlPanel: document.createElement('div')
+          }
+        };
+
+        resultsDiv.innerHTML += '<span class="success">✓ Set up full integration test data</span><br>';
+
+        // Try to render the chart
+        try {
+          HMB.renderChart();
+          resultsDiv.innerHTML += '<span class="success">✓ Chart rendering completed without errors</span><br>';
+        } catch (chartError) {
+          resultsDiv.innerHTML += '<span class="error">✗ Chart rendering failed: ' + chartError.message + '</span><br>';
+        }
+
+      } catch (error) {
+        resultsDiv.innerHTML += '<span class="error">✗ Error during full integration test: ' + error.message + '</span><br>';
+      }
+    });
+  </script>
+</body>
+</html>

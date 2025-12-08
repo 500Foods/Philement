@@ -28,16 +28,64 @@ HMB.renderChart = function() {
   // Clear previous chart
   d3.select('#metrics-chart').html('');
 
-  // Set up chart dimensions
-  const width = this.config.chartSettings.width - this.config.chartSettings.margin.left - this.config.chartSettings.margin.right;
-  const height = this.config.chartSettings.height - this.config.chartSettings.margin.top - this.config.chartSettings.margin.bottom;
+  // Get container dimensions for responsive design
+  const container = document.getElementById('chart-container');
+  const width = container.clientWidth - this.config.chartSettings.margin.left - this.config.chartSettings.margin.right;
+  const height = container.clientHeight - this.config.chartSettings.margin.top - this.config.chartSettings.margin.bottom;
 
-  // Create SVG container
+  // Create SVG container with responsive dimensions
   const svg = d3.select('#metrics-chart')
-    .attr('width', this.config.chartSettings.width)
-    .attr('height', this.config.chartSettings.height)
+    .attr('width', container.clientWidth)
+    .attr('height', container.clientHeight)
     .append('g')
     .attr('transform', `translate(${this.config.chartSettings.margin.left},${this.config.chartSettings.margin.top})`);
+
+  // Add chart title to SVG
+  const chartTitle = svg.append('text')
+    .attr('class', 'chart-title')
+    .attr('x', width / 2)
+    .attr('y', -this.config.chartSettings.margin.top / 2)
+    .attr('text-anchor', 'middle')
+    .attr('fill', 'var(--text-color)')
+    .attr('font-size', '1.3rem')
+    .attr('font-weight', '600')
+    .attr('cursor', 'pointer')
+    .text(this.config.title)
+    .on('click', () => {
+      console.log('Chart title clicked!');
+      this.toggleControlPanel();
+    });
+
+  // Add transparent overlay for SVG click area - always present but only active when panel is collapsed
+  const svgOverlay = svg.append('rect')
+    .attr('class', 'svg-overlay')
+    .attr('width', width)
+    .attr('height', height)
+    .attr('fill', 'transparent')
+    .attr('cursor', 'pointer')
+    .attr('opacity', 0)
+    .on('click', () => {
+      console.log('SVG overlay clicked! Panel collapsed:', this.state.elements.controlPanel.classList.contains('collapsed'));
+
+      // Only toggle if panel is collapsed
+      if (this.state.elements.controlPanel.classList.contains('collapsed')) {
+        console.log('Toggling control panel from SVG overlay');
+        this.toggleControlPanel();
+      } else {
+        console.log('Panel not collapsed, ignoring click');
+      }
+    });
+
+  // Log overlay creation
+  console.log('SVG overlay created with dimensions:', width, 'x', height);
+  console.log('Panel collapsed state:', this.state.elements.controlPanel.classList.contains('collapsed'));
+
+  // Add click handler to the SVG element itself as fallback
+  d3.select('#metrics-chart').on('click', function() {
+    if (HMB.state.elements.controlPanel.classList.contains('collapsed')) {
+      HMB.toggleControlPanel();
+    }
+  });
 
   // Set up scales
   const xScale = d3.scaleTime()
@@ -77,31 +125,33 @@ HMB.renderChart = function() {
 
   // Draw metrics
   this.drawMetrics(svg, xScale, leftYScale, rightYScale, width, height);
+
+  // Add legend to SVG
+  this.drawLegend(svg, width, height);
 };
 
 // Get domain for an axis based on metrics
 HMB.getAxisDomain = function(metrics) {
   if (metrics.length === 0) return [0, 1];
 
-  let min = Infinity;
-  let max = -Infinity;
+  let min = 0; // Always start at 0
+  let max = 0;
 
   metrics.forEach(metric => {
     this.state.filteredData.forEach(file => {
       if (file.data) {
         const value = this.getNestedValue(file.data, metric.path);
         if (typeof value === 'number') {
-          min = Math.min(min, value);
           max = Math.max(max, value);
         }
       }
     });
   });
 
-  // Add 10% padding if we have a valid range
-  if (min !== Infinity && max !== -Infinity) {
-    const padding = (max - min) * 0.1;
-    return [min - padding, max + padding];
+  // Add 10% padding if we have a valid max value
+  if (max > 0) {
+    const padding = max * 0.1;
+    return [0, max + padding];
   } else {
     return [0, 1];
   }
@@ -141,6 +191,64 @@ HMB.drawMetrics = function(svg, xScale, leftYScale, rightYScale, width, height) 
         .attr('stroke', metric.color)
         .attr('stroke-width', 2)
         .attr('fill', 'none');
+
+      // Add dots for each data point
+      svg.selectAll('.metric-dot-' + metric.path.replace(/\./g, '-'))
+        .data(metricData.filter(d => d.value !== null && d.value !== undefined))
+        .enter()
+        .append('circle')
+        .attr('class', 'metric-dot')
+        .attr('cx', d => xScale(new Date(d.date)))
+        .attr('cy', d => yScale(d.value))
+        .attr('r', 4)
+        .attr('fill', metric.color)
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1);
     }
   });
+};
+
+// Draw legend in SVG
+HMB.drawLegend = function(svg, width, height) {
+  // Create legend group - position it within the visible chart area
+  const legendGroup = svg.append('g')
+    .attr('class', 'chart-legend')
+    .attr('transform', `translate(${width - 200}, 20)`);
+
+  // Add legend title
+  legendGroup.append('text')
+    .attr('class', 'legend-title')
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('fill', 'var(--text-color)')
+    .attr('font-size', '0.9rem')
+    .attr('font-weight', '600')
+    .text('Metrics Legend');
+
+  // Add legend items
+  const legendItems = legendGroup.selectAll('.legend-item')
+    .data(this.state.selectedMetrics)
+    .enter()
+    .append('g')
+    .attr('class', 'legend-item')
+    .attr('transform', (d, i) => `translate(0, ${20 + i * 20})`);
+
+  // Add color swatches
+  legendItems.append('rect')
+    .attr('class', 'legend-color')
+    .attr('width', 15)
+    .attr('height', 3)
+    .attr('x', 0)
+    .attr('y', -2)
+    .attr('fill', d => d.color)
+    .attr('rx', 1);
+
+  // Add legend labels
+  legendItems.append('text')
+    .attr('class', 'legend-label')
+    .attr('x', 20)
+    .attr('y', 0)
+    .attr('fill', 'var(--text-color)')
+    .attr('font-size', '0.85rem')
+    .text(d => d.label);
 };
