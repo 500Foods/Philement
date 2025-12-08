@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Hydrogen Metrics Browser - Command Line Interface
-# Generates SVG charts from Hydrogen metrics data
+# Hydrogen Build Metrics Browser - Command Line Interface
+# Generates SVG charts from Hydrogen build metrics data
 #
-# Usage: ./hm_browser.sh [config_file] [output_file]
+# Usage: ./hbm_browser.sh [config_file] [output_file]
 #
 # If no arguments are provided, uses default configuration
 
 # Configuration
 SCRIPT_DIR=$(dirname "$(realpath "$0")") || true
-DEFAULT_CONFIG="${SCRIPT_DIR}/hm_browser_auto.json"
+DEFAULT_CONFIG="${SCRIPT_DIR}/hbm_browser_auto.json"
 DEFAULT_OUTPUT="hydrogen_metrics_report.svg"
 
 # Check if Node.js is available
@@ -38,7 +38,7 @@ if [[ ! -d "${OUTPUT_DIR}" ]]; then
 fi
 
 # Show starting message
-printf "Hydrogen Metrics Browser - CLI Mode\n" || true
+printf "Hydrogen Build Metrics Browser - CLI Mode\n" || true
 printf "=================================\n" || true
 printf "Config:     %s\n" "${CONFIG_FILE}" || true
 printf "Output:     %s\n" "${OUTPUT_FILE}" || true
@@ -46,7 +46,7 @@ printf "Started:    %s\n" "$(date)" || true
 printf "\n" || true
 
 # Run the browser in headless mode using Node.js
-if ! node "${SCRIPT_DIR}/hm_browser_cli.js" "${CONFIG_FILE}" "${OUTPUT_FILE}"; then
+if ! node "${SCRIPT_DIR}/hbm_browser_cli.js" "${CONFIG_FILE}" "${OUTPUT_FILE}"; then
     printf "\n" || true
     printf "❌ Error generating metrics report\n" || true
     printf "Completed:  %s\n" "$(date)" || true

@@ -1,5 +1,5 @@
 /**
- * Hydrogen Metrics Browser - Core Functions
+ * Hydrogen Build Metrics Browser - Core Functions
  * Main application state and initialization
  *
  * @version 1.0.0
@@ -11,7 +11,7 @@ var HMB = HMB || {};
 
 // Default configuration
 HMB.config = {
-  title: 'Hydrogen Metrics Browser',
+  title: 'Hydrogen Build Metrics Browser',
   dateRange: {
     start: '30_days_ago',
     end: 'today'
@@ -43,6 +43,20 @@ HMB.config = {
     },
     local: {
       basePath: '/docs/H/metrics'
+    }
+  },
+  exportSettings: {
+    svg: {
+      filename: 'hydrogen_metrics_chart',
+      includeStyles: true,
+      includeScripts: false,
+      quality: 'high',
+      backgroundColor: '#000409'
+    },
+    png: {
+      filename: 'hydrogen_metrics_chart',
+      scale: 2,
+      quality: 0.92
     }
   }
 };
@@ -91,6 +105,8 @@ HMB.initialize = function() {
 
 // Set up event listeners
 HMB.setupEventListeners = function() {
+  console.log('HMB.setupEventListeners called');
+
   // Chart title click to show controls (now handled in SVG rendering)
   // if (this.state.elements.chartTitle) {
   //   this.state.elements.chartTitle.addEventListener('click', () => {
@@ -135,9 +151,9 @@ HMB.setupEventListeners = function() {
   // Close panel button
   const closePanelBtn = document.getElementById('close-panel');
   if (closePanelBtn) {
-    console.log('Setting up close button event listener');
+    // console.log('Setting up close button event listener');
     closePanelBtn.addEventListener('click', (e) => {
-      console.log('Close button clicked');
+      // console.log('Close button clicked');
       e.preventDefault();
       e.stopPropagation();
       this.toggleControlPanel();
@@ -163,6 +179,19 @@ HMB.setupEventListeners = function() {
       this.hideError();
       this.loadInitialData();
     });
+  }
+
+  // Export SVG button
+  const exportSvgBtn = document.getElementById('export-svg');
+  console.log('Looking for export SVG button, found:', !!exportSvgBtn);
+  if (exportSvgBtn) {
+    console.log('Setting up export SVG button listener');
+    exportSvgBtn.addEventListener('click', () => {
+      console.log('Export SVG button clicked - starting export');
+      this.exportChartAsSVG();
+    });
+  } else {
+    console.error('Export SVG button not found!');
   }
 
 };
@@ -342,7 +371,9 @@ HMB.initDatePickers = function() {
 // Render the D3 chart
 HMB.renderChart = function() {
   if (this.state.selectedMetrics.length === 0) {
-    console.log('No metrics selected to render');
+    // console.log('No metrics selected to render - clearing chart');
+    // Clear the chart
+    d3.select('#metrics-chart').html('');
     return;
   }
 
@@ -351,7 +382,7 @@ HMB.renderChart = function() {
   }
 
   if (!this.state.filteredData || this.state.filteredData.length === 0) {
-    console.log('No data available for selected date range');
+    // console.log('No data available for selected date range');
     return;
   }
 
@@ -382,7 +413,7 @@ HMB.renderChart = function() {
     .attr('cursor', 'pointer')
     .text(this.config.title)
     .on('click', () => {
-      console.log('Chart title clicked!');
+      // console.log('Chart title clicked!');
       this.toggleControlPanel();
     });
 
@@ -395,20 +426,20 @@ HMB.renderChart = function() {
     .attr('cursor', 'pointer')
     .attr('opacity', 0)
     .on('click', () => {
-      console.log('SVG overlay clicked! Panel collapsed:', this.state.elements.controlPanel.classList.contains('collapsed'));
+      // console.log('SVG overlay clicked! Panel collapsed:', this.state.elements.controlPanel.classList.contains('collapsed'));
 
       // Only toggle if panel is collapsed
       if (this.state.elements.controlPanel.classList.contains('collapsed')) {
-        console.log('Toggling control panel from SVG overlay');
+        // console.log('Toggling control panel from SVG overlay');
         this.toggleControlPanel();
       } else {
-        console.log('Panel not collapsed, ignoring click');
+        // console.log('Panel not collapsed, ignoring click');
       }
     });
 
   // Log overlay creation
-  console.log('SVG overlay created with dimensions:', width, 'x', height);
-  console.log('Panel collapsed state:', this.state.elements.controlPanel.classList.contains('collapsed'));
+  // console.log('SVG overlay created with dimensions:', width, 'x', height);
+  // console.log('Panel collapsed state:', this.state.elements.controlPanel.classList.contains('collapsed'));
 
   // Add click handler to the SVG element itself as fallback
   d3.select('#metrics-chart').on('click', function() {
@@ -474,7 +505,7 @@ HMB.updateSelectedMetricsUI = function() {
 
     metricElement.innerHTML = `
       <div class="metric-info-selected">
-        <div class="metric-label-selected">${metric.label}</div>
+        <div class="metric-label-selected">${metric.displayLabel || metric.label}</div>
         <div class="metric-details-selected">
           <span class="metric-color-preview" style="background-color: ${metric.color}"></span>
           <span class="metric-axis-badge ${metric.axis}">${metric.axis}</span>
@@ -517,21 +548,26 @@ HMB.showError = function(message) {
 
 // SIMPLE toggle function - direct and reliable
 HMB.toggleControlPanel = function() {
-  console.log('SIMPLE TOGGLE CALLED');
+  // console.log('SIMPLE TOGGLE CALLED');
 
   if (this.state.elements.controlPanel) {
     const isCollapsed = this.state.elements.controlPanel.classList.contains('collapsed');
+    // console.log('Panel currently collapsed:', isCollapsed);
+
+    // Use the same logic as window resize - just call handleWindowResize after a short delay
+    setTimeout(() => {
+      // console.log('Calling handleWindowResize after panel toggle');
+      this.handleWindowResize();
+    }, 350); // Match the CSS transition duration
 
     if (isCollapsed) {
       // SHOW PANEL - DIRECT AND SIMPLE
-      console.log('SHOWING PANEL');
+      // console.log('SHOWING PANEL');
       this.state.elements.controlPanel.classList.remove('collapsed');
-      // Let CSS handle the transition
     } else {
       // HIDE PANEL - DIRECT AND SIMPLE
-      console.log('HIDING PANEL');
+      // console.log('HIDING PANEL');
       this.state.elements.controlPanel.classList.add('collapsed');
-      // Let CSS handle the transition
     }
   } else {
     console.warn('Control panel element not found!');
@@ -555,7 +591,7 @@ HMB.addSelectedMetric = function() {
   // Check if already added
   const existing = this.state.selectedMetrics.find(m => m.path === metricPath);
   if (existing) {
-    console.log('Metric already added');
+    // console.log('Metric already added');
     // Update the button state in case this was called directly
     const addMetricBtn = document.getElementById('add-selected-metric');
     if (addMetricBtn) {
@@ -570,9 +606,15 @@ HMB.addSelectedMetric = function() {
   const colorInput = document.getElementById('metric-color');
 
   // Create metric configuration with current UI selections
+  // Use the new display label format for consistency
+  // console.log('Adding metric with path:', metric.path, 'and context:', metric.context);
+  const displayLabel = this.createDisplayLabel(metric.path, metric.context || {});
+  // console.log('Created display label:', displayLabel);
   const metricConfig = {
     path: metric.path,
     label: metric.label,
+    displayLabel: displayLabel, // Store the simplified display label
+    context: metric.context, // Also store the context for reference
     axis: axisSelect ? axisSelect.value : 'left',
     type: typeSelect ? typeSelect.value : 'line',
     color: colorInput && colorInput.value ? colorInput.value : this.getRandomColor()
@@ -622,10 +664,68 @@ HMB.removeMetric = function(metricPath) {
 
 
 
+// Export the current chart as SVG
+HMB.exportChartAsSVG = function() {
+  console.log('Export SVG function called - starting export process');
+
+  try {
+    const svgElement = document.getElementById('metrics-chart');
+    if (!svgElement) {
+      console.error('SVG element not found');
+      alert('Error: Chart element not found. Please ensure a chart is displayed before exporting.');
+      return;
+    }
+
+    // Check if SVG has content
+    const svgContent = svgElement.innerHTML.trim();
+    if (!svgContent) {
+      console.warn('SVG element is empty');
+      alert('Warning: The chart appears to be empty. Please add some metrics and render a chart before exporting.');
+      return;
+    }
+
+    console.log('SVG element found, cloning...');
+    // Clone the SVG to avoid modifying the original
+    const svgClone = svgElement.cloneNode(true);
+
+    // Ensure SVG has proper namespace
+    if (!svgClone.hasAttribute('xmlns')) {
+      svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    }
+
+    // Get the SVG as a string
+    const svgString = new XMLSerializer().serializeToString(svgClone);
+    console.log('SVG serialized, length:', svgString.length);
+
+    // Use Blob method for better compatibility
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    // Create a temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = (this.config.exportSettings?.svg?.filename || 'chart') + '.svg';
+    document.body.appendChild(link);
+
+    // Try to click the link
+    link.click();
+    console.log('Download triggered successfully');
+
+    // Clean up
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    console.log('SVG export completed successfully');
+  } catch (error) {
+    console.error('SVG export failed:', error);
+    alert('Export failed: ' + error.message);
+  }
+};
+
 // Initialize the application when DOM is loaded
 if (typeof window !== 'undefined') {
   document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing Hydrogen Metrics Browser...');
+    console.log('Initializing Hydrogen Build Metrics Browser...');
     HMB.initialize();
   });
 }
