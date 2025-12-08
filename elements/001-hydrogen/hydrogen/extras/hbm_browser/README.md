@@ -30,6 +30,7 @@ The Hydrogen Build Metrics Browser (hbm_browser) is a powerful visualization too
 
 - **Automatic Discovery**: Find metrics files with 30-day fallback
 - **Nested JSON Extraction**: Extract numeric values from complex JSON structures
+- **String Number Parsing**: Parse comma-separated numbers and values with units (KB, MB, GB, %)
 - **Smart Path Resolution**: Intelligent metric path handling
 - **Date Range Filtering**: Filter data by custom date ranges
 

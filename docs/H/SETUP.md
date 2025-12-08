@@ -32,7 +32,7 @@ These tools are required when building or developing with the Hydrogen codebase:
 
 A handful of other projects are directly included in the tests/lib folder of this project.
 
-- [GitHub Sitmemap](https://github.com/500Foods/Scripts/github-sitemap) - Cross-reference all the markdown in a repository [lib/github-sitemap.sh](../tests/lib/github-sitemap.sh)) ([Docs](../tests/docs/github-sitemap.md))
+- [GitHub Sitmemap](https://github.com/500Foods/Scripts/github-sitemap) - Cross-reference all the markdown in a repository [lib/github-sitemap.sh](/elements/001-hydrogen/hydrogen/tests/lib/github-sitemap.sh)) ([Docs](/docs/H/tests/github-sitemap.md))
 
 ## Example Ubuntu Build Environment
 
@@ -48,7 +48,7 @@ NOTE: Latest NodeJS should be used (eg. Node 24)
 
 With that all installed, perform the following steps.
 
-- Generate PAYLOAD_LOCK and PAYLOAD_KEY (see [SECRETS.md](SECRETS.md) for setup instructions)
+- Generate PAYLOAD_LOCK and PAYLOAD_KEY (see [SECRETS.md](/docs/H/SECRETS.md) for setup instructions)
 - Run `swagger_generate.sh` and `payroll_generate.sh` in the payloads directory
 - Run `tests_00_all.sh` in the `tests` folder to build and test the entire project
 
@@ -113,7 +113,7 @@ export SHELLCHECK_OPTS=--enable=all --severity=style --external-sources --format
 
 ### Server Settings
 
-- `PAYLOAD_KEY` - Key used for encrypting payload data (see [SECRETS.md](SECRETS.md) for setup instructions)
+- `PAYLOAD_KEY` - Key used for encrypting payload data (see [SECRETS.md](/docs/H/SECRETS.md) for setup instructions)
 
 ### Database Connections
 
@@ -169,7 +169,7 @@ Should you want to build the project in a GitHub codespace, the following can be
 - `cd Philement/elements/001-hydrogen/hydrogen/tests`
 - `./test_00_all.sh`
 
-The hydrogen build should proceed, downloading unity if needed and running the payload build as well, so long as you've defined PAYLOAD_LOCK, PAYLOAD_KEY and WEBSOCKET_KEY as GitHub secrets in your repo.  See [SECRETS](SECRETS.md) for more information on those environment variables.
+The hydrogen build should proceed, downloading unity if needed and running the payload build as well, so long as you've defined PAYLOAD_LOCK, PAYLOAD_KEY and WEBSOCKET_KEY as GitHub secrets in your repo.  See [SECRETS](/docs/H/SECRETS.md) for more information on those environment variables.
 
 ### dockerfile
 
