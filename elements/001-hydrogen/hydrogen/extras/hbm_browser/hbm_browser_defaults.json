@@ -1,5 +1,5 @@
 {
-  "title": "Hydrogen Metrics Browser",
+  "title": "Hydrogen Build Metrics Browser",
   "description": "Interactive visualization of Hydrogen project metrics",
   "version": "1.0.0",
   "dateRange": {
@@ -14,7 +14,7 @@
       "top": 50,
       "right": 80,
       "bottom": 50,
-      "left": 80
+      "left": 130
     },
     "animationDuration": 1000,
     "transitionDuration": 300,
@@ -31,6 +31,7 @@
       "type": "line",
       "color": "#4a90e2",
       "lineWidth": 2,
+      "lineStyle": "regular",
       "pointRadius": 4,
       "showPoints": true,
       "interpolation": "monotone"
@@ -42,6 +43,7 @@
       "type": "line",
       "color": "#7ed321",
       "lineWidth": 2,
+      "lineStyle": "regular",
       "pointRadius": 4,
       "showPoints": true,
       "interpolation": "monotone"

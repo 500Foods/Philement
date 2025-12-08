@@ -1,5 +1,5 @@
 /**
- * Hydrogen Metrics Browser - UI Functions
+ * Hydrogen Build Metrics Browser - UI Functions
  * UI components and event handling
  *
  * @version 1.0.0
@@ -91,6 +91,78 @@ HMB.setupEventListeners = function() {
   }
 };
 
+// Create a simplified display label for the dropdown
+// Creates concise but informative labels like "Test 01-CMP elapsed" instead of "Test Results Data Elapsed"
+HMB.createDisplayLabel = function(path, context) {
+  // Handle different metric types with specific formatting
+
+  // 1. Test Results - Format as "Test <test_id> <metric_name>"
+  if (path.includes('test_results.data') && context && context.test_id) {
+    // Extract the metric name (last part of path)
+    const parts = path.split('.');
+    const metricName = parts[parts.length - 1];
+
+    // Create concise format: "Test <test_id> <metric_name>"
+    return `Test ${context.test_id} ${metricName}`;
+  }
+
+  // 2. CLOC (Code Lines) - Format as "CLOC <language> <metric_name>"
+  else if (path.includes('cloc.main') && context && context.language) {
+    // Extract the metric name (last part of path)
+    const parts = path.split('.');
+    const metricName = parts[parts.length - 1];
+
+    // Create concise format: "CLOC <language> <metric_name>"
+    return `CLOC ${context.language} ${metricName}`;
+  }
+
+  // 3. Coverage - Format as "Coverage <file> <metric_name>"
+  else if (path.includes('coverage.data') && context && context.file_path) {
+    // Extract the metric name (last part of path)
+    const parts = path.split('.');
+    const metricName = parts[parts.length - 1];
+
+    // Clean up file path for display
+    const cleanFilePath = context.file_path
+      .replace(/\{.*?\}/g, '') // Remove {COLOR} codes
+      .replace(/\.c$/, '')     // Remove .c suffix
+      .replace(/[^a-zA-Z0-9_\.\/]/g, '_'); // Replace special chars
+
+    // Create concise format: "Coverage <file> <metric_name>"
+    return `Coverage ${cleanFilePath} ${metricName}`;
+  }
+
+  // 4. Stats - Format as "Stats <metric> <stat_name>"
+  else if (path.includes('stats') && context && context.metric) {
+    // Extract the metric name (last part of path)
+    const parts = path.split('.');
+    const metricName = parts[parts.length - 1];
+
+    // Create concise format: "Stats <metric> <metric_name>"
+    return `Stats ${context.metric} ${metricName}`;
+  }
+
+  // 5. General case - Create clean label with underscores as spaces
+  else {
+    // Start with basic cleaning
+    let displayLabel = path
+      .replace(/\./g, ' ')
+      .replace(/\[/g, ' ')
+      .replace(/\]/g, '')
+      .replace(/([A-Z])/g, ' $1')
+      .trim()
+      .replace(/\s+/g, ' ');
+
+    // Replace underscores with spaces for better readability
+    displayLabel = displayLabel.replace(/_/g, ' ');
+
+    // Capitalize properly
+    displayLabel = displayLabel.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+
+    return displayLabel.trim();
+  }
+};
+
 // Initialize date pickers
 HMB.initDatePickers = function() {
   const today = new Date();
@@ -107,13 +179,23 @@ HMB.initDatePickers = function() {
   flatpickr(this.state.elements.startDate, {
     dateFormat: 'Y-m-d',
     defaultDate: this.state.currentDateRange.start,
-    maxDate: today
+    maxDate: today,
+    onChange: (selectedDates, dateStr) => {
+      // console.log('Start date changed to:', dateStr);
+      this.state.currentDateRange.start = dateStr;
+      this.handleDateRangeChange();
+    }
   });
 
   flatpickr(this.state.elements.endDate, {
     dateFormat: 'Y-m-d',
     defaultDate: this.state.currentDateRange.end,
-    maxDate: today
+    maxDate: today,
+    onChange: (selectedDates, dateStr) => {
+      // console.log('End date changed to:', dateStr);
+      this.state.currentDateRange.end = dateStr;
+      this.handleDateRangeChange();
+    }
   });
 };
 
@@ -129,19 +211,30 @@ HMB.applyMetricsFilter = function() {
     return;
   }
 
-  // Filter available metrics with case-insensitive search
-  // Treat spaces as wildcards - "combined coverage" should match "Combined_coverage"
+  // Filter available metrics with enhanced search
+  // Search both displayed values and underlying data for comprehensive filtering
   const filterLower = filterText.toLowerCase();
-  // Replace spaces with regex wildcard pattern
+
+  // Create regex pattern that treats spaces as wildcards
   const filterPattern = filterLower.replace(/\s+/g, '.*');
 
   const filteredMetrics = this.state.availableMetrics.filter(metric => {
+    // Search in multiple fields for better coverage
     const labelLower = metric.label.toLowerCase();
     const pathLower = metric.path.toLowerCase();
 
-    // Check if the pattern matches anywhere in label or path using regex
+    // Create display label for searching
+    const displayLabel = this.createDisplayLabel(metric.path, metric.context || {});
+    const displayLabelLower = displayLabel.toLowerCase();
+
+    // Check if the pattern matches in any of the relevant fields
     const regex = new RegExp(filterPattern);
-    return regex.test(labelLower) || regex.test(pathLower);
+    return regex.test(displayLabelLower) ||
+           regex.test(labelLower) ||
+           regex.test(pathLower) ||
+           (metric.context && metric.context.test_id && regex.test(metric.context.test_id.toLowerCase())) ||
+           (metric.context && metric.context.language && regex.test(metric.context.language.toLowerCase())) ||
+           (metric.context && metric.context.metric && regex.test(metric.context.metric.toLowerCase()));
   });
 
   // Update the metric dropdown with filtered results
@@ -152,11 +245,19 @@ HMB.applyMetricsFilter = function() {
       dropdown.remove(1);
     }
 
-    // Add filtered metrics to dropdown
+    // Add filtered metrics to dropdown with improved display format
     filteredMetrics.forEach(metric => {
       const option = document.createElement('option');
       option.value = metric.path;
-      option.textContent = `${metric.label} (${metric.path})`;
+  
+      // Use simplified display label for filtered results too
+      const displayLabel = this.createDisplayLabel(metric.path, metric.context || {});
+      option.textContent = displayLabel;
+  
+      // Store original data for reference
+      option.dataset.originalLabel = metric.label;
+      option.dataset.metricPath = metric.path;
+  
       dropdown.appendChild(option);
     });
 
@@ -166,19 +267,12 @@ HMB.applyMetricsFilter = function() {
       metricCountElement.textContent = `(${filteredMetrics.length})`;
     }
 
-    console.log(`Filtered dropdown to ${filteredMetrics.length} metrics`);
+    // console.log(`Filtered dropdown to ${filteredMetrics.length} metrics`);
   }
 };
 
-// Toggle control panel visibility
-HMB.toggleControlPanel = function() {
-  const isHidden = this.state.elements.controlPanel.classList.contains('hidden');
-  if (isHidden) {
-    this.state.elements.controlPanel.classList.remove('hidden');
-  } else {
-    this.state.elements.controlPanel.classList.add('hidden');
-  }
-};
+// Note: toggleControlPanel is implemented in core.js for collapse animation
+// This file previously had a conflicting implementation that used 'hidden' class
 
 // Update chart
 HMB.updateChart = function() {
@@ -197,7 +291,7 @@ HMB.addSelectedMetric = function() {
   // Check if already added
   const existing = this.state.selectedMetrics.find(m => m.path === metricPath);
   if (existing) {
-    console.log('Metric already added');
+    // console.log('Metric already added');
     // Update the button state in case this was called directly
     const addMetricBtn = document.getElementById('add-selected-metric');
     if (addMetricBtn) {
@@ -210,14 +304,17 @@ HMB.addSelectedMetric = function() {
   const axisSelect = document.getElementById('metric-axis');
   const typeSelect = document.getElementById('metric-type');
   const colorInput = document.getElementById('metric-color');
+  const lineStyleSelect = document.getElementById('metric-line-style');
 
   // Create metric configuration with current UI selections
   const metricConfig = {
     path: metric.path,
     label: metric.label,
+    displayLabel: this.createDisplayLabel(metric.path, metric.context || {}),
     axis: axisSelect ? axisSelect.value : 'left',
     type: typeSelect ? typeSelect.value : 'line',
-    color: colorInput && colorInput.value ? colorInput.value : this.getRandomColor()
+    color: colorInput && colorInput.value ? colorInput.value : this.getRandomColor(),
+    lineStyle: lineStyleSelect ? lineStyleSelect.value : 'regular'
   };
 
   this.state.selectedMetrics.push(metricConfig);
@@ -245,11 +342,12 @@ HMB.updateSelectedMetricsUI = function() {
 
     metricElement.innerHTML = `
       <div class="metric-info-selected">
-        <div class="metric-label-selected">${metric.label}</div>
+        <div class="metric-label-selected">${metric.displayLabel || metric.label}</div>
         <div class="metric-details-selected">
           <span class="metric-color-preview" style="background-color: ${metric.color}"></span>
           <span class="metric-axis-badge ${metric.axis}">${metric.axis}</span>
           <span class="metric-type-badge ${metric.type}">${metric.type}</span>
+          <span class="metric-style-badge ${metric.lineStyle}">${metric.lineStyle}</span>
         </div>
       </div>
       <button class="remove-metric-btn" title="Remove metric" data-metric-path="${metric.path}">
@@ -311,11 +409,19 @@ HMB.populateMetricDropdown = function() {
     dropdown.remove(1);
   }
 
-  // Add available metrics to dropdown
+  // Add available metrics to dropdown with improved display format
   this.state.availableMetrics.forEach(metric => {
     const option = document.createElement('option');
     option.value = metric.path;
-    option.textContent = `${metric.label} (${metric.path})`;
+
+    // Use simplified display label instead of complex format with redundant info
+    const displayLabel = this.createDisplayLabel(metric.path, metric.context || {});
+    option.textContent = displayLabel;
+
+    // Store original data for filtering and reference
+    option.dataset.originalLabel = metric.label;
+    option.dataset.metricPath = metric.path;
+
     dropdown.appendChild(option);
   });
 
@@ -338,18 +444,18 @@ HMB.populateMetricDropdown = function() {
     metricCountElement.textContent = `(${this.state.availableMetrics.length})`;
   }
 
-  console.log(`Populated dropdown with ${this.state.availableMetrics.length} metrics`);
+  // console.log(`Populated dropdown with ${this.state.availableMetrics.length} metrics`);
 };
 
 
 
 // Initialize and manage the color picker
 HMB.initColorPicker = function() {
-  console.log('Initializing color picker...');
+  // console.log('Initializing color picker...');
 
   // Check if already initialized to prevent duplicate event listeners
   if (this.state.colorPicker && this.state.colorPicker.initialized) {
-    console.log('Color picker already initialized, skipping');
+    // console.log('Color picker already initialized, skipping');
     return;
   }
 
@@ -366,9 +472,9 @@ HMB.initColorPicker = function() {
   // Set up color picker close button
   const closeColorPickerBtn = document.getElementById('close-color-picker');
   if (closeColorPickerBtn) {
-    console.log('Setting up close button event listener');
+    // console.log('Setting up close button event listener');
     closeColorPickerBtn.addEventListener('click', () => {
-      console.log('Close button clicked');
+      // console.log('Close button clicked');
       this.hideColorPicker();
     });
   } else {
@@ -378,9 +484,9 @@ HMB.initColorPicker = function() {
   // Set up color picker hex input
   const hexInput = document.getElementById('color-picker-hex');
   if (hexInput) {
-    console.log('Setting up HEX input event listener');
+    // console.log('Setting up HEX input event listener');
     hexInput.addEventListener('input', (e) => {
-      console.log('HEX input changed:', e.target.value);
+      // console.log('HEX input changed:', e.target.value);
       this.updateColorFromHex(e.target.value);
     });
   }
@@ -390,14 +496,14 @@ HMB.initColorPicker = function() {
   if (colorSwatch) {
     // Check if event listener already exists
     if (!colorSwatch.dataset.colorPickerInitialized) {
-      console.log('Setting up color swatch click handler');
+      // console.log('Setting up color swatch click handler');
       colorSwatch.addEventListener('click', () => {
-        console.log('Color swatch clicked - toggling color picker');
+        // console.log('Color swatch clicked - toggling color picker');
         this.toggleColorPicker();
       });
       colorSwatch.dataset.colorPickerInitialized = 'true';
     } else {
-      console.log('Color swatch event listener already set up');
+      // console.log('Color swatch event listener already set up');
     }
   } else {
     console.warn('Color preview element not found');
@@ -406,9 +512,9 @@ HMB.initColorPicker = function() {
   // Initialize color input change handler
   const colorInput = document.getElementById('metric-color');
   if (colorInput) {
-    console.log('Setting up color input change handler');
+    // console.log('Setting up color input change handler');
     colorInput.addEventListener('input', (e) => {
-      console.log('Color input changed:', e.target.value);
+      // console.log('Color input changed:', e.target.value);
       const preview = document.getElementById('color-preview');
       if (preview) {
         preview.style.backgroundColor = e.target.value || 'transparent';
@@ -420,20 +526,20 @@ HMB.initColorPicker = function() {
 
   // Initialize color picker interaction
   this.initColorPickerInteractions();
-  console.log('Color picker initialization complete');
+  // console.log('Color picker initialization complete');
 };
 
 // Toggle color picker visibility
 HMB.toggleColorPicker = function() {
-  console.log('toggleColorPicker called');
+  // console.log('toggleColorPicker called');
   const colorPicker = document.getElementById('vanilla-color-picker');
   if (colorPicker) {
-    console.log('Color picker element found, current display:', colorPicker.style.display);
+    // console.log('Color picker element found, current display:', colorPicker.style.display);
     if (colorPicker.style.display === 'block') {
-      console.log('Hiding color picker');
+      // console.log('Hiding color picker');
       this.hideColorPicker();
     } else {
-      console.log('Showing color picker');
+      // console.log('Showing color picker');
       this.showColorPicker();
     }
   } else {
@@ -443,10 +549,10 @@ HMB.toggleColorPicker = function() {
 
 // Show color picker
 HMB.showColorPicker = function() {
-  console.log('showColorPicker called');
+  // console.log('showColorPicker called');
   const colorPicker = document.getElementById('vanilla-color-picker');
   if (colorPicker) {
-    console.log('Showing color picker element');
+    // console.log('Showing color picker element');
 
     // Center the color picker in the window
     colorPicker.style.position = 'fixed';
@@ -460,7 +566,7 @@ HMB.showColorPicker = function() {
 
     // Initialize color picker with current color
     const currentColor = document.getElementById('metric-color').value || '#87CEEB';
-    console.log('Initializing color picker with color:', currentColor);
+    // console.log('Initializing color picker with color:', currentColor);
     this.updateColorPicker(currentColor);
   } else {
     console.warn('Color picker element not found in showColorPicker');
@@ -469,10 +575,10 @@ HMB.showColorPicker = function() {
 
 // Hide color picker
 HMB.hideColorPicker = function() {
-  console.log('hideColorPicker called');
+  // console.log('hideColorPicker called');
   const colorPicker = document.getElementById('vanilla-color-picker');
   if (colorPicker) {
-    console.log('Hiding color picker element');
+    // console.log('Hiding color picker element');
     colorPicker.style.display = 'none';
     this.state.colorPicker.isActive = false;
   } else {

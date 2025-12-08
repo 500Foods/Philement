@@ -1,6 +1,6 @@
 
 /**
- * Hydrogen Metrics Browser - Simple Main Entry
+ * Hydrogen Build Metrics Browser - Simple Main Entry
  * Main application using function calls instead of classes
  *
  * @version 1.0.0
@@ -22,11 +22,11 @@ const hmBrowser = {
 
 // Initialize the application
 function initHmBrowser() {
-  console.log('Initializing Hydrogen Metrics Browser (simple version)...');
+  console.log('Initializing Hydrogen Build Metrics Browser (simple version)...');
 
   // Set default configuration
   hmBrowser.config = {
-    title: 'Hydrogen Metrics Browser',
+    title: 'Hydrogen Build Metrics Browser',
     dateRange: {
       start: '30_days_ago',
       end: 'today'

@@ -1,5 +1,5 @@
 /**
- * Hydrogen Metrics Browser - Data Functions
+ * Hydrogen Build Metrics Browser - Data Functions
  * Data processing, file discovery, and metric extraction
  *
  * @version 1.0.0
@@ -15,8 +15,6 @@ HMB.loadInitialData = function() {
   this.showLoading();
   this.initProgressTracking();
 
-  console.log('Starting two-phase data loading process...');
-
   // Phase 1: Load just enough data to determine available metrics
   // Look back up to 10 days to find the first available metrics file
   this.loadMetricsDiscoveryPhase(10);
@@ -24,8 +22,6 @@ HMB.loadInitialData = function() {
 
 // Phase 1: Load just enough data to determine available metrics
 HMB.loadMetricsDiscoveryPhase = function(daysToCheck) {
-  console.log(`Starting metrics discovery phase - checking last ${daysToCheck} days`);
-
   const today = new Date();
   let filesFound = 0;
   let currentDay = 0;
@@ -39,7 +35,6 @@ HMB.loadMetricsDiscoveryPhase = function(daysToCheck) {
         return;
       }
 
-      console.log(`Found ${filesFound} metrics files during discovery phase`);
       // Extract metrics and move to phase 2
       this.extractAvailableMetrics();
       this.hideLoading(); // Hide the initial loading overlay
@@ -59,8 +54,6 @@ HMB.loadMetricsDiscoveryPhase = function(daysToCheck) {
       ? `${this.config.dataSources.browser.baseUrl}/${filePath}`
       : `${this.config.dataSources.local.basePath}/${filePath}`;
 
-    console.log(`Checking for metrics file: ${filePath}`);
-
     fetch(url)
       .then(response => {
         if (response.ok) {
@@ -70,7 +63,6 @@ HMB.loadMetricsDiscoveryPhase = function(daysToCheck) {
       })
       .then(data => {
         if (data) {
-          console.log(`Found metrics file for ${dateStr}`);
           filesFound++;
 
           // Cache the data
@@ -89,7 +81,6 @@ HMB.loadMetricsDiscoveryPhase = function(daysToCheck) {
         setTimeout(checkNextDay, 50);
       })
       .catch(error => {
-        console.log(`Error loading file for ${dateStr}:`, error.message);
         currentDay++;
         // Continue checking next day
         setTimeout(checkNextDay, 50);
@@ -102,8 +93,6 @@ HMB.loadMetricsDiscoveryPhase = function(daysToCheck) {
 
 // Phase 2: Load remaining data in background with progress tracking
 HMB.loadRemainingDataPhase = function(totalDays) {
-  console.log('Starting remaining data loading phase in background...');
-
   // Show progress bar for background loading
   this.showProgressBar();
 
@@ -114,8 +103,13 @@ HMB.loadRemainingDataPhase = function(totalDays) {
   const loadNextFile = () => {
     if (currentDay >= totalDays) {
       // All files processed
-      console.log(`Completed loading phase - loaded ${filesLoaded} files total`);
       this.hideProgressBar();
+
+      // Update chart now that all data is loaded
+      if (this.state.selectedMetrics.length > 0) {
+        this.updateChart();
+      }
+
       return;
     }
 
@@ -125,7 +119,6 @@ HMB.loadRemainingDataPhase = function(totalDays) {
 
     // Skip if we already have this data from discovery phase
     if (this.isDataCached(dateStr)) {
-      console.log(`Already have data for ${dateStr}, skipping...`);
       currentDay++;
       filesLoaded++;
       this.updateProgressTracking(currentDay, filesLoaded, totalDays);
@@ -149,8 +142,6 @@ HMB.loadRemainingDataPhase = function(totalDays) {
       })
       .then(data => {
         if (data) {
-          console.log(`Loaded additional data for ${dateStr}`);
-
           // Cache the data
           this.cacheLoadedData(dateStr, data);
 
@@ -172,7 +163,6 @@ HMB.loadRemainingDataPhase = function(totalDays) {
         setTimeout(loadNextFile, 20);
       })
       .catch(error => {
-        console.log(`Error loading file for ${dateStr}:`, error.message);
         currentDay++;
         // Update progress even on error
         this.updateProgressTracking(currentDay, filesLoaded, totalDays);
@@ -214,13 +204,11 @@ HMB.loadDataForDateRange = async function(days) {
           filePath: filePath
         });
         filesFound++;
-        console.log(`Found metrics file for ${dateStr}`);
 
         // Cache the loaded data
         this.cacheLoadedData(dateStr, data);
       }
     } catch (error) {
-      console.log(`Error loading file for ${currentDate.toDateString()}:`, error.message);
     }
 
     daysChecked++;
@@ -251,7 +239,6 @@ HMB.cacheLoadedData = function(date, data) {
   // Only cache if we don't already have this date
   if (!this.state.loadedDataCache[date]) {
     this.state.loadedDataCache[date] = data;
-    console.log(`Cached data for ${date}`);
   }
 };
 
@@ -294,8 +281,6 @@ HMB.processMetricsFiles = function(files) {
     this.state.progress.totalFiles = this.state.metricsData.length;
     this.state.progress.totalDays = this.state.progress.totalDays || 30;
   }
-
-  console.log(`Processed ${this.state.metricsData.length} metrics files`);
 };
 
 // Extract available numeric metrics from the data
@@ -304,17 +289,36 @@ HMB.extractAvailableMetrics = function() {
 
   // Use the most recent file to extract available metrics
   const latestData = this.state.metricsData[this.state.metricsData.length - 1].data;
+
   this.state.availableMetrics = this.extractNumericValues(latestData);
+
+  if (this.state.availableMetrics.length > 0) {
+    this.state.availableMetrics.slice(0, 5).forEach((m, i) => {
+    });
+
+    // Check for test_results metrics specifically
+    const testMetrics = this.state.availableMetrics.filter(m => m.path.includes('test_results'));
+    if (testMetrics.length > 0) {
+      testMetrics.slice(0, 3).forEach((m, i) => {
+      });
+    }
+  }
 
   // Auto-select default metrics from configuration
   if (this.config.metrics && this.config.metrics.length > 0) {
-    this.state.selectedMetrics = JSON.parse(JSON.stringify(this.config.metrics));
-  }
-
-  // Debug: Log what we found
-  console.log('Available metrics found:', this.state.availableMetrics.length);
-  if (this.state.availableMetrics.length > 0) {
-    console.log('Sample metrics:', this.state.availableMetrics.slice(0, 5));
+    // Clone the config metrics and add display labels
+    this.state.selectedMetrics = this.config.metrics.map(metric => {
+      const clonedMetric = JSON.parse(JSON.stringify(metric));
+      // Add display label for consistency
+      clonedMetric.displayLabel = this.createDisplayLabel(metric.path, {});
+      // Also add context for reference
+      clonedMetric.context = this.getContextForPath(metric.path);
+      // Ensure lineStyle has a default
+      if (!clonedMetric.lineStyle) {
+        clonedMetric.lineStyle = 'regular';
+      }
+      return clonedMetric;
+    });
   }
 
   // Update metric count display
@@ -358,7 +362,17 @@ HMB.extractNumericValues = function(data, path = '', context = {}) {
   const results = [];
 
   for (const [key, value] of Object.entries(data)) {
-    const newPath = path ? `${path}.${key}` : key;
+    // Build path based on data type
+    let newPath;
+    if (Array.isArray(data)) {
+      // When data is an array, we're iterating over indices
+      // The path should include the array index
+      newPath = `${path}[${key}]`;
+    } else {
+      // For regular objects, use dot notation
+      newPath = path ? `${path}.${key}` : key;
+    }
+
     const newContext = {...context};
 
     // Handle special cases for better labeling
@@ -400,6 +414,7 @@ HMB.extractNumericValues = function(data, path = '', context = {}) {
       // Handle arrays and objects with enhanced context
       if (Array.isArray(value)) {
         value.forEach((item, index) => {
+          const itemPath = `${path}.${key}[${index}]`;
           if (typeof item === 'object' && item !== null) {
             // Create array-specific context
             const arrayContext = {...newContext};
@@ -408,26 +423,27 @@ HMB.extractNumericValues = function(data, path = '', context = {}) {
             if (item.file_path) arrayContext.file_path = item.file_path;
             if (item.metric) arrayContext.metric = item.metric;
 
-            results.push(...this.extractNumericValues(item, newPath, arrayContext));
+            // Pass the correct array path with index
+            results.push(...this.extractNumericValues(item, itemPath, arrayContext));
           } else if (typeof item === 'number') {
             const arrayContext = {...newContext};
-            const cleanPath = this.createCleanMetricPath(`${newPath}[${index}]`, arrayContext);
+            const cleanPath = this.createCleanMetricPath(itemPath, arrayContext);
             results.push({
               path: cleanPath,
               value: item,
-              label: this.createEnhancedMetricLabel(`${newPath}[${index}]`, arrayContext),
-              originalPath: `${newPath}[${index}]`,
+              label: this.createEnhancedMetricLabel(itemPath, arrayContext),
+              originalPath: itemPath,
               context: arrayContext
             });
           } else if (typeof item === 'string' && item.match(/^\d+(\.\d+)?%$/)) {
             const numericValue = parseFloat(item.replace('%', ''));
             const arrayContext = {...newContext};
-            const cleanPath = this.createCleanMetricPath(`${newPath}[${index}]`, arrayContext);
+            const cleanPath = this.createCleanMetricPath(itemPath, arrayContext);
             results.push({
               path: cleanPath,
               value: numericValue,
-              label: this.createEnhancedMetricLabel(`${newPath}[${index}]`, arrayContext),
-              originalPath: `${newPath}[${index}]`,
+              label: this.createEnhancedMetricLabel(itemPath, arrayContext),
+              originalPath: itemPath,
               context: arrayContext
             });
           }
@@ -441,6 +457,43 @@ HMB.extractNumericValues = function(data, path = '', context = {}) {
   return results;
 };
 
+// Helper function to extract context from a path
+HMB.getContextForPath = function(path) {
+  const context = {};
+
+  // Try to extract context from the path pattern
+  if (path.includes('test_results.data')) {
+    // Extract test_id from path like "test_results.data.01-CMP.elapsed"
+    const match = path.match(/test_results\.data\.([^.]+)\./);
+    if (match && match[1]) {
+      context.test_id = match[1];
+    }
+  }
+  else if (path.includes('cloc.main')) {
+    // Extract language from path like "cloc.main.C.1000"
+    const match = path.match(/cloc\.main\.([^.]+)\./);
+    if (match && match[1]) {
+      context.language = match[1];
+    }
+  }
+  else if (path.includes('coverage.data')) {
+    // Extract file info from path like "coverage.data.src_main_c.95.5"
+    const match = path.match(/coverage\.data\.([^.]+)\./);
+    if (match && match[1]) {
+      context.file_path = match[1];
+    }
+  }
+  else if (path.includes('stats')) {
+    // Extract metric from path like "stats.performance.avg_time"
+    const match = path.match(/stats\.([^.]+)\./);
+    if (match && match[1]) {
+      context.metric = match[1];
+    }
+  }
+
+  return context;
+};
+
 // Create a human-readable label from a metric path
 HMB.createMetricLabel = function(path) {
   return path
@@ -451,6 +504,78 @@ HMB.createMetricLabel = function(path) {
     .trim()
     .replace(/\s+/g, ' ')
     .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+};
+
+// Create a simplified display label for the dropdown
+// Creates concise but informative labels like "Test 01-CMP elapsed" instead of "Test Results Data Elapsed"
+HMB.createDisplayLabel = function(path, context) {
+  // Handle different metric types with specific formatting
+
+  // 1. Test Results - Format as "Test <test_id> <metric_name>"
+  if (path.includes('test_results.data') && context && context.test_id) {
+    // Extract the metric name (last part of path)
+    const parts = path.split('.');
+    const metricName = parts[parts.length - 1];
+
+    // Create concise format: "Test <test_id> <metric_name>"
+    return `Test ${context.test_id} ${metricName}`;
+  }
+
+  // 2. CLOC (Code Lines) - Format as "CLOC <language> <metric_name>"
+  else if (path.includes('cloc.main') && context && context.language) {
+    // Extract the metric name (last part of path)
+    const parts = path.split('.');
+    const metricName = parts[parts.length - 1];
+
+    // Create concise format: "CLOC <language> <metric_name>"
+    return `CLOC ${context.language} ${metricName}`;
+  }
+
+  // 3. Coverage - Format as "Coverage <file> <metric_name>"
+  else if (path.includes('coverage.data') && context && context.file_path) {
+    // Extract the metric name (last part of path)
+    const parts = path.split('.');
+    const metricName = parts[parts.length - 1];
+
+    // Clean up file path for display
+    const cleanFilePath = context.file_path
+      .replace(/\{.*?\}/g, '') // Remove {COLOR} codes
+      .replace(/\.c$/, '')     // Remove .c suffix
+      .replace(/[^a-zA-Z0-9_\.\/]/g, '_'); // Replace special chars
+
+    // Create concise format: "Coverage <file> <metric_name>"
+    return `Coverage ${cleanFilePath} ${metricName}`;
+  }
+
+  // 4. Stats - Format as "Stats <metric> <stat_name>"
+  else if (path.includes('stats') && context && context.metric) {
+    // Extract the metric name (last part of path)
+    const parts = path.split('.');
+    const metricName = parts[parts.length - 1];
+
+    // Create concise format: "Stats <metric> <metric_name>"
+    return `Stats ${context.metric} ${metricName}`;
+  }
+
+  // 5. General case - Create clean label with underscores as spaces
+  else {
+    // Start with basic cleaning
+    let displayLabel = path
+      .replace(/\./g, ' ')
+      .replace(/\[/g, ' ')
+      .replace(/\]/g, '')
+      .replace(/([A-Z])/g, ' $1')
+      .trim()
+      .replace(/\s+/g, ' ');
+
+    // Replace underscores with spaces for better readability
+    displayLabel = displayLabel.replace(/_/g, ' ');
+
+    // Capitalize properly
+    displayLabel = displayLabel.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+
+    return displayLabel.trim();
+  }
 };
 
 // Create a clean metric path that uses descriptive identifiers instead of array indices
@@ -547,16 +672,105 @@ HMB.getNestedValue = function(obj, path) {
     // Try to find the metric in our available metrics to get the original path
     const metric = this.state.availableMetrics.find(m => m.path === path);
     if (metric && metric.originalPath) {
-      return this.getNestedValueByPath(obj, metric.originalPath);
+      const result = this.getNestedValueByPath(obj, metric.originalPath);
+      return result;
+    } else {
     }
   }
 
   // Fallback to direct path lookup
-  return this.getNestedValueByPath(obj, path);
+  const result = this.getNestedValueByPath(obj, path);
+  return result;
 };
 
 // Helper function to get value by exact path
+// Enhanced to handle both clean paths (test_results.data.01-CMP.elapsed)
+// and original array paths (test_results.data[0].elapsed)
 HMB.getNestedValueByPath = function(obj, path) {
+  // First, try to handle clean paths by converting them to array access
+  if (path.includes('test_results.data.') && !path.includes('[')) {
+    // Convert clean path like "test_results.data.01-CMP.elapsed" to array access
+    const match = path.match(/test_results\.data\.([^.]+)\.(.+)/);
+    if (match) {
+      const testId = match[1];
+      const remainingPath = match[2];
+
+      // Find the array index for this test_id
+      const dataArray = obj?.test_results?.data;
+      if (Array.isArray(dataArray)) {
+        for (let i = 0; i < dataArray.length; i++) {
+          if (dataArray[i]?.test_id === testId) {
+            // Found the matching test, now get the remaining path
+            const result = this.getNestedValueByPath(dataArray[i], remainingPath);
+            return result;
+          }
+        }
+      } else {
+      }
+      return undefined;
+    }
+  }
+  else if (path.includes('cloc.main.') && !path.includes('[')) {
+    // Convert clean path like "cloc.main.C.1000" to array access
+    const match = path.match(/cloc\.main\.([^.]+)\.(.+)/);
+    if (match) {
+      const language = match[1];
+      const remainingPath = match[2];
+
+      // Find the array index for this language
+      const mainArray = obj?.cloc?.main;
+      if (Array.isArray(mainArray)) {
+        for (let i = 0; i < mainArray.length; i++) {
+          if (mainArray[i]?.language === language) {
+            // Found the matching language, now get the remaining path
+            return this.getNestedValueByPath(mainArray[i], remainingPath);
+          }
+        }
+      }
+      return undefined;
+    }
+  }
+  else if (path.includes('coverage.data.') && !path.includes('[')) {
+      // Convert clean path like "coverage.data.src/api/api_service.c.coverage_percentage" to array access
+      // Need to handle file paths that contain dots by matching from the end
+      const lastDotIndex = path.lastIndexOf('.');
+      const filePath = path.substring('coverage.data.'.length, lastDotIndex);
+      const remainingPath = path.substring(lastDotIndex + 1);
+
+      // Find the array index for this file_path
+      const dataArray = obj?.coverage?.data;
+      if (Array.isArray(dataArray)) {
+          for (let i = 0; i < dataArray.length; i++) {
+              if (dataArray[i]?.file_path === filePath) {
+                  // Found the matching file, now get the remaining path
+                  return this.getNestedValueByPath(dataArray[i], remainingPath);
+              }
+          }
+      }
+      return undefined;
+  }
+  else if (path.includes('stats.') && !path.includes('[')) {
+    // Convert clean path like "stats.performance.avg_time" to array access
+    const match = path.match(/stats\.([^.]+)\.(.+)/);
+    if (match) {
+      const metric = match[1];
+      const remainingPath = match[2];
+
+      // Find the array index for this metric
+      const statsArray = obj?.stats;
+      if (Array.isArray(statsArray)) {
+        for (let i = 0; i < statsArray.length; i++) {
+          if (statsArray[i]?.metric === metric) {
+            // Found the matching metric, now get the remaining path
+            return this.getNestedValueByPath(statsArray[i], remainingPath);
+          }
+        }
+      }
+      return undefined;
+    }
+  }
+
+  // Handle original array notation paths like test_results.data[0].elapsed
   return path.split('.').reduce((o, p) => {
     // Handle array access like item[0]
     if (p.includes('[')) {
@@ -594,26 +808,28 @@ HMB.filterDataByDateRange = function() {
     if (file.date >= this.state.currentDateRange.start && file.date <= this.state.currentDateRange.end) {
       // Check if we have cached data for this date (might be more recent)
       const cachedData = this.getCachedData(file.date);
+      const dataToUse = cachedData || file.data;
       dateMap.set(file.date, {
         date: file.date,
-        data: cachedData || file.data,
+        data: dataToUse,
         filePath: file.filePath
       });
     }
   });
 
   // Create filtered data array
-  this.state.filteredData = allDates.map(dateStr => ({
-    date: dateStr,
-    data: dateMap.get(dateStr)?.data || null,
-    hasData: dateMap.get(dateStr) !== null
-  }));
+  this.state.filteredData = allDates.map(dateStr => {
+    const entry = dateMap.get(dateStr);
+    const data = entry?.data || null;
+    const hasData = entry !== null;
+    return {
+      date: dateStr,
+      data: data,
+      hasData: hasData
+    };
+  });
 };
 
-// Get nested value from object using dot notation
-HMB.getNestedValue = function(obj, path) {
-  return path.split('.').reduce((o, p) => (o || {})[p], obj);
-};
 
 // Handle date range changes and load additional data if needed
 HMB.handleDateRangeChange = function() {
@@ -626,8 +842,8 @@ HMB.handleDateRangeChange = function() {
   const datesNeedLoading = datesToLoad.filter(date => !this.isDataCached(date));
 
   if (datesNeedLoading.length > 0) {
-    // Show loading overlay for additional data loading
-    this.showLoading();
+    // Show progress bar for additional data loading
+    this.showProgressBar();
     this.initProgressTracking(datesNeedLoading.length);
 
     // Start loading additional files
@@ -645,12 +861,7 @@ HMB.loadAdditionalFiles = function(dates, currentIndex) {
     // All additional files loaded, update and finish
     this.filterDataByDateRange();
     this.renderChart();
-    this.hideLoading();
-
-    // Auto-update chart after additional data loading completes
-    if (this.state.selectedMetrics.length > 0) {
-      this.updateChart();
-    }
+    this.hideProgressBar();
 
     // Auto-update chart after additional data loading completes
     if (this.state.selectedMetrics.length > 0) {
@@ -677,8 +888,6 @@ HMB.loadAdditionalFiles = function(dates, currentIndex) {
     })
     .then(data => {
       if (data) {
-        console.log(`Loaded additional data for ${dateStr}`);
-
         // Cache the loaded data
         this.cacheLoadedData(dateStr, data);
 
@@ -699,8 +908,6 @@ HMB.loadAdditionalFiles = function(dates, currentIndex) {
       }, 100);
     })
     .catch(error => {
-      console.log(`Error loading additional file for ${dateStr}:`, error.message);
-
       // Continue with next file
       setTimeout(() => {
         this.loadAdditionalFiles(dates, currentIndex + 1);
@@ -737,10 +944,8 @@ HMB.loadAdditionalData = async function(dates) {
         }]);
 
         filesLoaded++;
-        console.log(`Loaded additional data for ${dateStr}`);
       }
     } catch (error) {
-      console.log(`Error loading additional file for ${dateStr}:`, error.message);
     }
 
     // Update progress

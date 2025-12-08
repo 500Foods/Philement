@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Hydrogen Metrics Browser - Interactive D3 visualization for Hydrogen project metrics">
-  <title>Hydrogen Metrics Browser</title>
+  <meta name="description" content="Hydrogen Build Metrics Browser - Interactive D3 visualization for Hydrogen project metrics">
+  <title>Hydrogen Build Metrics Browser</title>
 
   <!-- CSS Dependencies -->
-  <link rel="stylesheet" href="hm_browser_base.css">
-  <link rel="stylesheet" href="hm_browser_control_panel.css">
-  <link rel="stylesheet" href="hm_browser_color_picker.css">
-  <link rel="stylesheet" href="hm_browser_states.css">
+  <link rel="stylesheet" href="hbm_browser_base.css">
+  <link rel="stylesheet" href="hbm_browser_control_panel.css">
+  <link rel="stylesheet" href="hbm_browser_color_picker.css">
+  <link rel="stylesheet" href="hbm_browser_states.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -19,13 +19,13 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
 
   <!-- Application Modules -->
-  <script src="hm_browser_core.js"></script>
-  <script src="hm_browser_data.js"></script>
-  <script src="hm_browser_chart.js"></script>
-  <script src="hm_browser_ui.js"></script>
+  <script src="hbm_browser_core.js"></script>
+  <script src="hbm_browser_data.js"></script>
+  <script src="hbm_browser_chart.js"></script>
+  <script src="hbm_browser_ui.js"></script>
 
   <!-- Main Application Script -->
-  <script src="hm_browser.js" defer></script>
+  <script src="hbm_browser.js" defer></script>
 </head>
 <body>
   <!-- Loading Overlay -->
@@ -57,11 +57,14 @@
 
     <!-- Date Range Controls -->
     <div class="date-range">
-      <label for="start-date">Start Date</label>
-      <input type="text" id="start-date" placeholder="Select start date">
-
-      <label for="end-date" style="margin-top: 10px;">End Date</label>
-      <input type="text" id="end-date" placeholder="Select end date">
+      <div class="date-input-group">
+        <label for="start-date">Start Date</label>
+        <input type="text" id="start-date" placeholder="Select start date">
+      </div>
+      <div class="date-input-group">
+        <label for="end-date">End Date</label>
+        <input type="text" id="end-date" placeholder="Select end date">
+      </div>
     </div>
 
     <!-- Metrics Selection Section -->
@@ -108,6 +111,16 @@
             <input type="text" id="metric-color" placeholder="#RRGGBB" maxlength="7">
           </div>
         </div>
+
+        <div class="config-option">
+          <select id="metric-line-style" class="form-control">
+            <option value="thin">Thin</option>
+            <option value="regular" selected>Regular</option>
+            <option value="thick">Thick</option>
+            <option value="dashed">Dashed</option>
+            <option value="dotted">Dotted</option>
+          </select>
+        </div>
       </div>
 
       <!-- Add Metric Button -->
@@ -131,7 +144,7 @@
       <button class="btn primary" id="update-chart">
         <i class="fas fa-sync"></i> Update Chart
       </button>
-      <button class="btn success" id="export-svg">
+      <button class="btn success" id="export-svg" onclick="console.log('Direct onclick triggered'); HMB.exportChartAsSVG();">
         <i class="fas fa-download"></i> Export SVG
       </button>
     </div>
@@ -237,8 +250,8 @@
   <script>
     // Initialize the application when DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('Hydrogen Metrics Browser initialized');
-      // The main application will be loaded via hm_browser.js
+      console.log('Hydrogen Build Metrics Browser initialized');
+      // The main application will be loaded via hbm_browser.js
     });
   </script>
 </body>

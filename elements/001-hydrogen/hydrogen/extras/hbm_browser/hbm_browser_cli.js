@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Hydrogen Metrics Browser - CLI Version
+ * Hydrogen Build Metrics Browser - CLI Version
  * Headless Node.js implementation for generating SVG reports
  *
- * Usage: node hm_browser_cli.js [config_file] [output_file]
+ * Usage: node hbm_browser_cli.js [config_file] [output_file]
  */
 
 const fs = require('fs');
@@ -15,12 +15,12 @@ const iro = require('@jaames/iro');
 const flatpickr = require('flatpickr');
 
 // Import the main browser class and modules
-const HydrogenMetricsBrowser = require('./hm_browser.js');
-const HydrogenMetricsBrowserCore = require('./hm_browser_core.js');
-const HydrogenMetricsBrowserData = require('./hm_browser_data.js');
-const HydrogenMetricsBrowserChart = require('./hm_browser_chart.js');
-const HydrogenMetricsBrowserUI = require('./hm_browser_ui.js');
-const HydrogenMetricsBrowserUtils = require('./hm_browser_utils.js');
+const HydrogenMetricsBrowser = require('./hbm_browser.js');
+const HydrogenMetricsBrowserCore = require('./hbm_browser_core.js');
+const HydrogenMetricsBrowserData = require('./hbm_browser_data.js');
+const HydrogenMetricsBrowserChart = require('./hbm_browser_chart.js');
+const HydrogenMetricsBrowserUI = require('./hbm_browser_ui.js');
+const HydrogenMetricsBrowserUtils = require('./hbm_browser_utils.js');
 
 /**
  * CLI Main Function
@@ -28,10 +28,10 @@ const HydrogenMetricsBrowserUtils = require('./hm_browser_utils.js');
 async function main() {
   // Parse command line arguments
   const args = process.argv.slice(2);
-  const configFile = args[0] || 'hm_browser_auto.json';
+  const configFile = args[0] || 'hbm_browser_auto.json';
   const outputFile = args[1] || 'hydrogen_metrics_report.svg';
 
-  console.log('Hydrogen Metrics Browser - CLI Mode');
+  console.log('Hydrogen Build Metrics Browser - CLI Mode');
   console.log('=================================');
   console.log(`Config: ${configFile}`);
   console.log(`Output: ${outputFile}`);
@@ -101,7 +101,7 @@ function readConfigFile(filePath) {
  * @returns {JSDOM} JSDOM instance
  */
 async function setupHeadlessEnvironment() {
-  const htmlContent = fs.readFileSync(path.join(__dirname, 'hm_browser.html'), 'utf8');
+  const htmlContent = fs.readFileSync(path.join(__dirname, 'hbm_browser.html'), 'utf8');
 
   return new JSDOM(htmlContent, {
     runScripts: 'dangerously',

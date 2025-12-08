@@ -1,5 +1,5 @@
 /**
- * Hydrogen Metrics Browser - Main Entry Point
+ * Hydrogen Build Metrics Browser - Main Entry Point
  * Simple function-based approach
  *
  * @version 1.0.0
@@ -13,7 +13,7 @@ var HMB = HMB || {};
 HMB.loadConfiguration = function() {
   try {
     // Try relative path first for local development
-    fetch('./hm_browser_defaults.json')
+    fetch('./hbm_browser_defaults.json')
       .then(response => {
         if (!response.ok) {
           throw new Error('Config file not found at relative path');
@@ -40,7 +40,7 @@ HMB.loadConfiguration = function() {
 // Initialize the application when DOM is loaded
 if (typeof window !== 'undefined') {
   document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing Hydrogen Metrics Browser...');
+    console.log('Initializing Hydrogen Build Metrics Browser...');
     HMB.loadConfiguration();
     HMB.initialize();
   });

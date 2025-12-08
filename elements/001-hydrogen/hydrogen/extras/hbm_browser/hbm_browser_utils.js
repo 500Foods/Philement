@@ -1,12 +1,12 @@
 /**
- * Hydrogen Metrics Browser - Utilities Module
+ * Hydrogen Build Metrics Browser - Utilities Module
  * Utility functions and helpers
  *
  * @version 1.0.0
  * @license MIT
  */
 
-// Utility functions for the Hydrogen Metrics Browser
+// Utility functions for the Hydrogen Build Metrics Browser
 class HydrogenMetricsBrowserUtils {
   /**
    * Toggle control panel visibility

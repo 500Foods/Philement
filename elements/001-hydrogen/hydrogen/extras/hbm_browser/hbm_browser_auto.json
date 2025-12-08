@@ -1,5 +1,5 @@
 {
-  "title": "Hydrogen Metrics Auto Report",
+  "title": "Hydrogen Build Metrics Auto Report",
   "description": "Automated metrics visualization for Hydrogen project",
   "version": "1.0.0",
   "mode": "auto",
