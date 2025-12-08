@@ -346,37 +346,94 @@ HMB.extractAvailableMetrics = function() {
   // Filter data and render chart immediately
   this.filterDataByDateRange();
   this.renderChart();
+
+  // Auto-update chart after data loading completes
+  if (this.state.selectedMetrics.length > 0) {
+    this.updateChart();
+  }
 };
 
-// Recursively extract numeric values from nested JSON
-HMB.extractNumericValues = function(data, path = '') {
+// Recursively extract numeric values from nested JSON with enhanced labeling
+HMB.extractNumericValues = function(data, path = '', context = {}) {
   const results = [];
 
   for (const [key, value] of Object.entries(data)) {
     const newPath = path ? `${path}.${key}` : key;
+    const newContext = {...context};
 
-    if (typeof value === 'number') {
+    // Handle special cases for better labeling
+    if (Array.isArray(data)) {
+      // For arrays, use the index but also capture identifying fields
+      const index = parseInt(key);
+      if (data[index] && typeof data[index] === 'object') {
+        // Capture identifying fields from array items
+        if (data[index].test_id) newContext.test_id = data[index].test_id;
+        if (data[index].language) newContext.language = data[index].language;
+        if (data[index].file_path) newContext.file_path = data[index].file_path;
+        if (data[index].metric) newContext.metric = data[index].metric;
+      }
+    }
+
+    // Handle percentage strings (like "80.720%")
+    if (typeof value === 'string' && value.match(/^\d+(\.\d+)?%$/)) {
+      const numericValue = parseFloat(value.replace('%', ''));
+      const cleanPath = this.createCleanMetricPath(newPath, newContext);
       results.push({
-        path: newPath,
-        value: value,
-        label: this.createMetricLabel(newPath)
+        path: cleanPath,
+        value: numericValue,
+        label: this.createEnhancedMetricLabel(newPath, newContext),
+        originalPath: newPath, // Store original path for data lookup
+        context: newContext // Store context for reference
       });
-    } else if (typeof value === 'object' && value !== null) {
-      // Handle arrays and objects
+    }
+    else if (typeof value === 'number') {
+      const cleanPath = this.createCleanMetricPath(newPath, newContext);
+      results.push({
+        path: cleanPath,
+        value: value,
+        label: this.createEnhancedMetricLabel(newPath, newContext),
+        originalPath: newPath, // Store original path for data lookup
+        context: newContext // Store context for reference
+      });
+    }
+    else if (typeof value === 'object' && value !== null) {
+      // Handle arrays and objects with enhanced context
       if (Array.isArray(value)) {
         value.forEach((item, index) => {
           if (typeof item === 'object' && item !== null) {
-            results.push(...this.extractNumericValues(item, `${newPath}[${index}]`));
+            // Create array-specific context
+            const arrayContext = {...newContext};
+            if (item.test_id) arrayContext.test_id = item.test_id;
+            if (item.language) arrayContext.language = item.language;
+            if (item.file_path) arrayContext.file_path = item.file_path;
+            if (item.metric) arrayContext.metric = item.metric;
+
+            results.push(...this.extractNumericValues(item, newPath, arrayContext));
           } else if (typeof item === 'number') {
+            const arrayContext = {...newContext};
+            const cleanPath = this.createCleanMetricPath(`${newPath}[${index}]`, arrayContext);
             results.push({
-              path: `${newPath}[${index}]`,
+              path: cleanPath,
               value: item,
-              label: this.createMetricLabel(`${newPath}[${index}]`)
+              label: this.createEnhancedMetricLabel(`${newPath}[${index}]`, arrayContext),
+              originalPath: `${newPath}[${index}]`,
+              context: arrayContext
+            });
+          } else if (typeof item === 'string' && item.match(/^\d+(\.\d+)?%$/)) {
+            const numericValue = parseFloat(item.replace('%', ''));
+            const arrayContext = {...newContext};
+            const cleanPath = this.createCleanMetricPath(`${newPath}[${index}]`, arrayContext);
+            results.push({
+              path: cleanPath,
+              value: numericValue,
+              label: this.createEnhancedMetricLabel(`${newPath}[${index}]`, arrayContext),
+              originalPath: `${newPath}[${index}]`,
+              context: arrayContext
             });
           }
         });
       } else {
-        results.push(...this.extractNumericValues(value, newPath));
+        results.push(...this.extractNumericValues(value, newPath, newContext));
       }
     }
   }
@@ -394,6 +451,124 @@ HMB.createMetricLabel = function(path) {
     .trim()
     .replace(/\s+/g, ' ')
     .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+};
+
+// Create a clean metric path that uses descriptive identifiers instead of array indices
+HMB.createCleanMetricPath = function(path, context) {
+  // Handle test_results.data array items
+  if (path.includes('test_results.data') && context.test_id) {
+    return path.replace(/test_results\.data\[\d+\]/, `test_results.data.${context.test_id}`);
+  }
+  // Handle cloc.main array items
+  else if (path.includes('cloc.main') && context.language) {
+    return path.replace(/cloc\.main\[\d+\]/, `cloc.main.${context.language.replace(/\s+/g, '_').replace(/\//g, '_')}`);
+  }
+  // Handle stats array items
+  else if (path.includes('stats') && context.metric) {
+    return path.replace(/stats\[\d+\]/, `stats.${context.metric}`);
+  }
+  // Handle coverage.data array items
+  else if (path.includes('coverage.data') && context.file_path) {
+    // Clean up file_path by removing color codes and .c suffix
+    const cleanFilePath = context.file_path
+      .replace(/\{.*?\}/g, '') // Remove {COLOR} codes
+      .replace(/\.c$/, '')     // Remove .c suffix
+      .replace(/[^a-zA-Z0-9_\.\/]/g, '_'); // Replace special chars with underscore
+    return path.replace(/coverage\.data\[\d+\]/, `coverage.data.${cleanFilePath}`);
+  }
+  // For other arrays, try to find a meaningful identifier
+  else if (path.includes('[') && path.includes(']')) {
+    // If we have any context, use it
+    if (context.test_id) {
+      return path.replace(/\[\d+\]/, `.${context.test_id}`);
+    } else if (context.language) {
+      return path.replace(/\[\d+\]/, `.${context.language.replace(/\s+/g, '_')}`);
+    } else if (context.metric) {
+      return path.replace(/\[\d+\]/, `.${context.metric}`);
+    }
+  }
+
+  // Default: return original path if no special handling
+  return path;
+};
+
+// Create an enhanced metric label with descriptive information
+HMB.createEnhancedMetricLabel = function(path, context) {
+  // Handle test_results.data items
+  if (path.includes('test_results.data') && context.test_id) {
+    const baseLabel = path
+      .replace('test_results.data', `Test ${context.test_id}`)
+      .replace(/\[/g, ' ')
+      .replace(/\]/g, '')
+      .replace(/\./g, ' ');
+    return `${baseLabel} (${context.test_id})`;
+  }
+  // Handle cloc.main items
+  else if (path.includes('cloc.main') && context.language) {
+    const baseLabel = path
+      .replace('cloc.main', `CLOC ${context.language}`)
+      .replace(/\[/g, ' ')
+      .replace(/\]/g, '')
+      .replace(/\./g, ' ');
+    return `${baseLabel} (${context.language})`;
+  }
+  // Handle stats items
+  else if (path.includes('stats') && context.metric) {
+    const baseLabel = path
+      .replace('stats', `Stats ${context.metric}`)
+      .replace(/\[/g, ' ')
+      .replace(/\]/g, '')
+      .replace(/\./g, ' ');
+    return `${baseLabel} (${context.metric})`;
+  }
+  // Handle coverage.data items
+  else if (path.includes('coverage.data') && context.file_path) {
+    const cleanFilePath = context.file_path
+      .replace(/\{.*?\}/g, '') // Remove {COLOR} codes
+      .replace(/\.c$/, '');    // Remove .c suffix
+    const baseLabel = path
+      .replace('coverage.data', `Coverage ${cleanFilePath}`)
+      .replace(/\[/g, ' ')
+      .replace(/\]/g, '')
+      .replace(/\./g, ' ');
+    return `${baseLabel} (${cleanFilePath})`;
+  }
+
+  // Default labeling for other cases
+  return this.createMetricLabel(path);
+};
+
+// Get nested value from object using dot notation (enhanced to handle our clean paths)
+HMB.getNestedValue = function(obj, path) {
+  // First try the original path if we have it stored
+  if (this.state.metricsData && this.state.metricsData.length > 0) {
+    const latestData = this.state.metricsData[this.state.metricsData.length - 1].data;
+
+    // Try to find the metric in our available metrics to get the original path
+    const metric = this.state.availableMetrics.find(m => m.path === path);
+    if (metric && metric.originalPath) {
+      return this.getNestedValueByPath(obj, metric.originalPath);
+    }
+  }
+
+  // Fallback to direct path lookup
+  return this.getNestedValueByPath(obj, path);
+};
+
+// Helper function to get value by exact path
+HMB.getNestedValueByPath = function(obj, path) {
+  return path.split('.').reduce((o, p) => {
+    // Handle array access like item[0]
+    if (p.includes('[')) {
+      const arrayPart = p.match(/^([^\[]+)\[(\d+)\]/);
+      if (arrayPart) {
+        const arrayName = arrayPart[1];
+        const index = parseInt(arrayPart[2]);
+        return (o || {})[arrayName] ? (o || {})[arrayName][index] : undefined;
+      }
+    }
+    return (o || {})[p];
+  }, obj);
 };
 
 // Filter data by current date range
@@ -471,6 +646,16 @@ HMB.loadAdditionalFiles = function(dates, currentIndex) {
     this.filterDataByDateRange();
     this.renderChart();
     this.hideLoading();
+
+    // Auto-update chart after additional data loading completes
+    if (this.state.selectedMetrics.length > 0) {
+      this.updateChart();
+    }
+
+    // Auto-update chart after additional data loading completes
+    if (this.state.selectedMetrics.length > 0) {
+      this.updateChart();
+    }
     return;
   }
 
