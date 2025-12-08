@@ -243,7 +243,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ## Folder: /tests
 
 - [TESTING.md](/docs/H/tests/TESTING.md) - How to use and update the Test Suite
-- [TESTING_UNITY.md](/docs/H/TESTING_UNITY.md) - How to create new Unity Unit Test Framework tests
+- [TESTING_UNITY.md](/docs/H/tests/TESTING_UNITY.md) - How to create new Unity Unit Test Framework tests
 - [Unity](/elements/001-hydrogen/hydrogen/tests/unity/README.md) - Brief description of Unity
 
 ### Folder: /docs/H/tests
@@ -304,4 +304,4 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_96_htmlhint.md](/docs/H/tests/test_96_htmlhint.md): HTML validation tests
 - [test_97_xmlstarlet.md](/docs/H/tests/test_97_xmlstarlet.md): XML/SVG validation tests
 - [test_98_luacheck.md](/docs/H/tests/test_98_luacheck.md): Lua validation tests
-- [test_99_code_size.md](/docs/H/tests/test_80_code_size.md): Code size analysis and metrics
+- [test_99_code_size.md](/docs/H/tests/test_99_code_size.md): Code size analysis and metrics
