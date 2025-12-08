@@ -294,6 +294,14 @@ HMB.initDatePickers = function() {
     end: today.toISOString().split('T')[0]
   };
 
+  // Also set the input values directly in case flatpickr doesn't initialize properly
+  if (this.state.elements.startDate) {
+    this.state.elements.startDate.value = this.state.currentDateRange.start;
+  }
+  if (this.state.elements.endDate) {
+    this.state.elements.endDate.value = this.state.currentDateRange.end;
+  }
+
   // Check if elements exist before initializing
   if (this.state.elements.startDate && this.state.elements.endDate) {
     // Initialize date pickers
@@ -321,6 +329,10 @@ HMB.initDatePickers = function() {
           }
         }
       });
+    } else {
+      // Fallback if flatpickr is not available
+      this.state.elements.startDate.value = this.state.currentDateRange.start;
+      this.state.elements.endDate.value = this.state.currentDateRange.end;
     }
   }
 };
@@ -446,117 +458,6 @@ HMB.renderChart = function() {
 
   // Add legend to SVG
   this.drawLegend(svg, width, height);
-};
-
-// Draw legend in SVG
-HMB.drawLegend = function(svg, width, height) {
-  // Create legend group
-  const legendGroup = svg.append('g')
-    .attr('class', 'chart-legend')
-    .attr('transform', `translate(20, ${height + 40})`);
-
-  // Add legend title
-  legendGroup.append('text')
-    .attr('class', 'legend-title')
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('fill', 'var(--text-color)')
-    .attr('font-size', '0.9rem')
-    .attr('font-weight', '600')
-    .text('Metrics Legend');
-
-  // Add legend items
-  const legendItems = legendGroup.selectAll('.legend-item')
-    .data(this.state.selectedMetrics)
-    .enter()
-    .append('g')
-    .attr('class', 'legend-item')
-    .attr('transform', (d, i) => `translate(0, ${20 + i * 20})`);
-
-  // Add color swatches
-  legendItems.append('rect')
-    .attr('class', 'legend-color')
-    .attr('width', 15)
-    .attr('height', 3)
-    .attr('x', 0)
-    .attr('y', -2)
-    .attr('fill', d => d.color)
-    .attr('rx', 1);
-
-  // Add legend labels
-  legendItems.append('text')
-    .attr('class', 'legend-label')
-    .attr('x', 20)
-    .attr('y', 0)
-    .attr('fill', 'var(--text-color)')
-    .attr('font-size', '0.85rem')
-    .text(d => d.label);
-};
-
-// Get domain for an axis based on metrics
-HMB.getAxisDomain = function(metrics) {
-  if (metrics.length === 0) return [0, 1];
-
-  let min = Infinity;
-  let max = -Infinity;
-
-  metrics.forEach(metric => {
-    this.state.filteredData.forEach(file => {
-      if (file.data) {
-        const value = this.getNestedValue(file.data, metric.path);
-        if (typeof value === 'number') {
-          min = Math.min(min, value);
-          max = Math.max(max, value);
-        }
-      }
-    });
-  });
-
-  // Add 10% padding if we have a valid range
-  if (min !== Infinity && max !== -Infinity) {
-    const padding = (max - min) * 0.1;
-    return [min - padding, max + padding];
-  } else {
-    return [0, 1];
-  }
-};
-
-// Draw metrics on the chart
-HMB.drawMetrics = function(svg, xScale, leftYScale, rightYScale, width, height) {
-  const lineGenerator = d3.line()
-    .defined(d => d.value !== null && d.value !== undefined)
-    .x(d => xScale(new Date(d.date)))
-    .y(d => {
-      const metric = this.state.selectedMetrics.find(m => m.path === d.metricPath);
-      return metric.axis === 'left' ? leftYScale(d.value) : rightYScale(d.value);
-    })
-    .curve(d3.curveMonotoneX);
-
-  this.state.selectedMetrics.forEach(metric => {
-    // Prepare data for this metric
-    const metricData = this.state.filteredData.map(file => {
-      const value = file.data ? this.getNestedValue(file.data, metric.path) : null;
-      return {
-        date: file.date,
-        value: typeof value === 'number' ? value : null,
-        metricPath: metric.path
-      };
-    });
-
-    // Determine which scale to use
-    const yScale = metric.axis === 'left' ? leftYScale : rightYScale;
-
-    // Draw line
-    if (metric.type === 'line') {
-      svg.append('path')
-        .datum(metricData)
-        .attr('class', 'metric-line')
-        .attr('d', lineGenerator)
-        .attr('stroke', metric.color)
-        .attr('stroke-width', 2)
-        .attr('fill', 'none');
-    }
-  });
 };
 
 // Update selected metrics UI

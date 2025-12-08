@@ -6,25 +6,28 @@ Hydrogen is a C project that implements a comprehensive suite of capabilities.
 - Web, WebSocket, SMTP, mDNS, and other services are included
 - Blackbox (Integration) and Unity unit tests with gcov for coverage reporting
 
-The base for the project is in elements/001-hydrogen/hydrogen/
-The source code is in elements/001-hydrogen/hydrogen/src/
-The cmake files are in elements/001-hydrogen/hydrogen/cmake/
-The tests are in elements/001-hydrogen/hydrogen/tests/
-The documentation for the project is in docs/H/
+All directories are relative to the repository root
+The base for the project is in /elements/001-hydrogen/hydrogen/
+The source code is in /elements/001-hydrogen/hydrogen/src/
+The cmake files are in /elements/001-hydrogen/hydrogen/cmake/
+The tests are in /elements/001-hydrogen/hydrogen/tests/
+The documentation for the project is in /docs/H/
 
 ## ⚠️ CRITICAL INSTRUCTIONS
 
-- After ANY C coding change, run `mkt` to perform a test build - can be run from any directory
+- Review /docs/H/tests/TESTING.md before continuing
+- After ANY C coding change, run alias `mkt` to perform a test build - can be run from any directory
 - The trial build outputs minimal text - typically only error messages - greatly reducing AI token usage
-- Once test build succeeds, run `mka` to perform build against all targets - can be run from any directory
-- Working with unit tests, after `mkt` use `mku <base test name without .c>` to build and run the test fro any directory
-- When making only script changes, there is no need to run `mkt` - that is for changes to C code only
+- Once test build succeeds, run alias `mka` to perform build against all targets - can be run from any directory
+- Working with unit tests, after alias `mkt` use alias `mku <base test name without .c>` to build and run the test fro any directory
+- When making only script changes, there is no need to run alias `mkt` - that is for changes to C code only
 
 ## ⚠️ ADDITINAL GUIDANCE
 
 - When searching code, use tools like grep to find patterns efficiently
 - Follow the C and Bash coding requirements strictly to avoid linting errors detected by cppcheck and shellcheck
 - Use the repository structure diagram to quickly understand the codebase organization
+- Only create new test scripts when specifically asked to create test scripts
 
 ## PROJECT STRUCTURE - from elements/001-hydrogen/hydrogen
 
@@ -88,10 +91,10 @@ tests/          Test framework
 - tests/test_33_mysql_migrations.sh - MySQL migration performance test
 - tests/test_34_sqlite_migrations.sh - SQLite migration performance test
 - tests/test_35_db2_migrations.sh - DB2 migration performance test
-- tests/test_70_installer.sh - Standalone installer building test
-- tests/test_98_luacheck.sh - Lua code analysis with luacheck
-- tests/test_71_database_diagrams.sh - Database diagram generation
 - tests/test_41_conduit.sh - Conduit Query endpoint test
+- tests/test_70_installer.sh - Standalone installer building test
+- tests/test_71_database_diagrams.sh - Database diagram generation
+- tests/test_89_coverage.sh - Shows Unity and Blackbox test coverage
 - tests/test_90_markdownlint.sh - Lint for Markdown
 - tests/test_91_cppcheck.sh - Lint for C
 - tests/test_92_shellcheck.sh - Lint for Bash
@@ -100,8 +103,8 @@ tests/          Test framework
 - tests/test_95_stylelint.sh - Lint for CSS
 - tests/test_96_htmlhint.sh - Lint for HTML
 - tests/test_97_xmlstarlet.sh - Lint for XML/SVG (xmlstarlet)
-- tests/test_80_code_size.sh - Checks limits on source code, runs cloc
-- tests/test_89_coverage.sh - Shows Unity and Blackbox test coverage
+- tests/test_98_luacheck.sh - Lua code analysis with luacheck
+- tests/test_99_code_size.sh - Checks limits on source code, runs cloc
 
 ## CRITICAL DOCUMENTATION
 
@@ -114,7 +117,8 @@ tests/          Test framework
 
 ## C CODING REQUIREMENTS
 
-- cppcheck configured with all directives enabled
+- cppcheck configured with all directives enabled, including styles
+- All cppcheck issues need to be corrected - prefer fixes over exceptions
 - src/hydrogen.h is included first in all .c source files
 - Function Prototypes absolutely must be declared for every function
 - Grouped/commented include files at the top of every .c/.h file
@@ -127,9 +131,12 @@ tests/          Test framework
 - When using #include use <src/folder/...> instead of "../../.."
 - cmake files are in cmake/ folder, starting with cmake/CMakeLists.txt
 
+IMPORTANT: The alias `mkp` can be used to run cppcheck against all project sources.
+
 ## BASH CODING REQUIREMENTS
 
 - shellcheck configured with all directives enabled
+- All shellcheck issues need to be corrected - prefer fixes over exceptions
 - Update CHANGELOG and TEST_VERSION at top of every script after every change
 - ALWAYS use `jq` for JSON parsing, filtering, and validation
 - NEVER use `grep` or text manipulation tools for JSON data
@@ -142,11 +149,8 @@ tests/          Test framework
 - SC2248: Add double quotes even when variables don't contain special characters
 - Run tests/test_92_cppcheck.sh whenever Bash code is changed
 
-IMPORTANT: Test 92 can be used to check all of the scripts at one time, useful for
-finding errors. When using Test 92 to identify code that needs fixes, please make an
-attempt to fix the code properly rather than just adding directives. Directives can
-be added, with justifications, but only after all other options have been exhausted.
-  
+IMPORTANT: The alias `mks` can be used to run shellcheck against all project scripts.
+
 ## MARKDOWN CODING REQUIREMENTS
 
 - Use consistent headings (# H1, ## H2), valid links
@@ -158,14 +162,6 @@ be added, with justifications, but only after all other options have been exhaus
 - MD032/blanks-around-lists: Lists should be surrounded by blank lines
 - Unique headings
 - Label code snippets
-
-## LOGGING
-
-```c
-// Levels: 0=TRACE 1=DEBUG 2=STATE 3=ALERT 4=ERROR 5=FATAL 6=QUIET
-log_this("Component", "State: READY", LOG_LEVEL_STATE, true, true, true);
-log_this("Component", "Failed: reason", LOG_LEVEL_ERROR, true, true, true);
-```
 
 ## CONFIGURATION
 
