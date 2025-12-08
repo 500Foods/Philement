@@ -21,6 +21,7 @@ The documentation for the project is in /docs/H/
 - Once test build succeeds, run alias `mka` to perform build against all targets - can be run from any directory
 - Working with unit tests, after alias `mkt` use alias `mku <base test name without .c>` to build and run the test fro any directory
 - When making only script changes, there is no need to run alias `mkt` - that is for changes to C code only
+- Assume all env vars (like HYDROGEN_ROOT) and all aliases are properly defined and declaredp
 
 ## ⚠️ ADDITINAL GUIDANCE
 

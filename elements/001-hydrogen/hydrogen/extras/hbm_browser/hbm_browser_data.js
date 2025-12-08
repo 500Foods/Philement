@@ -388,17 +388,21 @@ HMB.extractNumericValues = function(data, path = '', context = {}) {
       }
     }
 
-    // Handle percentage strings (like "80.720%")
-    if (typeof value === 'string' && value.match(/^\d+(\.\d+)?%$/)) {
-      const numericValue = parseFloat(value.replace('%', ''));
-      const cleanPath = this.createCleanMetricPath(newPath, newContext);
-      results.push({
-        path: cleanPath,
-        value: numericValue,
-        label: this.createEnhancedMetricLabel(newPath, newContext),
-        originalPath: newPath, // Store original path for data lookup
-        context: newContext // Store context for reference
-      });
+    // Handle numeric strings (percentages, comma-separated numbers, and numbers with units)
+    if (typeof value === 'string') {
+      // Clean the string: remove commas, spaces, and units
+      const cleanedValue = value.replace(/,/g, '').replace(/\s*(KB|MB|GB|%)?$/i, '');
+      const numericValue = parseFloat(cleanedValue);
+      if (!isNaN(numericValue)) {
+        const cleanPath = this.createCleanMetricPath(newPath, newContext);
+        results.push({
+          path: cleanPath,
+          value: numericValue,
+          label: this.createEnhancedMetricLabel(newPath, newContext),
+          originalPath: newPath, // Store original path for data lookup
+          context: newContext // Store context for reference
+        });
+      }
     }
     else if (typeof value === 'number') {
       const cleanPath = this.createCleanMetricPath(newPath, newContext);
@@ -435,17 +439,21 @@ HMB.extractNumericValues = function(data, path = '', context = {}) {
               originalPath: itemPath,
               context: arrayContext
             });
-          } else if (typeof item === 'string' && item.match(/^\d+(\.\d+)?%$/)) {
-            const numericValue = parseFloat(item.replace('%', ''));
-            const arrayContext = {...newContext};
-            const cleanPath = this.createCleanMetricPath(itemPath, arrayContext);
-            results.push({
-              path: cleanPath,
-              value: numericValue,
-              label: this.createEnhancedMetricLabel(itemPath, arrayContext),
-              originalPath: itemPath,
-              context: arrayContext
-            });
+          } else if (typeof item === 'string') {
+            // Clean the string: remove commas, spaces, and units
+            const cleanedValue = item.replace(/,/g, '').replace(/\s*(KB|MB|GB|%)?$/i, '');
+            const numericValue = parseFloat(cleanedValue);
+            if (!isNaN(numericValue)) {
+              const arrayContext = {...newContext};
+              const cleanPath = this.createCleanMetricPath(itemPath, arrayContext);
+              results.push({
+                path: cleanPath,
+                value: numericValue,
+                label: this.createEnhancedMetricLabel(itemPath, arrayContext),
+                originalPath: itemPath,
+                context: arrayContext
+              });
+            }
           }
         });
       } else {
@@ -771,7 +779,7 @@ HMB.getNestedValueByPath = function(obj, path) {
   }
 
   // Handle original array notation paths like test_results.data[0].elapsed
-  return path.split('.').reduce((o, p) => {
+  let result = path.split('.').reduce((o, p) => {
     // Handle array access like item[0]
     if (p.includes('[')) {
       const arrayPart = p.match(/^([^\[]+)\[(\d+)\]/);
@@ -783,6 +791,17 @@ HMB.getNestedValueByPath = function(obj, path) {
     }
     return (o || {})[p];
   }, obj);
+
+  // Parse string values that contain numbers
+  if (typeof result === 'string') {
+    const cleanedValue = result.replace(/,/g, '').replace(/\s*(KB|MB|GB|%)?$/i, '');
+    const numericValue = parseFloat(cleanedValue);
+    if (!isNaN(numericValue)) {
+      return numericValue;
+    }
+  }
+
+  return result;
 };
 
 // Filter data by current date range
