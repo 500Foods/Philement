@@ -1,16 +1,16 @@
-# Hydrogen Metrics Browser Architecture
+# Hydrogen Build Metrics Browser Architecture
 
 ## System Overview
 
 ```mermaid
 flowchart TD
     A[Start] --> B{Execution Mode}
-    B -->|Browser| C[Load hm_browser.html]
-    B -->|Command Line| D[Run hm_browser.js with config]
+    B -->|Browser| C[Load hbm_browser.html]
+    B -->|Command Line| D[Run hbm_browser.js with config]
 
     C --> E[Load D3, Flatpickr, Font Awesome from CDN]
-    C --> F[Load hm_browser.css]
-    C --> G[Load hm_browser.js]
+    C --> F[Load hbm_browser.css]
+    C --> G[Load hbm_browser.js]
 
     D --> H[Load configuration from JSON]
     D --> I[Process metrics files]

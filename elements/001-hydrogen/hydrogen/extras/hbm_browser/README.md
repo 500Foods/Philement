@@ -1,12 +1,12 @@
-# Hydrogen Metrics Browser
+# Hydrogen Build Metrics Browser
 
-![Hydrogen Metrics Browser Logo](https://via.placeholder.com/150/4a90e2/ffffff?text=HMB)
+![Hydrogen Build Metrics Browser Logo](https://via.placeholder.com/150/4a90e2/ffffff?text=HMB)
 
 ## **Interactive D3 visualization tool for Hydrogen project metrics**
 
 ## Overview
 
-The Hydrogen Metrics Browser (hm_browser) is a powerful visualization tool that provides interactive analysis of Hydrogen project metrics data. It offers both browser-based interactive exploration and command-line automated report generation.
+The Hydrogen Build Metrics Browser (hbm_browser) is a powerful visualization tool that provides interactive analysis of Hydrogen project metrics data. It offers both browser-based interactive exploration and command-line automated report generation.
 
 ## Features
 
@@ -37,11 +37,11 @@ The Hydrogen Metrics Browser (hm_browser) is a powerful visualization tool that 
 
 ### Browser Mode
 
-Simply open `hm_browser.html` in any modern browser. No installation required!
+Simply open `hbm_browser.html` in any modern browser. No installation required!
 
 ```bash
 # Open in browser
-open elements/001-hydrogen/hydrogen/extras/hm_browser/hm_browser.html
+open elements/001-hydrogen/hydrogen/extras/hbm_browser/hbm_browser.html
 ```
 
 ### Command Line Mode
@@ -50,18 +50,18 @@ Requires Node.js v18+ and npm dependencies.
 
 ```bash
 # Install dependencies
-cd elements/001-hydrogen/hydrogen/extras/hm_browser
+cd elements/001-hydrogen/hydrogen/extras/hbm_browser
 npm install jsdom @jaames/iro flatpickr d3
 
 # Make script executable
-chmod +x hm_browser.sh
+chmod +x hbm_browser.sh
 ```
 
 ## Usage
 
 ### Browser Mode Usage
 
-1. Open `hm_browser.html` in your browser
+1. Open `hbm_browser.html` in your browser
 2. The application automatically loads metrics from GitHub
 3. Click on the chart title or legend to show controls
 4. Use the control panel to:
@@ -74,22 +74,22 @@ chmod +x hm_browser.sh
 
 ```bash
 # Basic usage with default configuration
-./hm_browser.sh
+./hbm_browser.sh
 
 # Custom configuration and output file
-./hm_browser.sh custom_config.json report_output.svg
+./hbm_browser.sh custom_config.json report_output.svg
 
 # Using Node.js directly
-node hm_browser_cli.js hm_browser_auto.json metrics_report.svg
+node hbm_browser_cli.js hbm_browser_auto.json metrics_report.svg
 ```
 
 ## Configuration
 
-### Browser Configuration (`hm_browser_defaults.json`)
+### Browser Configuration (`hbm_browser_defaults.json`)
 
 ```json
 {
-  "title": "Hydrogen Metrics Browser",
+  "title": "Hydrogen Build Metrics Browser",
   "dateRange": {
     "start": "30_days_ago",
     "end": "today"
@@ -113,11 +113,11 @@ node hm_browser_cli.js hm_browser_auto.json metrics_report.svg
 }
 ```
 
-### CLI Configuration (`hm_browser_auto.json`)
+### CLI Configuration (`hbm_browser_auto.json`)
 
 ```json
 {
-  "title": "Hydrogen Metrics Auto Report",
+  "title": "Hydrogen Build Metrics Auto Report",
   "mode": "auto",
   "dateRange": {
     "start": "30_days_ago",
@@ -173,15 +173,15 @@ The browser automatically extracts all numeric values from the metrics JSON. Com
 ## Architecture
 
 ```Features
-┌───────────────────────────────────────────────────┐
-│               Hydrogen Metrics Browser              │
-├───────────────────┬───────────────────┬─────────────┤
-│   Browser Mode    │   CLI Mode        │  Core        │
-├───────────────────┼───────────────────┼─────────────┤
-│ - GitHub API      │ - Local FS Access  │ - D3 Charts  │
-│ - Interactive UI  │ - Headless Render  │ - Data Proc │
-│ - Real-time Updates│ - Batch Processing │ - Config    │
-└───────────────────┴───────────────────┴─────────────┘
+┌────────────────────────────────────────────────────────┐
+│         Hydrogen Build Metrics Browser                 │
+├─────────────────────┬────────────────────┬─────────────┤
+│   Browser Mode      │   CLI Mode         │  Core       │
+├─────────────────────┼────────────────────┼─────────────┤
+│ - GitHub API        │ - Local FS Access  │ - D3 Charts │
+│ - Interactive UI    │ - Headless Render  │ - Data Proc │
+│ - Real-time Updates │ - Batch Processing │ - Config    │
+└─────────────────────┴────────────────────┴─────────────┘
 ```
 
 ## Technical Details
@@ -244,14 +244,14 @@ console.log('Debug info:', window.hmBrowser?.getDebugInfo());
 
 ```bash
 # Run with debug logging
-DEBUG=1 node hm_browser_cli.js config.json output.svg
+DEBUG=1 node hbm_browser_cli.js config.json output.svg
 ```
 
 ## Examples
 
 ### Basic Browser Usage
 
-1. Open `hm_browser.html`
+1. Open `hbm_browser.html`
 2. Wait for automatic data loading
 3. Click chart title to show controls
 4. Adjust date range as needed
@@ -261,10 +261,10 @@ DEBUG=1 node hm_browser_cli.js config.json output.svg
 
 ```bash
 # Generate report for specific date range
-node hm_browser_cli.js custom_config.json report_2025-11.svg
+node hbm_browser_cli.js custom_config.json report_2025-11.svg
 
 # Process with custom metrics
-node hm_browser_cli.js performance_config.json perf_report.svg
+node hbm_browser_cli.js performance_config.json perf_report.svg
 ```
 
 ## Development
@@ -272,14 +272,14 @@ node hm_browser_cli.js performance_config.json perf_report.svg
 ### Project Structure
 
 ```files
-hm_browser/
-├── hm_browser.html          # Main HTML file
-├── hm_browser.css           # Styles
-├── hm_browser.js            # Core functionality
-├── hm_browser_cli.js        # CLI implementation
-├── hm_browser.sh            # CLI shell script
-├── hm_browser_defaults.json # Browser config
-├── hm_browser_auto.json     # CLI config
+hbm_browser/
+├── hbm_browser.html          # Main HTML file
+├── hbm_browser.css           # Styles
+├── hbm_browser.js            # Core functionality
+├── hbm_browser_cli.js        # CLI implementation
+├── hbm_browser.sh            # CLI shell script
+├── hbm_browser_defaults.json # Browser config
+├── hbm_browser_auto.json     # CLI config
 ├── architecture.md          # System architecture
 ├── implementation_plan.md    # Implementation details
 ├── TEST_PLAN.md             # Testing strategy
