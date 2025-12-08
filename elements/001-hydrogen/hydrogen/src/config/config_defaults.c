@@ -251,7 +251,7 @@ void initialize_config_defaults_swagger(AppConfig* config) {
 
         // Metadata defaults
         config->swagger.metadata.title = strdup("Hydrogen API");
-        config->swagger.metadata.description = strdup("Hydrogen Server API");
+        config->swagger.metadata.description = strdup("Hydrogen Server API<br><a href=hbm_browser.html>Hydrogen Build Metrics Browser</a>");
         config->swagger.metadata.version = strdup("1.0.0");
 
         // Contact and license are NULL by default

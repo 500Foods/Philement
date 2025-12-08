@@ -20,6 +20,7 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
   - [`make-email.sh`](#make-emailsh)
   - [`migrate_paths.sh`](#migrate_pathssh)
   - [`run-unity-test.sh`](#run-unity-testsh)
+  - [`hbm_browser`](#hbm_browser)
 - [Payload Tools](#payload-tools)
   - [`debug_payload.c`](#debug_payloadc)
   - [`find_all_markers.c`](#find_all_markersc)
@@ -369,6 +370,32 @@ The script generates a professional HTML email with:
 - Embedded SVG charts showing test results and code metrics
 - Responsive dark theme styling
 - Timestamp and footer information
+
+### `hbm_browser`
+
+**Purpose:** Hydrogen Build Metrics Browser
+**Description:** Interactive D3.js visualization tool for analyzing Hydrogen project build metrics. Provides both browser-based exploration and command-line automated report generation.
+
+**Features:**
+
+- Interactive browser interface with dual-axis charts
+- Automatic extraction of numeric values from JSON metrics files
+- Support for comma-separated numbers and values with units (KB, MB, GB, %)
+- Date range filtering and color customization
+- Command-line mode for automated SVG report generation
+
+**Usage:**
+
+```bash
+# Browser mode - open in web browser
+open hbm_browser/hbm_browser.html
+
+# Command-line mode
+cd hbm_browser
+node hbm_browser_cli.js config.json output.svg
+```
+
+**Documentation:** See [hbm_browser/README.md](hbm_browser/README.md) for complete usage instructions and configuration options.
 
 ## Payload Tools
 
