@@ -121,5 +121,5 @@ To run this test individually:
 - [test_13_crash_handler.md](test_13_crash_handler.md) - Crash handler testing
 - [test_18_signals.md](test_18_signals.md) - Signal handling tests
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
-- [testing.md](../../docs/testing.md) - Overall testing strategy
-- [api.md](../../docs/api.md) - API documentation for HTTP endpoints
+- [testing.md](/docs/H/core/testing.md) - Overall testing strategy
+- [api.md](/docs/H/core/api.md) - API documentation for HTTP endpoints

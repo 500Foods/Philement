@@ -233,4 +233,4 @@ fi
 - [Coverage Libraries](coverage.md) - Complete coverage system overview
 - [Coverage Combined](coverage-combined.md) - Combined coverage analysis
 - [Coverage Table](coverage_table.md) - Table generation for metrics
-- [Build Metrics](../../docs/metrics/README.md) - How coverage data appears in metrics
+- [Build Metrics](/docs/H/metrics/README.md) - How coverage data appears in metrics

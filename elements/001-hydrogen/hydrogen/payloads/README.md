@@ -236,4 +236,4 @@ export PAYLOAD_LOCK="base64-encoded-rsa-public-key"  # Required for encryption
 - `PAYLOAD_LOCK` can be shared (used only for encryption)
 - Rotate encryption keys periodically
 - Test encryption/decryption when modifying payload system
-- See [SECRETS.md](../docs/SECRETS.md) for environment variable management
+- See [SECRETS.md](/docs/H/SECRETS.md) for environment variable management

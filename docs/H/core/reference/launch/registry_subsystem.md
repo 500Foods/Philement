@@ -4,7 +4,7 @@
 
 This document is a placeholder for future content on the registry subsystem of the Hydrogen project. Detailed information about the registry subsystem's design and functionality will be added here as the project evolves.
 
-For current related information, please refer to [Launch System Architecture](/docs/reference/launch_system_architecture.md).
+For current related information, please refer to [Launch System Architecture](/docs/H/core/reference/launch_system_architecture.md).
 
 ## Topics to be Covered
 

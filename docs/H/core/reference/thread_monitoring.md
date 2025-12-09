@@ -4,7 +4,7 @@
 
 This document is a placeholder for future content on thread monitoring related to the Hydrogen project. Detailed information about thread monitoring mechanisms and configurations will be added here as the project evolves.
 
-For current related information, please refer to [System Architecture](/docs/reference/system_architecture.md) and [System Info](/docs/reference/system_info.md).
+For current related information, please refer to [System Architecture](/docs/H/core/reference/system_architecture.md) and [System Info](/docs/H/core/reference/system_info.md).
 
 ## Topics to be Covered
 

@@ -1,7 +1,5 @@
 # Hydrogen Build Metrics Browser
 
-![Hydrogen Build Metrics Browser Logo](https://via.placeholder.com/150/4a90e2/ffffff?text=HMB)
-
 ## **Interactive D3 visualization tool for Hydrogen project metrics**
 
 ## Overview
@@ -38,7 +36,7 @@ The Hydrogen Build Metrics Browser (hbm_browser) is a powerful visualization too
 
 ### Browser Mode
 
-Simply open `hbm_browser.html` in any modern browser. No installation required!
+Simply open `hbm_browser.html` in any modern browser. No installation required! Note: A link is provided in the default Swagger configuraiton, and the code is included in the swagger folder of the payload.
 
 ```bash
 # Open in browser
@@ -305,5 +303,4 @@ npm run build
 For issues, questions, or feature requests:
 
 - Check the [GitHub Issues](https://github.com/500Foods/Philement/issues)
-- Review the [architecture documentation](architecture.md)
-- Consult the [test plan](TEST_PLAN.md)
+- Review the [architecture documentation](/elements/001-hydrogen/hydrogen/extras/hbm_browser/architecture.md)

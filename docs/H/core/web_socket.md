@@ -12,7 +12,7 @@ This document describes the WebSocket interface provided by the Hydrogen server 
 
 The server will automatically try alternative ports (5001-5010) if the default port is unavailable. Check the server logs or use the system info endpoint to determine the actual bound port.
 
-For complete configuration options including IPv6 support and logging settings, see the [Configuration Guide](./configuration.md#websocket).
+For complete configuration options including IPv6 support and logging settings, see the [Configuration Guide](/docs/H/core/configuration.md#websocket).
 
 ## Status Updates
 
@@ -94,17 +94,17 @@ Common error codes:
 
 ## Security
 
-The WebSocket server implements multiple layers of security as documented in [SECRETS.md](SECRETS.md):
+The WebSocket server implements multiple layers of security as documented in [SECRETS.md](/docs/H/SECRETS.md):
 
 ### Transport Security
 
-- TLS encryption with modern cipher suites (see [network_architecture.md](./reference/network_architecture.md))
+- TLS encryption with modern cipher suites (see [network_architecture.md](/docs/H/core/reference/network_architecture.md))
 - Certificate validation using system CA store
 - Secure WebSocket protocol (wss://) required in production
 
 ### Authentication
 
-- API key or OIDC token required (see [oidc_architecture.md](./reference/oidc_architecture.md))
+- API key or OIDC token required (see [oidc_architecture.md](/docs/H/core/reference/oidc_architecture.md))
 - RSA-signed session tokens with configurable expiration
 - Secure token storage using environment variables
 
@@ -230,7 +230,7 @@ The WebSocket server implements a robust, multi-phase shutdown process:
 
 This approach ensures that even under heavy load or in error conditions, the WebSocket server will shut down cleanly without resource leaks, thread hangs, or race conditions.
 
-For a complete overview of the shutdown architecture across all components, see the [Shutdown Architecture](./shutdown_architecture.md) document.
+For a complete overview of the shutdown architecture across all components, see the [Shutdown Architecture](/docs/H/core//shutdown_architecture.md) document.
 
 ### Memory Management
 

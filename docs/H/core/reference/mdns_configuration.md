@@ -275,7 +275,7 @@ dns-sd -L "Hydrogen_Web_Interface" _http._tcp local.
 
 ## Related Documentation
 
-- [Network Configuration](/docs/reference/network_configuration.md) - General network settings
+- [Network Configuration](/docs/H/core/reference/network_configuration.md) - General network settings
 - [Web Server Configuration](webserver_configuration.md) - HTTP server settings
 - [WebSocket Configuration](websocket_configuration.md) - WebSocket settings
 - [Logging Configuration](logging_configuration.md) - Logging setup

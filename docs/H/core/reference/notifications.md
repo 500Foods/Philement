@@ -4,7 +4,7 @@
 
 This document is a placeholder for future content on notifications related to the Hydrogen project. Detailed information about notification systems and configurations will be added here as the project evolves.
 
-For current related information, please refer to [System Architecture](/docs/reference/system_architecture.md) and [SMTP Configuration](/docs/reference/smtp_configuration.md).
+For current related information, please refer to [System Architecture](/docs/H/core/reference/system_architecture.md) and [SMTP Configuration](/docs/H/core/reference/smtp_configuration.md).
 
 ## Topics to be Covered
 

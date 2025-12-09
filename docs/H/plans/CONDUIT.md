@@ -4,7 +4,7 @@
 
 1. **Read This First**: [`CONDUIT.md`](CONDUIT.md) - This document (comprehensive plan)
 2. **Check Context**: [`DATABASE_PLAN.md`](DATABASE_PLAN.md) - Existing database architecture
-3. **Review Code**: [`src/database/`](../../src/database/) - Current database implementation
+3. **Review Code**: [`src/database/`](/elements/001-hydrogen/hydrogen/src/database/) - Current database implementation
 4. **Start With**: Phase 1 (Query Table Cache) - Foundation for everything else
 5. **Build Order**: QTC → Queue Selection → Parameter Processing → Pending Results → API Endpoint
 6. **Test As You Go**: Write unit tests for each component before moving to next phase
@@ -162,7 +162,7 @@ When picking up this work in a future session:
 
 - [ ] Read this CONDUIT.md document top to bottom
 - [ ] Review current [`DATABASE_PLAN.md`](DATABASE_PLAN.md) status
-- [ ] Check existing [`src/database/`](../../src/database/) implementation
+- [ ] Check existing [`src/database/`](/elements/001-hydrogen/hydrogen/src/database/) implementation
 - [ ] Identify which phase was last worked on (check todo list)
 - [ ] Review any existing code in `src/api/conduit/` (if created)
 - [ ] Run existing tests: `./tests/test_30_database.sh`

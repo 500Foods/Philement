@@ -112,24 +112,24 @@ The Hydrogen project uses several security mechanisms that developers need to be
 
 1. **Payload Encryption**
    - RSA+AES hybrid encryption for embedded assets
-   - See [payload/README.md](/payloads/README.md) for implementation
-   - Key management documented in [SECRETS.md](SECRETS.md)
+   - See [payload/README.md](/elements/001-hydrogen/hydrogen/payloads/README.md) for implementation
+   - Key management documented in [SECRETS.md](/docs/H/SECRETS.md)
 
 2. **OIDC Security**
    - RSA key pairs for token signing
    - AES encryption for sensitive data
-   - See [docs/oidc_integration.md](./oidc_integration.md)
+   - See [docs/oidc_integration.md](/docs/H/core/oidc_integration.md)
 
 3. **Transport Security**
    - TLS for HTTP/WebSocket connections
    - Certificate management
-   - See [docs/reference/network_architecture.md](./reference/network_architecture.md)
+   - See [docs/reference/network_architecture.md](/docs/H/core/reference/network_architecture.md)
 
 ### Secrets Management
 
 - Environment variable-based configuration
 - Secure key storage guidelines
-- See [SECRETS.md](SECRETS.md) for comprehensive documentation
+- See [SECRETS.md](/docs/H/SECRETS.md) for comprehensive documentation
 
 ## Project Glossary
 
@@ -236,7 +236,7 @@ make clean
 3. **Check Dependencies**: Refer to the [Component Dependency Map](#component-dependency-map)
 4. **Follow Patterns**: Use the established [Implementation Patterns](#quick-reference-implementation-patterns)
 5. **Test Changes**: Run appropriate tests from the test suite
-6. **Review Coding Guidelines**: Ensure your changes follow the [Coding Guidelines](./coding_guidelines.md)
+6. **Review Coding Guidelines**: Ensure your changes follow the [Coding Guidelines](/docs/H/core/coding_guidelines.md)
 
 ## Common Development Tasks
 
@@ -263,7 +263,7 @@ make clean
 
 ## Additional Resources
 
-- [Coding Guidelines](./coding_guidelines.md) - Detailed coding standards
-- [API Documentation](./api.md) - Complete API reference
-- [System Architecture](./reference/system_architecture.md) - Detailed system design
-- [Testing System](./testing.md) - Test framework documentation
+- [Coding Guidelines](/docs/H/core/coding_guidelines.md) - Detailed coding standards
+- [API Documentation](/docs/H/core/api.md) - Complete API reference
+- [System Architecture](/docs/H/core/reference/system_architecture.md) - Detailed system design
+- [Testing System](/docs/H/core/testing.md) - Test framework documentation

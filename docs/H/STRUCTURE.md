@@ -428,9 +428,9 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <details>
 <summary><b>API Documentation</b></summary>
 
-- [docs/api/system/system_health.md](/docs/H/core/api/system/system_health.md) - System health API
-- [docs/api/system/system_info.md](/docs/H/core/api/system/system_info.md) - System information API
-- [docs/api/system/system_version.md](/docs/H/core/api/system/system_version.md) - System version API
+- [docs/api/system/system_health.md](/docs/H/api/system/system_health.md) - System health API
+- [docs/api/system/system_info.md](/docs/H/api/system/system_info.md) - System information API
+- [docs/api/system/system_version.md](/docs/H/api/system/system_version.md) - System version API
 
 </details>
 
@@ -535,6 +535,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 - [tests/test_01_compilation.sh](/elements/001-hydrogen/hydrogen/tests/test_01_compilation.sh) - Compilation tests
 - [tests/test_02_secrets.sh](/elements/001-hydrogen/hydrogen/tests/test_02_secrets.sh) - Checks validity of key environment variables
+- [tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh) - Checks existence of key environment variables
 - [tests/test_04_check_links.sh](/elements/001-hydrogen/hydrogen/tests/test_04_check_links.sh) - Link validation tests
 
 ### Core Functional Tests

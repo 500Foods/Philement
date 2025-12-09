@@ -93,7 +93,7 @@ This test is part of the Hydrogen testing framework and runs automatically with:
 
 ## Related Documentation
 
-- [Test Framework Overview](../TESTING.md)
-- [Database Tests](../docs/test_30_database.md)
-- [Migration Tests](../docs/test_31_migrations.md)
-- [Database Architecture](../../docs/database.md)
+- [Test Framework Overview](/docs/H/tests/TESTING.md)
+- [Database Tests](/docs/H/tests/test_30_database.md)
+- [Migration Tests](/docs/H/tests/test_31_migrations.md)
+- [Database Architecture](/docs/H/core/database.md)

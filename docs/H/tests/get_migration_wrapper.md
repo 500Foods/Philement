@@ -85,8 +85,8 @@ lua get_migration_wrapper.lua
 
 ## Related Documentation
 
-- [Database Migration Tests](../../tests/docs/test_31_migrations.md) - How this script is used in testing
-- [PostgreSQL Migration Tests](../../tests/docs/test_32_postgres_migrations.md) - PostgreSQL-specific usage
-- [MySQL Migration Tests](../../tests/docs/test_33_mysql_migrations.md) - MySQL-specific usage
-- [SQLite Migration Tests](../../tests/docs/test_34_sqlite_migrations.md) - SQLite-specific usage
-- [DB2 Migration Tests](../../tests/docs/test_35_db2_migrations.md) - DB2-specific usage
+- [Database Migration Tests](/docs/H/tests/test_31_migrations.md) - How this script is used in testing
+- [PostgreSQL Migration Tests](/docs/H/tests/test_32_postgres_migrations.md) - PostgreSQL-specific usage
+- [MySQL Migration Tests](/docs/H/tests/test_33_mysql_migrations.md) - MySQL-specific usage
+- [SQLite Migration Tests](/docs/H/tests/test_34_sqlite_migrations.md) - SQLite-specific usage
+- [DB2 Migration Tests](/docs/H/tests/test_35_db2_migrations.md) - DB2-specific usage

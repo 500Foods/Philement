@@ -81,7 +81,7 @@
 #define SR_QUEUES           "Queues"
 #define SR_MUTEXES          "Mutexes"         
 
-// The primary 18 Subsystems
+// The primary 19 Subsystems
 #define SR_REGISTRY         "Registry"
 #define SR_THREADS          "Threads"
 #define SR_PAYLOAD          "Payload"
@@ -99,7 +99,8 @@
 #define SR_NETWORK          "Network"
 #define SR_RESOURCES        "Resources"
 #define SR_OIDC             "OIDC"
-#define SR_NOTIFY           "Notify"
+#define SR_NOTIFY           "Notify"  
+#define SR_MIRAGE           "Mirage"
 
 // Additional sub-Subsystem Tracking
 #define SR_WEBSOCKET_LIB    "WebSocket-Lib"     // Low-level libwebsockets diagnostics

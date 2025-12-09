@@ -131,4 +131,4 @@ curl http://localhost:5000/api/system/info
 
 ## Advanced Monitoring
 
-For more detailed system monitoring, including real-time thread information, memory analysis, and file descriptor tracking, see the [Thread Monitoring Documentation](/docs/reference/thread_monitoring.md). This documentation includes a bash script that provides deeper insights into the Hydrogen server's runtime behavior, complementing the information available through this API endpoint.
+For more detailed system monitoring, including real-time thread information, memory analysis, and file descriptor tracking, see the [Thread Monitoring Documentation](/docs/H/core/reference/thread_monitoring.md). This documentation includes a bash script that provides deeper insights into the Hydrogen server's runtime behavior, complementing the information available through this API endpoint.

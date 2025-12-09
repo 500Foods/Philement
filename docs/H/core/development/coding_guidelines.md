@@ -326,4 +326,4 @@ docs/
 
 - [API Documentation](../reference/api.md)
 - [Configuration Guide](../reference/configuration.md)
-- [Service Documentation](/docs/reference/service.md)
+- [Service Documentation](/docs/H/core/reference/service.md)

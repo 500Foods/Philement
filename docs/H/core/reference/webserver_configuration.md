@@ -176,7 +176,7 @@ ls -la /tmp/hydrogen_uploads
 
 ## Related Documentation
 
-- [API Configuration](/docs/reference/api_configuration.md) - Configure API endpoints
+- [API Configuration](/docs/H/core/reference/api_configuration.md) - Configure API endpoints
 - [Swagger Configuration](swagger_configuration.md) - API documentation settings
 - [Logging Configuration](logging_configuration.md) - Detailed logging setup
 - [Security Configuration](security_configuration.md) - Security best practices

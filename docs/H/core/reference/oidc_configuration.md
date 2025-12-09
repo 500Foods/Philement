@@ -4,7 +4,7 @@
 
 This document is a placeholder for future content on OpenID Connect (OIDC) configuration for the Hydrogen project. Detailed guidelines and options for setting up OIDC authentication will be added here as the project evolves.
 
-For current related information, please refer to [System Architecture](/docs/reference/system_architecture.md) and [SECRETS.md](../SECRETS.md).
+For current related information, please refer to [System Architecture](/docs/H/core/reference/system_architecture.md) and [SECRETS.md](/docs/H/SECRETS.md).
 
 ## Topics to be Covered
 

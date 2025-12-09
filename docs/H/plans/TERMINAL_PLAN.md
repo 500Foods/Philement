@@ -2,17 +2,17 @@
 
 ## REQUIRED: Complete understanding required
 
-- [**INSTRUCTIONS.md**](../..//INSTRUCTIONS.md) - Critical development guide with C programming requirements, build configurations, and Hydrogen development patterns
-- [**README.md**](../..//README.md) - Project overview, architecture, and testing status information
-- [**tests/TESTING.md**](../../tests/TESTING.md) - Complete testing framework documentation and test suite structure
+- [**INSTRUCTIONS.md**](/docs/H/INSTRUCTIONS.md) - Critical development guide with C programming requirements, build configurations, and Hydrogen development patterns
+- [**README.md**](/docs/H/README.md) - Project overview, architecture, and testing status information
+- [**tests/TESTING.md**](/docs/H/tests/TESTING.md) - Complete testing framework documentation and test suite structure
 
 ## RECOMMENDED: Understanding context and inspiration
 
-- [**STRUCTURE.md**](../../STRUCTURE.md) - Complete file organization and directory structure documentation
-- [**docs/web_socket.md**](../web_socket.md) - WebSocket implementation patterns (test_23_websockets.sh reference)
-- [**docs/api.md**](../api.md) - API structure and documentation approaches (swagger endpoint patterns)
-- [**docs/data_structures.md**](../data_structures.md) - Core data structure patterns and conventions
-- [**cmake/README.md**](../../cmake/README.md) - Build system configuration and requirements
+- [**STRUCTURE.md**](/docs/H/STRUCTURE.md) - Complete file organization and directory structure documentation
+- [**docs/web_socket.md**](/docs/H/core/web_socket.md) - WebSocket implementation patterns (test_23_websockets.sh reference)
+- [**docs/api.md**](/docs/H/core/api.md) - API structure and documentation approaches (swagger endpoint patterns)
+- [**docs/data_structures.md**](/docs/H/core/data_structures.md) - Core data structure patterns and conventions
+- [**cmake/README.md**](/elements/001-hydrogen/hydrogen/cmake/README.md) - Build system configuration and requirements
 
 ## Hydrogen System Architecture Essentials
 

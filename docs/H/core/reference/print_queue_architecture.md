@@ -408,4 +408,4 @@ void print_queue_process(print_queue_t* queue) {
 - [Print Queue Management](../print_queue.md) - User-focused documentation
 - [API Documentation](../reference/api.md) - API endpoint details
 - [Configuration Guide](../reference/configuration.md) - Configuration options
-- [Beryllium](/docs/reference/beryllium.md) - G-code analysis system
+- [Beryllium](/docs/H/core/reference/beryllium.md) - G-code analysis system

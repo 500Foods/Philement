@@ -230,7 +230,7 @@ All scripts include proper error handling and return appropriate exit codes:
 
 1. `#include "unity.h"` → `#include <unity.h>`
 2. `#include "../hydrogen.h"` → `#include <src/hydrogen.h>`
-3. `#include "../../../../src/something"` → `#include <src/something>`
+3. `#include "..//elements/001-hydrogen/hydrogen/src/something"` → `#include <src/something>`
 4. `#include "../../../../tests/unity/something"` → `#include <unity/something>`
 5. `#include <config/something>` → `#include <src/config/something>`
 
