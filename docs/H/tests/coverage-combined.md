@@ -169,4 +169,4 @@ echo "$analysis" | sed -n '/UNCOVERED_FILES:/,/^$/p' | tail -n +2
 - [Coverage Libraries](coverage.md) - Complete coverage system overview
 - [Coverage Common](coverage-common.md) - Shared coverage utilities
 - [Coverage Table](coverage_table.md) - Table generation for metrics
-- [Build Metrics](../../docs/metrics/README.md) - How combined coverage appears in metrics
+- [Build Metrics](/docs/H/metrics/README.md) - How combined coverage appears in metrics

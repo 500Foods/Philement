@@ -142,8 +142,8 @@ To run this test individually:
 
 ## Related Documentation
 
-- [test_00_all.md](test_00_all.md) - Main test suite documentation
-- [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
-- [Unity Framework README](../unity/README.md) - Unity testing framework information
-- [testing.md](../../docs/testing.md) - Overall testing strategy
-- [coding_guidelines.md](../../docs/coding_guidelines.md) - Code quality standards
+- [test_00_all.md](/docs/H/tests/test_00_all.md) - Main test suite documentation
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Modular library documentation
+- [Unity Framework README](/elements/001-hydrogen/hydrogen/tests/unity/README.md) - Unity testing framework information
+- [testing.md](/docs/H/core/testing.md) - Overall testing strategy
+- [coding_guidelines.md](/docs/H/core/coding_guidelines.md) - Code quality standards

@@ -432,7 +432,7 @@ For more information about how the Subsystem Registry integrates with other comp
 - [System Architecture](./system_architecture.md) - Overall system design
 - [Thread Monitoring](../thread_monitoring.md) - Thread management
 - [Shutdown Architecture](../shutdown_architecture.md) - Shutdown process
-- [State Management](/docs/reference/state_management.md) - System state management
+- [State Management](/docs/H/core/reference/state_management.md) - System state management
 
 ## Example Code: Custom Subsystem Implementation
 

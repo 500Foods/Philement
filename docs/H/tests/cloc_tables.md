@@ -75,4 +75,4 @@ The output is appended to the metrics file alongside the test results and covera
 
 - [CLOC Library](cloc.md) - Core CLOC functionality and API
 - [Test 00 All](test_00_all.md) - How metrics files are generated
-- [Build Metrics](../../docs/metrics/README.md) - Overview of the metrics system
+- [Build Metrics](/docs/H/metrics/README.md) - Overview of the metrics system

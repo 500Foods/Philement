@@ -199,4 +199,4 @@ Part of the comprehensive Hydrogen test suite:
 - [Test 22 Swagger](test_22_swagger.md) - Similar parallel testing pattern
 - [Test 23 WebSockets](test_23_websockets.md) - General WebSocket testing
 - [Framework Library](framework.md) - Test framework utilities
-- [Terminal Architecture](../../docs/reference/terminal_architecture.md) - Terminal subsystem architecture and implementation
+- [Terminal Architecture](/docs/H/core/reference/terminal_architecture.md) - Terminal subsystem architecture and implementation

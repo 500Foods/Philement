@@ -26,7 +26,7 @@ Each daily metrics file contains four tables that provide different perspectives
 
 This table shows the results of running the complete test suite, which includes over 30 individual tests covering compilation, functionality, security, and code quality.
 
-**Learn more:** See [Test Suite Orchestrator](../../tests/docs/test_00_all.md) for details on how these results are generated and coordinated.
+**Learn more:** See [Test Suite Orchestrator](/docs/H/tests/test_00_all.md) for details on how these results are generated and coordinated.
 
 **What it tells us:**
 
@@ -71,7 +71,7 @@ As a result, coverage is a bit less than what one might normally expect, with ma
 of having many more individual tests than the number of lines they actually cover, which is
 highlighted in this table, just for comedic value mostly.
 
-**Learn more:** See [Coverage Analysis System](../../tests/docs/coverage.md) for technical details on how coverage is calculated and the sophisticated architecture behind these measurements.
+**Learn more:** See [Coverage Analysis System](/docs/H/tests/coverage.md) for technical details on how coverage is calculated and the sophisticated architecture behind these measurements.
 
 ### 3. Code Size Analysis (CLOC Main)
 
@@ -138,7 +138,7 @@ with the Test code exceeding the Core code by a significant margin.
 
 However, virtually all of the Test code has been written with the help of an AI model (primarily Grok). This doesn't take anything away from the test code's validity or value, but might unfairly inflate the human contributions to the project. AI models were used in the core code as well, but to a lesser degree. It kind of balances out overall by separating them out this way and just deriving productivity information from the Core content.
 
-**Learn more:** See [CLOC Analysis Library](../../tests/docs/cloc.md) for technical details on how code size analysis works and the sophisticated exclusion patterns used.
+**Learn more:** See [CLOC Analysis Library](/docs/H/tests/cloc.md) for technical details on how code size analysis works and the sophisticated exclusion patterns used.
 
 ## File Organization
 
@@ -160,18 +160,18 @@ Each file contains the four tables as they existed on that specific date, allowi
 
 These metrics are generated automatically by Test 00 (the test suite orchestrator) after each complete build. The system ensures that metrics are only created when all tests have been run, providing an accurate snapshot of the project's state at that moment.
 
-**Learn more:** See [Testing Framework](../../docs/testing.md) for the complete testing philosophy and approach that makes this metrics system possible.
+**Learn more:** See [Testing Framework](/docs/H/core/testing.md) for the complete testing philosophy and approach that makes this metrics system possible.
 
 ## Related Documentation
 
 For deeper understanding of how these metrics are generated and integrated into the build system:
 
-- **[Test Suite Orchestrator](../../tests/docs/test_00_all.md)** - How Test 00 coordinates all testing and generates metrics
-- **[CLOC Analysis Library](../../tests/docs/cloc.md)** - Technical details of the code size analysis system
-- **[Coverage Analysis System](../../tests/docs/coverage.md)** - Comprehensive coverage calculation and reporting architecture
-- **[Testing Framework](../../docs/testing.md)** - Overview of the complete testing approach and philosophy
-- **[Test Framework Libraries](../../tests/docs/LIBRARIES.md)** - All modular testing libraries and their functions
-- **[Blackbox Testing Guide](../../tests/TESTING.md)** - Primary documentation for blackbox/integration testing framework
-- **[Unity Unit Testing](../../tests/TESTING_UNITY.md)** - Primary introduction to unit testing details and framework
+- **[Test Suite Orchestrator](/docs/H/tests/test_00_all.md)** - How Test 00 coordinates all testing and generates metrics
+- **[CLOC Analysis Library](/docs/H/tests/cloc.md)** - Technical details of the code size analysis system
+- **[Coverage Analysis System](/docs/H/tests/coverage.md)** - Comprehensive coverage calculation and reporting architecture
+- **[Testing Framework](/docs/H/core/testing.md)** - Overview of the complete testing approach and philosophy
+- **[Test Framework Libraries](/docs/H/tests/LIBRARIES.md)** - All modular testing libraries and their functions
+- **[Blackbox Testing Guide](/docs/H/tests/TESTING.md)** - Primary documentation for blackbox/integration testing framework
+- **[Unity Unit Testing](/docs/H/tests/TESTING_UNITY.md)** - Primary introduction to unit testing details and framework
 
 These documents provide the technical foundation that makes the metrics system possible and show how deeply integrated metrics generation is with the overall build and testing infrastructure.

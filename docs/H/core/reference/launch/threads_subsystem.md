@@ -92,4 +92,4 @@ When working with the Threads subsystem:
 
 - [Launch System Architecture](../launch_system_architecture.md)
 - [System Architecture](../system_architecture.md)
-- [Thread Monitoring](/docs/reference/thread_monitoring.md)
+- [Thread Monitoring](/docs/H/core/reference/thread_monitoring.md)

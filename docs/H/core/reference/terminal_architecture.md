@@ -82,7 +82,7 @@ The Terminal subsystem is configured through the following settings in hydrogen.
    - Required for all terminal sessions
    - Integration with OIDC system (see [oidc_architecture.md](./oidc_architecture.md))
    - RSA-signed session tokens with configurable expiration
-   - Secure token storage (see [SECRETS.md](../SECRETS.md))
+   - Secure token storage (see [SECRETS.md](/docs/H/SECRETS.md))
 
 2. **Authorization**
    - Role-based access control with least privilege principle
@@ -100,7 +100,7 @@ The Terminal subsystem is configured through the following settings in hydrogen.
    - WebSocket TLS encryption with modern cipher suites (see [network_architecture.md](./network_architecture.md))
    - Input sanitization and command filtering
    - Output filtering for sensitive data
-   - Environment variable protection (see [SECRETS.md](../SECRETS.md))
+   - Environment variable protection (see [SECRETS.md](/docs/H/SECRETS.md))
 
 ## Session Lifecycle
 

@@ -7,7 +7,7 @@ It includes test scripts, configuration files, support utilities, and detailed d
 
 The Hydrogen testing framework is designed to ensure the robustness and correctness of the server through a structured suite of blackbox (aka integration) tests. These tests cover various aspects including compilation, startup/shutdown sequences, API functionality, system endpoints, and code quality checks.
 
-NOTE: A separate document covers the [Unity Unit Test Framework](./TESTING_UNITY.md).
+NOTE: A separate document covers the [Unity Unit Test Framework](/docs/H/tests/TESTING_UNITY.md).
 
 ## Core Components
 
@@ -46,61 +46,61 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 
 ### Test Suite Management - Orchestration
 
-- **[test_00_all.sh](docs/test_00_all.md)**: Test suite runner for orchestrating all tests (described above).
+- **[test_00_all.sh](/docs/H/tests/test_00_all.md)**: Test suite runner for orchestrating all tests (described above).
 
 ### Compilation and Static Analysis
 
-- **[test_01_compilation.sh](docs/test_01_compilation.md)**: Verifies successful compilation and build processes.
-- **[test_02_secrets.sh](docs/test_02_secrets.md)**: Checks validity of key environment variables
-- **[test_03_shell.sh](docs/test_03_shell.md)**: Validates environment variables used in Hydrogen configuration
-- **[test_04_check_links.sh](docs/test_04_check_links.md)**: Validates links in documentation files.
+- **[test_01_compilation.sh](/docs/H/tests/test_01_compilation.md)**: Verifies successful compilation and build processes.
+- **[test_02_secrets.sh](/docs/H/tests/test_02_secrets.md)**: Checks validity of key environment variables
+- **[test_03_shell.sh](/docs/H/tests/test_03_shell.md)**: Validates environment variables used in Hydrogen configuration
+- **[test_04_check_links.sh](/docs/H/tests/test_04_check_links.md)**: Validates links in documentation files.
 
 ### Core Functional Tests
 
-- **[test_10_unity.sh](docs/test_10_unity.md)**: Integrates Unity testing framework for unit tests.
-- **[test_11_leaks_like_a_sieve.sh](docs/test_11_leaks_like_a_sieve.md)**: Detects memory leaks and resource issues using Valgrind.
-- **[test_12_env_variables.sh](docs/test_12_env_variables.md)**: Tests that configuration values can be provided via environment variables.
-- **[test_13_crash_handler.sh](docs/test_13_crash_handler.md)**: Tests that the crash handler correctly generates and formats core dumps.
-- **[test_14_library_dependencies.sh](docs/test_14_library_dependencies.md)**: Checks for required library dependencies.
-- **[test_15_json_error_handling.sh](docs/test_15_json_error_handling.md)**: Tests JSON configuration error handling.
-- **[test_16_shutdown.sh](docs/test_16_shutdown.md)**: Tests the shutdown functionality of the application with a minimal configuration.
-- **[test_17_startup_shutdown.sh](docs/test_17_startup_shutdown.md)**: Validates complete startup and shutdown lifecycles.
-- **[test_18_signals.sh](docs/test_18_signals.md)**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
-- **[test_19_socket_rebind.sh](docs/test_19_socket_rebind.md)**: Tests socket rebinding behavior.
+- **[test_10_unity.sh](/docs/H/tests/test_10_unity.md)**: Integrates Unity testing framework for unit tests.
+- **[test_11_leaks_like_a_sieve.sh](/docs/H/tests/test_11_leaks_like_a_sieve.md)**: Detects memory leaks and resource issues using Valgrind.
+- **[test_12_env_variables.sh](/docs/H/tests/test_12_env_variables.md)**: Tests that configuration values can be provided via environment variables.
+- **[test_13_crash_handler.sh](/docs/H/tests/test_13_crash_handler.md)**: Tests that the crash handler correctly generates and formats core dumps.
+- **[test_14_library_dependencies.sh](/docs/H/tests/test_14_library_dependencies.md)**: Checks for required library dependencies.
+- **[test_15_json_error_handling.sh](/docs/H/tests/test_15_json_error_handling.md)**: Tests JSON configuration error handling.
+- **[test_16_shutdown.sh](/docs/H/tests/test_16_shutdown.md)**: Tests the shutdown functionality of the application with a minimal configuration.
+- **[test_17_startup_shutdown.sh](/docs/H/tests/test_17_startup_shutdown.md)**: Validates complete startup and shutdown lifecycles.
+- **[test_18_signals.sh](/docs/H/tests/test_18_signals.md)**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
+- **[test_19_socket_rebind.sh](/docs/H/tests/test_19_socket_rebind.md)**: Tests socket rebinding behavior.
 
 ### Server Tests
 
-- **[test_20_api_prefix.sh](docs/test_20_api_prefix.md)**: Validates API prefix configurations.
-- **[test_21_system_endpoints.sh](docs/test_21_system_endpoints.md)**: Tests system endpoint functionality.
-- **[test_22_swagger.sh](docs/test_22_swagger.md)**: Verifies Swagger documentation and UI integration.
-- **[test_23_websockets.sh](docs/test_23_websockets.md)**: Tests WebSocket server functionality and integration.
-- **[test_24_uploads.sh](docs/test_24_uploads.md)**: Tests uploading a file to the server
-- **[test_25_mdns.sh](docs/test_25_mdns.md)**: Tests mDNS server and client functionality and integration
-- **[test_26_terminal.sh](docs/test_26_terminal.md)**: Tests terminal functionality, payload serving, and WebSocket connections
+- **[test_20_api_prefix.sh](/docs/H/tests/test_20_api_prefix.md)**: Validates API prefix configurations.
+- **[test_21_system_endpoints.sh](/docs/H/tests/test_21_system_endpoints.md)**: Tests system endpoint functionality.
+- **[test_22_swagger.sh](/docs/H/tests/test_22_swagger.md)**: Verifies Swagger documentation and UI integration.
+- **[test_23_websockets.sh](/docs/H/tests/test_23_websockets.md)**: Tests WebSocket server functionality and integration.
+- **[test_24_uploads.sh](/docs/H/tests/test_24_uploads.md)**: Tests uploading a file to the server
+- **[test_25_mdns.sh](/docs/H/tests/test_25_mdns.md)**: Tests mDNS server and client functionality and integration
+- **[test_26_terminal.sh](/docs/H/tests/test_26_terminal.md)**: Tests terminal functionality, payload serving, and WebSocket connections
 
 ### Database Tests
 
-- **[test_30_database.sh](docs/test_30_database.md)**: All Engines Parallel Operational Test
-- **[test_32_postgres_migrations.sh](docs/test_32_postgres_migrations.md)**: PostgreSQL migration performance test
-- **[test_33_mysql_migrations.sh](docs/test_33_mysql_migrations.md)**: MySQL migration performance test
-- **[test_34_sqlite_migrations.sh](docs/test_34_sqlite_migrations.md)**: SQLite migration performance test
-- **[test_35_db2_migrations.sh](docs/test_35_db2_migrations.md)**: DB2 migration performance test
-- **[test_98_luacheck.sh](docs/test_98_luacheck.md)**: Lua code analysis with luacheck
-- **[test_71_database_diagrams.sh](docs/test_71_database_diagrams.md)**: Database diagram generation
-- **[test_41_conduit.sh](docs/test_41_conduit.md)**: Conduit Query endpoint test
+- **[test_30_database.sh](/docs/H/tests/test_30_database.md)**: All Engines Parallel Operational Test
+- **[test_32_postgres_migrations.sh](/docs/H/tests/test_32_postgres_migrations.md)**: PostgreSQL migration performance test
+- **[test_33_mysql_migrations.sh](/docs/H/tests/test_33_mysql_migrations.md)**: MySQL migration performance test
+- **[test_34_sqlite_migrations.sh](/docs/H/tests/test_34_sqlite_migrations.md)**: SQLite migration performance test
+- **[test_35_db2_migrations.sh](/docs/H/tests/test_35_db2_migrations.md)**: DB2 migration performance test
+- **[test_71_database_diagrams.sh](/docs/H/tests/test_71_database_diagrams.md)**: Database diagram generation
+- **[test_41_conduit.sh](/docs/H/tests/test_41_conduit.md)**: Conduit Query endpoint test
 
 ### Static Analysis & Code Quality Tests
 
-- **[test_90_markdownlint.sh](docs/test_90_markdownlint.md)**: Lints Markdown documentation using markdownlint.
-- **[test_91_cppcheck.sh](docs/test_91_cppcheck.md)**: Performs C/C++ static analysis using cppcheck.
-- **[test_92_shellcheck.sh](docs/test_92_shellcheck.md)**: Validates shell scripts using shellcheck with exception justification checks.
-- **[test_93_jsonlint.sh](docs/test_93_jsonlint.md)**: Validates JSON file syntax and structure.
-- **[test_94_eslint.sh](docs/test_94_eslint.md)**: Lints JavaScript files using eslint.
-- **[test_95_stylelint.sh](docs/test_95_stylelint.md)**: Validates CSS files using stylelint.
-- **[test_96_htmlhint.sh](docs/test_96_htmlhint.md)**: Validates HTML files using htmlhint.
-- **[test_97_xmlstarlet.sh](docs/test_97_xmlstarlet.md)**: Validates XML/SVG files using xmlstarlet.
-- **[test_80_code_size.sh](docs/test_80_code_size.md)**: Analyzes code size metrics and file distribution.
-- **[test_99_coverage.sh](docs/test_99_coverage.md)**: Performs comprehensive coverge analysis.
+- **[test_89_coverage.sh](/docs/H/tests/test_89_coverage.md)**: Performs comprehensive coverge analysis.
+- **[test_90_markdownlint.sh](/docs/H/tests/test_90_markdownlint.md)**: Lints Markdown documentation using markdownlint.
+- **[test_91_cppcheck.sh](/docs/H/tests/test_91_cppcheck.md)**: Performs C/C++ static analysis using cppcheck.
+- **[test_92_shellcheck.sh](/docs/H/tests/test_92_shellcheck.md)**: Validates shell scripts using shellcheck with exception justification checks.
+- **[test_93_jsonlint.sh](/docs/H/tests/test_93_jsonlint.md)**: Validates JSON file syntax and structure.
+- **[test_94_eslint.sh](/docs/H/tests/test_94_eslint.md)**: Lints JavaScript files using eslint.
+- **[test_95_stylelint.sh](/docs/H/tests/test_95_stylelint.md)**: Validates CSS files using stylelint.
+- **[test_96_htmlhint.sh](/docs/H/tests/test_96_htmlhint.md)**: Validates HTML files using htmlhint.
+- **[test_97_xmlstarlet.sh](/docs/H/tests/test_97_xmlstarlet.md)**: Validates XML/SVG files using xmlstarlet.
+- **[test_98_luacheck.sh](/docs/H/tests/test_98_luacheck.md)**: Lua code analysis with luacheck
+- **[test_99_code_size.sh](/docs/H/tests/test_99_code_size.md)**: Analyzes code size metrics and file distribution.
 
 ## Configuration Files
 
@@ -185,7 +185,7 @@ When creating new test scripts, adhere to the following standards:
 ../hydrogen ./configs/hydrogen_test_max.json
 ```
 
-For more detailed information on the Hydrogen testing approach, refer to the [Testing Documentation](../docs/testing.md).
+For more detailed information on the Hydrogen testing approach, refer to the [Testing Documentation](/docs/H/core/testing.md).
 
 ## Test Renumbering / Renaming
 

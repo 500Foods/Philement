@@ -24,9 +24,9 @@ Efforts were made to optimize the WebSocket server shutdown process to reduce ex
 
 ## Key Files
 
-- [src/websocket/websocket_server_shutdown.c](../../src/websocket/websocket_server_shutdown.c)
-- [src/websocket/websocket_server_context.c](../../src/websocket/websocket_server_context.c)
-- [src/websocket/websocket_server_internal.h](../../src/websocket/websocket_server_internal.h)
+- [src/websocket/websocket_server_shutdown.c](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_shutdown.c)
+- [src/websocket/websocket_server_context.c](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_context.c)
+- [src/websocket/websocket_server_internal.h](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_internal.h)
 
 ## Challenges
 

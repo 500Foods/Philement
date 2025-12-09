@@ -104,7 +104,7 @@ The SMTP Relay subsystem is configured through the following settings in hydroge
 2. **Authentication**
    - Client authentication with SASL mechanisms
    - Server authentication via TLS certificates
-   - Credential management via environment variables (see [SECRETS.md](../SECRETS.md))
+   - Credential management via environment variables (see [SECRETS.md](/docs/H/SECRETS.md))
    - Role-based access control for relay permissions
 
 3. **Content Security**
