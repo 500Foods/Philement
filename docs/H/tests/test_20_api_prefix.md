@@ -150,6 +150,6 @@ To run this test individually:
 - [test_19_socket_rebind.md](test_19_socket_rebind.md) - Socket rebinding tests (SO_REUSEADDR)
 - [test_21_system_endpoints.md](test_21_system_endpoints.md) - System endpoint testing
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
-- [api.md](../../docs/api.md) - API documentation and endpoint specifications
-- [configuration.md](../../docs/configuration.md) - Configuration file documentation
-- [testing.md](../../docs/testing.md) - Overall testing strategy
+- [api.md](/docs/H/core/api.md) - API documentation and endpoint specifications
+- [configuration.md](/docs/H/core/configuration.md) - Configuration file documentation
+- [testing.md](/docs/H/core/testing.md) - Overall testing strategy

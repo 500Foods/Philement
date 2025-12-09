@@ -238,12 +238,12 @@ The test performs cryptographic signature verification:
 
 ## Related Documentation
 
-- [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
-- [framework.md](framework.md) - Testing framework overview and architecture
-- [file_utils.md](file_utils.md) - File utility functions documentation
-- [log_output.md](log_output.md) - Log output formatting and analysis
-- [installer/README.md](../../installer/README.md) - Installer system documentation
-- [test_01_compilation.md](test_01_compilation.md) - Original compilation test (installer functionality removed)
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
+- [framework.md](/docs/H/tests/framework.md) - Testing framework overview and architecture
+- [file_utils.md](/docs/H/tests/file_utils.md) - File utility functions documentation
+- [log_output.md](/docs/H/tests/log_output.md) - Log output formatting and analysis
+- [installer/README.md](/elements/001-hydrogen/hydrogen/installer/README.md) - Installer system documentation
+- [test_01_compilation.md](/docs/H/tests/test_01_compilation.md) - Original compilation test (installer functionality removed)
 
 ## Version History
 

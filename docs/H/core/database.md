@@ -19,7 +19,7 @@ Database Instance
 
 ### Core Components
 
-- **[Lead DQM](reference/lead_dqm.md)** - Central coordinator for each database instance
+- **[Lead DQM](/docs/H/core/reference/lead_dqm.md)** - Central coordinator for each database instance
 - **Child Queue Managers** - Specialized queues for different priority levels
 - **Multi-Engine Interface** - Unified API across all supported database engines
 - **Dynamic Queue Scaling** - Automatic spawning/shutdown based on workload
@@ -164,20 +164,20 @@ Each database gets exactly one **Lead DQM** that:
 
 ### Core Documentation
 
-- **[DATABASE_PLAN.md](plans/DATABASE_PLAN.md)** - Comprehensive implementation plan and status
-- **[Lead DQM Guide](reference/lead_dqm.md)** - Developer guide for Lead DQM implementation and operation
-- **[Database Architecture](reference/database_architecture.md)** - System architecture overview
-- **[Database Configuration](reference/database_configuration.md)** - Configuration reference
+- **[DATABASE_PLAN.md](/docs/H/plans/DATABASE_PLAN.md)** - Comprehensive implementation plan and status
+- **[Lead DQM Guide](/docs/H/core/reference/lead_dqm.md)** - Developer guide for Lead DQM implementation and operation
+- **[Database Architecture](/docs/H/core/reference/database_architecture.md)** - System architecture overview
+- **[Database Configuration](/docs/H/core/reference/database_configuration.md)** - Configuration reference
 
 ### Testing Documentation
 
-- **[test_30_database.md](../tests/docs/test_30_database.md)** - All Engines Parallel Operational Test
-- **[Database Migration Tests](../tests/docs/test_31_migrations.md)** - Migration validation testing
+- **[test_30_database.md](/docs/H/tests/test_30_database.md)** - All Engines Parallel Operational Test
+- **[Database Migration Tests](/docs/H/tests/test_31_migrations.md)** - Migration validation testing
 
 ### Reference Materials
 
-- **[Database Types](../src/database/database_types.h)** - Type definitions and structures
-- **[Database Engine Interface](../src/database/database_engine.c)** - Multi-engine abstraction layer
+- **[Database Types](/elements/001-hydrogen/hydrogen/src/database/database_types.h)** - Type definitions and structures
+- **[Database Engine Interface](/elements/001-hydrogen/hydrogen/src/database/database_engine.c)** - Multi-engine abstraction layer
 
 ## Development Guidelines
 

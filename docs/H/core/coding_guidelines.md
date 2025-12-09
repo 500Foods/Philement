@@ -709,8 +709,8 @@ Cryptographic Operations Review:
 
 ## Related Documentation
 
-- [API Documentation](./api.md)
-- [Configuration Guide](./configuration.md)
-- [Service Documentation](./service.md)
-- [OIDC Architecture](./reference/oidc_architecture.md)
-- [Security Best Practices](/docs/security_best_practices.md)
+- [API Documentation](/docs/H/core/api.md)
+- [Configuration Guide](/docs/H/core/configuration.md)
+- [Service Documentation](/docs/H/core/service.md)
+- [OIDC Architecture](/docs/H/core/reference/oidc_architecture.md)
+- [Security Best Practices](/docs/H/core/security_best_practices.md)

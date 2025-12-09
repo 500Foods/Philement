@@ -2,12 +2,12 @@
 
 ## ESSENTIAL PREREQUISITES
 
-- [INSTRUCTIONS.md](../../INSTRUCTIONS.md) - C development standards and build processes
-- [tests/TESTING.md](../../tests/TESTING.md) - Testing framework overview
-- [docs/reference/database_architecture.md](../reference/database_architecture.md) - Architecture specs
-- [src/queue/queue.c](../../src/queue/queue.c) - Queue infrastructure to extend
-- [src/config/config_databases.c](../../src/config/config_databases.c) - Existing config system
-- [CMAKE/README.md](../../cmake/README.md) - Build system for database engines
+- [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) - C development standards and build processes
+- [tests/TESTING.md](/docs/H/tests/TESTING.md) - Testing framework overview
+- [docs/reference/database_architecture.md](/docs/H/core/reference/database_architecture.md) - Architecture specs
+- [src/queue/queue.c](/elements/001-hydrogen/hydrogen/src/queue/queue.c) - Queue infrastructure to extend
+- [src/config/config_databases.c](/elements/001-hydrogen/hydrogen/src/config/config_databases.c) - Existing config system
+- [CMAKE/README.md](/elements/001-hydrogen/hydrogen/cmake/README.md) - Build system for database engines
 
 ## ARCHITECTURE OVERVIEW
 
@@ -742,7 +742,7 @@ d
 **Test Pattern:**
 
 ```c
-#include "../../src/database/database_connection.h"
+#include "/elements/001-hydrogen/hydrogen/src/database/database_connection.h"
 
 TEST_GROUP(DatabaseConnectionTests);
 TEST(DatabaseConnectionTests, connect_with_valid_credentials);

@@ -4,7 +4,7 @@
 
 This document is a placeholder for future content on the service architecture of the Hydrogen project. Detailed information about service design and implementation will be added here as the project evolves.
 
-For current related information, please refer to [System Architecture](/docs/reference/system_architecture.md).
+For current related information, please refer to [System Architecture](/docs/H/core/reference/system_architecture.md).
 
 ## Topics to be Covered
 

@@ -1,7 +1,7 @@
 # Test 36: WebSockets
 
 **Version:** 1.0.0  
-**Test Script:** [test_23_websockets.sh](../test_23_websockets.sh)  
+**Test Script:** [test_23_websockets.sh](/elements/001-hydrogen/hydrogen/tests/test_23_websockets.sh)  
 **Test Type:** Integration Testing  
 **Dependencies:** WebSocket server, libwebsockets, Network subsystem
 
@@ -165,7 +165,7 @@ This test verifies the WebSocket server functionality in the Hydrogen system, en
 
 ## Related Documentation
 
-- **Main Test Suite:** [tests/TESTING.md](../TESTING.md)
-- **Project Overview:** [SITEMAP.md](../../SITEMAP.md)
-- **WebSocket Documentation:** [docs/web_socket.md](../../docs/web_socket.md)
-- **Configuration Guide:** [docs/configuration.md](../../docs/configuration.md)
+- **Main Test Suite:** [tests/TESTING.md](/docs/H/tests/TESTING.md)
+- **Project Overview:** [SITEMAP.md](/docs/H/SITEMAP.md)
+- **WebSocket Documentation:** [docs/web_socket.md](/docs/H/core/web_socket.md)
+- **Configuration Guide:** [docs/configuration.md](/docs/H/core/configuration.md)

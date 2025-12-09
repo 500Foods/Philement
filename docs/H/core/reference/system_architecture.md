@@ -112,7 +112,7 @@ These components implement the primary user-facing features of Hydrogen, leverag
                           └───────────────┘
 ```
 
-The [Print Queue Architecture](./print_queue_architecture.md) document provides detailed information about this component.
+The [Print Queue Architecture](/docs/H/core/reference/print_queue_architecture.md) document provides detailed information about this component.
 
 ### WebSocket Communication
 
@@ -129,7 +129,7 @@ The [Print Queue Architecture](./print_queue_architecture.md) document provides 
                           └───────────────┘
 ```
 
-The [WebSocket Server Architecture](./websocket_architecture.md) document provides detailed information about this component.
+The [WebSocket Server Architecture](/docs/H/core/reference/websocket_architecture.md) document provides detailed information about this component.
 
 ### Network Management
 
@@ -146,7 +146,7 @@ The [WebSocket Server Architecture](./websocket_architecture.md) document provid
                           └───────────────┘
 ```
 
-The [Network Interface Architecture](./network_architecture.md) document provides detailed information about this component.
+The [Network Interface Architecture](/docs/H/core/reference/network_architecture.md) document provides detailed information about this component.
 
 ### Terminal System
 
@@ -325,7 +325,7 @@ Each major component runs in its own thread, with the main thread responsible fo
 3. **Responsiveness**: Long-running operations don't block the entire system
 4. **Scheduling**: Components can operate at different priorities and frequencies
 
-See the [Thread Monitoring](../thread_monitoring.md) document for details on monitoring thread health.
+See the [Thread Monitoring](/docs/H/core/reference/thread_monitoring.md) document for details on monitoring thread health.
 
 ## Startup Sequence
 
@@ -421,7 +421,7 @@ The shutdown sequence follows the reverse of the startup sequence, ensuring depe
 - Network connections are closed before network resources are freed
 - Log system is the last to shut down
 
-See the [Shutdown Architecture](../shutdown_architecture.md) document for detailed information about this process.
+See the [Shutdown Architecture](/docs/H/core/shutdown_architecture.md) document for detailed information about this process.
 
 ## Key Architectural Patterns
 
@@ -457,7 +457,7 @@ This pattern enables:
 - Runtime monitoring of subsystem health
 - Structured status reporting
 
-See the [Subsystem Registry Architecture](./subsystem_registry_architecture.md) document for detailed information.
+See the [Subsystem Registry Architecture](/docs/H/core/reference/subsystem_registry_architecture.md) document for detailed information.
 
 ### 2. Thread-Safe Queues
 
@@ -586,7 +586,7 @@ This dependency graph guides:
 
 ## Security Model
 
-Hydrogen implements a comprehensive security model with multiple layers of protection. For detailed implementation of encryption and secrets management, see [SECRETS.md](../SECRETS.md).
+Hydrogen implements a comprehensive security model with multiple layers of protection. For detailed implementation of encryption and secrets management, see [SECRETS.md](/docs/H/SECRETS.md).
 
 ```diagram
 ┌───────────────────────────────────────────────────────────────┐
@@ -631,11 +631,11 @@ Hydrogen implements a comprehensive security model with multiple layers of prote
 
 Each security layer is documented in detail:
 
-- [Network Security](./network_architecture.md)
-- [Payload Encryption](/payloads/README.md)
-- [OIDC Security](./oidc_architecture.md)
-- [Database Security](./database_architecture.md)
-- [SMTP Security](./smtp_relay_architecture.md)
+- [Network Security](/docs/H/core/reference/network_architecture.md)
+- [Payload Encryption](/elements/001-hydrogen/hydrogen/payloads/README.md)
+- [OIDC Security](/docs/H/core/reference/oidc_architecture.md)
+- [Database Security](/docs/H/core/reference/database_architecture.md)
+- [SMTP Security](/docs/H/core/reference/smtp_relay_architecture.md)
 
 ## AI Integration
 
@@ -665,7 +665,7 @@ AI capabilities are integrated throughout the Hydrogen architecture:
                 └───────────────────────────────────┘
 ```
 
-See the [AI Integration](../ai_integration.md) document for detailed information about AI capabilities.
+See the [AI Integration](/docs/H/core/ai_integration.md) document for detailed information about AI capabilities.
 
 ## Component Interaction Examples
 
@@ -724,10 +724,10 @@ src/
 
 For more detailed information about specific components, refer to these documents:
 
-- [Print Queue Architecture](./print_queue_architecture.md) - Detailed print queue design
-- [WebSocket Server Architecture](./websocket_architecture.md) - WebSocket implementation details
-- [Network Interface Architecture](./network_architecture.md) - Network abstraction design
-- [Shutdown Architecture](../shutdown_architecture.md) - Shutdown process details
-- [Data Structures](./data_structures.md) - Core data structures
-- [Thread Monitoring](../thread_monitoring.md) - Thread health monitoring
-- [AI Integration](../ai_integration.md) - AI capabilities
+- [Print Queue Architecture](/docs/H/core/reference/print_queue_architecture.md) - Detailed print queue design
+- [WebSocket Server Architecture](/docs/H/core/reference/websocket_architecture.md) - WebSocket implementation details
+- [Network Interface Architecture](/docs/H/core/reference/network_architecture.md) - Network abstraction design
+- [Shutdown Architecture](/docs/H/core/shutdown_architecture.md) - Shutdown process details
+- [Data Structures](/docs/H/core/reference/data_structures.md) - Core data structures
+- [Thread Monitoring](/docs/H/core/reference/thread_monitoring.md) - Thread health monitoring
+- [AI Integration](/docs/H/core/ai_integration.md) - AI capabilities

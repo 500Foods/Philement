@@ -8,7 +8,7 @@ This guide is written for users setting up and managing a Hydrogen 3D printer co
 
 The Hydrogen server provides network-based control and monitoring for 3D printers. It uses a configuration file to control various aspects of its operation, from basic settings like network ports to advanced features like printer discovery on your network. This guide will help you understand and customize these settings for your needs.
 
-For instructions on running Hydrogen as a system service that starts automatically with your computer, see the [Service Setup Guide](/docs/reference/service.md).
+For instructions on running Hydrogen as a system service that starts automatically with your computer, see the [Service Setup Guide](/docs/H/core/reference/service.md).
 
 ## Using a Custom Configuration File
 

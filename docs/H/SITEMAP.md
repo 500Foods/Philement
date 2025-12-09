@@ -6,6 +6,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [README.md](/docs/H/README.md): Main Hydrogen project README - eseentially the Table of Contents for the project
 - [LICENSE.md](/docs/H/LICENSE.md): Standard MIT License
+- [LICENSE.md](/elements/001-hydrogen/hydrogen/LICENSE.md): Standard MIT License (duplicate)
 - [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md): "Recipe For Success" targetting AI models (or humans!) that are working on the project
 - [RELEASES.md](/docs/H/RELEASES.md): Version history index and instructions
 - [SECRETS.md](/docs/H/SECRETS.md): Outlines how secrets are managed in the project
@@ -40,9 +41,9 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 ### Folder: /docs/api/system
 
-- [system_health.md](/docs/H/core/api/system/system_health.md)
-- [system_info.md](/docs/H/core/api/system/system_info.md)
-- [system_version.md](/docs/H/core/api/system/system_version.md)
+- [system_health.md](/docs/H/api/system/system_health.md)
+- [system_info.md](/docs/H/api/system/system_info.md)
+- [system_version.md](/docs/H/api/system/system_version.md)
 
 ### Folder: /docs/deployment
 
@@ -70,6 +71,9 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 ### Folder: /docs/reference
 
+- [faq.md](/docs/H/core/reference/faq.md)
+- [glossary.md](/docs/H/core/reference/glossary.md)             │
+- [troubleshooting.md](/docs/H/core/reference/troubleshooting.md)
 - [api.md](/docs/H/core/reference/api.md)
 - [configuration.md](/docs/H/core/reference/configuration.md)
 - [data_structures.md](/docs/H/core/reference/data_structures.md)
@@ -243,7 +247,9 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ## Folder: /tests
 
 - [TESTING.md](/docs/H/tests/TESTING.md) - How to use and update the Test Suite
+- [README.md](/elements/001-hydrogen/hydrogen/tests/README.md) - How to use and update the Test Suite (duplicate)
 - [TESTING_UNITY.md](/docs/H/tests/TESTING_UNITY.md) - How to create new Unity Unit Test Framework tests
+- [UNITY.md](/elements/001-hydrogen/hydrogen/tests/UNITY.md) - How to create new Unity Unit Test Framework tests (duplicate)
 - [Unity](/elements/001-hydrogen/hydrogen/tests/unity/README.md) - Brief description of Unity
 
 ### Folder: /docs/H/tests
@@ -268,6 +274,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_00_all.md](/docs/H/tests/test_00_all.md): Test orchestration and execution framework
 - [test_01_compilation.md](/docs/H/tests/test_01_compilation.md): Compilation and build verification tests
 - [test_02_secrets.md](/docs/H/tests/test_02_secrets.md): Checks validity of key environment variables
+- [test_02_shell.md](/docs/H/tests/test_03_shell.md): Checks existence of key environment variables
 - [test_04_check_links.md](/docs/H/tests/test_04_check_links.md): Link validation tests
 - [test_10_unity.md](/docs/H/tests/test_10_unity.md): Unity testing framework integration
 - [test_11_leaks_like_a_sieve.md](/docs/H/tests/test_11_leaks_like_a_sieve.md): Memory leak detection tests
@@ -292,6 +299,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_33_mysql_migrations.md](/docs/H/tests/test_33_mysql_migrations.md): MySQL migration performance test
 - [test_34_sqlite_migrations.md](/docs/H/tests/test_34_sqlite_migrations.md): SQLite migration performance test
 - [test_35_db2_migrations.md](/docs/H/tests/test_35_db2_migrations.md): DB2 migration performance test
+- [test_41_conduit.md](/docs/H/tests/test_41_conduit.md): Query mechanism
 - [test_70_installer.md](/docs/H/tests/test_70_installer.md): Standalone installer building test
 - [test_71_database_diagrams.md](/docs/H/tests/test_71_database_diagrams.md): Standalone installer building test
 - [test_89_coverage.md](/docs/H/tests/test_89_coverage.md): Build system coverage information

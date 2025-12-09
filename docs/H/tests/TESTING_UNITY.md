@@ -7,7 +7,7 @@ IMPORTANT: The main purpose of the Unity Framework Testing in this project is to
 
 ## MOCKS
 
-A separate document specifically about the Mocks available and how to use them can be found in [unity/mocks/README.md](unity/mocks/README.md).
+A separate document specifically about the Mocks available and how to use them can be found in [unity/mocks/README.md](/elements/001-hydrogen/hydrogen/tests/unity/mocks/README.md).
 
 ## GENERAL FILE/FOLDER CONVENTIONS
 

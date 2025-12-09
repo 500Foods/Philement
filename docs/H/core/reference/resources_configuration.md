@@ -330,5 +330,5 @@ curl http://your-printer:5000/api/system/metrics
 
 - [Print Queue Configuration](printqueue_configuration.md) - Queue settings
 - [Logging Configuration](logging_configuration.md) - Log management
-- [Monitoring Guide](/docs/reference/monitoring.md) - System monitoring
-- [Performance Guide](/docs/reference/performance.md) - Performance tuning
+- [Monitoring Guide](/docs/H/core/reference/monitoring.md) - System monitoring
+- [Performance Guide](/docs/H/core/reference/performance.md) - Performance tuning

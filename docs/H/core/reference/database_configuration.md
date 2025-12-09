@@ -222,6 +222,6 @@ curl http://localhost:5000/api/system/db/status
 
 ## Related Documentation
 
-- [OIDC Configuration](/docs/reference/oidc_configuration.md)
-- [Logging Configuration](/docs/reference/logging_configuration.md)
-- [System Architecture](/docs/reference/system_architecture.md)
+- [OIDC Configuration](/docs/H/core/reference/oidc_configuration.md)
+- [Logging Configuration](/docs/H/core/reference/logging_configuration.md)
+- [System Architecture](/docs/H/core/reference/system_architecture.md)

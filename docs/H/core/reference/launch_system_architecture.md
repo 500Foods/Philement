@@ -27,7 +27,7 @@ Each subsystem's launch process is documented separately:
 
 | Subsystem | Description | Documentation |
 |-----------|-------------|---------------|
-| Registry | Foundation for subsystem management | [Launch Process](/docs/reference/launch/registry_subsystem.md) |
+| Registry | Foundation for subsystem management | [Launch Process](/docs/H/core/reference/launch/registry_subsystem.md) |
 | Payload | Manages embedded payloads | [Launch Process](launch/payload_subsystem.md) |
 | WebServer | HTTP services | [Launch Process](launch/webserver_subsystem.md) |
 | Network | Network connectivity | [Coming Soon] |

@@ -272,13 +272,13 @@ The Subsystem Registry plays a crucial role in the shutdown process by managing 
 
 The registry provides real-time monitoring of the shutdown progress, allowing the main shutdown sequence to adapt to conditions and ensure all subsystems are properly terminated.
 
-For detailed information about the Subsystem Registry design and implementation, see the [Subsystem Registry Architecture](./reference/subsystem_registry_architecture.md) document.
+For detailed information about the Subsystem Registry design and implementation, see the [Subsystem Registry Architecture](/docs/H/core/reference/subsystem_registry_architecture.md) document.
 
 ## References
 
-- [Subsystem Registry Architecture](./reference/subsystem_registry_architecture.md) - Subsystem lifecycle management
-- [Thread Monitoring](./thread_monitoring.md) - Detailed thread diagnostic information
-- [WebSocket Interface](./web_socket.md) - WebSocket server shutdown implementation
-- [mDNS Server](./mdns_server.md) - mDNS server shutdown implementation
-- [System Info API](./api/system/system_info.md) - System health and status monitoring
-- [Release Notes](../RELEASES.md) - History of shutdown improvements
+- [Subsystem Registry Architecture](/docs/H/core/reference/subsystem_registry_architecture.md) - Subsystem lifecycle management
+- [Thread Monitoring](/docs/H/core/reference/thread_monitoring.md) - Detailed thread diagnostic information
+- [WebSocket Interface](/docs/H/core//web_socket.md) - WebSocket server shutdown implementation
+- [mDNS Server](/docs/H/core/mdns_server.md) - mDNS server shutdown implementation
+- [System Info API](/docs/H/api/system/system_info.md) - System health and status monitoring
+- [Release Notes](/docs/H/RELEASES.md) - History of shutdown improvements

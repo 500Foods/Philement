@@ -4,7 +4,7 @@
 
 This document is a placeholder for future content on monitoring related to the Hydrogen project. Detailed information about monitoring capabilities and configurations will be added here as the project evolves.
 
-For current related information, please refer to [System Architecture](/docs/reference/system_architecture.md) and [Resources Configuration](/docs/reference/resources_configuration.md).
+For current related information, please refer to [System Architecture](/docs/H/core/reference/system_architecture.md) and [Resources Configuration](/docs/H/core/reference/resources_configuration.md).
 
 ## Topics to be Covered
 

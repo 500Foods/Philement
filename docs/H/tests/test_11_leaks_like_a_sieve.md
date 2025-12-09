@@ -78,4 +78,4 @@ This test integrates with:
 - May require increased timeout values for complex operations
 - Memory usage is also increased during analysis
 
-For more information on memory debugging techniques, see the [Testing Documentation](../../docs/testing.md).
+For more information on memory debugging techniques, see the [Testing Documentation](/docs/H/core/testing.md).
