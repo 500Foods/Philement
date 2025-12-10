@@ -55,7 +55,7 @@ Hydrogen is currently designed for technical users who:
 
 ### Technical References
 
-- [**API Documentation**](/docs/H/core/api.md) - REST API reference and implementation details
+- [**API Documentation**](/docs/H/core/subsystems/api/api.md) - REST API reference and implementation details
 - [**Configuration Guide**](/docs/H/core/configuration.md) - System configuration and settings
 - [**Data Structures**](/docs/H/core/data_structures.md) - Core data structures and interfaces
 - [**Testing Framework**](/docs/H/core/testing.md) - Testing documentation and procedures
@@ -64,12 +64,12 @@ Hydrogen is currently designed for technical users who:
 
 - [**Service Architecture**](/docs/H/core/service.md) - Service management and lifecycle
 - [**Shutdown Architecture**](/docs/H/core/shutdown_architecture.md) - Graceful shutdown procedures
-- [**Thread Monitoring**](/docs/H/core/thread_monitoring.md) - Thread management and monitoring
-- [**WebSocket Implementation**](/docs/H/core/web_socket.md) - WebSocket server architecture
-- [**Mirage Proxy**](/docs/H/core/MIRAGE.md) - WebSocket tunneling for remote device access
-- [**mDNS Server**](/docs/H/core/mdns_server.md) - Service discovery implementation
-- [**Print Queue System**](/docs/H/core/print_queue.md) - 3D printing queue management
-- [**OIDC Integration**](/docs/H/core/oidc_integration.md) - OpenID Connect authentication
+- [**Thread Monitoring**](/docs/H/core/subsystems/threads/threads.md) - Thread management and monitoring
+- [**WebSocket Implementation**](/docs/H/core/subsystems/websocket/websocket.md) - WebSocket server architecture
+- [**Mirage Proxy**](/docs/H/core/subsystems/mirage/mirage.md) - WebSocket tunneling for remote device access
+- [**mDNS Server**](/docs/H/core/subsystems/mdnsserver/mdnsserver.md) - Service discovery implementation
+- [**Print Queue System**](/docs/H/core/subsystems/print/print.md) - 3D printing queue management
+- [**OIDC Integration**](/docs/H/core/subsystems/oidc/oidc.md) - OpenID Connect authentication
 - [**System Information**](/docs/H/core/system_info.md) - System monitoring and reporting
 
 ### Implementation Notes

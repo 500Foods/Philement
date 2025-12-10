@@ -9,8 +9,8 @@
 ## RECOMMENDED: Understanding context and inspiration
 
 - [**STRUCTURE.md**](/docs/H/STRUCTURE.md) - Complete file organization and directory structure documentation
-- [**docs/web_socket.md**](/docs/H/core/web_socket.md) - WebSocket implementation patterns (test_23_websockets.sh reference)
-- [**docs/api.md**](/docs/H/core/api.md) - API structure and documentation approaches (swagger endpoint patterns)
+- [**docs/web_socket.md**](/docs/H/core/subsystems/websocket/websocket.md) - WebSocket implementation patterns (test_23_websockets.sh reference)
+- [**docs/api.md**](/docs/H/core/subsystems/api/api.md) - API structure and documentation approaches (swagger endpoint patterns)
 - [**docs/data_structures.md**](/docs/H/core/data_structures.md) - Core data structure patterns and conventions
 - [**cmake/README.md**](/elements/001-hydrogen/hydrogen/cmake/README.md) - Build system configuration and requirements
 

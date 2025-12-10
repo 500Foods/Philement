@@ -153,5 +153,5 @@ typedef struct {
 ## Related Documentation
 
 - [Coding Guidelines](/docs/H/core/coding_guidelines.md)
-- [API Documentation](/docs/H/core/api.md)
+- [API Documentation](/docs/H/core/subsystems/api/api.md)
 - [Configuration Guide](/docs/H/core/configuration.md)

@@ -118,7 +118,7 @@ The Hydrogen project uses several security mechanisms that developers need to be
 2. **OIDC Security**
    - RSA key pairs for token signing
    - AES encryption for sensitive data
-   - See [docs/oidc_integration.md](/docs/H/core/oidc_integration.md)
+   - See [docs/oidc_integration.md](/docs/H/core/subsystems/oidc/oidc.md)
 
 3. **Transport Security**
    - TLS for HTTP/WebSocket connections
@@ -264,6 +264,6 @@ make clean
 ## Additional Resources
 
 - [Coding Guidelines](/docs/H/core/coding_guidelines.md) - Detailed coding standards
-- [API Documentation](/docs/H/core/api.md) - Complete API reference
+- [API Documentation](/docs/H/core/subsystems/api/api.md) - Complete API reference
 - [System Architecture](/docs/H/core/reference/system_architecture.md) - Detailed system design
 - [Testing System](/docs/H/core/testing.md) - Test framework documentation

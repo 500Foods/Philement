@@ -7,7 +7,7 @@ This document serves as a table of contents for all available API endpoints in t
 All sensitive endpoints use encryption and secure key management as documented in [SECRETS.md](/docs/H/SECRETS.md). For implementation details of the encryption systems, see:
 
 - [Payload Encryption](/elements/001-hydrogen/hydrogen/payloads/README.md)
-- [OIDC Security](/docs/H/core//oidc_integration.md)
+- [OIDC Security](/docs/H/core/subsystems/oidc/oidc.md)
 - [Network Security](/docs/H/core/reference/network_architecture.md)
 
 ## System Service
@@ -58,6 +58,6 @@ Endpoints for OpenID Connect (OIDC) authentication and identity management. All 
 ## Additional Resources
 
 - [Configuration Guide](/docs/H/core/configuration.md) - Complete guide for server configuration
-- [WebSocket API](/docs/H/core/web_socket.md) - Real-time communication interface
-- [Print Queue Management](/docs/H/core/print_queue.md) - Print job scheduling and management
-- [OIDC Integration](/docs/H/core/oidc_integration.md) - Identity Provider functionality
+- [WebSocket API](/docs/H/core/subsystems/websocket/websocket.md) - Real-time communication interface
+- [Print Queue Management](/docs/H/core/subsystems/print/print.md) - Print job scheduling and management
+- [OIDC Integration](/docs/H/core/subsystems/oidc/oidc.md) - Identity Provider functionality

@@ -402,7 +402,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [docs/README.md](/docs/H/core/README.md) - Documentation index
 - [docs/developer_onboarding.md](/docs/H/core/developer_onboarding.md) - Setup and onboarding guide
 - [docs/coding_guidelines.md](/docs/H/core/coding_guidelines.md) - Coding standards and practices
-- [docs/api.md](/docs/H/core/api.md) - API reference documentation
+- [docs/api.md](/docs/H/core/subsystems/api/api.md) - API reference documentation
 - [docs/testing.md](/docs/H/core/testing.md) - Testing guide and procedures
 - [docs/metrics/README.md](/docs/H/metrics/README.md) - Build metrics documentation
 - [docs/configuration.md](/docs/H/core/configuration.md) - Configuration system documentation
@@ -416,12 +416,12 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <summary><b>Subsystem Documentation</b></summary>
 
 - [docs/ai_integration.md](/docs/H/core/ai_integration.md) - AI integration documentation
-- [docs/mdns_server.md](/docs/H/core/mdns_server.md) - mDNS server documentation
-- [docs/oidc_integration.md](/docs/H/core/oidc_integration.md) - OIDC integration guide
-- [docs/print_queue.md](/docs/H/core/print_queue.md) - Print queue system documentation
+- [docs/mdns_server.md](/docs/H/core/subsystems/mdnsserver/mdnsserver.md) - mDNS server documentation
+- [docs/oidc_integration.md](/docs/H/core/subsystems/oidc/oidc.md) - OIDC integration guide
+- [docs/print_queue.md](/docs/H/core/subsystems/print/print.md) - Print queue system documentation
 - [docs/shutdown_architecture.md](/docs/H/core/shutdown_architecture.md) - Shutdown system architecture
-- [docs/thread_monitoring.md](/docs/H/core/thread_monitoring.md) - Thread monitoring documentation
-- [docs/web_socket.md](/docs/H/core/web_socket.md) - WebSocket system documentation
+- [docs/thread_monitoring.md](/docs/H/core/subsystems/threads/threads.md) - Thread monitoring documentation
+- [docs/web_socket.md](/docs/H/core/subsystems/websocket/websocket.md) - WebSocket system documentation
 
 </details>
 

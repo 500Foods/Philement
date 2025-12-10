@@ -133,4 +133,4 @@ This test is part of the Hydrogen testing framework and runs automatically with:
 - [Database Tests](/docs/H/tests/test_30_database.md)
 - [System Endpoint Tests](/docs/H/tests/test_21_system_endpoints.md)
 - [Conduit Service](/docs/H/plans/CONDUIT.md)
-- [Database Architecture](/docs/H/core/database.md)
+- [Database Architecture](/docs/H/core/subsystems/database/database.md)

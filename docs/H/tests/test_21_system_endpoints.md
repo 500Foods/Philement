@@ -164,7 +164,7 @@ To run this test individually:
 - [test_20_api_prefix.md](/docs/H/tests/test_20_api_prefix.md) - API prefix testing
 - [test_22_swagger.md](/docs/H/tests/test_22_swagger.md) - Swagger/OpenAPI documentation testing
 - [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Modular library documentation
-- [api.md](/docs/H/core/api.md) - API documentation and endpoint specifications
+- [api.md](/docs/H/core/subsystems/api/api.md) - API documentation and endpoint specifications
 - [configuration.md](/docs/H/core/configuration.md) - Configuration file documentation
 - [testing.md](/docs/H/core/testing.md) - Overall testing strategy
 - [system_info.md](/docs/H/core/system_info.md) - System information documentation

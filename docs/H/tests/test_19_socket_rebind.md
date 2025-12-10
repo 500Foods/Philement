@@ -122,4 +122,4 @@ To run this test individually:
 - [test_18_signals.md](/docs/H/tests/test_18_signals.md) - Signal handling tests
 - [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Modular library documentation
 - [testing.md](/docs/H/core/testing.md) - Overall testing strategy
-- [api.md](/docs/H/core/api.md) - API documentation for HTTP endpoints
+- [api.md](/docs/H/core/subsystems/api/api.md) - API documentation for HTTP endpoints

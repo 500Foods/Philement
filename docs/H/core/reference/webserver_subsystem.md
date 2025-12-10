@@ -377,5 +377,5 @@ For more information on WebServer-related topics, see:
 
 - [WebServer Configuration](/docs/H/core/reference/webserver_configuration.md) - Configuration details
 - [Launch System Architecture](/docs/H/core/reference/launch_system_architecture.md) - Launch system integration
-- [API Documentation](/docs/H/core/api.md) - REST API details
+- [API Documentation](/docs/H/core/subsystems/api/api.md) - REST API details
 - [Subsystem Registry Architecture](/docs/H/core/reference/subsystem_registry_architecture.md) - Subsystem management
