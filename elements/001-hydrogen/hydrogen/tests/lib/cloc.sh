@@ -432,8 +432,8 @@ EOF
             header_comment=0
             cmake_code=$(jq -r '.CMake.code // 0' "${core_json}" 2>/dev/null || echo 0)
             cmake_comment=$(jq -r '.CMake.comment // 0' "${core_json}" 2>/dev/null || echo 0)
-            shell_code=$((($(jq -r '."Bourne Shell".code // 0' "${core_json}" 2>/dev/null || echo 0) + $(jq -r '.zsh.code // 0' "${core_json}" 2>/dev/null || echo 0))))
-            shell_comment=$((($(jq -r '."Bourne Shell".comment // 0' "${core_json}" 2>/dev/null || echo 0) + $(jq -r '.zsh.comment // 0' "${core_json}" 2>/dev/null || echo 0))))
+            shell_code=$(($(jq -r '."Bourne Shell".code // 0' "${core_json}" 2>/dev/null || echo 0) + $(jq -r '.zsh.code // 0' "${core_json}" 2>/dev/null || echo 0)))
+            shell_comment=$(($(jq -r '."Bourne Shell".comment // 0' "${core_json}" 2>/dev/null || echo 0) + $(jq -r '.zsh.comment // 0' "${core_json}" 2>/dev/null || echo 0)))
             lua_code=$(jq -r '.Lua.code // 0' "${core_json}" 2>/dev/null || echo 0)
             lua_comment=$(jq -r '.Lua.comment // 0' "${core_json}" 2>/dev/null || echo 0)
             javascript_code=$(jq -r '.JavaScript.code // 0' "${core_json}" 2>/dev/null || echo 0)
