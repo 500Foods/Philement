@@ -49,6 +49,18 @@
       "interpolation": "monotone"
     },
     {
+      "path": "cloc.main.Markdown.code",
+      "label": "Markdown code",
+      "axis": "left",
+      "type": "line",
+      "color": "#87CEEB",
+      "lineWidth": 2,
+      "lineStyle": "regular",
+      "pointRadius": 4,
+      "showPoints": true,
+      "interpolation": "monotone"
+    },
+    {
       "path": "cloc.main.Shell.code",
       "label": "Shell code",
       "axis": "left",
