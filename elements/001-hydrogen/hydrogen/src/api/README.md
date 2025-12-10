@@ -116,7 +116,7 @@ See the [Developer Onboarding Guide](/docs/H/core/developer_onboarding.md) for m
 
 For comprehensive API documentation, refer to:
 
-- [API Documentation](/docs/H/core/api.md) - Complete API reference
+- [API Documentation](/docs/H/core/subsystems/api/api.md) - Complete API reference
 
 ## Testing
 

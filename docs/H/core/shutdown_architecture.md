@@ -278,7 +278,7 @@ For detailed information about the Subsystem Registry design and implementation,
 
 - [Subsystem Registry Architecture](/docs/H/core/reference/subsystem_registry_architecture.md) - Subsystem lifecycle management
 - [Thread Monitoring](/docs/H/core/reference/thread_monitoring.md) - Detailed thread diagnostic information
-- [WebSocket Interface](/docs/H/core//web_socket.md) - WebSocket server shutdown implementation
-- [mDNS Server](/docs/H/core/mdns_server.md) - mDNS server shutdown implementation
+- [WebSocket Interface](/docs/H/core/subsystems/websocket/websocket.md) - WebSocket server shutdown implementation
+- [mDNS Server](/docs/H/core/subsystems/mdnsserver/mdnsserver.md) - mDNS server shutdown implementation
 - [System Info API](/docs/H/api/system/system_info.md) - System health and status monitoring
 - [Release Notes](/docs/H/RELEASES.md) - History of shutdown improvements

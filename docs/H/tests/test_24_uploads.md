@@ -197,6 +197,6 @@ This test specifically targets the `src/api/service/upload.c` file to increase c
 - [test_21_system_endpoints.md](/docs/H/tests/test_21_system_endpoints.md) - System endpoint testing
 - [test_22_swagger.md](/docs/H/tests/test_22_swagger.md) - Similar parallel test pattern
 - [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Modular library documentation
-- [api.md](/docs/H/core/api.md) - API documentation and endpoint specifications
+- [api.md](/docs/H/core/subsystems/api/api.md) - API documentation and endpoint specifications
 - [configuration.md](/docs/H/core/configuration.md) - Configuration file documentation
 - [testing.md](/docs/H/core/testing.md) - Overall testing strategy
