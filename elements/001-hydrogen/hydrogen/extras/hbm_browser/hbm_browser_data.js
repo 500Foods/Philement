@@ -396,9 +396,9 @@ HMB.extractNumericValues = function(data, path = '', context = {}) {
       if (!isNaN(numericValue)) {
         const cleanPath = this.createCleanMetricPath(newPath, newContext);
         results.push({
-          path: cleanPath,
+          path: cleanPath, // Use clean path as primary identifier
           value: numericValue,
-          label: this.createEnhancedMetricLabel(newPath, newContext),
+          label: this.createEnhancedMetricLabel(cleanPath, newContext), // Use clean path for labeling too
           originalPath: newPath, // Store original path for data lookup
           context: newContext // Store context for reference
         });
@@ -407,9 +407,9 @@ HMB.extractNumericValues = function(data, path = '', context = {}) {
     else if (typeof value === 'number') {
       const cleanPath = this.createCleanMetricPath(newPath, newContext);
       results.push({
-        path: cleanPath,
+        path: cleanPath, // Use clean path as primary identifier
         value: value,
-        label: this.createEnhancedMetricLabel(newPath, newContext),
+        label: this.createEnhancedMetricLabel(cleanPath, newContext), // Use clean path for labeling too
         originalPath: newPath, // Store original path for data lookup
         context: newContext // Store context for reference
       });
@@ -592,7 +592,7 @@ HMB.createCleanMetricPath = function(path, context) {
   if (path.includes('test_results.data') && context.test_id) {
     return path.replace(/test_results\.data\[\d+\]/, `test_results.data.${context.test_id}`);
   }
-  // Handle cloc.main array items
+  // Handle cloc.main array items - this is the key fix for the Shell/Markdown issue
   else if (path.includes('cloc.main') && context.language) {
     return path.replace(/cloc\.main\[\d+\]/, `cloc.main.${context.language.replace(/\s+/g, '_').replace(/\//g, '_')}`);
   }
@@ -683,6 +683,11 @@ HMB.getNestedValue = function(obj, path) {
       const result = this.getNestedValueByPath(obj, metric.originalPath);
       return result;
     } else {
+      // If no original path found, try the clean path directly (for backward compatibility)
+      const result = this.getNestedValueByPath(obj, path);
+      if (result !== undefined) {
+        return result;
+      }
     }
   }
 
