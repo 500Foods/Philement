@@ -208,7 +208,7 @@ ws.onmessage = function(event) {
 
 ## Related Documentation
 
-- [Web Server Configuration](webserver_configuration.md) - HTTP server settings
-- [Print Queue Configuration](printqueue_configuration.md) - Job management
-- [Logging Configuration](logging_configuration.md) - Detailed logging setup
-- [Network Configuration](network_configuration.md) - Network settings
+- [Web Server Configuration](/docs/H/core/reference/webserver_configuration.md) - HTTP server settings
+- [Print Queue Configuration](/docs/H/core/reference/printqueue_configuration.md) - Job management
+- [Logging Configuration](/docs/H/core/reference/logging_configuration.md) - Detailed logging setup
+- [Network Configuration](/docs/H/core/reference/network_configuration.md) - Network settings

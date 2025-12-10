@@ -116,6 +116,6 @@ echo "$table_output" >> metrics.txt
 
 ## Related Documentation
 
-- [Coverage Libraries](coverage.md) - Complete coverage system overview
-- [Test 00 All](test_00_all.md) - Metrics file generation
+- [Coverage Libraries](/docs/H/tests/coverage.md) - Complete coverage system overview
+- [Test 00 All](/docs/H/tests/test_00_all.md) - Metrics file generation
 - [Build Metrics](/docs/H/metrics/README.md) - Metrics system overview

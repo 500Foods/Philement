@@ -107,5 +107,5 @@ The script automatically updates the project README.md with:
 
 ## Related Documentation
 
-- [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
-- [framework.md](framework.md) - Testing framework overview and architecture
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
+- [framework.md](/docs/H/tests/framework.md) - Testing framework overview and architecture

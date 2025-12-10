@@ -90,6 +90,6 @@ When working with the Threads subsystem:
 
 ## Related Documentation
 
-- [Launch System Architecture](../launch_system_architecture.md)
-- [System Architecture](../system_architecture.md)
+- [Launch System Architecture](/docs/H/core/reference/launch_system_architecture.md)
+- [System Architecture](/docs/H/core/reference/system_architecture.md)
 - [Thread Monitoring](/docs/H/core/reference/thread_monitoring.md)

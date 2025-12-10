@@ -119,7 +119,7 @@ The script provides detailed output including:
 
 ## Related Documentation
 
-- [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
-- [framework.md](framework.md) - Testing framework overview and architecture
-- [file_utils.md](file_utils.md) - File utility functions documentation
-- [log_output.md](log_output.md) - Log output formatting and analysis
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
+- [framework.md](/docs/H/tests/framework.md) - Testing framework overview and architecture
+- [file_utils.md](/docs/H/tests/file_utils.md) - File utility functions documentation
+- [log_output.md](/docs/H/tests/log_output.md) - Log output formatting and analysis

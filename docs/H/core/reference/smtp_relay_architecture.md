@@ -96,7 +96,7 @@ The SMTP Relay subsystem is configured through the following settings in hydroge
 ## Security Considerations
 
 1. **Transport Security**
-   - TLS encryption with modern cipher suites (see [network_architecture.md](network_architecture.md))
+   - TLS encryption with modern cipher suites (see [network_architecture.md](/docs/H/core/reference/network_architecture.md))
    - Certificate validation using system CA store
    - STARTTLS protocol compliance (RFC 3207)
    - Connection security with configurable timeouts

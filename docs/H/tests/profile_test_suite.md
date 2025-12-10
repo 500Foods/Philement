@@ -150,6 +150,6 @@ Common issues and solutions:
 
 ## Related Documentation
 
-- [Test 00 All](test_00_all.md) - Main test orchestration script
-- [Framework Library](framework.md) - Test framework utilities
-- [LIBRARIES.md](LIBRARIES.md) - Complete library documentation index
+- [Test 00 All](/docs/H/tests/test_00_all.md) - Main test orchestration script
+- [Framework Library](/docs/H/tests/framework.md) - Test framework utilities
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Complete library documentation index

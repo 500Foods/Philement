@@ -38,16 +38,16 @@ The configuration file is organized into logical sections, each controlling a di
 
 Each major subsystem has its own detailed configuration guide:
 
-- [Web Server Configuration](reference/webserver_configuration.md) - HTTP server settings
-- [WebSocket Configuration](reference/websocket_configuration.md) - Real-time updates
-- [Print Queue Configuration](reference/printqueue_configuration.md) - Job management
-- [mDNS Configuration](reference/mdns_configuration.md) - Network discovery
-- [Swagger Configuration](reference/swagger_configuration.md) - API documentation
-- [Terminal Configuration](reference/terminal_configuration.md) - Web terminal
-- [Logging Configuration](reference/logging_configuration.md) - Log management
-- [SMTP Relay Configuration](reference/smtp_configuration.md) - Email handling
-- [Database Configuration](reference/database_configuration.md) - Database connections
-- [System Resources](reference/resources_configuration.md) - Resource management
+- [Web Server Configuration](/docs/H/core/reference/webserver_configuration.md) - HTTP server settings
+- [WebSocket Configuration](/docs/H/core/reference/websocket_configuration.md) - Real-time updates
+- [Print Queue Configuration](/docs/H/core/reference/printqueue_configuration.md) - Job management
+- [mDNS Configuration](/docs/H/core/reference/mdns_configuration.md) - Network discovery
+- [Swagger Configuration](/docs/H/core/reference/swagger_configuration.md) - API documentation
+- [Terminal Configuration](/docs/H/core/reference/terminal_configuration.md) - Web terminal
+- [Logging Configuration](/docs/H/core/reference/logging_configuration.md) - Log management
+- [SMTP Relay Configuration](/docs/H/core/reference/smtp_configuration.md) - Email handling
+- [Database Configuration](/docs/H/core/reference/database_configuration.md) - Database connections
+- [System Resources](/docs/H/core/reference/resources_configuration.md) - Resource management
 
 ## Using Environment Variables
 

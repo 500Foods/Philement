@@ -10,7 +10,7 @@ This is a separate executable file that takes a JSON layout file and a JSON data
 
 ## GitHub Sitemap Library
 
-- **[GitHub Sitemap Library](github-sitemap.md)** - Documentation for `github-sitemap.sh`, a utility for checking markdown links and generating sitemap reports. [Script](/elements/001-hydrogen/hydrogen/tests/lib/github-sitemap.sh)
+- **[GitHub Sitemap Library](/docs/H/tests/github-sitemap.md)** - Documentation for `github-sitemap.sh`, a utility for checking markdown links and generating sitemap reports. [Script](/elements/001-hydrogen/hydrogen/tests/lib/github-sitemap.sh)
 
 ## Test Framework Libraries
 

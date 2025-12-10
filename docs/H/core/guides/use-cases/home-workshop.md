@@ -242,6 +242,6 @@ Configure log rotation to manage disk space:
 ### Getting Help
 
 1. Check system logs
-2. Review [Configuration Guide](../../reference/configuration.md)
+2. Review [Configuration Guide](/docs/H/core/reference/configuration.md)
 3. Search existing issues
 4. Join community forums

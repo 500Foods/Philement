@@ -279,6 +279,6 @@ Additional functions were added from test_10_compilation.sh:
 
 ## Related Documentation
 
-- [Log Output Library](log_output.md) - Output formatting and logging
-- [Test Framework Library](framework.md) - Test lifecycle management
-- [LIBRARIES.md](LIBRARIES.md) - Library index
+- [Log Output Library](/docs/H/tests/log_output.md) - Output formatting and logging
+- [Test Framework Library](/docs/H/tests/framework.md) - Test lifecycle management
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Library index

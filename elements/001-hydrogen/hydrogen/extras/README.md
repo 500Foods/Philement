@@ -47,11 +47,11 @@ Brotli is a popular compression algorithm that is particularly good at compressi
 
 MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 decoding but it is less standard on DB2 (LUW) so we have one for that as well.
 
-- [brotli_udf_db2](brotli_udf_db2/README.md) Brotli Decompress UDF for IBM DB2 (LUW)
-- [base64decode_udf_db2](base64decode_udf_db2/README.md) Base64 Decode UDF for IBM DB2 (LUW)
-- [brotli_udf_mysql](brotli_udf_mysql/README.md) Brotli Decompress UDF for MySQL/MariaDB
-- [brotli_udf_postgresql](brotli_udf_postgresql/README.md) Brotli Decompress UDF for PostgreSQL
-- [brotli_udf_sqlite](brotli_udf_sqlite/README.md) Brotli Decompress UDF for SQLite
+- [brotli_udf_db2](/elements/001-hydrogen/hydrogen/extras/brotli_udf_db2/README.md) Brotli Decompress UDF for IBM DB2 (LUW)
+- [base64decode_udf_db2](/elements/001-hydrogen/hydrogen/extras/base64decode_udf_db2/README.md) Base64 Decode UDF for IBM DB2 (LUW)
+- [brotli_udf_mysql](/elements/001-hydrogen/hydrogen/extras/brotli_udf_mysql/README.md) Brotli Decompress UDF for MySQL/MariaDB
+- [brotli_udf_postgresql](/elements/001-hydrogen/hydrogen/extras/brotli_udf_postgresql/README.md) Brotli Decompress UDF for PostgreSQL
+- [brotli_udf_sqlite](/elements/001-hydrogen/hydrogen/extras/brotli_udf_sqlite/README.md) Brotli Decompress UDF for SQLite
 
 ### Available UDF Functions
 
@@ -395,7 +395,7 @@ cd hbm_browser
 node hbm_browser_cli.js config.json output.svg
 ```
 
-**Documentation:** See [hbm_browser/README.md](hbm_browser/README.md) for complete usage instructions and configuration options.
+**Documentation:** See [hbm_browser/README.md](/elements/001-hydrogen/hydrogen/extras/hbm_browser/README.md) for complete usage instructions and configuration options.
 
 ## Payload Tools
 

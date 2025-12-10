@@ -230,7 +230,7 @@ fi
 
 ## Related Documentation
 
-- [Coverage Libraries](coverage.md) - Complete coverage system overview
-- [Coverage Combined](coverage-combined.md) - Combined coverage analysis
-- [Coverage Table](coverage_table.md) - Table generation for metrics
+- [Coverage Libraries](/docs/H/tests/coverage.md) - Complete coverage system overview
+- [Coverage Combined](/docs/H/tests/coverage-combined.md) - Combined coverage analysis
+- [Coverage Table](/docs/H/tests/coverage_table.md) - Table generation for metrics
 - [Build Metrics](/docs/H/metrics/README.md) - How coverage data appears in metrics

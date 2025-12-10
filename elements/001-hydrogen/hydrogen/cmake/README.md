@@ -47,41 +47,41 @@ Hydrogen is a C project that implements a comprehensive suite of capabilities in
 
 The CMake build system is organized into multiple specialized files, each managing distinct aspects of the build process:
 
-- [**CMakeLists.txt**](CMakeLists.txt) Main configuration file that defines the project, includes all other CMakeLists files, and orchestrates the overall build structure.
+- [**CMakeLists.txt**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists.txt) Main configuration file that defines the project, includes all other CMakeLists files, and orchestrates the overall build structure.
 
-- [**CMakeLists-version.cmake**](CMakeLists-version.cmake) Version numbering using git commit counts and release timestamps.
+- [**CMakeLists-version.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-version.cmake) Version numbering using git commit counts and release timestamps.
 
-- [**CMakeLists-init.cmake**](CMakeLists-init.cmake) Fundamental CMake setup including package discovery, compiler flags, library dependencies, and source file enumeration.
+- [**CMakeLists-init.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-init.cmake) Fundamental CMake setup including package discovery, compiler flags, library dependencies, and source file enumeration.
 
-- [**CMakeLists-base.cmake**](CMakeLists-base.cmake) Common build optimizations, CPU-specific flags, and parallel build settings.
+- [**CMakeLists-base.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-base.cmake) Common build optimizations, CPU-specific flags, and parallel build settings.
 
-- [**CMakeLists-cache.cmake**](CMakeLists-cache.cmake) Compiler caching with ccache for improved build performance.
+- [**CMakeLists-cache.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-cache.cmake) Compiler caching with ccache for improved build performance.
 
-- [**CMakeLists-ninja.cmake**](CMakeLists-ninja.cmake) Ninja generator-specific configurations and targets.
+- [**CMakeLists-ninja.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-ninja.cmake) Ninja generator-specific configurations and targets.
 
-- [**CMakeLists-regular.cmake**](CMakeLists-regular.cmake) Regular build target with standard optimizations.
+- [**CMakeLists-regular.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-regular.cmake) Regular build target with standard optimizations.
 
-- [**CMakeLists-debug.cmake**](CMakeLists-debug.cmake) Debug build target with AddressSanitizer instrumentation.
+- [**CMakeLists-debug.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-debug.cmake) Debug build target with AddressSanitizer instrumentation.
 
-- [**CMakeLists-valgrind.cmake**](CMakeLists-valgrind.cmake) Valgrind-compatible build target optimized for memory analysis.
+- [**CMakeLists-valgrind.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-valgrind.cmake) Valgrind-compatible build target optimized for memory analysis.
 
-- [**CMakeLists-perf.cmake**](CMakeLists-perf.cmake) Performance build target with aggressive optimizations.
+- [**CMakeLists-perf.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-perf.cmake) Performance build target with aggressive optimizations.
 
-- [**CMakeLists-coverage.cmake**](CMakeLists-coverage.cmake) Coverage build target with gcov instrumentation for unit testing.
+- [**CMakeLists-coverage.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-coverage.cmake) Coverage build target with gcov instrumentation for unit testing.
 
-- [**CMakeLists-release.cmake**](CMakeLists-release.cmake) Release build target with compression and payload embedding.
+- [**CMakeLists-release.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-release.cmake) Release build target with compression and payload embedding.
 
-- [**CMakeLists-examples.cmake**](CMakeLists-examples.cmake) Build targets for OIDC client example programs.
+- [**CMakeLists-examples.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-examples.cmake) Build targets for OIDC client example programs.
 
-- [**CMakeLists-unity.cmake**](CMakeLists-unity.cmake) Unity unit test framework integration and test executable generation.
+- [**CMakeLists-unity.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-unity.cmake) Unity unit test framework integration and test executable generation.
 
-- [**CMakeLists-package.cmake**](CMakeLists-package.cmake) Packaging and installation targets using CPack.
+- [**CMakeLists-package.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-package.cmake) Packaging and installation targets using CPack.
 
-- [**CMakeLists-targets.cmake**](CMakeLists-targets.cmake) High-level build targets including all_variants, trial, clean operations, and help.
+- [**CMakeLists-targets.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-targets.cmake) High-level build targets including all_variants, trial, clean operations, and help.
 
-- [**CMakeLists-output.cmake**](CMakeLists-output.cmake) Terminal output formatting and build status display.
+- [**CMakeLists-output.cmake**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-output.cmake) Terminal output formatting and build status display.
 
-Note: The CHANGELOG is also maintained in [**CMakeLists.txt**](CMakeLists.txt).
+Note: The CHANGELOG is also maintained in [**CMakeLists.txt**](/elements/001-hydrogen/hydrogen/cmake/CMakeLists.txt).
 
 This modular organization allows for targeted modifications when specific build aspects require changes.
 

@@ -264,5 +264,5 @@ The PAYLOAD subsystem integrates with:
 ## Related Documentation
 
 - [Launch System Architecture](/docs/H/core/reference/launch_system_architecture.md)
-- [Configuration System](../configuration.md)
-- [Subsystem Registry](../subsystem_registry_architecture.md)
+- [Configuration System](/docs/H/core/reference/configuration.md)
+- [Subsystem Registry](/docs/H/core/reference//subsystem_registry_architecture.md)

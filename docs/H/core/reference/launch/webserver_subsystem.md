@@ -282,6 +282,6 @@ The WebServer subsystem integrates with:
 ## Related Documentation
 
 - [Launch System Architecture](/docs/H/core/reference/launch_system_architecture.md)
-- [Network Subsystem](../network_architecture.md)
-- [Configuration System](../configuration.md)
-- [Subsystem Registry](../subsystem_registry_architecture.md)
+- [Network Subsystem](/docs/H/core/reference/network_architecture.md)
+- [Configuration System](/docs/H/core/configuration.md)
+- [Subsystem Registry](/docs/H/core/reference/subsystem_registry_architecture.md)

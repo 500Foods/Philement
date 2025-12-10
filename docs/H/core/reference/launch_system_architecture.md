@@ -28,8 +28,8 @@ Each subsystem's launch process is documented separately:
 | Subsystem | Description | Documentation |
 |-----------|-------------|---------------|
 | Registry | Foundation for subsystem management | [Launch Process](/docs/H/core/reference/launch/registry_subsystem.md) |
-| Payload | Manages embedded payloads | [Launch Process](launch/payload_subsystem.md) |
-| WebServer | HTTP services | [Launch Process](launch/webserver_subsystem.md) |
+| Payload | Manages embedded payloads | [Launch Process](/docs/H/core/reference/launch/payload_subsystem.md) |
+| WebServer | HTTP services | [Launch Process](/docs/H/core/reference/launch/webserver_subsystem.md) |
 | Network | Network connectivity | [Coming Soon] |
 | Logging | System-wide logging | [Coming Soon] |
 | Database | Data persistence | [Coming Soon] |
@@ -595,8 +595,8 @@ The Launch System provides several important benefits:
 
 For more information on individual subsystems and how they integrate with the Launch System, see:
 
-- [Subsystem Registry Architecture](subsystem_registry_architecture.md) - Registry details
-- [WebServer Subsystem](webserver_subsystem.md) - Web server implementation
-- [WebSocket Subsystem](websocket_subsystem.md) - WebSocket server implementation
-- [Print Subsystem](print_subsystem.md) - Print queue implementation
-- [System Architecture](system_architecture.md) - Overall system design
+- [Subsystem Registry Architecture](/docs/H/core/reference/subsystem_registry_architecture.md) - Registry details
+- [WebServer Subsystem](/docs/H/core/reference/webserver_subsystem.md) - Web server implementation
+- [WebSocket Subsystem](/docs/H/core/reference/websocket_subsystem.md) - WebSocket server implementation
+- [Print Subsystem](/docs/H/core/reference/print_subsystem.md) - Print queue implementation
+- [System Architecture](/docs/H/core/reference/system_architecture.md) - Overall system design

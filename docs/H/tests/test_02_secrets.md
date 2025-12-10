@@ -115,8 +115,8 @@ The test will fail if:
 
 ## Related Documentation
 
-- [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
-- [framework.md](framework.md) - Testing framework overview and architecture
-- [env_utils.md](env_utils.md) - Environment utility functions documentation
-- [log_output.md](log_output.md) - Log output formatting and analysis
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
+- [framework.md](/docs/H/tests/framework.md) - Testing framework overview and architecture
+- [env_utils.md](/docs/H/tests/env_utils.md) - Environment utility functions documentation
+- [log_output.md](/docs/H/tests/log_output.md) - Log output formatting and analysis
 - [SECRETS.md](/docs/H/SECRETS.md) - Information about managing secrets throughout the project

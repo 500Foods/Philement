@@ -51,7 +51,7 @@ The mDNS Server is configured through the `mdns_server` section of the configura
 }
 ```
 
-For complete configuration options, see the [Configuration Guide](./configuration.md#mdns-server).
+For complete configuration options, see the [Configuration Guide](/docs/H/core/configuration.md#mdns-server).
 
 ## Service Advertisement
 
@@ -201,8 +201,8 @@ Common mDNS Server issues and solutions:
 
 ## References
 
-- [Shutdown Architecture](./shutdown_architecture.md) - Complete shutdown sequence overview
-- [WebSocket Interface](./web_socket.md) - WebSocket server implementation
-- [Configuration Guide](./reference/configuration.md) - Configuration options
-- [Thread Monitoring](./thread_monitoring.md) - Thread tracking and diagnostics
-- [Release Notes](../RELEASES.md) - History of mDNS server improvements
+- [Shutdown Architecture](/docs/H/core/shutdown_architecture.md) - Complete shutdown sequence overview
+- [WebSocket Interface](/docs/H/core/web_socket.md) - WebSocket server implementation
+- [Configuration Guide](/docs/H/core/reference/configuration.md) - Configuration options
+- [Thread Monitoring](/docs/H/core/thread_monitoring.md) - Thread tracking and diagnostics
+- [Release Notes](/docs/H/RELEASES.md) - History of mDNS server improvements

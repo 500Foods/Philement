@@ -437,7 +437,7 @@ The WebSocket subsystem implements comprehensive error handling:
 
 For more information on WebSocket-related topics, see:
 
-- [WebSocket Configuration](websocket_configuration.md) - Configuration details
-- [Launch System Architecture](launch_system_architecture.md) - Launch system integration
-- [WebServer Subsystem](webserver_subsystem.md) - Related HTTP server
-- [Subsystem Registry Architecture](subsystem_registry_architecture.md) - Subsystem management
+- [WebSocket Configuration](/docs/H/core/reference/websocket_configuration.md) - Configuration details
+- [Launch System Architecture](/docs/H/core/reference/launch_system_architecture.md) - Launch system integration
+- [WebServer Subsystem](/docs/H/core/reference/webserver_subsystem.md) - Related HTTP server
+- [Subsystem Registry Architecture](/docs/H/core/reference/subsystem_registry_architecture.md) - Subsystem management

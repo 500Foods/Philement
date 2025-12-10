@@ -375,7 +375,7 @@ The WebServer implements comprehensive error handling:
 
 For more information on WebServer-related topics, see:
 
-- [WebServer Configuration](webserver_configuration.md) - Configuration details
-- [Launch System Architecture](launch_system_architecture.md) - Launch system integration
-- [API Documentation](api.md) - REST API details
-- [Subsystem Registry Architecture](subsystem_registry_architecture.md) - Subsystem management
+- [WebServer Configuration](/docs/H/core/reference/webserver_configuration.md) - Configuration details
+- [Launch System Architecture](/docs/H/core/reference/launch_system_architecture.md) - Launch system integration
+- [API Documentation](/docs/H/core/api.md) - REST API details
+- [Subsystem Registry Architecture](/docs/H/core/reference/subsystem_registry_architecture.md) - Subsystem management

@@ -50,4 +50,4 @@ Part of static analysis tests.
 
 ## Related Documentation
 
-- [LIBRARIES.md](LIBRARIES.md)
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md)

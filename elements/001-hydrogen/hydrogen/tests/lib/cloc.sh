@@ -350,16 +350,16 @@ EOF
                                 comment_code_percentage: (if (($core_md.code // 0) + ($test_md.code // 0)) > 0 then (if (((($core_md.comment // 0) + ($test_md.comment // 0))) / (($core_md.code // 0) + ($test_md.code // 0)) * 100) > 0 then (((($core_md.comment // 0) + ($test_md.comment // 0))) / (($core_md.code // 0) + ($test_md.code // 0)) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end)
                             } | .lines = (.blank + .comment + .code)
                         ),
-                        # Bourne Shell
-                        (($core."Bourne Shell" // {}) as $core_sh | ($test."Bourne Shell" // {}) as $test_sh |
+                        # Shell (consolidated from Bourne Shell and zsh)
+                        (($core."Bourne Shell" // {}) as $core_sh | ($test."Bourne Shell" // {}) as $test_sh | ($core.zsh // {}) as $core_zsh | ($test.zsh // {}) as $test_zsh |
                             {
                                 section: "primary",
-                                language: "Bourne Shell",
-                                files: (($core_sh.nFiles // 0) + ($test_sh.nFiles // 0)),
-                                blank: (($core_sh.blank // 0) + ($test_sh.blank // 0)),
-                                comment: (($core_sh.comment // 0) + ($test_sh.comment // 0)),
-                                code: (($core_sh.code // 0) + ($test_sh.code // 0)),
-                                comment_code_percentage: (if (($core_sh.code // 0) + ($test_sh.code // 0)) > 0 then (if (((($core_sh.comment // 0) + ($test_sh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0)) * 100) > 0 then (((($core_sh.comment // 0) + ($test_sh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0)) * 100 | . * 10 | round / 10 | tostring | if contains(".") then . else . + ".0" end | . + " %") else "" end) else "" end)
+                                language: "Shell",
+                                files: (($core_sh.nFiles // 0) + ($test_sh.nFiles // 0) + ($core_zsh.nFiles // 0) + ($test_zsh.nFiles // 0)),
+                                blank: (($core_sh.blank // 0) + ($test_sh.blank // 0) + ($core_zsh.blank // 0) + ($test_zsh.blank // 0)),
+                                comment: (($core_sh.comment // 0) + ($test_sh.comment // 0) + ($core_zsh.comment // 0) + ($test_zsh.comment // 0)),
+                                code: (($core_sh.code // 0) + ($test_sh.code // 0) + ($core_zsh.code // 0) + ($test_zsh.code // 0)),
+                                comment_code_percentage: (if (($core_sh.code // 0) + ($test_sh.code // 0) + ($core_zsh.code // 0) + ($test_zsh.code // 0)) > 0 then (if (((($core_sh.comment // 0) + ($test_sh.comment // 0) + ($core_zsh.comment // 0) + ($test_zsh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0) + ($core_zsh.code // 0) + ($test_zsh.code // 0)) * 100) > 0 then (((($core_sh.comment // 0) + ($test_sh.comment // 0) + ($core_zsh.comment // 0) + ($test_zsh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0) + ($core_zsh.code // 0) + ($test_zsh.code // 0)) * 100 | . * 10 | round / 10 | tostring | if contains(".") then . else . + ".0" end | . + " %") else "" end) else "" end)
                             } | .lines = (.blank + .comment + .code)
                         ),
                         # Lua
@@ -371,7 +371,7 @@ EOF
                                 blank: (($core_lua.blank // 0) + ($test_lua.blank // 0)),
                                 comment: (($core_lua.comment // 0) + ($test_lua.comment // 0)),
                                 code: (($core_lua.code // 0) + ($test_lua.code // 0)),
-                                comment_code_percentage: (if (($core_lua.code // 0) + ($test_lua.code // 0)) > 0 then (if (((($core_lua.comment // 0) + ($test_lua.comment // 0))) / (($core_lua.code // 0) + ($test_lua.code // 0)) * 100) > 0 then (((($core_lua.comment // 0) + ($test_lua.comment // 0))) / (($core_lua.code // 0) + ($test_lua.code // 0)) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end)
+                                comment_code_percentage: (if (($core_lua.code // 0) + ($test_lua.code // 0)) > 0 then (if (((($core_lua.comment // 0) + ($test_lua.comment // 0))) / (($core_lua.code // 0) + ($test_lua.code // 0)) * 100) > 0 then (((($core_lua.comment // 0) + ($test_lua.comment // 0))) / (($core_lua.code // 0) + ($test_lua.code // 0)) * 100 | . * 10 | round / 10 | tostring | if contains(".") then . else . + ".0" end | . + " %") else "" end) else "" end)
                             } | .lines = (.blank + .comment + .code)
                         ),
                         # CMake
@@ -400,7 +400,7 @@ EOF
                         )
                     ),
                     # Secondary section languages: everything else
-                    ($core | to_entries[] | select(.key != "C" and .key != "header" and .key != "SUM" and (.key != "Markdown" and .key != "Bourne Shell" and .key != "Lua" and .key != "CMake" and .key != "JavaScript")) |
+                    ($core | to_entries[] | select(.key != "C" and .key != "header" and .key != "SUM" and (.key != "Markdown" and .key != "Bourne Shell" and .key != "zsh" and .key != "Lua" and .key != "CMake" and .key != "JavaScript")) |
                         {
                             section: "secondary",
                             language: .key,
@@ -432,8 +432,8 @@ EOF
             header_comment=0
             cmake_code=$(jq -r '.CMake.code // 0' "${core_json}" 2>/dev/null || echo 0)
             cmake_comment=$(jq -r '.CMake.comment // 0' "${core_json}" 2>/dev/null || echo 0)
-            shell_code=$(jq -r '."Bourne Shell".code // 0' "${core_json}" 2>/dev/null || echo 0)
-            shell_comment=$(jq -r '."Bourne Shell".comment // 0' "${core_json}" 2>/dev/null || echo 0)
+            shell_code=$((($(jq -r '."Bourne Shell".code // 0' "${core_json}" 2>/dev/null || echo 0) + $(jq -r '.zsh.code // 0' "${core_json}" 2>/dev/null || echo 0))))
+            shell_comment=$((($(jq -r '."Bourne Shell".comment // 0' "${core_json}" 2>/dev/null || echo 0) + $(jq -r '.zsh.comment // 0' "${core_json}" 2>/dev/null || echo 0))))
             lua_code=$(jq -r '.Lua.code // 0' "${core_json}" 2>/dev/null || echo 0)
             lua_comment=$(jq -r '.Lua.comment // 0' "${core_json}" 2>/dev/null || echo 0)
             javascript_code=$(jq -r '.JavaScript.code // 0' "${core_json}" 2>/dev/null || echo 0)
@@ -748,13 +748,13 @@ EOF
          "section": "code_metrics",
          "metric": "Code",
          "value": "${total_code_summary}",
-         "description": "Core C/Headers + Bash + CMake + Lua + JS code"
+         "description": "Core C/Headers + Shell + CMake + Lua + JS code"
      },
      {
          "section": "code_metrics",
          "metric": "Comments",
          "value": "${total_comments_summary}",
-         "description": "Core C/Headers + Bash + CMake + Lua + JS comments"
+         "description": "Core C/Headers + Shell + CMake + Lua + JS comments"
      },
      {
          "section": "code_metrics",

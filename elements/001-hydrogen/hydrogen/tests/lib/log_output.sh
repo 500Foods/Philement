@@ -104,13 +104,20 @@ TEST_ICON="${TEST_COLOR}\U2587\U2587${NC}"
 # Function to process a message and replace full paths with relative paths
 process_message() {
     local message="$1"
-    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
-    if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
-        # shellcheck disable=SC2154 # PRINTF defined in framework.sh
-        "${PRINTF}" '%s' "${message/${PROJECT_DIR}/}"
-    else
-        "${PRINTF}" '%s' "${message}"
+    local processed_message="${message}"
+
+    # Replace HYDROGEN_ROOT with relative path (anywhere in the string)
+    if [[ -n "${HYDROGEN_ROOT:-}" ]]; then
+        processed_message="${processed_message//${HYDROGEN_ROOT}/}"
     fi
+
+    # Replace HYDROGEN_DOCS_ROOT with relative path (anywhere in the string)
+    if [[ -n "${HYDROGEN_DOCS_ROOT:-}" ]]; then
+        processed_message="${processed_message//${HYDROGEN_DOCS_ROOT}/}"
+    fi
+
+    # shellcheck disable=SC2154 # PRINTF defined in framework.sh
+    "${PRINTF}" '%s' "${processed_message}"
 }
 
 # Function to enable output collection mode
@@ -358,12 +365,8 @@ print_output() {
     local elapsed
     elapsed=$(get_elapsed_time)
 
-    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
-    if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
-        processed_message="${message/${PROJECT_DIR}/}"
-    else
-        processed_message="${message}"
-    fi
+    # Process message to replace full paths with relative paths
+    processed_message=$(process_message "${message}")
 
     # Skip output if message is empty or contains only whitespace
     if [[ -n "${processed_message}" && ! "${processed_message}" =~ ^[[:space:]]*$ ]]; then
@@ -382,7 +385,6 @@ print_result() {
     local subtest_counter="$2"
     local status=$3
     local message=$4
-    local processed_message
 
     local test_ref
     test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
@@ -390,13 +392,9 @@ print_result() {
     local elapsed
     elapsed=$(get_elapsed_time)
 
-    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
-    if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
-        processed_message="${message/${PROJECT_DIR}/}"
-    else
-        processed_message="${message}"
-    fi
-    
+    # Process message to replace full paths with relative paths
+    processed_message=$(process_message "${message}")
+
     local formatted_output
     if [[ "${status}" -eq 0 ]]; then
         TEST_PASSED_COUNT=$(( TEST_PASSED_COUNT + 1 ))
@@ -405,7 +403,7 @@ print_result() {
         TEST_FAILED_COUNT=$(( TEST_FAILED_COUNT + 1 ))
         formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${FAIL_COLOR}${processed_message}${NC}"
     fi
-    
+
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         OUTPUT_COLLECTION+="${formatted_output}\n"
     else
@@ -425,12 +423,8 @@ print_warning() {
     local elapsed
     elapsed=$(get_elapsed_time)
 
-    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
-    if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
-        processed_message="${message/${PROJECT_DIR}/}"
-    else
-        processed_message="${message}"
-    fi
+    # Process message to replace full paths with relative paths
+    processed_message=$(process_message "${message}")
 
     local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${processed_message}"
 

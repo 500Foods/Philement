@@ -131,6 +131,6 @@ Replace `your-server` and `port` with your server's address and configured port.
 
 ## Related Documentation
 
-- [API Documentation Guide](../api.md) - How to document your API endpoints
-- [Web Server Configuration](webserver_configuration.md) - Configure the web server hosting Swagger UI
-- [Security Configuration](security_configuration.md) - Secure your API and documentation
+- [API Documentation Guide](/docs/H/core/api.md) - How to document your API endpoints
+- [Web Server Configuration](/docs/H/core/reference/webserver_configuration.md) - Configure the web server hosting Swagger UI
+- [Security Configuration](/docs/H/core/reference/security_configuration.md) - Secure your API and documentation
