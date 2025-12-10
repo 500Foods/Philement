@@ -453,16 +453,6 @@
   },
   {
     "section": "primary",
-    "language": "Markdown",
-    "files": 24,
-    "blank": 1762,
-    "comment": 1,
-    "code": 30364,
-    "comment_code_percentage": "0 %",
-    "lines": 6177
-  },
-  {
-    "section": "primary",
     "language": "Shell",
     "files": 83,
     "blank": 4109,
@@ -470,6 +460,16 @@
     "code": 19031,
     "comment_code_percentage": "25.7 %",
     "lines": 28033
+  },
+  {
+    "section": "primary",
+    "language": "Markdown",
+    "files": 24,
+    "blank": 1762,
+    "comment": 1,
+    "code": 30364,
+    "comment_code_percentage": "0 %",
+    "lines": 6177
   },
   {
     "section": "primary",
