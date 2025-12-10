@@ -709,7 +709,7 @@ Cryptographic Operations Review:
 
 ## Related Documentation
 
-- [API Documentation](/docs/H/core/api.md)
+- [API Documentation](/docs/H/core/subsystems/api/api.md)
 - [Configuration Guide](/docs/H/core/configuration.md)
 - [Service Documentation](/docs/H/core/service.md)
 - [OIDC Architecture](/docs/H/core/reference/oidc_architecture.md)

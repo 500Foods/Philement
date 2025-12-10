@@ -202,7 +202,7 @@ Common mDNS Server issues and solutions:
 ## References
 
 - [Shutdown Architecture](/docs/H/core/shutdown_architecture.md) - Complete shutdown sequence overview
-- [WebSocket Interface](/docs/H/core/web_socket.md) - WebSocket server implementation
+- [WebSocket Interface](/docs/H/core/subsystems/websocket/websocket.md) - WebSocket server implementation
 - [Configuration Guide](/docs/H/core/reference/configuration.md) - Configuration options
-- [Thread Monitoring](/docs/H/core/thread_monitoring.md) - Thread tracking and diagnostics
+- [Thread Monitoring](/docs/H/core/subsystems/threads/threads.md) - Thread tracking and diagnostics
 - [Release Notes](/docs/H/RELEASES.md) - History of mDNS server improvements

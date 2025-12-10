@@ -118,8 +118,8 @@ The queue system uses several technical features to ensure reliable operation:
 For additional details, see:
 
 - [Configuration Guide](/docs/H/core/configuration.md) for setup
-- [API Documentation](/docs/H/core/api.md) for endpoints
-- [WebSocket Documentation](/docs/H/core/web_socket.md) for real-time updates
+- [API Documentation](/docs/H/core/subsystems/api/api.md) for endpoints
+- [WebSocket Documentation](/docs/H/core/subsystems/websocket/websocket.md) for real-time updates
 
 ## Future Enhancements
 

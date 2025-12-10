@@ -22,21 +22,21 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [README.md](/docs/H/core/README.md)
 - [ai_integration.md](/docs/H/core/ai_integration.md)
-- [api.md](/docs/H/core/api.md)
+- [api.md](/docs/H/core/subsystems/api/api.md)
 - [coding_guidelines.md](/docs/H/core/coding_guidelines.md)
 - [configuration.md](/docs/H/core/configuration.md)
 - [data_structures.md](/docs/H/core/data_structures.md)
-- [database.md](/docs/H/core/database.md): Database subsystem overview and documentation index
+- [database.md](/docs/H/core/subsystems/database/database.md): Database subsystem overview and documentation index
 - [developer_onboarding.md](/docs/H/core/developer_onboarding.md)
-- [mdns_server.md](/docs/H/core/mdns_server.md)
-- [oidc_integration.md](/docs/H/core/oidc_integration.md)
-- [print_queue.md](/docs/H/core/print_queue.md)
+- [mdns_server.md](/docs/H/core/subsystems/mdnsserver/mdnsserver.md)
+- [oidc_integration.md](/docs/H/core/subsystems/oidc/oidc.md)
+- [print_queue.md](/docs/H/core/subsystems/print/print.md)
 - [service.md](/docs/H/core/service.md)
 - [shutdown_architecture.md](/docs/H/core/shutdown_architecture.md)
 - [system_info.md](/docs/H/core/system_info.md)
 - [testing.md](/docs/H/core/testing.md)
-- [thread_monitoring.md](/docs/H/core/thread_monitoring.md)
-- [web_socket.md](/docs/H/core/web_socket.md)
+- [thread_monitoring.md](/docs/H/core/subsystems/threads/threads.md)
+- [web_socket.md](/docs/H/core/subsystems/websocket/websocket.md)
 - [metrics/README.md](/docs/H/metrics/README.md) - Build metrics documentation
 
 ### Folder: /docs/api/system
