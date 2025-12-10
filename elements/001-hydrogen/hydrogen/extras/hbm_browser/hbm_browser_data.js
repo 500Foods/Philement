@@ -705,38 +705,48 @@ HMB.getNestedValueByPath = function(obj, path) {
     // Convert clean path like "test_results.data.01-CMP.elapsed" to array access
     const match = path.match(/test_results\.data\.([^.]+)\.(.+)/);
     if (match) {
-      const testId = match[1];
+      const testIdFromPath = match[1];
       const remainingPath = match[2];
 
       // Find the array index for this test_id
       const dataArray = obj?.test_results?.data;
       if (Array.isArray(dataArray)) {
         for (let i = 0; i < dataArray.length; i++) {
-          if (dataArray[i]?.test_id === testId) {
-            // Found the matching test, now get the remaining path
-            const result = this.getNestedValueByPath(dataArray[i], remainingPath);
-            return result;
+          // Normalize both identifiers for comparison (though test IDs are typically already normalized)
+          const jsonTestId = dataArray[i]?.test_id;
+          if (jsonTestId) {
+            const normalizedJsonTestId = jsonTestId.replace(/\s+/g, '_').replace(/\//g, '_');
+            if (normalizedJsonTestId === testIdFromPath || jsonTestId === testIdFromPath) {
+              // Found the matching test, now get the remaining path
+              const result = this.getNestedValueByPath(dataArray[i], remainingPath);
+              return result;
+            }
           }
         }
-      } else {
       }
       return undefined;
     }
   }
   else if (path.includes('cloc.main.') && !path.includes('[')) {
-    // Convert clean path like "cloc.main.C.1000" to array access
+    // Convert clean path like "cloc.main.C.1000" or "cloc.main.C_C++_Header.code" to array access
     const match = path.match(/cloc\.main\.([^.]+)\.(.+)/);
     if (match) {
-      const language = match[1];
+      const languageFromPath = match[1];
       const remainingPath = match[2];
 
       // Find the array index for this language
       const mainArray = obj?.cloc?.main;
       if (Array.isArray(mainArray)) {
         for (let i = 0; i < mainArray.length; i++) {
-          if (mainArray[i]?.language === language) {
-            // Found the matching language, now get the remaining path
-            return this.getNestedValueByPath(mainArray[i], remainingPath);
+          // Normalize both the path language and JSON language for comparison
+          // The path may have underscores where the JSON has spaces or slashes
+          const jsonLanguage = mainArray[i]?.language;
+          if (jsonLanguage) {
+            const normalizedJsonLanguage = jsonLanguage.replace(/\s+/g, '_').replace(/\//g, '_');
+            if (normalizedJsonLanguage === languageFromPath) {
+              // Found the matching language, now get the remaining path
+              return this.getNestedValueByPath(mainArray[i], remainingPath);
+            }
           }
         }
       }
@@ -747,16 +757,21 @@ HMB.getNestedValueByPath = function(obj, path) {
       // Convert clean path like "coverage.data.src/api/api_service.c.coverage_percentage" to array access
       // Need to handle file paths that contain dots by matching from the end
       const lastDotIndex = path.lastIndexOf('.');
-      const filePath = path.substring('coverage.data.'.length, lastDotIndex);
+      const filePathFromPath = path.substring('coverage.data.'.length, lastDotIndex);
       const remainingPath = path.substring(lastDotIndex + 1);
 
       // Find the array index for this file_path
       const dataArray = obj?.coverage?.data;
       if (Array.isArray(dataArray)) {
           for (let i = 0; i < dataArray.length; i++) {
-              if (dataArray[i]?.file_path === filePath) {
-                  // Found the matching file, now get the remaining path
-                  return this.getNestedValueByPath(dataArray[i], remainingPath);
+              // Normalize both file paths for comparison
+              const jsonFilePath = dataArray[i]?.file_path;
+              if (jsonFilePath) {
+                  const normalizedJsonFilePath = jsonFilePath.replace(/\s+/g, '_').replace(/\//g, '_');
+                  if (normalizedJsonFilePath === filePathFromPath || jsonFilePath === filePathFromPath) {
+                      // Found the matching file, now get the remaining path
+                      return this.getNestedValueByPath(dataArray[i], remainingPath);
+                  }
               }
           }
       }
@@ -766,16 +781,21 @@ HMB.getNestedValueByPath = function(obj, path) {
     // Convert clean path like "stats.performance.avg_time" to array access
     const match = path.match(/stats\.([^.]+)\.(.+)/);
     if (match) {
-      const metric = match[1];
+      const metricFromPath = match[1];
       const remainingPath = match[2];
 
       // Find the array index for this metric
       const statsArray = obj?.stats;
       if (Array.isArray(statsArray)) {
         for (let i = 0; i < statsArray.length; i++) {
-          if (statsArray[i]?.metric === metric) {
-            // Found the matching metric, now get the remaining path
-            return this.getNestedValueByPath(statsArray[i], remainingPath);
+          // Normalize both identifiers for comparison
+          const jsonMetric = statsArray[i]?.metric;
+          if (jsonMetric) {
+            const normalizedJsonMetric = jsonMetric.replace(/\s+/g, '_').replace(/\//g, '_');
+            if (normalizedJsonMetric === metricFromPath || jsonMetric === metricFromPath) {
+              // Found the matching metric, now get the remaining path
+              return this.getNestedValueByPath(statsArray[i], remainingPath);
+            }
           }
         }
       }
