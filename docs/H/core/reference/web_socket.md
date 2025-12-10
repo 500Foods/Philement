@@ -4,11 +4,11 @@ This document describes the WebSocket interface provided by the Hydrogen server 
 
 ## Connection Details
 
-- **Port:** 5001 (default, see [Configuration Guide](./configuration.md) for details)
+- **Port:** 5001 (default, see [Configuration Guide](/docs/H/core/configuration.md) for details)
 - **Protocol:** hydrogen-protocol
 - **Authorization:** Required, use `Authorization: Key abc` in header
 
-For complete configuration options including IPv6 support and logging settings, see the [Configuration Guide](./configuration.md#websocket).
+For complete configuration options including IPv6 support and logging settings, see the [Configuration Guide](/docs/H/core/configuration.md#websocket).
 
 ## Status Updates
 

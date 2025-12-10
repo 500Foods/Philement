@@ -6,10 +6,10 @@ This directory contains automatically generated SVG visualization files that pro
 
 In addition to the files described in detail in the sections that follow, there is also a subdirectory for each database design that is built into Hydrogen. These are essentially table relationship diagrams, simplified versions of a traditional Entity-Relationship Diagram (ERD) for each supported database engine, based off of the most current migration available during the most recent build.
 
-- [Acuranzo](acuranzo/README.md) - General Purpose Database Desgin (Acuranzo Enterprises Inc)
-- [Helium](helium/README.md) - 3D Printing Database Desgin (Philement Project)
-- [GAIUS](gaius/README.md) - Plant Yield Modelling Design (GaiusYield Project)
-- [GLM](glm/README.md) - Greenhouse Labour Management Design (500 Foods Corporation)
+- [Acuranzo](/elements/001-hydrogen/hydrogen/images/acuranzo/README.md) - General Purpose Database Desgin (Acuranzo Enterprises Inc)
+- [Helium](/elements/001-hydrogen/hydrogen/images/helium/README.md) - 3D Printing Database Desgin (Philement Project)
+- [GAIUS](/elements/001-hydrogen/hydrogen/images/gaius/README.md) - Plant Yield Modelling Design (GaiusYield Project)
+- [GLM](/elements/001-hydrogen/hydrogen/images/glm/README.md) - Greenhouse Labour Management Design (500 Foods Corporation)
 
 ## Available Images
 

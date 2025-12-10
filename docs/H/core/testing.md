@@ -226,7 +226,7 @@ The Hydrogen project provides a standardized template (test_template.sh) to help
    - Include example usage
    - Explain configuration requirements
 
-See [tests/TESTING.md](../tests/TESTING.md) for detailed examples and the complete test template documentation.
+See [tests/TESTING.md](/docs/H/tests/TESTING.md) for detailed examples and the complete test template documentation.
 
 ## Testing Guidelines
 

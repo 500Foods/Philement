@@ -124,9 +124,9 @@ This guide will help you get Hydrogen up and running quickly with a basic config
 
 ## Next Steps
 
-1. [Configure Your Environment](../configuration.md)
-2. [Set Up as a Service](../service.md)
-3. [Explore Advanced Features](../reference/api.md)
+1. [Configure Your Environment](/docs/H/core/configuration.md)
+2. [Set Up as a Service](/docs/H/core/service.md)
+3. [Explore Advanced Features](/docs/H/core/reference/api.md)
 
 ## Common Issues
 
@@ -150,12 +150,12 @@ This guide will help you get Hydrogen up and running quickly with a basic config
 
 ## Getting Help
 
-1. Review the [System Information](../reference/system_info.md)
-2. Check the [Configuration Guide](../configuration.md)
+1. Review the [System Information](/docs/H/core/reference/system_info.md)
+2. Check the [Configuration Guide](/docs/H/core/configuration.md)
 3. Search existing issues
 4. Create a new issue if needed
 
 ## Use Case Examples
 
-- [Home Workshop Setup](./use-cases/home-workshop.md)
-- [Print Farm Configuration](./use-cases/print-farm.md)
+- [Home Workshop Setup](/docs/H/core/guides/use-cases/home-workshop.md)
+- [Print Farm Configuration](/docs/H/core/guides/use-cases/print-farm.md)

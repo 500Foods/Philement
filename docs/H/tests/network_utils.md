@@ -341,6 +341,6 @@ The library is extensively used in `test_55_socket_rebind.sh` for:
 
 ## Related Documentation
 
-- [Test Framework Library](framework.md) - Test lifecycle management
-- [Log Output Library](log_output.md) - Logging and output formatting
-- [Lifecycle Management Library](lifecycle.md) - Application lifecycle management
+- [Test Framework Library](/docs/H/tests/framework.md) - Test lifecycle management
+- [Log Output Library](/docs/H/tests/log_output.md) - Logging and output formatting
+- [Lifecycle Management Library](/docs/H/tests/lifecycle.md) - Application lifecycle management

@@ -237,6 +237,6 @@ generate_cloc_for_readme >> README.md
 
 ## Related Documentation
 
-- [Test Framework Library](framework.md) - Main test framework that may use CLOC functionality
-- [File Utils Library](file_utils.md) - File manipulation utilities
-- [LIBRARIES.md](LIBRARIES.md) - Complete library documentation index
+- [Test Framework Library](/docs/H/tests/framework.md) - Main test framework that may use CLOC functionality
+- [File Utils Library](/docs/H/tests/file_utils.md) - File manipulation utilities
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Complete library documentation index

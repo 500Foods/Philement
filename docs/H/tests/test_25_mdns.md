@@ -197,11 +197,11 @@ To run this test individually:
 
 ## Related Documentation
 
-- [test_00_all.md](test_00_all.md) - Main test suite documentation
+- [test_00_all.md](/docs/H/tests/test_00_all.md) - Main test suite documentation
 - [mdns_server.md](/docs/H/core/mdns_server.md) - mDNS server implementation details
 - [configuration.md](/docs/H/core/configuration.md) - Configuration file documentation
 - [testing.md](/docs/H/core/testing.md) - Overall testing strategy
-- [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Modular library documentation
 
 ## mDNS Standards and Protocols
 

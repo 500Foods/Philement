@@ -77,5 +77,5 @@ To run this test individually:
 
 ## Related Documentation
 
-- [test_00_all.md](test_00_all.md) - Main test suite documentation
-- [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
+- [test_00_all.md](/docs/H/tests/test_00_all.md) - Main test suite documentation
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Modular library documentation

@@ -79,7 +79,7 @@ AI capabilities in Hydrogen can be configured through the standard configuration
 }
 ```
 
-See the [Configuration Reference](./reference/configuration.md) for detailed options.
+See the [Configuration Reference](/docs/H/core//reference/configuration.md) for detailed options.
 
 ## Privacy and Data Usage
 

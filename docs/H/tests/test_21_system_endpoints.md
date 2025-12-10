@@ -160,10 +160,10 @@ To run this test individually:
 
 ## Related Documentation
 
-- [test_00_all.md](test_00_all.md) - Main test suite documentation
-- [test_20_api_prefix.md](test_20_api_prefix.md) - API prefix testing
-- [test_22_swagger.md](test_22_swagger.md) - Swagger/OpenAPI documentation testing
-- [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
+- [test_00_all.md](/docs/H/tests/test_00_all.md) - Main test suite documentation
+- [test_20_api_prefix.md](/docs/H/tests/test_20_api_prefix.md) - API prefix testing
+- [test_22_swagger.md](/docs/H/tests/test_22_swagger.md) - Swagger/OpenAPI documentation testing
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Modular library documentation
 - [api.md](/docs/H/core/api.md) - API documentation and endpoint specifications
 - [configuration.md](/docs/H/core/configuration.md) - Configuration file documentation
 - [testing.md](/docs/H/core/testing.md) - Overall testing strategy

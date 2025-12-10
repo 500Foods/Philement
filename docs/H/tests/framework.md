@@ -575,6 +575,6 @@ This library replaces the following functions from `support_utils.sh`:
 
 ## Related Documentation
 
-- [Log Output Library](log_output.md) - Output formatting and logging
-- [File Utils Library](file_utils.md) - File and path utilities
-- [LIBRARIES.md](LIBRARIES.md) - Library index
+- [Log Output Library](/docs/H/tests/log_output.md) - Output formatting and logging
+- [File Utils Library](/docs/H/tests/file_utils.md) - File and path utilities
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Library index

@@ -289,7 +289,7 @@ curl http://your-printer:5000/api/smtp/queue
 
 ## Related Documentation
 
-- [Logging Configuration](logging_configuration.md) - Logging setup
-- [Security Configuration](security_configuration.md) - Security settings
-- [Network Configuration](network_configuration.md) - Network settings
+- [Logging Configuration](/docs/H/core/reference/logging_configuration.md) - Logging setup
+- [Security Configuration](/docs/H/core/reference/security_configuration.md) - Security settings
+- [Network Configuration](/docs/H/core/reference/network_configuration.md) - Network settings
 - [Notification Guide](/docs/H/core/reference/notifications.md) - Email notification setup

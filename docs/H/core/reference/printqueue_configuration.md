@@ -262,7 +262,7 @@ curl http://your-printer:5000/api/queue/metrics
 
 ## Related Documentation
 
-- [Web Server Configuration](webserver_configuration.md) - HTTP API settings
-- [WebSocket Configuration](websocket_configuration.md) - Real-time updates
-- [Logging Configuration](logging_configuration.md) - Detailed logging setup
-- [System Resources](resources_configuration.md) - Resource management
+- [Web Server Configuration](/docs/H/core/reference/webserver_configuration.md) - HTTP API settings
+- [WebSocket Configuration](/docs/H/core/reference/websocket_configuration.md) - Real-time updates
+- [Logging Configuration](/docs/H/core/reference/logging_configuration.md) - Detailed logging setup
+- [System Resources](/docs/H/core/reference/resources_configuration.md) - Resource management

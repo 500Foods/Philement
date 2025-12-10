@@ -453,7 +453,7 @@ The Print subsystem implements robust error handling strategies:
 
 For more information on Print subsystem-related topics, see:
 
-- [Print Queue Architecture](print_queue_architecture.md) - Detailed architecture
-- [Print Queue Configuration](printqueue_configuration.md) - Configuration details
-- [Launch System Architecture](launch_system_architecture.md) - Launch system integration
-- [Subsystem Registry Architecture](subsystem_registry_architecture.md) - Subsystem management
+- [Print Queue Architecture](/docs/H/core/reference/print_queue_architecture.md) - Detailed architecture
+- [Print Queue Configuration](/docs/H/core/reference/printqueue_configuration.md) - Configuration details
+- [Launch System Architecture](/docs/H/core/reference/launch_system_architecture.md) - Launch system integration
+- [Subsystem Registry Architecture](/docs/H/core/reference/subsystem_registry_architecture.md) - Subsystem management

@@ -395,4 +395,4 @@ The script is particularly useful for:
 - Investigating file descriptor usage
 - Understanding resource utilization
 
-For the API endpoint documentation, see [System Info API Documentation](./system_info.md).
+For the API endpoint documentation, see [System Info API Documentation](/docs/H/core//system_info.md).
