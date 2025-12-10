@@ -37,6 +37,13 @@ HMB.config = {
       color: "#800000"
     },
     {
+      path: "cloc.main.Markdown.code",
+      label: "Markdown code",
+      axis: "left",
+      type: "line",
+      color: "#87CEEB"
+    },
+    {
       path: "cloc.main.Shell.code",
       label: "Shell code",
       axis: "left",

@@ -419,7 +419,9 @@ HMB.showTooltip = function(event, d, metric) {
 
   // Format the tooltip content
   const seriesName = metric.displayLabel || metric.label;
-  const date = new Date(d.date).toLocaleDateString();
+  // Use the date string directly to avoid timezone conversion issues
+  // d.date is already in YYYY-MM-DD format
+  const date = d.date;
   const value = typeof d.value === 'number' ? d.value.toLocaleString() : d.value;
 
   // Set tooltip content with line breaks

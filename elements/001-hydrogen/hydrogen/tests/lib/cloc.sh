@@ -228,7 +228,7 @@ run_cloc_analysis() {
     fi
 
     # Run cloc on all target directories
-    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" "${cloc_targets[@]}" --quiet --json --exclude-list-file="${exclude_list}" --not-match-d="build" --not-match-d='tests/lib/node_modules' --not-match-d='tests/unity' --not-match-f='hydrogen_installer' --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${core_json}" 2>&1); then
+    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" "${cloc_targets[@]}" --quiet --json --exclude-list-file="${exclude_list}" --not-match-d="build" --not-match-d='tests/lib/node_modules' --not-match-d='tests/unity' --not-match-d='metrics' --not-match-f='hydrogen_installer' --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${core_json}" 2>&1); then
         if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" tests/unity --not-match-d='tests/unity/framework' --quiet --json --force-lang=C,c --force-lang=C,h --force-lang=C,inc > "${test_json}" 2>&1); then
             # Extract cloc version from core JSON
             local cloc_header
@@ -439,6 +439,7 @@ EOF
             javascript_code=$(jq -r '.JavaScript.code // 0' "${core_json}" 2>/dev/null || echo 0)
             javascript_comment=$(jq -r '.JavaScript.comment // 0' "${core_json}" 2>/dev/null || echo 0)
             markdown_code=$(jq -r '.Markdown.code // 0' "${core_json}" 2>/dev/null || echo 0)
+            markdown_code_test=$(jq -r '.Markdown.code // 0' "${test_json}" 2>/dev/null || echo 0)
 
             # Calculate summary values to match ratio calculations (for consistency)
             local total_code_summary total_test_summary
@@ -450,11 +451,11 @@ EOF
             total_test_summary=$("${PRINTF}" "%'d" "${test_code_value}")
 
             local total_docs_summary
-            total_docs_summary=$("${PRINTF}" "%'d" "$((markdown_code))")
+            total_docs_summary=$("${PRINTF}" "%'d" "$((markdown_code + markdown_code_test))")
             local total_comments_summary
             total_comments_summary=$("${PRINTF}" "%'d" "$((c_comment + header_comment + cmake_comment + shell_comment + lua_comment + javascript_comment))")
             local total_combined_summary
-            total_combined_summary=$("${PRINTF}" "%'d" "$((c_code + header_code + cmake_code + shell_code + lua_code + markdown_code + c_comment + header_comment + cmake_comment + shell_comment + lua_comment))")
+            total_combined_summary=$("${PRINTF}" "%'d" "$((c_code + header_code + cmake_code + shell_code + lua_code + javascript_code + markdown_code + markdown_code_test + c_comment + header_comment + cmake_comment + shell_comment + lua_comment + javascript_comment))")
 
             # Calculate totals for the 5 code languages
             local total_code_stats=$((c_code + header_code + cmake_code + shell_code + lua_code + javascript_code))

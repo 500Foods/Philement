@@ -673,25 +673,8 @@ HMB.createEnhancedMetricLabel = function(path, context) {
 
 // Get nested value from object using dot notation (enhanced to handle our clean paths)
 HMB.getNestedValue = function(obj, path) {
-  // First try the original path if we have it stored
-  if (this.state.metricsData && this.state.metricsData.length > 0) {
-    const latestData = this.state.metricsData[this.state.metricsData.length - 1].data;
-
-    // Try to find the metric in our available metrics to get the original path
-    const metric = this.state.availableMetrics.find(m => m.path === path);
-    if (metric && metric.originalPath) {
-      const result = this.getNestedValueByPath(obj, metric.originalPath);
-      return result;
-    } else {
-      // If no original path found, try the clean path directly (for backward compatibility)
-      const result = this.getNestedValueByPath(obj, path);
-      if (result !== undefined) {
-        return result;
-      }
-    }
-  }
-
-  // Fallback to direct path lookup
+  // Always use the clean path with identifier-based lookup
+  // This ensures we find the correct data regardless of array order in each file
   const result = this.getNestedValueByPath(obj, path);
   return result;
 };
