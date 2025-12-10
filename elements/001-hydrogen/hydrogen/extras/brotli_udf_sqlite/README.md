@@ -301,7 +301,7 @@ Key differences:
 
 ## See Also
 
-- [MySQL Brotli UDF](../brotli_udf_mysql/) - MySQL version of this extension
+- [MySQL Brotli UDF](/elements/001-hydrogen/hydrogen/extras/brotli_udf_mysql/) - MySQL version of this extension
 - [Brotli Library Documentation](https://github.com/google/brotli)
 - [SQLite Loadable Extensions](https://www.sqlite.org/loadext.html)
 

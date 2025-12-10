@@ -8,7 +8,7 @@ The print queue system handles the scheduling and management of print jobs, ensu
 
 ## Configuration
 
-Print queue settings are managed in the configuration file. See the [Configuration Guide](./configuration.md#print-job-management-printqueue) for detailed settings.
+Print queue settings are managed in the configuration file. See the [Configuration Guide](/docs/H/core/configuration.md#print-job-management-printqueue) for detailed settings.
 
 Basic configuration example:
 
@@ -117,9 +117,9 @@ The queue system uses several technical features to ensure reliable operation:
 
 For additional details, see:
 
-- [Configuration Guide](./configuration.md) for setup
-- [API Documentation](./api.md) for endpoints
-- [WebSocket Documentation](./web_socket.md) for real-time updates
+- [Configuration Guide](/docs/H/core/configuration.md) for setup
+- [API Documentation](/docs/H/core/api.md) for endpoints
+- [WebSocket Documentation](/docs/H/core/web_socket.md) for real-time updates
 
 ## Future Enhancements
 
@@ -140,4 +140,4 @@ When adding features to the print queue:
 3. Document any new API endpoints
 4. Include WebSocket events if applicable
 
-Note: This documentation is under active development. Check the [Configuration Guide](./configuration.md#print-job-management-printqueue) for the most up-to-date settings and options.
+Note: This documentation is under active development. Check the [Configuration Guide](/docs/H/core/configuration.md#print-job-management-printqueue) for the most up-to-date settings and options.

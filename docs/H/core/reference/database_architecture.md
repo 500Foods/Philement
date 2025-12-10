@@ -116,7 +116,7 @@ The Database subsystem is configured through the following settings in hydrogen.
 ## Security Considerations
 
 1. **Connection Security**
-   - TLS encryption for all connections (see [network_architecture.md](./network_architecture.md))
+   - TLS encryption for all connections (see [network_architecture.md](/docs/H/core/reference/network_architecture.md))
    - Certificate validation using system CA store
    - Connection timeouts with configurable thresholds
    - Secure credential handling as documented in [SECRETS.md](/docs/H/SECRETS.md)

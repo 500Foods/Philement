@@ -175,7 +175,7 @@ local sql = migrations:replace_query(template, 'postgresql', 'helium', 'app')
 
 ## Related Documentation
 
-- [Get Migration Wrapper](get_migration_wrapper.md) - Command-line interface for this module
+- [Get Migration Wrapper](/docs/H/tests/get_migration_wrapper.md) - Command-line interface for this module
 - [Database Migration Tests](/docs/H/tests/test_31_migrations.md) - General migration testing
 - [PostgreSQL Migration Tests](/docs/H/tests/test_32_postgres_migrations.md) - PostgreSQL-specific tests
 - [MySQL Migration Tests](/docs/H/tests/test_33_mysql_migrations.md) - MySQL-specific tests

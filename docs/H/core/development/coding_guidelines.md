@@ -324,6 +324,6 @@ docs/
 
 ## Related Documentation
 
-- [API Documentation](../reference/api.md)
-- [Configuration Guide](../reference/configuration.md)
+- [API Documentation](/docs/H/core/reference/api.md)
+- [Configuration Guide](/docs/H/core/reference/configuration.md)
 - [Service Documentation](/docs/H/core/reference/service.md)

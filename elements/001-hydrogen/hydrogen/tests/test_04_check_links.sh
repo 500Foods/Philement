@@ -1,11 +1,11 @@
 #!/bin/bash
-
 # Test: Markdown Links Check
 # Runs github-sitemap.sh to check markdown links and evaluates results with subtests
 
 # FUNCTIONS
 
 # CHANGELOG
+# 3.4.0 - 2025-12-09 - Added subtest to check for relative links in markdown files under HYDROGEN_ROOT and HYDROGEN_DOCS_ROOT
 # 3.3.0 - 2025-09-25 - Added total links count extraction from github-sitemap table and display in test title (e.g., "links: 1,163")
 # 3.2.0 - 2025-08-08 - Optimized parsing using single-pass batch processing (md5sum batching pattern)
 #                    - Applied md5sum optimization principles: minimize external process forks
@@ -30,11 +30,14 @@ TEST_NAME="Markdown Links {BLUE}(github-sitemap){RESET}"
 TEST_ABBR="LNK"
 TEST_NUMBER="04"
 TEST_COUNTER=0
-TEST_VERSION="3.3.0"
+TEST_VERSION="3.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
+
+# shellcheck source=tests/lib/file_utils.sh # Reference file utilities directly
+[[ -n "${FILE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/file_utils.sh"
 
 # Test configuration
 TARGET_README="README.md"
@@ -215,11 +218,58 @@ else
     EXIT_CODE=1
 fi
 
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Relative Links"
+
+# Find all .md files under HYDROGEN_ROOT and HYDROGEN_DOCS_ROOT
+RELATIVE_LINK_FILES=()
+while IFS= read -r -d '' file; do
+    RELATIVE_LINK_FILES+=("${file}")
+done < <(find "${HYDROGEN_ROOT}" "${HYDROGEN_DOCS_ROOT}" -name "*.md" -type f -print0 2>/dev/null || true)
+
+RELATIVE_LINK_COUNT=0
+RELATIVE_LINK_VIOLATIONS=()
+
+for file in "${RELATIVE_LINK_FILES[@]}"; do
+    # Convert to relative path for .lintignore checking
+    rel_file="${file#"${HYDROGEN_ROOT}"/}"
+    if [[ "${rel_file}" == "${file}" ]]; then
+        rel_file="${file#"${HYDROGEN_DOCS_ROOT}"/}"
+    fi
+
+    # Skip files excluded by .lintignore
+    # shellcheck disable=SC2310 # We want to continue even if the test fails    
+    if should_exclude_file "${rel_file}"; then
+        continue
+    fi
+
+    # Use grep with perl regex to find lines with [label](link) where link doesn't start with /, http, or #
+    violations=$(grep -P -n '\[.*\]\((?!http|/|#)[^)]*\)' "${file}" || true)
+    if [[ -n "${violations}" ]]; then
+        RELATIVE_LINK_COUNT=$((RELATIVE_LINK_COUNT + $(echo "${violations}" | wc -l)))
+        while IFS= read -r line; do
+            RELATIVE_LINK_VIOLATIONS+=("${file}:${line}")
+        done <<< "${violations}"
+    fi
+done
+
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Relative links found: ${RELATIVE_LINK_COUNT}"
+
+if [[ "${RELATIVE_LINK_COUNT}" -eq 0 ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No relative links found"
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found ${RELATIVE_LINK_COUNT} relative links"
+    for violation in "${RELATIVE_LINK_VIOLATIONS[@]}"; do
+        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Violation: ${violation}"
+    done
+    EXIT_CODE=1
+fi
+
 # Display summary information
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Link check summary:"
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Total issues found: ${ISSUES_FOUND}"
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Missing links: ${MISSING_LINKS_COUNT}"
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Orphaned files: ${ORPHANED_FILES_COUNT}"
+print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Relative links: ${RELATIVE_LINK_COUNT}"
 
 # Validate counts against exit code from github-sitemap.sh for debugging
 # Ensure counts are numeric before performing arithmetic

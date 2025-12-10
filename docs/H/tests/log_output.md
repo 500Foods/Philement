@@ -582,6 +582,6 @@ All legacy functions have been completely removed as of version 3.0.2.
 
 ## Related Documentation
 
-- [Framework Library](framework.md) - Test lifecycle management
-- [File Utils Library](file_utils.md) - File and path utilities
-- [LIBRARIES.md](LIBRARIES.md) - Library index
+- [Framework Library](/docs/H/tests/framework.md) - Test lifecycle management
+- [File Utils Library](/docs/H/tests/file_utils.md) - File and path utilities
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Library index

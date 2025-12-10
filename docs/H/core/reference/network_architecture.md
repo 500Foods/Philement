@@ -527,6 +527,6 @@ void update_network_info(network_info_t* net_info) {
 
 ## Related Documentation
 
-- [System Information](../system_info.md) - System information endpoint that reports network status
-- [mDNS Server](../mdns_server.md) - mDNS service that uses the network interface layer
-- [Configuration Guide](../reference/configuration.md) - Network-related configuration options
+- [System Information](/docs/H/core/system_info.md) - System information endpoint that reports network status
+- [mDNS Server](/docs/H/core//mdns_server.md) - mDNS service that uses the network interface layer
+- [Configuration Guide](/docs/H/core/reference/configuration.md) - Network-related configuration options

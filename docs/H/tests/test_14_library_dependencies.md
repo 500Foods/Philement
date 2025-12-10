@@ -105,5 +105,5 @@ Status indicators include:
 
 ## Related Documentation
 
-- [test_00_all.md](test_00_all.md) - Main test orchestration system
-- [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
+- [test_00_all.md](/docs/H/tests/test_00_all.md) - Main test orchestration system
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory

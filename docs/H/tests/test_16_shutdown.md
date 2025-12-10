@@ -88,6 +88,6 @@ This test specifically validates:
 
 ## Related Documentation
 
-- [test_00_all.md](test_00_all.md) - Main test orchestration system
-- [test_17_startup_shutdown.md](test_17_startup_shutdown.md) - Related startup/shutdown lifecycle testing
-- [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
+- [test_00_all.md](/docs/H/tests/test_00_all.md) - Main test orchestration system
+- [test_17_startup_shutdown.md](/docs/H/tests/test_17_startup_shutdown.md) - Related startup/shutdown lifecycle testing
+- [LIBRARIES.md](/docs/H/tests/LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory

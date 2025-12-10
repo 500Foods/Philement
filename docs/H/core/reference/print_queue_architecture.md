@@ -405,7 +405,7 @@ void print_queue_process(print_queue_t* queue) {
 
 ## Related Documentation
 
-- [Print Queue Management](../print_queue.md) - User-focused documentation
-- [API Documentation](../reference/api.md) - API endpoint details
-- [Configuration Guide](../reference/configuration.md) - Configuration options
+- [Print Queue Management](/docs/H/core//print_queue.md) - User-focused documentation
+- [API Documentation](/docs/H/core/reference/api.md) - API endpoint details
+- [Configuration Guide](/docs/H/core/reference/configuration.md) - Configuration options
 - [Beryllium](/docs/H/core/reference/beryllium.md) - G-code analysis system

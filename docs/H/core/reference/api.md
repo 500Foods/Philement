@@ -11,7 +11,7 @@ Retrieves comprehensive system status and information about the Hydrogen server,
 **Endpoint:** `/api/system/info`  
 **Method:** GET
 
-[Detailed Documentation](./system_info.md)
+[Detailed Documentation](/docs/H/core/system_info.md)
 
 ### Health Check
 
@@ -193,9 +193,9 @@ curl -X DELETE http://localhost:5000/api/queue/clear
 
 ## Additional Resources
 
-- [Configuration Guide](./configuration.md) - Complete guide for server configuration
-- [WebSocket API](./web_socket.md) - Real-time communication interface
-- [Print Queue Management](../print_queue.md) - Detailed queue management guide
+- [Configuration Guide](/docs/H/core/configuration.md) - Complete guide for server configuration
+- [WebSocket API](/docs/H/core/web_socket.md) - Real-time communication interface
+- [Print Queue Management](/docs/H/core/print_queue.md) - Detailed queue management guide
 
 ## Contributing to Documentation
 
