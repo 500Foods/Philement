@@ -25,11 +25,11 @@
   },
   "metrics": [
     {
-      "path": "summary.total_tests",
-      "label": "Total Tests",
+      "path": "cloc.main.Core_C_Headers.code",
+      "label": "Core code",
       "axis": "left",
       "type": "line",
-      "color": "#4a90e2",
+      "color": "#000080",
       "lineWidth": 2,
       "lineStyle": "regular",
       "pointRadius": 4,
@@ -37,11 +37,23 @@
       "interpolation": "monotone"
     },
     {
-      "path": "summary.combined_coverage",
-      "label": "Combined Coverage %",
-      "axis": "right",
+      "path": "cloc.main.Test_C_Headers.code",
+      "label": "Test code",
+      "axis": "left",
       "type": "line",
-      "color": "#7ed321",
+      "color": "#800000",
+      "lineWidth": 2,
+      "lineStyle": "regular",
+      "pointRadius": 4,
+      "showPoints": true,
+      "interpolation": "monotone"
+    },
+    {
+      "path": "cloc.main.Shell.code",
+      "label": "Shell code",
+      "axis": "left",
+      "type": "line",
+      "color": "#008000",
       "lineWidth": 2,
       "lineStyle": "regular",
       "pointRadius": 4,

@@ -178,3 +178,43 @@ body {
   border: 2px solid rgba(0, 255, 0, 0.8) !important;
 }
 */
+
+/* Tooltip styling for metric paths */
+.metric-label-selected {
+  position: relative;
+}
+
+.metric-label-selected:hover {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--accent-color);
+}
+
+/* Copy notification styling */
+.copy-notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--panel-bg);
+  color: var(--text-color);
+  padding: 12px 18px;
+  border-radius: 6px;
+  border: 1px solid var(--accent-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-size: 0.9rem;
+  z-index: 10000;
+  animation: slideIn 0.3s ease-out;
+  max-width: 400px;
+  word-break: break-all;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

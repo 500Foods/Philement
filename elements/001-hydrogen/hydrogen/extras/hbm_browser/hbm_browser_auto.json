@@ -27,34 +27,40 @@
     "outputFile": "hydrogen_metrics_report.svg"
   },
   "metrics": [
+
     {
-      "path": "summary.total_tests",
-      "label": "Total Tests",
+      "path": "scloc.main.Core_C_Headers.code",
+      "label": "Core code",
       "axis": "left",
       "type": "line",
-      "color": "#4a90e2",
+      "color": "#000080",
       "lineWidth": 2,
-      "pointRadius": 3,
+      "lineStyle": "regular",
+      "pointRadius": 4,
       "showPoints": true,
-      "interpolation": "linear"
+      "interpolation": "monotone"
     },
     {
-      "path": "summary.total_passed",
-      "label": "Tests Passed",
+      "path": "cloc.main.Test_C_Headers.code",
+      "label": "Test code",
       "axis": "left",
-      "type": "bar",
-      "color": "#7ed321",
-      "barWidth": 0.8,
-      "opacity": 0.7
+      "type": "line",
+      "color": "#800000",
+      "lineWidth": 2,
+      "lineStyle": "regular",
+      "pointRadius": 4,
+      "showPoints": true,
+      "interpolation": "monotone"
     },
     {
-      "path": "summary.combined_coverage",
-      "label": "Coverage %",
-      "axis": "right",
+      "path": "cloc.main.Shell.code",
+      "label": "Shell code",
+      "axis": "left",
       "type": "line",
-      "color": "#f5a623",
+      "color": "#008000",
       "lineWidth": 2,
-      "pointRadius": 3,
+      "lineStyle": "regular",
+      "pointRadius": 4,
       "showPoints": true,
       "interpolation": "monotone"
     }
