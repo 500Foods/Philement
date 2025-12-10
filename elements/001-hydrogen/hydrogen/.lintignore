@@ -47,9 +47,11 @@ installer/hydrogen_installer_*
 
 # These are large and well understood, and also generated automatically.
 # Not much reason to be analyzing them.
-docs/metrics/*
+metrics/
+**/metrics/**
 
 # Node.js dependencies - these are third-party code and shouldn't be linted
+node_modules/
 **/node_modules/**
 
 # Let's not worry about this guy so much
