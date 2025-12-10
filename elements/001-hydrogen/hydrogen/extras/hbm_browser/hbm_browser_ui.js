@@ -342,7 +342,7 @@ HMB.updateSelectedMetricsUI = function() {
 
     metricElement.innerHTML = `
       <div class="metric-info-selected">
-        <div class="metric-label-selected">${metric.displayLabel || metric.label}</div>
+        <div class="metric-label-selected" title="Path: ${metric.path}">${metric.displayLabel || metric.label}</div>
         <div class="metric-details-selected">
           <span class="metric-color-preview" style="background-color: ${metric.color}"></span>
           <span class="metric-axis-badge ${metric.axis}">${metric.axis}</span>
@@ -364,8 +364,62 @@ HMB.updateSelectedMetricsUI = function() {
       });
     }
 
+    // Add click handler for metric label to copy path to clipboard
+    const metricLabel = metricElement.querySelector('.metric-label-selected');
+    if (metricLabel) {
+      metricLabel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.copyMetricPathToClipboard(metric.path);
+      });
+    }
+
     selectedMetricsList.appendChild(metricElement);
   });
+};
+
+// Copy metric path to clipboard
+HMB.copyMetricPathToClipboard = function(metricPath) {
+  try {
+    // Create a temporary input element
+    const tempInput = document.createElement('input');
+    tempInput.value = metricPath;
+    document.body.appendChild(tempInput);
+
+    // Select and copy the text
+    tempInput.select();
+    tempInput.setSelectionRange(0, 99999); // For mobile devices
+
+    // Copy to clipboard
+    const success = document.execCommand('copy');
+
+    // Clean up
+    document.body.removeChild(tempInput);
+
+    // Show feedback
+    if (success) {
+      // Show a temporary notification
+      const existingNotification = document.getElementById('copy-notification');
+      if (existingNotification) {
+        existingNotification.remove();
+      }
+
+      const notification = document.createElement('div');
+      notification.id = 'copy-notification';
+      notification.className = 'copy-notification';
+      notification.textContent = `Copied: ${metricPath}`;
+      document.body.appendChild(notification);
+
+      // Remove notification after 2 seconds
+      setTimeout(() => {
+        notification.remove();
+      }, 2000);
+    }
+
+    return success;
+  } catch (error) {
+    console.error('Failed to copy metric path:', error);
+    return false;
+  }
 };
 
 // Remove a metric from selected metrics
