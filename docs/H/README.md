@@ -49,6 +49,7 @@ Hydrogen is currently designed for technical users who:
 ### Core Documentation
 
 - [**Documentation Hub**](/docs/H/core/README.md) - Start here for comprehensive overview
+- [**Subsystems Documentation**](/docs/H/core/subsystems/README.md) - Overview of all Hydrogen subsystems
 - [**Developer Onboarding**](/docs/H/core/developer_onboarding.md) - Visual architecture overview and code navigation
 - [**Quick Start Guide**](/docs/H/core/guides/quick-start.md) - Get up and running quickly
 - [**AI Integration**](/docs/H/core/ai_integration.md) - AI capabilities and implementations
