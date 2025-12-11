@@ -39,6 +39,10 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [web_socket.md](/docs/H/core/subsystems/websocket/websocket.md)
 - [metrics/README.md](/docs/H/metrics/README.md) - Build metrics documentation
 
+### Folder: /docs/H/core/subsystems
+
+- [README.md](/docs/H/core/subsystems/README.md): Table of Contents for all Hydrogen subsystems documentation
+
 ### Folder: /docs/api/system
 
 - [system_health.md](/docs/H/api/system/system_health.md)
