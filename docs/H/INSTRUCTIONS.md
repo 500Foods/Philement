@@ -154,15 +154,18 @@ IMPORTANT: The alias `mks` can be used to run shellcheck against all project scr
 
 ## MARKDOWN CODING REQUIREMENTS
 
-- Use consistent headings (# H1, ## H2), valid links
+- Use consistent headings (# H1, ## H2)
+- Use absolute links starting with /docs/H or with /elements/001-hydrogen/hydrogen/
 - Use headings instead of **topic** for emphasis
 - Fix common markdown issues such as these
-- MD009/no-trailing-spaces: Trailing spaces
-- MD012/no-multiple-blanks: Multiple consecutive blank lines
-- MD022/blanks-around-headings: Headings should be surrounded by blank lines
-- MD032/blanks-around-lists: Lists should be surrounded by blank lines
-- Unique headings
-- Label code snippets
+  - MD009/no-trailing-spaces: Trailing spaces
+  - MD012/no-multiple-blanks: Multiple consecutive blank lines
+  - MD022/blanks-around-headings: Headings should be surrounded by blank lines
+  - MD032/blanks-around-lists: Lists should be surrounded by blank lines
+  - Unique headings
+  - Label code snippets
+- Resolve any problems reported by Visual Studo Code
+- Run Test 04 after adding new documents
 
 ## CONFIGURATION
 
