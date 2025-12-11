@@ -415,6 +415,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <details>
 <summary><b>Subsystem Documentation</b></summary>
 
+- [Subsystems Documentation](/docs/H/core/subsystems/README.md) - Table of contents for all subsystem documentation
+
 - [docs/ai_integration.md](/docs/H/core/ai_integration.md) - AI integration documentation
 - [docs/mdns_server.md](/docs/H/core/subsystems/mdnsserver/mdnsserver.md) - mDNS server documentation
 - [docs/oidc_integration.md](/docs/H/core/subsystems/oidc/oidc.md) - OIDC integration guide
