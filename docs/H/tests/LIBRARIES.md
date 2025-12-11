@@ -21,6 +21,7 @@ These libraries were created as part of the test suite migration to replace supp
 - **[File Utils Library](/docs/H/tests/file_utils.md)** - Documentation for `file_utils.sh`, providing file and path manipulation functions for test scripts. [Script](/elements/001-hydrogen/hydrogen/tests/lib/file_utils.sh)
 - **[Test Framework Library](/docs/H/tests/framework.md)** - Documentation for `framework.sh`, providing test lifecycle management and result tracking functions. [Script](/elements/001-hydrogen/hydrogen/tests/lib/framework.sh)
 - **[Environment Utils Library](/docs/H/tests/env_utils.md)** - Documentation for `env_utils.sh`, providing environment variable handling and validation functions for test scripts. [Script](/elements/001-hydrogen/hydrogen/tests/lib/env_utils.sh)
+- **[Get Vars Library](/docs/H/tests/get_vars.md)** - Documentation for `get_vars.sh`, extracting environment variables from source files for whitelisting purposes. [Script](/elements/001-hydrogen/hydrogen/tests/lib/get_vars.sh)
 - **[Lifecycle Management Library](/docs/H/tests/lifecycle.md)** - Documentation for `lifecycle.sh`, providing functions for managing the lifecycle of the Hydrogen application during testing. [Script](/elements/001-hydrogen/hydrogen/tests/lib/lifecycle.sh)
 - **[Network Utilities Library](/docs/H/tests/network_utils.md)** - Documentation for `network_utils.sh`, providing network-related functions including TIME_WAIT socket management for test scripts. [Script](/elements/001-hydrogen/hydrogen/tests/lib/network_utils.sh)
 
@@ -39,6 +40,8 @@ These libraries were created as part of the test suite migration to replace supp
 
 - **[Migrations Lua Module](/docs/H/tests/migrations.md)** - Documentation for `migrations.lua`, providing multi-engine SQL generation and database abstraction for migration testing.
 - **[Get Migration Wrapper](/docs/H/tests/get_migration_wrapper.md)** - Documentation for `get_migration_wrapper.lua`, providing command-line interface for database migration SQL generation.
+- **[Get Diagram Library](/docs/H/tests/get_diagram.md)** - Documentation for `get_diagram.sh`, generating SVG database diagrams from migration JSON data. [Script](/elements/001-hydrogen/hydrogen/tests/lib/get_diagram.sh)
+- **[Get Migration Library](/docs/H/tests/get_migration.md)** - Documentation for `get_migration.sh`, retrieving migration data using Lua scripts. [Script](/elements/001-hydrogen/hydrogen/tests/lib/get_migration.sh)
 
 ## Profiling Libraries
 
