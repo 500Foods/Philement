@@ -328,13 +328,12 @@ HMB.showLoading = function() {
 // Initialize date pickers
 HMB.initDatePickers = function() {
   const today = new Date();
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(today.getDate() - 30);
+  const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   // Set default date range
   this.state.currentDateRange = {
-    start: thirtyDaysAgo.toISOString().split('T')[0],
-    end: today.toISOString().split('T')[0]
+    start: thirtyDaysAgo.getFullYear() + '-' + String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0') + '-' + String(thirtyDaysAgo.getDate()).padStart(2, '0'),
+    end: today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0')
   };
 
   // Also set the input values directly in case flatpickr doesn't initialize properly
@@ -355,7 +354,7 @@ HMB.initDatePickers = function() {
         maxDate: today,
         onChange: (selectedDates) => {
           if (selectedDates.length > 0) {
-            this.state.currentDateRange.start = selectedDates[0].toISOString().split('T')[0];
+            this.state.currentDateRange.start = selectedDates[0].getFullYear() + '-' + String(selectedDates[0].getMonth() + 1).padStart(2, '0') + '-' + String(selectedDates[0].getDate()).padStart(2, '0');
             this.handleDateRangeChange();
           }
         }
@@ -367,7 +366,7 @@ HMB.initDatePickers = function() {
         maxDate: today,
         onChange: (selectedDates) => {
           if (selectedDates.length > 0) {
-            this.state.currentDateRange.end = selectedDates[0].toISOString().split('T')[0];
+            this.state.currentDateRange.end = selectedDates[0].getFullYear() + '-' + String(selectedDates[0].getMonth() + 1).padStart(2, '0') + '-' + String(selectedDates[0].getDate()).padStart(2, '0');
             this.handleDateRangeChange();
           }
         }

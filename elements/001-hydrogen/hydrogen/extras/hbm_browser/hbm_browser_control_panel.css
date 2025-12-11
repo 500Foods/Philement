@@ -65,6 +65,10 @@
   font-family: var(--font-family);
 }
 
+.x-axis .darken-dates {
+  opacity: 0.5;
+}
+
 /* Chart lines styling */
 .metric-line {
   stroke-width: 2;
@@ -357,7 +361,7 @@
 }
 
 .selected-metrics-list {
-  max-height: 300px;
+  max-height: 500px;
   overflow-y: auto;
   margin-top: 10px;
 }
@@ -377,6 +381,16 @@
 .selected-metric-item:hover {
   background: var(--hover-color);
   border-color: var(--accent-color);
+}
+
+.selected-metric-item.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+}
+
+.selected-metric-item.drag-over {
+  border-top: 2px solid var(--accent-color);
+  background: rgba(74, 144, 226, 0.1);
 }
 
 .metric-info-selected {
@@ -472,6 +486,26 @@
   height: 16px;
   border-radius: 4px;
   border: 1px solid var(--border-color);
+}
+
+.reorder-handle-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: grab;
+  padding: 0 15px 0px 0px;
+  transition: transform var(--transition-speed) ease;
+  user-select: none;
+}
+
+.reorder-handle-btn:hover {
+  color: var(--accent-color);
+  transform: scale(1.1);
+}
+
+.reorder-handle-btn:active {
+  cursor: grabbing;
 }
 
 .remove-metric-btn {
