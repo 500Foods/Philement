@@ -19,7 +19,7 @@ HMB.config = {
   chartSettings: {
     width: '100%',
     height: '100%',
-    margin: { top: 50, right: 80, bottom: 50, left: 50 }
+    margin: { top: 50, right: 80, bottom: 50, left: 80 }
   },
   metrics: [
     {

@@ -14,7 +14,7 @@
       "top": 50,
       "right": 80,
       "bottom": 50,
-      "left": 130
+      "left": 80
     },
     "animationDuration": 1000,
     "transitionDuration": 300,
@@ -67,7 +67,7 @@
       "type": "line",
       "color": "#008000",
       "lineWidth": 2,
-      "lineStyle": "regular",
+      "lineStyle": "thick",
       "pointRadius": 4,
       "showPoints": true,
       "interpolation": "monotone"
