@@ -52,15 +52,15 @@ HMB.renderChart = function() {
   // Initialize zoom transform if not exists
   this.state.zoomTransform = this.state.zoomTransform || d3.zoomIdentity;
 
+  // Add defs for gradients at SVG root level
+  const defs = d3.select('#metrics-chart').append('defs');
+
   // Create SVG container with responsive dimensions
   const svg = d3.select('#metrics-chart')
     .attr('width', container.clientWidth)
     .attr('height', container.clientHeight)
     .append('g')
     .attr('transform', `translate(${this.config.chartSettings.margin.left},${this.config.chartSettings.margin.top})`);
-
-  // Add defs for gradients
-  const defs = svg.append('defs');
 
   // Add clip path for x-axis to prevent labels from extending beyond chart
   defs.append('clipPath')
@@ -305,7 +305,7 @@ HMB.renderChart = function() {
   // Create gradients for bar metrics
   this.state.selectedMetrics.forEach(metric => {
     if (metric.type === 'bar') {
-      const gradientId = `gradient-${metric.path.replace(/\./g, '-')}`;
+      const gradientId = `gradient-${metric.path.replace(/[^a-zA-Z0-9]/g, '_')}`;
       const gradient = defs.append('linearGradient')
         .attr('id', gradientId)
         .attr('x1', '0%')
@@ -548,7 +548,7 @@ HMB.drawMetrics = function(svg, xScale, leftYScale, rightYScale, width, height) 
         .attr('cx', d => xScale(d.date))
         .attr('cy', d => yScale(d.value))
         .attr('r', 4)
-        .attr('fill', metric.color)
+        .attr('fill', `url(#gradient-${metric.path.replace(/[^a-zA-Z0-9]/g, '_')})`)
         .attr('stroke', '#fff')
         .attr('stroke-width', 1)
         .attr('clip-path', 'url(#chart-clip)');
@@ -576,8 +576,10 @@ HMB.drawMetrics = function(svg, xScale, leftYScale, rightYScale, width, height) 
           strokeWidth = 2;
       }
 
-      // Calculate bar width - simple approach: fixed width based on number of points
-      const barWidth = Math.max(4, width / (validPoints.length * 2));
+      // Calculate bar width - use consistent width based on date range
+      const dateRange = xScale.domain();
+      const daysDiff = Math.ceil((dateRange[1] - dateRange[0]) / (24 * 60 * 60 * 1000)) + 1;
+      const barWidth = Math.max(4, width / (daysDiff * 2));
       const cornerRadius = 3;
 
       // Function to create rounded top rectangle path
@@ -602,7 +604,7 @@ HMB.drawMetrics = function(svg, xScale, leftYScale, rightYScale, width, height) 
           const barHeight = height - yScale(d.value);
           return roundedTopRect(barX, barY, barWidth, barHeight, cornerRadius);
         })
-        .attr('fill', `url(#gradient-${metric.path.replace(/\./g, '-')})`)
+        .attr('fill', `url(#gradient-${metric.path.replace(/[^a-zA-Z0-9]/g, '_')})`)
         .attr('clip-path', 'url(#chart-clip)')
         .style('stroke', metric.color)
         .style('stroke-width', strokeWidth + 'px');
