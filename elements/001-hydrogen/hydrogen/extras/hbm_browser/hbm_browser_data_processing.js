@@ -486,9 +486,36 @@ HMB.getNestedValueByPath = function(obj, path) {
       }
       return undefined;
   }
-  else if (path.includes('stats.') && !path.includes('[')) {
-    // Convert clean path like "stats.performance.avg_time" to array access
-    const match = path.match(/stats\.([^.]+)\.(.+)/);
+  else if (path.includes('.stats.') && !path.includes('[')) {
+    // Handle nested stats like "cloc.stats.metric.value"
+    const statsPathMatch = path.match(/(.+)\.stats\.([^.]+)\.(.+)/);
+    if (statsPathMatch) {
+      const prefix = statsPathMatch[1]; // "cloc"
+      const metricFromPath = statsPathMatch[2]; // "Unity Ratio"
+      const remainingPath = statsPathMatch[3]; // "value"
+
+      // First get the object containing stats
+      const containerObj = this.getNestedValueByPath(obj, prefix);
+      const statsArray = containerObj?.stats;
+      if (Array.isArray(statsArray)) {
+        for (let i = 0; i < statsArray.length; i++) {
+          // Normalize both identifiers for comparison
+          const jsonMetric = statsArray[i]?.metric;
+          if (jsonMetric) {
+            const normalizedJsonMetric = jsonMetric.replace(/\s+/g, '_').replace(/\//g, '_');
+            if (normalizedJsonMetric === metricFromPath || jsonMetric === metricFromPath) {
+              // Found the matching metric, now get the remaining path
+              return this.getNestedValueByPath(statsArray[i], remainingPath);
+            }
+          }
+        }
+      }
+      return undefined;
+    }
+  }
+  else if (path.startsWith('stats.') && !path.includes('[')) {
+    // Convert clean path like "stats.performance.avg_time" to array access (for root-level stats)
+    const match = path.match(/^stats\.([^.]+)\.(.+)/);
     if (match) {
       const metricFromPath = match[1];
       const remainingPath = match[2];
