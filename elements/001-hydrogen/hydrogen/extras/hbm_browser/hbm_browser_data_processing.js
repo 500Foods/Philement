@@ -569,18 +569,21 @@ HMB.getNestedValueByPath = function(obj, path) {
 HMB.filterDataByDateRange = function() {
   if (!this.state.currentDateRange || !this.state.metricsData) return;
 
-  const startDate = new Date(this.state.currentDateRange.start);
-  const endDate = new Date(this.state.currentDateRange.end);
+  // Parse dates as UTC to avoid timezone issues
+  const startParts = this.state.currentDateRange.start.split('-').map(Number);
+  const endParts = this.state.currentDateRange.end.split('-').map(Number);
+  const startDate = new Date(Date.UTC(startParts[0], startParts[1] - 1, startParts[2]));
+  const endDate = new Date(Date.UTC(endParts[0], endParts[1] - 1, endParts[2]));
   const allDates = [];
   const dateMap = new Map();
 
-  // Add all dates in range
+  // Add all dates in range using UTC
   let currentDate = new Date(startDate);
   while (currentDate <= endDate) {
-    const dateStr = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0') + '-' + String(currentDate.getDate()).padStart(2, '0');
+    const dateStr = currentDate.getUTCFullYear() + '-' + String(currentDate.getUTCMonth() + 1).padStart(2, '0') + '-' + String(currentDate.getUTCDate()).padStart(2, '0');
     allDates.push(dateStr);
     dateMap.set(dateStr, null);
-    currentDate.setDate(currentDate.getDate() + 1);
+    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
   }
 
   // Add actual data points - prioritize cached data if available
