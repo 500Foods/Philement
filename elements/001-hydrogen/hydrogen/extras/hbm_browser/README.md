@@ -1,10 +1,8 @@
 # Hydrogen Build Metrics Browser
 
-## **Interactive D3 visualization tool for Hydrogen project metrics**
-
 ## Overview
 
-The Hydrogen Build Metrics Browser (hbm_browser) is a powerful visualization tool that provides interactive analysis of Hydrogen project metrics data. It offers both browser-based interactive exploration and command-line automated report generation.
+The Hydrogen Build Metrics Browser (hbm_browser) is a powerful D3.js-based visualization tool that provides interactive analysis of Hydrogen project metrics data. It offers both browser-based interactive exploration and command-line automated report generation.
 
 ## Features
 
