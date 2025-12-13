@@ -59,3 +59,7 @@ CURIOSITIES.md
 
 # We'll have a lot of SVG files, but they're just padding numbers unnecessarily
 images/acuranzo
+
+# This is the node stuff from hbm_browser that we don't want to pull in
+extras/hbm_browser/node_modules/
+
