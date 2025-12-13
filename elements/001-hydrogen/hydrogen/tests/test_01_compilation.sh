@@ -7,6 +7,7 @@
 # download_unity_framework()
 
 # CHANGELOG
+# 4.4.0 - 2025-12-13 - Added check for HBM browser files timestamps in payload regeneration logic
 # 4.3.0 - 2025-12-03 - Extracted installer building functionality to standalone Test 80 (INS)
 # 4.2.0 - 2025-11-22 - Enhanced payload check to verify migration file timestamps - regenerates if any migration files are newer than payload
 # 4.1.0 - 2025-10-01 - Major optimization: Reduced rebuild time from 10-15s to ~1s with VERSION/RELEASE caching, simplified payload check, optimized source detection, and installer skip
@@ -41,7 +42,7 @@ TEST_NAME="Compilation"
 TEST_ABBR="CMP"
 TEST_NUMBER="01"
 TEST_COUNTER=0
-TEST_VERSION="4.3.0"
+TEST_VERSION="4.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -208,7 +209,15 @@ needs_payload_regeneration() {
             return 0  # Found newer migration files, need to regenerate
         fi
     done
-    
+
+    # Check if HBM browser files are newer than the payload
+    local hbm_dir="${PROJECT_DIR}/extras/hbm_browser"
+    if [[ -d "${hbm_dir}" ]]; then
+        if find "${hbm_dir}" -type f -newer "${payload_file}" -print -quit 2>/dev/null | grep -q .; then
+            return 0  # Found newer HBM files, need to regenerate
+        fi
+    fi
+
     return 1  # Payload exists and is current, no regeneration needed
 }
 
