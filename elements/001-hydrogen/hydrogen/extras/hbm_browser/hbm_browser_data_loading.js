@@ -11,6 +11,13 @@ var HMB = HMB || {};
 
 // Load initial data with proper two-phase approach
 HMB.loadInitialData = function() {
+  // Prevent double-loading
+  if (this.state.isLoading) {
+    console.log('Data loading already in progress, skipping duplicate call');
+    return;
+  }
+  this.state.isLoading = true;
+
   // Step 1: Show loading overlay immediately
   this.showLoading();
   this.initProgressTracking();
@@ -91,7 +98,7 @@ HMB.loadMetricsDiscoveryPhase = function(daysToCheck) {
   checkNextDay();
 };
 
-// Phase 2: Load remaining data in background with progress tracking
+// Phase 2: Load remaining data in background with progress tracking (batch loading)
 HMB.loadRemainingDataPhase = function(totalDays) {
   // Show progress bar for background loading
   this.showProgressBar();
@@ -99,11 +106,19 @@ HMB.loadRemainingDataPhase = function(totalDays) {
   const today = new Date();
   let currentDay = 0;
   let filesLoaded = 0;
+  const BATCH_SIZE = 10;
+  const startTime = performance.now();
 
-  const loadNextFile = () => {
+  const loadBatch = async () => {
     if (currentDay >= totalDays) {
       // All files processed
+      const endTime = performance.now();
+      const elapsed = ((endTime - startTime) / 1000).toFixed(1);
+      const perDataset = filesLoaded > 0 ? ((endTime - startTime) / filesLoaded).toFixed(3) : 0;
+      console.log(`${filesLoaded} of ${totalDays} datasets loaded in ${elapsed}s @ ${perDataset}ms/dataset`);
+
       this.hideProgressBar();
+      this.state.isLoading = false;
 
       // Update chart now that all data is loaded
       if (this.state.selectedMetrics.length > 0) {
@@ -113,66 +128,72 @@ HMB.loadRemainingDataPhase = function(totalDays) {
       return;
     }
 
-    const currentDate = new Date(today);
-    currentDate.setDate(today.getDate() - currentDay);
-    const dateStr = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0') + '-' + String(currentDate.getDate()).padStart(2, '0');
+    // Prepare batch of files to load
+    const batch = [];
+    const startDay = currentDay;
+    
+    for (let i = 0; i < BATCH_SIZE && (startDay + i) < totalDays; i++) {
+      const dayOffset = startDay + i;
+      const currentDate = new Date(today);
+      currentDate.setDate(today.getDate() - dayOffset);
+      const dateStr = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0') + '-' + String(currentDate.getDate()).padStart(2, '0');
 
-    // Skip if we already have this data from discovery phase
-    if (this.isDataCached(dateStr)) {
-      currentDay++;
-      filesLoaded++;
-      this.updateProgressTracking(currentDay, filesLoaded, totalDays);
-      setTimeout(loadNextFile, 20);
-      return;
+      // Skip if we already have this data from discovery phase
+      if (this.isDataCached(dateStr)) {
+        currentDay++;
+        filesLoaded++;
+        continue;
+      }
+
+      const [year, month, day] = dateStr.split('-');
+      const filePath = `${year}-${month}/${year}-${month}-${day}.json`;
+
+      const url = this.state.isBrowser
+        ? `${this.config.dataSources.browser.baseUrl}/${filePath}`
+        : `${this.config.dataSources.local.basePath}/${filePath}`;
+
+      batch.push({dateStr, filePath, url});
     }
 
-    const [year, month, day] = dateStr.split('-');
-    const filePath = `${year}-${month}/${year}-${month}-${day}.json`;
+    // Load all files in the batch in parallel
+    const loadPromises = batch.map(item =>
+      fetch(item.url)
+        .then(response => response.ok ? response.json() : null)
+        .then(data => {
+          if (data) {
+            // Cache the loaded data
+            this.cacheLoadedData(item.dateStr, data);
 
-    const url = this.state.isBrowser
-      ? `${this.config.dataSources.browser.baseUrl}/${filePath}`
-      : `${this.config.dataSources.local.basePath}/${filePath}`;
+            // Add to our metrics data
+            this.processMetricsFiles([{
+              date: item.dateStr,
+              data: data,
+              filePath: item.filePath
+            }]);
 
-    fetch(url)
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        }
-        return null;
-      })
-      .then(data => {
-        if (data) {
-          // Cache the loaded data
-          this.cacheLoadedData(dateStr, data);
+            filesLoaded++;
+          }
+          currentDay++;
+          return data;
+        })
+        .catch(error => {
+          currentDay++;
+          return null;
+        })
+    );
 
-          // Add to our metrics data
-          this.processMetricsFiles([{
-            date: dateStr,
-            data: data,
-            filePath: filePath
-          }]);
+    // Wait for all files in the batch to complete
+    await Promise.all(loadPromises);
 
-          filesLoaded++;
-        }
+    // Update progress
+    this.updateProgressTracking(currentDay, filesLoaded, totalDays);
 
-        currentDay++;
-        // Update progress
-        this.updateProgressTracking(currentDay, filesLoaded, totalDays);
-
-        // Load next file after small delay
-        setTimeout(loadNextFile, 20);
-      })
-      .catch(error => {
-        currentDay++;
-        // Update progress even on error
-        this.updateProgressTracking(currentDay, filesLoaded, totalDays);
-        // Continue with next file
-        setTimeout(loadNextFile, 20);
-      });
+    // Load next batch after small delay
+    setTimeout(loadBatch, 20);
   };
 
-  // Start loading from beginning
-  loadNextFile();
+  // Start loading first batch
+  loadBatch();
 };
 
 // Load data for a specific date range with progress tracking
@@ -318,10 +339,24 @@ HMB.handleDateRangeChange = function() {
   }
 };
 
-// Simple event-driven loading of additional files
-HMB.loadAdditionalFiles = function(dates, currentIndex) {
+// Batch loading of additional files
+HMB.loadAdditionalFiles = async function(dates, currentIndex) {
+  const BATCH_SIZE = 10;
+  
+  // Track loading stats on first call
+  if (currentIndex === 0) {
+    this.state.additionalLoadStart = performance.now();
+    this.state.additionalFilesLoaded = 0;
+  }
+
   if (currentIndex >= dates.length) {
     // All additional files loaded, update and finish
+    const endTime = performance.now();
+    const elapsed = ((endTime - this.state.additionalLoadStart) / 1000).toFixed(1);
+    const filesLoaded = this.state.additionalFilesLoaded;
+    const perDataset = filesLoaded > 0 ? ((endTime - this.state.additionalLoadStart) / filesLoaded).toFixed(3) : 0;
+    console.log(`${filesLoaded} of ${dates.length} datasets loaded in ${elapsed}s @ ${perDataset}ms/dataset`);
+    
     this.filterDataByDateRange();
     this.renderChart();
     this.hideProgressBar();
@@ -333,87 +368,112 @@ HMB.loadAdditionalFiles = function(dates, currentIndex) {
     return;
   }
 
-  const dateStr = dates[currentIndex];
-  const [year, month, day] = dateStr.split('-');
-  const filePath = `${year}-${month}/${year}-${month}-${day}.json`;
-
-  const url = this.state.isBrowser
-    ? `${this.config.dataSources.browser.baseUrl}/${filePath}`
-    : `${this.config.dataSources.local.basePath}/${filePath}`;
-
-  // Load this file
-  fetch(url)
-    .then(response => {
-      if (response.ok) {
-        return response.json();
-      }
-      return null;
-    })
-    .then(data => {
-      if (data) {
-        // Cache the loaded data
-        this.cacheLoadedData(dateStr, data);
-
-        // Add to our metrics data
-        this.processMetricsFiles([{
-          date: dateStr,
-          data: data,
-          filePath: filePath
-        }]);
-      }
-
-      // Update progress
-      this.updateProgressTracking(currentIndex + 1, this.state.metricsData.length, dates.length);
-
-      // Load next file after small delay
-      setTimeout(() => {
-        this.loadAdditionalFiles(dates, currentIndex + 1);
-      }, 100);
-    })
-    .catch(error => {
-      // Continue with next file
-      setTimeout(() => {
-        this.loadAdditionalFiles(dates, currentIndex + 1);
-      }, 100);
-    });
-};
-
-// Load additional data for specific dates
-HMB.loadAdditionalData = async function(dates) {
-  let filesLoaded = 0;
-
-  for (let i = 0; i < dates.length; i++) {
-    const dateStr = dates[i];
+  // Prepare batch of files to load
+  const batch = [];
+  for (let i = 0; i < BATCH_SIZE && (currentIndex + i) < dates.length; i++) {
+    const dateStr = dates[currentIndex + i];
     const [year, month, day] = dateStr.split('-');
     const filePath = `${year}-${month}/${year}-${month}-${day}.json`;
 
-    try {
+    const url = this.state.isBrowser
+      ? `${this.config.dataSources.browser.baseUrl}/${filePath}`
+      : `${this.config.dataSources.local.basePath}/${filePath}`;
+
+    batch.push({dateStr, filePath, url});
+  }
+
+  // Load all files in the batch in parallel
+  const loadPromises = batch.map(item =>
+    fetch(item.url)
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (data) {
+          // Cache the loaded data
+          this.cacheLoadedData(item.dateStr, data);
+
+          // Add to our metrics data
+          this.processMetricsFiles([{
+            date: item.dateStr,
+            data: data,
+            filePath: item.filePath
+          }]);
+          
+          this.state.additionalFilesLoaded++;
+        }
+        return data;
+      })
+      .catch(error => null)
+  );
+
+  // Wait for all files in the batch to complete
+  await Promise.all(loadPromises);
+
+  // Update progress
+  this.updateProgressTracking(currentIndex + batch.length, this.state.metricsData.length, dates.length);
+
+  // Load next batch after small delay
+  setTimeout(() => {
+    this.loadAdditionalFiles(dates, currentIndex + batch.length);
+  }, 100);
+};
+
+// Load additional data for specific dates (batch loading)
+HMB.loadAdditionalData = async function(dates) {
+  let filesLoaded = 0;
+  const BATCH_SIZE = 10;
+  const startTime = performance.now();
+
+  for (let i = 0; i < dates.length; i += BATCH_SIZE) {
+    // Prepare batch of files to load
+    const batch = [];
+    
+    for (let j = i; j < Math.min(i + BATCH_SIZE, dates.length); j++) {
+      const dateStr = dates[j];
+      const [year, month, day] = dateStr.split('-');
+      const filePath = `${year}-${month}/${year}-${month}-${day}.json`;
+
       const url = this.state.isBrowser
         ? `${this.config.dataSources.browser.baseUrl}/${filePath}`
         : `${this.config.dataSources.local.basePath}/${filePath}`;
 
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-
-        // Cache the loaded data
-        this.cacheLoadedData(dateStr, data);
-
-        // Add to our metrics data
-        this.processMetricsFiles([{
-          date: dateStr,
-          data: data,
-          filePath: filePath
-        }]);
-
-        filesLoaded++;
-      }
-    } catch (error) {
+      batch.push({dateStr, filePath, url});
     }
 
+    // Load all files in the batch in parallel
+    const loadPromises = batch.map(item =>
+      fetch(item.url)
+        .then(response => response.ok ? response.json() : null)
+        .then(data => {
+          if (data) {
+            // Cache the loaded data
+            this.cacheLoadedData(item.dateStr, data);
+
+            // Add to our metrics data
+            this.processMetricsFiles([{
+              date: item.dateStr,
+              data: data,
+              filePath: item.filePath
+            }]);
+
+            filesLoaded++;
+          }
+          return data;
+        })
+        .catch(error => null)
+    );
+
+    // Wait for all files in the batch to complete
+    await Promise.all(loadPromises);
+
     // Update progress
-    this.updateProgressTracking(i + 1, filesLoaded, dates.length);
+    this.updateProgressTracking(i + batch.length, filesLoaded, dates.length);
   }
+
+  // Log completion stats
+  const endTime = performance.now();
+  const elapsed = ((endTime - startTime) / 1000).toFixed(1);
+  const perDataset = filesLoaded > 0 ? ((endTime - startTime) / filesLoaded).toFixed(3) : 0;
+  console.log(`${filesLoaded} of ${dates.length} datasets loaded in ${elapsed}s @ ${perDataset}ms/dataset`);
 
   return filesLoaded;
 };

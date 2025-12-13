@@ -129,22 +129,28 @@ HMB.renderChart = function() {
 
   // Set up scales
   // Generate full date range for domain to ensure all dates are displayed
+  // Use UTC dates constructed directly from date parts to avoid timezone conversions
   const dates = this.state.filteredData.map(d => {
     const [year, month, day] = d.date.split('-').map(Number);
-    return new Date(year, month - 1, day);
+    return new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
   });
   const minDate = d3.min(dates);
   const maxDate = d3.max(dates);
-  const allDates = d3.timeDay.range(minDate, d3.timeDay.offset(maxDate, 1));
+  // Add one day padding on each end for comfortable bar/point display
+  const paddedMinDate = d3.utcDay.offset(minDate, -1);
+  const paddedMaxDate = d3.utcDay.offset(maxDate, 1);
+  const allDates = d3.utcDay.range(minDate, d3.utcDay.offset(maxDate, 1));
 
   // Debug: Log missing dates within the selected date range
   const logMissingDates = () => {
-    const startDate = new Date(this.state.currentDateRange.start);
-    const endDate = new Date(this.state.currentDateRange.end);
+    const startParts = this.state.currentDateRange.start.split('-').map(Number);
+    const endParts = this.state.currentDateRange.end.split('-').map(Number);
+    const startDate = new Date(Date.UTC(startParts[0], startParts[1] - 1, startParts[2]));
+    const endDate = new Date(Date.UTC(endParts[0], endParts[1] - 1, endParts[2]));
     const missingDates = [];
     let currentDate = new Date(startDate);
     while (currentDate <= endDate) {
-      const dateStr = d3.timeFormat('%Y-%m-%d')(currentDate);
+      const dateStr = d3.utcFormat('%Y-%m-%d')(currentDate);
       const file = this.state.filteredData.find(d => d.date === dateStr);
       if (!file || !file.data) {
         missingDates.push(dateStr);
@@ -157,7 +163,7 @@ HMB.renderChart = function() {
           missingDates.push(dateStr);
         }
       }
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
 //    console.log('Missing dates:', missingDates);
 //    console.log('Count of missing dates:', missingDates.length);
@@ -165,8 +171,8 @@ HMB.renderChart = function() {
   };
   logMissingDates();
 
-  let xScale = d3.scaleTime()
-    .domain([minDate, maxDate])
+  let xScale = d3.scaleUtc()
+    .domain([paddedMinDate, paddedMaxDate])
     .range([0, width]);
 
   // Create scales for each axis
@@ -199,21 +205,21 @@ HMB.renderChart = function() {
   // Helper function to get day of week from YYYY-MM-DD string
   const getDayOfWeek = (dateStr) => {
     const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.getDay(); // 0 = Sunday
+    const date = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+    return date.getUTCDay(); // 0 = Sunday
   };
 
-  // Add X axis
+  // Add X axis - use UTC formatting to match UTC dates
   const xAxis = svg.append('g')
     .attr('class', 'x-axis')
     .attr('transform', `translate(0,${height - 0})`)
     .attr('clip-path', 'url(#x-axis-clip)')
     .call(d3.axisBottom(xScale).tickValues(allDates).tickFormat(d => {
-      const dayOfWeek = d.getDay();
+      const dayOfWeek = d.getUTCDay();
       if (dayOfWeek === 0) { // Sunday
-        return d3.timeFormat('%Y-W%W')(d);
+        return d3.utcFormat('%Y-W%W')(d);
       } else {
-        return d3.timeFormat('%Y-%m-%d')(d);
+        return d3.utcFormat('%Y-%m-%d')(d);
       }
     }));
 
@@ -224,11 +230,11 @@ HMB.renderChart = function() {
     .attr('dx', '0.8em')
     .attr('dy', '-0.25em')
     .attr('fill', 'var(--text-color)')
-    .classed('darken-dates', d => this.state.missingDates.includes(d3.timeFormat('%Y-%m-%d')(d)))
-    .style('font-weight', d => d.getDay() === 0 ? 'bold' : 'normal');
+    .classed('darken-dates', d => this.state.missingDates.includes(d3.utcFormat('%Y-%m-%d')(d)))
+    .style('font-weight', d => d.getUTCDay() === 0 ? 'bold' : 'normal');
 
   // Add major axis lines on Sundays
-  const sundayDates = allDates.filter(d => d.getDay() === 0 && xScale(d) >= 0 && xScale(d) <= width);
+  const sundayDates = allDates.filter(d => d.getUTCDay() === 0 && xScale(d) >= 0 && xScale(d) <= width);
   sundayDates.forEach(d => {
     svg.append('line')
       .attr('class', 'sunday-line')
@@ -356,11 +362,11 @@ HMB.renderChart = function() {
 
       // Update x axis
       xAxis.call(d3.axisBottom(rescaledX).tickValues(allDates).tickFormat(d => {
-        const dayOfWeek = d.getDay();
+        const dayOfWeek = d.getUTCDay();
         if (dayOfWeek === 0) {
-          return d3.timeFormat('%Y-W%W')(d);
+          return d3.utcFormat('%Y-W%W')(d);
         } else {
-          return d3.timeFormat('%Y-%m-%d')(d);
+          return d3.utcFormat('%Y-%m-%d')(d);
         }
       }));
 
@@ -371,12 +377,12 @@ HMB.renderChart = function() {
         .attr('dx', '0.8em')
         .attr('dy', '-0.25em')
         .attr('fill', 'var(--text-color)')
-        .classed('darken-dates', d => this.state.missingDates.includes(d3.timeFormat('%Y-%m-%d')(d)))
-        .style('font-weight', d => d.getDay() === 0 ? 'bold' : 'normal');
+        .classed('darken-dates', d => this.state.missingDates.includes(d3.utcFormat('%Y-%m-%d')(d)))
+        .style('font-weight', d => d.getUTCDay() === 0 ? 'bold' : 'normal');
 
       // Update sunday lines
       svg.selectAll('.sunday-line').remove();
-      const sundayDates = allDates.filter(d => d.getDay() === 0 && rescaledX(d) >= 0 && rescaledX(d) <= width);
+      const sundayDates = allDates.filter(d => d.getUTCDay() === 0 && rescaledX(d) >= 0 && rescaledX(d) <= width);
       sundayDates.forEach(d => {
         svg.append('line')
           .attr('class', 'sunday-line')
@@ -460,7 +466,7 @@ HMB.drawMetrics = function(svg, xScale, leftYScale, rightYScale, width, height) 
        // console.log(`    📊 path "${metric.path}" -> ${value} (type: ${typeof value})`);
        const [year, month, day] = file.date.split('-').map(Number);
        return {
-         date: new Date(year, month - 1, day),
+         date: new Date(Date.UTC(year, month - 1, day, 0, 0, 0)),
          value: typeof value === 'number' ? value : null,
          metricPath: metric.path
        };
@@ -652,7 +658,7 @@ HMB.showTooltip = function(event, d, metric) {
   // Calculate date from mouse position using current rescaled x-scale
   const mouseX = event.clientX - containerRect.left - this.config.chartSettings.margin.left;
   const dateObj = this.currentXScale.invert(mouseX);
-  const date = d3.timeFormat('%Y-%m-%d')(dateObj);
+  const date = d3.utcFormat('%Y-%m-%d')(dateObj);
   const value = typeof d.value === 'number' ? d.value.toLocaleString() : d.value;
 
   // Set tooltip content with line breaks
