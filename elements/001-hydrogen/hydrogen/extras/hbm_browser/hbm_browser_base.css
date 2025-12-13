@@ -17,7 +17,7 @@
   --success-color: #4caf50;
   --warning-color: #ff9800;
   --error-color: #f44336;
-  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-family: Cairo, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   --transition-speed: 0.3s;
   --slow-transition-speed: 0.8s;
   --panel-transition-speed: 0.3s; /* Deliberately slow for debugging */
