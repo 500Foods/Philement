@@ -95,6 +95,22 @@ This project uses [Font Awesome Free](https://fontawesome.com) icons. Font Aweso
 
 The SVG data for a handful of these icons are currently used in the database diagrams. The code for these is found in  tests/lib/generate_database.js.
 
+### Hydrogen Build Metrics Browser
+
+The [Hydrogen Build Metrics Browser](/elements/001-hydrogen/hydrogen/extras/hbm_browser/) uses several open-source JavaScript libraries:
+
+- **[D3.js](https://d3js.org/)** (v7.8.5) - Data visualization library for creating interactive charts and graphs
+- **[Flatpickr](https://flatpickr.js.org/)** (v4.6.13) - Lightweight date picker library
+- **[Iro.js](https://iro.js.org/)** (v5) - Color picker widget for the web
+- **[JSDOM](https://github.com/jsdom/jsdom)** - JavaScript implementation of the DOM for Node.js CLI functionality
+
+### Database Diagrams
+
+The [database diagram generation tool](/docs/H/tests/get_diagram.md) uses embedded icons and fonts:
+
+- **[Font Awesome Free](https://fontawesome.com)** - Embedded SVG icons for database schema elements (keys, relationships, constraints)
+- **[Cairo Font Family](https://fonts.google.com/specimen/Cairo)** - Font family used for rendering text in generated diagrams
+
 ## Latest Test Results
 
 <div style="display: flex; flex-direction: column; align-items: start; gap: 0px;">
