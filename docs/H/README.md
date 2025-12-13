@@ -108,3 +108,11 @@ The SVG data for a handful of these icons are currently used in the database dia
   <img src="/elements/001-hydrogen/hydrogen/images/CLOC_CODE.svg" alt="CLOC Code Analysis" style="margin: -25px 0px 0px -20px;">
   <img src="/elements/001-hydrogen/hydrogen/images/CLOC_STAT.svg" alt="CLOC Extended Statistics" style="margin: -25px 0px 0px -20px;">
 </div>
+
+## Repository History
+
+The [Hydrogen Build Metrics Browser](/elements/001-hydrogen/hydrogen/extras/hbm_browser/README.md) app is available through the Swagger/OpenAPI page in a running system, locally via a file:// browser reference, or can be used in its command-line variant to produce SVG charts directly. The tool provides access to nearly 3,000 build metrics - basically everything in the above tables, and is shown here, gneerated via Test 00 alongside the above tables. Data used for this only started being captured on or around September 25, 2025.
+
+<div style="display: flex; background: none !important; border: none !important; flex-direction: column; align-items: start; gap: 0px;">
+  <img src="/elements/001-hydrogen/hydrogen/images/HISTORY.svg" alt="Hydrogen Build Metrics" style="margin: 20px 0px 0px 0px;">
+</div>

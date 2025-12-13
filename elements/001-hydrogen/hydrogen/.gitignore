@@ -44,4 +44,6 @@ hydrogen_valgrind
 
 # Node exclusions
 tests/lib/node_modules/*
-tests/lib/package*
+# tests/lib/package*
+extras/hbm_browser/node_modules/*
+# extras/hbm_browser/package*
