@@ -89,27 +89,76 @@ Hydrogen is currently designed for technical users who:
 
 ## Attributions
 
-### Icons
+### Core Libraries
 
-This project uses [Font Awesome Free](https://fontawesome.com) icons. Font Awesome Free is free for use with attribution. The embedded comments in the Font Awesome Free files contain the full attribution details required by the licenses (MIT, SIL OFL 1.1, and CC BY 4.0).
+Hydrogen uses several open-source C libraries for core functionality:
 
-The SVG data for a handful of these icons are currently used in the database diagrams. The code for these is found in  tests/lib/generate_database.js.
+- [**jansson**](https://github.com/akheron/jansson) - JSON parsing and generation library
+- [**libmicrohttpd**](https://www.gnu.org/software/libmicrohttpd/) - HTTP server library implementing the HTTP/1.1 protocol
+- [**libwebsockets**](https://libwebsockets.org/) - WebSocket server and client library
+- [**libbrotli**](https://github.com/google/brotli) - Brotli compression algorithm library
+- [**libuuid**](https://sourceforge.net/projects/libuuid/) - UUID generation library
+- [**libtar**](https://github.com/tklauser/libtar) - TAR file manipulation library
+- [**Lua**](https://www.lua.org/) - Lightweight scripting language
+- [**OpenSSL**](https://www.openssl.org/) - Cryptography and SSL/TLS toolkit
+- **POSIX Threads** - Standard threading library (pthreads)
+- **GNU C Library (glibc)** - Core C library providing essential functions
 
-### Hydrogen Build Metrics Browser
+### Web Interface Libraries
 
-The [Hydrogen Build Metrics Browser](/elements/001-hydrogen/hydrogen/extras/hbm_browser/) uses several open-source JavaScript libraries:
+Hydrogen embeds several JavaScript libraries for web-based interfaces and API documentation:
 
-- **[D3.js](https://d3js.org/)** (v7.8.5) - Data visualization library for creating interactive charts and graphs
-- **[Flatpickr](https://flatpickr.js.org/)** (v4.6.13) - Lightweight date picker library
-- **[Iro.js](https://iro.js.org/)** (v5) - Color picker widget for the web
-- **[JSDOM](https://github.com/jsdom/jsdom)** - JavaScript implementation of the DOM for Node.js CLI functionality
+- [**xterm.js**](https://xtermjs.org/) - Terminal emulation library for web-based terminal interfaces
+- [**SwaggerUI**](https://swagger.io/tools/swagger-ui/) - Interactive API documentation interface for OpenAPI specifications
+
+### Build Tools
+
+Hydrogen's build system and development tools include:
+
+- [**CMake**](https://cmake.org/) - Cross-platform build system generator
+- [**Ninja**](https://ninja-build.org/) - Fast build system with low overhead
+- [**GCC**](https://gcc.gnu.org/) - GNU Compiler Collection for C compilation
+- [**Unity**](https://www.throwtheswitch.org/unity) - Unit test framework for C
+- [**UPX**](https://upx.github.io/) - Ultimate Packer for eXecutables (binary compression)
+- [**ccache**](https://ccache.dev/) - Compiler cache for faster rebuilds
+- [**Make**](https://www.gnu.org/software/make/) - Traditional build automation tool
+
+### Development & Testing Tools
+
+Hydrogen uses comprehensive development and testing tools for code quality and validation:
+
+- [**sqruff**](https://github.com/quarylabs/sqruff) - SQL linting and formatting tool [Test 31](/docs/H/tests/test_31_migrations.md))
+- [**markdownlint**](https://github.com/DavidAnson/markdownlint) - Markdown file linting and style checking ([Test 90](/docs/H/tests/test_90_markdownlint.md))
+- [**cppcheck**](https://cppcheck.sourceforge.io/) - Static analysis for C/C++ code ([Test 91](/docs/H/tests/test_91_cppcheck.md))
+- [**shellcheck**](https://www.shellcheck.net/) - Static linting for bash scripts ([Test 92](/docs/H/tests/test_92_shellcheck.md))
+- [**jsonlint**](https://github.com/zaach/jsonlint) - JSON file validation and formatting ([Test 93](/docs/H/tests/test_93_jsonlint.md))
+- [**eslint**](https://eslint.org/) - JavaScript code linting and style checking ([Test 94](/docs/H/tests/test_94_eslint.md))
+- [**stylelint**](https://stylelint.io/) - CSS/SCSS linting and style checking ([Test 95](/docs/H/tests/test_95_stylelint.md))
+- [**htmlhint**](https://htmlhint.com/) - HTML code linting and validation ([Test 96](/docs/H/tests/test_96_htmlhint.md))
+- [**xmlstarlet**](https://xmlstar.sourceforge.net/) - XML/SVG validation and processing ([Test 97](/docs/H/tests/test_97_xmlstarlet.md))
+- [**luacheck**](https://github.com/mpeterv/luacheck) - Lua code analysis and linting ([Test 98](/docs/H/tests/test_98_luacheck.md))
+- [**cloc**](https://github.com/AlDanial/cloc) - Count Lines of Code analysis tool ([Test 99](/docs/H/tests/test_99_code_size.md))
+- [**swagger-cli**](https://github.com/APIDevTools/swagger-cli) - OpenAPI/Swagger validation and processing [Payload](/elements/001-hydrogen/hydrogen/payloads/README.md))
 
 ### Database Diagrams
 
 The [database diagram generation tool](/docs/H/tests/get_diagram.md) uses embedded icons and fonts:
 
-- **[Font Awesome Free](https://fontawesome.com)** - Embedded SVG icons for database schema elements (keys, relationships, constraints)
-- **[Cairo Font Family](https://fonts.google.com/specimen/Cairo)** - Font family used for rendering text in generated diagrams
+- [**Font Awesome Free**](https://fontawesome.com) - Embedded SVG icons for database schema elements (keys, relationships, constraints)
+- [**Cairo Font Family**](https://fonts.google.com/specimen/Cairo) - Font family used for rendering text in generated diagrams
+- [**D3.js**](https://d3js.org/) (v7.8.5) - Data visualization library for creating interactive charts and graphs
+- [**JSDOM**](https://github.com/jsdom/jsdom) - JavaScript implementation of the DOM for Node.js CLI functionality
+
+### Hydrogen Build Metrics Browser
+
+The [Hydrogen Build Metrics Browser](/elements/001-hydrogen/hydrogen/extras/hbm_browser/) uses several open-source JavaScript libraries:
+
+- [**Font Awesome Free**](https://fontawesome.com) - Embedded SVG icons for database schema elements (keys, relationships, constraints)
+- [**Cairo Font Family**](https://fonts.google.com/specimen/Cairo) - Font family used for rendering
+- [**D3.js**](https://d3js.org/) (v7.8.5) - Data visualization library for creating interactive charts and graphs
+- [**Flatpickr**](https://flatpickr.js.org/) (v4.6.13) - Lightweight date picker library
+- [**Iro.js**](https://iro.js.org/) (v5) - Color picker widget for the web
+- [**JSDOM**](https://github.com/jsdom/jsdom) - JavaScript implementation of the DOM for Node.js CLI functionality
 
 ## Latest Test Results
 
