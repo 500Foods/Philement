@@ -87,6 +87,18 @@ HMB.extractAvailableMetrics = function() {
 HMB.extractNumericValues = function(data, path = '', context = {}) {
   const results = [];
 
+  // Special handling for cloc data - flatten by language
+  if (path === 'cloc.main' && Array.isArray(data)) {
+    data.forEach(item => {
+      if (item.language) {
+        const languageKey = item.language.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+        const languagePath = `cloc.main.${languageKey}`;
+        results.push(...this.extractNumericValues(item, languagePath, context));
+      }
+    });
+    return results;
+  }
+
   for (const [key, value] of Object.entries(data)) {
     // Build path based on data type
     let newPath;

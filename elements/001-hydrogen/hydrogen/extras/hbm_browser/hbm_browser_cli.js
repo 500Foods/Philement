@@ -14,21 +14,13 @@ const d3 = require('d3');
 const iro = require('@jaames/iro');
 const flatpickr = require('flatpickr');
 
-// Import the main browser class and modules
-const HydrogenMetricsBrowser = require('./hbm_browser.js');
-const HydrogenMetricsBrowserCore = require('./hbm_browser_core.js');
-const HydrogenMetricsBrowserData = require('./hbm_browser_data.js');
-const HydrogenMetricsBrowserChart = require('./hbm_browser_chart.js');
-const HydrogenMetricsBrowserUI = require('./hbm_browser_ui.js');
-const HydrogenMetricsBrowserUtils = require('./hbm_browser_utils.js');
-
 /**
  * CLI Main Function
  */
 async function main() {
   // Parse command line arguments
   const args = process.argv.slice(2);
-  const configFile = args[0] || 'hbm_browser_auto.json';
+  const configFile = args[0] || 'hbm_browser_defaults.json';
   const outputFile = args[1] || 'hydrogen_metrics_report.svg';
 
   console.log('Hydrogen Build Metrics Browser - CLI Mode');
@@ -42,7 +34,7 @@ async function main() {
     const config = readConfigFile(configFile);
     console.log('Configuration loaded successfully');
 
-    // Set up headless environment
+    // Set up headless environment with browser scripts loaded
     const dom = await setupHeadlessEnvironment();
     global.window = dom.window;
     global.document = dom.window.document;
@@ -51,17 +43,63 @@ async function main() {
     // Initialize D3 and other libraries in headless mode
     setupGlobalLibraries();
 
-    // Create browser instance in headless mode
-    const browser = new HydrogenMetricsBrowser(config);
-    browser.isHeadless = true;
-    browser.isBrowser = false;
+    // Make libraries available in JSDOM window context
+    dom.window.d3 = d3;
+    dom.window.iro = iro;
+    dom.window.flatpickr = flatpickr;
 
-    // Override file discovery to use local filesystem
-    browser.discoverMetricsFiles = discoverLocalMetricsFiles;
+    // Load browser application scripts in correct order
+    await loadBrowserScripts(dom);
+
+    // Access the HMB object created by the browser scripts in the JSDOM window
+    const browser = dom.window.HMB;
+    if (!browser) {
+      throw new Error('Failed to load browser application - HMB object not found');
+    }
+
+    // Configure for headless mode
+    browser.state.isHeadless = true;
+    browser.state.isBrowser = false;
+
+    // Override data loading to use local filesystem
+    browser.discoverMetricsFiles = discoverLocalMetricsFiles.bind(browser);
+    browser.loadInitialData = loadInitialDataHeadless.bind(browser);
+
+    // Initialize the browser (sets up elements)
+    browser.initialize();
+
+    // Load configuration into browser
+    Object.assign(browser.config, config);
+
+    // Handle "all" date range mode - find actual date range from available files
+    if (config.dateRange && config.dateRange.mode === "all") {
+      const actualDateRange = await findActualDateRange();
+      browser.config.dateRange = {
+        start: actualDateRange.start,
+        end: actualDateRange.end,
+        mode: "absolute"
+      };
+      console.log(`Using full date range: ${actualDateRange.start} to ${actualDateRange.end}`);
+    }
+
+    // Set current date range in state (used by filterDataByDateRange)
+    browser.state.currentDateRange = {
+      start: browser.config.dateRange.start,
+      end: browser.config.dateRange.end
+    };
+
+    // Set selected metrics from config
+    browser.state.selectedMetrics = config.metrics || [];
+
+    // Set default chart dimensions for headless mode
+    browser.config.chartSettings.width = 1920;
+    browser.config.chartSettings.height = 1080;
 
     // Run the metrics processing
     console.log('Discovering metrics files...');
-    await browser.discoverMetricsFiles();
+    await browser.loadInitialData();
+
+    console.log('Missing dates:', browser.state.missingDates ? browser.state.missingDates.length : 'none');
 
     console.log('Processing metrics data...');
     browser.filterDataByDateRange();
@@ -69,7 +107,7 @@ async function main() {
 
     // Export SVG
     console.log('Generating SVG output...');
-    await exportSVGHeadless(browser, outputFile);
+    await exportSVGHeadless(browser, outputFile, dom);
 
     console.log('✅ Report generation completed successfully!');
     process.exit(0);
@@ -131,19 +169,131 @@ function setupGlobalLibraries() {
 }
 
 /**
+ * Load browser application scripts in the correct order
+ * @param {JSDOM} dom - JSDOM instance
+ */
+async function loadBrowserScripts(dom) {
+  const scripts = [
+    'hbm_browser_core.js',
+    'hbm_browser_data_loading.js',
+    'hbm_browser_data_processing.js',
+    'hbm_browser_chart.js',
+    'hbm_browser_ui_core.js',
+    'hbm_browser_ui_color.js',
+    'hbm_browser.js'
+  ];
+
+  for (const scriptName of scripts) {
+    const scriptPath = path.join(__dirname, scriptName);
+    const scriptContent = fs.readFileSync(scriptPath, 'utf8');
+
+    // Execute the script in the JSDOM context
+    dom.window.eval(scriptContent);
+  }
+}
+
+/**
+ * Find the actual date range from available metrics files
+ * @returns {Promise<{start: string, end: string}>}
+ */
+async function findActualDateRange() {
+  const docsRoot = process.env.HYDROGEN_DOCS_ROOT || path.join(__dirname, '..', '..', '..', '..', 'docs', 'H');
+  const metricsDir = path.join(docsRoot, 'metrics');
+
+  const dates = [];
+
+  try {
+    // Scan all year directories
+    const yearDirs = fs.readdirSync(metricsDir).filter(dir =>
+      fs.statSync(path.join(metricsDir, dir)).isDirectory() &&
+      /^\d{4}-\d{2}$/.test(dir)
+    );
+
+    for (const yearDir of yearDirs) {
+      const yearPath = path.join(metricsDir, yearDir);
+      try {
+        const files = fs.readdirSync(yearPath).filter(file =>
+          file.endsWith('.json') && /^\d{4}-\d{2}-\d{2}\.json$/.test(file)
+        );
+
+        files.forEach(file => {
+          const dateStr = file.replace('.json', '');
+          dates.push(dateStr);
+        });
+      } catch (error) {
+        // Skip directories that can't be read
+      }
+    }
+  } catch (error) {
+    console.warn('Could not scan metrics directory for date range:', error.message);
+    // Fall back to default range
+    return {
+      start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      end: new Date().toISOString().split('T')[0]
+    };
+  }
+
+  if (dates.length === 0) {
+    throw new Error('No metrics files found');
+  }
+
+  dates.sort();
+  return {
+    start: dates[0],
+    end: dates[dates.length - 1]
+  };
+}
+
+/**
+ * Headless version of initial data loading
+ */
+async function loadInitialDataHeadless() {
+  // Prevent double-loading
+  if (this.state.isLoading) {
+    console.log('Data loading already in progress, skipping duplicate call');
+    return;
+  }
+  this.state.isLoading = true;
+
+  // Step 1: Show loading overlay (skip in headless)
+  // this.showLoading();
+
+  // Load metrics data using the overridden discoverMetricsFiles
+  const foundFiles = await this.discoverMetricsFiles();
+
+  // Process the found files
+  this.processMetricsFiles(foundFiles);
+  console.log(`Loaded ${foundFiles.length} metrics files:`);
+  foundFiles.forEach(file => console.log(`  ${file.filePath}`));
+
+  // Extract metrics
+  this.extractAvailableMetrics();
+  console.log(`Extracted ${this.state.availableMetrics.length} available metrics`);
+
+  this.state.isLoading = false;
+}
+
+/**
  * Headless version of metrics file discovery using local filesystem
  * @returns {Promise<Array>} Array of metrics file data
  */
 async function discoverLocalMetricsFiles() {
-  const today = new Date();
-  let currentDate = new Date(today);
-  const foundFiles = [];
+  // Use HYDROGEN_DOCS_ROOT if available, otherwise use relative path
+  const docsRoot = process.env.HYDROGEN_DOCS_ROOT || path.join(__dirname, '..', '..', '..', '..', '..', 'docs', 'H');
 
-  // Try up to 30 days back
-  for (let i = 0; i < 30; i++) {
+  // Get the date range from config
+  const startDate = new Date(this.config.dateRange.start);
+  const endDate = new Date(this.config.dateRange.end);
+  const foundFiles = [];
+  const missingDates = [];
+
+  // Scan from end date back to start date
+  let currentDate = new Date(endDate);
+
+  while (currentDate >= startDate) {
     const dateStr = currentDate.toISOString().split('T')[0];
     const [year, month, day] = dateStr.split('-');
-    const filePath = path.join(__dirname, '..', '..', '..', '..', 'docs', 'H', 'metrics', year + '-' + month, year + '-' + month + '-' + day + '.json');
+    const filePath = path.join(docsRoot, 'metrics', year + '-' + month, year + '-' + month + '-' + day + '.json');
 
     try {
       if (fs.existsSync(filePath)) {
@@ -155,23 +305,28 @@ async function discoverLocalMetricsFiles() {
           filePath: filePath
         });
         console.log(`Found metrics file: ${filePath}`);
+      } else {
+        // Track missing dates
+        missingDates.push(dateStr);
       }
     } catch (error) {
-      console.log(`No file found for ${currentDate.toDateString()}`);
+      // Track missing dates
+      missingDates.push(dateStr);
     }
 
     // Go back one day
     currentDate.setDate(currentDate.getDate() - 1);
-
-    // If we have at least one file and it's within our date range, we can stop
-    if (foundFiles.length > 0 && i > 0) {
-      break;
-    }
   }
 
   if (foundFiles.length === 0) {
-    throw new Error('No metrics files found in the last 30 days');
+    throw new Error(`No metrics files found in date range ${this.config.dateRange.start} to ${this.config.dateRange.end}`);
   }
+
+  // Sort by date (oldest first)
+  foundFiles.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Set missing dates on the browser instance
+  this.state.missingDates = missingDates;
 
   return foundFiles;
 }
@@ -181,15 +336,15 @@ async function discoverLocalMetricsFiles() {
  * @param {HydrogenMetricsBrowser} browser - Browser instance
  * @param {string} outputFile - Output file path
  */
-async function exportSVGHeadless(browser, outputFile) {
-  // Get the SVG element
-  const svgElement = browser.elements.metricsChart;
+async function exportSVGHeadless(browser, outputFile, dom) {
+  // Get the SVG element directly from DOM
+  const svgElement = document.getElementById('metrics-chart');
   if (!svgElement) {
-    throw new Error('SVG element not found');
+    throw new Error('SVG element not found in DOM');
   }
 
-  // Serialize SVG to string
-  const serializer = new browser.elements.chartContainer.ownerDocument.defaultView.XMLSerializer();
+  // Serialize SVG to string using JSDOM's XMLSerializer
+  const serializer = new dom.window.XMLSerializer();
   const svgData = serializer.serializeToString(svgElement);
 
   // Write to file
