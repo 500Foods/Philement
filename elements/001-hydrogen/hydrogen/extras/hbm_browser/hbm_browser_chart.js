@@ -63,10 +63,20 @@ HMB.renderChart = function() {
   const defs = d3.select('#metrics-chart').append('defs');
 
   // Create SVG container with responsive dimensions
-  const svg = d3.select('#metrics-chart')
+  const svgRoot = d3.select('#metrics-chart')
     .attr('width', this.state.isHeadless ? this.config.chartSettings.width : container.clientWidth)
-    .attr('height', this.state.isHeadless ? this.config.chartSettings.height : container.clientHeight)
-    .append('g')
+    .attr('height', this.state.isHeadless ? this.config.chartSettings.height : container.clientHeight);
+
+  // Add background rectangle for headless mode
+  if (this.state.isHeadless) {
+    svgRoot.insert('rect', ':first-child')
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .attr('fill', '#1e1e1e')
+      .attr('rx', 6);
+  }
+
+  const svg = svgRoot.append('g')
     .attr('transform', `translate(${this.config.chartSettings.margin.left},${this.config.chartSettings.margin.top})`);
 
   // Add clip path for x-axis to prevent labels from extending beyond chart
