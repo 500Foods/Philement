@@ -40,6 +40,9 @@ cd "${HYDROGEN_DIR}" || exit 1
 echo "=== Hydrogen Email Notification Script ==="
 echo "📧 Preparing email with test results..."
 
+# Let's pause for a moment in case not all of our SVGs have been updated yet
+sleep 5
+
 # Check if mutt is available
 if ! command -v mutt >/dev/null 2>&1; then
     echo "❌ Error: mutt is not installed. Please install mutt first."
@@ -85,6 +88,8 @@ SVG_FILES=(
     "images/COMPLETE.svg"
     "images/CLOC_CODE.svg"
     "images/CLOC_STAT.svg"
+    "images/HISTORY.svg"
+    "images/COVERAGE.svg"
 )
 
 missing_svgs=0
@@ -192,6 +197,14 @@ fi
 
 if [[ -f "images/CLOC_STAT.svg" ]]; then
     MUTT_CMD+=" -a images/CLOC_STAT.svg"
+fi
+
+if [[ -f "images/HISTORY.svg" ]]; then
+    MUTT_CMD+=" -a images/HISTORY.svg"
+fi
+
+if [[ -f "images/COVERAGE.svg" ]]; then
+    MUTT_CMD+=" -a images/COVERAGE.svg"
 fi
 
 # Add subject and recipients
