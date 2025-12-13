@@ -46,8 +46,15 @@ HMB.renderChart = function() {
 
   // Get container dimensions for responsive design
   const container = document.getElementById('chart-container');
-  const width = container.clientWidth - this.config.chartSettings.margin.left - this.config.chartSettings.margin.right;
-  const height = container.clientHeight - this.config.chartSettings.margin.top - this.config.chartSettings.margin.bottom - 90;
+  let width, height;
+  if (this.state.isHeadless) {
+    // Use configured dimensions for headless mode
+    width = this.config.chartSettings.width - this.config.chartSettings.margin.left - this.config.chartSettings.margin.right;
+    height = this.config.chartSettings.height - this.config.chartSettings.margin.top - this.config.chartSettings.margin.bottom - 90;
+  } else {
+    width = container.clientWidth - this.config.chartSettings.margin.left - this.config.chartSettings.margin.right;
+    height = container.clientHeight - this.config.chartSettings.margin.top - this.config.chartSettings.margin.bottom - 90;
+  }
 
   // Initialize zoom transform if not exists
   this.state.zoomTransform = this.state.zoomTransform || d3.zoomIdentity;
@@ -57,8 +64,8 @@ HMB.renderChart = function() {
 
   // Create SVG container with responsive dimensions
   const svg = d3.select('#metrics-chart')
-    .attr('width', container.clientWidth)
-    .attr('height', container.clientHeight)
+    .attr('width', this.state.isHeadless ? this.config.chartSettings.width : container.clientWidth)
+    .attr('height', this.state.isHeadless ? this.config.chartSettings.height : container.clientHeight)
     .append('g')
     .attr('transform', `translate(${this.config.chartSettings.margin.left},${this.config.chartSettings.margin.top})`);
 
@@ -86,7 +93,8 @@ HMB.renderChart = function() {
     .attr('x', width / 2)
     .attr('y', -20 )
     .attr('text-anchor', 'middle')
-    .attr('fill', 'var(--text-color)')
+    .attr('fill', this.state.isHeadless ? '#ffffff' : 'var(--text-color)')
+    .attr('font-family', '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif')
     .attr('font-size', '1.3rem')
     .attr('font-weight', '600')
     .attr('cursor', 'pointer')
@@ -229,9 +237,22 @@ HMB.renderChart = function() {
     .attr('text-anchor', 'start')
     .attr('dx', '0.8em')
     .attr('dy', '-0.25em')
-    .attr('fill', 'var(--text-color)')
+    .attr('fill', this.state.isHeadless ? '#ffffff' : 'var(--text-color)')
+    .attr('font-family', '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif')
     .classed('darken-dates', d => this.state.missingDates.includes(d3.utcFormat('%Y-%m-%d')(d)))
     .style('font-weight', d => d.getUTCDay() === 0 ? 'bold' : 'normal');
+
+  // In headless mode, set fill for missing dates
+  if (this.state.isHeadless) {
+    xAxis.selectAll('text')
+      .filter(d => this.state.missingDates.includes(d3.utcFormat('%Y-%m-%d')(d)))
+      .attr('fill', '#666666');
+  }
+
+  // In headless mode, remove clip-path from x-axis to show labels
+  if (this.state.isHeadless) {
+    xAxis.attr('clip-path', null);
+  }
 
   // Add major axis lines on Sundays
   const sundayDates = allDates.filter(d => d.getUTCDay() === 0 && xScale(d) >= 0 && xScale(d) <= width);
@@ -298,14 +319,20 @@ HMB.renderChart = function() {
   // Add left Y axis
   svg.append('g')
     .attr('class', 'y-axis left-axis')
-    .call(d3.axisLeft(leftYScale).ticks(5).tickFormat(abbreviateNumber));
+    .call(d3.axisLeft(leftYScale).ticks(5).tickFormat(abbreviateNumber))
+    .selectAll('text')
+    .attr('fill', this.state.isHeadless ? '#ffffff' : 'var(--text-color)')
+    .attr('font-family', '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif');
 
   // Add right Y axis if needed
   if (rightAxisMetrics.length > 0) {
     svg.append('g')
       .attr('class', 'y-axis right-axis')
       .attr('transform', `translate(${width},0)`)
-      .call(d3.axisRight(rightYScale).ticks(5).tickFormat(abbreviateNumber));
+      .call(d3.axisRight(rightYScale).ticks(5).tickFormat(abbreviateNumber))
+      .selectAll('text')
+      .attr('fill', this.state.isHeadless ? '#ffffff' : 'var(--text-color)')
+      .attr('font-family', '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif');
   }
 
   // Create gradients for bar metrics
@@ -347,70 +374,81 @@ HMB.renderChart = function() {
     this.drawLegend(svg, width, height);
   }
 
-  // Add zoom and pan
-  const zoom = d3.zoom()
-    .scaleExtent([0.5, 5])
-    .translateExtent([[-width * 2, -height * 2], [width * 2, height * 2]])
-    .on('zoom', (event) => {
-      this.state.zoomTransform = event.transform;
-      const rescaledX = event.transform.rescaleX(this.originalXScale);
-      const rescaledLeftY = event.transform.rescaleY(this.originalLeftYScale);
-      const rescaledRightY = event.transform.rescaleY(this.originalRightYScale);
+  // Add zoom and pan (skip in headless mode)
+  if (!this.state.isHeadless) {
+    const zoom = d3.zoom()
+      .scaleExtent([0.5, 5])
+      .translateExtent([[-width * 2, -height * 2], [width * 2, height * 2]])
+      .on('zoom', (event) => {
+        this.state.zoomTransform = event.transform;
+        const rescaledX = event.transform.rescaleX(this.originalXScale);
+        const rescaledLeftY = event.transform.rescaleY(this.originalLeftYScale);
+        const rescaledRightY = event.transform.rescaleY(this.originalRightYScale);
 
-      // Update current xScale for tooltip
-      this.currentXScale = rescaledX;
+        // Update current xScale for tooltip
+        this.currentXScale = rescaledX;
 
-      // Update x axis
-      xAxis.call(d3.axisBottom(rescaledX).tickValues(allDates).tickFormat(d => {
-        const dayOfWeek = d.getUTCDay();
-        if (dayOfWeek === 0) {
-          return d3.utcFormat('%Y-W%W')(d);
-        } else {
-          return d3.utcFormat('%Y-%m-%d')(d);
+        // Update x axis
+        xAxis.call(d3.axisBottom(rescaledX).tickValues(allDates).tickFormat(d => {
+          const dayOfWeek = d.getUTCDay();
+          if (dayOfWeek === 0) {
+            return d3.utcFormat('%Y-W%W')(d);
+          } else {
+            return d3.utcFormat('%Y-%m-%d')(d);
+          }
+        }));
+
+        // Rotate tick labels 90 degrees
+        xAxis.selectAll('text')
+          .attr('transform', 'rotate(90)')
+          .attr('text-anchor', 'start')
+          .attr('dx', '0.8em')
+          .attr('dy', '-0.25em')
+          .attr('fill', (d) => {
+            const dateStr = d3.utcFormat('%Y-%m-%d')(d);
+            const isMissing = this.state.missingDates.includes(dateStr);
+            if (this.state.isHeadless) {
+              return isMissing ? '#666666' : '#ffffff'; // Dark gray for missing dates, white for available
+            } else {
+              return 'var(--text-color)';
+            }
+          })
+          .attr('font-family', '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif')
+          .classed('darken-dates', d => this.state.missingDates.includes(d3.utcFormat('%Y-%m-%d')(d)))
+          .style('font-weight', d => d.getUTCDay() === 0 ? 'bold' : 'normal');
+
+        // Update sunday lines
+        svg.selectAll('.sunday-line').remove();
+        const sundayDates = allDates.filter(d => d.getUTCDay() === 0 && rescaledX(d) >= 0 && rescaledX(d) <= width);
+        sundayDates.forEach(d => {
+          svg.append('line')
+            .attr('class', 'sunday-line')
+            .attr('x1', rescaledX(d))
+            .attr('y1', 0)
+            .attr('x2', rescaledX(d))
+            .attr('y2', height)
+            .attr('stroke', '#333')
+            .attr('stroke-width', 1)
+            .attr('stroke-dasharray', '2,2');
+        });
+
+        // Update y axes
+        svg.select('.left-axis').call(d3.axisLeft(rescaledLeftY).ticks(5).tickFormat(abbreviateNumber));
+        if (rightAxisMetrics.length > 0) {
+          svg.select('.right-axis').call(d3.axisRight(rescaledRightY).ticks(5).tickFormat(abbreviateNumber));
         }
-      }));
 
-      // Rotate tick labels 90 degrees
-      xAxis.selectAll('text')
-        .attr('transform', 'rotate(90)')
-        .attr('text-anchor', 'start')
-        .attr('dx', '0.8em')
-        .attr('dy', '-0.25em')
-        .attr('fill', 'var(--text-color)')
-        .classed('darken-dates', d => this.state.missingDates.includes(d3.utcFormat('%Y-%m-%d')(d)))
-        .style('font-weight', d => d.getUTCDay() === 0 ? 'bold' : 'normal');
-
-      // Update sunday lines
-      svg.selectAll('.sunday-line').remove();
-      const sundayDates = allDates.filter(d => d.getUTCDay() === 0 && rescaledX(d) >= 0 && rescaledX(d) <= width);
-      sundayDates.forEach(d => {
-        svg.append('line')
-          .attr('class', 'sunday-line')
-          .attr('x1', rescaledX(d))
-          .attr('y1', 0)
-          .attr('x2', rescaledX(d))
-          .attr('y2', height)
-          .attr('stroke', '#333')
-          .attr('stroke-width', 1)
-          .attr('stroke-dasharray', '2,2');
+        // Redraw metrics
+        svg.selectAll('.metric-line, .metric-dot, .metric-hover, .metric-bar, .metric-bar-hover').remove();
+        this.drawMetrics(svg, rescaledX, rescaledLeftY, rescaledRightY, width, height);
       });
 
-      // Update y axes
-      svg.select('.left-axis').call(d3.axisLeft(rescaledLeftY).ticks(5).tickFormat(abbreviateNumber));
-      if (rightAxisMetrics.length > 0) {
-        svg.select('.right-axis').call(d3.axisRight(rescaledRightY).ticks(5).tickFormat(abbreviateNumber));
-      }
-
-      // Redraw metrics
-      svg.selectAll('.metric-line, .metric-dot, .metric-hover, .metric-bar, .metric-bar-hover').remove();
-      this.drawMetrics(svg, rescaledX, rescaledLeftY, rescaledRightY, width, height);
+    d3.select('#metrics-chart').call(zoom);
+    d3.select('#metrics-chart').call(zoom.transform, this.state.zoomTransform);
+    d3.select('#metrics-chart').on('dblclick.zoom', () => {
+      svg.transition().call(zoom.transform, d3.zoomIdentity);
     });
-
-  d3.select('#metrics-chart').call(zoom);
-  d3.select('#metrics-chart').call(zoom.transform, this.state.zoomTransform);
-  d3.select('#metrics-chart').on('dblclick.zoom', () => {
-    svg.transition().call(zoom.transform, d3.zoomIdentity);
-  });
+  }
 };
 
 // Get domain for an axis based on metrics
@@ -743,7 +781,12 @@ HMB.drawLegend = function(svg, width, height) {
     .style('visibility', 'hidden');
   const itemWidths = sortedMetrics.map(d => {
     tempText.text(d.displayLabel || d.label);
-    const textWidth = tempText.node().getBBox().width;
+    let textWidth;
+    if (this.state.isHeadless) {
+      textWidth = (d.displayLabel || d.label).length * 8;
+    } else {
+      textWidth = tempText.node().getBBox().width;
+    }
     return 15 + 5 + textWidth + 5; // color 15 + space 5 + text + padding 5
   });
   tempText.remove();
@@ -779,7 +822,8 @@ HMB.drawLegend = function(svg, width, height) {
     .attr('class', 'legend-label')
     .attr('x', 20)
     .attr('y', 0)
-    .attr('fill', 'var(--text-color)')
+    .attr('fill', this.state.isHeadless ? '#ffffff' : 'var(--text-color)')
+    .attr('font-family', '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif')
     .attr('font-size', '0.85rem')
     .text(d => d.displayLabel || d.label);
 };

@@ -92,27 +92,36 @@ HMB.initialize = function() {
   if (!this.state.isBrowser) {
     console.log('Running in headless mode');
     this.state.isHeadless = true;
-    return;
+
+    // Set default date range for headless mode
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    this.state.currentDateRange = {
+      start: thirtyDaysAgo.getFullYear() + '-' + String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0') + '-' + String(thirtyDaysAgo.getDate()).padStart(2, '0'),
+      end: today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0')
+    };
   }
 
-  // Cache DOM elements
+  // Cache DOM elements (needed for headless mode too)
   this.cacheDOMElements();
 
-  // Set up event listeners
-  this.setupEventListeners();
+  if (this.state.isBrowser) {
+    // Set up event listeners
+    this.setupEventListeners();
 
-  // Initialize UI components
-  this.initUIComponents();
+    // Initialize UI components
+    this.initUIComponents();
 
-  // Set up window resize handler
-  this.setupWindowResizeHandler();
+    // Set up window resize handler
+    this.setupWindowResizeHandler();
 
-  // Load configuration
-  this.loadConfiguration();
+    // Load configuration
+    this.loadConfiguration();
 
-  // Start loading data in background
-  this.initProgressTracking();
-  this.loadInitialData();
+    // Start loading data in background
+    this.initProgressTracking();
+    this.loadInitialData();
+  }
 };
 
 
@@ -403,14 +412,26 @@ HMB.renderChart = function() {
   d3.select('#metrics-chart').html('');
 
   // Get container dimensions for responsive design
-  const container = document.getElementById('chart-container');
-  const width = container.clientWidth - this.config.chartSettings.margin.left - this.config.chartSettings.margin.right;
-  const height = container.clientHeight - this.config.chartSettings.margin.top - this.config.chartSettings.margin.bottom;
+  let containerWidth, containerHeight, width, height;
 
-  // Create SVG container with responsive dimensions
+  if (this.state.isHeadless) {
+    // Use fixed dimensions for headless mode
+    containerWidth = this.config.chartSettings.width;
+    containerHeight = this.config.chartSettings.height;
+    width = containerWidth - this.config.chartSettings.margin.left - this.config.chartSettings.margin.right;
+    height = containerHeight - this.config.chartSettings.margin.top - this.config.chartSettings.margin.bottom;
+  } else {
+    const container = document.getElementById('chart-container');
+    containerWidth = container.clientWidth;
+    containerHeight = container.clientHeight;
+    width = containerWidth - this.config.chartSettings.margin.left - this.config.chartSettings.margin.right;
+    height = containerHeight - this.config.chartSettings.margin.top - this.config.chartSettings.margin.bottom;
+  }
+
+  // Create SVG container with dimensions
   const svg = d3.select('#metrics-chart')
-    .attr('width', container.clientWidth)
-    .attr('height', container.clientHeight)
+    .attr('width', containerWidth)
+    .attr('height', containerHeight)
     .append('g')
     .attr('transform', `translate(${this.config.chartSettings.margin.left},${this.config.chartSettings.margin.top})`);
 

@@ -912,6 +912,10 @@ fi
 # shellcheck disable=SC2154 # OH defined externally in framework.sh
 ("${OH}" --width 108 -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
 
+# Generate SVG for repo history
+("${HYDROGEN_ROOT}"/extras/hbm_browser/hbm_browser.sh "${HYDROGEN_ROOT}"/extras/hbm_browser/hbm_browser_all.json "${HYDROGEN_ROOT}"/images/HISTORY.svg >/dev/null 2> &1)  &
+
+# Generate e-mail
 ("${PROJECT_DIR}/extras/make-email.sh" > /dev/null 2>&1) || true
 
 exit "${OVERALL_EXIT_CODE}"
