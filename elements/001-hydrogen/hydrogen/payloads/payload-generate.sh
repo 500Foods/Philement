@@ -14,6 +14,7 @@
 # - Cleans up all temporary files
 
 # CHANGELONG
+# 4.2.0 - 2025-12-13 - Added folder breakdown section showing file counts, sizes, and percentages for payload components
 # 4.1.0 - 2025-12-08 - Added Hydrogen Build Metrics Browser files to swagger folder in payload
 # 4.0.0 - 2024-12-05 - Added env var dependency checks
 # 3.0.0 - 2025-09-30 - Added Helium migration files to payload
@@ -638,6 +639,10 @@ create_tarball() {
 
     cd "${SWAGGERUI_DIR}" && "${TAR}" --mode=0000 --owner=0 --group=0 -cf "${TAR_FILE}" "${TAR_FILES[@]}"
 
+    # Calculate tar size for breakdown percentages
+    local tar_size
+    tar_size=$("${STAT}" -c%s "${TAR_FILE}")
+
     # Compress the tar file with Brotli using explicit settings
     echo -e "${CYAN}${INFO} Compressing tar file with Brotli...${NC}"
     echo -e "${CYAN}${INFO} - Quality: 11 (maximum)${NC}"
@@ -784,7 +789,11 @@ create_tarball() {
     print_header "Tarball Contents"
     echo -e "${CYAN}${INFO} Listing contents of compressed tarball:${NC}"
     echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
-    brotli -d < "${TEMP_DIR}/payload.tar.br" | "${TAR}" -tvf - | sort -k 6 | \
+
+    # Declare associative arrays for folder breakdown
+    declare -A dir_counts
+    declare -A dir_sizes
+
     while read -r line; do
         # Check if the file is a brotli-compressed file
         if [[ "${line}" == *".br" ]]; then
@@ -792,15 +801,49 @@ create_tarball() {
         else
             echo -e "  ${CYAN}${line}${NC}"
         fi
-    done || true
+
+        # Parse line for folder breakdown
+        size=$(echo "${line}" | awk '{print $3}')
+        path=$(echo "${line}" | awk '{for(i=6;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ $//')
+        dir=$(dirname "${path}")
+        if [[ "${dir}" == "." ]]; then
+            dir="root"
+        fi
+        ((dir_counts[${dir}]++))
+        ((dir_sizes[${dir}] += size))
+    done < <(brotli -d < "${TEMP_DIR}/payload.tar.br" | "${TAR}" -tvf - | sort -k 6) || true
+
+    # Calculate total file size for accurate percentages
+    local total_file_size=0
+    local total_count=0
+    for dir in "${!dir_sizes[@]}"; do
+        total_file_size=$(( total_file_size + dir_sizes[${dir}] ))
+        total_count=$(( total_count + dir_counts[${dir}] ))
+    done
+
+    # Display folder breakdown
+    print_header "Folder Breakdown"
+    for dir in $(printf '%s\n' "${!dir_counts[@]}" | sort); do
+        count=${dir_counts[${dir}]}
+        total_size=${dir_sizes[${dir}]}
+        size_kb=$(( (total_size + 1023) / 1024 ))
+        percentage=$(awk "BEGIN {printf \"%.1f\", ${total_size} * 100 / ${total_file_size}}")
+        printf "  %-12s %4d files, %4d KB, %5.1f%%\n" "${dir}" "${count}" "${size_kb}" "${percentage}"
+    done
+
+    # Display totals
+    local total_kb=$(( (total_file_size + 1023) / 1024 ))
+    local overhead_kb=$(( (tar_size - total_file_size + 1023) / 1024 ))
+    printf "  %-12s %4d files, %4d KB, %5.1f%%\n" "Total" "${total_count}" "${total_kb}" "100.0"
+    printf "  %-12s %16d KB\n" "Overhead" " ${overhead_kb}"
+
     echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
 
     # Display file sizes and hex samples for reference
-    echo -e "${BLUE}${BOLD}Distribution file details:${NC}"
-
+    print_header "Payload Details"
+    
     # Original tarball
-    local tar_size tar_head tar_tail
-    tar_size=$("${STAT}" -c%s "${TAR_FILE}")
+    local tar_head tar_tail
     tar_head=$(head -c5 "${TAR_FILE}" | xxd -p | tr -d '\n' || true)
     tar_tail=$(tail -c5 "${TAR_FILE}" | xxd -p | tr -d '\n' || true)
     echo -e "  ${GREEN}${INFO} Uncompressed tar:         ${NC}${tar_size} bytes"
