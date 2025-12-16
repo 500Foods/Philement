@@ -2,9 +2,13 @@
 
 This folder contains the migrations (aka database DDL and SQL) for creating a new instance of an Acuranzo database. Current supported engines include PostgreSQL, MySQL, SQLite, and IBM DB2.
 
+ The [migration_index.sh](../scripts/migration_index.sh) script can be used to automatically update the Migrations table below - [migration_update.sh](../scripts/migration_update.sh) will update all schema documents as well as perform other repository housekeeping tasks.
+
+This is a summary of the migrations included. Details about individual migrations should be supplied
+in the migrations themselves so that they get populated in the database directly.
+
 ## Design Notes
 
-1. The [migration_index.sh](../scripts/migration_index.sh) script can be used to automatically update the Migrations table below.
 1. Some tables do not have a primary key, such as "sessions".  This is deliberate.
 1. Scripts assume that working Base64 Decode funtionality is present across all engines.
 1. Scripts assume that working JSON_INGEST functionality is present across all engines.
@@ -100,4 +104,5 @@ This folder contains the migrations (aka database DDL and SQL) for creating a ne
 | [1067](/elements/002-helium/acuranzo/migrations/acuranzo_1067.lua) | lookups | 1.0.1 | 2025-11-28 | 4 |  | Theme - Default |
 | [1068](/elements/002-helium/acuranzo/migrations/acuranzo_1068.lua) | lookups | 1.0.0 | 2025-11-26 | 4 |  | Theme - Bluish |
 | [1069](/elements/002-helium/acuranzo/migrations/acuranzo_1069.lua) | lookups | 1.0.0 | 2025-12-04 | 4 |  | Theme - Whiteout |
-| **70** | | | | **415** | **24** | |
+| [1070](/elements/002-helium/acuranzo/migrations/acuranzo_1070.lua) | lookups | 1.0.0 | 2025-12-16 | 4 |  | Theme - Mustafar |
+| **71** | | | | **419** | **24** | |
