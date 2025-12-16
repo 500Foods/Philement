@@ -29,6 +29,20 @@ if [[ ! -d "${MIGRATIONS_FOLDER}" ]]; then
     exit 1
 fi
 
+# Compute absolute repo path for migrations folder
+# Assume README_FILE is under /elements/002-helium/ and migrations are relative to it
+if [[ "${README_FILE}" == */elements/002-helium/* ]]; then
+    # Extract the path from elements/002-helium/ onwards
+    REL_PATH="${README_FILE#*/elements/002-helium/}"
+    SCHEMA_DIR="${REL_PATH%%/*}"
+    MIGRATIONS_ABS="/elements/002-helium/${SCHEMA_DIR}/migrations"
+else
+    # Fallback to relative
+    README_DIR="$(dirname "${README_FILE}")"
+    MIGRATIONS_REL="$(realpath "${MIGRATIONS_FOLDER}" --relative-to="${README_DIR}")"
+    MIGRATIONS_ABS="${MIGRATIONS_REL}"
+fi
+
 # Function to extract value from cfg.VARIABLE = "value" or cfg.VARIABLE = 'value'
 extract_cfg_value() {
     local file="$1"
@@ -109,7 +123,7 @@ generate_migrations_table() {
         fi
         
         # Make migration number a clickable link
-        echo "| [${migration_num}](${MIGRATIONS_FOLDER}/${basename}) | ${table_name} | ${version} | ${released} | ${mig_count} | ${has_diag} | ${description} |"
+        echo "| [${migration_num}](${MIGRATIONS_ABS}/${basename}) | ${table_name} | ${version} | ${released} | ${mig_count} | ${has_diag} | ${description} |"
     done < <(find "${MIGRATIONS_FOLDER}" -maxdepth 1 -name '[a-z]*_[0-9]*.lua' -print0 | sort -zV || true)
     
     # Add totals row

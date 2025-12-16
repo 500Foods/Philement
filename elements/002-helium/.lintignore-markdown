@@ -1,0 +1,17 @@
+# .markdownlintrc - Markdown Linting Configuration
+#
+# SUMMARY: This configuration disables three specific markdown linting rules:
+# - MD013: Allows lines longer than 80 characters (for code blocks, tables, etc.)
+# - MD033: Allows raw HTML tags in Markdown (for advanced formatting)
+# - MD047: Doesn't require newline at the end of the file
+#
+# Used by test_z_codebase.sh for documentation quality checks.
+
+# Line lengths over 80 characters
+MD013: false
+
+# Injecting raw HTML tags
+MD033: false
+
+# Newline at the end of the file
+MD047: false
