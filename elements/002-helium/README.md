@@ -1,6 +1,6 @@
 # helium
 
-The primary Helium project documentation can be found in /docs/He/README.md. But since you're here, these might be of interest.
+The primary Helium project documentation can be found in [Helium Docs](/docs/He/README.md). But since you're here, these might be of interest.
 
 ## Scripts
 
