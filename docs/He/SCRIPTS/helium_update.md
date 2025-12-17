@@ -1,15 +1,15 @@
-# migration_update.sh
+# helium_update.sh
 
 ## Overview
 
-The `migration_update.sh` script is a comprehensive Bash utility that automates the process of updating migration indexes across all Helium database schemas and performs documentation quality checks. It calls `migration_index.sh` for each schema, validates documentation links, and checks markdown quality.
+The `helium_update.sh` script is a comprehensive Bash utility that automates the process of updating migration indexes across all Helium database schemas and performs documentation quality checks. It calls `migration_index.sh` for each schema, validates documentation links, and checks markdown quality.
 
-**Location:** `/elements/002-helium/scripts/migration_update.sh`
+**Location:** `/elements/002-helium/scripts/helium_update.sh`
 
 ## Usage
 
 ```bash
-./migration_update.sh
+./helium_update.sh
 ```
 
 This script takes no parameters and operates on a fixed set of schemas.

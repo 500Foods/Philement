@@ -42,7 +42,7 @@ luarocks list  # Should include lua-brotli
 
 - **Follow the patterns in existing migrations**
 - **Test on your preferred database engine first**
-- **Run `migration_update.sh` to update documentation**
+- **Run `helium_update.sh` to update documentation**
 
 ### 4. Advanced Topics
 
@@ -76,7 +76,7 @@ For hands-on learning, follow our **[10-minute Quick Start Tutorial](/docs/He/QU
 1. **Run the full test suite** to ensure compatibility
 2. **Document your migrations** with clear names and descriptions
 3. **Test rollback scenarios** to ensure reversibility
-4. **Update documentation** using the migration_update.sh script
+4. **Update documentation** using the helium_update.sh script
 
 ## Common Pitfalls
 

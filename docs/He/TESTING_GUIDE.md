@@ -87,7 +87,7 @@ markdownlint docs/He/*.md docs/He/**/*.md
 markdownlint --config .lintignore-markdown docs/He/*.md docs/He/**/*.md
 ```
 
-This is automatically run by `migration_update.sh` as part of the documentation quality checks.
+This is automatically run by `helium_update.sh` as part of the documentation quality checks.
 
 ## Testing on Database Engines
 

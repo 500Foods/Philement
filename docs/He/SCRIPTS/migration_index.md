@@ -79,4 +79,4 @@ The script will exit with an error message if:
 
 ## Integration
 
-This script is typically called by `migration_update.sh` to update all schema READMEs automatically, or can be run individually for specific schemas.
+This script is typically called by `helium_update.sh` to update all schema READMEs automatically, or can be run individually for specific schemas.
