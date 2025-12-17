@@ -30,7 +30,7 @@ The Helium project provides database schemas and migrations for the Hydrogen ser
 ### Scripts & Configuration
 
 - [**migration_index.sh**](/docs/He/SCRIPTS/migration_index.md) ([source](/elements/002-helium/scripts/migration_index.sh)) - Generates migration index tables for README files
-- [**migration_update.sh**](/docs/He/SCRIPTS/migration_update.md) ([source](/elements/002-helium/scripts/migration_update.sh)) - Updates migration indexes across all schemas
+- [**helium_update.sh**](/docs/He/SCRIPTS/helium_update.md) ([source](/elements/002-helium/scripts/helium_update.sh)) - Updates migration indexes across all schemas as well as other repository updates and checks
 - [**github-sitemap.sh**](/docs/He/SCRIPTS/github-sitemap.md) ([source](/elements/002-helium/scripts/github-sitemap.sh)) - Checks markdown links and identifies orphaned files
 
 ### Database Configuration
@@ -57,17 +57,17 @@ Each schema provides a complete database design with migrations, supporting Post
 
 ## Repository Information
 
-Generated 2025-Dec-16 (Tue) 11:05:48 PST
+Generated 2025-Dec-17 (Wed) 12:58:07 PST
 
 ```cloc
-github.com/AlDanial/cloc v 2.06  T=0.42 s (256.7 files/s, 51957.2 lines/s)
+github.com/AlDanial/cloc v 2.06  T=0.24 s (449.5 files/s, 92108.5 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Lua                             77           1682           1616          12335
-Markdown                        28           1440              0           3657
+Lua                             78           1737           1790          12579
+Markdown                        28           1442              0           3660
 Bourne Shell                     3            152            160            814
 -------------------------------------------------------------------------------
-SUM:                           108           3274           1776          16806
+SUM:                           109           3331           1950          17053
 -------------------------------------------------------------------------------
 ```

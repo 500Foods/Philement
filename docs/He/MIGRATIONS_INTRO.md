@@ -219,7 +219,7 @@ table.insert(queries, {
 ### Helium-Specific Tools
 
 - **migration_index.sh**: Updates documentation with migration info
-- **migration_update.sh**: Runs index updates across all schemas
+- **helium_update.sh**: Runs index updates across all schemas along with other repository updates and checks
 - **database.lua**: Processes migrations with macro expansion
 
 ### Development Workflow
@@ -229,7 +229,7 @@ table.insert(queries, {
 3. **Implement reverse migration**: For rollback capability
 4. **Add diagram migration**: For schema visualization
 5. **Test on all databases**: PostgreSQL, MySQL, SQLite, DB2
-6. **Update documentation**: Run migration_update.sh
+6. **Update documentation**: Run helium_update.sh
 7. **Commit and deploy**: Through normal CI/CD process
 
 ## Troubleshooting Common Issues
