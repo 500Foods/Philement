@@ -75,17 +75,17 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-12-16 19:12:34 UTC
+Last updated at 2025-12-18 01:45:54 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           129             81              0         313708
+JSON                           130             82              0         317784
 C                              875          35915          34317         126097
 SVG                            110            212           2646         100739
-Markdown                       473          13037             62          37289
-Text                            77             76              0          27168
-Bourne Shell                    93           4399          68708          20470
-Lua                             78           1688           1625          12345
+Markdown                       473          13037             62          37290
+Text                            78             77              0          27538
+Bourne Shell                    93           4399          68761          20470
+Lua                             79           1743           1799          12589
 C/C++ Header                   184           2015           5227           5891
 JavaScript                      12            759           1014           3628
 CMake                           17            171            318           1153
@@ -99,10 +99,10 @@ Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 YAML                             2              8             13             37
 -------------------------------------------------------------------------------
-SUM:                          2094          58918         114209         651819
+SUM:                          2097          58975         114436         656510
 -------------------------------------------------------------------------------
-253 Files were skipped (duplicate, binary, or without source code):
-  svg: 180
+257 Files were skipped (duplicate, binary, or without source code):
+  svg: 184
   lua: 17
   md: 5
   gitignore: 4
