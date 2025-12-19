@@ -106,4 +106,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1069](/elements/002-helium/acuranzo/migrations/acuranzo_1069.lua) | lookups | 1.0.0 | 2025-12-04 | 4 |  | Theme - Whiteout |
 | [1070](/elements/002-helium/acuranzo/migrations/acuranzo_1070.lua) | lookups | 1.0.0 | 2025-12-16 | 4 |  | Theme - Mustafar |
 | [1071](/elements/002-helium/acuranzo/migrations/acuranzo_1071.lua) | lookups | 1.0.0 | 2025-12-17 | 4 |  | Theme - 1977 |
-| **72** | | | | **423** | **24** | |
+| [1072](/elements/002-helium/acuranzo/migrations/acuranzo_1072.lua) | lookups | 1.0.0 | 2025-12-18 | 4 |  | Theme - Lanboss |
+| [1073](/elements/002-helium/acuranzo/migrations/acuranzo_1073.lua) | lookups | 1.0.0 | 2025-12-18 | 4 |  | Theme - Bland |
+| [1074](/elements/002-helium/acuranzo/migrations/acuranzo_1074.lua) | lookups | 1.0.0 | 2025-12-18 | 4 |  | Theme - Stormy |
+| **75** | | | | **435** | **24** | |
