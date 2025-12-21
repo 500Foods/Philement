@@ -42,9 +42,9 @@ Hydrogen is currently designed for technical users who:
 
 ### Generated Content
 
-- [**Build Metrics**](/docs/H/plans/README.md) - Planning documents, TO-DO lists, that kind of thing
+- [**Release Ntes**](/docs/H/releases/README.md) - Release notes
 - [**Build Metrics**](/docs/H/metrics/README.md) - Daily build metrics and quality tracking
-- [**Build Metrics**](/docs/H/releases/README.md) - Release notes
+- [**Planning**](/docs/H/plans/README.md) - Planning documents, TO-DO lists, that kind of thing
 
 ### Core Documentation
 
@@ -53,6 +53,10 @@ Hydrogen is currently designed for technical users who:
 - [**Developer Onboarding**](/docs/H/core/developer_onboarding.md) - Visual architecture overview and code navigation
 - [**Quick Start Guide**](/docs/H/core/guides/quick-start.md) - Get up and running quickly
 - [**AI Integration**](/docs/H/core/ai_integration.md) - AI capabilities and implementations
+
+### Modules (aka plugins or extensions)
+
+- [**GAIUS**](/docs/H/modules/GAIUS.md) - Support for the [GAIUS](https://www.gaiusmodel.cmo) project.
 
 ### Technical References
 
