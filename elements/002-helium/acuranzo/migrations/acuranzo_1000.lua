@@ -69,14 +69,14 @@ if engine == 'db2' then table.insert(queries,{sql=[[
 --       UDF we've got in extras/base64_udf_db2 in case it is applied to a different schema
 if engine == 'db2' then table.insert(queries,{sql=[[
 
-    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64DECODE(encoded CLOB(2G))
-    RETURNS CLOB(2G)
+    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64DECODE(encoded CLOB(1M))
+    RETURNS CLOB(1M)
     LANGUAGE SQL
     DETERMINISTIC
     READS SQL DATA
 
     BEGIN ATOMIC
-        DECLARE result  CLOB(2G);
+        DECLARE result  CLOB(1M);
         DECLARE pos     INTEGER   DEFAULT 1;
         DECLARE len     INTEGER;
         DECLARE step    INTEGER   DEFAULT 32672;
@@ -129,13 +129,13 @@ if engine == 'db2' then table.insert(queries,{sql=[[
 --       so that we can properly handle the output of the Brotli decompress function
 if engine == 'db2' then table.insert(queries,{sql=[[
 
-    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64DECODEBINARY(encoded CLOB(2G))
-    RETURNS BLOB(2G)
+    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64DECODEBINARY(encoded CLOB(1M))
+    RETURNS BLOB(1M)
     LANGUAGE SQL
     DETERMINISTIC
     READS SQL DATA
     BEGIN ATOMIC
-    DECLARE result  BLOB(2G);
+    DECLARE result  BLOB(1M);
     DECLARE pos     INTEGER   DEFAULT 1;
     DECLARE len     INTEGER;
     DECLARE step    INTEGER   DEFAULT 32672;

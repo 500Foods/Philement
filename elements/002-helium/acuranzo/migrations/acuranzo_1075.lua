@@ -89,7 +89,7 @@ table.insert(queries,{sql=[[
                 (${LOOKUP_ID},  8, 1, 'Dashboard',          1, 1, '', '', ${JIS}[==[{"Index":  6, "Icon":"<i class='fa fa-fw fa-xl fa-bullseye-arrow'></i>"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID},  9, 1, 'Document Library',   1, 2, '', '', ${JIS}[==[{"Index":  7, "Icon":"<i class='fa fa-fw fa-xl fa-books'></i>"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 10, 1, 'Media Library',      1, 3, '', '', ${JIS}[==[{"Index":  8, "Icon":"<i class='fa fa-fw fa-xl fa-photo-film-music'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 11, 1, 'Diagram Library',    1, 4, '', '', ${JIS}[==[{"Index": 10, "Icon":"<i class='fa fa-fw fa-xl fa-shapes'></i>"}]==]${JIE}, ${COMMON_VALUES});
+                (${LOOKUP_ID}, 11, 1, 'Diagram Library',    1, 4, '', '', ${JIS}[==[{"Index": 10, "Icon":"<i class='fa fa-fw fa-xl fa-shapes'></i>"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 12, 1, 'Reports',            2, 5, '', '', ${JIS}[==[{"Index":  9, "Icon":"<i class='fa fa-fw fa-xl fa-clipboard-check'></i>"}]==]${JIE}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
