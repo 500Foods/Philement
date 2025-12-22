@@ -79,7 +79,7 @@ has_diagram() {
     if grep -q "TYPE_DIAGRAM_MIGRATION" "${file}"; then
         echo "✓"
     else
-        echo ""
+        echo "✗"
     fi
 }
 
@@ -88,7 +88,7 @@ generate_migrations_table() {
     echo "## Migrations"
     echo ""
     echo "| M# | Table | Version | Updated | Stmts | Diagram | Description |"
-    echo "|----|-------|---------|---------|-------|---------|-------------|"
+    echo "| ---- | ------- | --------- | --------- | ------- | --------- | ------------- |"
     
     local total_migrations=0
     local total_diagrams=0
