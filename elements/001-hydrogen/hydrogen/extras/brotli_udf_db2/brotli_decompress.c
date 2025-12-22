@@ -41,7 +41,7 @@ static size_t b64_decode(const char *in, size_t inlen, unsigned char *out) {
 
 /* DB2 UDF for Brotli decompression
  * Input: BLOB containing compressed binary data (max 32KB compressed)
- * Output: CLOB(2G) containing decompressed text data
+ * Output: CLOB(1M) containing decompressed text data
  * 
  * Note: We use BLOB for input (binary data from base64 decode) and
  * CLOB for output (decompressed text). BLOB preserves binary data
@@ -50,7 +50,7 @@ static size_t b64_decode(const char *in, size_t inlen, unsigned char *out) {
 
 /* Brotli decompression function
  * Input: BLOB containing compressed binary data
- * Output: CLOB(2G) containing decompressed text data
+ * Output: CLOB(1M) containing decompressed text data
  */
 #ifdef __cplusplus
 extern "C"
