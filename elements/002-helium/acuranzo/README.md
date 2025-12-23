@@ -111,4 +111,6 @@ in the migrations themselves so that they get populated in the database directly
 | [1074](/elements/002-helium/acuranzo/migrations/acuranzo_1074.lua) | lookups | 1.0.0 | 2025-12-18 | 4 | ✗ | Theme - Stormy |
 | [1075](/elements/002-helium/acuranzo/migrations/acuranzo_1075.lua) | lookups | 1.0.0 | 2025-12-20 | 6 | ✗ | Defaults for Lookup 042 - Modules |
 | [1076](/elements/002-helium/acuranzo/migrations/acuranzo_1076.lua) | lookups | 1.0.0 | 2025-12-21 | 6 | ✗ | Defaults for Lookup 043 - Tours |
-| **77** | | | | **447** | **77** | |
+| [1077](/elements/002-helium/acuranzo/migrations/acuranzo_1077.lua) | lookups | 1.0.0 | 2025-12-22 | 6 | ✗ | Defaults for Lookup 044 - Server Version History |
+| [1078](/elements/002-helium/acuranzo/migrations/acuranzo_1078.lua) | lookups | 1.0.0 | 2025-12-22 | 6 | ✗ | Defaults for Lookup 045 - Client Version History 0-10 |
+| **79** | | | | **459** | **79** | |
