@@ -334,10 +334,10 @@ const char* get_fallback_priority_label(int priority) {
 }
 
 void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count) {
-    // Format the counter as two 3-digit numbers
-    char counter_prefix[16];
-    snprintf(counter_prefix, sizeof(counter_prefix), "[ %03lu %03lu ]",
-             (current_count / 1000) % 1000, current_count % 1000);
+    // Format the counter as three 3-digit numbers
+    char counter_prefix[20];
+    snprintf(counter_prefix, sizeof(counter_prefix), "[ %03lu %03lu %03lu ]",
+             (current_count / 1000000) % 1000, (current_count / 1000) % 1000, current_count % 1000);
 
     // Use fallback labels if config system is unavailable
     const char* priority_label = (!app_config || !app_config->logging.levels)
@@ -511,14 +511,15 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
 
     // Get single counter value for both JSON and console output
     unsigned long current_count = __atomic_fetch_add(&log_counter, 1, __ATOMIC_SEQ_CST);
+    unsigned long counter_super = (current_count / 1000000) % 1000;
     unsigned long counter_high = (current_count / 1000) % 1000;
     unsigned long counter_low = current_count % 1000;
 
     char json_message[DEFAULT_MAX_LOG_MESSAGE_SIZE];
     // Create JSON message with all destinations enabled and counter values
     snprintf(json_message, sizeof(json_message),
-             "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"counter_high\":%lu,\"counter_low\":%lu,\"LogConsole\":true,\"LogFile\":true,\"LogDatabase\":true}",
-             subsystem, details, priority, counter_high, counter_low);
+             "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"counter_super\":%lu,\"counter_high\":%lu,\"counter_low\":%lu,\"LogConsole\":true,\"LogFile\":true,\"LogDatabase\":true}",
+             subsystem, details, priority, counter_super, counter_high, counter_low);
 
     // Check if we're in startup phase (logging subsystem not yet running or server not running)
     // or if this is the final shutdown message

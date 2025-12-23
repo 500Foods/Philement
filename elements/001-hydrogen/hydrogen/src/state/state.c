@@ -94,6 +94,10 @@ void signal_handler(int sig) {
             // Record shutdown start time immediately when signal received
             record_shutdown_start_time();
             
+            // Hide the ^C in the terminal output
+            // printf("\b\b  \b\b");                
+            printf("\n");
+            
             log_this(SR_SHUTDOWN, "%s received, initiating shutdown", LOG_LEVEL_STATE, 1, sig == SIGINT ? "SIGINT" : "SIGTERM");
             
             // Set signal-based shutdown flag for rapid exit
