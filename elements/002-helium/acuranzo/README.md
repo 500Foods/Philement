@@ -112,5 +112,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1075](/elements/002-helium/acuranzo/migrations/acuranzo_1075.lua) | lookups | 1.0.0 | 2025-12-20 | 6 | ✗ | Defaults for Lookup 042 - Modules |
 | [1076](/elements/002-helium/acuranzo/migrations/acuranzo_1076.lua) | lookups | 1.0.0 | 2025-12-21 | 6 | ✗ | Defaults for Lookup 043 - Tours |
 | [1077](/elements/002-helium/acuranzo/migrations/acuranzo_1077.lua) | lookups | 1.0.0 | 2025-12-22 | 6 | ✗ | Defaults for Lookup 044 - Server Version History |
-| [1078](/elements/002-helium/acuranzo/migrations/acuranzo_1078.lua) | lookups | 1.0.0 | 2025-12-22 | 6 | ✗ | Defaults for Lookup 045 - Client Version History 0-10 |
-| **79** | | | | **459** | **79** | |
+| [1078](/elements/002-helium/acuranzo/migrations/acuranzo_1078.lua) | lookups | 1.0.0 | 2025-12-22 | 6 | ✗ | Defaults for Lookup 045 - Client Version History |
+| [1079](/elements/002-helium/acuranzo/migrations/acuranzo_1079.lua) | lookups | 1.0.0 | 2025-12-24 | 6 | ✗ | Defaults for Lookup 046 - Macro Expansion |
+| [1080](/elements/002-helium/acuranzo/migrations/acuranzo_1080.lua) | lookups | 1.0.0 | 2025-12-24 | 6 | ✗ | Defaults for Lookup 047 - Translations |
+| **81** | | | | **471** | **81** | |
