@@ -115,4 +115,10 @@ in the migrations themselves so that they get populated in the database directly
 | [1078](/elements/002-helium/acuranzo/migrations/acuranzo_1078.lua) | lookups | 1.0.0 | 2025-12-22 | 6 | ✗ | Defaults for Lookup 045 - Client Version History |
 | [1079](/elements/002-helium/acuranzo/migrations/acuranzo_1079.lua) | lookups | 1.0.0 | 2025-12-24 | 6 | ✗ | Defaults for Lookup 046 - Macro Expansion |
 | [1080](/elements/002-helium/acuranzo/migrations/acuranzo_1080.lua) | lookups | 1.0.0 | 2025-12-24 | 6 | ✗ | Defaults for Lookup 047 - Translations |
-| **81** | | | | **471** | **81** | |
+| [1081](/elements/002-helium/acuranzo/migrations/acuranzo_1081.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 048 - Module Groups |
+| [1082](/elements/002-helium/acuranzo/migrations/acuranzo_1082.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 049 - Document Libraries |
+| [1083](/elements/002-helium/acuranzo/migrations/acuranzo_1083.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 050 - Document Status |
+| [1084](/elements/002-helium/acuranzo/migrations/acuranzo_1084.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 051 - Document Types |
+| [1085](/elements/002-helium/acuranzo/migrations/acuranzo_1085.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 052 - AI Summary Engines |
+| [1086](/elements/002-helium/acuranzo/migrations/acuranzo_1086.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 052 - Report Object Types |
+| **87** | | | | **507** | **87** | |
