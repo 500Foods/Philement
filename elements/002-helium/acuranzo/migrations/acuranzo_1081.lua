@@ -1,19 +1,19 @@
--- Migration: acuranzo_1063.lua
--- Defaults for Lookup 038 - AI Chat Engines
+-- Migration: acuranzo_1081.lua
+-- Defaults for Lookup 048 - Module Groups
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2025-11-24 - Initial creation
+-- 1.0.0 - 2025-12-25 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "lookups"
-cfg.MIGRATION = "1063"
-cfg.LOOKUP_ID = "038"
-cfg.LOOKUP_NAME = "AI Chat Engines"
+cfg.MIGRATION = "1081"
+cfg.LOOKUP_ID = "048"
+cfg.LOOKUP_NAME = "Module Groups"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -57,7 +57,7 @@ table.insert(queries,{sql=[[
                 [==[
                     # ${LOOKUP_ID} - ${LOOKUP_NAME}
 
-                    AI Chat Engines - supported AI chat engine configurations including API keys, icons, etc.
+                    Module Groups. Used to construct the main menu.
                 ]==],                           -- summary
                 ${JSON_INGEST_START}
                 [==[
@@ -78,27 +78,10 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, 0, 1, 'Demo / ChatGPT 4o', 0, 0, '', '',${JIS}[==[
-                    {
-                        "Icon": "<img src='images/ai_openai.png'>",
-                        "Name": "ChatGPT 4o",
-                        "Limit": 32768,
-                        "Model": "gpt-4o",
-                        "Banner": {
-                            "Default": ["Ask me anything."]
-                        },
-                        "Engine": "OpenAI",
-                        "API Key": "<api key>",
-                        "Country": "Demo",
-                        "Default": true,
-                        "Endpoint": "https://api.openai.com/v1/chat/completions",
-                        "Location": "Demo",
-                        "Authority": "Demo",
-                        "Cost Prompt": 0.00000,
-                        "Organization": "<org>",
-                        "Cost Completion": 0.00000
-                    }
-                ]==]${JIE}, ${COMMON_VALUES});
+                (${LOOKUP_ID},  0, 1, 'Not Assigned',           0,  0, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  1, 1, 'General Information',    0,  1, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  2, 1, 'Configuration',          0, 10, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  3, 1, 'Chat Services',          0,  2, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
@@ -147,7 +130,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0);
+            AND key_idx IN (0,1,2,3);
 
             ${SUBQUERY_DELIMITER}
 

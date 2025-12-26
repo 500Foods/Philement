@@ -1,19 +1,19 @@
--- Migration: acuranzo_1063.lua
--- Defaults for Lookup 038 - AI Chat Engines
+-- Migration: acuranzo_1085.lua
+-- Defaults for Lookup 052 - AI Summary Engines
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2025-11-24 - Initial creation
+-- 1.0.0 - 2025-12-25 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "lookups"
-cfg.MIGRATION = "1063"
-cfg.LOOKUP_ID = "038"
-cfg.LOOKUP_NAME = "AI Chat Engines"
+cfg.MIGRATION = "1085"
+cfg.LOOKUP_ID = "052"
+cfg.LOOKUP_NAME = "AI Summary Engines"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -57,7 +57,7 @@ table.insert(queries,{sql=[[
                 [==[
                     # ${LOOKUP_ID} - ${LOOKUP_NAME}
 
-                    AI Chat Engines - supported AI chat engine configurations including API keys, icons, etc.
+                    Models used specifically for back-end summarization tasks, like mapping icons to conversations.
                 ]==],                           -- summary
                 ${JSON_INGEST_START}
                 [==[
@@ -78,25 +78,26 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, 0, 1, 'Demo / ChatGPT 4o', 0, 0, '', '',${JIS}[==[
+                (${LOOKUP_ID},  0, 1, 'OpenAI/ChatGPT 4o', 0, 0, '', '', ${JIS}[==[
                     {
-                        "Icon": "<img src='images/ai_openai.png'>",
+                        "Icon": "<img src='Images/ai_openai.png'>",
                         "Name": "ChatGPT 4o",
                         "Limit": 32768,
                         "Model": "gpt-4o",
-                        "Banner": {
-                            "Default": ["Ask me anything."]
-                        },
                         "Engine": "OpenAI",
-                        "API Key": "<api key>",
-                        "Country": "Demo",
-                        "Default": true,
+                        "API Key": "<OpenAI Key>",
+                        "Country": "CA",
+                        "Default": false,
                         "Endpoint": "https://api.openai.com/v1/chat/completions",
-                        "Location": "Demo",
-                        "Authority": "Demo",
-                        "Cost Prompt": 0.00000,
-                        "Organization": "<org>",
-                        "Cost Completion": 0.00000
+                        "Location": "YVR",
+                        "Authority": "Example",
+                        "Cost Prompt": 0.00006,
+                        "Organization": "<OpenAI Org Identifier>",
+                        "Cost Completion": 0.00012,
+                        "Support Prompts": {
+                            "Abstract": 5010,
+                            "Correction": 6000
+                        }
                     }
                 ]==]${JIE}, ${COMMON_VALUES});
 

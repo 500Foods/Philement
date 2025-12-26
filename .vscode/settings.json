@@ -45,5 +45,13 @@
 "C_Cpp.default.compileCommands": [
 
   ""
-]
+],
+
+    "editor.fontFamily": "'Acuranzo Mono'",
+    "terminal.integrated.fontFamily": "'Acuranzo Mono'",
+    "markdown.preview.fontFamily": "'Acuranzo Mono', -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif",
+    "editor.fontLigatures": false,
+    "editor.fontSize": 14,
+    "editor.fontWeight": "400",  // Or match your built Regular weight
+    "editor.lineHeight": 1.6
 }

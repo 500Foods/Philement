@@ -1,0 +1,353 @@
+[buildPlans.AcuranzoSans]
+family = "Acuranzo Sans"
+spacing = "quasi-proportional"
+serifs = "sans"
+noCvSs = false
+exportGlyphNames = true
+noLigation = true
+
+[buildPlans.AcuranzoSans.variants.design]
+one = "base"
+three = "flat-top-serifless"
+four = "semi-open-non-crossing-serifless"
+five = "upright-flat-serifless"
+six = "open-contour"
+eight = "two-circles"
+nine = "open-contour"
+zero = "tall-slashed"
+capital-g = "toothless-corner-serifless-hooked"
+a = "single-storey-serifless"
+d = "toothless-corner-serifed"
+g = "single-storey-flat-hook-earless-rounded"
+j = "serifless"
+m = "earless-corner-double-arch-serifless"
+n = "earless-corner-straight-serifless"
+p = "earless-corner-serifless"
+q = "earless-corner-straight-serifless"
+r = "earless-corner-serifless"
+t = "flat-hook-asymmetric"
+w = "straight-vertical-sides-serifless"
+question = "corner-flat-hooked"
+
+[buildPlans.AcuranzoSans.widths.Normal]
+shape = 500
+menu = 5
+css = "normal"
+
+[buildPlans.AcuranzoSans.widths.Extended]
+shape = 600
+menu = 7
+css = "expanded"
+
+[buildPlans.AcuranzoSans.widths.Condensed]
+shape = 416
+menu = 3
+css = "condensed"
+
+[buildPlans.AcuranzoSans.widths.SemiCondensed]
+shape = 456
+menu = 4
+css = "semi-condensed"
+
+[buildPlans.AcuranzoSans.widths.SemiExtended]
+shape = 548
+menu = 6
+css = "semi-expanded"
+
+[buildPlans.AcuranzoSans.widths.ExtraExtended]
+shape = 658
+menu = 8
+css = "extra-expanded"
+
+[buildPlans.AcuranzoSans.widths.UltraExtended]
+shape = 720
+menu = 9
+css = "ultra-expanded"
+
+[buildPlans.AcuranzoSansFancy]
+family = "Acuranzo Sans Fancy"
+spacing = "quasi-proportional"
+serifs = "sans"
+noCvSs = false
+exportGlyphNames = true
+
+[buildPlans.AcuranzoSansFancy.variants.design]
+one = "base"
+three = "flat-top-serifless"
+four = "semi-open-non-crossing-serifless"
+five = "upright-flat-serifless"
+six = "open-contour"
+eight = "two-circles"
+nine = "open-contour"
+zero = "tall-slashed"
+capital-g = "toothless-corner-serifless-hooked"
+a = "single-storey-serifless"
+d = "toothless-corner-serifed"
+g = "single-storey-flat-hook-earless-rounded"
+j = "serifless"
+m = "earless-corner-double-arch-serifless"
+n = "earless-corner-straight-serifless"
+p = "earless-corner-serifless"
+q = "earless-corner-straight-serifless"
+r = "earless-corner-serifless"
+t = "flat-hook-asymmetric"
+w = "straight-vertical-sides-serifless"
+question = "corner-flat-hooked"
+
+[buildPlans.AcuranzoSansFancy.widths.Normal]
+shape = 500
+menu = 5
+css = "normal"
+
+[buildPlans.AcuranzoSansFancy.widths.Extended]
+shape = 600
+menu = 7
+css = "expanded"
+
+[buildPlans.AcuranzoSansFancy.widths.Condensed]
+shape = 416
+menu = 3
+css = "condensed"
+
+[buildPlans.AcuranzoSansFancy.widths.SemiCondensed]
+shape = 456
+menu = 4
+css = "semi-condensed"
+
+[buildPlans.AcuranzoSansFancy.widths.SemiExtended]
+shape = 548
+menu = 6
+css = "semi-expanded"
+
+[buildPlans.AcuranzoSansFancy.widths.ExtraExtended]
+shape = 658
+menu = 8
+css = "extra-expanded"
+
+[buildPlans.AcuranzoSansFancy.widths.UltraExtended]
+shape = 720
+menu = 9
+css = "ultra-expanded"
+
+[buildPlans.AcuranzoMonoFancy]
+family = "Acuranzo Mono Fancy"
+spacing = "term"
+serifs = "sans"
+noCvSs = false
+exportGlyphNames = true
+
+[buildPlans.AcuranzoMonoFancy.variants.design]
+one = "base"
+three = "flat-top-serifless"
+four = "semi-open-non-crossing-serifless"
+five = "upright-flat-serifless"
+six = "open-contour"
+eight = "two-circles"
+nine = "open-contour"
+zero = "tall-slashed"
+capital-g = "toothless-corner-serifless-hooked"
+a = "single-storey-serifless"
+d = "toothless-corner-serifed"
+g = "single-storey-flat-hook-earless-rounded"
+j = "serifless"
+m = "earless-corner-double-arch-serifless"
+n = "earless-corner-straight-serifless"
+p = "earless-corner-serifless"
+q = "earless-corner-straight-serifless"
+r = "earless-corner-serifless"
+t = "flat-hook-asymmetric"
+w = "straight-vertical-sides-serifless"
+question = "corner-flat-hooked"
+
+[buildPlans.AcuranzoMonoFancy.widths.Normal]
+shape = 500
+menu = 5
+css = "normal"
+
+[buildPlans.AcuranzoMonoFancy.widths.Extended]
+shape = 600
+menu = 7
+css = "expanded"
+
+[buildPlans.AcuranzoMonoFancy.widths.Condensed]
+shape = 416
+menu = 3
+css = "condensed"
+
+[buildPlans.AcuranzoMonoFancy.widths.SemiCondensed]
+shape = 456
+menu = 4
+css = "semi-condensed"
+
+[buildPlans.AcuranzoMonoFancy.widths.SemiExtended]
+shape = 548
+menu = 6
+css = "semi-expanded"
+
+[buildPlans.AcuranzoMonoFancy.widths.ExtraExtended]
+shape = 658
+menu = 8
+css = "extra-expanded"
+
+[buildPlans.AcuranzoMonoFancy.widths.UltraExtended]
+shape = 720
+menu = 9
+css = "ultra-expanded"
+
+[buildPlans.AcuranzoMono]
+family = "Acuranzo Mono"
+spacing = "term"
+serifs = "sans"
+noCvSs = false
+exportGlyphNames = true
+noLigation = true
+
+[buildPlans.AcuranzoMono.variants.design]
+one = "base"
+three = "flat-top-serifless"
+four = "semi-open-non-crossing-serifless"
+five = "upright-flat-serifless"
+six = "open-contour"
+eight = "two-circles"
+nine = "open-contour"
+zero = "tall-slashed"
+capital-g = "toothless-corner-serifless-hooked"
+a = "single-storey-serifless"
+d = "toothless-corner-serifed"
+g = "single-storey-flat-hook-earless-rounded"
+j = "serifless"
+m = "earless-corner-double-arch-serifless"
+n = "earless-corner-straight-serifless"
+p = "earless-corner-serifless"
+q = "earless-corner-straight-serifless"
+r = "earless-corner-serifless"
+t = "flat-hook-asymmetric"
+w = "straight-vertical-sides-serifless"
+question = "corner-flat-hooked"
+
+[buildPlans.AcuranzoMono.widths.Normal]
+shape = 500
+menu = 5
+css = "normal"
+
+[buildPlans.AcuranzoMono.widths.Extended]
+shape = 600
+menu = 7
+css = "expanded"
+
+[buildPlans.AcuranzoMono.widths.Condensed]
+shape = 416
+menu = 3
+css = "condensed"
+
+[buildPlans.AcuranzoMono.widths.SemiCondensed]
+shape = 456
+menu = 4
+css = "semi-condensed"
+
+[buildPlans.AcuranzoMono.widths.SemiExtended]
+shape = 548
+menu = 6
+css = "semi-expanded"
+
+[buildPlans.AcuranzoMono.widths.ExtraExtended]
+shape = 658
+menu = 8
+css = "extra-expanded"
+
+[buildPlans.AcuranzoMono.widths.UltraExtended]
+shape = 720
+menu = 9
+css = "ultra-expanded"
+
+[buildPlans.AcuranzoMonoMail]
+family = "Acuranzo Mono Mail"
+spacing = "term"
+serifs = "sans"
+noCvSs = true
+exportGlyphNames = false
+noLigation = true
+
+[buildPlans.AcuranzoMonoMail.variants.design]
+one = "base"
+three = "flat-top-serifless"
+four = "semi-open-non-crossing-serifless"
+five = "upright-flat-serifless"
+six = "open-contour"
+eight = "two-circles"
+nine = "open-contour"
+zero = "tall-slashed"
+capital-g = "toothless-corner-serifless-hooked"
+a = "single-storey-serifless"
+d = "toothless-corner-serifed"
+g = "single-storey-flat-hook-earless-rounded"
+j = "serifless"
+m = "earless-corner-double-arch-serifless"
+n = "earless-corner-straight-serifless"
+p = "earless-corner-serifless"
+q = "earless-corner-straight-serifless"
+r = "earless-corner-serifless"
+t = "flat-hook-asymmetric"
+w = "straight-vertical-sides-serifless"
+question = "corner-flat-hooked"
+
+[buildPlans.AcuranzoMonoMail.weights.Regular]
+shape = 400
+menu = 400
+css = 400
+
+[buildPlans.AcuranzoMonoMail.weights.Bold]
+shape = 700
+menu = 700
+css = 700
+
+[buildPlans.AcuranzoMonoMail.widths.Normal]
+shape = 500
+menu = 5
+css = "normal"
+
+[buildPlans.AcuranzoSansMail]
+family = "Acuranzo Sans Mail"
+spacing = "quasi-proportional"
+serifs = "sans"
+noCvSs = true
+exportGlyphNames = false
+noLigation = true
+
+[buildPlans.AcuranzoSansMail.variants.design]
+one = "base"
+three = "flat-top-serifless"
+four = "semi-open-non-crossing-serifless"
+five = "upright-flat-serifless"
+six = "open-contour"
+eight = "two-circles"
+nine = "open-contour"
+zero = "tall-slashed"
+capital-g = "toothless-corner-serifless-hooked"
+a = "single-storey-serifless"
+d = "toothless-corner-serifed"
+g = "single-storey-flat-hook-earless-rounded"
+j = "serifless"
+m = "earless-corner-double-arch-serifless"
+n = "earless-corner-straight-serifless"
+p = "earless-corner-serifless"
+q = "earless-corner-straight-serifless"
+r = "earless-corner-serifless"
+t = "flat-hook-asymmetric"
+w = "straight-vertical-sides-serifless"
+question = "corner-flat-hooked"
+
+[buildPlans.AcuranzoSansMail.weights.Regular]
+shape = 400
+menu = 400
+css = 400
+
+[buildPlans.AcuranzoSansMail.weights.Bold]
+shape = 700
+menu = 700
+css = 700
+
+[buildPlans.AcuranzoSansMail.widths.Normal]
+shape = 500
+menu = 5
+css = "normal"
