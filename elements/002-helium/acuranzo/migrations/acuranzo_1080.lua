@@ -13,7 +13,7 @@ local queries = {}
 cfg.TABLE = "lookups"
 cfg.MIGRATION = "1080"
 cfg.LOOKUP_ID = "047"
-cfg.LOOKUP_NAME = "Macro Expansion"
+cfg.LOOKUP_NAME = "Translations"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -62,9 +62,9 @@ table.insert(queries,{sql=[[
                 ${JSON_INGEST_START}
                 [==[
                     {
-                        "Default": "HTMLEditor",
+                        "Default": "JSONEditor",
                         "CSSEditor": false,
-                        "HTMLEditor": false,
+                        "HTMLEditor": true,
                         "JSONEditor": true,
                         "LookupEditor": false
                     }

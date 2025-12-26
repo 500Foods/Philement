@@ -65,7 +65,7 @@ table.insert(queries,{sql=[[
                         "Default": "HTMLEditor",
                         "CSSEditor": false,
                         "HTMLEditor": true,
-                        "JSONEditor": false,
+                        "JSONEditor": true,
                         "LookupEditor": false
                     }
                 ]==]

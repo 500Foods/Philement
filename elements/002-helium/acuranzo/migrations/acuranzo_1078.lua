@@ -62,7 +62,7 @@ table.insert(queries,{sql=[[
                 ${JSON_INGEST_START}
                 [==[
                     {
-                        "Default": "HTMLEditor",
+                        "Default": "JSONEditor",
                         "CSSEditor": false,
                         "HTMLEditor": false,
                         "JSONEditor": true,
