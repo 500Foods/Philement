@@ -120,5 +120,6 @@ in the migrations themselves so that they get populated in the database directly
 | [1083](/elements/002-helium/acuranzo/migrations/acuranzo_1083.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 050 - Document Status |
 | [1084](/elements/002-helium/acuranzo/migrations/acuranzo_1084.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 051 - Document Types |
 | [1085](/elements/002-helium/acuranzo/migrations/acuranzo_1085.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 052 - AI Summary Engines |
-| [1086](/elements/002-helium/acuranzo/migrations/acuranzo_1086.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 052 - Report Object Types |
-| **87** | | | | **507** | **87** | |
+| [1086](/elements/002-helium/acuranzo/migrations/acuranzo_1086.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 053 - Report Object Types |
+| [1087](/elements/002-helium/acuranzo/migrations/acuranzo_1087.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 054 - Report Object Attributes |
+| **88** | | | | **513** | **88** | |

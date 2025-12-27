@@ -22,6 +22,11 @@ file indicated above.
 
 NOTE: Depending on the build options chosen, it can take more than hour or more to build a comprehensive set of fonts.
 
+NOTE: The Mail variants were created to have a very small file (less than 15 KB each) that can be directly embedded as Base64 in HTML emails to avoid the
+dreaded "download remote content?" message in mail clients like Thunderbird and iOS. GMail doesn't even support fonts, so no help there. The normal non-Mail
+fonts are typically arund 1.6 MB. Far too large to be arbitrarily embedding in emails. The Mail versions are *very* stripped down character sets, not much
+more than typical ASCII characters, but can be augmented easily enough by adding individual codepoints to the cnfiguration file as needed.
+
 ## References
 
 [Iosevka](https://github.com/be5invis/Iosevka?tab=readme-ov-file) - GitHub repository for the project

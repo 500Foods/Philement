@@ -107,7 +107,7 @@ table.insert(queries,{sql=[[
                 (${LOOKUP_ID}, 26, 1, 'Field Shape',            2,  6, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-shapes'></i>", "Color": "Color-B", "Group": "Shape", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 27, 1, 'Calculated Counter',     3,  0, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 28, 1, 'Calculated Text',        3,  0, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-text'></i>", "Color": "Color-C", "Group": "Text", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 29, 1, 'Calculated Number',      3,  1, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-hashtag'></i>", "Color": "Color-C", "Group": "Number", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 29, 1, 'Calculated Number',      3,  1, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-hashtag'></i>", "Color": "Color-C", "Group": "Number", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 30, 1, 'Calculated Image',       3,  2, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-image'></i>", "Color": "Color-C", "Group": "Image", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 31, 1, 'Calculated Memo',        3,  3, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-memo'></i>", "Color": "Color-C", "Group": "Memo", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 32, 1, 'Calculated DateTime',    3,  4, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-calendar-clock'></i>", "Color": "Color-C", "Group": "DateTime", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}]==]${JIE}, ${COMMON_VALUES}),
@@ -133,7 +133,7 @@ table.insert(queries,{sql=[[
                 (${LOOKUP_ID}, 52, 1, 'CrossTab DateTime',      5,  4, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-calendar-clock'></i>", "Color": "Color-E", "Group": "DateTime", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 53, 1, 'CrossTab Shape',         5,  5, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-shapes'></i>", "Color": "Color-E", "Group": "Shape", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 54, 1, 'CrossTab Chart',         5,  6, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-chart-mixed'></i>", "Color": "Color-E", "Group": "Chart", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 55, 1, 'CrossTab Barcode',       5,  7, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-barcode'></i>", "Color": "Color-E", "Group": "Barcode", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 55, 1, 'CrossTab Barcode',       5,  7, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-barcode'></i>", "Color": "Color-E", "Group": "Barcode", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 56, 1, 'SubReport',              1,  8, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-page'></i>", "Color": "Color-F", "Group": "SubReport", "Attributes": [0, 1, 2, 3, 4, 14, 24, 29]}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 57, 1, 'Report Bottom',          0,  0, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-page'></i>", "Color": "Color-H", "Label": "End of Report"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 58, 1, 'Ruler',                  6,  9, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-ruler'></i>", "Attributes": [6, 13, 25, 26, 27, 28]}]==]${JIE}, ${COMMON_VALUES}),
@@ -187,7 +187,8 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0,1,2,3,4,5,6);
+                AND (key_idx >= 0)
+                AND (key_idx <= 60)
 
             ${SUBQUERY_DELIMITER}
 
