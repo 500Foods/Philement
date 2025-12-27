@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 7.2.0 - 2025-12-27 - Updated Totals row with label and C/C % to main cloc table
 # 7.1.0 - 2025-12-07 - Added HYDROGEN_DOCS_ROOT support for documentation folder inclusion
 # 7.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 6.6.1 - 2025-12-02 - Fixed ShellCheck SC2312 and SC2310 issues with explicit error handling
@@ -61,7 +62,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="7.1.0"
+CLOC_VERSION="7.2.0"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
@@ -260,29 +261,25 @@ run_cloc_analysis() {
             "header": "Files",
             "key": "files",
             "datatype": "int",
-            "justification": "right",
-            "summary": "sum"
+            "justification": "right"
         },
         {
             "header": "Blank",
             "key": "blank",
             "datatype": "int",
-            "justification": "right",
-            "summary": "sum"
+            "justification": "right"
         },
         {
             "header": "Comment",
             "key": "comment",
             "datatype": "int",
-            "justification": "right",
-            "summary": "sum"
+            "justification": "right"
         },
         {
             "header": "Code",
             "key": "code",
             "datatype": "int",
-            "justification": "right",
-            "summary": "sum"
+            "justification": "right"
         },
         {
             "header": "C/C %",
@@ -294,8 +291,7 @@ run_cloc_analysis() {
             "header": "Lines",
             "key": "lines",
             "datatype": "int",
-            "justification": "right",
-            "summary": "sum"
+            "justification": "right"
         }
     ]
 }
@@ -413,7 +409,18 @@ EOF
                         }
                     )
                 ] | map(select(. != null)) |
-                ( . | map(select(.section == "primary")) | sort_by(.lines) | reverse ) + ( . | map(select(.section == "secondary")) | sort_by(.lines) | reverse )
+                 ( ( . | map(select(.section == "primary")) | sort_by(.lines) | reverse ) + ( . | map(select(.section == "secondary")) | sort_by(.lines) | reverse ) ) + [
+                     {
+                         section: "totals",
+                         language: "Totals",
+                         files: (. | map(.files // 0) | add),
+                         blank: (. | map(.blank // 0) | add),
+                         comment: (. | map(.comment // 0) | add),
+                         code: (. | map(.code // 0) | add),
+                         comment_code_percentage: (if (. | map(.code // 0) | add) > 0 then (if ((. | map(.comment // 0) | add) / (. | map(.code // 0) | add) * 100) > 0 then (((. | map(.comment // 0) | add) / (. | map(.code // 0) | add) * 100 | . * 10 | round / 10) | tostring + " %") else "" end) else "" end),
+                         lines: (. | map(.lines // 0) | add)
+                     }
+                 ]
             ' "${core_json}" "${test_json}" > "${data_json_file}"
 
             # Calculate totals from the generated JSON data
