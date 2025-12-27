@@ -1,3 +1,20 @@
+# This file is used by the iosevka font build system
+#
+# From the Iosevka repo root, build like this. the jCmd sets
+# the number of CPUs and thus also a limit on the memory as 
+# it can take a long time (like an hour or more) to build,
+# and without a limit it might consume all system resources.
+#
+# The Fancy versions include coding ligatures
+# The Mail versions are stripped down for HTML email embedding
+#
+# npm run build -- --jCmd=8 woff2:AcuranzoSans
+# npm run build -- --jCmd=8 woff2:AcuranzoSansFancy
+# npm run build -- --jCmd=8 woff2:AcuranzoMono
+# npm run build -- --jCmd=8 woff2:AcuranzoMonoFancy
+# npm run build -- --jCmd=8 woff2-unhinted::AcuranzoSansMail
+# npm run build -- --jCmd=8 woff2-unhinted::AcuranzoMonoMail
+                                                  
 [buildPlans.AcuranzoSans]
 family = "Acuranzo Sans"
 spacing = "quasi-proportional"
