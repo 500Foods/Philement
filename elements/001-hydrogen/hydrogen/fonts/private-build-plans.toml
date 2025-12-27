@@ -268,6 +268,12 @@ noCvSs = true
 exportGlyphNames = false
 noLigation = true
 
+[buildPlans.AcuranzoMonoMail.subset]
+include.ranges = [
+  [32, 126],    # Basic ASCII printable (space to ~)
+  [160, 255],   # Latin-1 Supplement (é, ñ, £, °, ±, ×, etc. — essential for most emails)
+]
+
 [buildPlans.AcuranzoMonoMail.variants.design]
 one = "base"
 three = "flat-top-serifless"
@@ -296,11 +302,6 @@ shape = 400
 menu = 400
 css = 400
 
-[buildPlans.AcuranzoMonoMail.weights.Bold]
-shape = 700
-menu = 700
-css = 700
-
 [buildPlans.AcuranzoMonoMail.widths.Normal]
 shape = 500
 menu = 5
@@ -313,6 +314,12 @@ serifs = "sans"
 noCvSs = true
 exportGlyphNames = false
 noLigation = true
+
+[buildPlans.AcuranzoSansMail.subset]
+include.ranges = [
+  [32, 126],    # Basic ASCII printable (space to ~)
+  [160, 255],   # Latin-1 Supplement (é, ñ, £, °, ±, ×, etc. — essential for most emails)
+]
 
 [buildPlans.AcuranzoSansMail.variants.design]
 one = "base"
@@ -341,11 +348,6 @@ question = "corner-flat-hooked"
 shape = 400
 menu = 400
 css = 400
-
-[buildPlans.AcuranzoSansMail.weights.Bold]
-shape = 700
-menu = 700
-css = 700
 
 [buildPlans.AcuranzoSansMail.widths.Normal]
 shape = 500

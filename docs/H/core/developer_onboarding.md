@@ -134,7 +134,7 @@ The Hydrogen project uses several security mechanisms that developers need to be
 ## Project Glossary
 
 | Term | Definition |
-|------|------------|
+| ---- | ---------- |
 | Queue | Thread-safe data structure for inter-component communication |
 | Service | A standalone component with its own thread(s) |
 | Handler | Function that processes a specific request type |
