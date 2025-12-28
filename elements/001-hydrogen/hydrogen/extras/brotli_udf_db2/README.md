@@ -6,6 +6,15 @@ This directory contains the DB2 User Defined Function (UDF) for Brotli decompres
 
 One key motivation for using Brotli compression in DB2 is that the DB2 SQL parser restricts individual string literals to 32 KB. By using Brotli compression with maximum quality settings and base64 encoding, we can effectively handle text files up to potentially 200 KB if they compress well (such as the CSS, HTML, and JSON content commonly found in migration files). This provides a significant expansion of the effective input size limit while maintaining excellent compression ratios.
 
+### Memory Efficiency with CLOB Locators
+
+The UDFs now use DB2's CLOB locator mechanism (`CLOB(2G) AS LOCATOR`) for true memory efficiency. Locators prevent DB2 from pre-allocating the full 2GB capacity for each function call, allocating only the memory actually needed for the data:
+
+- **Memory Usage**: Only allocates memory for actual data size, not the full CLOB(2G) capacity
+- **Performance**: Critical for SQL statements that call these functions hundreds of times
+- **No SQL Changes**: Existing SQL code continues to work without modifications
+- **Increased Capacity**: Support for up to 2GB of decompressed data
+
 ## Architecture
 
 Following the same chunked pattern as `BASE64DECODE`:
@@ -221,9 +230,17 @@ EXTERNAL NAME 'brotli_decompress.so!BROTLI_DECOMPRESS_CHUNK'
 ### BROTLI_DECOMPRESS
 
 ```sql
-CREATE FUNCTION BROTLI_DECOMPRESS(compressed CLOB(2G))
-RETURNS CLOB(2G)
-LANGUAGE SQL
+CREATE FUNCTION BROTLI_DECOMPRESS(compressed BLOB(1M))
+RETURNS CLOB(2G) AS LOCATOR
+LANGUAGE C
+```
+
+### BASE64_BROTLI_DECOMPRESS
+
+```sql
+CREATE FUNCTION BASE64_BROTLI_DECOMPRESS(encoded CLOB(2G) AS LOCATOR)
+RETURNS CLOB(2G) AS LOCATOR
+LANGUAGE C
 ```
 
 ## Troubleshooting
@@ -279,4 +296,6 @@ This UDF is declared in migration 1000 (`acuranzo_1000.lua`) and is automaticall
 
 ## Version History
 
+- 1.2.0 (2025-12-28) - Implemented CLOB locators for memory efficiency with hundreds of function calls
+- 1.1.0 (2025-12-28) - Increased capacity to CLOB(2G) for better performance and larger data support
 - 1.0.0 (2025-11-27) - Initial creation for Brotli decompression support
