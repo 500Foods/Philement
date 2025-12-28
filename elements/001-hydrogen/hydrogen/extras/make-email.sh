@@ -70,8 +70,8 @@ BUILD_NUMBER=$(echo "${VERSION_FULL}" | grep -oE "ver [0-9]+\.[0-9]+\.[0-9]+\.[0
 # Format numbers with commas for readability
 format_number() {
     local num=$1
-    # Use printf to add commas as thousand separators
-    printf "%'d" "${num}"
+    # Use sed to add commas as thousand separators
+    echo "${num}" | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'
 }
 
 FORMATTED_PASSED=$(format_number "${TOTAL_PASSED}")
@@ -81,7 +81,7 @@ FORMATTED_FAILED=$(format_number "${TOTAL_FAILED}")
 TRIMMED_ELAPSED_TIME=$(echo "${ELAPSED_TIME}" | grep -oE "[0-9]{2}:[0-9]{2}\.[0-9]{3}$" || echo "${ELAPSED_TIME}")
 
 # Create email subject with version
-SUBJECT="Hydrogen Build ${BUILD_NUMBER} Results: ${FORMATTED_PASSED} Passed, ${FORMATTED_FAILED} Failed, ${TRIMMED_ELAPSED_TIME} elapsed"
+SUBJECT="Hydrogen Build ${BUILD_NUMBER}: ${FORMATTED_PASSED} Passed — ${FORMATTED_FAILED} Failed — ${TRIMMED_ELAPSED_TIME} elapsed"
 
 # Check if SVG files exist
 SVG_FILES=(
