@@ -126,4 +126,5 @@ in the migrations themselves so that they get populated in the database directly
 | [1089](/elements/002-helium/acuranzo/migrations/acuranzo_1089.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 056 - Acuranzo Systems |
 | [1090](/elements/002-helium/acuranzo/migrations/acuranzo_1090.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 057 - Report Page Sizes |
 | [1091](/elements/002-helium/acuranzo/migrations/acuranzo_1091.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 058 - Query Queues |
-| **92** | | | | **537** | **92** | |
+| [1092](/elements/002-helium/acuranzo/migrations/acuranzo_1092.lua) | queries | 1.0.0 | 2025-12-28 | 3 | ✗ | QueryRef #001 - Get System Information |
+| **93** | | | | **540** | **93** | |

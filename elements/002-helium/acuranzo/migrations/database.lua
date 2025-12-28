@@ -240,7 +240,7 @@ local database = {
         local sql = template
 
         -- Allows for 5 levels of macro nesting before giving up
-        local unresolved = 5
+        local unresolved = 6
         while unresolved > 0 do
             -- Run macro expansion
             for key, value in pairs(cfg) do
