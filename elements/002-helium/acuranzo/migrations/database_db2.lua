@@ -19,7 +19,7 @@ return {
     PRIMARY = "PRIMARY KEY",
     SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
     TEXT = "VARCHAR(250)",
-    TEXT_BIG = "CLOB(1M)",
+    TEXT_BIG = "CLOB(100K)",
     TIMESTAMP_TZ = "TIMESTAMP",
     UNIQUE = "UNIQUE",
     VARCHAR_20 = "VARCHAR(20)",
@@ -37,8 +37,8 @@ return {
     DROP_CHECK = "BEGIN IF EXISTS(SELECT 1 FROM ${SCHEMA}${TABLE}) THEN SIGNAL SQLSTATE '75001' SET MESSAGE_TEXT='Refusing to drop table ${SCHEMA}${TABLE} – it contains data'; END IF; END",
 
     BROTLI_DECOMPRESS_FUNCTION = [[
-        CREATE OR REPLACE FUNCTION ${SCHEMA}BROTLI_DECOMPRESS(compressed BLOB(1M))
-        RETURNS CLOB(1M)
+        CREATE OR REPLACE FUNCTION ${SCHEMA}BROTLI_DECOMPRESS(compressed BLOB(100K))
+        RETURNS CLOB(100K)
         LANGUAGE C
         PARAMETER STYLE DB2SQL
         NO SQL
@@ -49,7 +49,7 @@ return {
         EXTERNAL NAME 'brotli_decompress.so!BROTLI_DECOMPRESS'
    ]],
 
-    JSON = "CLOB(1M)",
+    JSON = "CLOB(100K)",
     JIS = "${SCHEMA}JSON_INGEST(",
     JIE = ")",
     JSON_INGEST_START = "${SCHEMA}JSON_INGEST(",
@@ -64,7 +64,7 @@ return {
             DECLARE i INTEGER DEFAULT 1;
             DECLARE L INTEGER;
             DECLARE ch CHAR(1);
-            DECLARE out CLOB(10M) DEFAULT '';
+            DECLARE out CLOB(100K) DEFAULT '';
             DECLARE in_str SMALLINT DEFAULT 0;
             DECLARE esc SMALLINT DEFAULT 0;
 
