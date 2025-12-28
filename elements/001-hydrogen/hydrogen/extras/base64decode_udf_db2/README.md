@@ -2,24 +2,33 @@
 
 This directory contains DB2 User-Defined Functions (UDFs) for decoding Base64 encoded data, with support for chunked processing to handle large inputs efficiently.
 
+## Memory Efficiency
+
+The underlying C UDFs use DB2's CLOB locator mechanism for efficient handling of large data, providing significant memory efficiency improvements:
+
+- **Memory Usage**: C UDFs only allocate memory for actual data size, not the full CLOB(2G) capacity
+- **Performance**: Critical for SQL statements that call these functions hundreds of times
+- **No SQL Changes**: Existing SQL code continues to work without modifications
+- **Increased Capacity**: Support for up to 2GB of decoded data
+
 ## Files Overview
 
-- `base64_chunk_udf.c`: C source code implementing the core Base64 decoding UDF
-- `base64_chunk_udf.so`: Compiled shared library containing the UDF implementation
+- `base64_udf.c`: C source code implementing the core Base64 decoding UDF
+- `base64_udf.so`: Compiled shared library containing the UDF implementation
 - `install_base64decode.clp`: DB2 CLP script for registering the UDFs in the database
 - `Makefile`: Build script for compiling and installing the UDF
 
 ## Detailed Descriptions
 
-### base64_chunk_udf.c
+### base64_udf.c
 
-This C file implements a DB2 UDF called `BASE64_DECODE_CHUNK` that decodes Base64 encoded strings. Key features:
+This C file implements DB2 UDFs for Base64 decoding using CLOB locators for memory efficiency. Key features:
 
-- **Function Signature**: `BASE64_DECODE_CHUNK(VARCHAR(32672)) RETURNS VARCHAR(32672)`
+- **Function Signature**: `BASE64_DECODE_CHUNK(CLOB(2G) AS LOCATOR) RETURNS CLOB(2G) AS LOCATOR`
 - **Parameter Style**: DB2SQL
 - **Decoding Logic**: Implements standard Base64 decoding with proper handling of padding characters (=)
 - **Error Handling**: Sets SQLSTATE for invalid input or memory allocation failures
-- **Memory Management**: Dynamically allocates working memory for input filtering
+- **Memory Management**: Uses DB2 CLOB locators for efficient memory allocation
 - **Input Validation**: Filters input to only valid Base64 characters before decoding
 - **Null Handling**: Properly handles NULL inputs by setting output to NULL
 
@@ -27,17 +36,18 @@ The implementation includes:
 
 - Base64 index mapping initialization
 - Block-by-block decoding function
-- Main UDF entry point with DB2-specific parameter handling
+- Main UDF entry point with DB2-specific parameter handling using locator APIs
+- Binary version: `BASE64_DECODE_CHUNK_BINARY(CLOB(2G) AS LOCATOR) RETURNS BLOB(1M)` for binary data
 - Additional test UDFs: `HYDROGEN_CHECK` (returns "Hydrogen") and `ScalarUDF` (official DB2 sample)
 
 ### install_base64decode.clp
 
 This DB2 Command Line Processor script creates and registers the UDFs in the database:
 
-- **BASE64_DECODE_CHUNK**: Core C UDF for decoding Base64 chunks (text output)
-- **BASE64DECODE**: SQL wrapper function that handles large CLOB inputs by processing them in 32,672-character chunks (text output)
-- **BASE64_DECODE_CHUNK_BINARY**: Core C UDF for decoding Base64 chunks (binary output, used with Brotli decompression)
-- **BASE64DECODEBINARY**: SQL wrapper function for decoding large CLOB inputs (binary output, used with Brotli decompression)
+- **BASE64_DECODE_CHUNK**: Core C UDF using CLOB locators for efficient decoding of base64 data, returns CLOB(2G) AS LOCATOR (text data)
+- **BASE64DECODE**: Simple SQL wrapper that directly calls the CLOB locator version
+- **BASE64_DECODE_CHUNK_BINARY**: Core C UDF using CLOB locators for decoding base64 to binary data, returns BLOB(1M) (binary output, used with Brotli decompression)
+- **BASE64DECODEBINARY**: Simple SQL wrapper that directly calls the binary CLOB locator version
 - **HYDROGEN_CHECK**: Test UDF returning "Hydrogen"
 - **ScalarUDF**: Official DB2 sample UDF for salary calculations
 
@@ -71,9 +81,9 @@ The Base64 decode UDFs are automatically created and used by the Helium migratio
 
 Migration 1000 creates the following functions in your database schema:
 
-- `BASE64_DECODE_CHUNK`: C UDF for decoding individual 32KB chunks
-- `BASE64DECODE`: SQL wrapper function for decoding large CLOB inputs (text data)
-- `BASE64DECODEBINARY`: SQL wrapper function for decoding large CLOB inputs (binary data, used with Brotli decompression)
+- `BASE64_DECODE_CHUNK`: C UDF using CLOB locators for efficient decoding of base64 data, returns CLOB(2G) AS LOCATOR (text data)
+- `BASE64DECODE`: SQL wrapper function for decoding large CLOB(2G) inputs, returns CLOB(2G) (text data)
+- `BASE64DECODEBINARY`: SQL wrapper function for decoding large CLOB(2G) inputs (binary data, used with Brotli decompression)
 
 ### How Migrations Use These Functions
 
