@@ -5,8 +5,8 @@
 -- Create the decompression UDF (accepts BLOB from BASE64DECODEBINARY)
 -- Input: BLOB containing compressed binary data (from BASE64DECODEBINARY)
 -- Output: CLOB containing decompressed text data
-CREATE OR REPLACE FUNCTION ${SCHEMA}.BROTLI_DECOMPRESS(compressed BLOB(1M))
-RETURNS CLOB(1M)
+CREATE OR REPLACE FUNCTION ${SCHEMA}.BROTLI_DECOMPRESS(compressed BLOB(100K))
+RETURNS CLOB(100K)
 LANGUAGE C
 PARAMETER STYLE DB2SQL
 NO SQL
@@ -22,8 +22,8 @@ EXTERNAL NAME 'brotli_decompress.so!BROTLI_DECOMPRESS'
 -- as it avoids passing binary data through SQL
 -- Input: CLOB containing base64-encoded compressed data
 -- Output: CLOB containing decompressed text data
-CREATE OR REPLACE FUNCTION ${SCHEMA}.BASE64_BROTLI_DECOMPRESS(encoded CLOB(1M))
-RETURNS CLOB(1M)
+CREATE OR REPLACE FUNCTION ${SCHEMA}.BASE64_BROTLI_DECOMPRESS(encoded CLOB(100K))
+RETURNS CLOB(100K)
 LANGUAGE C
 PARAMETER STYLE DB2SQL
 NO SQL
