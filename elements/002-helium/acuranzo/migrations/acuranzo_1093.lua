@@ -1,5 +1,5 @@
--- Migration: acuranzo_1092.lua
--- QueryRef #001 - Get System Information
+-- Migration: acuranzo_1093.lua
+-- QueryRef #002 - Get IP Whitelist
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -19,9 +19,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1092"
-cfg.QUERY_REF = "001"
-cfg.QUERY_NAME = "Get System Information"
+cfg.MIGRATION = "1093"
+cfg.QUERY_REF = "002"
+cfg.QUERY_NAME = "Get IP Whitelist"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -58,38 +58,37 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     SELECT
-                        name,
-                        valid_until,
-                        license_id,
-                        system_id
+                        list_value
                     FROM
-                        ${SCHEMA}licenses
+                        ${SCHEMA}lists
                     WHERE
-                        LOWER(application_key) = :APIKEY
-                        AND (valid_after < CURRENT_TIMESTAMP)
-                        AND (valid_until > CURRENT_TIMESTAMP);
+                        list_type_a31 = 1
+                        AND list_value = :IPADDRESS
+                        AND (valid_after < ${NOW})
+                        AND (valid_until > ${NOW})
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    Retrieve system information for a given API key, ensuring that the license
-                    is currently valid. This is used to block access for unlicensed systems.
+                    Determine whether a given IP address is present in the whitelist. The whitelist
+                    is updated by administrators to allow unrestricted access from specific IP addresses.
+                    This typically includes office IP addresses, known trusted networks, VPN endpoints,
+                    remote servers, service poviders, and other safe sources. The intent is to ensure
+                    administrators and trusted users can always access the system without being blocked
+                    by security measures such as IP blacklisting.
 
                     ## Parameters
 
-                    - `APIKEY` (string, required): The application key to look up the license for.
+                    - `IPADDRESS` (string): The IP address to check against the whitelist.
 
                     ## Returns
 
-                    - `name` (string): The name of the licensed system.
-                    - `valid_until` (timestamp): The date and time when the license expires.
-                    - `license_id` (integer): The unique identifier for the license.
-                    - `system_id` (integer): The unique identifier for the system.
+                    - `list_value` (string): The whitelisted IP address if found.
 
                     ## Tables
 
-                    - `${SCHEMA}licenses`: The table containing license information.
+                    - `app.lists`: Contains whitelist entries with validity periods (list_type_a31 = 0).
 
                 ]==]
                                                                                     AS summary,
