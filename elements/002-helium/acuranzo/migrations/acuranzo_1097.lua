@@ -1,5 +1,5 @@
--- Migration: acuranzo_1095.lua
--- QueryRef #004 - Log Login Attempt
+-- Migration: acuranzo_1097.lua
+-- QueryRef #006 - Mark Repeated Login Failures
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1095"
-cfg.QUERY_REF = "004"
-cfg.QUERY_NAME = "Log Login Attempt"
+cfg.MIGRATION = "1097"
+cfg.QUERY_REF = "006"
+cfg.QUERY_NAME = "Mark Repeated Login Failures"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -49,52 +49,35 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    INSERT INTO ${SCHEMA}actions (
-                        action_type_a24,
-                        application_version,
-                        feature_a21,
-                        action,
-                        action_msecs,
-                        ip_address,
-                        created_id,
-                        created_at
-                    )
-                    VALUES (
-                        2,
-                        :APPLICATIONVER,
-                        100,
-                        :LOGINID,
-                        :LOGINTIMER,
-                        :IPADDRESS,
-                        :LOGINLOGID,
-                        ${NOW}
-                    )
+                    UPDATE ${SCHEMA}lists
+                    SET
+                      list_type_a31 = 2,
+                      updated_id = :LOGINLOGID,
+                      updated_at = ${NOW}
+                    WHERE
+                      (list_value = :IPADDRESS || '' / '' || :LOGINID)
+                      OR (valid_until < ${NOW});
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    Log a login attempt into the actions table for auditing purposes.
-                    This is also used to track failed login attempts for the purposes of
-                    updating the IP blacklist.
+                    This query marks IP addresses and login IDs that have exceeded
+                    a threshold of failed login attempts within a specified time window.
 
                     ## Parameters
 
-                    - `APPLICATIONVER` (string): The version of the application making the login attempt.
-                    - `LOGINID` (string): The login identifier used in the attempt.
-                    - `LOGINTIMER` (integer): The time taken to process the login attempt in
-                        milliseconds.
-                    - `IPADDRESS` (string): The IP address from which the login attempt was made.
-                    - `LOGINLOGID` (integer): The unique identifier of the login log entry associated
-                        with this attempt.
+                    - `IPADDRESS` (string): The IP address from which the login attempts originated.
+                    - `LOGINID` (string): The login ID that was used in the login attempts
+                    - `LOGINLOGID` (integer): The identifier of the log entry for the current login attempt.
 
                     ## Returns
 
-                    - Affected rows in the `actions` table where the login attempt was logged. Expected to be 1.
+                    - Affected rows in the `lists` table where entries were updated. Expected to be 1.
 
                     ## Tables
 
-                    - `${SCHEMA}actions`: The table where login attempts are logged.
+                    - `${SCHEMA}lists`: The table where IP addresses and login IDs are marked.
 
                 ]==]
                                                                                     AS summary,

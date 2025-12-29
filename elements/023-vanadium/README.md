@@ -1,13 +1,26 @@
-# Fonts
+# Vanadium Fonts
 
-The Iosevka font tool has been used to generate a suite of custom fonts for the Hydrogen project. The main highlights include the following:
+The [Iosevka](https://github.com/be5invis/Iosevka?tab=readme-ov-file) font has been used as the base to generate a suite of custom fonts for the Philement project, and the next element on the list was... Vanadium! This is essentially the "term" and "quasi-proportional" Iosevka font with a bunch of alternate glyphs.
 
 - "Open" 4's - meaning the top of the 4 is separated
 - Alternate zero - a dot in the zero to distinguish it visually from an O
-- Tabular numbers - fixed-width numbers that align even in the proportional font
-- Many other glyph tweaks
+- Tabular numbers - fixed-width numbers that align, even in the proportional font
+- Many other glyph tweaks angling for the sans-but-stylish look
 
-The [private-build-plans.toml](/elements/001-hydrogen/hydrogen/fonts/private-build-plans.toml) file contains the configuration choices for these fonts.
+The [private-build-plans.toml](/elements/023-vanadium/private-build-plans.toml) file contains the configuration choices for these fonts. They are the same for all thee variations below.
+
+The Mail variations have a severely restricted list of glyphs (basically ASCII and a few symbols) though
+more may be added when needed. The idea is to be able to embed the font direectly in an HTML email to
+avoid the dreaded "do you wnat to donwload the rest of this mssage" kind of tracking nonsense. See more information in the [Notes](#notes) section below.
+
+## Font Variations
+
+- Vanadium Sans - Proportional font for documentation and general UI
+- Vanadium Mono - Monospaced font for coding and terminal usage
+- Vanadium Sans Fancy - Same as above but with "fancy" ligatures
+- Vanadium Mono Fancy - Same as above but with "fancy" ligatures
+- Vanadium Sans Mail - A stripped down version suitable for embedding in emails as Base64
+- Vanadium Mono Mail - A stripped down version suitable for embedding in emails as Base64
 
 ## Font Samples
 
@@ -46,15 +59,6 @@ function helloWorld() {
 }
 ```
 
-## Font Variations
-
-- Acuranzo Sans - Proportional font for documentation and general UI
-- Acuranzo Mono - Monospaced font for coding and terminal usage
-- Acuranzo Sans Fancy - Same as above but with "fancy" ligatures
-- Acuranzo Mono Fancy - Same as above but with "fancy" ligatures
-- Acuranzo Sans Mail - A stripped down version suitable for embedding in emails as Base64
-- Acuranzo Mono Mail - A stripped down version suitable for embedding in emails as Base64
-
 ## Building
 
 To rebuild the fonts from source, ensure you have the Iosevka build environment set up. Then run:
@@ -67,7 +71,7 @@ This script builds all the font variants listed above using the configuration in
 
 ## License
 
-These fonts are licensed under the SIL Open Font License, Version 1.1. See [OFL.txt](/elements/001-hydrogen/hydrogen/fonts/OFL.txt) for the full license text.
+These fonts are licensed under the SIL Open Font License, Version 1.1. See [OFL.txt](/elements/023-vanadium/OFL.txt) for the full license text.
 
 ## Notes
 
@@ -93,7 +97,7 @@ Using fonts isn't normally very difficult - just select them from a list where n
 /* https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
 
 .markdown-preview.markdown-preview {
-  font-family: 'Acuranzo Sans Semi-Extended', sans-serif;
+  font-family: 'Vanadium Sans Semi-Extended', sans-serif;
   font-size: 14px;
   background: #000409;
   
@@ -107,7 +111,7 @@ Using fonts isn't normally very difficult - just select them from a list where n
 
   pre, 
   code {
-    font-family: 'Acuranzo Mono Semi-Extended', monospace; 
+    font-family: 'Vanadium Mono Semi-Extended', monospace; 
     font-size: 14px;  
   }
 }

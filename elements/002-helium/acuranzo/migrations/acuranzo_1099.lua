@@ -1,5 +1,5 @@
--- Migration: acuranzo_1095.lua
--- QueryRef #004 - Log Login Attempt
+-- Migration: acuranzo_1099.lua
+-- QueryRef #008 - Get Account ID
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1095"
-cfg.QUERY_REF = "004"
-cfg.QUERY_NAME = "Log Login Attempt"
+cfg.MIGRATION = "1099"
+cfg.QUERY_REF = "008"
+cfg.QUERY_NAME = "Get Account ID"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -49,52 +49,39 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    INSERT INTO ${SCHEMA}actions (
-                        action_type_a24,
-                        application_version,
-                        feature_a21,
-                        action,
-                        action_msecs,
-                        ip_address,
-                        created_id,
-                        created_at
-                    )
-                    VALUES (
-                        2,
-                        :APPLICATIONVER,
-                        100,
-                        :LOGINID,
-                        :LOGINTIMER,
-                        :IPADDRESS,
-                        :LOGINLOGID,
-                        ${NOW}
-                    )
+                    SELECT
+                        DISTINCT account_id
+                    FROM
+                        ${SCHEMA}account_contacts
+                    WHERE
+                        (LOWER(contact) = :LOGINID)
+                        AND (
+                            (valid_after IS NULL)
+                            OR (valid_after < ${NOW})
+                        )
+                        AND (
+                            (valid_until IS NULL)
+                            OR (valid_until > ${NOW})
+                        )
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    Log a login attempt into the actions table for auditing purposes.
-                    This is also used to track failed login attempts for the purposes of
-                    updating the IP blacklist.
+                    This query retrieves the distinct account ID associated with a given login ID
+                    from the `account_contacts` table, considering only currently valid contacts.
 
                     ## Parameters
 
-                    - `APPLICATIONVER` (string): The version of the application making the login attempt.
-                    - `LOGINID` (string): The login identifier used in the attempt.
-                    - `LOGINTIMER` (integer): The time taken to process the login attempt in
-                        milliseconds.
-                    - `IPADDRESS` (string): The IP address from which the login attempt was made.
-                    - `LOGINLOGID` (integer): The unique identifier of the login log entry associated
-                        with this attempt.
+                    - `LOGINID` (string): The login ID (contact) to look up.
 
                     ## Returns
 
-                    - Affected rows in the `actions` table where the login attempt was logged. Expected to be 1.
+                    - `account_id` (integer): The distinct account ID associated with the provided login ID.
 
                     ## Tables
 
-                    - `${SCHEMA}actions`: The table where login attempts are logged.
+                    - `${SCHEMA}account_contacts`: The table containing account contact information.
 
                 ]==]
                                                                                     AS summary,
