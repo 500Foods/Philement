@@ -131,4 +131,8 @@ in the migrations themselves so that they get populated in the database directly
 | [1094](/elements/002-helium/acuranzo/migrations/acuranzo_1094.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #003 - Get IP Blacklist |
 | [1095](/elements/002-helium/acuranzo/migrations/acuranzo_1095.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #004 - Log Login Attempt |
 | [1096](/elements/002-helium/acuranzo/migrations/acuranzo_1096.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #005 - Get Login Attempt Count |
-| **97** | | | | **557** | **97** | |
+| [1097](/elements/002-helium/acuranzo/migrations/acuranzo_1097.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #006 - Mark Repeated Login Failures |
+| [1098](/elements/002-helium/acuranzo/migrations/acuranzo_1098.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #007 - Block IP Address Temporarily |
+| [1099](/elements/002-helium/acuranzo/migrations/acuranzo_1099.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #008 - Get Account ID |
+| [1100](/elements/002-helium/acuranzo/migrations/acuranzo_1100.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #009 - Check Login Authorization |
+| **101** | | | | **573** | **101** | |

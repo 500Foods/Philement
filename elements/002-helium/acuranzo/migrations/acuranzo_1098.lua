@@ -1,5 +1,5 @@
--- Migration: acuranzo_1095.lua
--- QueryRef #004 - Log Login Attempt
+-- Migration: acuranzo_1098.lua
+-- QueryRef #007 - Block IP Address Temporarily
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1095"
-cfg.QUERY_REF = "004"
-cfg.QUERY_NAME = "Log Login Attempt"
+cfg.MIGRATION = "1098"
+cfg.QUERY_REF = "007"
+cfg.QUERY_NAME = "Block IP Address Temporarily"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -49,52 +49,54 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    INSERT INTO ${SCHEMA}actions (
-                        action_type_a24,
-                        application_version,
-                        feature_a21,
-                        action,
-                        action_msecs,
-                        ip_address,
-                        created_id,
-                        created_at
+                    INSERT INTO ${SCHEMA}lists (
+                      list_type_a31,
+                      list_value,
+                      list_note,
+                      valid_after,
+                      valid_until,
+                      status_a32,
+                      created_id,
+                      created_at,
+                      updated_id,
+                      updated_at
                     )
-                    VALUES (
-                        2,
-                        :APPLICATIONVER,
-                        100,
-                        :LOGINID,
-                        :LOGINTIMER,
-                        :IPADDRESS,
-                        :LOGINLOGID,
-                        ${NOW}
+                  VALUES
+                    (
+                      0,
+                      :IPADDRESS || '' / '' || :LOGINID,
+                      :REASON,
+                      ${NOW},
+                      ${TRMS} -1 * :LOGINBLOCKDURATION ${TRME}, -- future time -> multiply by -1
+                      1,
+                      :LOGINLOGID,
+                      ${NOW},
+                      :LOGINLOGID,
+                      ${NOW}
                     )
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    Log a login attempt into the actions table for auditing purposes.
-                    This is also used to track failed login attempts for the purposes of
-                    updating the IP blacklist.
+                    This query blocks a specific IP address and login ID combination
+                    for a defined duration by inserting an entry into the `lists` table.
 
                     ## Parameters
 
-                    - `APPLICATIONVER` (string): The version of the application making the login attempt.
-                    - `LOGINID` (string): The login identifier used in the attempt.
-                    - `LOGINTIMER` (integer): The time taken to process the login attempt in
-                        milliseconds.
-                    - `IPADDRESS` (string): The IP address from which the login attempt was made.
-                    - `LOGINLOGID` (integer): The unique identifier of the login log entry associated
-                        with this attempt.
+                    - `IPADDRESS` (string): The IP address to be blocked.
+                    - `LOGINID` (string): The login ID associated with the block.
+                    - `REASON` (string): The reason for blocking the IP address and login ID
+                    - `LOGINBLOCKDURATION` (integer): The duration in minutes for which the block is effective.
+                    - `LOGINLOGID` (integer): The identifier of the log entry for the current login attempt.
 
                     ## Returns
 
-                    - Affected rows in the `actions` table where the login attempt was logged. Expected to be 1.
+                    - Affected rows in the `lists` table where the new block entry was inserted. Expected to be 1.
 
                     ## Tables
 
-                    - `${SCHEMA}actions`: The table where login attempts are logged.
+                    - `${SCHEMA}lists`: The table where IP addresses and login IDs are blocked.
 
                 ]==]
                                                                                     AS summary,
