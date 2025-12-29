@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGLOG
+-- 2.2.0 - 2025-12-28 - Added TRMS and TRME macros for time calculations (Time Range Minutes Start/End)
 -- 2.1.0 - 2025-11-23 - Added DROP_CHECK to test for non-empty tables prior to drop
 -- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
 
@@ -21,6 +22,8 @@ return {
     TEXT = "VARCHAR(250)",
     TEXT_BIG = "CLOB(100K)",
     TIMESTAMP_TZ = "TIMESTAMP",
+    TRMS = "${NOW} - ( ",
+    TRME = " ) MINUTES",
     UNIQUE = "UNIQUE",
     VARCHAR_20 = "VARCHAR(20)",
     VARCHAR_50 = "VARCHAR(50)",
