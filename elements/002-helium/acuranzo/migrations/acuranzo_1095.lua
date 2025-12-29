@@ -1,5 +1,5 @@
--- Migration: acuranzo_1092.lua
--- QueryRef #001 - Get System Information
+-- Migration: acuranzo_1095.lua
+-- QueryRef #004 - Log Login Attempt
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -7,21 +7,13 @@
 -- CHANGELOG
 -- 1.0.0 - 2025-12-28 - Initial creation
 
--- Note: Migrations populating the query table are more than a little bit confusing!
---       It is the most-indented SQL code that is the actual query being created.
---       In this case, this is the query starting at column 21, after FOUR selects.
---       The rest is just the migration code, which is inserting into the same table,
---       so a lot of what we have here is being duplicated. Pay close attention to the
---       query_type_a28 field and also query_queue_a58 to ensure that the new query
---       is populated with the appropriate values.
-
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1092"
-cfg.QUERY_REF = "001"
-cfg.QUERY_NAME = "Get System Information"
+cfg.MIGRATION = "1095"
+cfg.QUERY_REF = "004"
+cfg.QUERY_NAME = "Log Login Attempt"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -54,42 +46,55 @@ table.insert(queries,{sql=[[
                 ${STATUS_ACTIVE}                                                    AS query_status_a27,
                 ${TYPE_SQL}                                                         AS query_type_a28,
                 ${DIALECT}                                                          AS query_dialect_a30,
-                ${QTC_CACHED}                                                       AS query_queue_a58,
+                ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    SELECT
-                        name,
-                        valid_until,
-                        license_id,
-                        system_id
-                    FROM
-                        ${SCHEMA}licenses
-                    WHERE
-                        LOWER(application_key) = :APIKEY
-                        AND (valid_after < CURRENT_TIMESTAMP)
-                        AND (valid_until > CURRENT_TIMESTAMP);
+                    INSERT INTO ${SCHEMA}actions (
+                        action_type_a24,
+                        application_version,
+                        feature_a21,
+                        action,
+                        action_msecs,
+                        ip_address,
+                        created_id,
+                        created_at
+                    )
+                    VALUES (
+                        2,
+                        :APPLICATIONVER,
+                        100,
+                        :LOGINID,
+                        :LOGINTIMER,
+                        :IPADDRESS,
+                        :LOGINLOGID,
+                        ${NOW}
+                    )
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    Retrieve system information for a given API key, ensuring that the license
-                    is currently valid. This is used to block access for unlicensed systems.
+                    Log a login attempt into the actions table for auditing purposes.
+                    This is also used to track failed login attempts for the purposes of
+                    updating the IP blacklist.
 
                     ## Parameters
 
-                    - `APIKEY` (string, required): The application key to look up the license for.
+                    - `APPLICATIONVER` (string): The version of the application making the login attempt.
+                    - `LOGINID` (string): The login identifier used in the attempt.
+                    - `LOGINTIMER` (integer): The time taken to process the login attempt in
+                        milliseconds.
+                    - `IPADDRESS` (string): The IP address from which the login attempt was made.
+                    - `LOGINLOGID` (integer): The unique identifier of the login log entry associated
+                        with this attempt.
 
                     ## Returns
 
-                    - `name` (string): The name of the licensed system.
-                    - `valid_until` (timestamp): The date and time when the license expires.
-                    - `license_id` (integer): The unique identifier for the license.
-                    - `system_id` (integer): The unique identifier for the system.
+                    - No direct return values; the query performs an insert operation.
 
                     ## Tables
 
-                    - `${SCHEMA}licenses`: The table containing license information.
+                    - `${SCHEMA}actions`: The table where login attempts are logged.
 
                 ]==]
                                                                                     AS summary,
