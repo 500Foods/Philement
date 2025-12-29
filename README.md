@@ -76,7 +76,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-12-29 08:57:30 UTC
+Last updated at 2025-12-29 09:04:01 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -103,13 +103,13 @@ YAML                             2              8             13             37
 -------------------------------------------------------------------------------
 SUM:                          2159          59954         116367         713551
 -------------------------------------------------------------------------------
-367 Files were skipped (duplicate, binary, or without source code):
+368 Files were skipped (duplicate, binary, or without source code):
   svg: 299
   lua: 12
   md: 5
   gitignore: 4
+  png: 4
   jpg: 3
-  png: 3
   clp: 2
   dproj: 2
   json: 2
