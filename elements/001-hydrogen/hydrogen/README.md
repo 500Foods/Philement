@@ -10,7 +10,6 @@ The main TOC for the Hydrogen project can be found in [**/docs/H/README.md**](/d
   - [Brotli UDF for MySQL](/elements/001-hydrogen/hydrogen/extras/brotli_udf_mysql/README.md) - Decompress brotli in MySQL/MariaDB
   - [Brotli UDF for PostgreSQL](/elements/001-hydrogen/hydrogen/extras/brotli_udf_postgresql/README.md) - Decompress brotli in PostgreSQL
   - [Brotli UDF for SQLite](/elements/001-hydrogen/hydrogen/extras/brotli_udf_sqlite/README.md) - Decompress brotli in SQLite
-- [**fonts**](/elements/001-hydrogen/hydrogen/fonts/README.md) - Details about the custom fonts being used
 - [**images**](/elements/001-hydrogen/hydrogen/images/README.md) - Generated SVGs for build statistics, database diagrams
   - [acuranzo](/elements/001-hydrogen/hydrogen/images/acuranzo/README.md) - Database diagrams for Acuranzo instances
   - [gaius](/elements/001-hydrogen/hydrogen/images/gaius/README.md) - Database diagrams for GAIUS instances
