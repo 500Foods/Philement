@@ -96,5 +96,5 @@ img.markdown-embed-image {                  /* Covers all common image classes i
 
 ## References
 
-[Iosevka](https://github.com/be5invis/Iosevka?tab=readme-ov-file) - GitHub repository for the project
-[Iosevka Customizer](https://typeof.net/Iosevka/customizer) - Used to generate configuration file
+- [Iosevka](https://github.com/be5invis/Iosevka?tab=readme-ov-file) - GitHub repository for the project
+- [Iosevka Customizer](https://typeof.net/Iosevka/customizer) - Used to generate configuration file
