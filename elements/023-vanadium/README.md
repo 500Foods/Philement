@@ -24,40 +24,9 @@ avoid the dreaded "do you wnat to donwload the rest of this mssage" kind of trac
 
 ## Font Samples
 
-### Proportional
+Note: The imagees were rendered with `Vanadium Sans Semi-Extendd` and `Vanadium Mono Semi-extended` variations.
 
-0123456789
-abcdefghijklmnopqrstuvwxyz
-ABCDEFGHIJKLMNOPQRSTUVWXYZ  
-!@#$%^&* <> () {} [] ' " . , : ; ?
-
-The quick brown fox jumps over the lazy dog.
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-
-### Monospaced
-
-```sample
-0123456789
-abcdefghijklmnopqrstuvwxyz
-ABCDEFGHIJKLMNOPQRSTUVWXYZ  
-!@#$%^&* <> () {} [] ' " . , : ; ?
-
-The quick brown fox jumps over the lazy dog.
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-```
-
-### Code
-
-```javascript
-function helloWorld() {
-    console.log("Hello, World!");
-    return 42;
-}
-```
+<img width="1445" height="1212" alt="image" src="https://github.com/user-attachments/assets/a3951122-3693-452d-ab6e-b160efa86d8b" />
 
 ## Building
 
