@@ -1,6 +1,6 @@
 # Vanadium Fonts
 
-The [Iosevka](https://github.com/be5invis/Iosevka?tab=readme-ov-file) font (Sans) served as the base to generate a suite of custom fonts for the Philement project. And the next element on the project list was... Vanadium! This is essentially the "Terminal" (mono) and "quasi-proportional" (proportional) Iosevka font with numerous alternate glyph selections.
+The [Iosevka](https://github.com/be5invis/Iosevka?tab=readme-ov-file) font (Sans) served as the base to generate a suite of custom fonts for the Philement project. And the next element on the project list was... Vanadium! This is essentially the "Terminal" (mono) and "Quasi-Proportional" Iosevka Sans font with numerous alternate glyph selections. The glyph selections are the same for all variations of Vanadium.
 
 - "Open" 4's - meaning the top of the 4 is separated
 - Alternate zero - a dot in the zero to distinguish it visually from an O
