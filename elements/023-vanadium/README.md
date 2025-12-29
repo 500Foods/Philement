@@ -26,7 +26,7 @@ avoid the dreaded "do you wnat to donwload the rest of this mssage" kind of trac
 
 Note: The imagees were rendered with `Vanadium Sans Semi-Extendd` and `Vanadium Mono Semi-extended` variations.
 
-<img width="1445" height="1212" alt="image" src="https://github.com/user-attachments/assets/a3951122-3693-452d-ab6e-b160efa86d8b" />
+<img width="1445" height="1212" alt="image" src="vanadium-sample.png" />
 
 ## Building
 
