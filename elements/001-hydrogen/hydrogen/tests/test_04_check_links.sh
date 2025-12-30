@@ -26,7 +26,7 @@
 set -euo pipefail
 
 # Test configuration
-TEST_NAME="Markdown Links {BLUE}(github-sitemap){RESET}"
+TEST_NAME="Markdown Links  {BLUE}github-sitemap{RESET}"
 TEST_ABBR="LNK"
 TEST_NUMBER="04"
 TEST_COUNTER=0
@@ -194,9 +194,9 @@ parse_sitemap_output "${MARKDOWN_CHECK}" ISSUES_FOUND MISSING_LINKS_COUNT ORPHAN
 
 # Update test name to include total links count
 if [[ "${TOTAL_LINKS}" -gt 0 ]]; then
-    TEST_NAME="Markdown Links {BLUE}(github-sitemap links: $("${PRINTF}" "%'d" "${TOTAL_LINKS}" || true)){RESET}"
+    TEST_NAME="Markdown Links  {BLUE}github-sitemap links: $("${PRINTF}" "%'d" "${TOTAL_LINKS}" || true){RESET}"
 fi
-
+                                                                                                        
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Missing links found: ${MISSING_LINKS_COUNT}"
 if [[ "${MISSING_LINKS_COUNT}" -eq 0 ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No missing links found"

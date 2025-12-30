@@ -50,7 +50,7 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Databases {BLUE}(engines: 4){RESET}"
+TEST_NAME="Databases  {BLUE}engines: 4{RESET}"
 TEST_ABBR="DBS"
 TEST_NUMBER="30"
 TEST_COUNTER=0

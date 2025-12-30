@@ -186,7 +186,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             # Extract migration time and update test name
             migration_time=$("${GREP}" "MIGRATION_TIME=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
             if [[ -n "${migration_time}" ]]; then
-                TEST_NAME="${TEST_NAME} {BLUE}(cycle: ${migration_time}s){RESET}"
+                TEST_NAME="${TEST_NAME}  {BLUE}cycle: ${migration_time}s{RESET}"
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${ENGINE_NAME} migration test completed successfully in ${migration_time}s"
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
 

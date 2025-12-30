@@ -99,7 +99,7 @@ if [[ -n "${min_elapsed}" || -n "${max_elapsed}" ]]; then
             timing_info="Max: ${max_elapsed}"
         fi
     fi
-    TEST_NAME="${TEST_NAME} {BLUE}(cycle: ${timing_info}){RESET}"
+    TEST_NAME="${TEST_NAME}  {BLUE}cycle: ${timing_info}{RESET}"
 fi
 
 # Print completion table

@@ -59,7 +59,7 @@ TEMP_OUTPUT="${LOG_PREFIX}${TIMESTAMP}_temp.log"
 
 if [[ "${SHELL_COUNT}" -gt 0 ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running shellcheck on ${SHELL_COUNT} shell scripts with caching..."
-    TEST_NAME="${TEST_NAME} {BLUE}(shellheck: ${SHELL_COUNT} files){RESET}"
+    TEST_NAME="${TEST_NAME}  {BLUE}shellcheck: ${SHELL_COUNT} files{RESET}"
 
     # Batch compute content hashes for all files
     declare -A file_hashes

@@ -129,7 +129,7 @@ else
     EXIT_CODE=1
 fi
 
-TEST_NAME="${TEST_NAME} {BLUE}(secrets: 5){RESET}"
+TEST_NAME="${TEST_NAME}  {BLUE}secrets: 5{RESET}"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}" 

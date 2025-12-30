@@ -28,7 +28,7 @@ fi
 set -euo pipefail
 
 # Test configuration
-TEST_NAME="Test Suite Coverage {BLUE}(coverage_table){RESET}"
+TEST_NAME="Test Suite Coverage  {BLUE}coverage_table{RESET}"
 TEST_ABBR="COV"
 TEST_NUMBER="89"
 TEST_COUNTER=0

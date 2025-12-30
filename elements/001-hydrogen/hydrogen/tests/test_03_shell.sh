@@ -321,7 +321,7 @@ WHITELIST_COUNT=${#ENV_WHITELIST[@]}
 
 # Update test name to include whitelist count
 if [[ "${WHITELIST_COUNT}" -gt 0 ]]; then
-    TEST_NAME="Shell Variables {BLUE}(whitelist: $("${PRINTF}" "%'d" "${WHITELIST_COUNT}" || true) vars){RESET}"
+    TEST_NAME="Shell Variables  {BLUE}whitelist: $("${PRINTF}" "%'d" "${WHITELIST_COUNT}" || true) vars{RESET}"
 fi
 
 # Print completion table

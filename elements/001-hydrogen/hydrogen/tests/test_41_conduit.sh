@@ -21,7 +21,7 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Conduit Query {BLUE}(QRY){RESET}"
+TEST_NAME="Conduit Query  {BLUE}QRY: 0{RESET}"
 TEST_ABBR="QRY"
 TEST_NUMBER="41"
 TEST_COUNTER=0

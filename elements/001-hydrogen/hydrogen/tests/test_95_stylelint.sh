@@ -45,7 +45,7 @@ if [[ "${CSS_COUNT}" -gt 0 ]]; then
     TEMP_LOG="${LOG_PREFIX}${TIMESTAMP}_temp.log"
     
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running stylelint on ${CSS_COUNT} CSS files..."
-    TEST_NAME="${TEST_NAME} {BLUE}(stylelint: ${CSS_COUNT} files){RESET}"
+    TEST_NAME="${TEST_NAME}  {BLUE}stylelint: ${CSS_COUNT} files{RESET}"
 
     # Use basic stylelint rules if no config exists
     if [[ -f ".stylelintrc.json" ]] || [[ -f ".stylelintrc.js" ]] || [[ -f "stylelint.config.js" ]]; then
@@ -78,7 +78,7 @@ if [[ "${CSS_COUNT}" -gt 0 ]]; then
     fi
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No CSS files to check"
-    TEST_NAME="${TEST_NAME} {BLUE}(stylelint: 0 files){RESET}"
+    TEST_NAME="${TEST_NAME}  {BLUE}stylelint: 0 files{RESET}"
 fi
 
 # Print test completion summary

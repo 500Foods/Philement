@@ -125,7 +125,7 @@ cat > "${EMAIL_BODY}" << EOF
 <head>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Vanadium Sans Semi-Extended', sans-serif;
             line-height: 1.6;
             color: #fff;
             max-width: 800px;
@@ -161,6 +161,7 @@ cat > "${EMAIL_BODY}" << EOF
             text-align: center;
         }
         img {
+            font-family: 'Vanadium Mono Semi-Extended', monospace;
             max-width: 100%;
             height: auto;
             display: block;

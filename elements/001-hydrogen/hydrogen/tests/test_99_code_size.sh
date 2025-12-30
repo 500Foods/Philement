@@ -260,13 +260,13 @@ if [[ -n "${CLOC_PID}" ]]; then
         # Generate SVGs from the table files using Oh.sh
         # shellcheck disable=SC2154 # OH defined in framework.sh
         if [[ -f "${CLOC_OUTPUT}" ]]; then
-            ("${OH}" -i "${CLOC_OUTPUT}" --width 74 -o "${PROJECT_DIR}/images/CLOC_CODE.svg" 2>/dev/null) &
+            ("${OH}" -i "${CLOC_OUTPUT}" --width 74  --font "Vanadium Mono Semi-Extended" -o "${PROJECT_DIR}/images/CLOC_CODE.svg" 2>/dev/null) &
         fi
 
         # Check for stats table file
         cloc_stats="${CLOC_OUTPUT%.txt}_stats.txt"
         if [[ -f "${cloc_stats}" ]]; then
-            ("${OH}" -i "${cloc_stats}" -o "${PROJECT_DIR}/images/CLOC_STAT.svg" 2>/dev/null) &
+            ("${OH}" -i "${cloc_stats}"  --font "Vanadium Mono Semi-Extended" -o "${PROJECT_DIR}/images/CLOC_STAT.svg" 2>/dev/null) &
         fi
 
         # Extract summary statistics from JSON data
@@ -296,7 +296,7 @@ print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Line counts: ..${LINE_COUNT_FIL
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "cloc format: ..${CLOC_OUTPUT}"
 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "cloc output: ..${CLOC_DATA}"
 
-TEST_NAME="${TEST_NAME} {BLUE}(lines: ${LOCCOUNT}){RESET}"
+TEST_NAME="${TEST_NAME}  {BLUE}lines: ${LOCCOUNT}{RESET}"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
