@@ -135,4 +135,18 @@ in the migrations themselves so that they get populated in the database directly
 | [1098](/elements/002-helium/acuranzo/migrations/acuranzo_1098.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #007 - Block IP Address Temporarily |
 | [1099](/elements/002-helium/acuranzo/migrations/acuranzo_1099.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #008 - Get Account ID |
 | [1100](/elements/002-helium/acuranzo/migrations/acuranzo_1100.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #009 - Check Login Authorization |
-| **101** | | | | **573** | **101** | |
+| [1101](/elements/002-helium/acuranzo/migrations/acuranzo_1101.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #010 - Check Account Authorization |
+| [1102](/elements/002-helium/acuranzo/migrations/acuranzo_1102.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #011 - Get Login E-Mail |
+| [1103](/elements/002-helium/acuranzo/migrations/acuranzo_1103.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #012 - Check Passwoord |
+| [1104](/elements/002-helium/acuranzo/migrations/acuranzo_1104.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #013 - Store JWT |
+| [1105](/elements/002-helium/acuranzo/migrations/acuranzo_1105.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #014 - Log the Login |
+| [1106](/elements/002-helium/acuranzo/migrations/acuranzo_1106.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #015 - Cleanup Login Records |
+| [1107](/elements/002-helium/acuranzo/migrations/acuranzo_1107.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #016 - Log Endpoint Access |
+| [1108](/elements/002-helium/acuranzo/migrations/acuranzo_1108.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #017 - Get User Roles |
+| [1109](/elements/002-helium/acuranzo/migrations/acuranzo_1109.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #018 - Validate JWT |
+| [1110](/elements/002-helium/acuranzo/migrations/acuranzo_1110.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #019 - Delete JWT |
+| [1111](/elements/002-helium/acuranzo/migrations/acuranzo_1111.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #020 - Delete Account JWTs |
+| [1112](/elements/002-helium/acuranzo/migrations/acuranzo_1112.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #021 - Store Session Log |
+| [1113](/elements/002-helium/acuranzo/migrations/acuranzo_1113.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #022 - Delete Session Log |
+| [1114](/elements/002-helium/acuranzo/migrations/acuranzo_1114.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #023 - Get Session Logs List |
+| **115** | | | | **629** | **115** | |
