@@ -1,5 +1,5 @@
--- Migration: acuranzo_1106.lua
--- QueryRef #015 - Cleanup Login Records
+-- Migration: acuranzo_1107.lua
+-- QueryRef #016 - Log Endpoint Access
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1106"
-cfg.QUERY_REF = "015"
-cfg.QUERY_NAME = "Cleanup Login Records"
+cfg.MIGRATION = "1107"
+cfg.QUERY_REF = "016"
+cfg.QUERY_NAME = "Log Endpoint Access"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -50,50 +50,49 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     INSERT INTO ${SCHEMA}actions (
-                        action_type_a24,
-                        system_id,
-                        app_id,
-                        app_version,
-                        account_id,
-                        feature_a21,
-                        action,
-                        action_msecs,
-                        ip_address,
-                        created_id,
-                        created_at
+                      action_type_a24,
+                      system_id,
+                      app_id,
+                      app_version,
+                      account_id,
+                      feature_a21,
+                      action,
+                      action_msecs,
+                      ip_address,
+                      created_id,
+                      created_at
                     )
-                    VALUES
+                  VALUES
                     (
-                        3,
-                        :SYSTEMID,
-                        :APPID,
-                        :APPVERSION,
-                        :ACCOUNTID,
-                        100,
-                        :LOGINID,
-                        :LOGINTIMER,
-                        :IPADDRESS,
-                        :ACCOUNTID,
-                        ${NOW}
+                      :ENDPOINT,
+                      :SYSTEMID,
+                      :APPID,
+                      :APPVERSION,
+                      :ACCOUNTID,
+                      100,
+                      :ACTION,
+                      :LOGINTIMER,
+                      :IPADDRESS,
+                      :ACCOUNTID,
+                      CURRENT_TIMESTAMP
                     )
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query logs a login action into the `actions` table, recording
-                    details such as system ID, application ID, account ID, login ID,
-                    login duration, and IP address.
+                    This query logs access to various endpoints within the application.
 
                     ## Parameters
 
-                    - `SYSTEMID` (integer): The system ID from which the login is made.
-                    - `APPID` (integer): The application ID associated with the login.
-                    - `APPVERSION` (string): The version of the application.
-                    - `ACCOUNTID` (integer): The account ID of the user logging in.
-                    - `LOGINID` (string): The login identifier used by the user.
-                    - `LOGINTIMER` (integer): The duration of the login process in milliseconds.
-                    - `IPADDRESS` (string): The IP address from which the login is made.
+                    - `:ENDPOINT` (string): The endpoint being accessed.
+                    - `:SYSTEMID` (integer): The system identifier.
+                    - `:APPID` (integer): The application identifier.
+                    - `:APPVERSION` (string): The version of the application.
+                    - `:ACCOUNTID` (integer): The account identifier.
+                    - `:ACTION` (string): Description of the action performed.
+                    - `:LOGINTIMER` (integer): Time taken for the action in milliseconds.
+                    - `:IPADDRESS` (string): The IP address from which the action is performed.
 
                     ## Returns
 
@@ -101,15 +100,11 @@ table.insert(queries,{sql=[[
 
                     ## Tables
 
-                    - `${SCHEMA}actions`: The table where login actions are logged.
+                    - `actions`: The table where the access logs are stored.
 
                     ## Notes
 
-                    - Ensure that the parameters are validated before executing this query
-                      to maintain data integrity.
-                    - The `action_type_a24` value of 3 indicates a login action.
-                    - The `feature_a21` value of 100 corresponds to the login feature.
-                    - The `created_at` field is set to the current timestamp.
+                    - Ensure that the parameters are validated before executing this query.
 
                 ]==]
                                                                                     AS summary,

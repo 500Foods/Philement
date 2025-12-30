@@ -1,5 +1,5 @@
--- Migration: acuranzo_1106.lua
--- QueryRef #015 - Cleanup Login Records
+-- Migration: acuranzo_1109.lua
+-- QueryRef #018 - Validate JWT
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1106"
-cfg.QUERY_REF = "015"
-cfg.QUERY_NAME = "Cleanup Login Records"
+cfg.MIGRATION = "1109"
+cfg.QUERY_REF = "018"
+cfg.QUERY_NAME = "Validate JWT"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -49,67 +49,49 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    INSERT INTO ${SCHEMA}actions (
-                        action_type_a24,
-                        system_id,
-                        app_id,
-                        app_version,
-                        account_id,
-                        feature_a21,
-                        action,
-                        action_msecs,
-                        ip_address,
-                        created_id,
-                        created_at
-                    )
-                    VALUES
-                    (
-                        3,
-                        :SYSTEMID,
-                        :APPID,
-                        :APPVERSION,
-                        :ACCOUNTID,
-                        100,
-                        :LOGINID,
-                        :LOGINTIMER,
-                        :IPADDRESS,
-                        :ACCOUNTID,
-                        ${NOW}
-                    )
+                    SELECT
+                        token_hash,
+                        valid_until
+                    FROM
+                        ${SCHEMA}tokens
+                    WHERE
+                        (token_hash = :TOKENHASH)
+                        AND (ip_address = :IPADDRESS)
+                        AND (
+                            (valid_after IS NULL)
+                            OR (valid_after < ${NOW})
+                        )
+                        AND (
+                            (valid_until IS NULL)
+                            OR (valid_until > ${NOW})
+                        );
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query logs a login action into the `actions` table, recording
-                    details such as system ID, application ID, account ID, login ID,
-                    login duration, and IP address.
+                    This query validates a JWT token by checking its hash and IP address against the tokens table.
 
                     ## Parameters
 
-                    - `SYSTEMID` (integer): The system ID from which the login is made.
-                    - `APPID` (integer): The application ID associated with the login.
-                    - `APPVERSION` (string): The version of the application.
-                    - `ACCOUNTID` (integer): The account ID of the user logging in.
-                    - `LOGINID` (string): The login identifier used by the user.
-                    - `LOGINTIMER` (integer): The duration of the login process in milliseconds.
-                    - `IPADDRESS` (string): The IP address from which the login is made.
+                    - `TOKENHASH` (string): The hash of the JWT token to be validated.
+                    - `IPADDRESS` (string): The IP address from which the token is being used
+                        for validation.
 
                     ## Returns
 
-                    - Rows affected: The number of rows inserted into the `actions` table.
+                    - `token_hash` (string): The hash of the validated JWT token.
+                    - `valid_until` (datetime): The expiration time of the token.
 
                     ## Tables
 
-                    - `${SCHEMA}actions`: The table where login actions are logged.
+                    - `tokens`: This table stores JWT token hashes along with associated metadata,
+                        including validity periods and IP addresses.
 
                     ## Notes
 
-                    - Ensure that the parameters are validated before executing this query
-                      to maintain data integrity.
-                    - The `action_type_a24` value of 3 indicates a login action.
-                    - The `feature_a21` value of 100 corresponds to the login feature.
-                    - The `created_at` field is set to the current timestamp.
+                    - The query ensures that the token is valid based on the current time and
+                        the provided IP address.
 
                 ]==]
                                                                                     AS summary,
