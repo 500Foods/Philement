@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.4.0 - 2025-12-30 - Added JRS, JRM, JRE macros for JSON value retrieval
 -- 2.3.0 - 2025-12-29 - Added SESSION_SECS macro for session duration calculation
 -- 2.2.0 - 2025-12-28 - Added TRMS and TRME macros for time calculations (Time Range Minutes Start/End)
 -- 2.1.0 - 2025-11-23 - Added DROP_CHECK to test for non-empty tables prior to drop
@@ -17,6 +18,9 @@ return {
     CHAR_50 = "char(50)",
     CHAR_128 = "char(128)",
     INTEGER = "integer",
+    JRS = "",
+    JRM = "::json ->> ",
+    JRE = "",
     NOW = "CURRENT_TIMESTAMP",
     PRIMARY = "PRIMARY KEY",
     SERIAL = "serial",

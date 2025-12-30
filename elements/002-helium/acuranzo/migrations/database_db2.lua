@@ -3,13 +3,16 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.4.0 - 2025-12-30 - Added JRS, JRM, JRE macros (JSON Retrieval Start, Middle, End)
 -- 2.3.0 - 2025-12-29 - Added SESSION_SECS macro for session duration calculation
 -- 2.2.0 - 2025-12-28 - Added TRMS and TRME macros for time calculations (Time Range Minutes Start/End)
 -- 2.1.0 - 2025-11-23 - Added DROP_CHECK to test for non-empty tables prior to drop
 -- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
 
 -- NOTES
--- Bse64 support provided via a C UDF found in extras
+-- Base64 support provided via a C UDF
+-- Brotli decompression provided via a C UDF
+-- Source for both UDFs can be found in the elements/001-hydrogen/hydrogen/extras directory
 
 return {
     CHAR_2 = "CHAR(2)",
@@ -17,6 +20,9 @@ return {
     CHAR_50 = "CHAR(50)",
     CHAR_128 = "CHAR(128)",
     INTEGER = "INTEGER",
+    JRS = "JSON_VALUE(",
+    JRM = ", ",
+    JRE = " DEFAULT NULL ON ERROR)",
     NOW = "CURRENT TIMESTAMP",
     PRIMARY = "PRIMARY KEY",
     SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
