@@ -116,7 +116,7 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
 
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using cached results for ${cached_files} files, processing ${processed_files} files out of ${MD_COUNT}..."
 
-    TEST_NAME="${TEST_NAME} {BLUE}(markdownlint: ${MD_COUNT} files){RESET}"
+    TEST_NAME="${TEST_NAME}  {BLUE}markdownlint: ${MD_COUNT} files{RESET}"
 
     # Run markdownlint on files that need processing
     if [[ "${processed_files}" -gt 0 ]]; then

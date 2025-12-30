@@ -171,7 +171,7 @@ for design in "${DESIGNS[@]}"; do
 done
 
 # Update test name with total count and parallel indicator
-TEST_NAME="${TEST_NAME} {BLUE}(combos: ${TOTAL_COMBINATIONS}){RESET}"
+TEST_NAME="${TEST_NAME}  {BLUE}designs: ${TOTAL_COMBINATIONS}{RESET}"
 
 # Function to run diagram generation in parallel
 run_diagram_generation_parallel() {
@@ -272,7 +272,7 @@ for design in "${DESIGNS[@]}"; do
 done
 
 # Update test name with total count
-TEST_NAME="${TEST_NAME} {BLUE}(combos: ${TOTAL_COMBINATIONS}){RESET}"
+TEST_NAME="${TEST_NAME}  {BLUE}combos: ${TOTAL_COMBINATIONS}{RESET}"
 
 # Start parallel diagram generation
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Diagram Generation in Parallel"

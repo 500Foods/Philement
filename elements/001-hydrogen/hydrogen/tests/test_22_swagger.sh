@@ -764,7 +764,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # Convert to milliseconds for more readable display
         # shellcheck disable=SC2312 # We want to continue even if printf fails
         avg_response_time_ms=$(printf "%.3f" "$(echo "scale=6; ${avg_response_time} * 1000" | bc 2>/dev/null || echo "0.500")" 2>/dev/null || echo "0.500")
-        TEST_NAME="${TEST_NAME} {BLUE}(avg: ${avg_response_time_ms}ms){RESET}"
+        TEST_NAME="${TEST_NAME}  {BLUE}avg: ${avg_response_time_ms}ms{RESET}"
     fi
 
 else

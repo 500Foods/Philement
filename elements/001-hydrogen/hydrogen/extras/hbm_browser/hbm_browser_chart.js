@@ -104,7 +104,7 @@ HMB.renderChart = function() {
     .attr('y', -20 )
     .attr('text-anchor', 'middle')
     .attr('fill', this.state.isHeadless ? '#ffffff' : 'var(--text-color)')
-    .attr('font-family', 'Cairo, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif')
+    .attr('font-family', '"Vanadium Sans Semi-Extended", Tahoma, Geneva, Verdana, sans-serif')
     .attr('font-size', '1.3rem')
     .attr('font-weight', '600')
     .attr('cursor', 'pointer')
@@ -248,7 +248,7 @@ HMB.renderChart = function() {
     .attr('dx', '0.8em')
     .attr('dy', '-0.25em')
     .attr('fill', this.state.isHeadless ? '#ffffff' : 'var(--text-color)')
-    .attr('font-family', 'Cairo, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif')
+    .attr('font-family', '"Vanadium Sans Semi-Extended", Tahoma, Geneva, Verdana, sans-serif')
     .classed('darken-dates', d => this.state.missingDates.includes(d3.utcFormat('%Y-%m-%d')(d)))
     .style('font-weight', d => d.getUTCDay() === 0 ? 'bold' : 'normal');
 
@@ -332,7 +332,7 @@ HMB.renderChart = function() {
     .call(d3.axisLeft(leftYScale).ticks(5).tickFormat(abbreviateNumber))
     .selectAll('text')
     .attr('fill', this.state.isHeadless ? '#ffffff' : 'var(--text-color)')
-    .attr('font-family', 'Cairo, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif');
+    .attr('font-family', '"Vanadium Sans Semi-Extended", Tahoma, Geneva, Verdana, sans-serif');
 
   // Add right Y axis if needed
   if (rightAxisMetrics.length > 0) {
@@ -342,7 +342,7 @@ HMB.renderChart = function() {
       .call(d3.axisRight(rightYScale).ticks(5).tickFormat(abbreviateNumber))
       .selectAll('text')
       .attr('fill', this.state.isHeadless ? '#ffffff' : 'var(--text-color)')
-      .attr('font-family', 'Cairo, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif');
+      .attr('font-family', '"Vanadium Sans Semi-Extended", Tahoma, Geneva, Verdana, sans-serif');
   }
 
   // Create gradients for bar metrics
@@ -423,7 +423,7 @@ HMB.renderChart = function() {
               return 'var(--text-color)';
             }
           })
-          .attr('font-family', 'Cairo, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif')
+          .attr('font-family', '"Vanadium Sans Semi-Extended", Tahoma, Geneva, Verdana, sans-serif')
           .classed('darken-dates', d => this.state.missingDates.includes(d3.utcFormat('%Y-%m-%d')(d)))
           .style('font-weight', d => d.getUTCDay() === 0 ? 'bold' : 'normal');
 
@@ -833,7 +833,7 @@ HMB.drawLegend = function(svg, width, height) {
     .attr('x', 20)
     .attr('y', 0)
     .attr('fill', this.state.isHeadless ? '#ffffff' : 'var(--text-color)')
-    .attr('font-family', 'Cairo, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif')
+    .attr('font-family', '"Vanadium Sans Semi-Extended", Tahoma, Geneva, Verdana, sans-serif')
     .attr('font-size', '0.85rem')
     .text(d => d.displayLabel || d.label);
 };
