@@ -174,7 +174,7 @@ table.insert(queries,{sql=[[
                                 "unique": false
                             },
                             {
-                                "name": "application_id",
+                                "name": "app_id",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,

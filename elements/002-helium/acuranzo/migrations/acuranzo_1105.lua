@@ -52,8 +52,8 @@ table.insert(queries,{sql=[[
                     INSERT INTO ${SCHEMA}actions (
                         action_type_a24,
                         system_id,
-                        application_id,
-                        application_version,
+                        app_id,
+                        app_version,
                         account_id,
                         feature_a21,
                         action,
@@ -66,8 +66,8 @@ table.insert(queries,{sql=[[
                     (
                         3,
                         :SYSTEMID,
-                        :APPLICATIONID,
-                        :APPLICATIONVER,
+                        :APPID,
+                        :APPVERSION,
                         :ACCOUNTID,
                         100,
                         :LOGINID,
@@ -88,8 +88,8 @@ table.insert(queries,{sql=[[
                     ## Parameters
 
                     - `SYSTEMID` (integer): The system ID from which the login is made.
-                    - `APPLICATIONID` (integer): The application ID associated with the login.
-                    - `APPLICATIONVER` (string): The version of the application.
+                    - `APPID` (integer): The application ID associated with the login.
+                    - `APPVERSION` (string): The version of the application.
                     - `ACCOUNTID` (integer): The account ID of the user logging in.
                     - `LOGINID` (string): The login identifier used by the user.
                     - `LOGINTIMER` (integer): The duration of the login process in milliseconds.

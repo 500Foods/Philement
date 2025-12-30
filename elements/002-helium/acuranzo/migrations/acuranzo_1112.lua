@@ -1,19 +1,19 @@
--- Migration: acuranzo_1106.lua
--- QueryRef #015 - Cleanup Login Records
+-- Migration: acuranzo_1112.lua
+-- QueryRef #021 - Store Session Log
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2025-12-28 - Initial creation
+-- 1.0.0 - 2025-12-29 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1106"
-cfg.QUERY_REF = "015"
-cfg.QUERY_NAME = "Cleanup Login Records"
+cfg.MIGRATION = "1112"
+cfg.QUERY_REF = "021"
+cfg.QUERY_NAME = "Store Session Log"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -49,31 +49,30 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    INSERT INTO ${SCHEMA}actions (
-                        action_type_a24,
-                        system_id,
-                        app_id,
-                        app_version,
+                    INSERT INTO ${SCHEMA}sessions (
+                        session_id,
                         account_id,
-                        feature_a21,
-                        action,
-                        action_msecs,
-                        ip_address,
-                        created_id,
-                        created_at
+                        session,
+                        session_length,
+                        session_issues,
+                        session_changes,
+                        session_secs,
+                        status_a25,
+                        flag_a26,
+                        created_at,
+                        updated_at
                     )
-                    VALUES
-                    (
-                        3,
-                        :SYSTEMID,
-                        :APPID,
-                        :APPVERSION,
+                    VALUES (
+                        :SESSIONID,
                         :ACCOUNTID,
-                        100,
-                        :LOGINID,
-                        :LOGINTIMER,
-                        :IPADDRESS,
-                        :ACCOUNTID,
+                        :SESSION,
+                        :SESSION_LENGTH,
+                        :SESSION_ISSUES,
+                        :SESSION_CHANGES,
+                        ${SESSION_SECS},
+                        :SESSION_STATUS,
+                        :SESSION_FLAGS,
+                        :SESSION_START,
                         ${NOW}
                     )
                 ]==]                                                                AS code,
@@ -81,35 +80,35 @@ table.insert(queries,{sql=[[
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query logs a login action into the `actions` table, recording
-                    details such as system ID, application ID, account ID, login ID,
-                    login duration, and IP address.
+                    This query stores a session log entry into the sessions table. It records
+                    details about user sessions including duration, issues, and changes.
 
                     ## Parameters
 
-                    - `SYSTEMID` (integer): The system ID from which the login is made.
-                    - `APPID` (integer): The application ID associated with the login.
-                    - `APPVERSION` (string): The version of the application.
-                    - `ACCOUNTID` (integer): The account ID of the user logging in.
-                    - `LOGINID` (string): The login identifier used by the user.
-                    - `LOGINTIMER` (integer): The duration of the login process in milliseconds.
-                    - `IPADDRESS` (string): The IP address from which the login is made.
+                    - `SESSIONID` (string): A unique identifier for the session.
+                    - `ACCOUNTID` (integer): The ID of the account associated with the session.
+                    - `SESSION` (text): The session data to be stored.
+                    - `SESSION_LENGTH` (integer): The length of the session data.
+                    - `SESSION_ISSUES` (integer): The number of issues encountered during the session
+                    - `SESSION_CHANGES` (integer): The number of changes made during the session.
+                    - `SESSION_START` (timestamp): The timestamp when the session started.
+                    - `SESSION_STATUS` (integer): The status code representing the session state.
+                    - `SESSION_FLAGS` (integer): Flags associated with the session.
 
                     ## Returns
 
-                    - Rows affected: The number of rows inserted into the `actions` table.
+                    - Rows affected: The number of rows inserted into the `sessions` table.
 
                     ## Tables
 
-                    - `${SCHEMA}actions`: The table where login actions are logged.
+                    - `${SCHEMA}sessions`: The table where session logs are stored.
 
                     ## Notes
 
-                    - Ensure that the parameters are validated before executing this query
-                      to maintain data integrity.
-                    - The `action_type_a24` value of 3 indicates a login action.
-                    - The `feature_a21` value of 100 corresponds to the login feature.
-                    - The `created_at` field is set to the current timestamp.
+                    - Ensure that the `ACCOUNTID` parameter is validated before executing this query.
+                    - This query inserts a new session log entry into the sessions table.
+                    - This is useful for tracking user session information.
+                    - SESSION_SECS is calculated based on the difference between the current time and SESSION_START.
 
                 ]==]
                                                                                     AS summary,

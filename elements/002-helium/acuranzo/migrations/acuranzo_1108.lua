@@ -1,5 +1,5 @@
--- Migration: acuranzo_1106.lua
--- QueryRef #015 - Cleanup Login Records
+-- Migration: acuranzo_1108.lua
+-- QueryRef #017 - Get User Roles
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1106"
-cfg.QUERY_REF = "015"
-cfg.QUERY_NAME = "Cleanup Login Records"
+cfg.MIGRATION = "1108"
+cfg.QUERY_REF = "017"
+cfg.QUERY_NAME = "Get User Roles"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -49,67 +49,44 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    INSERT INTO ${SCHEMA}actions (
-                        action_type_a24,
-                        system_id,
-                        app_id,
-                        app_version,
-                        account_id,
-                        feature_a21,
-                        action,
-                        action_msecs,
-                        ip_address,
-                        created_id,
-                        created_at
-                    )
-                    VALUES
-                    (
-                        3,
-                        :SYSTEMID,
-                        :APPID,
-                        :APPVERSION,
-                        :ACCOUNTID,
-                        100,
-                        :LOGINID,
-                        :LOGINTIMER,
-                        :IPADDRESS,
-                        :ACCOUNTID,
-                        ${NOW}
-                    )
+                    SELECT
+                        role_id
+                    FROM
+                        ${SCHEMA}account_roles
+                    WHERE
+                        (account_id = :ACCOUNTID)
+                        AND (
+                            (valid_after IS NULL)
+                            OR (valid_after < ${NOW})
+                        )
+                        AND (
+                            (valid_until IS NULL)
+                            OR (valid_until > ${NOW})
+                        );
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query logs a login action into the `actions` table, recording
-                    details such as system ID, application ID, account ID, login ID,
-                    login duration, and IP address.
+                    This query retrieves the roles assigned to a specific account.
 
                     ## Parameters
 
-                    - `SYSTEMID` (integer): The system ID from which the login is made.
-                    - `APPID` (integer): The application ID associated with the login.
-                    - `APPVERSION` (string): The version of the application.
-                    - `ACCOUNTID` (integer): The account ID of the user logging in.
-                    - `LOGINID` (string): The login identifier used by the user.
-                    - `LOGINTIMER` (integer): The duration of the login process in milliseconds.
-                    - `IPADDRESS` (string): The IP address from which the login is made.
+                    - `ACCOUNTID` (integer): The ID of the account whose roles are to be retrieved.
 
                     ## Returns
 
-                    - Rows affected: The number of rows inserted into the `actions` table.
+                    - `role_id` (integer): The ID of each role assigned to the account.
 
                     ## Tables
 
-                    - `${SCHEMA}actions`: The table where login actions are logged.
+                    - `account_roles`: This table contains the mapping of accounts to their roles,
+                      including validity periods.
 
                     ## Notes
 
-                    - Ensure that the parameters are validated before executing this query
-                      to maintain data integrity.
-                    - The `action_type_a24` value of 3 indicates a login action.
-                    - The `feature_a21` value of 100 corresponds to the login feature.
-                    - The `created_at` field is set to the current timestamp.
+                    - The query filters roles based on the current time to ensure only active roles
+                      are returned.
 
                 ]==]
                                                                                     AS summary,

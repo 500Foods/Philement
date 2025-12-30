@@ -53,8 +53,8 @@ table.insert(queries,{sql=[[
                         token_hash,
                         account_id,
                         system_id,
-                        application_id,
-                        application_version,
+                        app_id,
+                        app_version,
                         ip_address,
                         valid_after,
                         valid_until
@@ -64,8 +64,8 @@ table.insert(queries,{sql=[[
                         :TOKENHASH,
                         :ACCOUNTID,
                         :SYSTEMID,
-                        :APPLICATIONID,
-                        :APPLICATIONVER,
+                        :APPID,
+                        :APPVERSION,
                         :IPADDRESS,
                         ${NOW},
                         ${TRMS} -1 * :JWTDURATION ${TRME}
@@ -83,8 +83,8 @@ table.insert(queries,{sql=[[
                     - `TOKENHASH` (string): The hash of the JWT token to be stored.
                     - `ACCOUNTID` (integer): The account ID associated with the token.
                     - `SYSTEMID` (integer): The system ID from which the token is issued.
-                    - `APPLICATIONID` (integer): The application ID associated with the token.
-                    - `APPLICATIONVER` (string): The version of the application.
+                    - `APPID` (integer): The application ID associated with the token.
+                    - `APPVERSION` (string): The version of the application.
                     - `IPADDRESS` (string): The IP address from which the token is issued.
                     - `JWTDURATION` (integer): The duration in seconds for which the token is
                         valid.

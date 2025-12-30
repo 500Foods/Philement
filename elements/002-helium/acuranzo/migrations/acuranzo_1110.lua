@@ -1,19 +1,19 @@
--- Migration: acuranzo_1106.lua
--- QueryRef #015 - Cleanup Login Records
+-- Migration: acuranzo_1110.lua
+-- QueryRef #019 - Delete JWT
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2025-12-28 - Initial creation
+-- 1.0.0 - 2025-12-29 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1106"
-cfg.QUERY_REF = "015"
-cfg.QUERY_NAME = "Cleanup Login Records"
+cfg.MIGRATION = "1110"
+cfg.QUERY_REF = "019"
+cfg.QUERY_NAME = "Delete JWT"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -49,67 +49,32 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    INSERT INTO ${SCHEMA}actions (
-                        action_type_a24,
-                        system_id,
-                        app_id,
-                        app_version,
-                        account_id,
-                        feature_a21,
-                        action,
-                        action_msecs,
-                        ip_address,
-                        created_id,
-                        created_at
-                    )
-                    VALUES
-                    (
-                        3,
-                        :SYSTEMID,
-                        :APPID,
-                        :APPVERSION,
-                        :ACCOUNTID,
-                        100,
-                        :LOGINID,
-                        :LOGINTIMER,
-                        :IPADDRESS,
-                        :ACCOUNTID,
-                        ${NOW}
-                    )
+                    DELETE FROM
+                        ${SCHEME}tokens
+                    WHERE
+                        (token_hash = :TOKENHASH)
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query logs a login action into the `actions` table, recording
-                    details such as system ID, application ID, account ID, login ID,
-                    login duration, and IP address.
+                    This query deletes a JWT token from the tokens table based on its hash.
 
                     ## Parameters
 
-                    - `SYSTEMID` (integer): The system ID from which the login is made.
-                    - `APPID` (integer): The application ID associated with the login.
-                    - `APPVERSION` (string): The version of the application.
-                    - `ACCOUNTID` (integer): The account ID of the user logging in.
-                    - `LOGINID` (string): The login identifier used by the user.
-                    - `LOGINTIMER` (integer): The duration of the login process in milliseconds.
-                    - `IPADDRESS` (string): The IP address from which the login is made.
+                    - `TOKENHASH` (string): The hash of the JWT token to be deleted.
 
                     ## Returns
 
-                    - Rows affected: The number of rows inserted into the `actions` table.
+                    - Returns affected row count indicating the number of tokens deleted.
 
                     ## Tables
 
-                    - `${SCHEMA}actions`: The table where login actions are logged.
+                    - `tokens`: This table stores JWT token hashes along with associated metadata.
 
                     ## Notes
 
-                    - Ensure that the parameters are validated before executing this query
-                      to maintain data integrity.
-                    - The `action_type_a24` value of 3 indicates a login action.
-                    - The `feature_a21` value of 100 corresponds to the login feature.
-                    - The `created_at` field is set to the current timestamp.
+                    - Ensure that the `TOKENHASH` parameter is validated before executing this query.
 
                 ]==]
                                                                                     AS summary,

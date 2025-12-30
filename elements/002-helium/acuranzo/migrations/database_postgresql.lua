@@ -2,7 +2,8 @@
 
 -- luacheck: no max line length
 
--- CHANGLOG
+-- CHANGELOG
+-- 2.3.0 - 2025-12-29 - Added SESSION_SECS macro for session duration calculation
 -- 2.2.0 - 2025-12-28 - Added TRMS and TRME macros for time calculations (Time Range Minutes Start/End)
 -- 2.1.0 - 2025-11-23 - Added DROP_CHECK to test for non-empty tables prior to drop
 -- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
@@ -19,6 +20,7 @@ return {
     NOW = "CURRENT_TIMESTAMP",
     PRIMARY = "PRIMARY KEY",
     SERIAL = "serial",
+    SESSION_SECS = "EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - :SESSION_START))",
     TEXT = "text",
     TEXT_BIG = "text",
     TIMESTAMP_TZ = "timestamptz",
