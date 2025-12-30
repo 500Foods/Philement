@@ -65,7 +65,7 @@ if [[ -f "${LOG_FILE}" ]]; then
     # Extract "Total elapsed time" from log file
     elapsed_time=$("${AWK}" "/Total elapsed time:/ {print \$NF}" "${LOG_FILE}" 2>/dev/null | tail -1 || true)
     if [[ -n "${elapsed_time}" ]]; then
-        TEST_NAME="${TEST_NAME} {BLUE}(cycle: ${elapsed_time}){RESET}"
+        TEST_NAME="${TEST_NAME}  {BLUE}cycle: ${elapsed_time}{RESET}"
     fi
 fi
 

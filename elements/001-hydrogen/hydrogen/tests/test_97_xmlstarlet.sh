@@ -40,7 +40,7 @@ if [[ "${XML_COUNT}" -gt 0 ]]; then
     TEMP_LOG="${LOG_PREFIX}${TIMESTAMP}_temp.log"
     
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running xmlstarlet on ${XML_COUNT} XML/SVG files..."
-    TEST_NAME="${TEST_NAME} {BLUE}(xmlstarlet: ${XML_COUNT} files){RESET}"
+    TEST_NAME="${TEST_NAME}  {BLUE}xmlstarlet: ${XML_COUNT} files{RESET}"
 
     # List files being checked for debugging
     for file in "${XML_FILES[@]}"; do
@@ -73,7 +73,7 @@ if [[ "${XML_COUNT}" -gt 0 ]]; then
 
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No XML/SVG files to check"
-    TEST_NAME="${TEST_NAME} {BLUE}(xmlstarlet: 0 files){RESET}"
+    TEST_NAME="${TEST_NAME}  {BLUE}xmlstarlet: 0 files{RESET}"
 fi
 
 # Print test completion summary

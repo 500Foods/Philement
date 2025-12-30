@@ -110,7 +110,7 @@ done < <("${FIND}" . -type f -name "*.lua" || true)
 LUA_COUNT=${#LUA_FILES_TO_CHECK[@]}
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Evaluating ${LUA_COUNT} files..."
 
-TEST_NAME="${TEST_NAME} {BLUE}(luacheck: ${LUA_COUNT} files){RESET}"
+TEST_NAME="${TEST_NAME}  {BLUE}luacheck: ${LUA_COUNT} files{RESET}"
 
 # Run luacheck once to get both cache stats and issues
 COMBINED_OUTPUT=$(run_luacheck ".")

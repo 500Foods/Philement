@@ -45,7 +45,7 @@ if [[ "${JS_COUNT}" -gt 0 ]]; then
     TEMP_LOG="${LOG_PREFIX}${TIMESTAMP}_temp.log"
 
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running eslint on ${JS_COUNT} JavaScript files..."
-    TEST_NAME="${TEST_NAME} {BLUE}(eslint: ${JS_COUNT} files){RESET}"
+    TEST_NAME="${TEST_NAME}  {BLUE}eslint: ${JS_COUNT} files{RESET}"
 
     # Use basic eslint rules if no config exists
     if [[ -f ".eslintrc.js" ]] || [[ -f ".eslintrc.json" ]] || [[ -f "eslint.config.js" ]]; then
@@ -73,7 +73,7 @@ if [[ "${JS_COUNT}" -gt 0 ]]; then
 
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No JavaScript files to check"
-    TEST_NAME="${TEST_NAME} {BLUE}(eslint: 0 files){RESET}"
+    TEST_NAME="${TEST_NAME}  {BLUE}eslint: 0 files{RESET}"
 fi
 
 # Print test completion summary
