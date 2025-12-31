@@ -1,0 +1,51 @@
+{
+  "name": "lithium-tests",
+  "version": "1.0.0",
+  "description": "Lithium PWA Test Suite",
+  "main": "test-runner.js",
+  "scripts": {
+    "test": "mocha --recursive --exit",
+    "test:watch": "mocha --watch --recursive",
+    "test:coverage": "nyc --reporter=html --reporter=text mocha --recursive --exit",
+    "test:debug": "node --inspect-brk node_modules/mocha/bin/_mocha --recursive --exit",
+    "test:report": "nyc report --reporter=lcov"
+  },
+  "dependencies": {
+    "chai": "^5.1.1",
+    "mocha": "^10.4.0",
+    "nyc": "^15.1.0",
+    "sinon": "^17.0.1",
+    "sinon-chai": "^3.7.0"
+  },
+  "nyc": {
+    "include": [
+      "../src/**/*.js"
+    ],
+    "exclude": [
+      "**/tests/**",
+      "**/dist/**",
+      "**/node_modules/**"
+    ],
+    "reporter": [
+      "html",
+      "text",
+      "lcov"
+    ],
+    "all": true,
+    "check-coverage": true,
+    "per-file": true,
+    "statements": 80,
+    "branches": 80,
+    "functions": 80,
+    "lines": 80
+  },
+  "mocha": {
+    "require": [
+      "@babel/register"
+    ],
+    "spec": "tests/**/*.test.js",
+    "timeout": 5000,
+    "reporter": "spec",
+    "ui": "bdd"
+  }
+}

@@ -11,3 +11,8 @@ This is the master index for documentation across the entire Philement project.
 ## 002 Helium
 
 - [Helium](docs/He/README.md) - Database migrations
+
+## 003 Lithium
+
+- [Lithium](docs/Li/README.md) - Progressive Web App framework with Mocha + nyc testing
+- [Lithium Testing](docs/Li/TESTING.md) - Comprehensive testing framework documentation

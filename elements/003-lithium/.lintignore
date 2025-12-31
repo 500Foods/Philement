@@ -1,0 +1,27 @@
+# Lithium Linting Exclusions
+
+# SUMMARY: This configuration excludes several file types from linting:
+# - Build directories (debug, release, perf, valgrind builds)
+# - Test artifacts (logs, results, diagnostics)
+# - Test configuration with deliberate error (for testing error handling)
+#
+# Used by test_99_codebase.sh for documentation quality checks.
+
+# This file contains patterns for files to exclude from linting checks.
+# Each line should contain one pattern. Empty lines and lines starting with # are ignored.
+# Patterns use bash glob syntax (same as .gitignore).
+
+# Build directories (these are also excluded by default in the test script)
+# A 'make clean' is also done in the codebase test prior to running lints
+build/*
+
+# LICENSE.md isn't really a markdown file but plain text 
+LICENSE.md
+
+# Node.js dependencies - these are third-party code and shouldn't be linted
+node_modules/
+node_modules
+/node_modules
+**/node_modules/**
+
+
