@@ -1,0 +1,32 @@
+<div class="main-container">
+
+  <!-- Left Sidebar Menu -->
+  <div id="divLeft" class="menu-sidebar bg-light border-end p-3">
+    <h5 class="mb-4">Menu</h5>
+    <div class="d-flex flex-column gap-2">
+      <button class="btn btn-outline-primary menu-button" data-module="dashboard">
+        <i class="fas fa-tachometer-alt me-2"></i><span class="button-text">Dashboard</span>
+      </button>
+      <button class="btn btn-outline-primary menu-button" data-module="source-editor">
+        <i class="fas fa-code me-2"></i><span class="button-text">Source Editor</span>
+      </button>
+      <button class="btn btn-outline-primary menu-button" data-module="queries">
+        <i class="fas fa-search me-2"></i><span class="button-text">Queries</span>
+      </button>
+      <button class="btn btn-outline-primary menu-button" data-module="lookups">
+        <i class="fas fa-book me-2"></i><span class="button-text">Lookups</span>
+      </button>
+    </div>
+    <hr class="my-4">
+    <button id="logout-button" class="btn btn-outline-danger w-100">
+      <i class="fas fa-sign-out-alt me-2"></i><span class="button-text">Logout</span>
+    </button>
+  </div>
+
+  <!-- Main Content Area -->
+  <div id="divRight" class="content-area p-4">
+    <div id="sub-module-container" class="sub-module-container">
+      <!-- Sub-modules will be loaded here -->
+    </div>
+  </div>
+</div>

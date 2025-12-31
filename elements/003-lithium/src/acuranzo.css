@@ -1,0 +1,532 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--ACZ-font-family);
+  font-size: var(--ACZ-font-size-3);
+  line-height: var(--ACZ-line-height);
+  margin: 0px;
+  padding: 2px;
+}
+
+/* Implement wait cursor */
+body.wait, body.wait *{
+  cursor: wait !important;
+}
+
+::selection {
+  background: var(--ACZ-color-10);
+}
+
+/* This appeared somewhere around TMS WEB Core 2.6.1.0 - default form styling? Maybe? */
+div.card {
+  background: none !important;
+  border: none !important;
+  display: flex !important;
+  top: 0px !important;
+  left: 0px !important;
+  width: 100% !important;
+  height: 100% !important;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Some general HTML tag overrides */
+p {
+  margin-bottom: 0px;
+}
+ul, ol {
+    margin-top: -16px;
+    margin-bottom: -16px;
+}
+li + li {
+  margin-top: -8px;
+}
+strong {
+  filter: var(--ACZ-shadow-3);
+}
+.h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6 {
+  margin-top: var(--ACZ-margin-1) !important;
+  margin-bottom: var(--ACZ-margin-1) !important;
+}
+.h1, h1 { font-size: var(--ACZ-font-size-5); }
+.h2, h2 { font-size: var(--ACZ-font-size-4); }
+.h3, h3 { font-size: var(--ACZ-font-size-3); }
+.h4, h4 { font-size: var(--ACZ-font-size-2); }
+.h5, h5 { font-size: var(--ACZ-font-size-2); }
+.h6, h6 { font-size: var(--ACZ-font-size-2); }
+
+
+/* Main UI sections */
+#divLeft, #divRight {
+  background: var(--ACZ-color-1);
+  min-width: 250px;
+  height: 100%;
+  border: var(--ACZ-border-1);
+  border-radius: var(--ACZ-border-radius-0);
+  color: var(--ACZ-color-input);
+  margin: 0px !important;
+  padding: var(--ACZ-margin-1);
+  gap: var(--ACZ-margin-1);
+  opacity: 1;
+  transition: var(--ACZ-transition-std);
+}
+#divLeft {
+  flex-shrink: 0;
+}
+
+/* Used primarily in Login and main UI top-left */
+.Title {
+  background: var(--ACZ-color-2);
+  border: var(--ACZ-border-1);
+  border-radius: var(--ACZ-border-radius-2);
+  height: auto !important;
+  min-height: var(--ACZ-elem-height-1);
+  overflow: hidden;
+}
+.Title1 {
+  font-size: var(--ACZ-font-size-5);
+  font-weight: bold;
+  font-family: var(--ACZ-font-family);
+  line-height: 1.2;
+  padding-top: 2px;
+  transition: var(--ACZ-transition-std);
+}
+#divTitle > div > div {
+  transition: var(--ACZ-transition-std);
+}
+.Title2 {
+  font-size: var(--ACZ-font-size-2);
+  font-weight: normal;
+  font-family: var(--ACZ-font-family);
+}
+.Title3 {
+  font-size: var(--ACZ-font-size-1);
+  font-weight: normal;
+  font-family: var(--ACZ-font-family);
+  opacity: 0.7;
+}
+
+/* Progress spinner icon */
+#btnProgress {
+  position: relative !important;
+  top: 0px !important;
+  right: 0px !important;
+  left: unset !important;
+  border: none !important;
+  z-index: 1;
+  order: 3;
+  transform: scale(1.05);
+}
+.fa-atom-simple.svg-inline--fa .fa-primary,
+.fa-atom-simple.svg-inline--fa .fa-secondary {
+  transition: var(--ACZ-transition-std);
+}
+.prog-spinner {
+  -webkit-animation: prog-spinner 0.75s infinite linear !important;
+  animation: prog-spinner 2500ms infinite linear !important;
+  transform: rotate(180deg);
+  transform-origin: 50% 50%;
+}
+@keyframes prog-spinner {
+  from { transform:rotate(0deg); }
+  to { transform:rotate(360deg); }
+}
+
+/* Main panel at right is a PageControl */
+#PCMain {
+  position: relative !important;
+  display: flex;
+  top: unset !important;
+  left: unset !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0px;
+  padding: 0px;
+  opacity: 0;
+  transition: var(--ACZ-transition-panel);
+  overflow: hidden;
+}
+
+/* Pages that need a border */
+.Page {
+  top: 0px !important;
+  left: 0px !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+.PageBorder {
+  display: flex;
+  position: relative !important;
+  top: 0px !important;
+  left: 0px !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0px;
+  padding: 0px;
+  gap: var(--ACZ-margin-1);
+  background: var(--ACZ-color-2) !important;
+  border: var(--ACZ-border-1);
+  border-radius: var(--ACZ-border-radius-2);
+}
+/* Pages that draw their own borders - most of them */
+.PageBlank {
+  position: relative !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  top: 0px !important;
+  left: 0px !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0px;
+  padding: 0px;
+  gap: var(--ACZ-margin-1);
+}
+
+/* This is the main part of the page */
+.PageMiddle {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-grow: 1;
+  flex-direction: row;
+  top: 0px !important;
+  left: 0px !important;
+  width: 100% !important;
+  margin: 0px;
+  padding: 0px;
+  overflow: hidden;
+}
+
+/* Sections above and below main part of the page (optional) */
+.PageTop,
+.PageBottom {
+  background: var(--ACZ-color-2);
+  border: var(--ACZ-border-1);
+  border-radius: var(--ACZ-border-radius-1);
+  padding: var(--ACZ-margin-1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0 !important;
+  gap: var(--ACZ-margin-1);
+}
+/* Sections within the page */
+.PageSection {
+  border: var(--ACZ-border-1);
+  border-radius: var(--ACZ-border-radius-1);
+  min-width: 100px;
+  min-height: 100px;
+  background: var(--ACZ-color-2);
+}
+.PageSubSection {
+  margin: var(--ACZ-margin-1);
+  gap: var(--ACZ-margin-1);
+}
+
+/* Default buttons */
+/* NOTE: NavButtons are in Tabulator.css */
+button {
+  --bs-btn-border-radius: var(--ACZ-border-radius-2) !important;
+  border: var(--ACZ-border-1);
+  border-radius: var(--ACZ-border-radius-2);
+  transition: var(--ACZ-transition-std);
+}
+.HugeButton {
+  min-height: var(--ACZ-elem-height-3);
+  min-width: var(--ACZ-elem-height-3);
+}
+.BigButton {
+  max-height: var(--ACZ-elem-height-4);
+  min-height: var(--ACZ-elem-height-4);
+  padding: 6px;
+}
+.BigButton2 {
+  max-height: var(--ACZ-elem-height-4);
+  min-height: var(--ACZ-elem-height-4);
+  padding: 6px;
+  border-radius: var(--ACZ-border-radius-3);
+  --bs-btn-border-radius: var(--ACZ-border-radius-3);
+  transition: var(--ACZ-transition-std);
+}
+.RegButton {
+  min-height: var(--ACZ-elem-height-6);
+  min-width: var(--ACZ-elem-height-6);
+}
+.SmallButton {
+  min-height: var(--ACZ-elem-height-5);
+  min-width: var(--ACZ-elem-height-5);
+}
+.SmallButton2 {
+  transition: var(--ACZ-transition-std);
+  min-height: var(--ACZ-elem-height-5);
+  min-width: var(--ACZ-elem-height-5);
+  border-radius: var(--ACZ-border-radius-3);
+  --bs-btn-border-radius: var(--ACZ-border-radius-3);
+}
+.SmallButton2 > img {
+  width: var(--ACZ-iconimage-size);
+  height: var(--ACZ-iconimage-size);
+  filter: var(--ACZ-iconimage-filter);
+}
+/* Disabled elements */
+button:disabled {
+  opacity: 0.25 !important;
+}
+input:disabled {
+  opacity: 0.25 !important;
+}
+
+/* Collapse animation */
+button.Collapse > svg {
+  transition: var(--ACZ-transition-std);
+}
+
+/* Masks interface when a modal window is needed */
+#divMask {
+  position: absolute !important;
+  display: block;
+  z-index: 0 !important;
+  background: black !important;
+  width: 100% !important;
+  height: 100% !important;
+  top: 0px !important;
+  left: 0px !important;
+  right: 0px !important;
+  bottom: 0px !important;
+  margin: 0px !important;
+  padding: 0px !important;
+  opacity: 1.0;
+  transition: var(--ACZ-transition-std);
+}
+
+/* Popup Panels */
+#divThemesHolder,
+#divLogout,
+#divInactivity {
+  transition: var(--ACZ-transition-std);
+  position: absolute;
+  display: none;
+  z-index: 6 !important;
+  width: 300px;
+  height: 68px;
+  border: var(--ACZ-border-1) !important;
+  border-radius: var(--ACZ-border-radius-2)!important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%);
+  background: var(--ACZ-color-5);
+}
+#divLogout {
+  height: auto !important;
+}
+
+#divThemesHolder {
+  height: 50%;
+}
+#divThemes {
+  width: 100% !important;
+}
+#divThemes > div.tabulator-footer > div.tabulator-calcs-holder > div > div {
+  border-bottom-left-radius: var(--ACZ-border-radius-2);
+  border-bottom-right-radius: var(--ACZ-border-radius-2);
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+}
+#divThemes .tabulator-footer {
+  border-radius: var(--ACZ-border-radius-1);
+}
+#divThemes > div.tabulator-header > div,
+#divThemes > div.tabulator-header > div > div.tabulator-headers > div {
+  border-top-left-radius: var(--ACZ-border-radius-2);
+  border-top-right-radius: var(--ACZ-border-radius-2);
+  border-right: none !important;
+}
+
+/* Splitters are there - grudgingly - as they */
+/* don't work particularly well on mobile but if */
+/* you need to use them on desktop, better that  */
+/* they are there and not used than not there */
+.Splitter {
+  position: relative !important;
+  top: 0px !important;
+  left: unset !important;
+  width: 10px !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  cursor: col-resize;
+  z-index: 1;
+  margin: 0px -3px 0px -3px !important;
+  transition: none;
+  flex-shrink: 0;
+  flex-grow: 0;
+}
+
+/* Used where buttons need bigger descriptions */
+.Labels {
+  font-family: var(--ACZ-font-family);
+  font-size: var(--ACZ-font-size-2);
+  color: var(--ACZ-color-input);
+  line-height: 1.2;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: var(--ACZ-border-radius-3);
+}
+.Labels:hover {
+  background: var(--ACZ-color-6);
+}
+
+/* ToolHeader */
+.ToolHeader {
+  background: var(--ACZ-color-4);
+  border: var(--ACZ-border-1);
+  border-radius: var(--ACZ-border-radius-2);
+  padding: var(--ACZ-margin-1);
+  gap: var(--ACZ-margin-2) !important;
+}
+
+/* ToolFooter */
+.ToolFooter {
+  background: var(--ACZ-color-4);
+  border: var(--ACZ-border-1);
+  border-radius: var(--ACZ-border-radius-2);
+  padding: var(--ACZ-margin-1) var(--ACZ-margin-2);
+  gap: var(--ACZ-margin-2) !important;
+  font-family: var(--ACZ-font-family-monospace) !important;
+}
+.ToolFooter > div > label > div {
+  display: inline;
+  color: var(--ACZ-color-11) !important;
+}
+
+/* ToolSelector */
+.ToolSelector {
+  transition: var(--ACZ-transition-quick);
+}
+.ToolSelector > button {
+  min-width: var(--ACZ-elem-height-4);
+}
+
+/* ToolEditor */
+.ToolEditor {
+  transition: var(--ACZ-transition-quick);
+  width: var(--ACZ-elem-height-4);
+  overflow: hidden !important;
+  padding-right: var(--ACZ-margin-2) !important;
+}
+.ToolEditor > button {
+  min-width: var(--ACZ-elem-height-4);
+  padding: 0px;
+}
+.ToolEditor > input {
+  transition: var(--ACZ-transition-quick);
+  min-width: 0px;
+  margin-left: -30px;
+  border: 1px solid var(--ACZ-color-5);
+  border-left: none;
+  padding-left: 8px;
+}
+.ToolEditor > input:focus {
+  outline: 0px !important;
+  box-shadow: none !important;
+}
+
+/* Scrollbars */
+/* Style the scrollbars */
+::-webkit-scrollbar {
+  width: var(--ACZ-scroll-width-4) !important;
+  min-width: var(--ACZ-scroll-width-4) !important;
+  min-height: var(--ACZ-scroll-width-4) !important;
+}
+::-webkit-scrollbar-track {
+  background: var(--ACZ-scroll-color-track);
+}
+::-webkit-scrollbar-thumb {
+  border: var(--ACZ-scroll-width-5) solid var(--ACZ-scroll-color-border);
+  box-shadow: 0px 0px 0px 10px var(--ACZ-scroll-color-thumb) inset;
+  border-radius: var(--ACZ-scroll-radius-2);
+  overflow: hidden;
+  min-width: var(--ACZ-scroll-width-3);
+  min-height: var(--ACZ-scroll-width-3);
+}
+::-webkit-scrollbar-corner {
+  background: var(--ACZ-scroll-color-track);
+}
+
+/* Toggling classes */
+div.ToggleOff {
+  display: none !important;
+}
+
+
+/* No Connection -> No Theme */
+#divNoConnection {
+  transition: all 1000ms linear;
+  position: absolute;
+  display: none;
+  z-index: 6 !important;
+  width: 300px;
+  height: 68px;
+  border: 2px solid #ccc !important;
+  border-radius: 5px !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%);
+  background: #777;
+  font-family: sans-serif !important;
+  font-size: 11px !important;
+}
+
+
+
+
+.MenuButton > svg {
+  pointer-events: none;
+}
+.Menu {
+  transition: var(--ACZ-transition-std);
+  display: none;
+  position: absolute;
+  flex-direction: column;
+  background: var(--ACZ-color-5);
+  border: var(--ACZ-border-1);
+  border-radius: var(--ACZ-border-radius-2);
+  z-index: 1;
+  color: var(--ACZ-color-input);
+  opacity: 0;
+  overflow: hidden;
+}
+.MenuItem {
+  display: flex;
+  gap: var(--ACZ-margin-1);
+  padding: var(--ACZ-margin-1);
+  cursor: pointer !important;
+  align-items: center;
+  justify-content: start;
+}
+.MenuItem > div.Label {
+  padding: var(--ACZ-margin-1);
+}
+.MenuItem:hover {
+  background: var(--ACZ-color-2);
+}
+
+
+.Color-A { background-color: var(--ACZ-color-A); }
+.Color-B { background-color: var(--ACZ-color-B); }
+.Color-C { background-color: var(--ACZ-color-C); }
+.Color-D { background-color: var(--ACZ-color-D); }
+.Color-E { background-color: var(--ACZ-color-E); }
+.Color-F { background-color: var(--ACZ-color-F); }
+.Color-G { background-color: var(--ACZ-color-G); }
+.Color-H { background-color: var(--ACZ-color-H); }
+
+
+.Bold {
+  color: var(--ACZ-color-input) !important;
+}
+
