@@ -151,4 +151,11 @@ in the migrations themselves so that they get populated in the database directly
 | [1114](/elements/002-helium/acuranzo/migrations/acuranzo_1114.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #023 - Get Session Logs List |
 | [1115](/elements/002-helium/acuranzo/migrations/acuranzo_1115.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #024 - Get Session Log |
 | [1116](/elements/002-helium/acuranzo/migrations/acuranzo_1116.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #025 - Get Queries List |
-| **117** | | | | **637** | **117** | |
+| [1117](/elements/002-helium/acuranzo/migrations/acuranzo_1117.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #026 - Get Lookup |
+| [1118](/elements/002-helium/acuranzo/migrations/acuranzo_1118.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #027 - Get System Query |
+| [1119](/elements/002-helium/acuranzo/migrations/acuranzo_1119.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #028 - Update System Query |
+| [1120](/elements/002-helium/acuranzo/migrations/acuranzo_1120.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #029 - Create System Query |
+| [1121](/elements/002-helium/acuranzo/migrations/acuranzo_1121.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #030 - Get Lookups List |
+| [1122](/elements/002-helium/acuranzo/migrations/acuranzo_1122.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #031 - Get Lookups List + Search |
+| [1123](/elements/002-helium/acuranzo/migrations/acuranzo_1123.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #032 - Get Queries List + Search |
+| **124** | | | | **665** | **124** | |
