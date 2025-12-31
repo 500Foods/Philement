@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.5.0 - 2025-12-31 - Added SIZE_ macros
 -- 2.4.0 - 2025-12-30 - Added JRS, JRM, JRE macros for JSON value retrieval
 -- 2.3.0 - 2025-12-29 - Added SESSION_SECS macro for session duration calculation
 -- 2.2.0 - 2025-12-28 - Added TRMS and TRME macros for time calculations (Time Range Minutes Start/End)
@@ -17,17 +18,28 @@ return {
     CHAR_20 = "char(20)",
     CHAR_50 = "char(50)",
     CHAR_128 = "char(128)",
+    FLOAT = "float",
+    FLOAT_BIG = "double",
     INTEGER = "int",
+    INTEGER_BIG = "bigint",
+    INTEGER_SMALL = "smallint",
     JRS = "",
     JRM = " ->> ",
     JRE = "",
-    NOW = "CURRENT_TIMESTAMP",
+    NOW = "CURRENT_TIMESTAMP(3)",
     PRIMARY = "PRIMARY KEY",
     SERIAL = "int auto increment",
     SESSION_SECS = "UNIX_TIMESTAMP(CURRENT_TIMESTAMP) - UNIX_TIMESTAMP(:SESSION_START)",
+    SIZE_COLLECTION = "LENGTH(collection)",
+    SIZE_FLOAT = "4",
+    SIZE_FLOAT_BIG = "8",
+    SIZE_INTEGER = "4",
+    SIZE_INTEGER_BIG = "8",
+    SIZE_INTEGER_SMALL = "2",
+    SIZE_TIMESTAMP = "7",
     TEXT = "text",
     TEXT_BIG = "text",
-    TIMESTAMP_TZ = "timestamp",
+    TIMESTAMP_TZ = "datetime(3)",
     TRMS = "DATE_SUB(${NOW}, INTERVAL ",
     TRME = " MINUTE)",
     UNIQUE = "UNIQUE",

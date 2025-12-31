@@ -149,4 +149,6 @@ in the migrations themselves so that they get populated in the database directly
 | [1112](/elements/002-helium/acuranzo/migrations/acuranzo_1112.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #021 - Store Session Log |
 | [1113](/elements/002-helium/acuranzo/migrations/acuranzo_1113.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #022 - Delete Session Log |
 | [1114](/elements/002-helium/acuranzo/migrations/acuranzo_1114.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #023 - Get Session Logs List |
-| **115** | | | | **629** | **115** | |
+| [1115](/elements/002-helium/acuranzo/migrations/acuranzo_1115.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #024 - Get Session Log |
+| [1116](/elements/002-helium/acuranzo/migrations/acuranzo_1116.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #025 - Get Queries List |
+| **117** | | | | **637** | **117** | |
