@@ -1,0 +1,5 @@
+# Intended to be used by test_92 to ignore various things for shellcheck
+enable=all
+severity=style
+format=gcc
+external-sources=true

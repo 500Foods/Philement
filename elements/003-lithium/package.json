@@ -1,0 +1,70 @@
+{
+  "name": "lithium-pwa",
+  "version": "1.0.0",
+  "description": "Lithium Progressive Web App with Vanilla JavaScript",
+  "main": "src/app.js",
+  "type": "module",
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "vite dev",
+    "build": "vite build",
+    "build:prod": "vite build --mode production && npm run minify-html",
+    "preview": "vite preview",
+    "minify-html": "html-minifier-terser --input-dir dist --output-dir dist --file-ext html --collapse-whitespace --remove-comments --minify-js --minify-css && terser dist/service-worker.js -o dist/service-worker.js --compress --mangle",
+    "serve": "vite preview --port 3000",
+    "test": "cd tests && npm test",
+    "test:watch": "cd tests && npm run test:watch",
+    "test:coverage": "cd tests && npm run test:coverage",
+    "test:all": "cd tests && node test-runner.js",
+    "lint": "eslint src/**/*.js tests/**/*.js",
+    "lint:fix": "eslint src/**/*.js tests/**/*.js --fix",
+    "format": "prettier --write src/**/*.js tests/**/*.js",
+    "clean": "rm -rf dist coverage reports",
+    "deploy": "npm run build:prod && rsync -avz dist/ user@server:/var/www/lithium/"
+  },
+  "dependencies": {
+    "@vitejs/plugin-basic-ssl": "^1.1.0",
+    "idb": "^7.1.1",
+    "vite": "^5.2.0",
+    "workbox-window": "^7.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/register": "^7.23.7",
+    "eslint": "^8.57.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.1",
+    "html-minifier-terser": "^7.2.0",
+    "prettier": "^3.2.5",
+    "terser": "^5.44.1",
+    "vite-plugin-html": "^3.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "pwa",
+    "progressive-web-app",
+    "vanilla-javascript",
+    "spa",
+    "offline-first"
+  ],
+  "author": "Philement",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/philement/lithium-pwa.git"
+  },
+  "bugs": {
+    "url": "https://github.com/philement/lithium-pwa/issues"
+  },
+  "homepage": "https://philement.github.io/lithium-pwa/",
+  "browserslist": [
+    "> 0.5%",
+    "last 2 versions",
+    "not dead",
+    "not op_mini all"
+  ]
+}
