@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.5.0 - 2025-12-31 - Added SIZE_ macros
 -- 2.4.0 - 2025-12-30 - Added JRS, JRM, JRE macros (JSON Retrieval Start, Middle, End)
 -- 2.3.0 - 2025-12-29 - Added SESSION_SECS macro for session duration calculation
 -- 2.2.0 - 2025-12-28 - Added TRMS and TRME macros for time calculations (Time Range Minutes Start/End)
@@ -13,13 +14,19 @@
 -- Base64 support provided via a C UDF
 -- Brotli decompression provided via a C UDF
 -- Source for both UDFs can be found in the elements/001-hydrogen/hydrogen/extras directory
+-- Unlike other databases, DB2 requires explicit sizes for JSON/VARCHAR/CLOB types
+-- This currently uses 100K for this kind of thing - COLLECTION_SIZE, TEXT_BIG, etc.
 
 return {
     CHAR_2 = "CHAR(2)",
     CHAR_20 = "CHAR(20)",
     CHAR_50 = "CHAR(50)",
     CHAR_128 = "CHAR(128)",
+    FLOAT = "REAL",
+    FLOAT_BIG = "DOUBLE",
     INTEGER = "INTEGER",
+    INTEGER_BIG = "BIGINT",
+    INTEGER_SMALL = "SMALLINT",
     JRS = "JSON_VALUE(",
     JRM = ", ",
     JRE = " DEFAULT NULL ON ERROR)",
@@ -27,6 +34,13 @@ return {
     PRIMARY = "PRIMARY KEY",
     SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
     SESSION_SECS ="(TIMESTAMPDIFF(2, TIMESTAMP(:SESSION_START) - CURRENT TIMESTAMP) * -1) / 1000000",
+    SIZE_COLLECTION = "COALESCE(LENGTH(collection), 0)",
+    SIZE_FLOAT = "4",
+    SIZE_FLOAT_BIG = "4",
+    SIZE_INTEGER = "4",
+    SIZE_INTEGER_BIG = "8",
+    SIZE_INTEGER_SMALL = "2",
+    SIZE_TIMESTAMP = "10",
     TEXT = "VARCHAR(250)",
     TEXT_BIG = "CLOB(100K)",
     TIMESTAMP_TZ = "TIMESTAMP",
