@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="Theme-Default">
 
   <head>
     <!-- Required meta tags -->
@@ -141,31 +141,16 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/suneditor@3.3.0/dist/css/suneditor.min.css">
     <script src="https://cdn.jsdelivr.net/npm/suneditor@3.3.0/dist/suneditor.min.js"></script>
 
+    <!-- Split.js 1.6.5 -->
+    <script src="https://unpkg.com/split.js@1.6.5/dist/split.min.js"></script>
+
     <!-- Preload critical resources -->
-    <link rel="preload" href="/src/app.js" as="script">
   </head>
 
   <body>
-    <!-- Main App Container -->
-    <div class="app-container">
-      <header class="app-header">
-        <h1>Lithium PWA</h1>
-        <p class="subtitle">Modern Progressive Web App</p>
-      </header>
-
-      <main class="app-main">
-        <div class="content">
-          <h2>Welcome to Lithium</h2>
-          <p>A modern Progressive Web App built with vanilla JavaScript.</p>
-          <div id="app" class="app-content">
-            <!-- App content will be loaded here -->
-          </div>
-        </div>
-      </main>
-
-      <footer class="app-footer">
-        <p>&copy; <span id="current-year"></span> Lithium PWA. All rights reserved.</p>
-      </footer>
+    <!-- Main App Container - Full Page SPA -->
+    <div id="app">
+      <!-- Content will be loaded here by JavaScript -->
     </div>
 
     <!-- Bootstrap JS Bundle with Popper -->

@@ -414,6 +414,49 @@ code {
   animation: fadeIn 0.5s ease-out forwards;
 }
 
+/* Crossfade Transitions */
+@keyframes fadeInCross {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOutCross {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.module-crossfade-in {
+  animation: fadeInCross 0.3s ease-out forwards;
+  position: absolute;
+  width: 100%;
+  opacity: 0;
+}
+
+.module-crossfade-out {
+  animation: fadeOutCross 0.3s ease-out forwards;
+  position: absolute;
+  width: 100%;
+  opacity: 1;
+}
+
+.module-container {
+  position: relative;
+  width: 100%;
+  transition: opacity 0.3s ease-out;
+}
+
 /* Code Blocks */
 pre {
   background-color: #2d2d2d;
@@ -448,5 +491,102 @@ code {
 
   pre {
     background-color: #1e1e1e;
+  }
+}
+
+/* Module-specific styles */
+
+/* Login Module */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.login-card {
+  max-width: 400px;
+  width: 100%;
+}
+
+.login-form .form-label {
+  font-weight: 600;
+}
+
+/* Main Menu Module */
+.main-container {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+}
+
+.menu-sidebar {
+  width: 250px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.content-area {
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* Split.js gutter styling - invisible but functional */
+.gutter {
+  background-color: transparent;
+  cursor: col-resize;
+}
+
+.gutter.gutter-horizontal {
+  background-image: none;
+}
+
+.gutter:hover {
+  background-color: rgba(63, 81, 181, 0.1); /* Subtle hover effect */
+}
+
+.menu-button {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  white-space: normal;
+  word-wrap: break-word;
+  min-height: 40px;
+}
+
+.menu-button .button-text {
+  flex: 1;
+  text-align: left;
+}
+
+.menu-button.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.sub-module-container {
+  min-height: 300px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main-container {
+    height: auto;
+  }
+
+  .menu-sidebar {
+    height: auto;
+    min-height: 200px;
+  }
+
+  .content-area {
+    height: auto;
   }
 }
