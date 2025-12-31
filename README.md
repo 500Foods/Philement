@@ -76,46 +76,51 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-12-31 09:01:34 UTC
+Last updated at 2025-12-31 11:50:43 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           144             96              0         375023
+JSON                           148             96              0         382240
 C                              875          35916          34319         126099
 SVG                            116            224           2862         110046
-Markdown                       475          13076             62          37447
-Text                            93             92              0          32725
+Markdown                       479          13608             64          38923
+Text                            94             95              0          33150
+Bourne Shell                   104           4965          71123          23422
 Lua                            136           3141           2867          21702
-Bourne Shell                    94           4402          70287          20487
 C/C++ Header                   184           2015           5227           5891
-JavaScript                      12            759           1014           3628
+JavaScript                      25            952           1104           4484
+CSS                              9            245            103           1430
 CMake                           17            171            318           1153
-HTML                             9            165             46           1092
-CSS                              8            181             78           1081
+HTML                             9            172             58           1150
 make                             9             95             60            517
 TOML                             1             55             35            449
 Python                           1             36              9            195
 SQL                              9             14             13            174
 zsh                              2             31             42             97
-Pascal                           4             34             31             72
-Delphi Form                      2              1              0             66
+Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
+Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          2193          60512         117283         737981
+SUM:                          2223          61851         118219         751233
 -------------------------------------------------------------------------------
-481 Files were skipped (duplicate, binary, or without source code):
+507 Files were skipped (duplicate, binary, or without source code):
   svg: 386
-  ttf: 22
+  ttf: 26
   lua: 12
-  md: 5
-  gitignore: 4
-  png: 4
-  woff2: 4
+  sh: 9
+  md: 7
+  png: 6
+  woff2: 6
+  gitignore: 5
+  json: 4
+  ico: 3
   jpg: 3
+  lintignore-markdown: 3
   clp: 2
-  dproj: 2
-  json: 2
-  lintignore-markdown: 2
+  lintignore-bash: 2
+  lintignore-c: 2
+  lintignore-lua: 2
+  lintignore: 2
   sqruff_db2: 2
   sqruff_mysql: 2
   sqruff_postgresql: 2
@@ -127,18 +132,12 @@ SUM:                          2193          60512         117283         737981
   control: 1
   detailed: 1
   disabled: 1
+  dproj: 1
   gcode: 1
   ggignore: 1
   gitattributes: 1
   html: 1
-  ico: 1
-  js: 1
-  lintignore-bash: 1
-  lintignore-c: 1
-  lintignore-lua: 1
-  lintignore: 1
   payload_generated: 1
-  sh: 1
   sqlite: 1
   stl: 1
   stylelintcache: 1
