@@ -275,8 +275,8 @@ if [[ -n "${CLOC_PID}" ]]; then
             IFS=',' read -r files_part lines_part <<< "${STATS}"
             FILES_COUNT=$(echo "${files_part}" | cut -d':' -f2)
             CODE_LINES=$(echo "${lines_part}" | cut -d':' -f2)
-            LOCCOUNT=$("${PRINTF}" "%'d" "${CODE_LINES}")
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Found $("${PRINTF}" "%'d" "${FILES_COUNT}" || true) files with ${LOCCOUNT} lines of code"
+            LOCCOUNT=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${CODE_LINES}")
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Found $(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${FILES_COUNT}" || true) files with ${LOCCOUNT} lines of code"
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to parse cloc data"
             EXIT_CODE=1

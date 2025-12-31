@@ -194,7 +194,7 @@ parse_sitemap_output "${MARKDOWN_CHECK}" ISSUES_FOUND MISSING_LINKS_COUNT ORPHAN
 
 # Update test name to include total links count
 if [[ "${TOTAL_LINKS}" -gt 0 ]]; then
-    TEST_NAME="Markdown Links  {BLUE}github-sitemap links: $("${PRINTF}" "%'d" "${TOTAL_LINKS}" || true){RESET}"
+    TEST_NAME="Markdown Links  {BLUE}github-sitemap links: $(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${TOTAL_LINKS}" || true){RESET}"
 fi
                                                                                                         
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Missing links found: ${MISSING_LINKS_COUNT}"

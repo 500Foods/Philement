@@ -173,7 +173,7 @@ format_file_size() {
 # Function to format file size with thousands separators
 format_number() {
     local any_number="$1"
-    "${PRINTF}" "%'d" "${any_number}" 2>/dev/null || echo "${any_number}"
+    env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${any_number}" 2>/dev/null || echo "${any_number}"
 }
 
 

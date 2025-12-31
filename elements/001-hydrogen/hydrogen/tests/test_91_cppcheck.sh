@@ -124,9 +124,10 @@ while read -r file; do
 done < <("${FIND}" . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
 
 C_COUNT=${#C_FILES_TO_CHECK[@]}
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Evaluating ${C_COUNT} files..."
+C_COUNT_FMT=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${C_COUNT}" || true)
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Evaluating ${C_COUNT_FMT} files..."
 
-TEST_NAME="${TEST_NAME}  {BLUE}cppcheck: ${C_COUNT} files{RESET}"
+TEST_NAME="${TEST_NAME}  {BLUE}cppcheck: ${C_COUNT_FMT} files{RESET}"
 
 # Run cppcheck once to get both cache stats and issues
 COMBINED_OUTPUT=$(run_cppcheck ".")

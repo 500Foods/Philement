@@ -42,7 +42,7 @@ setup_test_environment
 # Function to format numbers with thousands separators
 format_number() {
     local num="${1}"
-    printf "%'d" "${num}" 2>/dev/null || echo "${num}"
+    env LC_ALL=en_US.UTF_8printf "%'d" "${num}" 2>/dev/null || echo "${num}"
 }
 
 # Function to format duration with leading zero if < 1s
