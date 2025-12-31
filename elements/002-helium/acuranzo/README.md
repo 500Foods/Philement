@@ -158,4 +158,11 @@ in the migrations themselves so that they get populated in the database directly
 | [1121](/elements/002-helium/acuranzo/migrations/acuranzo_1121.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #030 - Get Lookups List |
 | [1122](/elements/002-helium/acuranzo/migrations/acuranzo_1122.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #031 - Get Lookups List + Search |
 | [1123](/elements/002-helium/acuranzo/migrations/acuranzo_1123.lua) | queries | 1.0.0 | 2025-12-30 | 4 | ✗ | QueryRef #032 - Get Queries List + Search |
-| **124** | | | | **665** | **124** | |
+| [1124](/elements/002-helium/acuranzo/migrations/acuranzo_1124.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #033 - Get Session Logs List + Search |
+| [1125](/elements/002-helium/acuranzo/migrations/acuranzo_1125.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #034 - Get Lookup List |
+| [1126](/elements/002-helium/acuranzo/migrations/acuranzo_1126.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #035 - Get Lookup Key |
+| [1127](/elements/002-helium/acuranzo/migrations/acuranzo_1127.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #036 - Store Chat |
+| [1128](/elements/002-helium/acuranzo/migrations/acuranzo_1128.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #037 - Chats Missing Icon+Keywords |
+| [1129](/elements/002-helium/acuranzo/migrations/acuranzo_1129.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #038 - Update Chat Icon+Keywords |
+| [1130](/elements/002-helium/acuranzo/migrations/acuranzo_1130.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #039 - Get Chats List |
+| **131** | | | | **693** | **131** | |
