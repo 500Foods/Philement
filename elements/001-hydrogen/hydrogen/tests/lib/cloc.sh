@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 7.3.0 - 2025-12-30 - Fixed thousands separators by adding LC_ALL=en_US.UTF_8 to printf commands using '%'d 
 # 7.2.0 - 2025-12-27 - Updated Totals row with label and C/C % to main cloc table
 # 7.1.0 - 2025-12-07 - Added HYDROGEN_DOCS_ROOT support for documentation folder inclusion
 # 7.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
@@ -84,7 +85,7 @@ calculate_file_sizes() {
     if [[ -f "${project_root}/hydrogen_release" ]]; then
         release_size=$(stat -c "%s" "${project_root}/hydrogen_release" 2>/dev/null || echo "0")
         if release_size_calc=$(bc -l <<< "scale=0; ${release_size} / 1024" 2>/dev/null); then
-            release_size=$(printf "%.0f" "${release_size_calc}")
+            release_size=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${release_size_calc}")
         else
             release_size="0"
         fi
@@ -94,7 +95,7 @@ calculate_file_sizes() {
     if [[ -f "${project_root}/hydrogen_naked" ]]; then
         naked_size=$(stat -c "%s" "${project_root}/hydrogen_naked" 2>/dev/null || echo "0")
         if naked_size_calc=$(bc -l <<< "scale=0; ${naked_size} / 1024" 2>/dev/null); then
-            naked_size=$(printf "%.0f" "${naked_size_calc}")
+            naked_size=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${naked_size_calc}")
         else
             naked_size="0"
         fi
@@ -104,7 +105,7 @@ calculate_file_sizes() {
     if [[ -f "${project_root}/payloads/payload.tar.br.enc" ]]; then
         payload_size=$(stat -c "%s" "${project_root}/payloads/payload.tar.br.enc" 2>/dev/null || echo "0")
         if payload_size_calc=$(bc -l <<< "scale=0; ${payload_size} / 1024" 2>/dev/null); then
-            payload_size=$(printf "%.0f" "${payload_size_calc}")
+            payload_size=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${payload_size_calc}")
         else
             payload_size="0"
         fi
@@ -118,7 +119,7 @@ calculate_file_sizes() {
         if [[ -n "${latest_installer}" && -f "${latest_installer}" ]]; then
             installer_size=$(stat -c "%s" "${latest_installer}" 2>/dev/null || echo "0")
             if installer_size_calc=$(bc -l <<< "scale=0; ${installer_size} / 1024" 2>/dev/null); then
-                installer_size=$(printf "%.0f" "${installer_size_calc}")
+                installer_size=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${installer_size_calc}")
             else
                 installer_size="0"
             fi
@@ -137,7 +138,7 @@ calculate_file_sizes() {
             if [[ "${repo_bytes}" -gt 0 ]]; then
                 # Convert to MB (not GB)
                 if repo_size_calc=$(bc -l <<< "scale=0; ${repo_bytes} / (1024*1024)" 2>/dev/null); then
-                    repo_size=$(printf "%.0f" "${repo_size_calc}")
+                    repo_size=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${repo_size_calc}")
                 else
                     repo_size="0"
                 fi
@@ -450,19 +451,19 @@ EOF
 
             # Calculate summary values to match ratio calculations (for consistency)
             local total_code_summary total_test_summary
-            total_code_summary=$("${PRINTF}" "%'d" "$((c_code + header_code + cmake_code + shell_code + lua_code + javascript_code))")
-
+            total_code_summary=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "$((c_code + header_code + cmake_code + shell_code + lua_code + javascript_code))")
+            
             # Extract test code value for the Test metric
             local test_code_value
             test_code_value=$(jq -r '.C.code // 0' "${test_json}" 2>/dev/null || echo 0)
-            total_test_summary=$("${PRINTF}" "%'d" "${test_code_value}")
-
+            total_test_summary=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${test_code_value}")
+            
             local total_docs_summary
-            total_docs_summary=$("${PRINTF}" "%'d" "$((markdown_code + markdown_code_test))")
+            total_docs_summary=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "$((markdown_code + markdown_code_test))")
             local total_comments_summary
-            total_comments_summary=$("${PRINTF}" "%'d" "$((c_comment + header_comment + cmake_comment + shell_comment + lua_comment + javascript_comment))")
+            total_comments_summary=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "$((c_comment + header_comment + cmake_comment + shell_comment + lua_comment + javascript_comment))")
             local total_combined_summary
-            total_combined_summary=$("${PRINTF}" "%'d" "$((c_code + header_code + cmake_code + shell_code + lua_code + javascript_code + markdown_code + markdown_code_test + c_comment + header_comment + cmake_comment + shell_comment + lua_comment + javascript_comment))")
+            total_combined_summary=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "$((c_code + header_code + cmake_code + shell_code + lua_code + javascript_code + markdown_code + markdown_code_test + c_comment + header_comment + cmake_comment + shell_comment + lua_comment + javascript_comment))")
 
             # Calculate totals for the 5 code languages
             local total_code_stats=$((c_code + header_code + cmake_code + shell_code + lua_code + javascript_code))
@@ -594,18 +595,18 @@ EOF
 
             # Format values with thousands separators
             local format_instrumented_black format_instrumented_unity format_covered_black format_covered_unity format_instrumented_tests
-            format_instrumented_black=$("${PRINTF}" "%'d" "${instrumented_blackbox}")
-            format_instrumented_unity=$("${PRINTF}" "%'d" "${instrumented_unity}")
-            format_covered_black=$("${PRINTF}" "%'d" "${covered_blackbox}")
-            format_covered_unity=$("${PRINTF}" "%'d" "${covered_unity}")
+            format_instrumented_black=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${instrumented_blackbox}")
+            format_instrumented_unity=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${instrumented_unity}")
+            format_covered_black=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${covered_blackbox}")
+            format_covered_unity=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${covered_unity}")
             # Calculate covered lines for combined coverage
             local covered_combined
             covered_combined=$(printf "%.0f" "$(bc -l <<< "scale=0; (${coverage_combined} * ${instrumented_blackbox}) / 100" 2>/dev/null || echo 0)" 2>/dev/null || echo 0) || true
             local format_covered_combined
-            format_covered_combined=$("${PRINTF}" "%'d" "${covered_combined}")
+            format_covered_combined=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${covered_combined}")
             # Debug: ensure instrumented_tests is not empty before formatting
             if [[ -n "${instrumented_tests}" ]] && [[ "${instrumented_tests}" != "0" ]]; then
-                format_instrumented_tests=$("${PRINTF}" "%'d" "${instrumented_tests}")
+                format_instrumented_tests=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${instrumented_tests}")
             else
                 format_instrumented_tests=""
             fi

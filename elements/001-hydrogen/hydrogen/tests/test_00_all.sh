@@ -662,7 +662,7 @@ done
 
 # Let's come up with a number that represents how much code is in our test suite
 # shellcheck disable=SC2154 # GREP defined externally in framework.sh
-SCRIPT_SCALE=$("${PRINTF}" "%'d" "$(cd "${SCRIPT_DIR}" && "${FIND}" . -type f -name "*.sh" -exec "${GREP}" -vE '^\s*(#|$)' {} + | wc -l)" || true)
+SCRIPT_SCALE=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "$(cd "${SCRIPT_DIR}" && "${FIND}" . -type f -name "*.sh" -exec "${GREP}" -vE '^\s*(#|$)' {} + | wc -l)" || true)
 
 # Format both times as HH:MM:SS.ZZZ
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "${TOTAL_ELAPSED}")
