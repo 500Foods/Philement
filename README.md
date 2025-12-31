@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-12-31 21:25:50 UTC
+Last updated at 2025-12-31 21:54:38 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -65,9 +65,9 @@ Text                            94             95              0          33150
 Bourne Shell                   104           4965          71123          23422
 Lua                            136           3141           2867          21702
 C/C++ Header                   184           2015           5227           5891
-JavaScript                      31           1049           1164           4857
-CSS                             10            303            140           2007
-HTML                            15            174             64           1231
+JavaScript                      31           1049           1164           4853
+CSS                             10            305            146           1997
+HTML                            15            166             61           1191
 CMake                           17            171            318           1153
 make                             9             95             60            517
 TOML                             1             55             35            449
@@ -78,17 +78,17 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          2244          62383         118322         753266
+SUM:                          2244          62377         118325         753212
 -------------------------------------------------------------------------------
-513 Files were skipped (duplicate, binary, or without source code):
+533 Files were skipped (duplicate, binary, or without source code):
   svg: 386
-  ttf: 26
+  woff2: 30
+  ttf: 22
   lua: 12
   sh: 9
   md: 7
   css: 6
   png: 6
-  woff2: 6
   gitignore: 5
   json: 4
   ico: 3
