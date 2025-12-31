@@ -55,4 +55,4 @@ be of interest to you.
 
 ## License
 
-- [**LICENSE**](/docs/Li/LICENSE.md) - This project is covered by the MIT License
+- [**LICENSE**](/elements/003-lithium/LICENSE.md) - This project is covered by the MIT License
