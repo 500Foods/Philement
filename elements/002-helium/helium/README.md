@@ -7,7 +7,7 @@ Early days, so lots of things could find their way into here.
 ## Database Files
 
 | File | Purpose |
-|------|---------|
+| ------ | --------- |
 | [`database.lua`](migrations/database.lua) | Converts migration files to engine-specific SQL using macros and fancy formatting tricks |
 | [`database_mysql.lua`](migrations/database_mysql.lua) | MySQL-specific database configuration |
 | [`database_postgresql.lua`](migrations/database_postgresql.lua) | PostgreSQL-specific database configuration |

@@ -2,10 +2,7 @@
 
 ## Overview
 
-Lithium uses a comprehensive testing approach inspired by the Hydrogen project,
-featuring Mocha as the test framework, Chai for assertions, and NYC (Istanbul)
-for code coverage. This document provides detailed information about the testing
-infrastructure.
+Lithium uses a comprehensive testing approach inspired by the Hydrogen project, featuring Mocha as the test framework, Chai for assertions, and NYC (Istanbul) for code coverage. This document provides detailed information about the testing infrastructure.
 
 ## Table of Contents
 
