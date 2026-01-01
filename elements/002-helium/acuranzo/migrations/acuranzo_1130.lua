@@ -78,7 +78,7 @@ table.insert(queries,{sql=[[
                                 convos_icon,
                                 convos_keywords
                         ) convos_variations
-                    ON app.convos.convos_id = max_convos_id
+                    ON ${SCHEMA}convos.convos_id = max_convos_id
                     WHERE
                         NOT (
                             (convos_ref like '%.Docs.%')
@@ -91,17 +91,29 @@ table.insert(queries,{sql=[[
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
+                    This query returns a list of chat conversations that are not auto-generated.
 
                     ## Parameters
 
+                    - No parameters (yet!).
 
                     ## Returns
 
+                    - convos_id
+                    - convos_ref
+                    - convos_icon
+                    - convos_keywords
+                    - updated_at
+                    - record_size
 
                     ## Tables
 
+                    - `${SCHEMA}convos`: Stores chat conversations
 
                     ## Notes
+
+                    - This excludes auto conversations (those with a reference containing 'Docs' or 'Queries')
+                    - There is currently no limit or filter on the returned list. Will need consider limits here.
 
                 ]==]
                                                                                     AS summary,

@@ -84,7 +84,7 @@ table.insert(queries,{sql=[[
 
                     ## Tables
 
-                    - `app.lists`: Contains blacklist entries with validity periods (list_type_a31 = 0).
+                    - `${SCHEMA}lists`: Contains blacklist entries with validity periods (list_type_a31 = 0).
 
                 ]==]
                                                                                     AS summary,

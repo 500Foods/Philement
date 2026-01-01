@@ -66,15 +66,22 @@ table.insert(queries,{sql=[[
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
+                    This query updates the icon and keywords for a chat conversation.
 
                     ## Parameters
 
+                    - `CONVOSICON` (string): The icon to update
+                    - `CONVOSKEYWORDS` (string): The keywords to update as a comma-separated list
+                    - `CONVOSID` (integer): The conversation ID to update
+                    - `CONVOSREF` (string): The conversation reference to update
 
                     ## Returns
 
+                    - Returns the number of rows affected, expected to be 1.
 
                     ## Tables
 
+                    - `${SCHEMA}convos`: Stores chat conversations
 
                     ## Notes
 
