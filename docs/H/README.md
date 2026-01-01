@@ -37,12 +37,12 @@ Hydrogen is currently designed for technical users who:
 - [**Project Structure**](/docs/H/STRUCTURE.md) - Complete file organization and architecture overview
 - [**Build Environment**](/docs/H/SETUP.md) - Build and runtime requirements, environment setup
 - [**Secrets Management**](/docs/H/SECRETS.md) - Environment variables and security configuration
-- [**Release Notes**](/docs/H/RELEASES.md) - Detailed version history and changes
+- [**Release Notes**](/RELEASES.md) - Detailed version history and changes
 - [**Markdown Site Map**](/docs/H/SITEMAP.md) - Index to all Markdown files in this repository
 
 ### Generated Content
 
-- [**Release Ntes**](/docs/H/releases/README.md) - Release notes
+- [**Release Notes**](/releases/README.md) - Release notes
 - [**Build Metrics**](/docs/H/metrics/README.md) - Daily build metrics and quality tracking
 - [**Planning**](/docs/H/plans/README.md) - Planning documents, TO-DO lists, that kind of thing
 

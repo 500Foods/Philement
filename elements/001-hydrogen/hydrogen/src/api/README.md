@@ -134,7 +134,7 @@ This should return a JSON response indicating the health status of the system.
 
 ## Versioning
 
-The Hydrogen API currently does not implement explicit versioning. All endpoints are considered part of the current stable release unless otherwise noted. Check the [RELEASES.md](/docs/H/RELEASES.md) for information on API changes in each release.
+The Hydrogen API currently does not implement explicit versioning. All endpoints are considered part of the current stable release unless otherwise noted. Check the [RELEASES.md](/RELEASES.md) for information on API changes in each release.
 
 ## Tests
 
