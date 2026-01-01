@@ -55,7 +55,11 @@ table.insert(queries,{sql=[[
                         convos_icon,
                         convos_keywords,
                         updated_at,
-                        66
+                        (${SIZE_INTEGER} * 3)
+                        + (${SIZE_TIMESTAMP} * 4)
+                        + coalesce(LENGTH(convos_ref),0)
+                        + coalesce(LENGTH(convos_keywords),0)
+                        + coalesce(LENGTH(convos_icon),0)
                         + coalesce(LENGTH(prompt),0)
                         + coalesce(LENGTH(response),0)
                         + coalesce(LENGTH(context),0)

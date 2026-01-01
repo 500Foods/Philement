@@ -1,5 +1,5 @@
--- Migration: acuranzo_1124.lua
--- QueryRef #033 - Get Session Logs List + Search
+-- Migration: acuranzo_1139.lua
+-- QueryRef #048 - Create Document
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1124"
-cfg.QUERY_REF = "033"
-cfg.QUERY_NAME = "Get Session Logs List + Search"
+cfg.MIGRATION = "1139"
+cfg.QUERY_REF = "048"
+cfg.QUERY_NAME = "Create Document"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -49,93 +49,62 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    SELECT
-                        session_id,
-                        account_id,
-                        session_length,
-                        session_issues,
-                        session_changes,
-                        session_secs,
-                        session_mins,
-                        status_a25,
-                        flag_a26,
-                        sessions.created_at,
-                        sessions.updated_at,
-                        ${JRS}lua25.collection${JRM}'$.icon'${JRE}) status_icon
-                    FROM (
-                        SELECT
-                            session_id,
-                            account_id,
-                            SUM(session_length) session_length,
-                            SUM(session_issues) session_issues,
-                            SUM(session_changes) session_changes,
-                            MAX(session_secs) session_secs,
-                            MAX(status_a25) status_a25,
-                            MIN(flag_a26) flag_a26,
-                            MIN(created_at) created_at,
-                            MAX(updated_at) updated_at,
-                            1 + (SUM(session_secs) / 60) session_mins
-                        FROM
-                            ${SCHEMA}sessions
-                        WHERE
-                            (account_id = :ACCOUNTID)
-                        GROUP BY
-                            session_id,
-                            account_id
-                    ) sessions
-                    LEFT OUTER JOIN
-                        ${SCHEMA}lookups lua25
-                        ON lua25.lookup_id = 25
-                        AND lua25.key_idx = sessions.status_a25
-                    WHERE
-                        session_id IN (
-                            SELECT
-                                session_id
-                            FROM
-                                ${SCHEMA}sessions
-                            WHERE
-                                (account_id = :ACCOUNTID)
-                                AND (
-                                    (UPPER(session_id) LIKE '%' || :SEARCH || '%')
-                                    OR (UPPER(session) LIKE '%' || :SEARCH || '%')
-                                )
+                    ${INSERT_KEY_START} doc_id ${INSERT_KEY_END}
+                        INSERT INTO ${SCHEMA}documents (
+                            doc_id,
+                            rev_id,
+                            doc_library_a49,
+                            doc_status_a50,
+                            doc_type_a51,
+                            name,
+                            created_at,
+                            created_id,
+                            updated_at,
+                            updated_id
                         )
-                    ORDER BY
-                        sessions.created_at DESC
+                        WITH next_doc_id AS (
+                            SELECT COALESCE(MAX(doc_id), 0) + 1 AS new_doc_id
+                            FROM ${SCHEMA}documents
+                        )
+                        SELECT
+                            new_doc_id,
+                            0, -- no prior revisions
+                            :DOCLIBRARY,
+                            :DOCSTATUS,
+                            :DOCTYPE,
+                            'New Document',
+                            ${NOW},
+                            :USERID,
+                            ${NOW},
+                            :USERID
+                        FROM next_doc_id
+                    ${INSERT_KEY_RETURN} doc_id
+                    ;
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query returns the sessions for a given account, filtered by a search term.
+                    #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
+
+                    This query is used to create a new document.
 
                     ## Parameters
 
-                    - ACCOUNTID - The account to search for sessions
-                    - SEARCH - The search term to filter the results
+                    - `DOCTYPE` (integer): The document type
+                    - `DOCSTATUS` (integer): The document status
+                    - `DOCLIBRARY` (integer): The document library
+                    - `USERID` (integer): The user ID
 
                     ## Returns
 
-                    - session_id - The session ID
-                    - account_id - The account ID
-                    - session_length - The length of the session
-                    - session_issues - The number of issues in the session
-                    - session_changes - The number of changes in the session
-                    - session_secs - The number of seconds in the session
-                    - session_mins - The number of minutes in the session
-                    - status_a25 - The status of the session
-                    - flag_a26 - The flag of the session
-                    - created_at - The creation date of the session
-                    - updated_at - The last update date of the session
-                    - status_icon - The icon for the status of the session
+                    - `doc_id`: The document ID
 
                     ## Tables
 
-                    - 1${SCHEMA}sessions`: The sessions table
+                    - `documents`: The documents table
 
                     ## Notes
-
-                    - The search term is applied to the session_id and session fields
 
                 ]==]
                                                                                     AS summary,
