@@ -71,8 +71,8 @@ table.insert(queries,{sql=[[
                                 SUM(session_issues) session_issues,
                                 SUM(session_changes) session_changes,
                                 MAX(session_secs) session_secs,
-                                MAX(status_lua_25) status_lua_25,
-                                MIN(flag_lua_26) flag_lua_26,
+                                MAX(status_a25) status_a25,
+                                MIN(flag_a26) flag_a26,
                                 MIN(created_at) created_at,
                                 MAX(updated_at) updated_at,
                                 1 + (SUM(session_secs) / 60) session_mins
@@ -87,7 +87,7 @@ table.insert(queries,{sql=[[
                     LEFT OUTER JOIN
                         ${SCHEMA}lookups lua25
                         ON lua25.lookup_id = 25
-                        AND lua25.key_idx = sessions.status_lua_25
+                        AND lua25.key_idx = sessions.status_a25
                   ORDER BY
                     sessions.created_at DESC
                 ]==]                                                                AS code,

@@ -1,5 +1,5 @@
--- Migration: acuranzo_1124.lua
--- QueryRef #033 - Get Session Logs List + Search
+-- Migration: acuranzo_1138.lua
+-- QueryRef #047 - Get Documents
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1124"
-cfg.QUERY_REF = "033"
-cfg.QUERY_NAME = "Get Session Logs List + Search"
+cfg.MIGRATION = "1138"
+cfg.QUERY_REF = "047"
+cfg.QUERY_NAME = "Get Documents"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -50,92 +50,82 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     SELECT
-                        session_id,
-                        account_id,
-                        session_length,
-                        session_issues,
-                        session_changes,
-                        session_secs,
-                        session_mins,
-                        status_a25,
-                        flag_a26,
-                        sessions.created_at,
-                        sessions.updated_at,
-                        ${JRS}lua25.collection${JRM}'$.icon'${JRE}) status_icon
-                    FROM (
-                        SELECT
-                            session_id,
-                            account_id,
-                            SUM(session_length) session_length,
-                            SUM(session_issues) session_issues,
-                            SUM(session_changes) session_changes,
-                            MAX(session_secs) session_secs,
-                            MAX(status_a25) status_a25,
-                            MIN(flag_a26) flag_a26,
-                            MIN(created_at) created_at,
-                            MAX(updated_at) updated_at,
-                            1 + (SUM(session_secs) / 60) session_mins
-                        FROM
-                            ${SCHEMA}sessions
-                        WHERE
-                            (account_id = :ACCOUNTID)
-                        GROUP BY
-                            session_id,
-                            account_id
-                    ) sessions
+                        docs.doc_id,
+                        docs.rev_id,
+                        docs.name,
+                        docs.collection,
+                        docs.doc_library_a49,
+                        docs.doc_status_a50,
+                        docs.doc_type_a51,
+                        docs.valid_after,
+                        docs.valid_until,
+                        docs.created_id,
+                        docs.created_at,
+                        docs.updated_id,
+                        docs.updated_at,
+                        (${SIZE_INTEGER} * 7)
+                        + (${SIZE_TIMESTAMP} * 4)
+                        + COALESCE(LENGTH(docs.name), 0)
+                        + COALESCE(LENGTH(docs.summary), 0)
+                        + COALESCE(LENGTH(docs.file_name), 0)
+                        + COALESCE(LENGTH(docs.file_data), 0)
+                        + COALESCE(LENGTH(docs.file_text), 0)
+                        + COALESCE(LENGTH(docs.file_preview), 0)
+                        + ${SIZE_COLLECTION}
+                        record_size
+                    FROM
+                        ${SCHEMA}documents docs
                     LEFT OUTER JOIN
-                        ${SCHEMA}lookups lua25
-                        ON lua25.lookup_id = 25
-                        AND lua25.key_idx = sessions.status_a25
-                    WHERE
-                        session_id IN (
-                            SELECT
-                                session_id
-                            FROM
-                                ${SCHEMA}sessions
-                            WHERE
-                                (account_id = :ACCOUNTID)
-                                AND (
-                                    (UPPER(session_id) LIKE '%' || :SEARCH || '%')
-                                    OR (UPPER(session) LIKE '%' || :SEARCH || '%')
-                                )
-                        )
+                        ${SCHEMA}lookups library
+                        ON (docs.doc_library_a49 = library.key_idx)
+                        AND (library.lookup_id = 49)
+                  --    LEFT OUTER JOIN
+                  --        ${SCHEMA}lookups status
+                  --        ON (docs.doc_status_a50 = status.key_idx)
+                  --        AND (status.lookup_id = 50)
+                  --    WHERE
+                  --        (library.status_a1 = 1)
+                  --        AND (docs.doc_status_a50 = 1)
                     ORDER BY
-                        sessions.created_at DESC
+                        library.sort_seq,
+                        library.value_txt,
+                        docs.name
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query returns the sessions for a given account, filtered by a search term.
+                    This query returns the list of documents, currently all documents.
 
                     ## Parameters
 
-                    - ACCOUNTID - The account to search for sessions
-                    - SEARCH - The search term to filter the results
+                    - No parameters at this stage
 
                     ## Returns
 
-                    - session_id - The session ID
-                    - account_id - The account ID
-                    - session_length - The length of the session
-                    - session_issues - The number of issues in the session
-                    - session_changes - The number of changes in the session
-                    - session_secs - The number of seconds in the session
-                    - session_mins - The number of minutes in the session
-                    - status_a25 - The status of the session
-                    - flag_a26 - The flag of the session
-                    - created_at - The creation date of the session
-                    - updated_at - The last update date of the session
-                    - status_icon - The icon for the status of the session
+                    - `doc_id`: The document ID
+                    - `rev_id`: The revision ID
+                    - `name`: The document name
+                    - `collection`: The document collection
+                    - `doc_library_a49`: The document library
+                    - `doc_status_a50`: The document status
+                    - `doc_type_a51`: The document type
+                    - `valid_after`: The document valid after date
+                    - `valid_until`: The document valid until date
+                    - `created_id`: The document created by
+                    - `created_at`: The document created at
+                    - `updated_id`: The document updated by
+                    - `updated_at`: The document updated at
+                    - `record_size`: The document record size
 
                     ## Tables
 
-                    - 1${SCHEMA}sessions`: The sessions table
+                    - `documents`: The documents table
+                    - `lookups`: The lookups table
 
                     ## Notes
 
-                    - The search term is applied to the session_id and session fields
+                    - This will need to be filtered at some point, but for now, it's all documents.
 
                 ]==]
                                                                                     AS summary,

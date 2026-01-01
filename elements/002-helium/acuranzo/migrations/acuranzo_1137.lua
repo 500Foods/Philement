@@ -1,5 +1,5 @@
--- Migration: acuranzo_1124.lua
--- QueryRef #033 - Get Session Logs List + Search
+-- Migration: acuranzo_1137.lua
+-- QueryRef #046 - Get Main Menu
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1124"
-cfg.QUERY_REF = "033"
-cfg.QUERY_NAME = "Get Session Logs List + Search"
+cfg.MIGRATION = "1137"
+cfg.QUERY_REF = "046"
+cfg.QUERY_NAME = "Get Main Menu"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -50,92 +50,64 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     SELECT
-                        session_id,
-                        account_id,
-                        session_length,
-                        session_issues,
-                        session_changes,
-                        session_secs,
-                        session_mins,
-                        status_a25,
-                        flag_a26,
-                        sessions.created_at,
-                        sessions.updated_at,
-                        ${JRS}lua25.collection${JRM}'$.icon'${JRE}) status_icon
-                    FROM (
-                        SELECT
-                            session_id,
-                            account_id,
-                            SUM(session_length) session_length,
-                            SUM(session_issues) session_issues,
-                            SUM(session_changes) session_changes,
-                            MAX(session_secs) session_secs,
-                            MAX(status_a25) status_a25,
-                            MIN(flag_a26) flag_a26,
-                            MIN(created_at) created_at,
-                            MAX(updated_at) updated_at,
-                            1 + (SUM(session_secs) / 60) session_mins
-                        FROM
-                            ${SCHEMA}sessions
-                        WHERE
-                            (account_id = :ACCOUNTID)
-                        GROUP BY
-                            session_id,
-                            account_id
-                    ) sessions
+                        modulegroup.value_txt grpname,
+                        modulegroup.key_idx grpnum,
+                        module.value_txt modname,
+                        module.key_idx modnum,
+                        modulegroup.sort_seq grpsort,
+                        module.sort_seq modsort,
+                        1234 entries,
+                        module.collection collection
+                    FROM
+                        ${SCHEMA}lookups module
                     LEFT OUTER JOIN
-                        ${SCHEMA}lookups lua25
-                        ON lua25.lookup_id = 25
-                        AND lua25.key_idx = sessions.status_a25
+                        ${SCHEMA}lookups modulegroup
+                        ON module.value_int = modulegroup.key_idx
                     WHERE
-                        session_id IN (
-                            SELECT
-                                session_id
-                            FROM
-                                ${SCHEMA}sessions
-                            WHERE
-                                (account_id = :ACCOUNTID)
-                                AND (
-                                    (UPPER(session_id) LIKE '%' || :SEARCH || '%')
-                                    OR (UPPER(session) LIKE '%' || :SEARCH || '%')
-                                )
-                        )
+                        (module.lookup_id = 42)
+                        AND (module.status_a1 = 1)
+                        AND (modulegroup.lookup_id = 48)
+                        AND (modulegroup.status_a1 = 1)
                     ORDER BY
-                        sessions.created_at DESC
+                        modulegroup.sort_seq,
+                        modulegroup.value_txt,
+                        module.sort_seq,
+                        module.value_txt
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query returns the sessions for a given account, filtered by a search term.
+                    This query retrieves the Main Menu for the app using the same convention
+                    as the GLM dataase with "Modules" and "Module Groups".
 
                     ## Parameters
 
-                    - ACCOUNTID - The account to search for sessions
-                    - SEARCH - The search term to filter the results
+                    - No parameters at this stage
 
                     ## Returns
 
-                    - session_id - The session ID
-                    - account_id - The account ID
-                    - session_length - The length of the session
-                    - session_issues - The number of issues in the session
-                    - session_changes - The number of changes in the session
-                    - session_secs - The number of seconds in the session
-                    - session_mins - The number of minutes in the session
-                    - status_a25 - The status of the session
-                    - flag_a26 - The flag of the session
-                    - created_at - The creation date of the session
-                    - updated_at - The last update date of the session
-                    - status_icon - The icon for the status of the session
+                    - grpname: The name of the module group
+                    - grpnum: The key index of the module group
+                    - modname: The name of the module
+                    - modnum: The key index of the module
+                    - grpsort: The sort sequence of the module group
+                    - modsort: The sort sequence of the module
+                    - entries: The number of entries in the module (hardcoded to 1234 for now)
+                    - collection: The collection of the module
 
                     ## Tables
 
-                    - 1${SCHEMA}sessions`: The sessions table
+                    - `${SCHEMA}lookups`: Stores lookup keys
 
                     ## Notes
 
-                    - The search term is applied to the session_id and session fields
+                    - This is kind of old-style in that the GLM menu system was written decades ago
+                    - This joins two differnet lookups to get our grouped menu items (one level grouping only)
+                    - This tends to be plenty sufficient for our purposes, but we might consider other
+                      optinos in future to deal with handling "favourite" items and that kind of thing. Maybe.
+                    - At the moment this returns everything as we've not gotten around to limiting it to
+                      the modules that the user has access to. Getting there.
 
                 ]==]
                                                                                     AS summary,

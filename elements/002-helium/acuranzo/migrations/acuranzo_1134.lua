@@ -1,5 +1,5 @@
--- Migration: acuranzo_1124.lua
--- QueryRef #033 - Get Session Logs List + Search
+-- Migration: acuranzo_1134.lua
+-- QueryRef #043 - Update Lookup Key
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1124"
-cfg.QUERY_REF = "033"
-cfg.QUERY_NAME = "Get Session Logs List + Search"
+cfg.MIGRATION = "1134"
+cfg.QUERY_REF = "043"
+cfg.QUERY_NAME = "Update Lookup Key"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -49,93 +49,54 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    SELECT
-                        session_id,
-                        account_id,
-                        session_length,
-                        session_issues,
-                        session_changes,
-                        session_secs,
-                        session_mins,
-                        status_a25,
-                        flag_a26,
-                        sessions.created_at,
-                        sessions.updated_at,
-                        ${JRS}lua25.collection${JRM}'$.icon'${JRE}) status_icon
-                    FROM (
-                        SELECT
-                            session_id,
-                            account_id,
-                            SUM(session_length) session_length,
-                            SUM(session_issues) session_issues,
-                            SUM(session_changes) session_changes,
-                            MAX(session_secs) session_secs,
-                            MAX(status_a25) status_a25,
-                            MIN(flag_a26) flag_a26,
-                            MIN(created_at) created_at,
-                            MAX(updated_at) updated_at,
-                            1 + (SUM(session_secs) / 60) session_mins
-                        FROM
-                            ${SCHEMA}sessions
-                        WHERE
-                            (account_id = :ACCOUNTID)
-                        GROUP BY
-                            session_id,
-                            account_id
-                    ) sessions
-                    LEFT OUTER JOIN
-                        ${SCHEMA}lookups lua25
-                        ON lua25.lookup_id = 25
-                        AND lua25.key_idx = sessions.status_a25
+                    UPDATE
+                        ${SCHEMA}lookups
+                    SET
+                        lookup_id = :LOOKUPID,
+                        key_idx = :KEYIDX,
+                        value_txt = :VALUETXT,
+                        value_int = :VALUEINT,
+                        sort_seq = :SORTSEQ,
+                        status_a1 = :STATUSA1,
+                        summary = :SUMMARY,
+                        code = :CODE,
+                        collection = :COLLECTION,
+                        updated_at = ${NOW},
+                        updated_id = :USERID
                     WHERE
-                        session_id IN (
-                            SELECT
-                                session_id
-                            FROM
-                                ${SCHEMA}sessions
-                            WHERE
-                                (account_id = :ACCOUNTID)
-                                AND (
-                                    (UPPER(session_id) LIKE '%' || :SEARCH || '%')
-                                    OR (UPPER(session) LIKE '%' || :SEARCH || '%')
-                                )
-                        )
-                    ORDER BY
-                        sessions.created_at DESC
+                        (lookup_id = :ORIGLOOKUPID)
+                        AND (key_idx = :ORIGKEYIDX)
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query returns the sessions for a given account, filtered by a search term.
+                    This query updates a lookup key in the database.
 
                     ## Parameters
 
-                    - ACCOUNTID - The account to search for sessions
-                    - SEARCH - The search term to filter the results
+                    - :LOOKUPID (integer): The unique identifier for the lookup.
+                    - :KEYIDX (integer): The key index for the key.
+                    - :VALUETXT (string): The value for the key.
+                    - :VALUEINT (integer): The value for the key.
+                    - :SORTSEQ (integer): The sort sequence for the key.
+                    - :STATUSA1 (integer): The status for the key.
+                    - :SUMMARY (string): The summary for the key.
+                    - :CODE (string): The code for the key.
+                    - :COLLECTION (JSON): The collection for the key.
+                    - :USERID (integer): The user ID for the key.
+                    - :ORIGLOOKUPID (integer): The original lookup ID for the key.
+                    - :ORIGKEYIDX (integer): The original key index for the key.
 
                     ## Returns
 
-                    - session_id - The session ID
-                    - account_id - The account ID
-                    - session_length - The length of the session
-                    - session_issues - The number of issues in the session
-                    - session_changes - The number of changes in the session
-                    - session_secs - The number of seconds in the session
-                    - session_mins - The number of minutes in the session
-                    - status_a25 - The status of the session
-                    - flag_a26 - The flag of the session
-                    - created_at - The creation date of the session
-                    - updated_at - The last update date of the session
-                    - status_icon - The icon for the status of the session
+                    - Affected row count, expected to be 1.
 
                     ## Tables
 
-                    - 1${SCHEMA}sessions`: The sessions table
+                    - `${SCHEMA}lookups`: Stores lookup keys
 
                     ## Notes
-
-                    - The search term is applied to the session_id and session fields
 
                 ]==]
                                                                                     AS summary,

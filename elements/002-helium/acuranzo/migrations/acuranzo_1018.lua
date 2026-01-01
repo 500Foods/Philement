@@ -38,8 +38,8 @@ table.insert(queries,{sql=[[
             CREATE TABLE ${SCHEMA}${TABLE}
             (
                 session_id              ${CHAR_20}          NOT NULL,
-                status_lua_25           ${INTEGER}          NOT NULL,
-                flag_lua_26             ${INTEGER}          NOT NULL,
+                status_a25              ${INTEGER}          NOT NULL,
+                flag_a26                ${INTEGER}          NOT NULL,
                 account_id              ${INTEGER}          NOT NULL,
                 session_length          ${INTEGER}          NOT NULL,
                 session_issues          ${INTEGER}          NOT NULL,
@@ -163,7 +163,7 @@ table.insert(queries,{sql=[[
                                 "unique": false
                             },
                             {
-                                "name": "status_lua_25",
+                                "name": "status_a25",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -171,7 +171,7 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "flag_lua_26",
+                                "name": "flag_a26",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,

@@ -160,7 +160,7 @@ table.insert(queries,{sql=[[
                                 "unique": true
                             },
                             {
-                                "name": "status_lua_34",
+                                "name": "status_a34",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -168,7 +168,7 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "scope_lua_35",
+                                "name": "scope_a35",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -176,7 +176,7 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "type_lua_36",
+                                "name": "type_a36",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
