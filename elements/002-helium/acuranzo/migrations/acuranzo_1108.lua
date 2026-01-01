@@ -80,7 +80,7 @@ table.insert(queries,{sql=[[
 
                     ## Tables
 
-                    - `account_roles`: This table contains the mapping of accounts to their roles,
+                    - `${SCHEMA}account_roles`: This table contains the mapping of accounts to their roles,
                       including validity periods.
 
                     ## Notes

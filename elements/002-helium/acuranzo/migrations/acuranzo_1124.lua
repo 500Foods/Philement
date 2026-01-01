@@ -107,17 +107,35 @@ table.insert(queries,{sql=[[
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
+                    This query returns the sessions for a given account, filtered by a search term.
 
                     ## Parameters
 
+                    - ACCOUNTID - The account to search for sessions
+                    - SEARCH - The search term to filter the results
 
                     ## Returns
 
+                    - session_id - The session ID
+                    - account_id - The account ID
+                    - session_length - The length of the session
+                    - session_issues - The number of issues in the session
+                    - session_changes - The number of changes in the session
+                    - session_secs - The number of seconds in the session
+                    - session_mins - The number of minutes in the session
+                    - status_a25 - The status of the session
+                    - flag_a26 - The flag of the session
+                    - created_at - The creation date of the session
+                    - updated_at - The last update date of the session
+                    - status_icon - The icon for the status of the session
 
                     ## Tables
 
+                    - 1${SCHEMA}sessions`: The sessions table
 
                     ## Notes
+
+                    - The search term is applied to the session_id and session fields
 
                 ]==]
                                                                                     AS summary,

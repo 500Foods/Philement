@@ -100,7 +100,7 @@ table.insert(queries,{sql=[[
 
                     ## Tables
 
-                    - `actions`: The table where the access logs are stored.
+                    - `${SCHEMA}actions`: The table where the access logs are stored.
 
                     ## Notes
 
