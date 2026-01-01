@@ -159,14 +159,14 @@ table.insert(queries,{sql=[[
                                 "unique": false
                             },
                             {
-                                "name": "list_type_lua_31",
+                                "name": "list_type_a31",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false
                             },
                             {
-                                "name": "status_lua_32",
+                                "name": "status_a32",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,

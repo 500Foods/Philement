@@ -165,4 +165,14 @@ in the migrations themselves so that they get populated in the database directly
 | [1128](/elements/002-helium/acuranzo/migrations/acuranzo_1128.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #037 - Chats Missing Icon+Keywords |
 | [1129](/elements/002-helium/acuranzo/migrations/acuranzo_1129.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #038 - Update Chat Icon+Keywords |
 | [1130](/elements/002-helium/acuranzo/migrations/acuranzo_1130.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #039 - Get Chats List |
-| **131** | | | | **693** | **131** | |
+| [1131](/elements/002-helium/acuranzo/migrations/acuranzo_1131.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #040 - Get Chats Lis + Search |
+| [1132](/elements/002-helium/acuranzo/migrations/acuranzo_1132.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #041 - Get Chat |
+| [1133](/elements/002-helium/acuranzo/migrations/acuranzo_1133.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #042 - Create Lookup Key |
+| [1134](/elements/002-helium/acuranzo/migrations/acuranzo_1134.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #043 - Update Lookup Key |
+| [1135](/elements/002-helium/acuranzo/migrations/acuranzo_1135.lua) | queries | 1.0.0 | 2025-12-31 | 10 | ✗ | QueryRef #044 - Get Filtered Lookup: AI Models |
+| [1136](/elements/002-helium/acuranzo/migrations/acuranzo_1136.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #045 - Get Version History |
+| [1137](/elements/002-helium/acuranzo/migrations/acuranzo_1137.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #046 - Get Main Menu |
+| [1138](/elements/002-helium/acuranzo/migrations/acuranzo_1138.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #047 - Get Documents |
+| [1139](/elements/002-helium/acuranzo/migrations/acuranzo_1139.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #048 - Create Document |
+| [1140](/elements/002-helium/acuranzo/migrations/acuranzo_1140.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #049 - Get Document |
+| **141** | | | | **739** | **141** | |

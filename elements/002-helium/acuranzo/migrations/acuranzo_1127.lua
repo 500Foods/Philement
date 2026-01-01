@@ -49,7 +49,7 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    ${INSERT_KEYSTART} convos_id ${INSERT_KEYEND}
+                    ${INSERT_KEY_START} convos_id ${INSERT_KEY_END}
                         INSERT INTO ${SCHEMA}convos (
                             convos_id,
                             convos_ref,
@@ -79,7 +79,8 @@ table.insert(queries,{sql=[[
                             ${NOW}
                         FROM
                             next_convos_id
-                    ${INSERT_RETURN} convos_id;
+                    ${INSERT_KEY_RETURN} convos_id
+                    ;
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[

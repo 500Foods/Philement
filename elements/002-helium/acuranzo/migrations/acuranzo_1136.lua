@@ -1,5 +1,5 @@
--- Migration: acuranzo_1124.lua
--- QueryRef #033 - Get Session Logs List + Search
+-- Migration: acuranzo_1136.lua
+-- QueryRef #045 - Get Version History
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -11,9 +11,9 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1124"
-cfg.QUERY_REF = "033"
-cfg.QUERY_NAME = "Get Session Logs List + Search"
+cfg.MIGRATION = "1136"
+cfg.QUERY_REF = "045"
+cfg.QUERY_NAME = "Get Version History"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -50,92 +50,77 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     SELECT
-                        session_id,
-                        account_id,
-                        session_length,
-                        session_issues,
-                        session_changes,
-                        session_secs,
-                        session_mins,
-                        status_a25,
-                        flag_a26,
-                        sessions.created_at,
-                        sessions.updated_at,
-                        ${JRS}lua25.collection${JRM}'$.icon'${JRE}) status_icon
-                    FROM (
-                        SELECT
-                            session_id,
-                            account_id,
-                            SUM(session_length) session_length,
-                            SUM(session_issues) session_issues,
-                            SUM(session_changes) session_changes,
-                            MAX(session_secs) session_secs,
-                            MAX(status_a25) status_a25,
-                            MIN(flag_a26) flag_a26,
-                            MIN(created_at) created_at,
-                            MAX(updated_at) updated_at,
-                            1 + (SUM(session_secs) / 60) session_mins
-                        FROM
-                            ${SCHEMA}sessions
-                        WHERE
-                            (account_id = :ACCOUNTID)
-                        GROUP BY
-                            session_id,
-                            account_id
-                    ) sessions
-                    LEFT OUTER JOIN
-                        ${SCHEMA}lookups lua25
-                        ON lua25.lookup_id = 25
-                        AND lua25.key_idx = sessions.status_a25
+                        AL.lookup_id,
+                        AL.key_idx,
+                        AL.value_txt,
+                        AL.value_int,
+                        AL.sort_seq,
+                        AL.status_lua_1,
+                        AL.summary,
+                        AL.code,
+                        AL.collection,
+                        AL.valid_after,
+                        AL.valid_until,
+                        AL.created_id,
+                        AL.created_at,
+                        AL.updated_id,
+                        AL.updated_at,
+                        (${SIZE_INTEGER} * 7)
+                        + (${SIZE_TIMESTAMP} * 4)
+                        + COALESCE(LENGTH(AL.value_txt), 0)
+                        + COALESCE(LENGTH(AL.summary), 0)
+                        + COALESCE(LENGTH(AL.code), 0)
+                        + ${SIZE_COLLECTION}
+                        record_size
+                    FROM
+                        ${SCHEMA}lookups AL
                     WHERE
-                        session_id IN (
-                            SELECT
-                                session_id
-                            FROM
-                                ${SCHEMA}sessions
-                            WHERE
-                                (account_id = :ACCOUNTID)
-                                AND (
-                                    (UPPER(session_id) LIKE '%' || :SEARCH || '%')
-                                    OR (UPPER(session) LIKE '%' || :SEARCH || '%')
-                                )
-                        )
+                        (AL.lookup_id = :CLIENTSERVER)
+                        and (AL.key_idx = :KEYIDX)
                     ORDER BY
-                        sessions.created_at DESC
+                        AL.sort_seq,
+                        AL.key_idx,
+                        AL.value_txt,
+                        AL.value_int
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query returns the sessions for a given account, filtered by a search term.
+                    This query retrives version history for client or server applications.
 
                     ## Parameters
 
-                    - ACCOUNTID - The account to search for sessions
-                    - SEARCH - The search term to filter the results
+                    - `:CLIENTSERVER` (integer): The choice between client or server history.
+                    - `:KEYIDX` (integer): The specific history item to retrieve.
 
                     ## Returns
 
-                    - session_id - The session ID
-                    - account_id - The account ID
-                    - session_length - The length of the session
-                    - session_issues - The number of issues in the session
-                    - session_changes - The number of changes in the session
-                    - session_secs - The number of seconds in the session
-                    - session_mins - The number of minutes in the session
-                    - status_a25 - The status of the session
-                    - flag_a26 - The flag of the session
-                    - created_at - The creation date of the session
-                    - updated_at - The last update date of the session
-                    - status_icon - The icon for the status of the session
+                    - lookup_id: The lookup ID for the history item.
+                    - key_idx: The unique identifier for the history item.
+                    - value_txt: The text value associated with the history item.
+                    - value_int: The integer value associated with the history item.
+                    - sort_seq: The sort sequence for the history item.
+                    - status_lua_1: The status of the history item.
+                    - summary: A summary of the history item.
+                    - code: The code associated with the history item.
+                    - collection: A JSON object containing additional details about the history item.
+                    - valid_after: The timestamp after which the history item is valid.
+                    - valid_until: The timestamp until which the history item is valid.
+                    - created_id: The ID of the user who created the history item.
+                    - created_at: The timestamp when the history item was created.
+                    - updated_id: The ID of the user who last updated the history item.
+                    - updated_at: The timestamp when the history item was last updated.
+                    - record_size: The size of the history item record.
 
                     ## Tables
 
-                    - 1${SCHEMA}sessions`: The sessions table
+                    - `${SCHEMA}lookups`: Stores lookup keys
 
                     ## Notes
 
-                    - The search term is applied to the session_id and session fields
+                    - CLIENTSERVER = 45 for client history, 44 for server history.
+                    - Will likely expand to other numbers if other apps are added
 
                 ]==]
                                                                                     AS summary,
