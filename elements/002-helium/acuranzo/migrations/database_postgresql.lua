@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.6.0 - 2025-12-31 - Added fancy INSERT_ macros to get our new key value returned
 -- 2.5.0 - 2025-12-31 - Added SIZE_ macros
 -- 2.4.0 - 2025-12-30 - Added JRS, JRM, JRE macros for JSON value retrieval
 -- 2.3.0 - 2025-12-29 - Added SESSION_SECS macro for session duration calculation
@@ -18,6 +19,9 @@ return {
     CHAR_20 = "char(20)",
     CHAR_50 = "char(50)",
     CHAR_128 = "char(128)",
+    INSERT_KEY_START = "-- ",
+    INSERT_KEY_END = "",
+    INSERT_KEY_RETURN = "RETURNING ",
     INTEGER = "integer",
     INTEGER_BIG = "bigint",
     INTEGER_SMALL = "smallint",

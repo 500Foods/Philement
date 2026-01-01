@@ -70,7 +70,7 @@ table.insert(queries,{sql=[[
 
                     ## Tables
 
-                    - `tokens`: This table stores JWT token hashes along with associated metadata.
+                    - `${SCHEMA}tokens`: This table stores JWT token hashes along with associated metadata.
 
                     ## Notes
 

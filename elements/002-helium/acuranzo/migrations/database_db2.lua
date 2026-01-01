@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.6.0 - 2025-12-31 - Added fancy INSERT_ macros to get our new key value returned
 -- 2.5.0 - 2025-12-31 - Added SIZE_ macros
 -- 2.4.0 - 2025-12-30 - Added JRS, JRM, JRE macros (JSON Retrieval Start, Middle, End)
 -- 2.3.0 - 2025-12-29 - Added SESSION_SECS macro for session duration calculation
@@ -24,6 +25,9 @@ return {
     CHAR_128 = "CHAR(128)",
     FLOAT = "REAL",
     FLOAT_BIG = "DOUBLE",
+    INSERT_KEY_START = "SELECT ",
+    INSERT_KEY_END = " FROM FINAL TABLE (",
+    INSERT_KEY_RETURN = "); -- ",
     INTEGER = "INTEGER",
     INTEGER_BIG = "BIGINT",
     INTEGER_SMALL = "SMALLINT",

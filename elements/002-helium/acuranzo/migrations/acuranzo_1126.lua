@@ -87,15 +87,32 @@ table.insert(queries,{sql=[[
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
+                    This query returns the lookup values for the specified lookup ID and key index.
 
                     ## Parameters
 
+                    - LOOKUPID - The lookup ID to filter the results
+                    - KEYIDX - The key index to filter the results
 
                     ## Returns
 
+                    - lookup_id - The lookup ID
+                    - key_idx - The key index
+                    - value_txt - The text value
+                    - value_int - The integer value
+                    - sort_seq - The sort sequence
+                    - status_a1 - The status
+                    - valid_after - The valid after date
+                    - valid_until - The valid until date
+                    - created_id - The created by ID
+                    - created_at - The created at date
+                    - updated_id - The updated by ID
+                    - updated_at - The updated at date
+                    - record_size - The record size
 
                     ## Tables
 
+                    - `${SCHEMA}lookups`: The lookups table
 
                     ## Notes
 

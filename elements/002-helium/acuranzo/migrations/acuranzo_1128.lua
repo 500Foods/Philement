@@ -68,7 +68,7 @@ table.insert(queries,{sql=[[
                             GROUP BY
                                 convos_ref
                         ) convos_updates
-                        ON app.convos.convos_id = max_convos_id
+                        ON ${SCHEMA}convos.convos_id = max_convos_id
                     WHERE
                         NOT(
                             (convos_ref like '%.Docs.%')
@@ -81,15 +81,23 @@ table.insert(queries,{sql=[[
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
+                    This query returns the most recent chat for each chat reference that is missing either an icon or keywords.
 
                     ## Parameters
 
+                    - No parameters.
 
                     ## Returns
 
+                    - convos_id
+                    - convos_ref
+                    - context
+                    - prompt
+                    - response
 
                     ## Tables
 
+                    - `${SCHEMA}convos`: Stores chat conversations
 
                     ## Notes
 
