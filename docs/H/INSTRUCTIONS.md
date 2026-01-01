@@ -110,7 +110,7 @@ tests/          Test framework
 ## CRITICAL DOCUMENTATION
 
 - /docs/H/README.md - contains TOC for all docs
-- /docs/H/RELEASES.md - release history and update instructions
+- /RELEASES.md - release history and update instructions
 - /docs/H/SITEMAP.md - links to all markdown docs
 - /docs/H/STRUCTURE.md - links to all files
 - /docs/H/tests/TESTING.md - blackbox/integration tests tests

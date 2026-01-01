@@ -281,4 +281,4 @@ For detailed information about the Subsystem Registry design and implementation,
 - [WebSocket Interface](/docs/H/core/subsystems/websocket/websocket.md) - WebSocket server shutdown implementation
 - [mDNS Server](/docs/H/core/subsystems/mdnsserver/mdnsserver.md) - mDNS server shutdown implementation
 - [System Info API](/docs/H/api/system/system_info.md) - System health and status monitoring
-- [Release Notes](/docs/H/RELEASES.md) - History of shutdown improvements
+- [Release Notes](/RELEASES.md) - History of shutdown improvements
