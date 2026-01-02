@@ -53,21 +53,21 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-01-02 10:08:42 UTC
+Last updated at 2026-01-02 15:26:37 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           149             97              0         386316
+JSON                           150             98              0         390392
 C                              875          35916          34319         126099
 SVG                            106            204           2502          94506
-Markdown                       511          14191            121          40362
-Text                            95             96              0          33519
+Markdown                       512          14275            121          40593
+Text                            96             97              0          33888
 Lua                            153           3587           3045          24647
-Bourne Shell                   104           4969          71496          23408
+Bourne Shell                   104           4969          71693          23408
+JavaScript                      38           1298           1829           6436
 C/C++ Header                   184           2015           5227           5891
-JavaScript                      31           1049           1164           4853
-CSS                             10            305            146           1997
-HTML                            15            166             61           1191
+CSS                             13            354            175           2221
+HTML                            15            167             62           1194
 CMake                           17            171            318           1153
 make                             9             95             60            517
 TOML                             1             55             35            449
@@ -78,7 +78,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          2277          63017         118573         745485
+SUM:                          2290          63402         119465         751971
 -------------------------------------------------------------------------------
 613 Files were skipped (duplicate, binary, or without source code):
   svg: 464
