@@ -135,14 +135,6 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [COMPLETE.svg](/elements/001-hydrogen/hydrogen/images/COMPLETE.svg): Latest Test Suite Results table rendered as SVG
 - [COVERAGE.svg](/elements/001-hydrogen/hydrogen/images/COVERAGE.svg): Latest Test Suite Coverage table rendered as SVG
 
-## Folder: /images/acuranzo
-
-- [README.md](/elements/001-hydrogen/hydrogen/images/acuranzo/README.md): Documentation for Acuranzo database diagrams
-
-## Folder: /images/helium
-
-- [README.md](/elements/001-hydrogen/hydrogen/images/helium/README.md): Documentation for Helium database diagrams
-
 ## Folder: /payloads
 
 - [README.md](/elements/001-hydrogen/hydrogen/payloads/README.md)

@@ -8,7 +8,11 @@
 # - Warning suppressions for common patterns
 # - Code style settings
 #
-# Used primarily by tests/test_38_luacheck.sh for Lua code linting.
+# Used primarily by tests/test_98_luacheck.sh for Lua code linting.
+#
+# CHANGELOG:
+# 2026-01-01: Added ignore=561 to suppress cyclomatic complexity warnings for database migration functions
+#             when HELIUM_ROOT Lua files were added to the test coverage.
 
 # Standard library (lua51, lua52, lua53, luajit, ngx_lua)
 std=max
@@ -31,7 +35,9 @@ global=schema
 # 213: unused loop variable
 # 311: value assigned to variable is unused
 # 542: empty if branch
+# 561: cyclomatic complexity (for database migration functions)
 ignore=542
+ignore=561
 
 # Don't report unused arguments that start with underscore
 option=--no-unused-args

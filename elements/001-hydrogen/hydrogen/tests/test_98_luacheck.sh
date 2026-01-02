@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-
+ 
 # Test: Lua Code Analysis
 # Performs luacheck analysis on Lua source files
-
+ 
 # FUNCTIONS
 # run_luacheck()
-
+ 
 # CHANGELOG
+# 1.1.0 - 2026-01-01 - Added HELIUM_ROOT Lua files to analysis
 # 1.0.0 - 2025-10-15 - Initial version for Lua code analysis based on test_91_cppcheck.sh
 
 set -euo pipefail
@@ -56,6 +57,8 @@ run_luacheck() {
 
     # Collect files with inline filtering using centralized exclusion function
     local files=()
+    
+    # First, collect files from current directory (HYDROGEN_ROOT)
     while read -r file; do
         rel_file="${file#./}"
         # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -63,6 +66,19 @@ run_luacheck() {
             files+=("${file}")
         fi
     done < <("${FIND}" . -type f -name "*.lua" || true)
+    
+    # Then, collect files from HELIUM_ROOT
+    if [[ -d "${HELIUM_ROOT}" ]]; then
+        while read -r file; do
+            # Convert HELIUM_ROOT path to relative path for exclusion checking
+            rel_file="${file#${HELIUM_ROOT}/}"
+            rel_file="helium/${rel_file}"  # Add helium prefix to distinguish from hydrogen files
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if ! should_exclude_file "${rel_file}"; then
+                files+=("${file}")
+            fi
+        done < <("${FIND}" "${HELIUM_ROOT}" -type f -name "*.lua" || true)
+    fi
 
     if [[ ${#files[@]} -gt 0 ]]; then
         # Calculate modified files since last run
@@ -99,6 +115,8 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Detected ${CORES} CPU cores fo
 
 # Count files that will be checked (excluding .lintignore patterns)
 LUA_FILES_TO_CHECK=()
+
+# Count files from current directory (HYDROGEN_ROOT)
 while read -r file; do
     rel_file="${file#./}"
     # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -106,6 +124,18 @@ while read -r file; do
         LUA_FILES_TO_CHECK+=("${rel_file}")
     fi
 done < <("${FIND}" . -type f -name "*.lua" || true)
+
+# Count files from HELIUM_ROOT
+if [[ -d "${HELIUM_ROOT}" ]]; then
+    while read -r file; do
+        rel_file="${file#${HELIUM_ROOT}/}"
+        rel_file="helium/${rel_file}"  # Add helium prefix to distinguish from hydrogen files
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if ! should_exclude_file "${rel_file}"; then
+            LUA_FILES_TO_CHECK+=("${rel_file}")
+        fi
+    done < <("${FIND}" "${HELIUM_ROOT}" -type f -name "*.lua" || true)
+fi
 
 LUA_COUNT=${#LUA_FILES_TO_CHECK[@]}
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Evaluating ${LUA_COUNT} files..."
