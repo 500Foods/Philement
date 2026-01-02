@@ -7,6 +7,7 @@
 # generate_database_diagram()
 
 # CHANGELOG
+# 3.0.0 - 2026-01-01 - Generate SVG diagrams in HELIUM_ROOT/<design>/diagrams directories instead of HYDROGEN_ROOT/images
 # 2.0.0 - 2025-11-17 - Fixed diagram numbering bug, added before/after highlighting, generates diagrams for ALL migrations (not just latest)
 # 1.2.0 - 2025-11-15 - Fixed filename generation to use last_diagram_migration from metadata
 # 1.1.0 - 2025-09-30 - Added metadata, starting with 'Tables included' to output
@@ -82,20 +83,13 @@ generate_database_diagram() {
     local schema="$3"
     local migration_num="$4"
 
-    # Create output directory in hydrogen project (not global project root)
-    local hydrogen_dir
-    hydrogen_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
-    local output_dir="${hydrogen_dir}/images/${design}"
+    # Create output directory in HELIUM_ROOT/<design>/diagrams/<engine>
+    local output_dir="${HELIUM_ROOT}/${design}/diagrams/${engine}"
     mkdir -p "${output_dir}"
 
     # Generate filename using requested migration number
-    local schema_part=""
-    if [[ -n "${schema}" ]]; then
-        schema_part="-${schema,,}"  # ,, converts to lowercase
-    fi
-    
-    # Always use the requested migration number for the filename
-    local output_file="${output_dir}/${design,,}-${engine,,}${schema_part}-${migration_num}.svg"
+    # Format: ${design}-${engine}-${migration_num}.svg
+    local output_file="${output_dir}/${design,,}-${engine,,}-${migration_num}.svg"
     local metadata_file="${output_file%.svg}.metadata"
 
     # Check if diagram already exists - skip if it does
@@ -374,12 +368,8 @@ for design in "${DESIGNS[@]}"; do
                         fi
                     fi
 
-                    # Calculate output directory
-                    hydrogen_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
-                    output_dir="${hydrogen_dir}/images/${design}"
-
-                    # Metadata file uses requested migration number
-                    metadata_file="${output_dir}/${design,,}-${engine,,}${display_schema}-${migration_num}.metadata"
+                    # Calculate output directory and metadata file
+                    metadata_file="${HELIUM_ROOT}/${design}/diagrams/${engine}/${design,,}-${engine,,}-${migration_num}.metadata"
 
                     # Show table count and highlighting statistics from metadata
                     if [[ -f "${metadata_file}" ]]; then
@@ -401,10 +391,8 @@ for design in "${DESIGNS[@]}"; do
                         rm -f "${metadata_file}"
                     fi
 
-                    # Extract relative path from hydrogen directory
-                    relative_result_file="${result_file#*hydrogen/hydrogen/}"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${relative_result_file}"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diagram in images/${design}/${design}-${engine}${display_schema}-${migration_num}.svg"
+                    # Show the new diagram location
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diagram in ${design}/diagrams/${engine}/${design}-${engine}-${migration_num}.svg"
 
                     if [[ -f "${result_file}" ]]; then
                         result_content=$(cat "${result_file}")

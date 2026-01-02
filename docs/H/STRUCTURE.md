@@ -25,7 +25,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [PROMPTS.md](/docs/H/PROMPTS.md) - More about prompts
 - [CURIOSITIES.md](/docs/H/CURIOSITIES.md) - More about the project
 - [SETUP.md](/docs/H/SETUP.md) - Installation and setup instructions
-- [RELEASES.md](/RELEASES.md) - Release notes and version history
 - [SECRETS.md](/docs/H/SECRETS.md) - Security configuration guide
 - [SITEMAP.md](/docs/H/SITEMAP.md) - Project navigation and file index
 - [STRUCTURE.md](/docs/H/STRUCTURE.md) - This file - project structure overview
@@ -40,16 +39,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [CLOC_STAT.svg](/elements/001-hydrogen/hydrogen/images/CLOC_STAT.svg) - Extended statistics generated from cloc data (auto-generated)
 - [COVERAGE.svg](/elements/001-hydrogen/hydrogen/images/COVERAGE.svg) - Visual coverage analysis report (auto-generated)
 - [COMPLETE.svg](/elements/001-hydrogen/hydrogen/images/COMPLETE.svg) - Complete test suite results visualization (auto-generated)
-
-</details>
-
-<details>
-<summary><b>Database Diagrams</b></summary>
-
-- [images/acuranzo/](/elements/001-hydrogen/hydrogen/images/acuranzo/) - Acuranzo database schema diagrams ([README](/elements/001-hydrogen/hydrogen/images/acuranzo/README.md))
-- [images/gaius/](/elements/001-hydrogen/hydrogen/images/gaius/) - Gaius database schema diagrams ([README](/elements/001-hydrogen/hydrogen/images/gaius/README.md))
-- [images/glm/](/elements/001-hydrogen/hydrogen/images/glm/) - GLM database schema diagrams ([README](/elements/001-hydrogen/hydrogen/images/glm/README.md))
-- [images/helium/](/elements/001-hydrogen/hydrogen/images/helium/) - Helium database schema diagrams ([README](/elements/001-hydrogen/hydrogen/images/helium/README.md))
 
 </details>
 

@@ -10,11 +10,7 @@ The main TOC for the Hydrogen project can be found in [**/docs/H/README.md**](/d
   - [Brotli UDF for MySQL](/elements/001-hydrogen/hydrogen/extras/brotli_udf_mysql/README.md) - Decompress brotli in MySQL/MariaDB
   - [Brotli UDF for PostgreSQL](/elements/001-hydrogen/hydrogen/extras/brotli_udf_postgresql/README.md) - Decompress brotli in PostgreSQL
   - [Brotli UDF for SQLite](/elements/001-hydrogen/hydrogen/extras/brotli_udf_sqlite/README.md) - Decompress brotli in SQLite
-- [**images**](/elements/001-hydrogen/hydrogen/images/README.md) - Generated SVGs for build statistics, database diagrams
-  - [acuranzo](/elements/001-hydrogen/hydrogen/images/acuranzo/README.md) - Database diagrams for Acuranzo instances
-  - [gaius](/elements/001-hydrogen/hydrogen/images/gaius/README.md) - Database diagrams for GAIUS instances
-  - [glm](/elements/001-hydrogen/hydrogen/images/glm/README.md) - Database diagrams for GLM instances
-  - [helium](/elements/001-hydrogen/hydrogen/images/helium/README.md) - Database diagrams for Helium instances
+- [**images**](/elements/001-hydrogen/hydrogen/images/README.md) - Generated SVGs for build statistics
 - [**installer**](/elements/001-hydrogen/hydrogen/installer/README.md) - Bash installation script intended for end users
 - [**payloads**](/elements/001-hydrogen/hydrogen/payloads/README.md) - Tools for building Hydrogen payload files
 - [**src**](/elements/001-hydrogen/hydrogen/src/README.md) - The main C source code for the Hydrogen project

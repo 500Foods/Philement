@@ -15,6 +15,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-01-01 - Fixed test conditions to be == instead of ~= (oopsie!)
 -- 1.0.0 - 2025-12-31 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -25,7 +26,7 @@ cfg.MIGRATION = "1135"
 cfg.QUERY_REF = "044"
 cfg.QUERY_NAME = "Get Filtered Lookup: AI Models"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-if engine ~= 'db2' then table.insert(queries,{sql=[[
+if engine == 'db2' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -161,7 +162,7 @@ if engine ~= 'db2' then table.insert(queries,{sql=[[
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-if engine ~= 'mysql' then table.insert(queries,{sql=[[
+if engine == 'mysql' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -297,7 +298,7 @@ if engine ~= 'mysql' then table.insert(queries,{sql=[[
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-if engine ~= 'postgresql' then table.insert(queries,{sql=[[
+if engine == 'postgresql' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -431,9 +432,8 @@ if engine ~= 'postgresql' then table.insert(queries,{sql=[[
     FROM next_query_id;
 
 ]]}) end
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-if engine ~= 'sqlite' then table.insert(queries,{sql=[[
+if engine == 'sqlite' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}

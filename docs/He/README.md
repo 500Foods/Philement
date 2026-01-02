@@ -1,6 +1,31 @@
 # Helium Database Schema Project
 
-The Helium project provides database schemas and migrations for the Hydrogen server system. It supports multiple database engines and enables schema-agnostic database operations.
+The Helium project provides database schemas and migrations (collectively referred to as "designs") for the Hydrogen server system. It supports multiple database engines - currently including the following.
+
+- [PostgreSQL 16+](https://www.postgresql.org/) - Advanced open source relational database
+- [MariaDB 10.5+](https://mariadb.org/) - Enhanced, drop-in MySQL replacement[^mysql-note]
+- [SQLite 3.35+](https://www.sqlite.org/) - Self-contained, serverless SQL database engine
+- [IBM DB2 (LUW) 10+](https://www.ibm.com/products/db2-database) - Enterprise-grade relational database system
+
+[^mysql-note]: The original intent was for MySQL/MariaDB support, but only MariaDB is included in the test environment. MySQL compatibility should be carefully evaluated if needd.
+
+Within this project are the Lua scripts that make up the designs for each schema.
+
+- Creates tables and other database objects (DDL)
+- Populates tables with default data (DML)
+- Includes both forward and reverse migrations
+- Diagram information is embedded in individaul migration files
+
+The Hydrogen project is what uses these files. The migration files themsleves can be directly embedded into the Hydrogen executable payload. And they are included in the comprehensive test suite for the Hydrogen Project. That is also where the database diagram generation occurs, with the resulting SVG files landing here.
+
+- [Test 30 - Database Subsystem Test](/docs/H/tests/test_30_database.md) - Validates Database Queue Manager (DQM) startup and functionality across multiple database engines
+- [Test 31 - Migration Validation](/docs/H/tests/test_31_migrations.md) - Performs static analysis on database migration files using SQL linting tools
+- [Test 32 - PostgreSQL Migrations](/docs/H/tests/test_32_postgres_migrations.md) - Tests PostgreSQL database migration performance and execution
+- [Test 33 - MySQL Migrations](/docs/H/tests/test_33_mysql_migrations.md) - Tests MySQL/MariaDB database migration performance and execution
+- [Test 34 - SQLite Migrations](/docs/H/tests/test_34_sqlite_migrations.md) - Tests SQLite database migration performance and execution
+- [Test 35 - DB2 Migrations](/docs/H/tests/test_35_db2_migrations.md) - Tests IBM DB2 database migration performance and execution
+- [Test 71 - Database Diagrams](/docs/H/tests/test_71_database_diagrams.md) - Generates SVG database diagrams for all supported database engine and design combinations
+- [Test 98 - Lua Code Analysis](/docs/H/tests/test_98_luacheck.md) - Performs static analysis on Lua source files using luacheck tool
 
 ## Table of Contents
 
@@ -57,17 +82,18 @@ Each schema provides a complete database design with migrations, supporting Post
 
 ## Repository Information
 
-Generated 2025-Dec-31 (Wed) 22:02:28 PST
+Generated 2026-Jan-01 (Thu) 18:12:15 PST
 
 ```cloc
-github.com/AlDanial/cloc v 2.06  T=0.43 s (428.1 files/s, 87841.1 lines/s)
+github.com/AlDanial/cloc v 2.06  T=0.96 s (295.5 files/s, 135589.4 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Lua                            152           3581           3036          24637
-Markdown                        28           1442              0           3729
+SVG                            100            200           2496          89564
+Lua                            152           3581           3035          24637
+Markdown                        28           1448              0           3748
 Bourne Shell                     3            152            160            814
 -------------------------------------------------------------------------------
-SUM:                           183           5175           3196          29180
+SUM:                           283           5381           5691         118763
 -------------------------------------------------------------------------------
 ```
