@@ -71,7 +71,7 @@ run_luacheck() {
     if [[ -d "${HELIUM_ROOT}" ]]; then
         while read -r file; do
             # Convert HELIUM_ROOT path to relative path for exclusion checking
-            rel_file="${file#${HELIUM_ROOT}/}"
+            rel_file="${file#"${HELIUM_ROOT}"/}"
             rel_file="helium/${rel_file}"  # Add helium prefix to distinguish from hydrogen files
             # shellcheck disable=SC2310 # We want to continue even if the test fails
             if ! should_exclude_file "${rel_file}"; then
@@ -128,7 +128,7 @@ done < <("${FIND}" . -type f -name "*.lua" || true)
 # Count files from HELIUM_ROOT
 if [[ -d "${HELIUM_ROOT}" ]]; then
     while read -r file; do
-        rel_file="${file#${HELIUM_ROOT}/}"
+        rel_file="${file#"${HELIUM_ROOT}"/}"
         rel_file="helium/${rel_file}"  # Add helium prefix to distinguish from hydrogen files
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if ! should_exclude_file "${rel_file}"; then

@@ -360,14 +360,6 @@ for design in "${DESIGNS[@]}"; do
 
                     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${subtest_name}"
 
-                    # Generate the correct filename with proper schema handling
-                    display_schema=""
-                    if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
-                        if [[ -n "${SCHEMA_ARRAY[${i}]}" ]]; then
-                            display_schema="-${SCHEMA_ARRAY[${i}],,}"
-                        fi
-                    fi
-
                     # Calculate output directory and metadata file
                     metadata_file="${HELIUM_ROOT}/${design}/diagrams/${engine}/${design,,}-${engine,,}-${migration_num}.metadata"
 

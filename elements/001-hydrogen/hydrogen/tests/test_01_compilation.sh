@@ -7,6 +7,7 @@
 # download_unity_framework()
 
 # CHANGELOG
+# 4.4.1 - 2026-01-01 - If migrations have been updated, in addition to regenerating the payload, the helium/helium_update.sh script is also run
 # 4.4.0 - 2025-12-13 - Added check for HBM browser files timestamps in payload regeneration logic
 # 4.3.0 - 2025-12-03 - Extracted installer building functionality to standalone Test 80 (INS)
 # 4.2.0 - 2025-11-22 - Enhanced payload check to verify migration file timestamps - regenerates if any migration files are newer than payload
@@ -206,6 +207,18 @@ needs_payload_regeneration() {
         if find "${migrations_dir}" -type f \
             \( -name "database.lua" -o -name "database_*.lua" -o -name "${design}_????.lua" \) \
             -newer "${payload_file}" -print -quit 2>/dev/null | grep -q .; then
+            
+            # Run helium_update.sh from within the HELIUM_ROOT folder
+            if [[ -f "${helium_base_dir}/scripts/helium_update.sh" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running helium_update.sh due to migration changes..."
+                # shellcheck disable=SC2310 # We want to continue even if this fails
+                if (cd "${helium_base_dir}" && ./scripts/helium_update.sh >/dev/null 2>&1); then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "helium_update.sh completed successfully"
+                else
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "helium_update.sh failed or not found"
+                fi
+            fi
+            
             return 0  # Found newer migration files, need to regenerate
         fi
     done
