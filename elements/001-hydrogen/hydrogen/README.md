@@ -20,7 +20,6 @@ The main TOC for the Hydrogen project can be found in [**/docs/H/README.md**](/d
 
 - [**tests/unity**](/docs/H/tests/TESTING_UNITY.md) - Unity Framework unit test guidelines
 - [**tests/unity/framework/Unity**](/elements/001-hydrogen/hydrogen/tests/unity/framework/Unity/README.md) - Unity Framework documentation
-- [**tests/unity/framework/CMock**](/elements/001-hydrogen/hydrogen/tests/unity/framework/CMock/README.md) - CMockFramework documentation
 
 ## License
 

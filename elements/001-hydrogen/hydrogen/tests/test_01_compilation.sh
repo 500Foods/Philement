@@ -72,26 +72,26 @@ download_unity_framework() {
 }
 
 # Function to download CMock framework if missing
-download_cmock_framework() {
-    local unity_dir="${SCRIPT_DIR}/unity"
-    local framework_dir="${unity_dir}/framework"
-    local cmock_framework_dir="${framework_dir}/CMock"
+# download_cmock_framework() {
+#     local unity_dir="${SCRIPT_DIR}/unity"
+#     local framework_dir="${unity_dir}/framework"
+#     local cmock_framework_dir="${framework_dir}/CMock"
 
-    if [[ ! -d "${cmock_framework_dir}" ]]; then
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "CMock framework not found in ${cmock_framework_dir}. Downloading now..."
-        mkdir -p "${framework_dir}"
-        if curl -L https://github.com/ThrowTheSwitch/CMock/archive/refs/heads/master.zip -o "${framework_dir}/cmock.zip"; then
-            unzip "${framework_dir}/cmock.zip" -d "${framework_dir}/"
-            mv "${framework_dir}/CMock-master" "${cmock_framework_dir}"
-            rm "${framework_dir}/cmock.zip"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "CMock framework downloaded and extracted successfully to ${cmock_framework_dir}"
-            return 0
-        fi
-    else
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "CMock framework already exists in ${cmock_framework_dir}"
-        return 0
-    fi
-}
+#     if [[ ! -d "${cmock_framework_dir}" ]]; then
+#         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "CMock framework not found in ${cmock_framework_dir}. Downloading now..."
+#         mkdir -p "${framework_dir}"
+#         if curl -L https://github.com/ThrowTheSwitch/CMock/archive/refs/heads/master.zip -o "${framework_dir}/cmock.zip"; then
+#             unzip "${framework_dir}/cmock.zip" -d "${framework_dir}/"
+#             mv "${framework_dir}/CMock-master" "${cmock_framework_dir}"
+#             rm "${framework_dir}/cmock.zip"
+#             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "CMock framework downloaded and extracted successfully to ${cmock_framework_dir}"
+#             return 0
+#         fi
+#     else
+#         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "CMock framework already exists in ${cmock_framework_dir}"
+#         return 0
+#     fi
+# }
 
 # ===== OPTIMIZATION FUNCTIONS FOR INCREMENTAL BUILDS =====
 
@@ -291,16 +291,16 @@ else
 fi
 evaluate_test_result_silent "Unity framework check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Check CMock Framework"
+# print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Check CMock Framework"
 
-# shellcheck disable=SC2310 # We want to continue even if the test fails
-if download_cmock_framework; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "CMock framework check passed"
-else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "CMock framework check failed"
-    EXIT_CODE=1
-fi
-evaluate_test_result_silent "CMock framework check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
+# # shellcheck disable=SC2310 # We want to continue even if the test fails
+# if download_cmock_framework; then
+#     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "CMock framework check passed"
+# else
+#     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "CMock framework check failed"
+#     EXIT_CODE=1
+# fi
+# evaluate_test_result_silent "CMock framework check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "CMake Configuration"
 

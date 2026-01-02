@@ -14,30 +14,30 @@ As far as progress reporting goes, well, there are likely 500 steps or more to b
 This project has a number of, well, elements. Each is named after an element in the periodic table. Like elements in the real world, some of these will be hugely important while others may be relatively insignificant. Some will require thousands and thousands of developer hours, and others not so much. And the effort applied to each will likely be equally unbalanced as the focus shifts among the different pieces needed to get this up and running. The main [Philement Documentation](/docs/README.md) index is also available, covering elements that are a little further along.
 
 | Element | Status | Description |
-|:-------:|:------:|:------------|
-| [hydrogen](https://github.com/500Foods/Philement/tree/main/elements/001-hydrogen/README.md) | 🔨 | A websocket-equipped service, like Klipper+Moonraker combined |
-| [helium](https://github.com/500Foods/Philement/tree/main/elements/002-helium/README.md) | 🔨 | Everything database-related |
-| [lithium](https://github.com/500Foods/Philement/tree/main/elements/003-lithium/README.md) | 🔨 | Web-based UI for desktops and larger systems |
-| [beryllium](https://github.com/500Foods/Philement/tree/main/elements/004-beryllium/README.md) | 🏆 | Deals with everything gcode-related |
-| [boron](https://github.com/500Foods/Philement/tree/main/elements/005-boron/README.md) | 💡 | Rhymes with Voron! Hardware database, like for Vorons or [Troodons](https://github.com/500Foods/WelcomeToTroodon) |
-| [carbon](https://github.com/500Foods/Philement/tree/main/elements/006-carbon/README.md) | 🏆 | Print fault detection, a bit like what Obico is for |
-| [nitrogen](https://github.com/500Foods/Philement/tree/main/elements/007-nitrogen/README.md) | 🔨 | LVGL-based UI for controllers and smaller systems |
-| [oxygen](https://github.com/500Foods/Philement/tree/main/elements/008-oxygen/README.md) | 💡 | Notifications |
-| [fluorine](https://github.com/500Foods/Philement/tree/main/elements/009-fluorine/README.md) | 💡 | Filament management system |
-| [neon](https://github.com/500Foods/Philement/tree/main/elements/010-neon/README.md) | 💡 | Well, lighting, obviously |
-| [sodium](https://github.com/500Foods/Philement/tree/main/elements/011-sodium/README.md) | 💡 | An MMU and general MMU support |
-| [magnesium](https://github.com/500Foods/Philement/tree/main/elements/012-magnesium/README.md) | 💡 | Print farm management tool |
-| [aluminum](https://github.com/500Foods/Philement/tree/main/elements/013-aluminum/README.md) | 💡 | Home Assistant integration |
-| [silicon](https://github.com/500Foods/Philement/tree/main/elements/014-silicon/README.md) | 💡 | Printer experiment - Voron 2.4r2 without an MCU |
-| [phosphorus](https://github.com/500Foods/Philement/tree/main/elements/015-phosphorus/README.md) | 💡 | Printer experiment - Beltless printer|
-| [sulfur](https://github.com/500Foods/Philement/tree/main/elements/016-sulfur/README.md) | 💡 | Printer experiment - Robotic arm printer |
-| [chlorine](https://github.com/500Foods/Philement/tree/main/elements/017-chlorine/README.md) | 🔨 | [www.philement.com](https://www.philement.com) website source  |
-| [argon](https://github.com/500Foods/Philement/tree/main/elements/018-argon/README.md) | 💡 | Filament extruder - recycle that waste plastic! |
-| [potassium](https://github.com/500Foods/Philement/tree/main/elements/019-potassium/README.md) | 💡 | Power monitoring |
-| [calcium](https://github.com/500Foods/Philement/tree/main/elements/020-calcium/README.md) | 💡 | Optimization Wizard - building on beryllium and boron |
-| [scandium](https://github.com/500Foods/Philement/tree/main/elements/021-scandium/README.md) | 💡 | Implementation of x3dp.com - 3D Printer Exchange |
-| [titanium](https://github.com/500Foods/Philement/tree/main/elements/022-titanium/README.md) | 💡 | High-performance video streaming for remote monitoring |
-| [vanadium](https://github.com/500Foods/Philement/tree/main/elements/023-vanadium/README.md) | 🏆 | Custom font for Philement based off of Iosevka |
+| :-------: | :------: | :------------ |
+| [hydrogen](/docs/H/README.md) | 🔨 | A websocket-equipped service, like Klipper+Moonraker combined |
+| [helium](/docs/He/README.md) | 🔨 | Everything database-related |
+| [lithium](/docs/Li/README.md) | 🔨 | Web-based UI for desktops and larger systems |
+| [beryllium](/elements/004-beryllium/README.md) | 🏆 | Deals with everything gcode-related |
+| [boron](/elements/005-boron/README.md) | 💡 | Rhymes with Voron! Hardware database, like for Vorons or [Troodons](https://github.com/500Foods/WelcomeToTroodon) |
+| [carbon](/elements/006-carbon/README.md) | 🏆 | Print fault detection, a bit like what Obico is for |
+| [nitrogen](/elements/007-nitrogen/README.md) | 🔨 | LVGL-based UI for controllers and smaller systems |
+| [oxygen](/elements/008-oxygen/README.md) | 💡 | Notifications |
+| [fluorine](/elements/009-fluorine/README.md) | 💡 | Filament management system |
+| [neon](/elements/010-neon/README.md) | 💡 | Well, lighting, obviously |
+| [sodium](/elements/011-sodium/README.md) | 💡 | An MMU and general MMU support |
+| [magnesium](/elements/012-magnesium/README.md) | 💡 | Print farm management tool |
+| [aluminum](/elements/013-aluminum/README.md) | 💡 | Home Assistant integration |
+| [silicon](/elements/014-silicon/README.md) | 💡 | Printer experiment - Voron 2.4r2 without an MCU |
+| [phosphorus](/elements/015-phosphorus/README.md) | 💡 | Printer experiment - Beltless printer |
+| [sulfur](/elements/016-sulfur/README.md) | 💡 | Printer experiment - Robotic arm printer |
+| [chlorine](/elements/017-chlorine/README.md) | 🔨 | [www.philement.com](https://www.philement.com) website source |
+| [argon](/elements/018-argon/README.md) | 💡 | Filament extruder - recycle that waste plastic! |
+| [potassium](/elements/019-potassium/README.md) | 💡 | Power monitoring |
+| [calcium](/elements/020-calcium/README.md) | 💡 | Optimization Wizard - building on beryllium and boron |
+| [scandium](/elements/021-scandium/README.md) | 💡 | Implementation of x3dp.com - 3D Printer Exchange |
+| [titanium](/elements/022-titanium/README.md) | 💡 | High-performance video streaming for remote monitoring |
+| [vanadium](/docs/V/README.md) | 🏆 | Custom font for Philement based off of Iosevka |
 
 <sup>💡 → Idea and Planning Stage &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔨 → Working on it &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🏆 → Nowhere near done but... Check it out!</sup>
 
