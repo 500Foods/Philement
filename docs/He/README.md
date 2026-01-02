@@ -9,7 +9,7 @@ The Helium project provides database schemas and migrations (collectively referr
 
 [^mysql-note]: The original intent was for MySQL/MariaDB support, but only MariaDB is included in the test environment. MySQL compatibility should be carefully evaluated if needd.
 
-Within this project are the Lua scripts that make up the designs for each schema.
+Within this project are the Lua scripts that make up the designs for each design/schema/migration.
 
 - Creates tables and other database objects (DDL)
 - Populates tables with default data (DML)
@@ -26,6 +26,8 @@ The Hydrogen project is what uses these files. The migration files themsleves ca
 - [Test 35 - DB2 Migrations](/docs/H/tests/test_35_db2_migrations.md) - Tests IBM DB2 database migration performance and execution
 - [Test 71 - Database Diagrams](/docs/H/tests/test_71_database_diagrams.md) - Generates SVG database diagrams for all supported database engine and design combinations
 - [Test 98 - Lua Code Analysis](/docs/H/tests/test_98_luacheck.md) - Performs static analysis on Lua source files using luacheck tool
+
+IN addtion, [Test 01 - Compilation](/docs/H/tests/test_01_compliation.md) builds the Hydrgoen payload which typically includes the migration files. As part of the build step, it checks to see if the migrations files have been updated more recently than the paylod. If so, it regenerates the payload and also runs the [helium_update.sh](/elements/002-helium/scripts/helium_update.sh) script.
 
 ## Table of Contents
 
@@ -82,18 +84,18 @@ Each schema provides a complete database design with migrations, supporting Post
 
 ## Repository Information
 
-Generated 2026-Jan-01 (Thu) 18:12:15 PST
+Generated 2026-Jan-01 (Thu) 18:48:06 PST
 
 ```cloc
-github.com/AlDanial/cloc v 2.06  T=0.96 s (295.5 files/s, 135589.4 lines/s)
+github.com/AlDanial/cloc v 2.06  T=0.98 s (289.5 files/s, 132800.0 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 SVG                            100            200           2496          89564
-Lua                            152           3581           3035          24637
-Markdown                        28           1448              0           3748
+Lua                            152           3581           3036          24637
+Markdown                        28           1448              0           3749
 Bourne Shell                     3            152            160            814
 -------------------------------------------------------------------------------
-SUM:                           283           5381           5691         118763
+SUM:                           283           5381           5692         118764
 -------------------------------------------------------------------------------
 ```

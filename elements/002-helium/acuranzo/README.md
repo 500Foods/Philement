@@ -169,7 +169,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1132](/elements/002-helium/acuranzo/migrations/acuranzo_1132.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #041 - Get Chat |
 | [1133](/elements/002-helium/acuranzo/migrations/acuranzo_1133.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #042 - Create Lookup Key |
 | [1134](/elements/002-helium/acuranzo/migrations/acuranzo_1134.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #043 - Update Lookup Key |
-| [1135](/elements/002-helium/acuranzo/migrations/acuranzo_1135.lua) | queries | 1.0.0 | 2025-12-31 | 10 | ✗ | QueryRef #044 - Get Filtered Lookup: AI Models |
+| [1135](/elements/002-helium/acuranzo/migrations/acuranzo_1135.lua) | queries | 1.0.1 | 2026-01-01 | 10 | ✗ | QueryRef #044 - Get Filtered Lookup: AI Models |
 | [1136](/elements/002-helium/acuranzo/migrations/acuranzo_1136.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #045 - Get Version History |
 | [1137](/elements/002-helium/acuranzo/migrations/acuranzo_1137.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #046 - Get Main Menu |
 | [1138](/elements/002-helium/acuranzo/migrations/acuranzo_1138.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #047 - Get Documents |
