@@ -58,10 +58,10 @@ STEP 1: GATHER CHANGES
   IGNORE these auto-generated files (build artifacts):
     - *.svg badges: COVERAGE.svg, COMPLETE.svg, CLOC_CODE.svg, CLOC_STAT.svg, HISTORY.svg
     - Log files and log directories
-    - Metrics files (JSON and TXT) - these are updated daily by the build system
-    - Installer updates - the installer is updated daily, but the changes are not significant unless it is to the installer script itself
-    - Any file updated solely by CI/CD pipelines
-
+    - Anything to do with metrics files (JSON and TXT) - these are updated daily by the build system
+    - Installer updates - the installer is updated daily, but the installer itself is rarely updated
+    - Anthing to do with release notes themselves
+    
   SEARCH for CHANGELOG entries:
   ```
   grep -r 'YYYY-MM-DD' --include='CHANGELOG*'
@@ -69,6 +69,8 @@ STEP 1: GATHER CHANGES
 
   THRESHOLD: Files with >10 lines changed warrant an entry. Smaller changes
   may qualify on slow days or if particularly significant.
+
+  CHECK that the release notes for the prior day do not already cover these changes.
 
 STEP 2: ANALYZE CHANGES
 
@@ -157,6 +159,7 @@ QUALITY CHECKLIST (before completing)
 
 ## January 2026
 
+- [2026-Jan-02 (Fri)](/releases/2026-01/2026-01-02.md): (Li) Lithium UI framework implementation, editor stubs, library initialization
 - [2026-Jan-01 (Wed)](/releases/2026-01/2026-01-01.md): (H, He, Philement) Lua analysis enhancement, diagram restructuring, release notes reorganization
 
 ## December 2025
