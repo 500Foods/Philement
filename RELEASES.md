@@ -1,6 +1,8 @@
 # Philement Release Notes
 
-***NOTE:*** *These release notes are typically AI-generated based off of a review of GitHub commits and CHANGELOG entries. They are not always entirely accurate and sometimes miss the nuance of what is being changed. They often highlight changes in files that are automatically updated by the build system despite instructions to the contrary, for example. These should be treated as a starting point for understanding what has changed, not as a definitive record.*
+These are AI-generated release notes for the Philement project. The instructions for the models can be found in the HTML comment block at the top of this file.
+
+***NOTE:*** *These are based primarily off of a review of git commits and CHANGELOG entries for a given date. They can contain errors and omissions if the models didn't pickup on the context or nuance of the changes or if they chose to emphasize some changes over others.*
 
 ***NOTE:*** *On 2026-Jan-01, these were moved from the Hydrogen project (where the bulk of the work was done up to this point) to the Philement project overall, in recognition of the fact that work is now proceeding on multiple fronts.*
 
@@ -56,6 +58,8 @@ STEP 1: GATHER CHANGES
   IGNORE these auto-generated files (build artifacts):
     - *.svg badges: COVERAGE.svg, COMPLETE.svg, CLOC_CODE.svg, CLOC_STAT.svg, HISTORY.svg
     - Log files and log directories
+    - Metrics files (JSON and TXT) - these are updated daily by the build system
+    - Installer updates - the installer is updated daily, but the changes are not significant unless it is to the installer script itself
     - Any file updated solely by CI/CD pipelines
 
   SEARCH for CHANGELOG entries:
@@ -137,6 +141,7 @@ QUALITY CHECKLIST (before completing)
 -->
 ## Contents
 
+- [January 2026](#january-2026)
 - [December 2025](#december-2025)
 - [November 2025](#november-2025)
 - [October 2025](#october-2025)
@@ -149,6 +154,10 @@ QUALITY CHECKLIST (before completing)
 - [March 2025](#march-2025)
 - [February 2025](#february-2025)
 - [July 2024](#july-2024)
+
+## January 2026
+
+- [2026-Jan-01 (Wed)](/releases/2026-01/2026-01-01.md): (H, He, Philement) Lua analysis enhancement, diagram restructuring, release notes reorganization
 
 ## December 2025
 

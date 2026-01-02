@@ -21,8 +21,9 @@
 # print_test_completion()
 
 # CHANGELOG
+# 4.1.0 - 2026-01-01 - Added HELIUM_ROOT path filtering to process_message() function
 # 4.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
-# 3.9.0 - 2025-08-18 - Inlining some functions for performance 
+# 3.9.0 - 2025-08-18 - Inlining some functions for performance
 # 3.8.0 - 2025-08-17 - Converted OUTPUT_COLLECTION from array to simple string for improved performance
 # 3.7.0 - 2025-08-10 - Simplifid some log output naming, cleared out mktemp calls
 # 3.6.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
@@ -109,6 +110,11 @@ process_message() {
     # Replace HYDROGEN_ROOT with relative path (anywhere in the string)
     if [[ -n "${HYDROGEN_ROOT:-}" ]]; then
         processed_message="${processed_message//${HYDROGEN_ROOT}/}"
+    fi
+
+    # Replace HELIUM_ROOT with relative path (anywhere in the string)
+    if [[ -n "${HELIUM_ROOT:-}" ]]; then
+        processed_message="${processed_message//${HELIUM_ROOT}/}"
     fi
 
     # Replace HYDROGEN_DOCS_ROOT with relative path (anywhere in the string)
