@@ -1,0 +1,121 @@
+/* Tabulator Full Table - Advanced styling with navigation controls */
+
+/* Import simple table styles as base */
+@import '/src/init/tabulator-simple.css';
+
+/* Navigation container */
+.tabulator-nav {
+  background-color: var(--card-bg);
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  margin-bottom: 0;
+}
+
+/* Navigation button styling */
+.tabulator-nav .btn {
+  margin-right: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.tabulator-nav .btn:last-child {
+  margin-right: 0;
+}
+
+.tabulator-nav .nav-left,
+.tabulator-nav .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Search input styling */
+.tabulator-nav .input-group {
+  max-width: 250px;
+}
+
+.tabulator-nav .form-control {
+  font-size: 0.875rem;
+  padding: 0.375rem 0.75rem;
+}
+
+/* Full table container with navigation */
+.tabulator-full-container {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--box-shadow);
+  background-color: var(--card-bg);
+}
+
+.tabulator-full-container .tabulator-simple-container {
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+}
+
+/* Export button styling */
+.tabulator-nav .btn-export {
+  position: relative;
+}
+
+.tabulator-nav .btn-export .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 150px;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  z-index: 1000;
+  display: none;
+}
+
+.tabulator-nav .btn-export:hover .dropdown-menu {
+  display: block;
+}
+
+.tabulator-nav .dropdown-menu .dropdown-item {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.tabulator-nav .dropdown-menu .dropdown-item:hover {
+  background-color: rgba(63, 81, 181, 0.1);
+}
+
+/* Pagination controls */
+.tabulator-full .tabulator-paginator {
+  padding: 0.75rem 1rem;
+  background-color: var(--card-bg);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tabulator-nav {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .tabulator-nav .nav-left,
+  .tabulator-nav .nav-right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tabulator-nav .input-group {
+    max-width: 100%;
+  }
+
+  .tabulator-nav .btn {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+}
