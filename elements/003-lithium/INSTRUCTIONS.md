@@ -2,7 +2,7 @@
 
 ## Overview
 
-Lithium is a modular single-page application (SPA) built with modern web technologies. It features a login system, main menu, and multiple sub-modules for different functionalities. This document provides comprehensive guidance for AI models to be immediately productive with the Lithium codebase.
+Lithium is a modular single-page application (SPA) built with modern web technologies. This document provides comprehensive guidance for AI models to be immediately productive with the Lithium codebase.
 
 ## Tech Stack
 
@@ -16,11 +16,7 @@ Lithium is a modular single-page application (SPA) built with modern web technol
 ## Project Structure
 
 ```directory
-docs/Li/                    # Project documentation
-├── README.md               # Main HTML TOC
-├── TESTING.md              # Info on tests with Mocha and nyc
-├── BUILD.md                # What building the project involves
-elements/003-lithium/       # Project source
+/elements/003-lithium/
 ├── index.html              # Main HTML entry point
 ├── package.json            # Project dependencies and scripts
 ├── vite.config.js          # Vite build configuration
@@ -31,10 +27,30 @@ elements/003-lithium/       # Project source
 ├── src/
 │   ├── app.js             # Main application logic and module loader
 │   ├── lithium.css        # Global styles
-│   ├── network/           # Network utilities
-│   ├── router/            # Routing utilities
-│   ├── storage/           # Storage utilities
-│   ├── utils/             # Utility functions
+│   ├── core/              # Core system components
+│   │   ├── logger/        # Logging utilities
+│   │   │   └── logger.js
+│   │   ├── network/       # Network utilities
+│   │   │   └── network.js
+│   │   ├── router/        # Routing utilities
+│   │   │   └── router.js
+│   │   └── storage/       # Storage utilities
+│   │       └── storage.js
+│   ├── init/              # Initialization modules and CSS
+│   │   ├── tabulator-simple.css  # Simple table styling
+│   │   ├── tabulator-full.css   # Advanced table styling
+│   │   ├── jsoneditor.css       # JSON editor styling
+│   │   ├── tabulator-init.js    # Tabulator initialization
+│   │   ├── jsoneditor-init.js   # JSONEditor initialization
+│   │   ├── suneditor-init.js    # SunEditor initialization
+│   │   ├── flatpickr-init.js    # Flatpickr initialization
+│   │   ├── codemirror-init.js   # CodeMirror initialization
+│   │   ├── prism-init.js        # Prism.js initialization
+│   │   └── highlight-init.js    # Highlight.js initialization
+│   ├── editors/            # Editor component folders
+│   │   ├── table-simple/    # Simple table editor
+│   │   ├── table-full/      # Advanced table editor
+│   │   └── json/            # JSON editor
 │   └── modules/           # All application modules
 │       ├── login/         # Login module
 │       │   ├── login.js
@@ -46,8 +62,7 @@ elements/003-lithium/       # Project source
 │       ├── source-editor/ # Source editor module
 │       ├── queries/       # Queries module
 │       └── lookups/       # Lookups module
-├── tests/                  # Test suite
-└── INSTRUCTIONS.md        # This file
+└── tests/                  # Test suite
 ```
 
 ## Development Setup
@@ -86,366 +101,214 @@ This starts Vite dev server on <http://localhost:3000>
 - `npm run format`: Format code with Prettier
 - `npm run clean`: Clean build artifacts
 
-## Module System
+## Key Architectural Decisions
 
-### Structure
+### 1. Core vs Init Separation
 
-- Each module has a `.js` and `.html` file in its own directory
-- Modules are loaded dynamically using ES6 `import()` with Vite's asset handling
-- Each module exports a default class with an `init()` function that receives the app instance
+**Core Components** (`src/core/`):
 
-### Loading Process
+- Essential system utilities (logger, network, router, storage)
+- Low-level functionality used throughout the application
+- Minimal dependencies, maximum reusability
 
-1. App checks for JWT in localStorage
-2. If valid JWT: Load main menu module
-3. If no JWT: Load login module
-4. Modules inject their HTML into containers and manage their own DOM
-5. Navigation switches between modules by hiding/showing containers
+**Initialization Modules** (`src/init/`):
 
-### Module Class Structure
+- Third-party library initialization and configuration
+- CSS files for editor components
+- Higher-level abstractions for complex libraries
+- Singleton pattern for easy access
+
+### 2. Font Strategy
+
+**Default Fonts:**
+
+- **Proportional**: Vanadium Sans (primary), system fonts (fallback)
+- **Monospace**: Vanadium Mono (primary), Courier New (fallback)
+
+**CSS Variables:**
+
+```css
+:root {
+  --font-family: 'Vanadium Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'Vanadium Mono', 'Courier New', Courier, monospace;
+}
+```
+
+### 3. CSS Organization
+
+**Rationale for Init Folder CSS:**
+
+- CSS files are co-located with their JavaScript initialization modules
+- Single load point for all initialization-related assets
+- Better organization than scattering CSS across different folders
+- Easier to manage dependencies and build processes
+
+### 4. Editor Architecture
+
+**Pattern:** Each editor has:
+
+- JavaScript initialization module (`*-init.js`)
+- CSS styling file (`*.css`)
+- Dedicated folder in `src/editors/` for future expansion
+- Singleton instance for global access
+- Comprehensive API for programmatic control
+
+## Build Process Considerations
+
+### Vite Configuration
+
+The current `vite.config.js` handles:
+
+- ES6 module support with native browser imports
+- CSS processing with source maps
+- Production minification with Terser
+- Modern browser targeting
+
+### CSS Handling
+
+**Development:**
+
+- Individual CSS files loaded via `<link>` tags in index.html
+- CSS source maps enabled for debugging
+- Hot module replacement for styles
+
+**Production:**
+
+- Vite automatically processes and optimizes CSS
+- CSS files are extracted and minified
+- Proper caching headers applied
+- CSS imports are resolved correctly
+
+### CSS Import Notes
+
+The `@import` statement in `tabulator-full.css`:
+
+```css
+@import '/src/init/tabulator-simple.css';
+```
+
+This works because:
+
+1. Vite processes CSS imports during build
+2. The path is relative to the project root
+3. Vite resolves and bundles the imported CSS
+4. Production build creates proper dependency graph
+
+### Build Optimization Recommendations
+
+1. **CSS Bundling:** Consider using Vite's CSS code splitting for large projects
+2. **Critical CSS:** Extract critical CSS for above-the-fold content
+3. **PurgeCSS:** Add PurgeCSS to remove unused styles in production
+4. **Font Loading:** Consider preloading Vanadium fonts for better performance
+
+## Initialization Module Usage
+
+### Pattern
+
+Each initialization module follows this pattern:
 
 ```javascript
-class ModuleName {
-  constructor(app, container) {
-    this.app = app;          // Reference to main app instance
-    this.container = container; // DOM container for this module
-    this.logger = app.logger; // Access to logging system
+// Singleton class
+class EditorInit {
+  constructor() {
+    this.instances = new Map(); // Track instances
+    this.defaultOptions = { /* sensible defaults */ };
   }
 
-  async init() {
-    // Load HTML template
-    this.container.innerHTML = htmlTemplate;
-    
-    // Set up event listeners
-    this.setupEventListeners();
-  }
+  // Main initialization method
+  initEditor(elementId, content, options = {}) { /* ... */ }
 
-  setupEventListeners() {
-    // Attach DOM event handlers here
-  }
-
-  destroy() {
-    // Clean up resources if needed
-  }
+  // Utility methods
+  getEditor(elementId) { /* ... */ }
+  destroyEditor(elementId) { /* ... */ }
+  setDefaultOptions(options) { /* ... */ }
 }
 
-export default ModuleName;
+// Export singleton instance
+export const editorInit = new EditorInit();
 ```
 
-## Key Files and Components
-
-### `index.html`
-
-- Minimal HTML with Bootstrap CSS/JS and empty `#app` div
-- Includes PWA manifest and service worker registration
-- Loads all third-party libraries via CDN
-- Main app script loaded as ES module
-
-### `src/app.js`
-
-Contains `LithiumApp` class with:
-
-- JWT authentication check and management
-- Module loading system with dynamic imports
-- Logger and network services (placeholder)
-- App initialization and lifecycle management
-- PWA event handlers (install prompts, online/offline detection)
-
-### `vite.config.js`
-
-- Base path configuration for production
-- Build options with source maps and minification
-- Development server on port 3000
-- ES module support and modern browser targeting
-
-## Coding Guidelines
-
-### JavaScript Standards
-
-- **ES6 Modules**: Use `import`/`export` syntax
-- **Async/Await**: Preferred for asynchronous operations
-- **DOM Manipulation**: Use modern APIs (`querySelector`, `addEventListener`)
-- **Event Handling**: Attach events in module `init()` functions
-- **Error Handling**: Use try/catch with meaningful error messages
-
-### Code Organization
-
-- **Styling**: Use Bootstrap classes, custom styles in `lithium.css`
-- **Comments**: Extensive comments for future development planning
-- **File Structure**: Keep related HTML and JS files together in module directories
-- **Naming**: Use descriptive names for functions and variables
-
-### Best Practices
-
-- **Modularity**: Keep modules self-contained and focused
-- **Reusability**: Create utility functions in `src/utils/` for shared logic
-- **Performance**: Use lazy loading for heavy dependencies
-- **Accessibility**: Follow WCAG guidelines for UI components
-- **Security**: Sanitize user input, validate data
-
-## Authentication Flow
-
-1. **App Initialization**: `LithiumApp` checks for JWT in localStorage
-2. **JWT Validation**: If valid JWT exists, load main menu
-3. **Login Process**: If no valid JWT, load login module
-4. **Login Success**: Store fake JWT, transition to main menu
-5. **Main Menu**: Sidebar with buttons to load sub-modules
-6. **Logout**: Clear JWT from localStorage, return to login
-
-### JWT Management Methods
+### Usage Example
 
 ```javascript
-// Get JWT from localStorage
-app.getJWT()
+import { tabulatorInit } from '/src/init/tabulator-init.js';
 
-// Set JWT in localStorage
-app.setJWT(token)
+// Initialize a table
+tabulatorInit.initTable('my-table', columns, data);
 
-// Clear JWT from localStorage
-app.clearJWT()
+// Get table instance
+const table = tabulatorInit.getTable('my-table');
 
-// Validate JWT (placeholder implementation)
-app.isValidJWT(token)
+// Clean up
+tabulatorInit.destroyTable('my-table');
 ```
 
-## Module Development
+## FontAwesome Integration
 
-### Creating New Modules
+### SunEditor Configuration
 
-1. **Create Directory**: Add new directory in `src/modules/`
-2. **Add Files**: Create `module-name.js` and `module-name.html`
-3. **Export Class**: Export default class with `init()` method
-4. **HTML Template**: Use template string or load via Vite
-5. **Services**: Use `app.logger` and `app.network` for services
-6. **Navigation**: Add button to main menu if needed
+FontAwesome is enabled by default in SunEditor:
 
-### Module Lifecycle
-
-1. **Construction**: Module class instantiated with app reference
-2. **Initialization**: `init()` called after DOM injection
-3. **Event Setup**: Event listeners attached in `init()`
-4. **Active Use**: Module handles user interactions
-5. **Cleanup**: `destroy()` called when module unloaded
-
-### Current Modules
-
-- **login**: Username/password form, dummy authentication
-- **main**: Sidebar menu with navigation buttons
-- **dashboard**: App info and status display
-- **source-editor**: Placeholder for code editing
-- **queries**: Placeholder for database queries
-- **lookups**: Placeholder for data reference
-
-## Testing
-
-### Manual Testing
-
-- Run development server: `npm run dev`
-- Open browser at <http://localhost:3000>
-- Check console for errors
-- Test module switching and authentication flow
-- Verify PWA installation and offline functionality
-
-### Automated Testing
-
-- Run test suite: `npm test`
-- Check test coverage: `npm run test:coverage`
-- Run linter: `npm run lint`
-- Fix linting issues: `npm run lint:fix`
-- Format code: `npm run format`
-
-## Build and Deployment
-
-### Production Build
-
-```bash
-npm run build:prod
+```javascript
+font: ['Vanadium Sans', 'Arial', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana', 'FontAwesome'],
+fontAwesome: true
 ```
 
-This creates optimized production build in `dist/` directory with:
+### Configuration Method
 
-- Minified JavaScript and CSS
-- Compressed HTML
-- Optimized assets
-- Source maps for debugging
-
-### Deployment
-
-```bash
-npm run deploy
+```javascript
+sunEditorInit.configureFontAwesome('editor1', true, ['fa-user', 'fa-envelope', 'fa-phone']);
 ```
-
-Deploys production build to configured server (edit package.json for your setup)
-
-## PWA Features
-
-### Service Worker
-
-- Automatically registered in `index.html`
-- Handles offline caching and asset management
-- Provides offline-first experience
-
-### Manifest
-
-- Defined in `public/manifest.json`
-- Configures app name, icons, theme colors
-- Enables install prompts and home screen icons
-
-### Offline Support
-
-- Assets cached by service worker
-- Fallback strategies for network failures
-- Online/offline detection with UI feedback
-
-## Development Tools
-
-### Third-Party Libraries
-
-- **Bootstrap 5**: UI components and responsive design
-- **Font Awesome**: Icon library
-- **SheetJS**: Excel file processing
-- **Interact.js**: Drag and drop interactions
-- **SimpleBar**: Custom scrollbars
-- **Tabulator**: Interactive tables
-- **Luxon**: Date/time handling
-- **Prism.js**: Code syntax highlighting
-- **Highlight.js**: Alternative syntax highlighting
-- **KaTeX**: Math rendering
-- **CodeMirror**: Code editor
-- **SunEditor**: Rich text editor
-
-### Development Utilities
-
-- **ESLint**: JavaScript linting
-- **Prettier**: Code formatting
-- **HTML Minifier**: HTML compression
-- **Terser**: JavaScript minification
-- **Vite**: Build tool and development server
-
-## AI-Specific Information
-
-### For AI Models Working on Lithium
-
-1. **Code Patterns**: Follow existing module structure and naming conventions
-2. **File Organization**: Keep related files together in module directories
-3. **API Usage**: Use `app.logger` for logging, `app.network` for network operations
-4. **Error Handling**: Implement robust error handling with user feedback
-5. **Documentation**: Add comments explaining complex logic and future plans
-6. **Tool Integration**: When using development tools (search, edit, run commands), ensure changes align with project structure and coding standards
-7. **Incremental Development**: Make small, testable changes and verify functionality before proceeding to complex features
-8. **Dependency Management**: Check `package.json` for existing dependencies before suggesting new ones; prefer lightweight, well-maintained packages
-9. **Security Awareness**: Implement input validation, avoid XSS vulnerabilities, and follow secure coding practices for authentication
-10. **Performance Considerations**: Optimize DOM manipulation, use efficient event handling, and consider lazy loading for module assets
-
-### Collaboration Guidelines for AI Partners
-
-To maximize effectiveness as a development partner:
-
-- **Proactive Analysis**: Before making changes, analyze the codebase using search tools to understand existing patterns and dependencies
-- **Clear Communication**: Explain proposed changes, including rationale and potential impacts
-- **Iterative Refinement**: Be prepared to iterate on implementations based on feedback and testing results
-- **Quality Assurance**: Run tests and linting after changes; suggest improvements to test coverage
-- **Documentation Updates**: Update relevant documentation (READMEs, comments) when making structural changes
-- **Version Control**: Commit changes with descriptive messages; suggest branching strategies for feature development
-
-### Common Development Tasks
-
-**Adding New Module**:
-
-1. Create module directory in `src/modules/`
-2. Add JS class and HTML template
-3. Export default class with `init()` method
-4. Add navigation button to main menu
-5. Update module documentation in the module's README.md
-
-**Extending Existing Module**:
-
-1. Locate module in `src/modules/`
-2. Review existing code and README.md for context
-3. Add new functionality to JS class
-4. Update HTML template if needed
-5. Test in development environment
-6. Update module documentation
-
-**Adding Utility Function**:
-
-1. Create new file in `src/utils/`
-2. Export reusable function with JSDoc comments
-3. Import and use in modules as needed
-4. Add unit tests if applicable
-
-**Integrating Third-Party Libraries**:
-
-1. Check if library is already included in `package.json` or CDN links
-2. If adding new dependency, ensure it supports ES6 modules and modern browsers
-3. Update import statements and verify compatibility with Vite build process
-4. Test integration thoroughly, especially PWA functionality
 
 ## Future Development Notes
 
 ### Planned Enhancements
 
-- Replace placeholder JWT with real authentication
-- Implement actual functionality in placeholder modules
-- Add routing if needed (currently all client-side)
-- Consider state management for complex interactions
-- Add unit tests when functionality expands
+1. **Dynamic CSS Loading:** Load CSS files only when needed
+2. **Theme System:** Create a comprehensive theming system
+3. **CSS-in-JS:** Consider CSS-in-JS for component-specific styles
+4. **Performance Optimization:** Lazy load non-critical CSS
 
 ### Technical Debt
 
-- JWT validation needs proper implementation
-- Module error handling could be enhanced
-- Testing coverage needs expansion
-- Documentation for new modules required
+1. **CSS Import Paths:** Consider using `@/` alias for cleaner imports
+2. **CSS Variables:** Expand CSS variable usage for better theming
+3. **Responsive Design:** Review mobile responsiveness across all editors
+4. **Accessibility:** Ensure all editors meet WCAG standards
 
-### Performance Considerations
+### Lessons Learned
 
-- Optimize module loading for large applications
-- Implement code splitting for better caching
-- Consider lazy loading for non-critical modules
-- Monitor bundle size and optimize dependencies
+1. **Organization Matters:** Co-locating related assets improves maintainability
+2. **Consistent Patterns:** Singleton pattern works well for initialization modules
+3. **Font Strategy:** Default fonts should be practical and widely available
+4. **Build Process:** Vite handles CSS imports well, but documentation is key
 
 ## Troubleshooting
 
-### Common Issues
+### CSS Not Loading
 
-**Module Loading Failures**:
+1. Check file paths in index.html
+2. Verify Vite dev server is running
+3. Ensure CSS files exist in correct locations
+4. Check browser console for 404 errors
 
-- Check module path in `app.loadModule()`
-- Verify module exports default class
-- Ensure HTML template is properly loaded
+### CSS Import Issues
 
-**Authentication Problems**:
+1. Verify import paths are correct
+2. Check Vite build output for CSS processing
+3. Ensure no circular dependencies
+4. Clear Vite cache if needed
 
-- Check JWT storage and retrieval
-- Verify JWT validation logic
-- Test login/logout flow
+### Font Issues
 
-**Build Errors**:
-
-- Run `npm install` to ensure dependencies
-- Check Vite configuration
-- Verify ES module syntax
-
-**PWA Issues**:
-
-- Check service worker registration
-- Verify manifest configuration
-- Test offline functionality
+1. Verify font files exist in `/public/assets/fonts/`
+2. Check font-face declarations in CSS
+3. Ensure proper font licensing
+4. Test fallback fonts
 
 ## Additional Resources
 
-- **Bootstrap Documentation**: <https://getbootstrap.com/docs/5.3/>
 - **Vite Documentation**: <https://vitejs.dev/>
-- **ES6 Modules Guide**: <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules>
-- **PWA Guide**: <https://web.dev/progressive-web-apps/>
-- **JWT Specification**: <https://jwt.io/>
-
-## Getting Help
-
-For questions or issues:
-
-- Check existing documentation in `docs/`
-- Review similar modules for patterns
-- Consult Vite and Bootstrap documentation
-- Ask specific questions about implementation details
+- **CSS Modules**: <https://github.com/css-modules/css-modules>
+- **Font Loading**: <https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face>
+- **CSS Variables**: <https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties>
