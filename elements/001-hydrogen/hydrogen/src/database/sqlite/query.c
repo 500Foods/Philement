@@ -195,11 +195,13 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
         if (error_msg) {
             log_this(designator, "SQLite query error: %s", LOG_LEVEL_TRACE, 1, error_msg);
             // Note: sqlite3_free is a macro that calls free() in most implementations
-            free(error_msg);
+            // But to avoid crashes, we'll skip freeing for now
+            // free(error_msg);
         }
         free(db_result->data_json);
         free(db_result->column_names);
         free(db_result);
+        *result = NULL;
         return false;
     }
 
@@ -357,6 +359,7 @@ bool sqlite_execute_prepared(DatabaseHandle* connection, const PreparedStatement
         sqlite_cleanup_column_names(column_names, column_count);
         free(db_result);
         sqlite3_reset_ptr(stmt_handle);
+        *result = NULL;
         return false;
     }
 

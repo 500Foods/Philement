@@ -13,6 +13,12 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
+#include <openssl/decoder.h>
+#include <openssl/provider.h>
+
+// Global OpenSSL provider handles
+static OSSL_PROVIDER *openssl_default_provider = NULL;
+static OSSL_PROVIDER *openssl_legacy_provider = NULL;
 
 /**
  * Check if a payload exists in the executable
@@ -128,6 +134,18 @@ bool validate_payload_key(const char *key) {
 void init_openssl(void) {
     static bool initialized = false;
     if (!initialized) {
+        // Load default provider
+        openssl_default_provider = OSSL_PROVIDER_load(NULL, "default");
+        if (!openssl_default_provider) {
+            log_this(SR_PAYLOAD, "Failed to load default OpenSSL provider", LOG_LEVEL_ERROR, 0);
+            ERR_print_errors_fp(stderr);
+        }
+        // Load legacy provider for backward compatibility (required for traditional RSA)
+        openssl_legacy_provider = OSSL_PROVIDER_load(NULL, "legacy");
+        if (!openssl_legacy_provider) {
+            log_this(SR_PAYLOAD, "Failed to load legacy OpenSSL provider - traditional RSA keys will not load", LOG_LEVEL_ERROR, 0);
+            ERR_print_errors_fp(stderr);
+        }
         OpenSSL_add_all_algorithms();
         ERR_load_crypto_strings();
         initialized = true;
@@ -152,6 +170,14 @@ void cleanup_openssl(void) {
     }
 
     // Clean up OpenSSL resources
+    if (openssl_legacy_provider) {
+        OSSL_PROVIDER_unload(openssl_legacy_provider);
+        openssl_legacy_provider = NULL;
+    }
+    if (openssl_default_provider) {
+        OSSL_PROVIDER_unload(openssl_default_provider);
+        openssl_default_provider = NULL;
+    }
     EVP_cleanup();
     ERR_free_strings();
 
@@ -509,11 +535,9 @@ bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
 
     bool success = false;
     BIO *bio = NULL;
-    BIO *b64 = NULL;
-    BIO *mem = NULL;
-    BIO *bio_chain = NULL;
     EVP_PKEY *pkey = NULL;
     EVP_PKEY_CTX *pkey_ctx = NULL;
+    OSSL_DECODER_CTX *dctx = NULL;
     uint8_t *aes_key = NULL;
     uint8_t *private_key_data = NULL;
     size_t private_key_len = 0;
@@ -550,33 +574,145 @@ bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
     log_this(SR_PAYLOAD, "― Init Vector (IV):  %10d bytes", LOG_LEVEL_DEBUG, 1, 16);
     log_this(SR_PAYLOAD, "― Encrypted size:    %'10d bytes", LOG_LEVEL_DEBUG, 1, encrypted_size - 4 - key_size - 16);
 
-    // Decode private key from base64
-    b64 = BIO_new(BIO_f_base64());
-    if (!b64) goto cleanup;
-    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-
-    mem = BIO_new_mem_buf(private_key_b64, -1);
-    if (!mem) goto cleanup;
-
-    bio_chain = BIO_push(b64, mem);
-
-    private_key_len = strlen(private_key_b64) * 3 / 4 + 1;
+    // Decode private key from base64 using a simple standalone decoder
+    // This avoids OpenSSL's base64 routines which have strict input requirements
+    size_t b64_len = strlen(private_key_b64);
+    
+    // Base64 decoding lookup table
+    static const int8_t b64_decode_table[256] = {
+        -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,  // 0-15
+        -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,  // 16-31
+        -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,62,-1,-1,-1,63,  // 32-47 (+, /)
+        52,53,54,55,56,57,58,59,60,61,-1,-1,-1,-2,-1,-1,  // 48-63 (0-9, =)
+        -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,  // 64-79 (A-O)
+        15,16,17,18,19,20,21,22,23,24,25,-1,-1,-1,-1,-1,  // 80-95 (P-Z)
+        -1,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,  // 96-111 (a-o)
+        41,42,43,44,45,46,47,48,49,50,51,-1,-1,-1,-1,-1,  // 112-127 (p-z)
+        -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,  // 128-255
+        -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    };
+    
+    // Calculate max decoded size (base64 decodes to 3/4 the size, plus padding allowance)
+    private_key_len = (b64_len * 3) / 4 + 4;
     private_key_data = calloc(1, private_key_len);
     if (!private_key_data) goto cleanup;
-
-    int read_len = BIO_read(bio_chain, private_key_data, (int)private_key_len);
-    if (read_len <= 0) goto cleanup;
-    private_key_len = (size_t)read_len;
+    
+    // Decode base64 manually
+    size_t out_pos = 0;
+    uint32_t accumulator = 0;
+    int bits = 0;
+    
+    for (size_t i = 0; i < b64_len; i++) {
+        int8_t val = b64_decode_table[(unsigned char)private_key_b64[i]];
+        
+        if (val == -1) {
+            // Invalid character - skip whitespace/newlines, error on others
+            if (private_key_b64[i] == '\n' || private_key_b64[i] == '\r' ||
+                private_key_b64[i] == ' ' || private_key_b64[i] == '\t') {
+                continue;  // Skip whitespace
+            }
+            log_this(SR_PAYLOAD, "Invalid base64 character at position %zu: 0x%02x", LOG_LEVEL_ERROR, 2, i, (unsigned char)private_key_b64[i]);
+            goto cleanup;
+        }
+        
+        if (val == -2) {
+            // Padding character '=' - stop decoding
+            break;
+        }
+        
+        accumulator = (accumulator << 6) | ((uint32_t)(unsigned char)val & 0x3F);
+        bits += 6;
+        
+        if (bits >= 8) {
+            bits -= 8;
+            private_key_data[out_pos++] = (uint8_t)((accumulator >> bits) & 0xFF);
+        }
+    }
+    
+    private_key_len = out_pos;
+    
+    log_this(SR_PAYLOAD, "― Base64 decoded key: %zu bytes", LOG_LEVEL_DEBUG, 1, private_key_len);
 
     bio = BIO_new_mem_buf(private_key_data, (int)private_key_len);
     if (!bio) goto cleanup;
 
-    // Load and verify private key
-    pkey = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL);
-    if (!pkey) {
-        log_this(SR_PAYLOAD, "Failed to load private key", LOG_LEVEL_ERROR, 0);
+    // Check if the decoded data is PEM-formatted (starts with "-----BEGIN")
+    // If so, the key was base64-encoded PEM text
+    bool is_pem_format = (private_key_len > 11 &&
+                          strncmp((char*)private_key_data, "-----BEGIN ", 11) == 0);
+    
+    BIO *key_bio = NULL;
+    const char *input_format = NULL;
+    
+    if (is_pem_format) {
+        // Key data is PEM format after base64 decode (key was base64-encoded PEM text)
+        log_this(SR_PAYLOAD, "― Key is base64-encoded PEM format", LOG_LEVEL_DEBUG, 0);
+        
+        // Check if PEM has proper ending
+        const char *end_marker = "-----END ";
+        const char *end_pos = strstr((char*)private_key_data, end_marker);
+        if (end_pos) {
+            log_this(SR_PAYLOAD, "― PEM has proper END marker", LOG_LEVEL_DEBUG, 0);
+        } else {
+            log_this(SR_PAYLOAD, "― WARNING: PEM missing END marker - may be truncated", LOG_LEVEL_ERROR, 0);
+        }
+        
+        // Log last 50 bytes of key for debugging
+        if (private_key_len > 50) {
+            char key_end[51];
+            memcpy(key_end, private_key_data + private_key_len - 50, 50);
+            key_end[50] = '\0';
+            log_this(SR_PAYLOAD, "― Key end (last 50 bytes): [%s]", LOG_LEVEL_DEBUG, 1, key_end);
+        }
+        
+        key_bio = bio;
+        input_format = "PEM";
+    } else {
+        // Key data is DER format after base64 decode (raw binary key)
+        log_this(SR_PAYLOAD, "― Key is base64-encoded DER format", LOG_LEVEL_DEBUG, 0);
+        key_bio = bio;
+        input_format = "DER";
+    }
+    
+    // Load and verify private key using OSSL_DECODER API
+    // Use NULL for key type to auto-detect (supports both PKCS#8 and traditional RSA formats)
+    dctx = OSSL_DECODER_CTX_new_for_pkey(&pkey, input_format, NULL, NULL, OSSL_KEYMGMT_SELECT_PRIVATE_KEY, NULL, NULL);
+    if (!dctx) {
+        log_this(SR_PAYLOAD, "Failed to create decoder context", LOG_LEVEL_ERROR, 0);
         goto cleanup;
     }
+
+    if (OSSL_DECODER_from_bio(dctx, key_bio) != 1) {
+        log_this(SR_PAYLOAD, "Failed to load private key", LOG_LEVEL_ERROR, 0);
+        // Log ALL OpenSSL errors from the error queue
+        unsigned long err_code;
+        char err_buf[256];
+        while ((err_code = ERR_get_error()) != 0) {
+            ERR_error_string_n(err_code, err_buf, sizeof(err_buf));
+            log_this(SR_PAYLOAD, "OpenSSL error: %s (code: %lu)", LOG_LEVEL_ERROR, 2, err_buf, err_code);
+        }
+        // Log first 100 bytes of decoded key for debugging
+        if (private_key_len > 0) {
+            char key_preview[101];
+            size_t preview_len = private_key_len > 100 ? 100 : private_key_len;
+            memcpy(key_preview, private_key_data, preview_len);
+            key_preview[preview_len] = '\0';
+            log_this(SR_PAYLOAD, "Decoded key preview (first 100 bytes): %.100s", LOG_LEVEL_DEBUG, 1, key_preview);
+            log_this(SR_PAYLOAD, "Decoded key length: %zu bytes", LOG_LEVEL_DEBUG, 1, private_key_len);
+        }
+        OSSL_DECODER_CTX_free(dctx);
+        dctx = NULL;
+        goto cleanup;
+    }
+
+    OSSL_DECODER_CTX_free(dctx);
+    dctx = NULL;
 
     // Initialize decryption context
     pkey_ctx = EVP_PKEY_CTX_new(pkey, NULL);
@@ -645,10 +781,9 @@ bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
 
 cleanup:
     if (bio) BIO_free(bio);
-    if (b64) BIO_free(b64);
-    if (mem) BIO_free(mem);
     if (pkey) EVP_PKEY_free(pkey);
     if (pkey_ctx) EVP_PKEY_CTX_free(pkey_ctx);
+    if (dctx) OSSL_DECODER_CTX_free(dctx);
     if (ctx) EVP_CIPHER_CTX_free(ctx);
     if (aes_key) {
         memset(aes_key, 0, aes_key_len);
