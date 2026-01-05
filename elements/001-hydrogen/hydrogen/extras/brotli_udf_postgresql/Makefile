@@ -8,7 +8,9 @@
 # PostgreSQL configuration - auto-detect version-specific pg_config
 # First try version-specific configs, then fall back to default
 PG_CONFIG ?= $(shell \
-    if [ -x /usr/pgsql-17/bin/pg_config ]; then \
+    if [ -x /usr/pgsql-18/bin/pg_config ]; then \
+        echo /usr/pgsql-18/bin/pg_config; \
+    elif [ -x /usr/pgsql-17/bin/pg_config ]; then \
         echo /usr/pgsql-17/bin/pg_config; \
     elif [ -x /usr/pgsql-16/bin/pg_config ]; then \
         echo /usr/pgsql-16/bin/pg_config; \
@@ -20,7 +22,8 @@ PG_CONFIG ?= $(shell \
         echo pg_config; \
     fi \
 )
-
+                           
+PG_CONFIG="/usr/bin/pg_config"
 # Check if pg_config exists
 ifeq ($(shell command -v $(PG_CONFIG) 2>/dev/null),)
     $(error pg_config not found. Install postgresql-server-dev package or set PG_CONFIG=/path/to/pg_config)
