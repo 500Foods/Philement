@@ -8,6 +8,7 @@
 #include "swagger.h"
 #include <src/webserver/web_server_core.h>
 #include <src/webserver/web_server_compression.h>
+#include <src/webserver/web_server_request.h>
 
 // Structure to hold in-memory Swagger files
 typedef struct {
@@ -598,6 +599,11 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
 
     // Add CORS headers
     add_cors_headers(response);
+
+    // Add custom headers based on file path
+    if (app_config) {
+        add_custom_headers(response, url_path, &app_config->webserver);
+    }
 
     // Queue response
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
