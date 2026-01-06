@@ -4,7 +4,13 @@
     "WebServer": {
         "Enabled": true,
         "EnableIPv6": false,
-        "Port": 5221
+        "Port": 5221,
+        "Headers": [
+            ["*", "Cross-Origin-Opener-Policy", "same-origin"],
+            ["*", "Cross-Origin-Embedder-Policy", "require-corp"],
+            [".wasm", "Cross-Origin-Resource-Policy", "same-origin"],
+            [".js", "Cross-Origin-Resource-Policy", "same-origin"]
+          ]
     },
     "API": {
         "Enabled": true,

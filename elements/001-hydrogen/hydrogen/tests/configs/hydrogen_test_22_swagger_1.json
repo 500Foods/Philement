@@ -1,10 +1,14 @@
-{
+    {
     "ServerName": "hydrogen-test-26",
     "PayloadKey": "${env.PAYLOAD_KEY}",
     "WebServer": {
         "Enabled": true,
         "EnableIPv6": false,
-        "Port": 5220
+        "Port": 5220,
+        "Headers": [
+            ["*", "X-Custom-Header-1", "test-value-1"],
+            [".js", "X-JS-Specific", "javascript-file"]
+          ]
     },
     "API": {
         "Enabled": true,

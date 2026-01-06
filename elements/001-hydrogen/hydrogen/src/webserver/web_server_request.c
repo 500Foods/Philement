@@ -1,4 +1,4 @@
-// Global includes 
+// Global includes
 #include <src/hydrogen.h>
 
 // Local includes
@@ -10,6 +10,58 @@
 #include <src/api/api_service.h>
 #include <src/api/system/config/config.h>
 #include <src/api/system/prometheus/prometheus.h>
+
+// Helper function to check if a file path matches a pattern
+// Supports wildcard (*) matching
+bool matches_pattern(const char* path, const char* pattern) {
+    if (!path || !pattern) return false;
+
+    // Exact match for "*" pattern
+    if (strcmp(pattern, "*") == 0) {
+        return true;
+    }
+
+    // Check if pattern ends with a file extension (e.g., ".js", ".wasm")
+    if (pattern[0] == '.' && strlen(pattern) > 1) {
+        // Check if path ends with this extension
+        size_t pattern_len = strlen(pattern);
+        size_t path_len = strlen(path);
+        
+        if (path_len >= pattern_len) {
+            return strcmp(path + path_len - pattern_len, pattern) == 0;
+        }
+        return false;
+    }
+
+    // For other patterns, do simple substring matching
+    return strstr(path, pattern) != NULL;
+}
+
+// Function to add custom headers to a response based on file path
+void add_custom_headers(struct MHD_Response *response, const char* file_path, const WebServerConfig* web_config) {
+    if (!response || !file_path || !web_config || !web_config->headers) {
+        return;
+    }
+
+    // Extract just the filename from the full path
+    const char* filename = strrchr(file_path, '/');
+    if (filename) {
+        filename++; // Skip the slash
+    } else {
+        filename = file_path;
+    }
+
+    // Check each header rule
+    for (size_t i = 0; i < web_config->headers_count; i++) {
+        const HeaderRule* rule = &web_config->headers[i];
+        
+        if (matches_pattern(filename, rule->pattern)) {
+            MHD_add_response_header(response, rule->header_name, rule->header_value);
+            log_this(SR_WEBSERVER, "Added custom header %s: %s for file %s", LOG_LEVEL_DEBUG, 3,
+                    rule->header_name, rule->header_value, filename);
+        }
+    }
+}
 
 enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
     // Check if client accepts Brotli compression
@@ -39,6 +91,9 @@ enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_p
     }
     
     add_cors_headers(response);
+    
+    // Add custom headers based on file path
+    add_custom_headers(response, file_path, server_web_config);
     
     // Set Content-Type based on the original file (not the .br version)
     const char *ext = strrchr(file_path, '.');
