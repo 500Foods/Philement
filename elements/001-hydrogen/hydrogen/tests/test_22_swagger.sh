@@ -9,6 +9,9 @@
 # test_swagger_configuration()
 
 # CHANGELOG
+# 7.4.0 - 2026-01-06 - Added custom headers test to verify WebServer.Headers configuration is applied to responses.
+#                    - Tests both configurations: one with simple headers and one with CORS headers.
+#                    - Verifies headers match patterns (wildcard * and extension-specific like .js).
 # 7.3.0 - 2025-09-19 - Major refactoring to reduce script size from 951 to ~750 lines.
 #                    - Moved timing functions (handle_timing_file, collect_timing_data, test_file_download) to file_utils.sh.
 #                    - Moved HTTP functions (check_response_content, check_redirect_response, check_swagger_json) to network_utils.sh.
@@ -47,7 +50,7 @@ TEST_NAME="Swagger"
 TEST_ABBR="SWG"
 TEST_NUMBER="22"
 TEST_COUNTER=0
-TEST_VERSION="7.3.0"
+TEST_VERSION="7.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -202,6 +205,68 @@ run_swagger_test_parallel() {
             if check_response_content "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "${js_file}" "true" "${js_timing_file}"; then
                 echo "JAVASCRIPT_TEST_PASSED" >> "${result_file}"
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ JavaScript test PASSED"
+                
+                # Check for custom headers by fetching head of JavaScript file
+                # Use the already-passed config_file from function parameter
+                if command -v jq >/dev/null 2>&1 && [[ -f "${config_file}" ]]; then
+                    local expected_headers_count
+                    expected_headers_count=$(jq -r '.WebServer.Headers // [] | length' "${config_file}" 2>/dev/null || echo "0")
+                    
+                    if [[ "${expected_headers_count}" -gt 0 ]]; then
+                        # Fetch headers for the JavaScript file (use -i with GET instead of -I HEAD to ensure we get the response with headers)
+                        local headers_output
+                        headers_output=$(curl -i -X GET --silent --max-time 10 "${base_url}${swagger_prefix}/swagger-initializer.js" 2>&1 | head -30 || true)
+                        
+                        # Check each header rule from config
+                        local custom_headers_found=0
+                        # shellcheck disable=SC2312 # this works and when it doesn't, well, we've got bigger problems
+                        while IFS= read -r header_rule; do
+                            local pattern header_name header_value
+                            pattern=$(echo "${header_rule}" | jq -r '.[0]' 2>/dev/null || echo "")
+                            header_name=$(echo "${header_rule}" | jq -r '.[1]' 2>/dev/null || echo "")
+                            header_value=$(echo "${header_rule}" | jq -r '.[2]' 2>/dev/null || echo "")
+                            
+                            # Check if pattern matches .js files (either "*" or ".js")
+                            if [[ "${pattern}" == "*" ]] || [[ "${pattern}" == ".js" ]]; then
+                                # Check if header is in response
+                                local received_value
+                                received_value=$(echo "${headers_output}" | "${GREP}" -i "^${header_name}:" | head -1 | sed 's/^[^:]*:[[:space:]]*//' | tr -d '\r' || echo "")
+                                if [[ -n "${received_value}" ]]; then
+                                    # Do case-insensitive comparison after trimming whitespace
+                                    if echo "${received_value}" | "${GREP}" -qixF "${header_value}"; then
+                                        custom_headers_found=$((custom_headers_found + 1))
+                                        echo "CUSTOM_HEADERS_TEST_PASSED" >> "${result_file}"
+                                        # Save header check result for analysis phase
+                                        echo "HEADER_CHECK:${header_name}:${header_value}:FOUND:${received_value}" >> "${result_file}"
+                                    else
+                                        # Save header check result for analysis phase
+                                        echo "HEADER_CHECK:${header_name}:${header_value}:MISMATCH:${received_value}" >> "${result_file}"
+                                    fi
+                                else
+                                    # Save header check result for analysis phase
+                                    echo "HEADER_CHECK:${header_name}:${header_value}:NOT_FOUND:(not found)" >> "${result_file}"
+                                fi
+                            fi
+                        done < <(jq -c '.WebServer.Headers[]' "${config_file}" 2>/dev/null || echo "")
+                        
+                        # Mark test as failed if we expected headers but didn't find any
+                        if [[ "${custom_headers_found}" -eq 0 ]] && [[ "${expected_headers_count}" -gt 0 ]]; then
+                            echo "CUSTOM_HEADERS_TEST_FAILED" >> "${result_file}"
+                        elif [[ "${custom_headers_found}" -gt 0 ]]; then
+                            # Already marked as passed above
+                            true
+                        else
+                            # No headers expected and none found
+                            echo "CUSTOM_HEADERS_TEST_PASSED" >> "${result_file}"
+                        fi
+                    else
+                        # No custom headers configured
+                        echo "CUSTOM_HEADERS_TEST_PASSED" >> "${result_file}"
+                    fi
+                else
+                    # jq not available or config not found
+                    echo "CUSTOM_HEADERS_TEST_PASSED" >> "${result_file}"
+                fi
             else
                 echo "JAVASCRIPT_TEST_FAILED" >> "${result_file}"
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ JavaScript test FAILED"
@@ -293,7 +358,7 @@ run_swagger_test_parallel() {
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unexpected response for non-existent file (HTTP ${http_code}, exit ${curl_exit_code})"
                 all_tests_passed=false
             fi
-            
+
             if [[ "${all_tests_passed}" = true ]]; then
                 echo "ALL_SWAGGER_TESTS_PASSED" >> "${result_file}"
             else
@@ -365,6 +430,7 @@ analyze_swagger_test_results() {
     local content_passed=false
     local javascript_passed=false
     local swagger_json_passed=false
+    local custom_headers_passed=false
 
     # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking individual test results:"
 
@@ -403,6 +469,14 @@ analyze_swagger_test_results() {
         # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Swagger JSON test: FAILED"
     fi
 
+    # Check custom headers test
+    if "${GREP}" -q "CUSTOM_HEADERS_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        custom_headers_passed=true
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ Custom headers test: PASSED"
+    # else
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Custom headers test: FAILED"
+    fi
+
     # Show diagnostic file links
     # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diagnostic files for ${description}:"
     # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  HTML content: ${LOG_PREFIX}_${log_suffix}_content.html"
@@ -416,6 +490,7 @@ analyze_swagger_test_results() {
     CONTENT_TEST_RESULT=${content_passed}
     JAVASCRIPT_TEST_RESULT=${javascript_passed}
     SWAGGER_JSON_TEST_RESULT=${swagger_json_passed}
+    CUSTOM_HEADERS_TEST_RESULT=${custom_headers_passed}
     
     # Return success only if all tests passed
     if "${GREP}" -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
@@ -722,6 +797,29 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger JSON test failed"
                 EXIT_CODE=1
             fi
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Custom Headers Test - ${description}"
+            if [[ "${CUSTOM_HEADERS_TEST_RESULT}" = true ]]; then
+                # Display header check results from result file
+                # Need to define result_file based on log_suffix
+                header_result_file="${LOG_PREFIX}_${log_suffix}.result"
+                while IFS=: read -r marker header_name header_value status received_value; do
+                    if [[ "${marker}" == "HEADER_CHECK" ]]; then
+                        if [[ "${status}" == "FOUND" ]]; then
+                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Expected \"${header_name}\":\"${header_value}\" was found (received: ${received_value})"
+                        elif [[ "${status}" == "MISMATCH" ]]; then
+                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Expected \"${header_name}\":\"${header_value}\" but received \"${received_value}\""
+                        else
+                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Expected \"${header_name}\":\"${header_value}\" was not found"
+                        fi
+                    fi
+                done < <("${GREP}" "^HEADER_CHECK:" "${header_result_file}" 2>/dev/null || true)
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Custom headers test passed"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Custom headers test failed"
+                EXIT_CODE=1
+            fi
             
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: All Swagger tests passed"
         else
@@ -778,3 +876,4 @@ print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VER
 
 # Return status code if sourced, exit if run standalone
 ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
+

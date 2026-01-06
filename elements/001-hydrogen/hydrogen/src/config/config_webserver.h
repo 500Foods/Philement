@@ -16,6 +16,13 @@
 #include "config_swagger.h"  // For SwaggerConfig
 #include "config_api.h"      // For APIConfig
 
+// Header rule structure for custom headers
+typedef struct HeaderRule {
+    char* pattern;           // File pattern (e.g., "*", ".js", ".wasm")
+    char* header_name;       // Header name (e.g., "Cross-Origin-Opener-Policy")
+    char* header_value;      // Header value (e.g., "same-origin")
+} HeaderRule;
+
 /*
  * Web server configuration structure
  */
@@ -37,10 +44,25 @@ typedef struct WebServerConfig {
     // NEW: Global CORS default that subsystems can override
     char* cors_origin;             // NEW: Global CORS default "*" - can be overridden per subsystem
 
+    // NEW: Custom headers configuration
+    HeaderRule* headers;           // Array of custom header rules
+    size_t headers_count;          // Number of header rules
+
     // Reference to subsystem configurations
     SwaggerConfig swagger;  // G. Swagger configuration
     APIConfig api;         // F. API configuration
 } WebServerConfig;
+
+/*
+ * Process custom headers configuration
+ *
+ * Loads custom header rules from JSON configuration.
+ *
+ * @param root The root JSON object
+ * @param webserver The web server configuration to populate
+ * @return true on success, false on error
+ */
+bool process_headers_config(json_t* root, WebServerConfig* webserver);
 
 /*
  * Load web server configuration
