@@ -1,7 +1,9 @@
 {
-    "ServerName": "hydrogen-test-17",
-    "PayloadKey": "${env.PAYLOAD_KEY}",
-    "LogFile": "./logs/hydrogen_test_max.log",
+    "Server": {
+        "ServerName": "hydrogen-test-17",
+        "PayloadKey": "${env.PAYLOAD_KEY}",
+        "LogFile": "./logs/hydrogen_test_max.log"
+    },
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": true,

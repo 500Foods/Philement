@@ -1,8 +1,10 @@
-{
-    "ServerName": "hydrogen-test-35-db2",
-    "PayloadKey": "${env.PAYLOAD_KEY}",
+{       
+    "Server": {
+        "ServerName": "hydrogen-test-35-db2",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
     "WebServer": {
-        "Enabled": true,
+        "EnableIPv4": true,
         "EnableIPv6": false,
         "Port": 5350
     },
