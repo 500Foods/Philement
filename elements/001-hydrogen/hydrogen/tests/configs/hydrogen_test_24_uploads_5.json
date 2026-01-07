@@ -1,8 +1,10 @@
 {
-    "ServerName": "hydrogen-test-24-upload-5",
-    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "Server": {
+        "ServerName": "hydrogen-test-24-upload-5",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
     "WebServer": {
-        "Enabled": true,
+        "EnableIPv4": true,
         "EnableIPv6": false,
         "Port": 5244,
         "MaxUploadSize": 10485760,

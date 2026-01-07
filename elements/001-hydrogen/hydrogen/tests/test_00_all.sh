@@ -70,7 +70,7 @@ commands=(
     "${PRINTF}" "${DATE}" "${FIND}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}" "${REALPATH}" "${DIRNAME}" "${MD5SUM}"   
     "brotli" "openssl" "${GIT}" "cmake" "gcc" "ninja" "${CLOC}"
     "tshark" "curl" "websocat" "wscat" "lsof" 
-    "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "xmlstarlet" "jsonlint" "swagger-cli" "luacheck"
+    "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "xmlstarlet" "jsonlint" "swagger-cli" "luacheck" "jsonschema\-cli"
     "db2level" "mysql_config" "pg_config" "sqlite3" "lua" "sqruff"
     "${OH}" "${TABLES}" 
 )
@@ -787,7 +787,7 @@ results_table_file="${RESULTS_DIR}/results_table.txt"
 results_summary=$("${GREP}" 'Test Suite Results' "${results_table_file}" | "${AWK}" -F'———' '{print $2,$3,$4}' | "${AWK}" '{print $2,$5,$8}' || true)
 # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
 coverage_summary=$("${GREP}" 'Test Suite Coverage' "${coverage_table_file}" | "${AWK}" -F'———' '{print $2,$3,$4}' | "${AWK}" '{print $2,$5,$8}' || true)
-if [[ ! "${results_summary}" == "${coverage_summary}" ]]; then
+if [[ "${results_summary}" != "${coverage_summary}" ]]; then
     echo "The coverage percentage values differ:"
     echo "Results:  ${results_summary}"
     echo "Coverage: ${coverage_summary}"

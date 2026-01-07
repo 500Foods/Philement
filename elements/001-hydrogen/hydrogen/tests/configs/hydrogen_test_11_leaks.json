@@ -1,9 +1,11 @@
 {
-    "Description": "This is a Hydrogen configuration file for Test 11.",
-    "ServerName": "hydrogen-test-11",
-    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "Server": {
+        "Description": "This is a Hydrogen configuration file for Test 11.",
+        "ServerName": "hydrogen-test-11",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
     "WebServer": {
-        "Enabled": true,
+        "EnableIPv4": true,
         "EnableIPv6": false,
         "Port": 5110
     }

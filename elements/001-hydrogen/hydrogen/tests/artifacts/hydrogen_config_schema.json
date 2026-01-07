@@ -1,0 +1,1024 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://philement.org/schemas/hydrogen/config_schema.json",
+  "title": "Hydrogen Configuration Schema",
+  "description": "JSON Schema for Hydrogen Server configuration files using JSON Schema Draft 2020-12",
+  "type": "object",
+  "properties": {
+    "Server": {
+      "type": "object",
+      "properties": {
+        "Description": {
+          "type": "string",
+          "description": "Description of the Hydrogen server instance"
+        },
+        "ServerName": {
+          "type": "string",
+          "description": "Name of the Hydrogen server instance"
+        },
+        "PayloadKey": {
+          "type": "string",
+          "description": "Payload encryption key, can use environment variable syntax"
+        },
+        "LogFile": {
+          "type": "string",
+          "description": "Path to the log file"
+        },
+        "StartupDelay": {
+          "type": "integer",
+          "description": "Startup delay in seconds",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "PayloadKey": {
+      "type": "string",
+      "description": "Payload encryption key, can use environment variable syntax"
+    },
+    "LogFile": {
+      "type": "string",
+      "description": "Path to the log file"
+    },
+    "WebServer": {
+      "type": "object",
+      "description": "Web server configuration",
+      "properties": {
+        "EnableIPv4": {
+          "type": "boolean",
+          "description": "Enable IPv4 support"
+        },
+        "EnableIPv6": {
+          "type": "boolean",
+          "description": "Enable IPv6 support"
+        },
+        "Port": {
+          "type": "integer",
+          "description": "Port number for the web server",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "WebRoot": {
+          "type": "string",
+          "description": "Root directory for web content"
+        },
+        "UploadPath": {
+          "type": "string",
+          "description": "API path for file uploads"
+        },
+        "UploadDir": {
+          "type": "string",
+          "description": "Directory for storing uploaded files"
+        },
+        "MaxUploadSize": {
+          "type": "integer",
+          "description": "Maximum upload size in bytes",
+          "minimum": 0
+        },
+        "Headers": {
+          "type": "array",
+          "description": "Custom HTTP headers configuration",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "API": {
+      "type": "object",
+      "description": "API configuration",
+      "properties": {
+        "Enabled": {
+          "type": "boolean",
+          "description": "Enable or disable the API"
+        },
+        "Prefix": {
+          "type": "string",
+          "description": "API URL prefix"
+        }
+      },
+      "additionalProperties": false
+    },
+    "WebSocketServer": {
+      "type": "object",
+      "description": "WebSocket server configuration",
+      "properties": {
+        "EnableIPv4": {
+          "type": "boolean",
+          "description": "Enable IPv4 support"
+        },
+        "EnableIPv6": {
+          "type": "boolean",
+          "description": "Enable IPv6 support"
+        },
+        "Port": {
+          "type": "integer",
+          "description": "Port number for the WebSocket server",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "Protocol": {
+          "type": "string",
+          "description": "WebSocket protocol name"
+        },
+        "Key": {
+          "type": "string",
+          "description": "WebSocket encryption key"
+        },
+        "MaxMessageSize": {
+          "type": "integer",
+          "description": "Maximum WebSocket message size in bytes",
+          "minimum": 0
+        },
+        "LibLogLevel": {
+          "type": "integer",
+          "description": "Library logging level",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "ConnectionTimeouts": {
+          "type": "object",
+          "description": "Connection timeout settings",
+          "properties": {
+            "ShutdownWaitSeconds": {
+              "type": "integer",
+              "description": "Shutdown wait time in seconds",
+              "minimum": 0
+            },
+            "ServiceLoopDelayMs": {
+              "type": "integer",
+              "description": "Service loop delay in milliseconds",
+              "minimum": 0
+            },
+            "ConnectionCleanupMs": {
+              "type": "integer",
+              "description": "Connection cleanup interval in milliseconds",
+              "minimum": 0
+            },
+            "ExitWaitSeconds": {
+              "type": "integer",
+              "description": "Exit wait time in seconds",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Network": {
+      "type": "object",
+      "description": "Network configuration",
+      "properties": {
+        "Available": {
+          "type": "object",
+          "description": "Network interface availability",
+          "patternProperties": {
+            "^[a-zA-Z0-9_-]+$": {
+              "type": "boolean",
+              "description": "Interface availability status"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Interfaces": {
+          "type": "object",
+          "description": "Network interface settings",
+          "properties": {
+            "MaxInterfaces": {
+              "type": "integer",
+              "description": "Maximum number of network interfaces",
+              "minimum": 1
+            },
+            "MaxIPsPerInterface": {
+              "type": "integer",
+              "description": "Maximum IP addresses per interface",
+              "minimum": 1
+            },
+            "MaxInterfaceNameLength": {
+              "type": "integer",
+              "description": "Maximum interface name length",
+              "minimum": 1
+            },
+            "MaxIPAddressLength": {
+              "type": "integer",
+              "description": "Maximum IP address length",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "PortAllocation": {
+          "type": "object",
+          "description": "Port allocation settings",
+          "properties": {
+            "StartPort": {
+              "type": "integer",
+              "description": "Starting port number",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "EndPort": {
+              "type": "integer",
+              "description": "Ending port number",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "ReservedPorts": {
+              "type": "array",
+              "description": "List of reserved port numbers",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              }
+            },
+            "RetryAttempts": {
+              "type": "integer",
+              "description": "Number of retry attempts for port allocation",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "SystemResources": {
+      "type": "object",
+      "description": "System resource configuration",
+      "properties": {
+        "Queues": {
+          "type": "object",
+          "description": "Queue settings",
+          "properties": {
+            "MaxQueueBlocks": {
+              "type": "integer",
+              "description": "Maximum number of queue blocks",
+              "minimum": 1
+            },
+            "QueueHashSize": {
+              "type": "integer",
+              "description": "Queue hash table size",
+              "minimum": 1
+            },
+            "DefaultQueueCapacity": {
+              "type": "integer",
+              "description": "Default queue capacity",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "Buffers": {
+          "type": "object",
+          "description": "Buffer settings",
+          "properties": {
+            "DefaultMessageBuffer": {
+              "type": "integer",
+              "description": "Default message buffer size",
+              "minimum": 1
+            },
+            "MaxLogMessageSize": {
+              "type": "integer",
+              "description": "Maximum log message size",
+              "minimum": 1
+            },
+            "PathBufferSize": {
+              "type": "integer",
+              "description": "Path buffer size",
+              "minimum": 1
+            },
+            "LineBufferSize": {
+              "type": "integer",
+              "description": "Line buffer size",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "SystemMonitoring": {
+      "type": "object",
+      "description": "System monitoring configuration",
+      "properties": {
+        "Intervals": {
+          "type": "object",
+          "description": "Monitoring intervals",
+          "properties": {
+            "StatusUpdateMs": {
+              "type": "integer",
+              "description": "Status update interval in milliseconds",
+              "minimum": 0
+            },
+            "ResourceCheckMs": {
+              "type": "integer",
+              "description": "Resource check interval in milliseconds",
+              "minimum": 0
+            },
+            "MetricsUpdateMs": {
+              "type": "integer",
+              "description": "Metrics update interval in milliseconds",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "Thresholds": {
+          "type": "object",
+          "description": "Monitoring thresholds",
+          "properties": {
+            "MemoryWarningPercent": {
+              "type": "number",
+              "description": "Memory warning threshold percentage",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "DiskSpaceWarningPercent": {
+              "type": "number",
+              "description": "Disk space warning threshold percentage",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "LoadAverageWarning": {
+              "type": "number",
+              "description": "Load average warning threshold",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "PrintQueue": {
+      "type": "object",
+      "description": "Print queue configuration",
+      "properties": {
+        "Enabled": {
+          "type": "boolean",
+          "description": "Enable or disable the print queue"
+        },
+        "QueueSettings": {
+          "type": "object",
+          "description": "Queue priority settings",
+          "properties": {
+            "DefaultPriority": {
+              "type": "integer",
+              "description": "Default print job priority",
+              "minimum": 0
+            },
+            "EmergencyPriority": {
+              "type": "integer",
+              "description": "Emergency print job priority",
+              "minimum": 0
+            },
+            "MaintenancePriority": {
+              "type": "integer",
+              "description": "Maintenance print job priority",
+              "minimum": 0
+            },
+            "SystemPriority": {
+              "type": "integer",
+              "description": "System print job priority",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "Timeouts": {
+          "type": "object",
+          "description": "Print queue timeout settings",
+          "properties": {
+            "ShutdownWaitMs": {
+              "type": "integer",
+              "description": "Shutdown wait time in milliseconds",
+              "minimum": 0
+            },
+            "JobProcessingTimeoutMs": {
+              "type": "integer",
+              "description": "Job processing timeout in milliseconds",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "Buffers": {
+          "type": "object",
+          "description": "Print queue buffer settings",
+          "properties": {
+            "JobMessageSize": {
+              "type": "integer",
+              "description": "Job message buffer size",
+              "minimum": 1
+            },
+            "StatusMessageSize": {
+              "type": "integer",
+              "description": "Status message buffer size",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Logging": {
+      "type": "object",
+      "description": "Logging configuration",
+      "properties": {
+        "Console": {
+          "type": "object",
+          "description": "Console logging settings",
+          "properties": {
+            "Enabled": {
+              "type": "boolean",
+              "description": "Enable console logging"
+            },
+            "DefaultLevel": {
+              "type": "integer",
+              "description": "Default logging level",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "Subsystems": {
+              "type": "object",
+              "description": "Subsystem-specific logging levels",
+              "patternProperties": {
+                "^[a-zA-Z0-9_-]+$": {
+                  "type": "integer",
+                  "description": "Logging level for specific subsystem",
+                  "minimum": 0,
+                  "maximum": 5
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "Database": {
+          "type": "object",
+          "description": "Database logging settings",
+          "properties": {
+            "Enabled": {
+              "type": "boolean",
+              "description": "Enable database logging"
+            },
+            "DefaultLevel": {
+              "type": "integer",
+              "description": "Default logging level",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "ConnectionString": {
+              "type": "string",
+              "description": "Database connection string"
+            },
+            "Subsystems": {
+              "type": "object",
+              "description": "Subsystem-specific logging levels",
+              "patternProperties": {
+                "^[a-zA-Z0-9_-]+$": {
+                  "type": "integer",
+                  "description": "Logging level for specific subsystem",
+                  "minimum": 0,
+                  "maximum": 5
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "File": {
+          "type": "object",
+          "description": "File logging settings",
+          "properties": {
+            "Enabled": {
+              "type": "boolean",
+              "description": "Enable file logging"
+            },
+            "DefaultLevel": {
+              "type": "integer",
+              "description": "Default logging level",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "Path": {
+              "type": "string",
+              "description": "Log file path"
+            },
+            "Subsystems": {
+              "type": "object",
+              "description": "Subsystem-specific logging levels",
+              "patternProperties": {
+                "^[a-zA-Z0-9_-]+$": {
+                  "type": "integer",
+                  "description": "Logging level for specific subsystem",
+                  "minimum": 0,
+                  "maximum": 5
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Swagger": {
+      "type": "object",
+      "description": "Swagger UI configuration",
+      "properties": {
+        "Enabled": {
+          "type": "boolean",
+          "description": "Enable or disable Swagger UI"
+        },
+        "Prefix": {
+          "type": "string",
+          "description": "Swagger UI URL prefix"
+        },
+        "UIOptions": {
+          "type": "object",
+          "description": "Swagger UI options",
+          "properties": {
+            "TryItEnabled": {
+              "type": "boolean",
+              "description": "Enable Try It Out feature"
+            },
+            "AlwaysExpanded": {
+              "type": "boolean",
+              "description": "Always expand operation details"
+            },
+            "DisplayOperationId": {
+              "type": "boolean",
+              "description": "Display operation IDs"
+            },
+            "DefaultModelsExpandDepth": {
+              "type": "integer",
+              "description": "Default models expand depth",
+              "minimum": 0
+            },
+            "DefaultModelExpandDepth": {
+              "type": "integer",
+              "description": "Default model expand depth",
+              "minimum": 0
+            },
+            "ShowExtensions": {
+              "type": "boolean",
+              "description": "Show extensions"
+            },
+            "ShowCommonExtensions": {
+              "type": "boolean",
+              "description": "Show common extensions"
+            },
+            "DocExpansion": {
+              "type": "string",
+              "description": "Documentation expansion mode"
+            },
+            "SyntaxHighlightTheme": {
+              "type": "string",
+              "description": "Syntax highlighting theme"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Terminal": {
+      "type": "object",
+      "description": "Terminal configuration",
+      "properties": {
+        "Enabled": {
+          "type": "boolean",
+          "description": "Enable or disable terminal"
+        },
+        "WebRoot": {
+          "type": "string",
+          "description": "Terminal web root - source of xterm.js"
+        },
+        "WebPath": {
+          "type": "string",
+          "description": "Terminal web path"
+        },
+        "ShellCommand": {
+          "type": "string",
+          "description": "Shell command to execute"
+        },
+        "MaxSessions": {
+          "type": "integer",
+          "description": "Maximum number of terminal sessions",
+          "minimum": 1
+        },
+        "IdleTimeoutSeconds": {
+          "type": "integer",
+          "description": "Idle timeout in seconds",
+          "minimum": 0
+        },
+        "BufferSize": {
+          "type": "integer",
+          "description": "Terminal buffer size",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "mDNSClient": {
+      "type": "object",
+      "description": "mDNS client configuration",
+      "properties": {
+        "EnableIPv4": {
+          "type": "boolean",
+          "description": "Enable IPv4 support"
+        },
+        "EnableIPv6": {
+          "type": "boolean",
+          "description": "Enable IPv6 support"
+        },
+        "ScanIntervalMs": {
+          "type": "integer",
+          "description": "Scan interval in milliseconds",
+          "minimum": 0
+        },
+        "ServiceTypes": {
+          "type": "array",
+          "description": "List of service types to monitor",
+          "items": {
+            "type": "string",
+            "description": "Service type identifier"
+          }
+        },
+        "MonitoredServices": {
+          "type": "object",
+          "description": "Monitored service categories",
+          "properties": {
+            "OwnServices": {
+              "type": "boolean",
+              "description": "Monitor own services"
+            },
+            "LoadBalancers": {
+              "type": "boolean",
+              "description": "Monitor load balancers"
+            },
+            "PrinterServices": {
+              "type": "boolean",
+              "description": "Monitor printer services"
+            },
+            "CustomServices": {
+              "type": "array",
+              "description": "List of custom services to monitor",
+              "items": {
+                "type": "string",
+                "description": "Custom service identifier"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "HealthCheck": {
+          "type": "object",
+          "description": "Health check configuration",
+          "properties": {
+            "Enabled": {
+              "type": "boolean",
+              "description": "Enable health checks"
+            },
+            "IntervalMs": {
+              "type": "integer",
+              "description": "Health check interval in milliseconds",
+              "minimum": 0
+            },
+            "TimeoutMs": {
+              "type": "integer",
+              "description": "Health check timeout in milliseconds",
+              "minimum": 0
+            },
+            "RetryCount": {
+              "type": "integer",
+              "description": "Number of retry attempts",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "mDNSServer": {
+      "type": "object",
+      "description": "mDNS server configuration",
+      "properties": {
+        "EnableIPv4": {
+          "type": "boolean",
+          "description": "Enable IPv4 support"
+        },
+        "EnableIPv6": {
+          "type": "boolean",
+          "description": "Enable IPv6 support"
+        },
+        "DeviceId": {
+          "type": "string",
+          "description": "Device identifier"
+        },
+        "FriendlyName": {
+          "type": "string",
+          "description": "Friendly device name"
+        },
+        "Model": {
+          "type": "string",
+          "description": "Device model"
+        },
+        "Manufacturer": {
+          "type": "string",
+          "description": "Device manufacturer"
+        },
+        "Version": {
+          "type": "string",
+          "description": "Device version"
+        },
+        "Retries": {
+          "type": "integer",
+          "description": "Number of retry attempts",
+          "minimum": 0
+        },
+        "Services": {
+          "type": "array",
+          "description": "List of mDNS services",
+          "items": {
+            "type": "object",
+            "description": "mDNS service configuration",
+            "properties": {
+              "Name": {
+                "type": "string",
+                "description": "Service name"
+              },
+              "Type": {
+                "type": "string",
+                "description": "Service type"
+              },
+              "Port": {
+                "type": "integer",
+                "description": "Service port number",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "TxtRecords": {
+                "type": "array",
+                "description": "List of TXT records",
+                "items": {
+                  "type": "string",
+                  "description": "TXT record value"
+                }
+              }
+            },
+            "required": ["Name", "Type", "Port"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Databases": {
+      "type": "object",
+      "description": "Database configuration",
+      "properties": {
+        "ConnectionCount": {
+          "type": "integer",
+          "description": "Number of database connections",
+          "minimum": 1
+        },
+        "Connections": {
+          "type": "array",
+          "description": "List of database connections",
+          "items": {
+            "type": "object",
+            "description": "Database connection configuration",
+            "properties": {
+              "Enabled": {
+                "type": "boolean",
+                "description": "Enable this database connection"
+              },
+              "Name": {
+                "type": "string",
+                "description": "Database connection name"
+              },
+              "Engine": {
+                "type": "string",
+                "description": "Database engine type",
+                "enum": ["sqlite", "postgres", "postgresql", "mariadb", "mysql", "db2", "${env.ACURANZO_DB_TYPE}", "${env.CANVAS_DB_TYPE}", "${env.HYDROTST_DB_TYPE}"]
+              },
+              "Host": {
+                "type": "string",
+                "description": "Database host"
+              },
+              "Port": {
+                "type": ["string", "integer"],
+                "description": "Database port"
+              },
+              "Database": {
+                "type": "string",
+                "description": "Database name or path"
+              },
+              "User": {
+                "type": "string",
+                "description": "Database username"
+              },
+              "Pass": {
+                "type": "string",
+                "description": "Database password"
+              },
+              "Bootstrap": {
+                "type": "string",
+                "description": "Bootstrap SQL query"
+              },
+              "Design": {
+                "type": "string",
+                "description": "Database design/schema"
+              },
+              "Schema": {
+                "type": "string",
+                "description": "Database schema"
+              },
+              "Queues": {
+                "type": "object",
+                "description": "Database queue configuration",
+                "properties": {
+                  "Slow": {
+                    "type": "object",
+                    "description": "Slow queue settings",
+                    "properties": {
+                      "start": {
+                        "type": "integer",
+                        "description": "Starting number of connections",
+                        "minimum": 0
+                      },
+                      "min": {
+                        "type": "integer",
+                        "description": "Minimum number of connections",
+                        "minimum": 0
+                      },
+                      "max": {
+                        "type": "integer",
+                        "description": "Maximum number of connections",
+                        "minimum": 0
+                      },
+                      "up": {
+                        "type": "integer",
+                        "description": "Scale up threshold",
+                        "minimum": 0
+                      },
+                      "down": {
+                        "type": "integer",
+                        "description": "Scale down threshold",
+                        "minimum": 0
+                      },
+                      "inactivity": {
+                        "type": "integer",
+                        "description": "Inactivity timeout",
+                        "minimum": 0
+                      }
+                    },
+                    "required": ["start"],
+                    "additionalProperties": false
+                  },
+                  "Medium": {
+                    "type": "object",
+                    "description": "Medium queue settings",
+                    "properties": {
+                      "start": {
+                        "type": "integer",
+                        "description": "Starting number of connections",
+                        "minimum": 0
+                      },
+                      "min": {
+                        "type": "integer",
+                        "description": "Minimum number of connections",
+                        "minimum": 0
+                      },
+                      "max": {
+                        "type": "integer",
+                        "description": "Maximum number of connections",
+                        "minimum": 0
+                      },
+                      "up": {
+                        "type": "integer",
+                        "description": "Scale up threshold",
+                        "minimum": 0
+                      },
+                      "down": {
+                        "type": "integer",
+                        "description": "Scale down threshold",
+                        "minimum": 0
+                      },
+                      "inactivity": {
+                        "type": "integer",
+                        "description": "Inactivity timeout",
+                        "minimum": 0
+                      }
+                    },
+                    "required": ["start", "min", "max", "up", "down", "inactivity"],
+                    "additionalProperties": false
+                  },
+                  "Fast": {
+                    "type": "object",
+                    "description": "Fast queue settings",
+                    "properties": {
+                      "start": {
+                        "type": "integer",
+                        "description": "Starting number of connections",
+                        "minimum": 0
+                      },
+                      "min": {
+                        "type": "integer",
+                        "description": "Minimum number of connections",
+                        "minimum": 0
+                      },
+                      "max": {
+                        "type": "integer",
+                        "description": "Maximum number of connections",
+                        "minimum": 0
+                      },
+                      "up": {
+                        "type": "integer",
+                        "description": "Scale up threshold",
+                        "minimum": 0
+                      },
+                      "down": {
+                        "type": "integer",
+                        "description": "Scale down threshold",
+                        "minimum": 0
+                      },
+                      "inactivity": {
+                        "type": "integer",
+                        "description": "Inactivity timeout",
+                        "minimum": 0
+                      }
+                    },
+                    "required": ["start"],
+                    "additionalProperties": false
+                  },
+                  "Cache": {
+                    "type": "object",
+                    "description": "Cache queue settings",
+                    "properties": {
+                      "start": {
+                        "type": "integer",
+                        "description": "Starting number of connections",
+                        "minimum": 0
+                      },
+                      "min": {
+                        "type": "integer",
+                        "description": "Minimum number of connections",
+                        "minimum": 0
+                      },
+                      "max": {
+                        "type": "integer",
+                        "description": "Maximum number of connections",
+                        "minimum": 0
+                      },
+                      "up": {
+                        "type": "integer",
+                        "description": "Scale up threshold",
+                        "minimum": 0
+                      },
+                      "down": {
+                        "type": "integer",
+                        "description": "Scale down threshold",
+                        "minimum": 0
+                      },
+                      "inactivity": {
+                        "type": "integer",
+                        "description": "Inactivity timeout",
+                        "minimum": 0
+                      }
+                    },
+                    "required": ["start"],
+                    "additionalProperties": false
+                  }
+                },
+                "required": ["Slow"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["Name", "Engine"],
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["Server"],
+  "additionalProperties": true
+}
