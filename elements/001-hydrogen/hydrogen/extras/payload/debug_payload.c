@@ -6,7 +6,7 @@
 #include <sys/mman.h>
 #include <stdint.h>
 
-int main(int argc, char *argv[]) {
+int main(int argc, const char *const argv[]) {
     if (argc != 2) {
         printf("Usage: %s <binary_file>\n", argv[0]);
         return 1;

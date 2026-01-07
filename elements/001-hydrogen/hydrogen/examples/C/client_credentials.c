@@ -312,7 +312,6 @@ static int get_access_token(char *access_token, size_t token_size, char *error_m
  */
 static int call_protected_api(const char *access_token, char *error_message, size_t error_size) {
     CURL *curl;
-    CURLcode res;
     struct MemoryStruct chunk;
     int success = 0;
     long http_code = 0;
@@ -344,9 +343,9 @@ static int call_protected_api(const char *access_token, char *error_message, siz
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)REQUEST_TIMEOUT_SECONDS);
-
+        
         /* Perform request */
-        res = curl_easy_perform(curl);
+        CURLcode res = curl_easy_perform(curl);
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
         
         /* Check for curl errors */

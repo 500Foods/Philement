@@ -24,7 +24,7 @@ This test ensures JSON file integrity through two validation layers:
 
 ### JSON Schema Validation (Added 2026-01-07)
 
-- **Schema Compliance**: Validates Hydrogen config files against [`hydrogen_config_schema.json`](elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json)
+- **Schema Compliance**: Validates Hydrogen config files against [`hydrogen_config_schema.json`](/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json)
 - **Structural Validation**: Ensures required fields, data types, and constraints are met
 - **Environment Variable Support**: Validates configuration files with environment variable references
 - **Error Reporting**: Provides detailed validation error messages for schema violations
@@ -34,12 +34,14 @@ This test ensures JSON file integrity through two validation layers:
 The test checks JSON files in two phases:
 
 ### Phase 1: Basic JSON Linting
+
 - All `.json` files in the project (excluding intentionally invalid test files)
 - Configuration files in `configs/` directories
 - Test configuration files in `tests/configs/`
 - Payload definitions and data files
 
 ### Phase 2: JSON Schema Validation
+
 - Hydrogen configuration files in `tests/configs/` directory
 - Files matching pattern `hydrogen_test_*.json`
 - All files validated against the comprehensive Hydrogen configuration schema
@@ -48,7 +50,7 @@ The test checks JSON files in two phases:
 
 - **jq**: Required for basic JSON syntax validation
 - **jsonschema-cli**: Required for JSON Schema validation (optional but recommended)
-- **Hydrogen Config Schema**: [`hydrogen_config_schema.json`](elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json)
+- **Hydrogen Config Schema**: [`hydrogen_config_schema.json`](/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json)
 
 ## Expected Outcomes
 
