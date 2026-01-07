@@ -1,8 +1,10 @@
-{
-    "ServerName": "hydrogen-test-26-terminal-filesystem",
-    "PayloadKey": "${env.PAYLOAD_KEY}",
+{       
+    "Server": {
+        "ServerName": "hydrogen-test-26-terminal-filesystem",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
     "WebServer": {
-        "EnabledIPv4": true,
+        "EnableIPv4": true,
         "EnableIPv6": true,
         "Port": 5262
     },

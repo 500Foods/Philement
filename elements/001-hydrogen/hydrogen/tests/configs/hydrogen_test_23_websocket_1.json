@@ -1,5 +1,7 @@
 {
-    "ServerName": "hydrogen-test-26",
+    "Server": {
+        "ServerName": "hydrogen-test-26"
+    },
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": true,

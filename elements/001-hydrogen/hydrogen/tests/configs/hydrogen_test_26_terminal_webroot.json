@@ -1,6 +1,8 @@
-{
-    "ServerName": "hydrogen-test-26",
-    "PayloadKey": "${env.PAYLOAD_KEY}",
+{       
+    "Server": {
+        "ServerName": "hydrogen-test-26",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": true,

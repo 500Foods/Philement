@@ -159,6 +159,7 @@ QUALITY CHECKLIST (before completing)
 
 ## January 2026
 
+- [2026-Jan-06 (Tue)](/releases/2026-01/2026-01-06.md): (H) Web server custom headers, pattern matching, comprehensive testing
 - [2026-Jan-05 (Mon)](/releases/2026-01/2026-01-05.md): (H) Payload system enhancements, PostgreSQL 18 support
 - [2026-Jan-02 (Fri)](/releases/2026-01/2026-01-02.md): (Li) Lithium UI framework implementation, editor stubs, library initialization
 - [2026-Jan-01 (Wed)](/releases/2026-01/2026-01-01.md): (H, He, Philement) Lua analysis enhancement, diagram restructuring, release notes reorganization
