@@ -137,6 +137,8 @@ declare -a ENV_WHITELIST=(
     "BASE_URL" "CONFIG_FILE" "FIRST_LOG" "FIRST_PID" "PORT" "SECOND_LOG" "SECOND_PID" 
     # First found in tests/test_22_swagger.sh
     "CUSTOM_HEADERS_TEST_RESULT"
+    # First found in tests/test_91_cppcheck.sh
+    "CACHE_HITS_FMT" "FILES_TO_RUN_FMT" "OTHER_ISSUES_FMT"
     # First found in tests/test_93_jsonlint.sh
     "CONFIG_COUNT" "JSONSCHEMA_CLI" "SCHEMA_FILE"
     # Remaining tests    

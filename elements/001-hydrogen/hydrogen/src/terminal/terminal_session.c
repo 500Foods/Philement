@@ -272,18 +272,18 @@ TerminalSession *get_terminal_session(const char *session_id) {
 
     pthread_rwlock_rdlock(&global_session_manager->sessions_lock);
 
-    TerminalSession *session = global_session_manager->active_sessions;
-    while (session) {
-        if (strcmp(session->session_id, session_id) == 0) {
+    TerminalSession *current_session = global_session_manager->active_sessions;
+    while (current_session) {
+        if (strcmp(current_session->session_id, session_id) == 0) {
             // Update activity timestamp
-            update_session_activity(session);
+            update_session_activity(current_session);
             break;
         }
-        session = session->next;
+        current_session = current_session->next;
     }
 
     pthread_rwlock_unlock(&global_session_manager->sessions_lock);
-    return session;
+    return current_session;
 }
 
 /**
@@ -517,7 +517,7 @@ bool list_active_sessions(char ***session_ids, size_t *count) {
         return false;
     }
 
-    TerminalSession *session = global_session_manager->active_sessions;
+    const TerminalSession *session = global_session_manager->active_sessions;
     size_t index = 0;
 
         while (session && index < *count) {

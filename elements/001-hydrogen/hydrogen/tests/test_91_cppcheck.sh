@@ -7,6 +7,7 @@
 # run_cppcheck()
 
 # CHANGELOG
+# 3.2.1 - 2026-01-07mkl+ - Added thousands separators to various output metrics
 # 3.2.0 - 2025-09-16 - Added cache hit statistics to output
 # 3.1.0 - 2025-08-13 - Review, removed custom should_exclude code, minor tewaks
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
@@ -134,12 +135,13 @@ COMBINED_OUTPUT=$(run_cppcheck ".")
 
 # Parse the combined output
 CACHE_HITS="${COMBINED_OUTPUT%%|*}"
+CACHE_HITS_FMT=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${CACHE_HITS}" || true)
 CPPCHECK_OUTPUT="${COMBINED_OUTPUT#*|}"
 
 FILES_TO_RUN=$(( C_COUNT - CACHE_HITS ))
-
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${CACHE_HITS} files of ${C_COUNT} files in cache..."
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running cppcheck on ${FILES_TO_RUN} / ${C_COUNT} files..."
+FILES_TO_RUN_FMT=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${FILES_TO_RUN}" || true)
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${CACHE_HITS_FMT} files of ${C_COUNT_FMT} files in cache..."
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running cppcheck on ${FILES_TO_RUN_FMT} / ${C_COUNT_FMT} files..."
 
 # Check for expected vs unexpected issues
 EXPECTED_WARNING="warning: Possible null pointer dereference: ptr"
@@ -155,7 +157,7 @@ while IFS= read -r line; do
         OTHER_ISSUES=$(( OTHER_ISSUES + 1 ))
     fi
 done <<< "${CPPCHECK_OUTPUT}"
-
+OTHER_ISSUES_FMT=$(env LC_ALL=en_US.UTF_8 "${PRINTF}" "%'d" "${OTHER_ISSUES}" || true)
 # Display output
 if [[ -n "${CPPCHECK_OUTPUT}" ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "cppcheck output:"
@@ -166,13 +168,13 @@ if [[ -n "${CPPCHECK_OUTPUT}" ]]; then
 fi
 
 if [[ ${OTHER_ISSUES} -gt 0 ]]; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found ${OTHER_ISSUES} unexpected issues in ${C_COUNT} files"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found ${OTHER_ISSUES_FMT} unexpected issues in ${C_COUNT_FMT} files"
     EXIT_CODE=1
 else
     if [[ ${HAS_EXPECTED} -eq 1 ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Found 1 expected warning in ${C_COUNT} files"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Found 1 expected warning in ${C_COUNT_FMT} files"
     else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No issues found in ${C_COUNT} files"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No issues found in ${C_COUNT_FMT} files"
     fi
 fi
 
