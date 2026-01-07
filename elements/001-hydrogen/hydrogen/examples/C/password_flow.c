@@ -74,7 +74,7 @@ static int display_token_info(const char *token, const char *token_type);
 static int current_time(void);
 static void print_json_value(json_t *value, const char *prefix);
 
-int main(int argc, char *argv[]) {
+int main(int argc, const char *const argv[]) {
     printf("Resource Owner Password Flow Example\n");
     printf("====================================\n\n");
 
@@ -330,16 +330,15 @@ static int get_tokens(const char *username, const char *password,
 
 /* Refresh the access token using a refresh token */
 static int refresh_access_token(const char *refresh_token,
-                              char *access_token, size_t access_token_size,
-                              char *new_refresh_token, size_t refresh_token_size,
-                              char *error_message, size_t error_size) {
+                               char *access_token, size_t access_token_size,
+                               char *new_refresh_token, size_t refresh_token_size,
+                               char *error_message, size_t error_size) {
     if (!refresh_token || refresh_token[0] == '\0') {
         snprintf(error_message, error_size, "No refresh token provided");
         return 0;
     }
     
     CURL *curl;
-    CURLcode res;
     struct MemoryStruct chunk;
     int success = 0;
     long http_code = 0;
@@ -380,7 +379,7 @@ static int refresh_access_token(const char *refresh_token,
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         
         /* Perform request */
-        res = curl_easy_perform(curl);
+        CURLcode res = curl_easy_perform(curl);
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
         
         /* Check for curl errors */
@@ -467,7 +466,6 @@ static int call_userinfo(const char *access_token, char *error_message, size_t e
     }
     
     CURL *curl;
-    CURLcode res;
     struct MemoryStruct chunk;
     int success = 0;
     long http_code = 0;
@@ -501,7 +499,7 @@ static int call_userinfo(const char *access_token, char *error_message, size_t e
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)REQUEST_TIMEOUT_SECONDS);
         
         /* Perform request */
-        res = curl_easy_perform(curl);
+        CURLcode res = curl_easy_perform(curl);
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
         
         /* Check for curl errors */
@@ -562,7 +560,6 @@ static int call_protected_api(const char *access_token, char *error_message, siz
     }
     
     CURL *curl;
-    CURLcode res;
     struct MemoryStruct chunk;
     int success = 0;
     long http_code = 0;
@@ -596,7 +593,7 @@ static int call_protected_api(const char *access_token, char *error_message, siz
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)REQUEST_TIMEOUT_SECONDS);
         
         /* Perform request */
-        res = curl_easy_perform(curl);
+        CURLcode res = curl_easy_perform(curl);
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
         
         /* Check for curl errors */
