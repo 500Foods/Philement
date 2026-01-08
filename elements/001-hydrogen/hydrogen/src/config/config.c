@@ -172,7 +172,7 @@ AppConfig* load_config(const char* cmdline_path) {
     }
 
     // Perform schema validation if config file was provided
-    log_this(SR_CONFIG, "Schema Validation", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_CONFIG, "Config Schema Validation", LOG_LEVEL_DEBUG, 0);
     if (final_path) {
         log_this(SR_CONFIG, "― Using config file: OK", LOG_LEVEL_DEBUG, 0);
 
@@ -185,7 +185,7 @@ AppConfig* load_config(const char* cmdline_path) {
             if (which_fp) {
                 char buffer[256];
                 if (fgets(buffer, sizeof(buffer), which_fp) != NULL) {
-                    log_this(SR_CONFIG, "― jsonschema-cli: OK", LOG_LEVEL_DEBUG, 0);
+                    log_this(SR_CONFIG, "― jsonschema-cli available: OK", LOG_LEVEL_DEBUG, 0);
                     pclose(which_fp);
 
                     // Create temp file with resolved env vars
