@@ -171,6 +171,134 @@ AppConfig* load_config(const char* cmdline_path) {
         config_path = "― Missing... using defaults";
     }
 
+    // Perform schema validation if config file was provided
+    log_this(SR_CONFIG, "Schema Validation", LOG_LEVEL_DEBUG, 0);
+    if (final_path) {
+        log_this(SR_CONFIG, "― Using config file: OK", LOG_LEVEL_DEBUG, 0);
+
+        const char* schema_path = getenv("HYDROGEN_SCHEMA");
+        if (schema_path && is_file_readable(schema_path)) {
+            log_this(SR_CONFIG, "― HYDROGEN_SCHEMA: OK", LOG_LEVEL_DEBUG, 0);
+
+            // Check if jsonschema-cli is available
+            FILE* which_fp = popen("which jsonschema-cli 2>/dev/null", "r");
+            if (which_fp) {
+                char buffer[256];
+                if (fgets(buffer, sizeof(buffer), which_fp) != NULL) {
+                    log_this(SR_CONFIG, "― jsonschema-cli: OK", LOG_LEVEL_DEBUG, 0);
+                    pclose(which_fp);
+
+                    // Create temp file with resolved env vars
+                    char temp_path[256] = "/tmp/hydrogen_config_XXXXXX";
+                    int fd = mkstemp(temp_path);
+                    if (fd == -1) {
+                        log_this(SR_CONFIG, "― Failed to create temp file for validation", LOG_LEVEL_DEBUG, 0);
+                        log_this(SR_CONFIG, "― Schema Validation: Skipped", LOG_LEVEL_DEBUG, 0);
+                    } else {
+                        close(fd);
+
+                        // Read original config file
+                        FILE* orig_fp = fopen(final_path, "r");
+                        if (!orig_fp) {
+                            log_this(SR_CONFIG, "― Failed to read config file for env resolution", LOG_LEVEL_DEBUG, 0);
+                            unlink(temp_path);
+                            log_this(SR_CONFIG, "― Schema Validation: Skipped", LOG_LEVEL_DEBUG, 0);
+                        } else {
+                            char content[65536] = {0};
+                            size_t content_len = fread(content, 1, sizeof(content) - 1, orig_fp);
+                            fclose(orig_fp);
+                            content[content_len] = '\0';
+
+                            // Resolve ${env.VAR} patterns
+                            char resolved[65536] = {0};
+                            char* src = content;
+                            char* dst = resolved;
+                            while (*src) {
+                                if (strncmp(src, "${env.", 6) == 0) {
+                                    char* end = strchr(src + 6, '}');
+                                    if (end) {
+                                        *end = '\0';
+                                        const char* var = src + 6;
+                                        const char* val = getenv(var);
+                                        if (val) {
+                                            strcpy(dst, val);
+                                            dst += strlen(val);
+                                        } else {
+                                            // Leave unresolved if not set
+                                            strcpy(dst, src);
+                                            dst += end - src + 1;
+                                        }
+                                        src = end + 1;
+                                    } else {
+                                        *dst++ = *src++;
+                                    }
+                                } else {
+                                    *dst++ = *src++;
+                                }
+                            }
+                            *dst = '\0';
+
+                            // Write resolved content to temp file
+                            FILE* temp_fp = fopen(temp_path, "w");
+                            if (!temp_fp) {
+                                log_this(SR_CONFIG, "― Failed to write temp file", LOG_LEVEL_DEBUG, 0);
+                                unlink(temp_path);
+                                log_this(SR_CONFIG, "― Schema Validation: Skipped", LOG_LEVEL_DEBUG, 0);
+                            } else {
+                                fwrite(resolved, 1, strlen(resolved), temp_fp);
+                                fclose(temp_fp);
+
+                                // Run schema validation on temp file
+                                char command[1024];
+                                snprintf(command, sizeof(command), "jsonschema-cli '%s' --output text -i '%s' 2>&1", schema_path, temp_path);
+                                FILE* val_fp = popen(command, "r");
+                                if (val_fp) {
+                                    char output[4096] = {0};
+                                    size_t len = fread(output, 1, sizeof(output) - 1, val_fp);
+                                    output[len] = '\0';
+                                    int status = pclose(val_fp);
+
+                                    // Log validation output line by line
+                                    char* line = strtok(output, "\n");
+                                    while (line) {
+                                        log_this(SR_CONFIG, "― %s", LOG_LEVEL_DEBUG, 1, line);
+                                        line = strtok(NULL, "\n");
+                                    }
+
+                                    // Log pass/fail result
+                                    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+                                        log_this(SR_CONFIG, "― Schema Validation: PASS", LOG_LEVEL_DEBUG, 0);
+                                    } else {
+                                        log_this(SR_CONFIG, "― Schema Validation: FAIL", LOG_LEVEL_DEBUG, 0);
+                                    }
+                                } else {
+                                    log_this(SR_CONFIG, "― Failed to execute validation command", LOG_LEVEL_DEBUG, 0);
+                                    log_this(SR_CONFIG, "― Schema Validation: Skipped", LOG_LEVEL_DEBUG, 0);
+                                }
+
+                                // Clean up temp file
+                                unlink(temp_path);
+                            }
+                        }
+                    }
+                } else {
+                    pclose(which_fp);
+                    log_this(SR_CONFIG, "― jsonschema-cli: Not found", LOG_LEVEL_DEBUG, 0);
+                    log_this(SR_CONFIG, "― Schema Validation: Skipped", LOG_LEVEL_DEBUG, 0);
+                }
+            } else {
+                log_this(SR_CONFIG, "― jsonschema-cli: Not found", LOG_LEVEL_DEBUG, 0);
+                log_this(SR_CONFIG, "― Schema Validation: Skipped", LOG_LEVEL_DEBUG, 0);
+            }
+        } else {
+            log_this(SR_CONFIG, "― HYDROGEN_SCHEMA: Not found", LOG_LEVEL_DEBUG, 0);
+            log_this(SR_CONFIG, "― Schema Validation: Skipped", LOG_LEVEL_DEBUG, 0);
+        }
+    } else {
+        log_this(SR_CONFIG, "- Using config file: Nope", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_CONFIG, "― Schema Validation: Skipped", LOG_LEVEL_DEBUG, 0);
+    }
+
     // If no config file was found, log the checked locations
     if (!root) {
         log_this(SR_CONFIG, "― Checking default locations", LOG_LEVEL_DEBUG, 0);
