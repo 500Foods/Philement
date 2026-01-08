@@ -2,8 +2,7 @@
     "Server": {
         "Description": "This is a Hydrogen configuration file for Test 11.",
         "ServerName": "hydrogen-test-11",
-        "PayloadKey": "${env.PAYLOAD_KEY}",
-	"deliberatelybad":"value"
+        "PayloadKey": "${env.PAYLOAD_KEY}"
     },
     "WebServer": {
         "EnableIPv4": true,
