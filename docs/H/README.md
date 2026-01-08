@@ -82,6 +82,7 @@ Hydrogen is currently designed for technical users who:
 - [**Database**](/docs/H/plans/DATABASE_PLAN.md) - Implementation plan for Database subsystem
 - [**Migrations**](/docs/H/plans/MIGRATIONS.md) - Performance improvements to the Migration system
 - [**Conduit**](/docs/H/plans/CONDUIT.md) - Implementation plan for Conduit Service endpoints
+- [**Auth**](/docs/H/plans/AUTH_PLAN.md) - Implementation plan for Auth subsystem
 
 ### Examples & Implementation
 

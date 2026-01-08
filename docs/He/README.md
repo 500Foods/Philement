@@ -27,7 +27,7 @@ The Hydrogen project is what uses these files. The migration files themsleves ca
 - [Test 71 - Database Diagrams](/docs/H/tests/test_71_database_diagrams.md) - Generates SVG database diagrams for all supported database engine and design combinations
 - [Test 98 - Lua Code Analysis](/docs/H/tests/test_98_luacheck.md) - Performs static analysis on Lua source files using luacheck tool
 
-IN addtion, [Test 01 - Compilation](/docs/H/tests/test_01_compliation.md) builds the Hydrgoen payload which typically includes the migration files. As part of the build step, it checks to see if the migrations files have been updated more recently than the paylod. If so, it regenerates the payload and also runs the [helium_update.sh](/elements/002-helium/scripts/helium_update.sh) script.
+IN addtion, [Test 01 - Compilation](/docs/H/tests/test_01_compilation.md) builds the Hydrgoen payload which typically includes the migration files. As part of the build step, it checks to see if the migrations files have been updated more recently than the paylod. If so, it regenerates the payload and also runs the [helium_update.sh](/elements/002-helium/scripts/helium_update.sh) script.
 
 ## Table of Contents
 
@@ -82,20 +82,24 @@ Each schema provides a complete database design with migrations, supporting Post
 
 - [**Hydrogen Integration**](/docs/He/INTEGRATION.md) - How Helium works with the Hydrogen server system
 
+### License
+
+- [**MIT License**](/docs/He/LICENSE.md) - Standard open-source license
+
 ## Repository Information
 
-Generated 2026-Jan-01 (Thu) 18:48:06 PST
+Generated 2026-Jan-07 (Wed) 18:38:30 PST
 
 ```cloc
-github.com/AlDanial/cloc v 2.06  T=0.98 s (289.5 files/s, 132800.0 lines/s)
+github.com/AlDanial/cloc v 2.06  T=1.15 s (251.6 files/s, 113635.6 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 SVG                            100            200           2496          89564
-Lua                            152           3581           3036          24637
-Markdown                        28           1448              0           3749
+Lua                            157           3673           3087          25171
+Markdown                        29           1455              0           3774
 Bourne Shell                     3            152            160            814
 -------------------------------------------------------------------------------
-SUM:                           283           5381           5692         118764
+SUM:                           289           5480           5743         119323
 -------------------------------------------------------------------------------
 ```
