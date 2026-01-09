@@ -8,6 +8,7 @@
 // Project includes
 #include <src/hydrogen.h>
 #include <src/database/database.h>
+#include <src/database/database_pending.h>
 
 // Local includes
 #include "dbqueue.h"
@@ -135,4 +136,102 @@ DatabaseQuery* database_queue_process_next(DatabaseQueue* db_queue) {
     }
 
     return query;
+}
+
+/*
+ * Wait for query result with timeout (synchronous execution)
+ *
+ * This function implements synchronous query execution by:
+ * 1. Registering a pending result for the query_id
+ * 2. Waiting for the worker thread to signal completion
+ * 3. Converting the QueryResult back to DatabaseQuery structure
+ *
+ * Returns: DatabaseQuery with result data, or NULL on timeout/error
+ */
+DatabaseQuery* database_queue_await_result(DatabaseQueue* db_queue, const char* query_id, int timeout_seconds) {
+    if (!db_queue || !query_id) {
+        log_this(SR_DATABASE, "Invalid parameters for await_result", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
+    // Get DQM label for logging
+    char* dqm_label = database_queue_generate_label(db_queue);
+    if (!dqm_label) {
+        log_this(SR_DATABASE, "Failed to generate DQM label", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
+    // Get the pending result manager
+    PendingResultManager* pending_mgr = get_pending_result_manager();
+    if (!pending_mgr) {
+        log_this(dqm_label, "Pending result manager not initialized", LOG_LEVEL_ERROR, 0);
+        free(dqm_label);
+        return NULL;
+    }
+
+    // Register a pending result for this query
+    PendingQueryResult* pending = pending_result_register(pending_mgr, query_id, timeout_seconds, dqm_label);
+    if (!pending) {
+        log_this(dqm_label, "Failed to register pending result for query: %s", LOG_LEVEL_ERROR, 1, query_id);
+        free(dqm_label);
+        return NULL;
+    }
+
+    log_this(dqm_label, "Waiting for result of query: %s (timeout: %d seconds)", LOG_LEVEL_TRACE, 2, query_id, timeout_seconds);
+
+    // Wait for the result (blocks until completed or timeout)
+    int wait_result = pending_result_wait(pending, dqm_label);
+
+    if (wait_result != 0) {
+        // Timeout or error occurred
+        if (pending_result_is_timed_out(pending)) {
+            log_this(dqm_label, "Query timed out: %s", LOG_LEVEL_ALERT, 1, query_id);
+        } else {
+            log_this(dqm_label, "Query wait failed: %s", LOG_LEVEL_ERROR, 1, query_id);
+        }
+        free(dqm_label);
+        return NULL;
+    }
+
+    // Get the result
+    QueryResult* query_result = pending_result_get(pending);
+    
+    // Create DatabaseQuery to return
+    DatabaseQuery* db_query = malloc(sizeof(DatabaseQuery));
+    if (!db_query) {
+        log_this(dqm_label, "Memory allocation failed for DatabaseQuery", LOG_LEVEL_ERROR, 0);
+        free(dqm_label);
+        return NULL;
+    }
+
+    // Initialize the structure
+    memset(db_query, 0, sizeof(DatabaseQuery));
+    db_query->query_id = strdup(query_id);
+    db_query->processed_at = time(NULL);
+
+    // Convert QueryResult to DatabaseQuery format
+    if (query_result) {
+        // Store the JSON result data as the query template (for backward compatibility)
+        // In a real implementation, we'd have a proper result field in DatabaseQuery
+        if (query_result->data_json) {
+            db_query->query_template = strdup(query_result->data_json);
+        }
+
+        // Store error message if present
+        if (query_result->error_message) {
+            db_query->error_message = strdup(query_result->error_message);
+        }
+
+        // Log success with statistics
+        log_this(dqm_label, "Query completed successfully: %s (rows: %zu, columns: %zu, time: %ld ms)",
+                LOG_LEVEL_TRACE, 4, query_id, query_result->row_count,
+                query_result->column_count, query_result->execution_time_ms);
+    } else {
+        // Query failed - result is NULL
+        db_query->error_message = strdup("Query execution failed or timed out");
+        log_this(dqm_label, "Query completed with NULL result: %s", LOG_LEVEL_ALERT, 1, query_id);
+    }
+
+    free(dqm_label);
+    return db_query;
 }
