@@ -70,6 +70,88 @@ A thorough review of the authentication system architecture and implementation p
 2. **Monitoring setup**: [AUTH_PLAN_OPERATIONS.md](/docs/H/plans/AUTH_PLAN_OPERATIONS.md)
 3. **Performance targets**: [AUTH_PLAN_PERFORMANCE.md](/docs/H/plans/AUTH_PLAN_PERFORMANCE.md)
 
+## Developer Reference Guide
+
+### 📁 Key File Locations
+
+| Component | Location | Purpose |
+| ----------- | ---------- | --------- |
+| **Auth Service** | `src/api/auth/` | Main auth implementation |
+| **Database Types** | `src/database/database.h` | `QueryResult` structure |
+| **OIDC Structures** | `src/oidc/oidc_tokens.h` | JWT claims reference |
+| **Config System** | `src/config/config.h` | Configuration access |
+| **Logging** | `src/logging/` | `log_this()` function |
+| **API Framework** | `src/api/api_service.h` | API request handling |
+
+### 🔧 Required Includes
+
+```c
+// Standard libraries
+#include <stdbool.h>
+#include <stdlib.h>
+#include <time.h>
+
+// Project libraries
+#include <src/config/config.h>        // Configuration access
+#include <src/database/database.h>    // QueryResult structure
+#include <src/hydrogen.h>             // Main project header
+```
+
+### 📊 Key Data Structures
+
+| Structure | Location | Purpose |
+| ----------- | ---------- | --------- |
+| `QueryResult` | `database.h:89` | Database query results |
+| `OIDCTokenClaims` | `oidc_tokens.h:40` | JWT claims reference |
+| `account_info_t` | `auth_service.h` | User account data |
+| `system_info_t` | `auth_service.h` | API key system data |
+| `jwt_claims_t` | `auth_service.h` | Auth JWT claims |
+| `jwt_config_t` | `auth_service.h` | JWT configuration |
+
+### 🛠️ Common Patterns
+
+**Database Queries:**
+
+```c
+// Use conduit service for QueryRef execution
+// QueryRef #001-#023 are pre-defined in payload
+QueryResult* result = execute_query(ref_number, json_params);
+```
+
+**Logging:**
+
+```c
+// Use SR_AUTH subsystem for auth logging
+log_this("AUTH", "Login attempt: %s from %s", username, ip);
+```
+
+**Memory Management:**
+
+```c
+// Always check for NULL after allocations
+account_info_t* account = calloc(1, sizeof(account_info_t));
+// ... use account ...
+free_account_info(account); // Use cleanup functions
+```
+
+**Error Handling:**
+
+```c
+if (!result || !result->success) {
+    log_this("AUTH", "Database error: %s", result->error_message);
+    return false;
+}
+```
+
+### 🔍 Implementation Search Paths
+
+When implementing auth functions, check these locations in order:
+
+1. **Existing OIDC code** (`src/oidc/`) - JWT handling patterns
+2. **Database examples** (`src/api/conduit/`) - Query execution
+3. **API endpoints** (`src/api/system/`) - Request/response patterns
+4. **Config usage** (`src/config/`) - Configuration access
+
 ## Environment Variables Required
 
 ```bash
