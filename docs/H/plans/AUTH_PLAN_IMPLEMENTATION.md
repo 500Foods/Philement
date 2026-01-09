@@ -649,8 +649,14 @@ Following the existing Hydrogen API pattern with separate directories for each e
 
 ```structure
 src/api/auth/
-├── auth_service.c           # Main auth service with shared utilities
+├── auth_service.c           # Main integration file (lightweight, includes all modules)
 ├── auth_service.h           # Auth service header with common functions
+├── auth_service_jwt.c       # JWT operations implementation (~500 lines)
+├── auth_service_jwt.h       # JWT operations internal header
+├── auth_service_validation.c # Input validation implementation (~180 lines)
+├── auth_service_validation.h # Validation internal header
+├── auth_service_database.c  # Database operations implementation (~500 lines)
+├── auth_service_database.h  # Database operations internal header
 ├── login/
 │   ├── login.c             # Login endpoint implementation
 │   └── login.h             # Login header with Swagger documentation
@@ -664,6 +670,38 @@ src/api/auth/
     ├── register.c          # Register endpoint implementation
     └── register.h          # Register header with Swagger documentation
 ```
+
+**Refactoring Note (2026-01-09)**: The original 1180-line [`auth_service.c`](/elements/001-hydrogen/hydrogen/src/api/auth/auth_service.c) has been refactored into focused modules to improve maintainability and meet the project's goal of keeping source files under 500 lines (max 1,000 lines):
+
+- **auth_service_jwt.c** (~500 lines): All JWT-related operations including:
+  - Base64url encoding/decoding
+  - JWT generation and validation
+  - Token hashing and management
+  - JWT configuration
+
+- **auth_service_validation.c** (~180 lines): All validation operations including:
+  - Login input validation
+  - Registration input validation
+  - Email and timezone format validation
+  - IP whitelist/blacklist checks
+  - Rate limiting logic
+
+- **auth_service_database.c** (~500 lines): All database operations including:
+  - Query execution wrappers
+  - Account lookup and management
+  - Password verification
+  - JWT storage and revocation
+  - Login attempt logging
+  - IP blocking
+
+- **auth_service.c** (~17 lines): Lightweight integration file that includes all three modules
+
+This modular structure provides:
+
+- Better code organization with clear separation of concerns
+- Easier testing with focused unit test targets
+- Improved maintainability with smaller, more manageable files
+- Better build times with focused compilation units
 
 ### JWT Handling
 

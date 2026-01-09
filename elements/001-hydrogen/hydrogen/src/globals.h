@@ -99,7 +99,8 @@
 #define SR_NETWORK          "Network"
 #define SR_RESOURCES        "Resources"
 #define SR_OIDC             "OIDC"
-#define SR_NOTIFY           "Notify"  
+#define SR_AUTH             "Auth"
+#define SR_NOTIFY           "Notify"
 #define SR_MIRAGE           "Mirage"
 
 // Additional sub-Subsystem Tracking
