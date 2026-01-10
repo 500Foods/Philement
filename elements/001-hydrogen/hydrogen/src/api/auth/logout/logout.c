@@ -4,6 +4,10 @@
  * Implements the /api/auth/logout endpoint that invalidates JWT tokens by
  * removing them from active storage. Accepts both valid and expired tokens
  * to ensure users can always logout even with expired sessions.
+ *
+ * NOTE: JWT authentication is handled by the API middleware layer. By the time
+ * this endpoint is called, the request has already been authenticated and
+ * the JWT claims are available via the connection context.
  */
 
 // Project includes 
@@ -17,7 +21,7 @@
 // Handle POST /api/auth/logout requests
 // Invalidates JWT token by removing it from storage
 // Success: 200 OK with confirmation message
-// Invalid Token: 401 Unauthorized
+// Invalid Token: 401 Unauthorized (handled by middleware)
 // Bad Request: 400 Bad Request for missing/invalid parameters
 // Error: 500 Internal Server Error with error details
 // Includes CORS headers for cross-origin access

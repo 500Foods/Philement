@@ -4,9 +4,10 @@
  * Tests the JWT generation functionality
  *
  * CHANGELOG:
+ * 2026-01-10: Updated for database parameter
  * 2026-01-09: Initial version - Tests for JWT generation
  *
- * TEST_VERSION: 1.0.0
+ * TEST_VERSION: 1.1.0
  */
 
 // Standard project header plus Unity Framework header
@@ -89,7 +90,7 @@ void tearDown(void) {
 void test_generate_jwt_null_account(void) {
     system_info_t* system = create_test_system();
     
-    char* jwt = generate_jwt(NULL, system, "192.168.1.1", time(NULL));
+    char* jwt = generate_jwt(NULL, system, "192.168.1.1", "Acuranzo", time(NULL));
     
     TEST_ASSERT_NULL(jwt);
     
@@ -100,7 +101,7 @@ void test_generate_jwt_null_account(void) {
 void test_generate_jwt_null_system(void) {
     account_info_t* account = create_test_account();
     
-    char* jwt = generate_jwt(account, NULL, "192.168.1.1", time(NULL));
+    char* jwt = generate_jwt(account, NULL, "192.168.1.1", "Acuranzo", time(NULL));
     
     TEST_ASSERT_NULL(jwt);
     
@@ -112,7 +113,7 @@ void test_generate_jwt_null_client_ip(void) {
     account_info_t* account = create_test_account();
     system_info_t* system = create_test_system();
     
-    char* jwt = generate_jwt(account, system, NULL, time(NULL));
+    char* jwt = generate_jwt(account, system, NULL, "Acuranzo", time(NULL));
     
     TEST_ASSERT_NULL(jwt);
     
@@ -125,7 +126,7 @@ void test_generate_jwt_valid_all_params(void) {
     account_info_t* account = create_test_account();
     system_info_t* system = create_test_system();
     
-    char* jwt = generate_jwt(account, system, "192.168.1.1", time(NULL));
+    char* jwt = generate_jwt(account, system, "192.168.1.1", "Acuranzo", time(NULL));
     
     TEST_ASSERT_NOT_NULL(jwt);
     TEST_ASSERT_GREATER_THAN(0, strlen(jwt));
@@ -140,7 +141,7 @@ void test_generate_jwt_proper_format(void) {
     account_info_t* account = create_test_account();
     system_info_t* system = create_test_system();
     
-    char* jwt = generate_jwt(account, system, "10.0.0.1", time(NULL));
+    char* jwt = generate_jwt(account, system, "10.0.0.1", "Acuranzo", time(NULL));
     
     TEST_ASSERT_NOT_NULL(jwt);
     
@@ -161,7 +162,7 @@ void test_generate_jwt_contains_three_parts(void) {
     account_info_t* account = create_test_account();
     system_info_t* system = create_test_system();
     
-    char* jwt = generate_jwt(account, system, "172.16.0.1", time(NULL));
+    char* jwt = generate_jwt(account, system, "172.16.0.1", "Acuranzo", time(NULL));
     
     TEST_ASSERT_NOT_NULL(jwt);
     
@@ -194,8 +195,8 @@ void test_generate_jwt_unique_tokens(void) {
     system_info_t* system = create_test_system();
     time_t now = time(NULL);
     
-    char* jwt1 = generate_jwt(account, system, "192.168.1.1", now);
-    char* jwt2 = generate_jwt(account, system, "192.168.1.1", now);
+    char* jwt1 = generate_jwt(account, system, "192.168.1.1", "Acuranzo", now);
+    char* jwt2 = generate_jwt(account, system, "192.168.1.1", "Acuranzo", now);
     
     TEST_ASSERT_NOT_NULL(jwt1);
     TEST_ASSERT_NOT_NULL(jwt2);
@@ -214,7 +215,7 @@ void test_generate_jwt_base64url_encoded(void) {
     account_info_t* account = create_test_account();
     system_info_t* system = create_test_system();
     
-    char* jwt = generate_jwt(account, system, "192.168.1.1", time(NULL));
+    char* jwt = generate_jwt(account, system, "192.168.1.1", "Acuranzo", time(NULL));
     
     TEST_ASSERT_NOT_NULL(jwt);
     

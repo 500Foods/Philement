@@ -37,6 +37,7 @@
 //@ swagger:tags "Auth Service"
 //@ swagger:summary Logout and invalidate JWT token
 //@ swagger:description Invalidates a JWT token by removing it from storage
+//@ swagger:security bearerAuth
 //@ swagger:request body application/json {"type":"object","required":["token"],"properties":{"token":{"type":"string","description":"JWT token to invalidate","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}}}
 //@ swagger:response 200 application/json {"type":"object","properties":{"success":{"type":"boolean","example":true},"message":{"type":"string","example":"Logout successful"}}}
 //@ swagger:response 400 application/json {"type":"object","properties":{"success":{"type":"boolean","example":false},"error":{"type":"string","example":"Missing or invalid token"}}}

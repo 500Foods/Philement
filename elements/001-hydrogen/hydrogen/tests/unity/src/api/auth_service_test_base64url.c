@@ -41,8 +41,9 @@ void test_utils_base64url_encode_simple_string(void) {
     char* result = utils_base64url_encode((const unsigned char*)input, strlen(input));
     
     TEST_ASSERT_NOT_NULL(result);
-    // Implementation removes padding, so "aGVsbG8=" becomes "aGVsbG"
-    TEST_ASSERT_EQUAL_STRING("aGVsbG", result);
+    // Base64url encoding of "hello" (5 bytes = 40 bits) requires ceil(40/6) = 7 chars
+    // Standard base64url encoding without padding
+    TEST_ASSERT_EQUAL_STRING("aGVsbG8", result);
     
     free(result);
 }
@@ -104,15 +105,16 @@ void test_utils_base64url_decode_simple_string(void) {
 // Test decoding with padding scenarios
 void test_utils_base64url_decode_with_padding(void) {
     // Base64url typically omits padding - decoder handles both
-    const char* input_no_pad = "aGVsbG";  // Without padding - actual output from encoder
+    // "aGVsbG8" is the correct encoding of "hello" (5 bytes)
+    const char* input_no_pad = "aGVsbG8";  // Without padding - actual output from encoder
     
     size_t len1 = 0;
     unsigned char* result1 = utils_base64url_decode(input_no_pad, &len1);
     
     TEST_ASSERT_NOT_NULL(result1);
-    // Decoder length calculation based on input length: (6 * 3) / 4 = 4
-    TEST_ASSERT_EQUAL_size_t(4, len1);
-    TEST_ASSERT_EQUAL_MEMORY("hell", result1, 4);
+    // Decoder length calculation based on input length: (7 * 3) / 4 = 5
+    TEST_ASSERT_EQUAL_size_t(5, len1);
+    TEST_ASSERT_EQUAL_MEMORY("hello", result1, 5);
     
     free(result1);
 }

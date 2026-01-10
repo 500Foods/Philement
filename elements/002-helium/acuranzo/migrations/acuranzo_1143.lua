@@ -49,8 +49,11 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     UPDATE ${SCHEMA}accounts
-                    SET password_hash = :PASSWORD_HASH, updated_at = CURRENT_TIMESTAMP
-                    WHERE account_id = :ACCOUNT_ID
+                    SET
+                        password_hash = :PASSWORDHASH,
+                        updated_at = ${NOW}
+                    WHERE
+                        account_id = :ACCOUNTID
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
@@ -60,8 +63,8 @@ table.insert(queries,{sql=[[
 
                     ## Parameters
 
-                    - `ACCOUNT_ID`: The ID of the account to update
-                    - `PASSWORD_HASH`: The new hashed password to store
+                    - `ACCOUNTID`: The ID of the account to update
+                    - `PASSWORDHASH`: The new hashed password to store
 
                     ## Returns
 

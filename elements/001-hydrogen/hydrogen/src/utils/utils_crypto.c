@@ -38,33 +38,27 @@ bool utils_random_bytes(unsigned char* buffer, size_t length);
 char* utils_base64url_encode(const unsigned char* data, size_t length) {
     if (!data || length == 0) return NULL;
 
-    size_t encoded_length = 4 * ((length + 2) / 3); // Base64 encoding length
-    char* encoded = calloc(encoded_length + 1, sizeof(char));
+    // Calculate output length without padding
+    // Base64url does not use padding characters
+    size_t output_length = (length * 4 + 2) / 3;
+    char* encoded = calloc(output_length + 1, sizeof(char));
     if (!encoded) return NULL;
 
     size_t i, j;
-    for (i = 0, j = 0; i < length; i += 3, j += 4) {
-        uint32_t octet_a = i < length ? data[i] : 0;
-        uint32_t octet_b = i + 1 < length ? data[i + 1] : 0;
-        uint32_t octet_c = i + 2 < length ? data[i + 2] : 0;
+    for (i = 0, j = 0; i < length && j < output_length; i += 3) {
+        uint32_t octet_a = data[i];
+        uint32_t octet_b = (i + 1 < length) ? data[i + 1] : 0;
+        uint32_t octet_c = (i + 2 < length) ? data[i + 2] : 0;
 
         uint32_t triple = (octet_a << 16) | (octet_b << 8) | octet_c;
 
-        encoded[j] = base64url_table[(triple >> 18) & 0x3F];
-        encoded[j + 1] = base64url_table[(triple >> 12) & 0x3F];
-        encoded[j + 2] = base64url_table[(triple >> 6) & 0x3F];
-        encoded[j + 3] = base64url_table[triple & 0x3F];
+        encoded[j++] = base64url_table[(triple >> 18) & 0x3F];
+        if (j < output_length) encoded[j++] = base64url_table[(triple >> 12) & 0x3F];
+        if (j < output_length) encoded[j++] = base64url_table[(triple >> 6) & 0x3F];
+        if (j < output_length) encoded[j++] = base64url_table[triple & 0x3F];
     }
 
-    // Remove padding characters for base64url (no padding needed)
-    size_t actual_length = (length * 4 + 2) / 3;
-    if (length % 3 == 1) {
-        encoded[actual_length - 1] = '\0';
-        encoded[actual_length - 2] = '\0';
-    } else if (length % 3 == 2) {
-        encoded[actual_length - 1] = '\0';
-    }
-
+    // String is already null-terminated from calloc
     return encoded;
 }
 

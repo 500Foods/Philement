@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1141.lua
--- QueryRef #050 - Check Username/Email Availability
+-- QueryRef #050 - Check Username/E-Mail Availability
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -49,12 +49,20 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     SELECT
-                        (SELECT COUNT(*) FROM ${SCHEMA}accounts WHERE name = :USERNAME) as username_count,
-                        (SELECT COUNT(*) FROM ${SCHEMA}account_contacts WHERE LOWER(contact) = LOWER(:EMAIL)) as email_count
+                        (
+                            SELECT COUNT(*)
+                            FROM ${SCHEMA}accounts
+                            WHERE UPPER(name) = UPPER(:USERNAME)
+                        ) as username_count,
+                        (
+                            SELECT COUNT(*)
+                            FROM ${SCHEMA}account_contacts
+                            WHERE LOWER(contact) = LOWER(:EMAIL)
+                        ) as email_count
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
-                    #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
+                    # QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
                     This query checks if a username or email address is already registered in the system.
 

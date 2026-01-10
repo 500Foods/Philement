@@ -5,7 +5,8 @@
 # This script scans the API code and extracts OpenAPI annotations
 # to generate an OpenAPI 3.1.0 specification file for API documentation
 
-# CHANGELOG        
+# CHANGELOG
+# 2.1.0 - 2026-01-10 - Added swagger:security annotation processing for JWT authentication
 # 2.0.0 - 2025-12-05 - Added HYDROGEN_ROOT environment variable check for proper path handling
 # 1.3.0 - 2025-10-20 - Added parameter processing support for query, path, header, and body parameters
 # 1.2.0 - 2024-01-01 - Improved modularity, fixed shellcheck warnings, enhanced error handling
@@ -27,7 +28,7 @@ if [[ -z "${HELIUM_ROOT:-}" ]]; then
 fi   
 
 # Display script information
-echo "swagger-generate.sh version 2.0.0"
+echo "swagger-generate.sh version 2.1.0"
 echo "OpenAPI JSON Generator for Hydrogen REST API"
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
@@ -448,6 +449,30 @@ process_swagger_parameters() {
     fi
 }
 
+# Function to process swagger security annotations
+process_swagger_security() {
+    local header_file="$1"
+    local method="$2"
+    local method_security_file="${TEMP_DIR}/security_${method}.json"
+    
+    # Initialize with null (no security by default)
+    echo "null" > "${method_security_file}"
+    
+    # Check for swagger:security annotation
+    local security_line
+    security_line=$("${GREP}" -E "//@ swagger:security" "${header_file}" | head -1 || echo "" || true)
+    
+    if [[ -n "${security_line}" ]]; then
+        # Extract security scheme name (e.g., "bearerAuth")
+        local security_scheme
+        security_scheme=$(echo "${security_line}" | "${SED}" -E 's/.*swagger:security[[:space:]]+([^[:space:]]+).*/\1/')
+        
+        # Create security array: [{"bearerAuth": []}]
+        jq -n --arg scheme "${security_scheme}" \
+            '[{($scheme): []}]' > "${method_security_file}"
+    fi
+}
+
 # Function to create method operation
 create_method_operation() {
     local method="$1"
@@ -458,6 +483,7 @@ create_method_operation() {
     local method_responses_file="${TEMP_DIR}/responses_${method}.json"
     local method_parameters_file="${TEMP_DIR}/parameters_${method}.json"
     local method_request_body_file="${TEMP_DIR}/request_body_${method}.json"
+    local method_security_file="${TEMP_DIR}/security_${method}.json"
     local method_operation_file="${TEMP_DIR}/operation_${method}.json"
     
     # Check if parameters file exists and has content
@@ -470,6 +496,12 @@ create_method_operation() {
     local has_request_body=false
     if [[ -f "${method_request_body_file}" ]] && [[ "$(cat "${method_request_body_file}" 2>/dev/null || echo "null" || true)" != "null" ]]; then
         has_request_body=true
+    fi
+    
+    # Check if security exists and is not null
+    local has_security=false
+    if [[ -f "${method_security_file}" ]] && [[ "$(cat "${method_security_file}" 2>/dev/null || echo "null" || true)" != "null" ]]; then
+        has_security=true
     fi
     
     # Build operation JSON based on what's available
@@ -510,6 +542,12 @@ create_method_operation() {
     if [[ "${has_request_body}" == "true" ]]; then
         base_operation=$(echo "${base_operation}" | jq --slurpfile reqbody "${method_request_body_file}" \
             '. + {"requestBody": $reqbody[0]}')
+    fi
+    
+    # Add security if present
+    if [[ "${has_security}" == "true" ]]; then
+        base_operation=$(echo "${base_operation}" | jq --slurpfile security "${method_security_file}" \
+            '. + {"security": $security[0]}')
     fi
     
     # Write final operation
@@ -581,6 +619,9 @@ process_endpoint_methods() {
         
         # Process request body for this method
         process_swagger_request_body "${header_file}" "${method}"
+        
+        # Process security for this method
+        process_swagger_security "${header_file}" "${method}"
         
         # Create method operation
         create_method_operation "${method}" "${summary}" "${description}" "${operation_id}" "${tag_array}"

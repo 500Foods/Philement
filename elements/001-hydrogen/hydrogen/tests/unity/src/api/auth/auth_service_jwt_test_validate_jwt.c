@@ -131,7 +131,7 @@ void test_validate_jwt_valid_token_returns_success(void) {
     account_info_t* account = create_test_account();
     system_info_t* system = create_test_system();
     
-    char* jwt = generate_jwt(account, system, "192.168.1.1", time(NULL));
+    char* jwt = generate_jwt(account, system, "192.168.1.1", "Acuranzo", time(NULL));
     TEST_ASSERT_NOT_NULL(jwt);
     
     // Validate the JWT

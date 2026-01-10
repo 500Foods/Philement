@@ -17,10 +17,13 @@
 #include "system/upload/upload.h"
 #include "conduit/conduit_service.h"
 #include "conduit/query/query.h"
+#include "conduit/auth_query/auth_query.h"
+#include "conduit/auth_queries/auth_queries.h"
 #include "auth/login/login.h"
 #include "auth/renew/renew.h"
 #include "auth/logout/logout.h"
 #include "auth/register/register.h"
+
 
 // Simple hardcoded endpoint validator and handler for /api/version
 bool is_exact_api_version_endpoint(const char *url) {
@@ -164,6 +167,8 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/system/recent", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/upload", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/query", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/auth_query", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/auth_queries", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
     log_group_end();
     
     return true;
@@ -273,22 +278,116 @@ bool is_api_request(const char *url) {
     return is_api_endpoint(url, service, endpoint);
 }
 
+// ============================================================================
+// JWT Authentication Middleware
+// ============================================================================
+// Endpoints that require JWT authentication have their paths listed here.
+// The middleware checks for a valid JWT in the Authorization header BEFORE
+// any POST data buffering occurs, saving server resources.
+// ============================================================================
+
+/**
+ * Check if an endpoint path requires JWT authentication.
+ * Returns true if the endpoint requires authentication, false otherwise.
+ */
+static bool endpoint_requires_auth(const char *path) {
+    // List of endpoints that require JWT authentication
+    // NOTE: Do NOT include login or register - those are used to GET a JWT
+    static const char *protected_endpoints[] = {
+        "auth/logout",
+        "auth/renew",
+        "conduit/auth_query",
+        "conduit/auth_queries",
+        NULL  // Sentinel
+    };
+    
+    for (int i = 0; protected_endpoints[i] != NULL; i++) {
+        if (strcmp(path, protected_endpoints[i]) == 0) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Validate JWT from Authorization header.
+ * Returns MHD_YES if authentication succeeds or is not required.
+ * Returns the result of sending a 401 response if authentication fails.
+ *
+ * IMPORTANT: This MUST be called when *con_cls == NULL (first callback)
+ * to perform early rejection before POST buffering starts.
+ */
+static enum MHD_Result check_jwt_auth(struct MHD_Connection *connection,
+                                      const char *path,
+                                      json_t **response_out) {
+    // Check if this endpoint requires authentication
+    if (!endpoint_requires_auth(path)) {
+        return MHD_YES;  // No auth required, continue
+    }
+    
+    // Get the Authorization header
+    const char *auth_header = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");
+    
+    if (!auth_header) {
+        log_this(SR_AUTH, "Authentication required - missing Authorization header for %s",
+                 LOG_LEVEL_ALERT, 1, path);
+        *response_out = json_object();
+        json_object_set_new(*response_out, "success", json_false());
+        json_object_set_new(*response_out, "error",
+            json_string("Authentication required - include Authorization: Bearer <token> header"));
+        return MHD_NO;  // Signal auth failure
+    }
+    
+    // Check for "Bearer " prefix
+    if (strncmp(auth_header, "Bearer ", 7) != 0) {
+        log_this(SR_AUTH, "Invalid Authorization header format for %s", LOG_LEVEL_ALERT, 1, path);
+        *response_out = json_object();
+        json_object_set_new(*response_out, "success", json_false());
+        json_object_set_new(*response_out, "error",
+            json_string("Invalid Authorization header - expected 'Bearer <token>' format"));
+        return MHD_NO;  // Signal auth failure
+    }
+    
+    // Extract token (skip "Bearer " prefix)
+    const char *token = auth_header + 7;
+    if (strlen(token) == 0) {
+        log_this(SR_AUTH, "Empty token in Authorization header for %s", LOG_LEVEL_ALERT, 1, path);
+        *response_out = json_object();
+        json_object_set_new(*response_out, "success", json_false());
+        json_object_set_new(*response_out, "error", json_string("Empty token in Authorization header"));
+        return MHD_NO;  // Signal auth failure
+    }
+    
+    // Token format looks valid - let the endpoint validate it fully
+    // (signature check, expiry, revocation status, etc.)
+    log_this(SR_AUTH, "Authorization header present and valid format for %s", LOG_LEVEL_DEBUG, 1, path);
+    return MHD_YES;  // Auth check passed, continue to endpoint
+}
+
 /*
  * Main request handler for the API subsystem.
- * 
+ *
  * This function is called by the webserver after is_api_endpoint confirms
  * that a request matches the configured prefix. The prefix must be set
  * in app_config->api.prefix - there is no default prefix.
- * 
+ *
+ * MIDDLEWARE ARCHITECTURE:
+ * On the FIRST callback (*con_cls == NULL), this function performs JWT
+ * authentication for protected endpoints BEFORE any POST data buffering.
+ * This saves server resources by immediately rejecting unauthorized requests
+ * without allocating buffers or processing POST data.
+ *
  * Example request flow with prefix "/custom":
  * 1. Webserver receives: GET "/custom/system/health"
  * 2. Webserver uses is_api_endpoint to validate prefix
  * 3. Webserver delegates to this function
- * 4. This function:
- *    a. Re-validates prefix
- *    b. Extracts path: "system/health"
- *    c. Routes to handle_system_health_request
- * 
+ * 4. First callback (*con_cls == NULL):
+ *    a. Extract path from URL
+ *    b. Check if endpoint requires JWT auth
+ *    c. If protected: validate Authorization header, return 401 if missing/invalid
+ * 5. Continue with POST buffering and endpoint handling if auth passes
+ *
  * This ensures consistent handling of all requests under the configured
  * prefix, while allowing other prefixes to be used by different subsystems.
  */
@@ -333,6 +432,25 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     if (!*path) {
         log_this(SR_API, "Empty path after prefix: %s", LOG_LEVEL_ERROR, 1, url);
         return MHD_NO;
+    }
+
+    // ========================================================================
+    // JWT AUTHENTICATION MIDDLEWARE
+    // On the FIRST callback (*con_cls == NULL), perform early JWT validation
+    // for protected endpoints. This rejects unauthorized requests BEFORE any
+    // POST data buffering occurs, saving server resources.
+    // ========================================================================
+    if (*con_cls == NULL) {
+        json_t *auth_error_response = NULL;
+        enum MHD_Result auth_result = check_jwt_auth(connection, path, &auth_error_response);
+        
+        if (auth_result == MHD_NO) {
+            // Authentication failed - send 401 response immediately
+            log_this(SR_AUTH, "Early JWT authentication failed for %s - returning 401",
+                     LOG_LEVEL_ALERT, 1, path);
+            return api_send_json_response(connection, auth_error_response, MHD_HTTP_UNAUTHORIZED);
+        }
+        // Note: check_jwt_auth returns MHD_YES if auth passes OR if endpoint doesn't require auth
     }
 
     /*
@@ -400,6 +518,14 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     else if (strcmp(path, "conduit/query") == 0) {
         return handle_conduit_query_request(connection, url, method, upload_data,
                                     upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "conduit/auth_query") == 0) {
+        return handle_conduit_auth_query_request(connection, url, method, upload_data,
+                                         upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "conduit/auth_queries") == 0) {
+        return handle_conduit_auth_queries_request(connection, url, method, upload_data,
+                                          upload_data_size, con_cls);
     }
 
     // Endpoint not found
