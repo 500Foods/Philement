@@ -49,10 +49,8 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     SELECT
-                        COUNT(*) as username_count,
-                        (SELECT COUNT(*) FROM ${SCHEMA}accounts WHERE email = :EMAIL) as email_count
-                    FROM ${SCHEMA}accounts
-                    WHERE username = :USERNAME
+                        (SELECT COUNT(*) FROM ${SCHEMA}accounts WHERE name = :USERNAME) as username_count,
+                        (SELECT COUNT(*) FROM ${SCHEMA}account_contacts WHERE LOWER(contact) = LOWER(:EMAIL)) as email_count
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
@@ -62,8 +60,8 @@ table.insert(queries,{sql=[[
 
                     ## Parameters
 
-                    - `USERNAME`: The username to check for availability
-                    - `EMAIL`: The email address to check for availability
+                    - `USERNAME`: The username to check for availability (checked against accounts.name)
+                    - `EMAIL`: The email address to check for availability (checked against account_contacts.contact)
 
                     ## Returns
 
@@ -72,12 +70,14 @@ table.insert(queries,{sql=[[
 
                     ## Tables
 
-                    - `accounts`: The user accounts table
+                    - `accounts`: The user accounts table (name column is the unique username)
+                    - `account_contacts`: The account contacts table (contact column stores emails)
 
                     ## Notes
 
                     - Used during user registration to prevent duplicate usernames/emails
                     - Returns counts rather than boolean for flexibility
+                    - Email comparison is case-insensitive using LOWER()
 
                 ]==]
                                                                                 AS summary,

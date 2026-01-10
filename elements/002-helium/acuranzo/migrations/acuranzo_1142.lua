@@ -48,10 +48,13 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
+                    -- Insert into accounts table first
+                    -- Note: Acuranzo schema uses 'name' for username, not 'username' column
+                    -- Note: status_a16: 1=active, iana_timezone_a17: 1 = default timezone
                     INSERT INTO ${SCHEMA}accounts
-                        (username, email, password_hash, full_name, created_at, updated_at, enabled, authorized)
+                        (name, first_name, last_name, password_hash, status_a16, iana_timezone_a17, summary, collection)
                     VALUES
-                        (:USERNAME, :EMAIL, :PASSWORD_HASH, :FULL_NAME, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 1)
+                        (:USERNAME, :FIRST_NAME, :LAST_NAME, :PASSWORD_HASH, 1, 1, :SUMMARY, '{}')
                     RETURNING account_id
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
@@ -62,10 +65,11 @@ table.insert(queries,{sql=[[
 
                     ## Parameters
 
-                    - `USERNAME`: The unique username for the new account
-                    - `EMAIL`: The unique email address for the new account
+                    - `USERNAME`: The unique username for the new account (stored in accounts.name)
+                    - `FIRST_NAME`: The user's first name
+                    - `LAST_NAME`: The user's last name
                     - `PASSWORD_HASH`: The hashed password for the account
-                    - `FULL_NAME`: The user's full name (optional)
+                    - `SUMMARY`: Summary/description of the account
 
                     ## Returns
 
@@ -77,9 +81,11 @@ table.insert(queries,{sql=[[
 
                     ## Notes
 
-                    - Account is created with enabled=1 and authorized=1 by default
-                    - Timestamps are set to CURRENT_TIMESTAMP automatically
-                    - Username and email must be unique (enforced by database constraints)
+                    - Account is created with status_a16=1 (active) by default
+                    - iana_timezone_a17=1 sets default timezone
+                    - Username (name) must be unique (enforced by database constraints)
+                    - Email is NOT stored in accounts table - use QueryRef #XXX to add email to account_contacts
+                    - After calling this query, you must insert the email into account_contacts separately
 
                 ]==]
                                                                                 AS summary,

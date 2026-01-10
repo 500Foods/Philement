@@ -14,6 +14,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <src/logging/logging.h>
+#include <jansson.h>
 
 // Local includes
 #include "auth_service.h"
@@ -137,46 +138,98 @@ bool is_valid_email(const char* email) {
 
 /**
  * Check if IP is in whitelist
+ * Uses QueryRef #002 to check APP.Lists #1 (whitelist)
+ * Returns true if IP is whitelisted, false otherwise
  */
-bool check_ip_whitelist(const char* client_ip) {
-    if (!client_ip) return false;
+bool check_ip_whitelist(const char* client_ip, const char* database) {
+    if (!client_ip || !database) {
+        log_this(SR_AUTH, "Invalid parameters for whitelist check", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
 
-    // TODO: Load whitelist from config->api->ip_whitelist array
-    // For now, no whitelist configured
-    (void)client_ip; // Suppress unused parameter warning
+    // Create parameters for QueryRef #002: Get IP Whitelist
+    json_t* params = json_object();
+    json_object_set_new(params, "ip_address", json_string(client_ip));
 
-    return false;
+    // Execute query against specified database
+    QueryResult* result = execute_auth_query(2, database, params);
+    json_decref(params);
+
+    if (!result) {
+        log_this(SR_AUTH, "Failed to check IP whitelist for %s", LOG_LEVEL_ERROR, 1, client_ip);
+        return false; // Fail-safe: assume not whitelisted
+    }
+
+    // If row_count > 0, IP is in whitelist
+    bool is_whitelisted = result->success && result->row_count > 0;
+
+    // Cleanup
+    if (result->error_message) free(result->error_message);
+    if (result->data_json) free(result->data_json);
+    free(result);
+
+    if (is_whitelisted) {
+        log_this(SR_AUTH, "IP %s is whitelisted", LOG_LEVEL_DEBUG, 1, client_ip);
+    }
+
+    return is_whitelisted;
 }
 
 /**
  * Check if IP is in blacklist
+ * Uses QueryRef #003 to check APP.Lists #0 (blacklist)
+ * Returns true if IP is blacklisted, false otherwise
  */
-bool check_ip_blacklist(const char* client_ip) {
-    if (!client_ip) return false;
+bool check_ip_blacklist(const char* client_ip, const char* database) {
+    if (!client_ip || !database) {
+        log_this(SR_AUTH, "Invalid parameters for blacklist check", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
 
-    // TODO: Load blacklist from config->api->ip_blacklist array
-    // For now, no blacklist configured
-    (void)client_ip; // Suppress unused parameter warning
+    // Create parameters for QueryRef #003: Get IP Blacklist
+    json_t* params = json_object();
+    json_object_set_new(params, "ip_address", json_string(client_ip));
 
-    return false;
+    // Execute query against specified database
+    QueryResult* result = execute_auth_query(3, database, params);
+    json_decref(params);
+
+    if (!result) {
+        log_this(SR_AUTH, "Failed to check IP blacklist for %s", LOG_LEVEL_ERROR, 1, client_ip);
+        return false; // Fail-safe: assume not blacklisted
+    }
+
+    // If row_count > 0, IP is in blacklist
+    bool is_blacklisted = result->success && result->row_count > 0;
+
+    // Cleanup
+    if (result->error_message) free(result->error_message);
+    if (result->data_json) free(result->data_json);
+    free(result);
+
+    if (is_blacklisted) {
+        log_this(SR_AUTH, "IP %s is blacklisted", LOG_LEVEL_ALERT, 1, client_ip);
+    }
+
+    return is_blacklisted;
 }
 
 /**
  * Handle rate limiting logic and IP blocking
+ * Returns true if IP should be blocked (rate limit exceeded)
+ * Returns false if allowed to continue
  */
 bool handle_rate_limiting(const char* client_ip, int failed_count,
-                          bool is_whitelisted) {
+                          bool is_whitelisted, const char* database) {
     const int MAX_ATTEMPTS = 5;
     const int BLOCK_DURATION_MINUTES = 15;
 
     if (failed_count >= MAX_ATTEMPTS && !is_whitelisted) {
-        // TODO: Execute QueryRef #007: Block IP Address Temporarily
-        // Parameters: { "ip": client_ip, "duration_minutes": BLOCK_DURATION_MINUTES }
+        // Block IP address using QueryRef #007
+        block_ip_address(client_ip, BLOCK_DURATION_MINUTES, database);
         
-        (void)BLOCK_DURATION_MINUTES; // Suppress unused variable warning until DB integration
-        
-        log_this("AUTH", "IP %s blocked due to too many failed attempts (%d)",
-                LOG_LEVEL_ALERT, 2, client_ip, failed_count);
+        log_this(SR_AUTH, "IP %s blocked due to too many failed attempts (%d >= %d)",
+                LOG_LEVEL_ALERT, 3, client_ip, failed_count, MAX_ATTEMPTS);
         
         return true; // IP blocked
     }

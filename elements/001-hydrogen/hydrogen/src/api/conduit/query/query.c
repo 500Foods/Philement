@@ -43,6 +43,14 @@ extern DatabaseQueue* mock_select_query_queue(const char* database, const char* 
 json_t* create_validation_error_response(const char* error_msg, const char* error_detail);
 json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref);
 json_t* create_processing_error_response(const char* error_msg, const char* database, int query_ref);
+json_t* parse_request_data_from_buffer(struct MHD_Connection* connection, ApiPostBuffer* buffer);
+enum MHD_Result handle_request_parsing_with_buffer(struct MHD_Connection *connection, ApiPostBuffer* buffer, json_t** request_json);
+// Backwards-compatible wrappers for unit tests (uses raw upload_data)
+json_t* parse_request_data(struct MHD_Connection* connection, const char* method,
+                           const char* upload_data, const size_t* upload_data_size);
+enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const char* method,
+                                       const char* upload_data, const size_t* upload_data_size,
+                                       json_t** request_json);
 
 // Forward declarations for request handling helper functions
 // (Now declared in header file)
@@ -69,20 +77,20 @@ bool validate_http_method(const char* method) {
     return strcmp(method, "GET") == 0 || strcmp(method, "POST") == 0;
 }
 
-// Parse request data from either POST JSON body or GET query parameters
-json_t* parse_request_data(struct MHD_Connection* connection, const char* method,
-                          const char* upload_data, const size_t* upload_data_size) {
+// Parse request data from either POST JSON body (using ApiPostBuffer) or GET query parameters
+json_t* parse_request_data_from_buffer(struct MHD_Connection* connection, ApiPostBuffer* buffer) {
     json_t* request_json = NULL;
     json_error_t json_error;
 
-    if (strcmp(method, "POST") == 0) {
-        // POST request - parse JSON body
-        if (!upload_data || *upload_data_size == 0) {
+    if (buffer->http_method == 'P') {
+        // POST request - parse JSON body from buffer
+        if (!buffer->data || buffer->size == 0) {
             return NULL; // Missing request body
         }
 
-        request_json = json_loads(upload_data, 0, &json_error);
+        request_json = json_loads(buffer->data, 0, &json_error);
         if (!request_json) {
+            log_this(SR_API, "Failed to parse JSON in conduit query: %s", LOG_LEVEL_ERROR, 1, json_error.text);
             return NULL; // Invalid JSON
         }
     } else {
@@ -108,6 +116,41 @@ json_t* parse_request_data(struct MHD_Connection* connection, const char* method
     }
 
     return request_json;
+}
+
+// Backwards-compatible wrapper for unit tests
+// Creates a temporary ApiPostBuffer from raw upload_data and calls parse_request_data_from_buffer
+json_t* parse_request_data(struct MHD_Connection* connection, const char* method,
+                           const char* upload_data, const size_t* upload_data_size) {
+    // Create temporary buffer structure
+    ApiPostBuffer temp_buffer = {
+        .data = NULL,
+        .size = 0,
+        .capacity = 0,
+        .http_method = (method && strcmp(method, "POST") == 0) ? 'P' : 'G'
+    };
+    
+    // Copy upload_data to temporary buffer if provided
+    if (upload_data && upload_data_size && *upload_data_size > 0) {
+        temp_buffer.data = malloc(*upload_data_size + 1);
+        if (!temp_buffer.data) {
+            return NULL;
+        }
+        memcpy(temp_buffer.data, upload_data, *upload_data_size);
+        temp_buffer.data[*upload_data_size] = '\0';
+        temp_buffer.size = *upload_data_size;
+        temp_buffer.capacity = *upload_data_size + 1;
+    }
+    
+    // Call the new function with the buffer
+    json_t* result = parse_request_data_from_buffer(connection, &temp_buffer);
+    
+    // Free temporary buffer
+    if (temp_buffer.data) {
+        free(temp_buffer.data);
+    }
+    
+    return result;
 }
 
 // Extract and validate required fields from request JSON
@@ -397,18 +440,17 @@ enum MHD_Result handle_method_validation(struct MHD_Connection *connection, cons
     return MHD_YES; // Continue processing
 }
 
-// Helper function to handle request data parsing
-enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const char* method,
-                                       const char* upload_data, const size_t* upload_data_size,
-                                       json_t** request_json) {
-    *request_json = parse_request_data(connection, method, upload_data, upload_data_size);
+// Helper function to handle request data parsing using ApiPostBuffer
+enum MHD_Result handle_request_parsing_with_buffer(struct MHD_Connection *connection, ApiPostBuffer* buffer,
+                                                   json_t** request_json) {
+    *request_json = parse_request_data_from_buffer(connection, buffer);
     if (!*request_json) {
         // Determine specific error based on method and data
         const char* error_msg = "Invalid JSON";
         const char* error_detail = "Request body contains invalid JSON";
         unsigned int http_status = MHD_HTTP_BAD_REQUEST;
 
-        if (strcmp(method, "POST") == 0 && (!upload_data || *upload_data_size == 0)) {
+        if (buffer->http_method == 'P' && (!buffer->data || buffer->size == 0)) {
             error_msg = "Missing request body";
             error_detail = "POST requests must include a JSON body";
         }
@@ -420,6 +462,42 @@ enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const 
         return MHD_NO; // Stop processing - error handled
     }
     return MHD_YES; // Continue processing
+}
+
+// Backwards-compatible wrapper for unit tests
+// Creates a temporary ApiPostBuffer from raw upload_data and calls handle_request_parsing_with_buffer
+enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const char* method,
+                                       const char* upload_data, const size_t* upload_data_size,
+                                       json_t** request_json) {
+    // Create temporary buffer structure
+    ApiPostBuffer temp_buffer = {
+        .data = NULL,
+        .size = 0,
+        .capacity = 0,
+        .http_method = (method && strcmp(method, "POST") == 0) ? 'P' : 'G'
+    };
+    
+    // Copy upload_data to temporary buffer if provided
+    if (upload_data && upload_data_size && *upload_data_size > 0) {
+        temp_buffer.data = malloc(*upload_data_size + 1);
+        if (!temp_buffer.data) {
+            return MHD_NO;
+        }
+        memcpy(temp_buffer.data, upload_data, *upload_data_size);
+        temp_buffer.data[*upload_data_size] = '\0';
+        temp_buffer.size = *upload_data_size;
+        temp_buffer.capacity = *upload_data_size + 1;
+    }
+    
+    // Call the new function with the buffer
+    enum MHD_Result result = handle_request_parsing_with_buffer(connection, &temp_buffer, request_json);
+    
+    // Free temporary buffer
+    if (temp_buffer.data) {
+        free(temp_buffer.data);
+    }
+    
+    return result;
 }
 
 // Helper function to handle field extraction and validation
@@ -606,17 +684,47 @@ enum MHD_Result handle_conduit_query_request(
     void **con_cls
    ) {
     (void)url;              // Unused parameter
-    (void)con_cls;          // Will be used when implemented
+
+    // Use common POST body buffering (handles both GET and POST)
+    ApiPostBuffer *buffer = NULL;
+    ApiBufferResult buf_result = api_buffer_post_data(method, upload_data, upload_data_size, con_cls, &buffer);
+    
+    switch (buf_result) {
+        case API_BUFFER_CONTINUE:
+            // More data expected for POST, continue receiving
+            return MHD_YES;
+            
+        case API_BUFFER_ERROR:
+            // Error occurred during buffering
+            return api_send_error_and_cleanup(connection, con_cls,
+                "Request processing error", MHD_HTTP_INTERNAL_SERVER_ERROR);
+            
+        case API_BUFFER_METHOD_ERROR:
+            // Unsupported HTTP method
+            return api_send_error_and_cleanup(connection, con_cls,
+                "Method not allowed - use GET or POST", MHD_HTTP_METHOD_NOT_ALLOWED);
+            
+        case API_BUFFER_COMPLETE:
+            // All data received (or GET request), continue with processing
+            break;
+    }
 
     log_this(SR_API, "%s: Processing conduit query request", LOG_LEVEL_TRACE, 1, conduit_service_name());
 
-    // Step 1: Validate HTTP method
+    // Step 1: Validate HTTP method (GET and POST are allowed)
     enum MHD_Result result = handle_method_validation(connection, method);
-    if (result != MHD_YES) return result;
+    if (result != MHD_YES) {
+        api_free_post_buffer(con_cls);
+        return result;
+    }
 
-    // Step 2: Parse request data
+    // Step 2: Parse request data from buffer (handles GET query params and POST JSON body)
     json_t *request_json = NULL;
-    result = handle_request_parsing(connection, method, upload_data, upload_data_size, &request_json);
+    result = handle_request_parsing_with_buffer(connection, buffer, &request_json);
+    
+    // Free the buffer now that we've parsed the data
+    api_free_post_buffer(con_cls);
+    
     if (result != MHD_YES) return result;
 
     log_this(SR_API, "%s: Request data parsed successfully", LOG_LEVEL_TRACE, 1, conduit_service_name());

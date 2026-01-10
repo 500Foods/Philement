@@ -76,7 +76,7 @@ return {
     JSON_INGEST_START = "${SCHEMA}json_ingest(",
     JSON_INGEST_END = ")",
     JSON_INGEST_FUNCTION = [[
-        CREATE OR REPLACE FUNCTION json_ingest(s longtext)
+        CREATE OR REPLACE FUNCTION ${SCHEMA}json_ingest(s longtext)
         RETURNS longtext
         DETERMINISTIC
         BEGIN

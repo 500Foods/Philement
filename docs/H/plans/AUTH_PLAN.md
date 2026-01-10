@@ -60,9 +60,11 @@ A thorough review of the authentication system architecture and implementation p
 
 ### For Testers
 
-1. **Testing strategy**: [AUTH_PLAN_TESTS.md](/docs/H/plans/AUTH_PLAN_TESTS.md)
-2. **Test cases**: See integration test section in AUTH_PLAN_TESTS.md
-3. **Environment setup**: Check test data requirements in AUTH_PLAN_ACURANZO.md
+1. **Blackbox/Integration Testing**: [TESTING.md](/docs/H/tests/TESTING.md) - Framework and patterns for integration tests
+2. **Unity Unit Testing**: [TESTING_UNITY.md](/docs/H/tests/TESTING_UNITY.md) - Framework and patterns for unit tests
+3. **Auth Testing Strategy**: [AUTH_PLAN_TESTS.md](/docs/H/plans/AUTH_PLAN_TESTS.md) - Comprehensive auth-specific test plan
+4. **Test cases**: See integration test section in AUTH_PLAN_TESTS.md
+5. **Environment setup**: Check test data requirements in AUTH_PLAN_ACURANZO.md
 
 ### For Operations
 

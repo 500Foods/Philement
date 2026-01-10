@@ -123,6 +123,7 @@ tests/          Test framework
 - src/hydrogen.h is included first in all .c source files
 - Function Prototypes absolutely must be declared for every function
 - Grouped/commented include files at the top of every .c/.h file
+- DO NOT USE GOTO UNDER ANY CIRCUMSTANCES. Why? Because I said so.
 - src/config/config_defaults.c contains many useful subsystem defaults
 - Use `log_this` when outputing anything to the log
 - cmake/CMakeLists.txt is used for all project builds including Unity
