@@ -1,0 +1,36 @@
+{       
+    "Server": {
+        "ServerName": "hydrogen-test-40-db2",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5403
+    },
+    "Databases": {
+        "Connections": [
+            {
+                "Enabled": true,
+                "Name": "HYDROTST",
+                "Engine": "${env.HYDROTST_DB_TYPE}",
+                "Database": "${env.HYDROTST_DB_NAME}",
+                "Host":"localhost",
+                "Port": 55555,
+                "StmtCache": 100,
+                "User": "${env.HYDROTST_DB_USER}",
+                "Pass": "${env.HYDROTST_DB_PASS}",
+                "Bootstrap":"SELECT query_id \"id\", query_ref \"ref\", query_status_a27 \"status\", query_type_a28 \"type\", query_dialect_a30 \"engine\", query_queue_a58 \"queue\", query_timeout \"timeout\", name \"name\", code \"query\" FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": true,
+                "TestMigration": false,
+                "Migrations":"PAYLOAD:acuranzo",
+                "Schema": "demo",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            }
+        ]
+    }
+}

@@ -14,6 +14,7 @@
 # - Cleans up all temporary files
 
 # CHANGELONG
+# 4.3.0 - 2026-01-10 - Changed SwaggerUI download to use git clone instead of GitHub API to avoid rate limits
 # 4.2.0 - 2025-12-13 - Added folder breakdown section showing file counts, sizes, and percentages for payload components
 # 4.1.0 - 2025-12-08 - Added Hydrogen Build Metrics Browser files to swagger folder in payload
 # 4.0.0 - 2024-12-05 - Added env var dependency checks
@@ -42,7 +43,7 @@ fi
 set -e
 
 # Display script information
-echo "payload-generate.sh version 4.1.0"
+echo "payload-generate.sh version 4.3.0"
 echo "Encrypted Payload Generator for Hydrogen"
 
 # Helium project Migrations to include (same as test_31_migrations.sh)
@@ -59,7 +60,7 @@ readonly COMPRESSED_TAR_FILE="${SCRIPT_DIR}/payload.tar.br.enc"
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
 FIND=$(command -v gfind 2>/dev/null || command -v find)
-GREP=$(command -v ggrep 2>/dev/null || command -v grep)
+# GREP=$(command -v ggrep 2>/dev/null || command -v grep)
 SED=$(command -v gsed 2>/dev/null || command -v sed)
 TAR=$(command -v gtar 2>/dev/null || command -v tar)
 STAT=$(command -v gstat 2>/dev/null || command -v stat)
@@ -110,6 +111,11 @@ check_dependencies() {
     local missing_deps=0
 
     # Required for basic operation
+    if ! command -v git >/dev/null 2>&1; then
+        echo -e "${RED}${FAIL} Error: git is required but not installed. Please install git.${NC}"
+        missing_deps=1
+    fi
+
     if ! command -v curl >/dev/null 2>&1; then
         echo -e "${RED}${FAIL} Error: curl is required but not installed. Please install curl.${NC}"
         missing_deps=1
@@ -183,11 +189,8 @@ cleanup() {
         rm -f "${TAR_FILE}"
     fi
 
-    # Remove encryption temporary files if they exist
-    rm -f "${TEMP_DIR}/aes_key.bin" "${TEMP_DIR}/encrypted_aes_key.bin" "${TEMP_DIR}/temp_payload.enc"
-
     # Remove any generated .br files in the script directory (except the final encrypted payload)
-    "${FIND}" "${SCRIPT_DIR}" -name "*.br" -not -name "payload.tar.br.enc" -delete
+    "${FIND}" "${SCRIPT_DIR}" -name "*.br" -not -name "payload.tar.br.enc" -delete 2>/dev/null || true
 
     echo -e "${GREEN}${PASS} Cleanup completed successfully.${NC}"
 }
@@ -249,12 +252,15 @@ window.onload = function() {
 EOF
 }
 
-# Function to get the latest SwaggerUI version from GitHub API
+# Function to get the latest SwaggerUI version from GitHub using git ls-remote
 get_latest_swaggerui_version() {
     echo -e "${CYAN}${INFO} Fetching latest SwaggerUI version from GitHub...${NC}" >&2
 
     local latest_version
-    latest_version=$(curl -s "https://api.github.com/repos/swagger-api/swagger-ui/releases/latest" | "${GREP}" '"tag_name"' | "${SED}" 's/.*"tag_name": "\(.*\)".*/\1/' || true)
+    # Use git ls-remote to get the latest tag (no API rate limiting)
+    latest_version=$(git ls-remote --tags --refs --sort="v:refname" https://github.com/swagger-api/swagger-ui.git |
+                     tail -n1 |
+                     "${SED}" 's/.*refs\/tags\/v/v/' || true)
 
     if [[ -z "${latest_version}" ]]; then
         echo -e "${YELLOW}${WARN} Failed to fetch latest version, falling back to v5.27.1${NC}" >&2
@@ -353,20 +359,15 @@ download_swaggerui() {
 
     echo -e "${CYAN}${INFO} Downloading SwaggerUI v${SWAGGERUI_VERSION}...${NC}"
 
-    # Download SwaggerUI from GitHub using API endpoint (more reliable)
-    curl -L "https://api.github.com/repos/swagger-api/swagger-ui/tarball/v${SWAGGERUI_VERSION}" -o "${TEMP_DIR}/swagger-ui.tar.gz"
+    # Clone the specific version tag from GitHub (no API rate limiting)
+    git clone --depth 1 --branch "v${SWAGGERUI_VERSION}" https://github.com/swagger-api/swagger-ui.git "${TEMP_DIR}/swagger-ui"
 
-    echo -e "${CYAN}${INFO} Extracting SwaggerUI distribution files...${NC}"
-    # Extract to temporary directory and get the actual directory name
-    "${TAR}" -xzf "${TEMP_DIR}/swagger-ui.tar.gz" -C "${TEMP_DIR}"
-
-    # Find the extracted directory (GitHub API uses hash-based naming)
-    EXTRACTED_DIR=$("${FIND}" "${TEMP_DIR}" -maxdepth 1 -type d -name "swagger-api-swagger-ui-*" | head -1 || true)
-    if [[ -z "${EXTRACTED_DIR}" ]]; then
-        echo -e "${RED}${FAIL} Failed to find extracted SwaggerUI directory${NC}"
-        exit 1
-    fi
-    echo -e "${CYAN}${INFO} Found extracted directory: $(basename "${EXTRACTED_DIR}")${NC}"
+    echo -e "${CYAN}${INFO} SwaggerUI cloned successfully...${NC}"
+    
+    # Set extracted directory to the cloned directory
+    EXTRACTED_DIR="${TEMP_DIR}/swagger-ui"
+    
+    echo -e "${CYAN}${INFO} Using directory: swagger-ui${NC}"
 
     # Create the temporary swaggerui directory for processing
     echo -e "${CYAN}${INFO} Creating temporary SwaggerUI directory...${NC}"

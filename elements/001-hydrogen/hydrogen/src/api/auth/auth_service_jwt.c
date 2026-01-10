@@ -206,7 +206,7 @@ char* generate_jwt(account_info_t* account, system_info_t* system,
 /**
  * Validate a JWT token
  */
-jwt_validation_result_t validate_jwt(const char* token) {
+jwt_validation_result_t validate_jwt(const char* token, const char* database) {
     jwt_validation_result_t result = {0};
     result.valid = false;
 
@@ -266,7 +266,7 @@ jwt_validation_result_t validate_jwt(const char* token) {
 
     // Check if token is revoked
     char* token_hash = compute_token_hash(token);
-    if (is_token_revoked(token_hash)) {
+    if (is_token_revoked(token_hash, database)) {
         free(token_hash);
         free(payload_decoded);
         free(token_copy);
@@ -359,15 +359,15 @@ char* generate_new_jwt(jwt_claims_t* old_claims) {
 /**
  * Validate JWT token (wrapper)
  */
-jwt_validation_result_t validate_jwt_token(const char* token) {
-    return validate_jwt(token);
+jwt_validation_result_t validate_jwt_token(const char* token, const char* database) {
+    return validate_jwt(token, database);
 }
 
 /**
  * Validate JWT for logout (allows expired tokens)
  */
-jwt_validation_result_t validate_jwt_for_logout(const char* token) {
-    jwt_validation_result_t result = validate_jwt(token);
+jwt_validation_result_t validate_jwt_for_logout(const char* token, const char* database) {
+    jwt_validation_result_t result = validate_jwt(token, database);
 
     // For logout, we accept expired tokens but still validate signature
     if (result.error == JWT_ERROR_EXPIRED) {

@@ -21,11 +21,11 @@ bool is_alphanumeric_underscore_hyphen(const char* str);
 bool is_valid_email(const char* email);
 
 // IP filtering
-bool check_ip_whitelist(const char* client_ip);
-bool check_ip_blacklist(const char* client_ip);
+bool check_ip_whitelist(const char* client_ip, const char* database);
+bool check_ip_blacklist(const char* client_ip, const char* database);
 
 // Rate limiting
 bool handle_rate_limiting(const char* client_ip, int failed_count,
-                         bool is_whitelisted);
+                         bool is_whitelisted, const char* database);
 
 #endif /* HYDROGEN_AUTH_SERVICE_VALIDATION_H */

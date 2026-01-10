@@ -124,75 +124,73 @@ bool validate_registration_input(const char* username, const char* password,
 bool validate_timezone(const char* tz);
 
 // API key and system validation
-bool verify_api_key(const char* api_key, system_info_t* sys_info);
+bool verify_api_key(const char* api_key, const char* database, system_info_t* sys_info);
+bool check_license_expiry(time_t license_expiry);
 
 // IP filtering functions
-bool check_ip_whitelist(const char* client_ip);
-bool check_ip_blacklist(const char* client_ip);
+bool check_ip_whitelist(const char* client_ip, const char* database);
+bool check_ip_blacklist(const char* client_ip, const char* database);
 
 // Audit logging functions
 void log_login_attempt(const char* login_id, const char* client_ip,
-                      const char* user_agent, time_t timestamp);
+                      const char* user_agent, time_t timestamp, const char* database);
 
 // Rate limiting functions
 int check_failed_attempts(const char* login_id, const char* client_ip,
-                         time_t window_start);
+                         time_t window_start, const char* database);
 bool handle_rate_limiting(const char* client_ip, int failed_count,
-                         bool is_whitelisted);
+                         bool is_whitelisted, const char* database);
 
 // Account management functions
-account_info_t* lookup_account(const char* login_id);
-bool verify_password(const char* password, const char* stored_hash);
+account_info_t* lookup_account(const char* login_id, const char* database);
+char* get_password_hash(int account_id, const char* database);
+bool verify_password(const char* password, const char* stored_hash, int account_id);
 
 // JWT functions
 char* generate_jwt(account_info_t* account, system_info_t* system,
                   const char* client_ip, time_t issued_at);
-void store_jwt(int account_id, const char* jwt_hash, time_t expires_at);
-jwt_validation_result_t validate_jwt(const char* token);
+void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, const char* database);
+jwt_validation_result_t validate_jwt(const char* token, const char* database);
 char* generate_new_jwt(jwt_claims_t* old_claims);
 void update_jwt_storage(int account_id, const char* old_jwt_hash,
-                       const char* new_jwt_hash, time_t new_expires);
-void delete_jwt_from_storage(const char* jwt_hash);
+                       const char* new_jwt_hash, time_t new_expires, const char* database);
+void delete_jwt_from_storage(const char* jwt_hash, const char* database);
 
 // Password functions
 char* hash_password(const char* password, int account_id);
 
 // Registration functions
-bool check_username_availability(const char* username);
+bool check_username_availability(const char* username, const char* database);
 int create_account_record(const char* username, const char* email,
-                         const char* hashed_password, const char* full_name);
+                         const char* hashed_password, const char* full_name, const char* database);
 
 // Request parsing functions
 char* parse_renew_request(const char* request_body);
 char* parse_logout_request(const char* request_body);
 
 // JWT validation for specific operations
-jwt_validation_result_t validate_jwt_token(const char* token);
-jwt_validation_result_t validate_jwt_for_logout(const char* token);
+jwt_validation_result_t validate_jwt_token(const char* token, const char* database);
+jwt_validation_result_t validate_jwt_for_logout(const char* token, const char* database);
 
 // Database query wrapper functions
 QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params);
 
-// Account management functions
-account_info_t* lookup_account(const char* login_id);
-bool verify_password(const char* password, const char* stored_hash);
-bool check_username_availability(const char* username);
 int create_account_record(const char* username, const char* email,
-                          const char* hashed_password, const char* full_name);
+                          const char* hashed_password, const char* full_name, const char* database);
 
 // JWT storage functions
-void store_jwt(int account_id, const char* jwt_hash, time_t expires_at);
+void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, const char* database);
 void update_jwt_storage(int account_id, const char* old_jwt_hash,
-                        const char* new_jwt_hash, time_t new_expires);
-void delete_jwt_from_storage(const char* jwt_hash);
-bool is_token_revoked(const char* token_hash);
+                        const char* new_jwt_hash, time_t new_expires, const char* database);
+void delete_jwt_from_storage(const char* jwt_hash, const char* database);
+bool is_token_revoked(const char* token_hash, const char* database);
 
 // Rate limiting and security functions
 int check_failed_attempts(const char* login_id, const char* client_ip,
-                          time_t window_start);
-void block_ip_address(const char* client_ip, int duration_minutes);
+                          time_t window_start, const char* database);
+void block_ip_address(const char* client_ip, int duration_minutes, const char* database);
 void log_login_attempt(const char* login_id, const char* client_ip,
-                       const char* user_agent, time_t timestamp);
+                       const char* user_agent, time_t timestamp, const char* database);
 
 // Utility functions
 char* generate_jti(void);
