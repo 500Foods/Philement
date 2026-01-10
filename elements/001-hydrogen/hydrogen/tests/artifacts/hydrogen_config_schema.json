@@ -101,6 +101,10 @@
         "Prefix": {
           "type": "string",
           "description": "API URL prefix"
+        },
+        "JWTSecret": {
+          "type": "string",
+          "description": "Secret key for JWT token signing and validation, can use environment variable syntax like ${env.HYDROGEN_DEMO_JWT_KEY}"
         }
       },
       "additionalProperties": false

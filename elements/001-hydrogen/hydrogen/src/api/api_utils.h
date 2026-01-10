@@ -20,6 +20,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdint.h>
+
+// Get magic number definitions for context type identification
+#include <src/webserver/web_server_core.h>
 
 // Standard C headers
 #include <stdio.h>
@@ -179,8 +183,13 @@ enum MHD_Result post_data_iterator(void *cls, enum MHD_ValueKind kind, const cha
 /**
  * Structure to buffer POST body data across MHD callback invocations.
  * The http_method field determines how the endpoint should be processed.
+ *
+ * IMPORTANT: The magic field MUST be the first member and MUST be set to
+ * API_POST_BUFFER_MAGIC. This allows request_completed() to differentiate
+ * between ApiPostBuffer and ConnectionInfo structures in con_cls.
  */
 typedef struct {
+    uint32_t magic;      // Must be API_POST_BUFFER_MAGIC (from web_server_core.h)
     char *data;          // Buffer for accumulated POST data
     size_t size;         // Current size of accumulated data
     size_t capacity;     // Allocated capacity of buffer

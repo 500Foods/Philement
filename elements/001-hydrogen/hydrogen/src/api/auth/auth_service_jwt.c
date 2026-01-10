@@ -12,6 +12,7 @@
 #include <src/hydrogen.h>
 #include <string.h>
 #include <ctype.h>
+#include <jansson.h>
 #include <src/logging/logging.h>
 
 // OpenSSL includes for JWT
@@ -81,8 +82,8 @@ jwt_config_t* get_jwt_config(void) {
  * Generate a JWT token
  */
 char* generate_jwt(account_info_t* account, system_info_t* system,
-                   const char* client_ip, time_t issued_at) {
-    if (!account || !system || !client_ip) {
+                   const char* client_ip, const char* database, time_t issued_at) {
+    if (!account || !system || !client_ip || !database) {
         log_this(SR_AUTH, "Invalid parameters for JWT generation", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
@@ -116,13 +117,13 @@ char* generate_jwt(account_info_t* account, system_info_t* system,
 
     char* payload_json = NULL;
     asprintf(&payload_json,
-             "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\"}",
+             "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"database\":\"%s\"}",
              account->id, system->app_id, exp, now, now, jti,
              account->id, system->system_id, system->app_id,
              account->username ? account->username : "",
              account->email ? account->email : "",
              account->roles ? account->roles : "",
-             client_ip, "UTC"); // TODO: Pass timezone
+             client_ip, "UTC", database); // TODO: Pass timezone
 
     free(jti);
 
@@ -241,24 +242,42 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
         return result;
     }
 
-    // Parse JSON claims (simplified - in real implementation use proper JSON parser)
-    char* payload_str = (char*)payload_decoded;
-    payload_str[payload_len] = '\0';
-
-    // Extract expiration time (very basic parsing)
-    const char* exp_str = strstr(payload_str, "\"exp\":");
-    if (!exp_str) {
-        free(payload_decoded);
+    // Parse JSON claims using jansson
+    char* payload_str = strndup((char*)payload_decoded, payload_len);
+    free(payload_decoded);
+    payload_decoded = NULL; // Mark as freed
+    
+    if (!payload_str) {
         free(token_copy);
         result.error = JWT_ERROR_INVALID_FORMAT;
         return result;
     }
 
-    time_t exp_time = atol(exp_str + 6);
+    json_error_t json_err;
+    json_t* payload_json = json_loads(payload_str, 0, &json_err);
+    free(payload_str);
+    
+    if (!payload_json) {
+        log_this(SR_AUTH, "Failed to parse JWT payload: %s", LOG_LEVEL_ERROR, 1, json_err.text);
+        free(token_copy);
+        result.error = JWT_ERROR_INVALID_FORMAT;
+        return result;
+    }
+
+    // Extract expiration time
+    json_t* exp_json = json_object_get(payload_json, "exp");
+    if (!exp_json || !json_is_integer(exp_json)) {
+        json_decref(payload_json);
+        free(token_copy);
+        result.error = JWT_ERROR_INVALID_FORMAT;
+        return result;
+    }
+
+    time_t exp_time = (time_t)json_integer_value(exp_json);
     time_t now = time(NULL);
 
     if (exp_time < now) {
-        free(payload_decoded);
+        json_decref(payload_json);
         free(token_copy);
         result.error = JWT_ERROR_EXPIRED;
         return result;
@@ -325,20 +344,100 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
     free(signing_input);
     free_jwt_config(config);
 
-    // Token is valid - create claims structure
+    // Token is valid - create claims structure with all fields
     result.valid = true;
     result.error = JWT_ERROR_NONE;
     result.claims = calloc(1, sizeof(jwt_claims_t));
-    if (result.claims) {
-        // Parse basic claims from payload (simplified)
-        result.claims->exp = exp_time;
-        result.claims->iat = now;
-        result.claims->nbf = now;
-        // TODO: Parse other claims from JSON
+    if (!result.claims) {
+        json_decref(payload_json);
+        free(token_copy);
+        result.valid = false;
+        result.error = JWT_ERROR_INVALID_FORMAT;
+        return result;
     }
 
-    free(payload_decoded);
+    // Extract all claims from JSON
+    result.claims->exp = exp_time;
+    
+    json_t* iat_json = json_object_get(payload_json, "iat");
+    result.claims->iat = (iat_json && json_is_integer(iat_json)) ?
+                         (time_t)json_integer_value(iat_json) : now;
+    
+    json_t* nbf_json = json_object_get(payload_json, "nbf");
+    result.claims->nbf = (nbf_json && json_is_integer(nbf_json)) ?
+                         (time_t)json_integer_value(nbf_json) : now;
+    
+    json_t* user_id_json = json_object_get(payload_json, "user_id");
+    result.claims->user_id = (user_id_json && json_is_integer(user_id_json)) ?
+                             (int)json_integer_value(user_id_json) : 0;
+    
+    json_t* system_id_json = json_object_get(payload_json, "system_id");
+    result.claims->system_id = (system_id_json && json_is_integer(system_id_json)) ?
+                               (int)json_integer_value(system_id_json) : 0;
+    
+    json_t* app_id_json = json_object_get(payload_json, "app_id");
+    result.claims->app_id = (app_id_json && json_is_integer(app_id_json)) ?
+                            (int)json_integer_value(app_id_json) : 0;
+    
+    // Extract string claims
+    json_t* iss_json = json_object_get(payload_json, "iss");
+    if (iss_json && json_is_string(iss_json)) {
+        result.claims->iss = strdup(json_string_value(iss_json));
+    }
+    
+    json_t* sub_json = json_object_get(payload_json, "sub");
+    if (sub_json && json_is_string(sub_json)) {
+        result.claims->sub = strdup(json_string_value(sub_json));
+    }
+    
+    json_t* aud_json = json_object_get(payload_json, "aud");
+    if (aud_json && json_is_string(aud_json)) {
+        result.claims->aud = strdup(json_string_value(aud_json));
+    }
+    
+    json_t* jti_json = json_object_get(payload_json, "jti");
+    if (jti_json && json_is_string(jti_json)) {
+        result.claims->jti = strdup(json_string_value(jti_json));
+    }
+    
+    json_t* username_json = json_object_get(payload_json, "username");
+    if (username_json && json_is_string(username_json)) {
+        result.claims->username = strdup(json_string_value(username_json));
+    }
+    
+    json_t* email_json = json_object_get(payload_json, "email");
+    if (email_json && json_is_string(email_json)) {
+        result.claims->email = strdup(json_string_value(email_json));
+    }
+    
+    json_t* roles_json = json_object_get(payload_json, "roles");
+    if (roles_json && json_is_string(roles_json)) {
+        result.claims->roles = strdup(json_string_value(roles_json));
+    }
+    
+    json_t* ip_json = json_object_get(payload_json, "ip");
+    if (ip_json && json_is_string(ip_json)) {
+        result.claims->ip = strdup(json_string_value(ip_json));
+    }
+    
+    json_t* tz_json = json_object_get(payload_json, "tz");
+    if (tz_json && json_is_string(tz_json)) {
+        result.claims->tz = strdup(json_string_value(tz_json));
+    }
+    
+    // Extract database field (NEW)
+    json_t* database_json = json_object_get(payload_json, "database");
+    if (database_json && json_is_string(database_json)) {
+        result.claims->database = strdup(json_string_value(database_json));
+    }
+
+    json_decref(payload_json);
     free(token_copy);
+
+    log_this(SR_AUTH, "Successfully validated JWT for user %s (database: %s)",
+             LOG_LEVEL_DEBUG, 2,
+             result.claims->username ? result.claims->username : "unknown",
+             result.claims->database ? result.claims->database : "none");
 
     return result;
 }
@@ -404,6 +503,7 @@ void free_jwt_claims(jwt_claims_t* claims) {
         free(claims->roles);
         free(claims->ip);
         free(claims->tz);
+        free(claims->database);
         free(claims);
     }
 }

@@ -32,36 +32,46 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-            -- Insert test accounts for authentication testing
-            -- Uses CTE to compute base ID (MySQL doesn't allow subselects from same table in INSERT)
-            INSERT INTO ${SCHEMA}accounts (account_id, name, first_name, last_name, password_hash, status_a16, iana_timezone_a17, summary, collection, ${COMMON_FIELDS})
+            INSERT INTO ${SCHEMA}accounts (
+                account_id,
+                name,
+                first_name,
+                last_name,
+                password_hash,
+                status_a16,
+                iana_timezone_a17,
+                summary,
+                collection,
+                ${COMMON_FIELDS}
+            )
             WITH next_account_id AS (
                 SELECT COALESCE(MAX(account_id), 0) AS base_id
                 FROM ${SCHEMA}accounts
             )
             SELECT
                 base_id + 1,
-                'testuser',
-                'Test',
+                '${HYDROGEN_DEMO_USER_NAME}',
+                '${HYDROGEN_DEMO_USER_NAME}',
                 'User',
-                'hashed_test_password',
+                '${HYDROGEN_DEMO_USER_PASS}',
                 1,
                 1,
-                'Test account for auth testing',
-                '{}',
+                'Demo User Account',
+                ${JIS} {} ${JIE},
                 ${COMMON_VALUES}
-            FROM next_account_id
+            FROM
+                next_account_id
             UNION ALL
             SELECT
                 base_id + 2,
-                'adminuser',
-                'Admin',
-                'User',
-                'hashed_admin_password',
+                '${HYDROGEN_DEMO_USER_NAME}',
+                '${HYDROGEN_DEMO_USER_NAME}',
+                '${HYDROGEN_DEMO_USER_NAME}',
+                '${HYDROGEN_DEMO_USER_PASS}',
                 1,
                 1,
-                'Admin test account',
-                '{}',
+                'Demo Admin Account',
+                ${JIS} {} ${JIE},
                 ${COMMON_VALUES}
             FROM next_account_id
             UNION ALL
@@ -73,8 +83,8 @@ table.insert(queries,{sql=[[
                 'hashed_disabled_password',
                 0,
                 1,
-                'Disabled test account',
-                '{}',
+                'Demo Disabled Account',
+                ${JIS} {} ${JIE},
                 ${COMMON_VALUES}
             FROM next_account_id
             UNION ALL
@@ -87,7 +97,7 @@ table.insert(queries,{sql=[[
                 2,
                 1,
                 'Unauthorized test account',
-                '{}',
+                ${JIS} {} ${JIE},
                 ${COMMON_VALUES}
             FROM next_account_id;
 
@@ -102,27 +112,34 @@ table.insert(queries,{sql=[[
             )
             SELECT
                 base_id + 1,
-                (SELECT account_id FROM ${SCHEMA}accounts WHERE name = 'testuser'),
+                (
+                    SELECT account_id
+                    FROM ${SCHEMA}accounts
+                    WHERE name = '${HYDROGEN_DEMO_USER_NAME}'),
                 1,
                 1,
                 1,
                 1,
-                'test@example.com',
+                '${HYDROGEN_DEMO_EMAL}',
                 'Primary email',
-                '{}',
+                ${JIS} {} ${JIE},
                 ${COMMON_VALUES}
             FROM next_contact_id
             UNION ALL
             SELECT
                 base_id + 2,
-                (SELECT account_id FROM ${SCHEMA}accounts WHERE name = 'adminuser'),
+                (
+                    SELECT account_id
+                    FROM ${SCHEMA}accounts
+                    WHERE name = '${HYDROGEN_DEMO_ADMIN_NAME}'
+                ),
                 1,
                 1,
                 1,
                 1,
-                'admin@example.com',
+                '${HYDROGEN_DEMO_EMAIL}',
                 'Primary email',
-                '{}',
+                ${JIS} {} ${JIE},
                 ${COMMON_VALUES}
             FROM next_contact_id
             UNION ALL
@@ -135,7 +152,7 @@ table.insert(queries,{sql=[[
                 1,
                 'disabled@example.com',
                 'Primary email',
-                '{}',
+                ${JIS} {} ${JIE},
                 ${COMMON_VALUES}
             FROM next_contact_id
             UNION ALL
@@ -148,7 +165,7 @@ table.insert(queries,{sql=[[
                 1,
                 'unauth@example.com',
                 'Primary email',
-                '{}',
+                ${JIS} {} ${JIE},
                 ${COMMON_VALUES}
             FROM next_contact_id;
 
@@ -195,14 +212,14 @@ table.insert(queries,{sql=[[
             DELETE FROM ${SCHEMA}account_contacts
             WHERE account_id IN (
                 SELECT account_id FROM ${SCHEMA}accounts
-                WHERE name IN ('testuser', 'adminuser', 'disableduser', 'unauthorizeduser')
+                WHERE name IN ('${HYDROGEN_DEMO_USER_NAME}', '${HYDROGEN_DEMO_ADMIN_NAME}', 'disableduser', 'unauthorizeduser')
             );
 
             ${SUBQUERY_DELIMITER}
 
             -- Remove test accounts
             DELETE FROM ${SCHEMA}accounts
-            WHERE name IN ('testuser', 'adminuser', 'disableduser', 'unauthorizeduser');
+            WHERE name IN ('${HYDROGEN_DEMO_USER_NAME}', '${HYDROGEN_DEMO_USER_NAME}', 'disableduser', 'unauthorizeduser');
 
             ${SUBQUERY_DELIMITER}
 

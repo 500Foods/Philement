@@ -36,6 +36,7 @@
 //@ swagger:tags "Auth Service"
 //@ swagger:summary Renew JWT token
 //@ swagger:description Renews a valid JWT token with updated expiration timestamp
+//@ swagger:security bearerAuth
 //@ swagger:request body application/json {"type":"object","required":["token"],"properties":{"token":{"type":"string","description":"JWT token to renew","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}}}
 //@ swagger:response 200 application/json {"type":"object","properties":{"success":{"type":"boolean","example":true},"token":{"type":"string","description":"New JWT token","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."},"expires_at":{"type":"integer","description":"Unix timestamp of expiration","example":1704830000}}}
 //@ swagger:response 400 application/json {"type":"object","properties":{"success":{"type":"boolean","example":false},"error":{"type":"string","example":"Missing or invalid token"}}}

@@ -48,14 +48,28 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    -- Insert into accounts table first
-                    -- Note: Acuranzo schema uses 'name' for username, not 'username' column
-                    -- Note: status_a16: 1=active, iana_timezone_a17: 1 = default timezone
-                    INSERT INTO ${SCHEMA}accounts
-                        (name, first_name, last_name, password_hash, status_a16, iana_timezone_a17, summary, collection)
-                    VALUES
-                        (:USERNAME, :FIRST_NAME, :LAST_NAME, :PASSWORD_HASH, 1, 1, :SUMMARY, '{}')
-                    RETURNING account_id
+
+                    INSERT INTO ${SCHEMA}accounts (
+                        name,
+                        first_name,
+                        last_name,
+                        password_hash,
+                        status_a16,
+                        iana_timezone_a17,
+                        summary,
+                        collection
+                    )
+                    VALUES (
+                        :USERNAME,
+                        :FIRST_NAME,
+                        :LAST_NAME,
+                        :PASSWORD_HASH,
+                        1,
+                        1,
+                        :SUMMARY,
+                        ${JIS} {} ${JIE}
+                    )
+                    -- RETURNING account_id
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
