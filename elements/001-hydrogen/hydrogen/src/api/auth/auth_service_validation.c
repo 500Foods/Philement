@@ -78,7 +78,7 @@ bool validate_registration_input(const char* username, const char* password,
     if (!username || strlen(username) < 3 || strlen(username) > 50) return false;
     if (!is_alphanumeric_underscore_hyphen(username)) return false;
 
-    // Password: 8-128 chars
+    // Check that password is between 8 and 128 characters
     if (!password || strlen(password) < 8 || strlen(password) > 128) return false;
 
     // Email: valid format, max 255 chars
