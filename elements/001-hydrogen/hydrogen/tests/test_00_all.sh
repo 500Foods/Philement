@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 8.0.1 - 2026-01-09 - Enhanced coverage discrepancy error message to show suggested adjustment values
 # 8.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variables
 # 7.0.1 - 2025-12-01 - Added build number to Test Suite Results title
 # 7.0.0 - 2025-12-01 - Added email generation at end of test suite, more summary data into JSON output
@@ -57,7 +58,7 @@ TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
 TEST_COUNTER=0
-TEST_VERSION="8.0.0"
+TEST_VERSION="8.0.1"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -602,7 +603,7 @@ if [[ ${#TEST_ARGS[@]} -eq 0 ]]; then
 else
     # Process each test argument (always sequential for specific tests)
     # shellcheck disable=SC2310 # We want to continue even if the test fails
-    for test_arg in "${TEST_ARGS[@]}"; do
+    for test_arg in "${TEST_ARGS[@]+"${TEST_ARGS[@]}"}"; do
         # Check if it's a specific test name
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if ! run_specific_test "${test_arg}"; then
@@ -617,21 +618,23 @@ pkill -9 -f hydrogen_test_ || true
 # Clean up any remaining core files
 rm -rf "${PROJECT_DIR}"/*.core.* 2>/dev/null || true
 
-# Get coverage percentages for display
-UNITY_COVERAGE=$(get_unity_coverage)
-BLACKBOX_COVERAGE=$(get_blackbox_coverage)
-COMBINED_COVERAGE=$(get_combined_coverage)
-
 # Get build number from hydrogen version
 VERSION_FULL=$("${PROJECT_DIR}"/hydrogen --version 2>/dev/null || echo "?")
 BUILD_NUMBER=$(echo "${VERSION_FULL}" | grep -oE "ver [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | grep -oE "[0-9]+$" || echo "?")
 
-# Run coverage table before displaying test results
+# Force coverage recalculation by removing cache marker files
+rm -f "${BUILD_DIR}/unity_coverage_marker" "${BUILD_DIR}/blackbox_coverage_marker" 2>/dev/null || true
 
+# Run coverage table FIRST to recalculate all coverage values
 # Save coverage table output to file and display to console using tee
 coverage_table_file="${RESULTS_DIR}/coverage_table.txt"
 # shellcheck disable=SC2154 # COVERAGE defined externally in framework.sh
 /usr/bin/env -i HYDROGEN_ROOT="${HYDROGEN_ROOT}" HELIUM_ROOT="${HELIUM_ROOT}" bash -c "${COVERAGE}" | tee "${coverage_table_file}" || true
+
+# NOW get coverage percentages for display (after they've been recalculated by coverage_table.sh)
+UNITY_COVERAGE=$(get_unity_coverage)
+BLACKBOX_COVERAGE=$(get_blackbox_coverage)
+COMBINED_COVERAGE=$(get_combined_coverage)
 
 # Calculate total elapsed time
 # shellcheck disable=SC2154 # DATE defined externally in framework.sh   
@@ -791,7 +794,39 @@ if [[ "${results_summary}" != "${coverage_summary}" ]]; then
     echo "The coverage percentage values differ:"
     echo "Results:  ${results_summary}"
     echo "Coverage: ${coverage_summary}"
-    echo "Please adjust via tests/lib/coverage.sh"
+    echo ""
+    
+    # Calculate the discrepancy adjustments needed
+    # Parse the percentages: format is "66.186% 54.816% 79.366%"
+    # shellcheck disable=SC2206 # We want word splitting here
+    results_values=(${results_summary//%/})
+    # shellcheck disable=SC2206 # We want word splitting here
+    coverage_values=(${coverage_summary//%/})
+    
+    # Read current discrepancy values from coverage.sh
+    current_unity_disc=$("${GREP}" "^DISCREPANCY_UNITY=" "${SCRIPT_DIR}/lib/coverage.sh" | "${SED}" 's/DISCREPANCY_UNITY=//' || echo "0")
+    current_coverage_disc=$("${GREP}" "^DISCREPANCY_COVERAGE=" "${SCRIPT_DIR}/lib/coverage.sh" | "${SED}" 's/DISCREPANCY_COVERAGE=//' || echo "0")
+    
+    # Calculate differences (Results - Coverage) * 1000 to get approximate line differences
+    # Unity is first value, Blackbox is second
+    unity_diff=$(echo "(${results_values[0]:-0} - ${coverage_values[0]:-0}) * 1000" | bc 2>/dev/null || echo "0")
+    blackbox_diff=$(echo "(${results_values[1]:-0} - ${coverage_values[1]:-0}) * 1000" | bc 2>/dev/null || echo "0")
+    
+    # Convert to integers and calculate suggested new values
+    # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+    unity_diff_int=$(echo "${unity_diff}" | "${AWK}" '{printf "%.0f", $1}' 2>/dev/null || echo "0")
+    # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+    blackbox_diff_int=$(echo "${blackbox_diff}" | "${AWK}" '{printf "%.0f", $1}' 2>/dev/null || echo "0")
+    
+    # New discrepancy values = current + diff
+    new_unity_disc=$((current_unity_disc - unity_diff_int))
+    new_coverage_disc=$((current_coverage_disc - blackbox_diff_int))
+    
+    echo "Consider updating tests/lib/coverage.sh with these new values:"
+    echo "DISCREPANCY_UNITY=${new_unity_disc}"
+    echo "DISCREPANCY_COVERAGE=${new_coverage_disc}"
+    echo ""
+    echo "Current values: DISCREPANCY_UNITY=${current_unity_disc}, DISCREPANCY_COVERAGE=${current_coverage_disc}"
 fi
 
 # Check for Unity test failures and display them if any exist
