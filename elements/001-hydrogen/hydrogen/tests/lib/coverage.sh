@@ -59,9 +59,9 @@ export COVERAGE_GUARD="true"
 # - EG: if coverage shows 19977, and unity = 19973 and blackbox = 19975,
 #       then we'd need to add 4 to unity and 2 to coverage below to fix
 #
-DISCREPANCY_UNITY=240
-DISCREPANCY_COVERAGE=74
-
+DISCREPANCY_UNITY=307
+DISCREPANCY_COVERAGE=141
+  
 # Library metadata
 COVERAGE_NAME="Coverage Library"
 COVERAGE_VERSION="4.0.0"
@@ -291,7 +291,7 @@ calculate_coverage_generic() {
     
     if [[ ${#to_process_bases[@]} -gt 0 ]]; then
         # Function to run gcov for a single file
-        # shellcheck disable=SC2317,SC2250 # Called by xargs
+        # shellcheck disable=SC2317,SC2250,SC2329 # Called by xargs
         run_gcov() {
             local dir="$1"
             local base="$2"
@@ -531,7 +531,7 @@ calculate_test_instrumented_lines() {
 
     if [[ ${#to_process_bases[@]} -gt 0 ]]; then
         # Function to run gcov for a single test file
-        # shellcheck disable=SC2317,SC2250 # Called by xargs
+        # shellcheck disable=SC2317,SC2250,SC2329 # Called by xargs
         run_gcov_test() {
             local dir="$1"
             local base="$2"
@@ -576,4 +576,4 @@ calculate_test_instrumented_lines() {
     echo "${total_test_lines}" > "${test_lines_file}"
     touch "${marker_file}"
     echo "${total_test_lines}"
-}
+}                                  
