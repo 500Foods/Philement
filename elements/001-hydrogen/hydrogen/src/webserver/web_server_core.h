@@ -22,8 +22,14 @@
 #include <src/config/config.h>
 #include <src/config/config_webserver.h>  // For WebServerConfig
 
+// Magic numbers to identify connection context types
+// These help distinguish between different struct types stored in con_cls
+#define CONNECTION_INFO_MAGIC 0x434F4E49  // "CONI" - Connection Info (file uploads)
+#define API_POST_BUFFER_MAGIC 0x41504942  // "APIB" - API Post Buffer (API requests)
+
 // Connection info structure shared across modules
 struct ConnectionInfo {
+    uint32_t magic;               // Must be CONNECTION_INFO_MAGIC
     FILE *fp;
     char *original_filename;
     char *new_filename;

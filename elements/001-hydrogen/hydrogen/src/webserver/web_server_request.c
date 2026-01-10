@@ -8,6 +8,7 @@
 #include "web_server_compression.h"
 #include <src/swagger/swagger.h>
 #include <src/api/api_service.h>
+#include <src/api/api_utils.h>
 #include <src/api/system/config/config.h>
 #include <src/api/system/prometheus/prometheus.h>
 
@@ -243,18 +244,48 @@ void request_completed(void *cls, struct MHD_Connection *connection,
                       void **con_cls, enum MHD_RequestTerminationCode toe) {
     (void)cls; (void)connection; (void)toe;  // Unused parameters
 
-    // Clean up connection info
-    struct ConnectionInfo *con_info = *con_cls;
-    if (NULL == con_info) return;
-    if (con_info->postprocessor) {
-        MHD_destroy_post_processor(con_info->postprocessor);
+    // Clean up connection info based on type
+    // Both ConnectionInfo and ApiPostBuffer have a magic field as their first member
+    // that we can use to determine the proper cleanup procedure
+    if (NULL == con_cls || NULL == *con_cls) {
+        // No context to clean up - just unregister thread
+        remove_service_thread(&webserver_threads, pthread_self());
+        log_this(SR_WEBSERVER, "Connection thread completed (no context)", LOG_LEVEL_TRACE, 0);
+        return;
     }
-    if (con_info->fp) {
-        fclose(con_info->fp);
+    
+    // Read the magic number to identify the context type
+    // Both structs have magic as their first uint32_t member
+    const uint32_t *magic_ptr = (const uint32_t *)*con_cls;
+    uint32_t magic = *magic_ptr;
+    
+    if (magic == CONNECTION_INFO_MAGIC) {
+        // This is a file upload ConnectionInfo structure
+        struct ConnectionInfo *con_info = (struct ConnectionInfo *)*con_cls;
+        if (con_info->postprocessor) {
+            MHD_destroy_post_processor(con_info->postprocessor);
+        }
+        if (con_info->fp) {
+            fclose(con_info->fp);
+        }
+        free(con_info->original_filename);
+        free(con_info->new_filename);
+        free(con_info);
+        log_this(SR_WEBSERVER, "Cleaned up ConnectionInfo (file upload)", LOG_LEVEL_TRACE, 0);
     }
-    free(con_info->original_filename);
-    free(con_info->new_filename);
-    free(con_info);
+    else if (magic == API_POST_BUFFER_MAGIC) {
+        // This is an API POST buffer - use the api_utils cleanup
+        api_free_post_buffer(con_cls);
+        log_this(SR_WEBSERVER, "Cleaned up ApiPostBuffer (API request)", LOG_LEVEL_TRACE, 0);
+    }
+    else {
+        // Unknown context type - log warning but don't crash
+        // This could be legacy context or an uninitialized structure
+        log_this(SR_WEBSERVER, "Unknown connection context type (magic=0x%08X) - freeing raw pointer",
+                 LOG_LEVEL_ALERT, 1, magic);
+        free(*con_cls);
+    }
+    
     *con_cls = NULL;
 
     // Remove connection thread from tracking after cleanup

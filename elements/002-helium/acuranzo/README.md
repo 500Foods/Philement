@@ -175,7 +175,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1138](/elements/002-helium/acuranzo/migrations/acuranzo_1138.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #047 - Get Documents |
 | [1139](/elements/002-helium/acuranzo/migrations/acuranzo_1139.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #048 - Create Document |
 | [1140](/elements/002-helium/acuranzo/migrations/acuranzo_1140.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #049 - Get Document |
-| [1141](/elements/002-helium/acuranzo/migrations/acuranzo_1141.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | QueryRef #050 - Check Username/Email Availability |
+| [1141](/elements/002-helium/acuranzo/migrations/acuranzo_1141.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | QueryRef #050 - Check Username/E-Mail Availability |
 | [1142](/elements/002-helium/acuranzo/migrations/acuranzo_1142.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | QueryRef #051 - Create New Account |
 | [1143](/elements/002-helium/acuranzo/migrations/acuranzo_1143.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | QueryRef #052 - Hash and Store Password |
 | [1144](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua) | queries | 1.0.0 | 2026-01-08 | 6 | ✗ | Test Data - Auth Test Accounts |

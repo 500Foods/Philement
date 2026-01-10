@@ -21,6 +21,9 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.2.0 - 2026-01-10 - Updated to use environment variables for demo credentials
+#                    - Uses HYDROGEN_DEMO_USER_NAME, HYDROGEN_DEMO_USER_PASS, etc.
+#                    - Aligns with migration 1144 and 1145 environment variable usage
 # 1.1.0 - 2026-01-10 - Restructured for parallel execution across multiple database engines
 #                    - Added support for PostgreSQL, MySQL, SQLite, and DB2
 #                    - Uses "demo" schema with persistent automigrations
@@ -34,7 +37,7 @@ TEST_NAME="Auth  {BLUE}engines: 4{RESET}"
 TEST_ABBR="AUTH"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -55,6 +58,17 @@ AUTH_TEST_CONFIGS=(
 # Test timeouts
 STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=10
+
+# Demo credentials from environment variables (set in shell and used in migrations)
+DEMO_USER_NAME="${HYDROGEN_DEMO_USER_NAME:-}"
+DEMO_USER_PASS="${HYDROGEN_DEMO_USER_PASS:-}"
+# shellcheck disable=SC2034 # These variables are defined for future test expansion
+DEMO_ADMIN_NAME="${HYDROGEN_DEMO_ADMIN_NAME:-}"
+# shellcheck disable=SC2034 # These variables are defined for future test expansion
+DEMO_ADMIN_PASS="${HYDROGEN_DEMO_ADMIN_PASS:-}"
+# shellcheck disable=SC2034 # These variables are defined for future test expansion
+DEMO_EMAIL="${HYDROGEN_DEMO_EMAIL:-}"
+DEMO_API_KEY="${HYDROGEN_DEMO_API_KEY:-}"
 
 # Function to validate auth request
 validate_auth_request() {
@@ -87,12 +101,18 @@ test_auth_login() {
     local base_url="$1"
     local result_file="$2"
     
-    local login_data='{
-        "login_id": "testuser",
-        "password": "TestPassword123!",
-        "api_key": "test-api-key-valid",
-        "tz": "America/Vancouver"
-    }'
+    # Use environment variables for demo credentials (set in migrations 1144/1145)
+    local login_data
+    login_data=$(cat <<EOF
+{
+    "database": "Acuranzo",
+    "login_id": "${DEMO_USER_NAME}",
+    "password": "${DEMO_USER_PASS}",
+    "api_key": "${DEMO_API_KEY}",
+    "tz": "America/Vancouver"
+}
+EOF
+)
     
     local response_file="${result_file}.login.json"
     
@@ -118,12 +138,18 @@ test_auth_login_invalid() {
     local base_url="$1"
     local result_file="$2"
     
-    local login_data='{
-        "login_id": "testuser",
-        "password": "WrongPassword123!",
-        "api_key": "test-api-key-valid",
-        "tz": "America/Vancouver"
-    }'
+    # Use valid username but invalid password (wrong password test)
+    local login_data
+    login_data=$(cat <<EOF
+{
+    "database": "Acuranzo",
+    "login_id": "${DEMO_USER_NAME}",
+    "password": "WrongPassword123!",
+    "api_key": "${DEMO_API_KEY}",
+    "tz": "America/Vancouver"
+}
+EOF
+)
     
     local response_file="${result_file}.login_invalid.json"
     
@@ -191,13 +217,19 @@ test_auth_register() {
     local unique_user="testuser_${timestamp}"
     local unique_email="test_${timestamp}@example.com"
     
-    local register_data="{
-        \"username\": \"${unique_user}\",
-        \"password\": \"NewPassword123!\",
-        \"email\": \"${unique_email}\",
-        \"full_name\": \"Test User ${timestamp}\",
-        \"api_key\": \"test-api-key-valid\"
-    }"
+    # Use environment variable for API key (same as used in migrations)
+    local register_data
+    register_data=$(cat <<EOF
+{
+    "database": "Acuranzo",
+    "username": "${unique_user}",
+    "password": "NewPassword123!",
+    "email": "${unique_email}",
+    "full_name": "Test User ${timestamp}",
+    "api_key": "${DEMO_API_KEY}"
+}
+EOF
+)
     
     local response_file="${result_file}.register.json"
     
@@ -376,6 +408,30 @@ if find_hydrogen_binary "${PROJECT_DIR}"; then
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
+    EXIT_CODE=1
+fi
+
+# Validate required environment variables for demo credentials
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Environment Variables"
+env_vars_valid=true
+if [[ -z "${DEMO_USER_NAME}" ]]; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: HYDROGEN_DEMO_USER_NAME is not set"
+    env_vars_valid=false
+fi
+if [[ -z "${DEMO_USER_PASS}" ]]; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: HYDROGEN_DEMO_USER_PASS is not set"
+    env_vars_valid=false
+fi
+if [[ -z "${DEMO_API_KEY}" ]]; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: HYDROGEN_DEMO_API_KEY is not set"
+    env_vars_valid=false
+fi
+
+if [[ "${env_vars_valid}" = true ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Required environment variables are set"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Missing required environment variables (HYDROGEN_DEMO_USER_NAME, HYDROGEN_DEMO_USER_PASS, HYDROGEN_DEMO_API_KEY)"
     EXIT_CODE=1
 fi
 

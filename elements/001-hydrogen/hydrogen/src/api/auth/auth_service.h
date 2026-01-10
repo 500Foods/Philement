@@ -76,6 +76,7 @@ typedef struct {
     char* roles;               // User roles
     char* ip;                  // Client IP address
     char* tz;                  // Client timezone
+    char* database;            // Database name (for routing authenticated queries)
 } jwt_claims_t;
 
 /*
@@ -148,7 +149,7 @@ bool verify_password(const char* password, const char* stored_hash, int account_
 
 // JWT functions
 char* generate_jwt(account_info_t* account, system_info_t* system,
-                  const char* client_ip, time_t issued_at);
+                  const char* client_ip, const char* database, time_t issued_at);
 void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, const char* database);
 jwt_validation_result_t validate_jwt(const char* token, const char* database);
 char* generate_new_jwt(jwt_claims_t* old_claims);

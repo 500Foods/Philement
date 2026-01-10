@@ -33,17 +33,30 @@ table.insert(queries,{sql=[[
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             -- Insert test API keys for authentication testing
-            INSERT INTO ${SCHEMA}licenses (api_key, system_id, app_id, license_expiry, features)
+            INSERT INTO ${SCHEMA}licenses (
+                api_key,
+                system_id,
+                app_id,
+                license_expiry,
+                features,
+                ${COMMON_FIELDS}
+            )
             VALUES
-                ('test-api-key-12345', 1, 1, '2026-12-31', '{"auth": true}'),
-                ('test-api-key-admin', 1, 1, '2026-12-31', '{"auth": true, "admin": true}'),
-                ('test-api-key-expired', 1, 1, '2025-01-01', '{"auth": true}');
+                ('${HYDROGEN_DEMO_API_KEY}', 1, 1, '2026-12-31', ${JIS} {"auth": true} ${JIE}, ${COMMON_VALUES}),
+                ('demo-api-key-admin', 1, 1, '2026-12-31', ${JIS} {"auth": true, "admin": true} ${JIE}, ${COMMON_VALUES}),
+                ('demo-api-key-expired', 1, 1, '2025-121-311', ${JIS} {"auth": true} ${JIE}, ${COMMON_VALUES});
 
             -- Insert test IP whitelist/blacklist entries
-            INSERT INTO ${SCHEMA}lists (list_type, list_name, list_value, list_status)
+            INSERT INTO ${SCHEMA}lists (
+                list_type,
+                list_name,
+                list_value,
+                list_status,
+                ${COMMON_FIELDS}
+            )
             VALUES
-                (1, 'Test Whitelist', '192.168.1.100', 1),  -- Whitelisted IP
-                (0, 'Test Blacklist', '192.168.1.200', 1);  -- Blocked IP
+                (1, 'Test Whitelist', '192.168.1.100', 1, ${COMMON_VALUES}),  -- Whitelisted IP
+                (0, 'Test Blacklist', '192.168.1.200', 1, ${COMMON_VALUES});  -- Blocked IP
 
             ${SUBQUERY_DELIMITER}
 

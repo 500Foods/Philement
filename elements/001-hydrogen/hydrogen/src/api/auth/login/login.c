@@ -275,7 +275,7 @@ enum MHD_Result handle_auth_login_request(
     
     // Step 16: Generate JWT token
     time_t issued_at = time(NULL);
-    char* jwt_token = generate_jwt(account, &sys_info, client_ip, issued_at);
+    char* jwt_token = generate_jwt(account, &sys_info, client_ip, database, issued_at);
     if (!jwt_token) {
         log_this(SR_AUTH, "Failed to generate JWT for account_id=%d", LOG_LEVEL_ERROR, 1, account->id);
         free_account_info(account);
@@ -328,7 +328,11 @@ enum MHD_Result handle_auth_login_request(
     // Build successful response with JWT token
     response = json_object();
     json_object_set_new(response, "success", json_true());
-    json_object_set_new(response, "token", json_string(jwt_token));
+    
+    // Create token with Bearer prefix for Swagger authorization
+    char bearer_token[2048]; // JWT tokens are typically < 1KB, this gives plenty of room
+    snprintf(bearer_token, sizeof(bearer_token), "Bearer %s", jwt_token);
+    json_object_set_new(response, "token", json_string(bearer_token));
     json_object_set_new(response, "expires_at", json_integer(expires_at));
     json_object_set_new(response, "user_id", json_integer(account->id));
     json_object_set_new(response, "username", json_string(account->username ? account->username : ""));

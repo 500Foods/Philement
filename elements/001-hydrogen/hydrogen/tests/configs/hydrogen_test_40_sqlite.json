@@ -8,6 +8,9 @@
         "EnableIPv6": false,
         "Port": 5402
     },
+    "API": {
+        "JWTSecret": "${env.HYDROGEN_DEMO_JWT_KEY}"
+    },
     "Databases": {
         "Connections": [
             {

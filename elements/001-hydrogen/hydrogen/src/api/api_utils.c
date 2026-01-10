@@ -392,6 +392,9 @@ ApiBufferResult api_buffer_post_data(
             return API_BUFFER_ERROR;
         }
         
+        // Set magic number for type identification in request_completed()
+        buffer->magic = API_POST_BUFFER_MAGIC;
+        
         // Determine HTTP method
         if (method && strcmp(method, "GET") == 0) {
             buffer->http_method = 'G';
