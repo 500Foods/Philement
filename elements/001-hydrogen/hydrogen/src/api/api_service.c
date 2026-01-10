@@ -1,6 +1,6 @@
 /*
  * API Service Implementation
- * 
+ *
  * Provides centralized API request handling and prefix registration.
  * Delegates requests to appropriate endpoint handlers based on URL.
  */
@@ -17,6 +17,10 @@
 #include "system/upload/upload.h"
 #include "conduit/conduit_service.h"
 #include "conduit/query/query.h"
+#include "auth/login/login.h"
+#include "auth/renew/renew.h"
+#include "auth/logout/logout.h"
+#include "auth/register/register.h"
 
 // Simple hardcoded endpoint validator and handler for /api/version
 bool is_exact_api_version_endpoint(const char *url) {
@@ -146,6 +150,10 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― /api/version (hardcoded, high precedence)", LOG_LEVEL_DEBUG, 0);
         log_this(SR_API, "― /api/files/local (hardcoded, high precedence - upload alias)", LOG_LEVEL_DEBUG, 0);
         log_this(SR_API, "― %s/version", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/auth/login", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/auth/renew", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/auth/logout", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/auth/register", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/info", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/health", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/test", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
@@ -285,10 +293,15 @@ bool is_api_request(const char *url) {
  * prefix, while allowing other prefixes to be used by different subsystems.
  */
 enum MHD_Result handle_api_request(struct MHD_Connection *connection,
-                                 const char *url, const char *method,
-                                 const char *version, const char *upload_data,
-                                 size_t *upload_data_size, void **con_cls) {
+                                  const char *url, const char *method,
+                                  const char *version, const char *upload_data,
+                                  size_t *upload_data_size, void **con_cls) {
     (void)version;  // Unused parameter
+    (void)upload_data;  // Unused - handled by individual endpoints
+    (void)upload_data_size;  // Unused - handled by individual endpoints
+    (void)con_cls;  // Unused - handled by individual endpoints
+    
+    log_this(SR_API, "handle_api_request: url=%s, method=%s", LOG_LEVEL_DEBUG, 2, url, method);
 
     if (!app_config || !app_config->api.prefix || !app_config->api.prefix[0]) {
         log_this(SR_API, "API prefix not configured", LOG_LEVEL_ERROR, 0);
@@ -334,6 +347,23 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     // Top-level version endpoint (/api/version)
     if (strcmp(path, "version") == 0) {
         return handle_version_request(connection);
+    }
+    // Auth endpoints
+    else if (strcmp(path, "auth/login") == 0) {
+        return handle_auth_login_request(NULL, connection, url, method, version,
+                                       upload_data, upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "auth/renew") == 0) {
+        return handle_post_auth_renew(connection, url, method, version, upload_data,
+                                    upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "auth/logout") == 0) {
+        return handle_post_auth_logout(connection, url, method, version, upload_data,
+                                     upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "auth/register") == 0) {
+        return handle_post_auth_register(connection, url, method, version, upload_data,
+                                       upload_data_size, con_cls);
     }
     // System endpoints
     else if (strcmp(path, "system/info") == 0) {

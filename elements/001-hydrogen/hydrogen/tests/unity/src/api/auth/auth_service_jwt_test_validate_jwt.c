@@ -4,9 +4,10 @@
  * Tests the JWT validation functionality
  *
  * CHANGELOG:
+ * 2026-01-10: Updated validate_jwt calls to include database parameter
  * 2026-01-09: Initial version - Tests for JWT validation
  *
- * TEST_VERSION: 1.0.0
+ * TEST_VERSION: 1.1.0
  */
 
 // Standard project header plus Unity Framework header
@@ -86,7 +87,7 @@ void tearDown(void) {
 
 /* Test 1: NULL token returns invalid with appropriate error */
 void test_validate_jwt_null_token(void) {
-    jwt_validation_result_t result = validate_jwt(NULL);
+    jwt_validation_result_t result = validate_jwt(NULL, "Acuranzo");
     
     TEST_ASSERT_FALSE(result.valid);
     TEST_ASSERT_EQUAL(JWT_ERROR_INVALID_FORMAT, result.error);
@@ -94,7 +95,7 @@ void test_validate_jwt_null_token(void) {
 
 /* Test 2: Empty token returns invalid */
 void test_validate_jwt_empty_token(void) {
-    jwt_validation_result_t result = validate_jwt("");
+    jwt_validation_result_t result = validate_jwt("", "Acuranzo");
     
     TEST_ASSERT_FALSE(result.valid);
     TEST_ASSERT_EQUAL(JWT_ERROR_INVALID_FORMAT, result.error);
@@ -102,7 +103,7 @@ void test_validate_jwt_empty_token(void) {
 
 /* Test 3: Token with no dots is invalid */
 void test_validate_jwt_invalid_format_no_dots(void) {
-    jwt_validation_result_t result = validate_jwt("invalidtoken");
+    jwt_validation_result_t result = validate_jwt("invalidtoken", "Acuranzo");
     
     TEST_ASSERT_FALSE(result.valid);
     TEST_ASSERT_EQUAL(JWT_ERROR_INVALID_FORMAT, result.error);
@@ -110,7 +111,7 @@ void test_validate_jwt_invalid_format_no_dots(void) {
 
 /* Test 4: Token with only one dot is invalid */
 void test_validate_jwt_invalid_format_one_dot(void) {
-    jwt_validation_result_t result = validate_jwt("header.payload");
+    jwt_validation_result_t result = validate_jwt("header.payload", "Acuranzo");
     
     TEST_ASSERT_FALSE(result.valid);
     TEST_ASSERT_EQUAL(JWT_ERROR_INVALID_FORMAT, result.error);
@@ -118,7 +119,7 @@ void test_validate_jwt_invalid_format_one_dot(void) {
 
 /* Test 5: Token with too many dots is invalid */
 void test_validate_jwt_invalid_format_too_many_dots(void) {
-    jwt_validation_result_t result = validate_jwt("header.payload.signature.extra");
+    jwt_validation_result_t result = validate_jwt("header.payload.signature.extra", "Acuranzo");
     
     TEST_ASSERT_FALSE(result.valid);
     TEST_ASSERT_EQUAL(JWT_ERROR_INVALID_FORMAT, result.error);
@@ -134,7 +135,7 @@ void test_validate_jwt_valid_token_returns_success(void) {
     TEST_ASSERT_NOT_NULL(jwt);
     
     // Validate the JWT
-    jwt_validation_result_t result = validate_jwt(jwt);
+    jwt_validation_result_t result = validate_jwt(jwt, "Acuranzo");
     
     // Should be valid (though it may fail if token is revoked - depends on DB)
     // At minimum, it should not have format errors
@@ -151,7 +152,7 @@ void test_validate_jwt_valid_token_returns_success(void) {
 
 /* Test 7: Validation result structure is properly initialized */
 void test_validate_jwt_result_structure(void) {
-    jwt_validation_result_t result = validate_jwt("invalid.token.format");
+    jwt_validation_result_t result = validate_jwt("invalid.token.format", "Acuranzo");
     
     // Result should have valid flag set
     TEST_ASSERT_FALSE(result.valid);

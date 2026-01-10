@@ -369,3 +369,175 @@ char *api_create_jwt(const json_t *claims, const char *secret) {
     
     return strdup("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkR1bW15IFRva2VuIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
 }
+
+// ============================================================================
+// POST Body Buffering Implementation
+// ============================================================================
+
+/**
+ * Initialize or accumulate POST body data for an API endpoint.
+ */
+ApiBufferResult api_buffer_post_data(
+    const char *method,
+    const char *upload_data,
+    size_t *upload_data_size,
+    void **con_cls,
+    ApiPostBuffer **buffer_out
+) {
+    // First call - initialize the POST buffer
+    if (*con_cls == NULL) {
+        ApiPostBuffer *buffer = calloc(1, sizeof(ApiPostBuffer));
+        if (!buffer) {
+            log_this(SR_API, "Failed to allocate API POST buffer", LOG_LEVEL_ERROR, 0);
+            return API_BUFFER_ERROR;
+        }
+        
+        // Determine HTTP method
+        if (method && strcmp(method, "GET") == 0) {
+            buffer->http_method = 'G';
+        } else if (method && strcmp(method, "POST") == 0) {
+            buffer->http_method = 'P';
+        } else if (method && strcmp(method, "OPTIONS") == 0) {
+            buffer->http_method = 'O';
+        } else {
+            // Unsupported method
+            free(buffer);
+            log_this(SR_API, "Unsupported HTTP method: %s", LOG_LEVEL_ERROR, 1, method ? method : "NULL");
+            return API_BUFFER_METHOD_ERROR;
+        }
+        
+        // For GET requests, we don't need to buffer anything - complete immediately
+        if (buffer->http_method == 'G') {
+            buffer->data = NULL;
+            buffer->size = 0;
+            buffer->capacity = 0;
+            *con_cls = buffer;
+            *buffer_out = buffer;
+            return API_BUFFER_COMPLETE;
+        }
+        
+        // For OPTIONS requests, also complete immediately
+        if (buffer->http_method == 'O') {
+            buffer->data = NULL;
+            buffer->size = 0;
+            buffer->capacity = 0;
+            *con_cls = buffer;
+            *buffer_out = buffer;
+            return API_BUFFER_COMPLETE;
+        }
+        
+        // For POST requests, allocate buffer for data
+        buffer->data = malloc(API_INITIAL_BUFFER_CAPACITY);
+        if (!buffer->data) {
+            log_this(SR_API, "Failed to allocate API POST buffer data", LOG_LEVEL_ERROR, 0);
+            free(buffer);
+            return API_BUFFER_ERROR;
+        }
+        buffer->data[0] = '\0';
+        buffer->size = 0;
+        buffer->capacity = API_INITIAL_BUFFER_CAPACITY;
+        *con_cls = buffer;
+        return API_BUFFER_CONTINUE;
+    }
+    
+    ApiPostBuffer *buffer = (ApiPostBuffer *)*con_cls;
+    
+    // For GET/OPTIONS, we already returned COMPLETE on first call
+    // If we're called again, just return COMPLETE again
+    if (buffer->http_method == 'G' || buffer->http_method == 'O') {
+        *buffer_out = buffer;
+        return API_BUFFER_COMPLETE;
+    }
+    
+    // Subsequent calls with data - accumulate POST body
+    if (*upload_data_size > 0) {
+        // Check if we would exceed the maximum allowed size
+        if (buffer->size + *upload_data_size > API_MAX_POST_SIZE) {
+            log_this(SR_API, "POST body too large (size=%zu, incoming=%zu, max=%d)",
+                     LOG_LEVEL_ERROR, 3, buffer->size, *upload_data_size, API_MAX_POST_SIZE);
+            return API_BUFFER_ERROR;
+        }
+        
+        // Grow buffer if needed
+        size_t needed = buffer->size + *upload_data_size + 1;
+        if (needed > buffer->capacity) {
+            size_t new_capacity = buffer->capacity * 2;
+            while (new_capacity < needed) {
+                new_capacity *= 2;
+            }
+            if (new_capacity > API_MAX_POST_SIZE + 1) {
+                new_capacity = API_MAX_POST_SIZE + 1;
+            }
+            char *new_data = realloc(buffer->data, new_capacity);
+            if (!new_data) {
+                log_this(SR_API, "Failed to grow API POST buffer", LOG_LEVEL_ERROR, 0);
+                return API_BUFFER_ERROR;
+            }
+            buffer->data = new_data;
+            buffer->capacity = new_capacity;
+        }
+        
+        // Append the incoming data
+        memcpy(buffer->data + buffer->size, upload_data, *upload_data_size);
+        buffer->size += *upload_data_size;
+        buffer->data[buffer->size] = '\0';
+        
+        // Signal that we've consumed the data, continue receiving
+        *upload_data_size = 0;
+        return API_BUFFER_CONTINUE;
+    }
+    
+    // Final call - all data received
+    *buffer_out = buffer;
+    return API_BUFFER_COMPLETE;
+}
+
+/**
+ * Free an API POST buffer and its contents.
+ */
+void api_free_post_buffer(void **con_cls) {
+    if (!con_cls || !*con_cls) return;
+    
+    ApiPostBuffer *buffer = (ApiPostBuffer *)*con_cls;
+    if (buffer->data) {
+        free(buffer->data);
+    }
+    free(buffer);
+    *con_cls = NULL;
+}
+
+/**
+ * Parse JSON from an API POST buffer.
+ */
+json_t *api_parse_json_body(ApiPostBuffer *buffer) {
+    if (!buffer || !buffer->data || buffer->size == 0) {
+        return NULL;
+    }
+    
+    json_error_t error;
+    json_t *json = json_loads(buffer->data, 0, &error);
+    if (!json) {
+        log_this(SR_API, "Failed to parse JSON request: %s at line %d, column %d",
+                 LOG_LEVEL_ERROR, 3, error.text, error.line, error.column);
+    }
+    return json;
+}
+
+/**
+ * Send an error response and free the POST buffer.
+ */
+enum MHD_Result api_send_error_and_cleanup(
+    struct MHD_Connection *connection,
+    void **con_cls,
+    const char *error_message,
+    unsigned int http_status
+) {
+    // Free the buffer first
+    api_free_post_buffer(con_cls);
+    
+    // Create and send error response
+    json_t *response = json_object();
+    json_object_set_new(response, "success", json_false());
+    json_object_set_new(response, "error", json_string(error_message));
+    return api_send_json_response(connection, response, http_status);
+}

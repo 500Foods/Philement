@@ -159,4 +159,103 @@ enum MHD_Result query_param_iterator(void *cls, enum MHD_ValueKind kind, const c
  */
 enum MHD_Result post_data_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
 
+// ============================================================================
+// POST Body Buffering Utilities
+// ============================================================================
+// These functions handle buffering of POST body data across multiple MHD
+// callback invocations. MHD delivers POST data in chunks, so endpoints must
+// accumulate the data before processing.
+
+/**
+ * Maximum POST body size for API requests (64KB default, sufficient for JSON)
+ */
+#define API_MAX_POST_SIZE (64 * 1024)
+
+/**
+ * Initial buffer capacity for POST body accumulation
+ */
+#define API_INITIAL_BUFFER_CAPACITY 1024
+
+/**
+ * Structure to buffer POST body data across MHD callback invocations.
+ * The http_method field determines how the endpoint should be processed.
+ */
+typedef struct {
+    char *data;          // Buffer for accumulated POST data
+    size_t size;         // Current size of accumulated data
+    size_t capacity;     // Allocated capacity of buffer
+    char http_method;    // 'G' for GET, 'P' for POST, 'O' for OPTIONS
+} ApiPostBuffer;
+
+/**
+ * Enumeration of POST buffering states returned by api_buffer_post_data
+ */
+typedef enum {
+    API_BUFFER_CONTINUE,     // More data expected, caller should return MHD_YES
+    API_BUFFER_COMPLETE,     // All data received, caller should process request
+    API_BUFFER_ERROR,        // Error occurred, response already sent or preparation failed
+    API_BUFFER_METHOD_ERROR  // Unsupported HTTP method
+} ApiBufferResult;
+
+/**
+ * Initialize or accumulate POST body data for an API endpoint.
+ *
+ * This function handles the MHD callback lifecycle:
+ * 1. First call (*con_cls == NULL): Allocates buffer, returns API_BUFFER_CONTINUE
+ * 2. Data calls (*upload_data_size > 0): Accumulates data, returns API_BUFFER_CONTINUE
+ * 3. Final call (*upload_data_size == 0): Returns API_BUFFER_COMPLETE
+ *
+ * For GET requests, immediately returns API_BUFFER_COMPLETE with empty buffer.
+ *
+ * @param method The HTTP method string ("GET", "POST", etc.)
+ * @param upload_data Pointer to current chunk of upload data
+ * @param upload_data_size Pointer to size of current data chunk
+ * @param con_cls Pointer to connection context (stores buffer between calls)
+ * @param buffer_out On API_BUFFER_COMPLETE, set to point to the ApiPostBuffer
+ * @return ApiBufferResult indicating how caller should proceed
+ */
+ApiBufferResult api_buffer_post_data(
+    const char *method,
+    const char *upload_data,
+    size_t *upload_data_size,
+    void **con_cls,
+    ApiPostBuffer **buffer_out
+);
+
+/**
+ * Free an API POST buffer and its contents.
+ * Sets *con_cls to NULL after freeing.
+ * Safe to call with NULL or already-freed buffer.
+ *
+ * @param con_cls Pointer to connection context containing the buffer
+ */
+void api_free_post_buffer(void **con_cls);
+
+/**
+ * Parse JSON from an API POST buffer.
+ * Returns NULL if buffer is empty or contains invalid JSON.
+ * Error message is logged automatically.
+ *
+ * @param buffer The ApiPostBuffer containing JSON data
+ * @return Parsed json_t object (caller must decref), or NULL on error
+ */
+json_t *api_parse_json_body(ApiPostBuffer *buffer);
+
+/**
+ * Send an error response and free the POST buffer.
+ * Convenience function for error handling in endpoints.
+ *
+ * @param connection The MHD connection
+ * @param con_cls Pointer to connection context (buffer will be freed)
+ * @param error_message Error message for JSON response
+ * @param http_status HTTP status code
+ * @return MHD_Result from api_send_json_response
+ */
+enum MHD_Result api_send_error_and_cleanup(
+    struct MHD_Connection *connection,
+    void **con_cls,
+    const char *error_message,
+    unsigned int http_status
+);
+
 #endif /* HYDROGEN_API_UTILS_H */

@@ -178,6 +178,6 @@ in the migrations themselves so that they get populated in the database directly
 | [1141](/elements/002-helium/acuranzo/migrations/acuranzo_1141.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | QueryRef #050 - Check Username/Email Availability |
 | [1142](/elements/002-helium/acuranzo/migrations/acuranzo_1142.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | QueryRef #051 - Create New Account |
 | [1143](/elements/002-helium/acuranzo/migrations/acuranzo_1143.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | QueryRef #052 - Hash and Store Password |
-| [1144](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | Test Data - Auth Test Accounts |
+| [1144](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua) | queries | 1.0.0 | 2026-01-08 | 6 | ✗ | Test Data - Auth Test Accounts |
 | [1145](/elements/002-helium/acuranzo/migrations/acuranzo_1145.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | Test Data - Auth Test API Keys |
-| **146** | | | | **759** | **146** | |
+| **146** | | | | **761** | **146** | |

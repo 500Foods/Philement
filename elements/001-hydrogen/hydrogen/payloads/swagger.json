@@ -24,6 +24,14 @@
   ],
   "tags": [
     {
+      "name": "Auth Service",
+      "description": "Provides login, logout, renew and related JWT operations."
+    },
+    {
+      "name": "Conduit Service",
+      "description": "Provides database query execution by reference with support for multiple database engines."
+    },
+    {
       "name": "OIDC Service",
       "description": "Provides OpenID Connect protocol endpoints and authentication services"
     },
@@ -33,13 +41,575 @@
     }
   ],
   "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "User login with username/password",
+        "description": "Authenticates users via username/email and password, validates API key, performs security checks (IP whitelist/blacklist, rate limiting), and returns a JWT token upon successful authentication.",
+        "operationId": "authLoginPost",
+        "tags": [
+          "Auth Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "token",
+                    "expires_at",
+                    "user_id"
+                  ],
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "description": "JWT token with Bearer prefix"
+                    },
+                    "expires_at": {
+                      "type": "integer",
+                      "description": "Token expiration timestamp (Unix epoch)"
+                    },
+                    "user_id": {
+                      "type": "integer",
+                      "description": "Authenticated user ID"
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "User role permissions"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid request parameters"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid credentials"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Too many failed attempts"
+                    },
+                    "retry_after": {
+                      "type": "integer",
+                      "description": "Seconds until retry allowed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "login_id",
+                  "password",
+                  "api_key",
+                  "tz"
+                ],
+                "properties": {
+                  "login_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255,
+                    "description": "Username or email address for authentication"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "description": "User password"
+                  },
+                  "api_key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255,
+                    "description": "API key for application identification"
+                  },
+                  "tz": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50,
+                    "description": "Client timezone (e.g., 'America/Vancouver')"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Logout and invalidate JWT token",
+        "description": "Invalidates a JWT token by removing it from storage",
+        "operationId": "postAuthLogout",
+        "tags": [
+          "Auth Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Logout successful"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Missing or invalid token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "JWT token to invalidate",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "User registration endpoint",
+        "description": "Registers a new user account with comprehensive validation",
+        "operationId": "postAuthRegister",
+        "tags": [
+          "Auth Service"
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Account created successfully"
+                    },
+                    "account_id": {
+                      "type": "integer",
+                      "example": 123
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "john_doe"
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "john@example.com"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid input parameters"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Username or email already exists"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password",
+                  "email",
+                  "api_key"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 50,
+                    "description": "Username (3-50 chars, alphanumeric with underscore/hyphen)",
+                    "example": "john_doe"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "description": "Password (8-128 chars)",
+                    "example": "SecurePass123!"
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "format": "email",
+                    "description": "Email address",
+                    "example": "john@example.com"
+                  },
+                  "full_name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "Full name (optional)",
+                    "example": "John Doe"
+                  },
+                  "api_key": {
+                    "type": "string",
+                    "description": "API key for license validation",
+                    "example": "abc123"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/renew": {
+      "post": {
+        "summary": "Renew JWT token",
+        "description": "Renews a valid JWT token with updated expiration timestamp",
+        "operationId": "postAuthRenew",
+        "tags": [
+          "Auth Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "token": {
+                      "type": "string",
+                      "description": "New JWT token",
+                      "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    },
+                    "expires_at": {
+                      "type": "integer",
+                      "description": "Unix timestamp of expiration",
+                      "example": 1704830000
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Missing or invalid token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or expired token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "JWT token to renew",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/conduit/query": {
       "get": {
         "summary": "Execute database query by reference",
         "description": "Executes a pre-defined query from the Query Table Cache using a query reference ID. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) that are automatically converted to database-specific parameter formats. Returns query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
         "operationId": "executeQueryByReferenceGet",
         "tags": [
-          ""
+          "Conduit Service"
         ],
         "responses": {
           "200": {
@@ -348,7 +918,7 @@
         "description": "Executes a pre-defined query from the Query Table Cache using a query reference ID. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) that are automatically converted to database-specific parameter formats. Returns query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
         "operationId": "executeQueryByReferencePost",
         "tags": [
-          ""
+          "Conduit Service"
         ],
         "responses": {
           "200": {
