@@ -177,14 +177,79 @@ This double-locking system means that even if someone gets a piece of the puzzle
 - **RSA Details**: Uses 2048-bit keys with PKCS1 padding, a trusted way to protect smaller pieces of data like the AES key.
 - **Compression**: Data is squeezed with Brotli at maximum quality to make it smaller before locking.
 
-## What’s Next for Secrets in Hydrogen?
+## Demo and Test Authentication Secrets
 
-As Hydrogen grows, we’ll add more secrets for different features, like authentication for a terminal system or secure logins with OpenID Connect. They’ll all follow the same idea of using environment variables to keep things safe.
+For testing the authentication system (Test 40), Hydrogen uses environment variables to store demo credentials. These credentials are used both in database migrations (to create test accounts) and in test scripts (to authenticate).
+
+### Demo Credential Environment Variables
+
+| Variable | Description | Example |
+| ---------- | ------------- | --------- |
+| `HYDROGEN_DEMO_USER_NAME` | Demo user username | `demouser` |
+| `HYDROGEN_DEMO_USER_PASS` | Demo user password | `DemoPass123!` |
+| `HYDROGEN_DEMO_ADMIN_NAME` | Demo admin username | `demoadmin` |
+| `HYDROGEN_DEMO_ADMIN_PASS` | Demo admin password | `AdminPass123!` |
+| `HYDROGEN_DEMO_EMAIL` | Demo email address | `demo@example.com` |
+| `HYDROGEN_DEMO_API_KEY` | Demo API key for authorization | `demo-api-key-valid` |
+| `HYDROGEN_DEMO_JWT_KEY` | Secret key for JWT signing | (use `openssl rand -hex 32`) |
+
+### Setting Up Demo Credentials
+
+1. **Generate a secure JWT key:**
+
+   ```bash
+   export HYDROGEN_DEMO_JWT_KEY=$(openssl rand -hex 32)
+   ```
+
+2. **Set the demo credentials:**
+
+   ```bash
+   export HYDROGEN_DEMO_USER_NAME="demouser"
+   export HYDROGEN_DEMO_USER_PASS="DemoPass123!"
+   export HYDROGEN_DEMO_ADMIN_NAME="demoadmin"
+   export HYDROGEN_DEMO_ADMIN_PASS="AdminPass123!"
+   export HYDROGEN_DEMO_EMAIL="demo@example.com"
+   export HYDROGEN_DEMO_API_KEY="demo-api-key-valid"
+   ```
+
+3. **Make permanent (optional):**
+
+   Add these to your `~/.bashrc` or `~/.zshrc` file.
+
+### Password Hashing
+
+Hydrogen uses SHA256 with account_id as salt for password hashing:
+
+```SQL
+hash = BASE64URL(SHA256(account_id + password))
+```
+
+**Important:** Since the account_id is used as the salt and is auto-generated in the database, migrations cannot pre-compute password hashes. Instead:
+
+1. Migrations create accounts with a placeholder hash
+2. A post-migration step updates the password hash using the actual account_id
+3. Alternatively, use a fixed account_id for demo accounts in migrations
+
+### JWT Configuration
+
+The JWT secret key is configured in the `API.JWTSecret` setting of your Hydrogen config file:
+
+```json
+{
+    "API": {
+        "JWTSecret": "${env.HYDROGEN_DEMO_JWT_KEY}"
+    }
+}
+```
+
+## What's Next for Secrets in Hydrogen?
+
+As Hydrogen grows, we'll add more secrets for different features, like authentication for a terminal system or secure logins with OpenID Connect. They'll all follow the same idea of using environment variables to keep things safe.
 
 ## Need More Help or Info?
 
 - Check out [README.md](/docs/H/README.md) for general info on Hydrogen.
 - Look at [payloads/README.md](/elements/001-hydrogen/hydrogen/payloads/README.md) for more on the payload system.
-- Visit the [OpenSSL Documentation](https://www.openssl.org/docs/) if you’re curious about the tools we used.
+- Visit the [OpenSSL Documentation](https://www.openssl.org/docs/) if you're curious about the tools we used.
 
-If you have questions or run into trouble, don’t hesitate to ask someone on the team or look for help online. We’re all in this together!
+If you have questions or run into trouble, don't hesitate to ask someone on the team or look for help online. We're all in this together!

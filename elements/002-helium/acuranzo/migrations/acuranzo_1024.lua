@@ -1,6 +1,8 @@
 -- Migration: acuranzo_1024.lua
 -- Creates administrator account
 
+-- NOTE: Also see acuranzo_1144.lua
+
 -- luacheck: no max line length
 -- luacheck: no unused args
 
@@ -46,14 +48,14 @@ table.insert(queries,{sql=[[
                 ${COMMON_FIELDS}
             )
             VALUES (
-                0,                              -- Default Administrator account_id value
+                9000,                           -- Default Administrator account_id value
                 1,                              -- Enabled
                 0,                              -- UTC by default
                 '${HYDROGEN_USERNAME}',         -- Get this from an environment variable
                 '',                             -- Not needed here
                 '',                             -- Not needed here
                 '${HYDROGEN_USERNAME}',         -- Same as above
-                '${HYDROGEN_PASSHASH}',         -- This is the SHA256+salted password value
+                ${SHA256_HASH_START}'9000'${SHA256_HASH_MID}'${HYDROGEN_PASSWORD}'${SHA256_HASH_END},
                 'Administrative Account',       -- Just something to remind us
                 '{}',                           -- No JSON needed at this stage
                 ${COMMON_VALUES}
@@ -101,7 +103,7 @@ table.insert(queries,{sql=[[
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             DELETE FROM ${SCHEMA}${TABLE}
-            WHERE account_id = 0;
+            WHERE account_id = 9000;
 
             ${SUBQUERY_DELIMITER}
 

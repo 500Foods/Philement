@@ -56,6 +56,13 @@ return {
     BASE64_START = "CONVERT_FROM(DECODE(",
     BASE64_END = ", 'base64'), 'UTF8')",
 
+    -- Password hash: ENCODE(SHA256(CONCAT(account_id, password)::bytea), 'base64')
+    -- Returns base64-encoded SHA256 hash
+    -- Usage: ${SHA256_HASH_START}'0'${SHA256_HASH_MID}'${HYDROGEN_DEMO_ADMIN_PASS}'${SHA256_HASH_END}
+    SHA256_HASH_START = "ENCODE(SHA256(CONCAT(",
+    SHA256_HASH_MID = ", ",
+    SHA256_HASH_END = ")::bytea), 'base64')",
+
     COMPRESS_START = "${SCHEMA}brotli_decompress(DECODE(",
     COMPRESS_END = ", 'base64'))",
 

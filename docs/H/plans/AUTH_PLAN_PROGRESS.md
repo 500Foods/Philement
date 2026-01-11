@@ -3,10 +3,45 @@
 ## Current Status
 
 **Overall Progress**: 100%
-**Last Updated**: 2026-01-10 06:51 PST
-**Current Phase**: Phase 6 - Testing - Test 40 updated to use environment variables for demo credentials (HYDROGEN_DEMO_USER_NAME, etc.), now ready for execution once migrations confirmed
+**Last Updated**: 2026-01-10 15:55 PST
+**Current Phase**: Phase 6 - Testing - Migrations 1144 and 1145 updated with SHA256 password hashing and environment variables, ready for Test 40 execution
 
 ## Latest Updates (2026-01-10)
+
+### Migration 1144 & 1145 SHA256 Password Hashing - COMPLETE ✅
+
+Updated migrations to use proper SHA256 password hashing with cross-database macros:
+
+**Migration 1144 Changes (v1.1.0)**:
+
+1. ✅ Changed from `base_id + N` to fixed account IDs (0=admin, 1=user, 2=disabled, 3=unauthorized)
+2. ✅ Implemented SHA256 password hashing using cross-database macros:
+   - `${SHA256_HASH_START}'account_id'${SHA256_HASH_MID}'password'${SHA256_HASH_END}`
+   - PostgreSQL: `ENCODE(SHA256(CONCAT(...))::bytea, 'base64')`
+   - MySQL: `TO_BASE64(SHA2(CONCAT(...), 256))`
+   - SQLite: `CRYPTO_ENCODE(CRYPTO_HASH('sha256', ... || ...), 'base64')`
+   - DB2: `BASE64ENCODE(HASH('SHA256', CAST(CONCAT(...) AS VARCHAR(256) FOR BIT DATA)))`
+3. ✅ Fixed Admin account to use `HYDROGEN_DEMO_ADMIN_NAME`/`HYDROGEN_DEMO_ADMIN_PASS` (was incorrectly using USER vars)
+4. ✅ Fixed email typo `HYDROGEN_DEMO_EMAL` → `HYDROGEN_DEMO_EMAIL`
+5. ✅ Simplified contact inserts to use fixed account_ids directly (removed subselects)
+6. ✅ Reverse migration now uses fixed account_ids for cleanup
+
+**Migration 1145 Changes (v1.1.0)**:
+
+1. ✅ Fixed invalid date `'2025-121-311'` → `'2020-01-01'` for expired API key
+2. ✅ Extended valid API key expiry to `'2030-12-31'` for longer test validity
+3. ✅ Fixed reverse migration to match actual inserted keys (was `test-api-key-%`, now explicit list)
+
+**Environment Variables Used**:
+
+- `HYDROGEN_DEMO_ADMIN_NAME` - Admin username (account_id=0)
+- `HYDROGEN_DEMO_ADMIN_PASS` - Admin password
+- `HYDROGEN_DEMO_USER_NAME` - User username (account_id=1)
+- `HYDROGEN_DEMO_USER_PASS` - User password
+- `HYDROGEN_DEMO_EMAIL` - Shared demo email
+- `HYDROGEN_DEMO_API_KEY` - Demo API key for authentication
+
+**Ready for Test 40**: With migrations now properly computing SHA256 hashes at database level and using environment variables, Test 40 should authenticate successfully.
 
 ### JWT Authentication Middleware - COMPLETE ✅
 

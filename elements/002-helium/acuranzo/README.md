@@ -34,7 +34,7 @@ in the migrations themselves so that they get populated in the database directly
 
 | M# | Table | Version | Updated | Stmts | Diagram | Description |
 | ---- | ------- | --------- | --------- | ------- | --------- | ------------- |
-| [1000](/elements/002-helium/acuranzo/migrations/acuranzo_1000.lua) | queries | 4.0.0 | 2025-11-27 | 13 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
+| [1000](/elements/002-helium/acuranzo/migrations/acuranzo_1000.lua) | queries | 4.0.0 | 2025-11-27 | 17 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
 | [1001](/elements/002-helium/acuranzo/migrations/acuranzo_1001.lua) | lookups | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the lookups table |
 | [1002](/elements/002-helium/acuranzo/migrations/acuranzo_1002.lua) | account_access | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_access table |
 | [1003](/elements/002-helium/acuranzo/migrations/acuranzo_1003.lua) | account_contacts | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_contacts table |
@@ -178,6 +178,6 @@ in the migrations themselves so that they get populated in the database directly
 | [1141](/elements/002-helium/acuranzo/migrations/acuranzo_1141.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | QueryRef #050 - Check Username/E-Mail Availability |
 | [1142](/elements/002-helium/acuranzo/migrations/acuranzo_1142.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | QueryRef #051 - Create New Account |
 | [1143](/elements/002-helium/acuranzo/migrations/acuranzo_1143.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | QueryRef #052 - Hash and Store Password |
-| [1144](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua) | queries | 1.0.0 | 2026-01-08 | 6 | ✗ | Test Data - Auth Test Accounts |
-| [1145](/elements/002-helium/acuranzo/migrations/acuranzo_1145.lua) | queries | 1.0.0 | 2026-01-08 | 4 | ✗ | Test Data - Auth Test API Keys |
-| **146** | | | | **761** | **146** | |
+| [1144](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua) | queries | 1.1.0 | 2026-01-10 | 6 | ✗ | Create Auth Test Accounts |
+| [1145](/elements/002-helium/acuranzo/migrations/acuranzo_1145.lua) | queries | 1.4.0 | 2026-01-11 | 7 | ✗ | Test Data - Auth Test API Keys |
+| **146** | | | | **768** | **146** | |
