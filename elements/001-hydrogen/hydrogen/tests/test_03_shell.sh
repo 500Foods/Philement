@@ -194,14 +194,22 @@ declare -a ENV_VARS=(
     # Key project parameters
     "HYDROGEN_SCHEMA|10-69|schema validation|The location of the JSON schma file (2020-12) used for validating Hydrogen configuration files."
     "HYDROGEN_DEV_EMAIL|02,12|Developer email|The email address of the developer responsible for this Hydrogen instance. Used for notifications and support contact."
-                            
+
+    # Demo config
+    "HYDROGEN_DEMO_API_KEY|40-49|Application Key|Used to authenticate client apps to the Hydrogen API."    
+    "HYDROGEN_DEMO_JWT_KEY|40-49|JWT Key|Used to sign JWT tokens for Hydrogen API authentication."
+    "HYDROGEN_DEMO_USER_NAME|40-49|Username|Used to test login and authentication processes."    
+    "HYDROGEN_DEMO_USER_PASS|40-49|Password|Used to test login and authentication processes." 
+    "HYDROGEN_DEMO_ADMIN_NAME|40-49|Username|Used to test login and authentication processes."    
+    "HYDROGEN_DEMO_ADMIN_PASS|40-49|Password|Used to test login and authentication processes." 
+    "HYDROGEN_DEMO_EMAIL|40-49|Password|Used to test login and authentication processes." 
+        
     # Security keys
     "HYDROGEN_INSTALLER_LOCK|02|Payload encryption key|RSA private key used for encrypting payload data. Must be base64 encoded and valid RSA format."
     "HYDROGEN_INSTALLER_KEY|02|Payload encryption key|RSA private key used for encrypting payload data. Must be base64 encoded and valid RSA format."
     "PAYLOAD_LOCK|02,12|Payload encryption key|RSA private key used for encrypting payload data. Must be base64 encoded and valid RSA format."
     "PAYLOAD_KEY|02,12|Payload encryption key|RSA private key used for encrypting payload data. Must be base64 encoded and valid RSA format."
     "WEBSOCKET_KEY|02,12|WebSocket authentication key|Key used for WebSocket connections and authentication."
-    "JWT_SECRET|12|JWT signing secret|Secret key used for signing JSON Web Tokens in API authentication."    
                    
     # MySQL demo
     "CANVAS_DB_HOST|30-35|Canvas database host|Hostname or IP address of the Canvas database server."

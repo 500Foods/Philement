@@ -67,7 +67,7 @@ table.insert(queries,{sql=[[
                         1,
                         1,
                         :SUMMARY,
-                        ${JIS} {} ${JIE}
+                        '{}'
                     )
                     -- RETURNING account_id
                 ]==]                                                                AS code,
