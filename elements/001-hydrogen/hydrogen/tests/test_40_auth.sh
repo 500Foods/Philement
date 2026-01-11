@@ -106,9 +106,9 @@ test_auth_login() {
     login_data=$(cat <<EOF
 {
     "database": "Acuranzo",
-    "login_id": "${DEMO_USER_NAME}",
-    "password": "${DEMO_USER_PASS}",
-    "api_key": "${DEMO_API_KEY}",
+    "login_id": "${HYDROGEN_DEMO_USER_NAME}",
+    "password": "${HYDROGEN_DEMO_USER_PASS}",
+    "api_key": "${HYDROGEN_DEMO_API_KEY}",
     "tz": "America/Vancouver"
 }
 EOF
@@ -143,9 +143,9 @@ test_auth_login_invalid() {
     login_data=$(cat <<EOF
 {
     "database": "Acuranzo",
-    "login_id": "${DEMO_USER_NAME}",
+    "login_id": "${HYDROGEN_DEMO_USER_NAME}",
     "password": "WrongPassword123!",
-    "api_key": "${DEMO_API_KEY}",
+    "api_key": "${HYDROGEN_DEMO_API_KEY}",
     "tz": "America/Vancouver"
 }
 EOF
@@ -226,7 +226,7 @@ test_auth_register() {
     "password": "NewPassword123!",
     "email": "${unique_email}",
     "full_name": "Test User ${timestamp}",
-    "api_key": "${DEMO_API_KEY}"
+    "api_key": "${HYDROGEN_DEMO_API_KEY}"
 }
 EOF
 )
@@ -414,15 +414,15 @@ fi
 # Validate required environment variables for demo credentials
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Environment Variables"
 env_vars_valid=true
-if [[ -z "${DEMO_USER_NAME}" ]]; then
+if [[ -z "${HYDROGEN_DEMO_USER_NAME}" ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: HYDROGEN_DEMO_USER_NAME is not set"
     env_vars_valid=false
 fi
-if [[ -z "${DEMO_USER_PASS}" ]]; then
+if [[ -z "${HYDROGEN_DEMO_USER_PASS}" ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: HYDROGEN_DEMO_USER_PASS is not set"
     env_vars_valid=false
 fi
-if [[ -z "${DEMO_API_KEY}" ]]; then
+if [[ -z "${HYDROGEN_DEMO_API_KEY}" ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: HYDROGEN_DEMO_API_KEY is not set"
     env_vars_valid=false
 fi

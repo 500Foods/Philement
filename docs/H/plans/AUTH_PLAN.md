@@ -157,7 +157,6 @@ When implementing auth functions, check these locations in order:
 ## Environment Variables Required
 
 ```bash
-export HYDROGEN_JWT_SECRET="your-256-bit-secret-here"
 export HYDROGEN_AUTH_ENABLED="true"
 export HYDROGEN_AUTH_MAX_FAILED_ATTEMPTS="5"
 export HYDROGEN_AUTH_RATE_LIMIT_WINDOW="15"

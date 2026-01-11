@@ -166,6 +166,116 @@ if engine == 'db2' then table.insert(queries,{sql=[[
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: DB2 has no built-in Base64 encoding, so here we're adding the UDF pointing at the
+--       UDF we've got in extras/base64encode_udf_db2 in case it is applied to a different schema
+if engine == 'db2' then table.insert(queries,{sql=[[
+
+    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64_ENCODE_CHUNK(input_data VARCHAR(32672))
+    RETURNS VARCHAR(32672)
+    LANGUAGE C
+    PARAMETER STYLE DB2SQL
+    NO SQL
+    DETERMINISTIC
+    NOT FENCED
+    THREADSAFE
+    RETURNS NULL ON NULL INPUT
+    EXTERNAL NAME 'base64_encode_udf.so!BASE64_ENCODE_CHUNK'
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: DB2 wrapper for BASE64ENCODE - simple for small inputs, chunked for large
+if engine == 'db2' then table.insert(queries,{sql=[[
+
+    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64ENCODE(input_data CLOB(1M))
+    RETURNS CLOB(1M)
+    LANGUAGE SQL
+    DETERMINISTIC
+    READS SQL DATA
+
+    BEGIN ATOMIC
+        DECLARE result  CLOB(1M);
+        DECLARE pos     INTEGER   DEFAULT 1;
+        DECLARE len     INTEGER;
+        DECLARE step    INTEGER   DEFAULT 24000;
+        DECLARE piece   VARCHAR(24000);
+
+        SET len = LENGTH(input_data);
+        SET result = CAST('' AS CLOB(1K));
+
+        IF len <= 24000 THEN
+            RETURN ${SCHEMA}BASE64_ENCODE_CHUNK(CAST(input_data AS VARCHAR(24000)));
+        END IF;
+
+        chunk_loop:
+        WHILE pos <= len DO
+            SET piece = CAST(SUBSTR(input_data, pos, step) AS VARCHAR(24000));
+            IF piece IS NULL OR LENGTH(piece) = 0 THEN
+            LEAVE chunk_loop;
+            END IF;
+
+            SET result = result || CAST(${SCHEMA}BASE64_ENCODE_CHUNK(piece) AS CLOB(32672));
+            SET pos = pos + step;
+        END WHILE chunk_loop;
+
+        RETURN result;
+    END
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: DB2 binary version of BASE64 encode for encoding BLOB data
+if engine == 'db2' then table.insert(queries,{sql=[[
+
+    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64_ENCODE_CHUNK_BINARY(input_data BLOB(32672))
+    RETURNS VARCHAR(32672)
+    LANGUAGE C
+    PARAMETER STYLE DB2SQL
+    NO SQL
+    DETERMINISTIC
+    NOT FENCED
+    THREADSAFE
+    RETURNS NULL ON NULL INPUT
+    EXTERNAL NAME 'base64_encode_udf.so!BASE64_ENCODE_CHUNK_BINARY'
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: DB2 wrapper for BASE64ENCODEBINARY - simple for small inputs, chunked for large
+if engine == 'db2' then table.insert(queries,{sql=[[
+
+    CREATE OR REPLACE FUNCTION ${SCHEMA}BASE64ENCODEBINARY(input_data BLOB(1M))
+    RETURNS CLOB(1M)
+    LANGUAGE SQL
+    DETERMINISTIC
+    READS SQL DATA
+    BEGIN ATOMIC
+    DECLARE result  CLOB(1M);
+    DECLARE pos     INTEGER   DEFAULT 1;
+    DECLARE len     INTEGER;
+    DECLARE step    INTEGER   DEFAULT 24000;
+    DECLARE piece   BLOB(24000);
+
+    SET len = LENGTH(input_data);
+    SET result = CAST('' AS CLOB(1K));
+
+    IF len <= 24000 THEN
+        RETURN ${SCHEMA}BASE64_ENCODE_CHUNK_BINARY(CAST(input_data AS BLOB(24000)));
+    END IF;
+
+    chunk_loop:
+    WHILE pos <= len DO
+        SET piece = CAST(SUBSTR(input_data, pos, step) AS BLOB(24000));
+        IF piece IS NULL OR LENGTH(piece) = 0 THEN
+        LEAVE chunk_loop;
+        END IF;
+
+        SET result = result || CAST(${SCHEMA}BASE64_ENCODE_CHUNK_BINARY(piece) AS CLOB(32672));
+        SET pos = pos + step;
+    END WHILE chunk_loop;
+
+    RETURN result;
+    END
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- NOTE: MySQL UDF for Brotli decompression
 --       Requires: libbrotli-dev and brotli_decompress.so in plugin directory
 --       Installation handled via extras/brotli_udf_mysql/

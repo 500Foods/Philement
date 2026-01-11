@@ -45,10 +45,11 @@ This is a collection of user-defined-functions (UDFs), all written in C and used
 
 Brotli is a popular compression algorithm that is particularly good at compressing text files like the JSON and CSS files that are found throughout the migration system.
 
-MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 decoding but it is less standard on DB2 (LUW) so we have one for that as well.
+MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 encoding and decoding but it is less standard on DB2 (LUW) so we have UDFs for both encoding and decoding there.
 
 - [brotli_udf_db2](/elements/001-hydrogen/hydrogen/extras/brotli_udf_db2/README.md) Brotli Decompress UDF for IBM DB2 (LUW)
 - [base64decode_udf_db2](/elements/001-hydrogen/hydrogen/extras/base64decode_udf_db2/README.md) Base64 Decode UDF for IBM DB2 (LUW)
+- [base64encode_udf_db2](/elements/001-hydrogen/hydrogen/extras/base64encode_udf_db2/README.md) Base64 Encode UDF for IBM DB2 (LUW)
 - [brotli_udf_mysql](/elements/001-hydrogen/hydrogen/extras/brotli_udf_mysql/README.md) Brotli Decompress UDF for MySQL/MariaDB
 - [brotli_udf_postgresql](/elements/001-hydrogen/hydrogen/extras/brotli_udf_postgresql/README.md) Brotli Decompress UDF for PostgreSQL
 - [brotli_udf_sqlite](/elements/001-hydrogen/hydrogen/extras/brotli_udf_sqlite/README.md) Brotli Decompress UDF for SQLite
@@ -56,11 +57,11 @@ MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 d
 ### Available UDF Functions
 
 | Database Engine | Base64 Functions | Brotli Functions | Test/Check Functions |
-|----------------|------------------|------------------|---------------------|
-| **DB2** | `BASE64_DECODE_CHUNK`<br>`BASE64DECODE`<br>`BASE64_DECODE_CHUNK_BINARY`<br>`BASE64DECODEBINARY` | `BROTLI_DECOMPRESS_CHUNK`<br>`BROTLI_DECOMPRESS` | `HYDROGEN_CHECK`<br>`ScalarUDF`<br>`HELIUM_BROTLI_CHECK` |
-| **MySQL** | `FROM_BASE64`¹ | `BROTLI_DECOMPRESS` | - |
-| **PostgreSQL** | `DECODE(..., 'base64')`<br>`CONVERT_FROM(..., 'UTF8')`² | `brotli_decompress` | - |
-| **SQLite** | `CRYPTO_DECODE`³ | `BROTLI_DECOMPRESS` | - |
+| ---------------- | ------------------ | ------------------ | --------------------- |
+| **DB2** | `BASE64_DECODE_CHUNK`<br>`BASE64DECODE`<br>`BASE64_DECODE_CHUNK_BINARY`<br>`BASE64DECODEBINARY`<br>`BASE64_ENCODE_CHUNK`<br>`BASE64ENCODE`<br>`BASE64_ENCODE_CHUNK_BINARY`<br>`BASE64ENCODEBINARY` | `BROTLI_DECOMPRESS_CHUNK`<br>`BROTLI_DECOMPRESS` | `HYDROGEN_CHECK`<br>`ScalarUDF`<br>`HELIUM_BROTLI_CHECK` |
+| **MySQL** | `FROM_BASE64`¹<br>`TO_BASE64`¹ | `BROTLI_DECOMPRESS` | - |
+| **PostgreSQL** | `DECODE(..., 'base64')`<br>`ENCODE(..., 'base64')`<br>`CONVERT_FROM(..., 'UTF8')`² | `brotli_decompress` | - |
+| **SQLite** | `CRYPTO_DECODE`³<br>`CRYPTO_ENCODE`³ | `BROTLI_DECOMPRESS` | - |
 
 ¹ *Native MySQL function*  
 ² *Native PostgreSQL functions*  

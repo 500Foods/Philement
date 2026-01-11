@@ -1,10 +1,13 @@
 -- Migration: acuranzo_1144.lua
--- Test Data - Auth Test Accounts
+-- Create Auth Test Accounts
+
+-- NOTE: Also see acuranzo_10244.lua
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.1.0 - 2026-01-10 - Use fixed account IDs (0-3) and SHA256_HASH_* macros for password hashing
 -- 1.0.0 - 2026-01-08 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -12,8 +15,6 @@ local queries = {}
 
 cfg.TABLE = "queries"
 cfg.MIGRATION = "1144"
-cfg.QUERY_REF = "1144"
-cfg.QUERY_NAME = "Test Data - Auth Test Accounts"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
     INSERT INTO ${SCHEMA}${QUERIES} (
@@ -32,6 +33,8 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
+            -- Insert demo accounts with fixed account IDs (0-3) for predictable password hashing
+            -- Password hash = BASE64(SHA256(account_id || password)) computed in migration
             INSERT INTO ${SCHEMA}accounts (
                 account_id,
                 name,
@@ -44,130 +47,120 @@ table.insert(queries,{sql=[[
                 collection,
                 ${COMMON_FIELDS}
             )
-            WITH next_account_id AS (
-                SELECT COALESCE(MAX(account_id), 0) AS base_id
-                FROM ${SCHEMA}accounts
-            )
-            SELECT
-                base_id + 1,
-                '${HYDROGEN_DEMO_USER_NAME}',
-                '${HYDROGEN_DEMO_USER_NAME}',
-                'User',
-                '${HYDROGEN_DEMO_USER_PASS}',
-                1,
-                1,
-                'Demo User Account',
-                ${JIS} {} ${JIE},
-                ${COMMON_VALUES}
-            FROM
-                next_account_id
-            UNION ALL
-            SELECT
-                base_id + 2,
-                '${HYDROGEN_DEMO_USER_NAME}',
-                '${HYDROGEN_DEMO_USER_NAME}',
-                '${HYDROGEN_DEMO_USER_NAME}',
-                '${HYDROGEN_DEMO_USER_PASS}',
+            VALUES
+            (
+                0,
+                '${HYDROGEN_DEMO_ADMIN_NAME}',
+                'Demo',
+                'Admin',
+                ${SHA256_HASH_START}'0'${SHA256_HASH_MID}'${HYDROGEN_DEMO_ADMIN_PASS}'${SHA256_HASH_END},
                 1,
                 1,
                 'Demo Admin Account',
-                ${JIS} {} ${JIE},
+                '{}',
                 ${COMMON_VALUES}
-            FROM next_account_id
-            UNION ALL
-            SELECT
-                base_id + 3,
+            ),
+            (
+                1,
+                '${HYDROGEN_DEMO_USER_NAME}',
+                'Demo',
+                'User',
+                ${SHA256_HASH_START}'1'${SHA256_HASH_MID}'${HYDROGEN_DEMO_USER_PASS}'${SHA256_HASH_END},
+                1,
+                1,
+                'Demo User Account',
+                '{}',
+                ${COMMON_VALUES}
+            ),
+            (
+                2,
                 'disableduser',
                 'Disabled',
                 'User',
-                'hashed_disabled_password',
+                ${SHA256_HASH_START}'2'${SHA256_HASH_MID}'disabled_pass'${SHA256_HASH_END},
                 0,
                 1,
                 'Demo Disabled Account',
-                ${JIS} {} ${JIE},
+                '{}',
                 ${COMMON_VALUES}
-            FROM next_account_id
-            UNION ALL
-            SELECT
-                base_id + 4,
+            ),
+            (
+                3,
                 'unauthorizeduser',
-                'Unauth',
+                'Unauthorized',
                 'User',
-                'hashed_unauth_password',
+                ${SHA256_HASH_START}'3'${SHA256_HASH_MID}'unauth_pass'${SHA256_HASH_END},
                 2,
                 1,
-                'Unauthorized test account',
-                ${JIS} {} ${JIE},
+                'Demo unauthorized account',
+                '{}',
                 ${COMMON_VALUES}
-            FROM next_account_id;
+            );
 
             ${SUBQUERY_DELIMITER}
 
             -- Insert email contacts for each test account
-            -- Uses CTE to compute base contact_id (MySQL doesn't allow subselects from same table in INSERT)
-            INSERT INTO ${SCHEMA}account_contacts (contact_id, account_id, contact_seq, contact_type_a18, authenticate_a19, status_a20, contact, summary, collection, ${COMMON_FIELDS})
-            WITH next_contact_id AS (
-                SELECT COALESCE(MAX(contact_id), 0) AS base_id
-                FROM ${SCHEMA}account_contacts
+            -- Uses fixed account_ids (0=admin, 1=user, 2=disabled, 3=unauthorized)
+            INSERT INTO ${SCHEMA}account_contacts (
+                contact_id,
+                account_id,
+                contact_seq,
+                contact_type_a18,
+                authenticate_a19,
+                status_a20,
+                contact,
+                summary,
+                collection,
+                ${COMMON_FIELDS}
             )
-            SELECT
-                base_id + 1,
-                (
-                    SELECT account_id
-                    FROM ${SCHEMA}accounts
-                    WHERE name = '${HYDROGEN_DEMO_USER_NAME}'),
-                1,
-                1,
-                1,
-                1,
-                '${HYDROGEN_DEMO_EMAL}',
-                'Primary email',
-                ${JIS} {} ${JIE},
-                ${COMMON_VALUES}
-            FROM next_contact_id
-            UNION ALL
-            SELECT
-                base_id + 2,
-                (
-                    SELECT account_id
-                    FROM ${SCHEMA}accounts
-                    WHERE name = '${HYDROGEN_DEMO_ADMIN_NAME}'
-                ),
+            VALUES (
+                0,
+                0,
                 1,
                 1,
                 1,
                 1,
                 '${HYDROGEN_DEMO_EMAIL}',
-                'Primary email',
-                ${JIS} {} ${JIE},
+                'Admin primary email',
+                '{}',
                 ${COMMON_VALUES}
-            FROM next_contact_id
-            UNION ALL
-            SELECT
-                base_id + 3,
-                (SELECT account_id FROM ${SCHEMA}accounts WHERE name = 'disableduser'),
+            ),
+            (
                 1,
                 1,
                 1,
                 1,
-                'disabled@example.com',
-                'Primary email',
-                ${JIS} {} ${JIE},
+                1,
+                1,
+                '${HYDROGEN_DEMO_EMAIL}',
+                'User primary email',
+                '{}',
                 ${COMMON_VALUES}
-            FROM next_contact_id
-            UNION ALL
-            SELECT
-                base_id + 4,
-                (SELECT account_id FROM ${SCHEMA}accounts WHERE name = 'unauthorizeduser'),
+            ),
+            (
+                2,
+                2,
                 1,
                 1,
                 1,
                 1,
-                'unauth@example.com',
-                'Primary email',
-                ${JIS} {} ${JIE},
+                '${HYDROGEN_DEMO_EMAIL}',
+                'Disabled account email',
+                '{}',
                 ${COMMON_VALUES}
-            FROM next_contact_id;
+            ),
+            (
+                3,
+                3,
+                1,
+                1,
+                1,
+                1,
+                '${HYDROGEN_DEMO_EMAIL}',
+                'Unauthorized account email',
+                '{}',
+                ${COMMON_VALUES}
+            );
 
             ${SUBQUERY_DELIMITER}
 
@@ -209,17 +202,15 @@ table.insert(queries,{sql=[[
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             -- Remove test account contacts first (foreign key constraint)
+            -- Uses fixed account_ids (0=admin, 1=user, 2=disabled, 3=unauthorized)
             DELETE FROM ${SCHEMA}account_contacts
-            WHERE account_id IN (
-                SELECT account_id FROM ${SCHEMA}accounts
-                WHERE name IN ('${HYDROGEN_DEMO_USER_NAME}', '${HYDROGEN_DEMO_ADMIN_NAME}', 'disableduser', 'unauthorizeduser')
-            );
+            WHERE account_id IN (0, 1, 2, 3);
 
             ${SUBQUERY_DELIMITER}
 
-            -- Remove test accounts
+            -- Remove test accounts (fixed IDs 0-3)
             DELETE FROM ${SCHEMA}accounts
-            WHERE name IN ('${HYDROGEN_DEMO_USER_NAME}', '${HYDROGEN_DEMO_USER_NAME}', 'disableduser', 'unauthorizeduser');
+            WHERE account_id IN (0, 1, 2, 3);
 
             ${SUBQUERY_DELIMITER}
 

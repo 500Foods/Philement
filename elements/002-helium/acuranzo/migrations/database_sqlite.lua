@@ -58,6 +58,16 @@ return {
     BASE64_START = "CRYPTO_DECODE(",
     BASE64_END = ",'base64')",
 
+    -- Password hash: crypto_encode(crypto_sha256(account_id || password), 'base64')
+    -- Uses sqlean crypto.so extension with crypto_sha256() direct hash function
+    -- crypto_sha256() returns binary blob directly, which crypto_encode converts to base64
+    -- Returns base64-encoded SHA256 hash matching DB2's CHAR(128) format
+    -- Usage: ${SHA256_HASH_START}'0'${SHA256_HASH_MID}'${HYDROGEN_DEMO_ADMIN_PASS}'${SHA256_HASH_END}
+    -- Note: SQLite version uses || for concatenation (not comma like DB2)
+    SHA256_HASH_START = "crypto_encode(crypto_sha256(",
+    SHA256_HASH_MID = " || ",
+    SHA256_HASH_END = "), 'base64')",
+
     COMPRESS_START = "BROTLI_DECOMPRESS(CRYPTO_DECODE(",
     COMPRESS_END = ",'base64'))",
 

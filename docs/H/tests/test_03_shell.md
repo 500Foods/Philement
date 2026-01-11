@@ -35,7 +35,6 @@ The test maintains an array of environment variables with the following informat
 - `HYDROGEN_DEV_EMAIL`: Developer email for notifications and support
 - `PAYLOAD_KEY`: RSA private key for payload encryption
 - `WEBSOCKET_KEY`: Authentication key for WebSocket connections
-- `JWT_SECRET`: Secret key for JWT token signing
 
 ### Database Variables
 

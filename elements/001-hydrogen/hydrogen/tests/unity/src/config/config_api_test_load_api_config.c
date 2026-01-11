@@ -69,13 +69,13 @@ void test_load_api_config_empty_json(void) {
     TEST_ASSERT_TRUE(config.api.enabled);  // Default is enabled
     TEST_ASSERT_EQUAL_STRING("/api", config.api.prefix);  // Default value
     // JWT secret may be NULL or processed depending on environment
-    // If JWT_SECRET is set, it should be processed; otherwise it should contain the placeholder
-    const char* jwt_env = getenv("JWT_SECRET");
+    // If HYDROGEN_DEMO_JWT_KEY is set, it should be processed; otherwise it should contain the placeholder
+    const char* jwt_env = getenv("HYDROGEN_DEMO_JWT_KEY");
     if (jwt_env) {
         TEST_ASSERT_NOT_NULL(config.api.jwt_secret);
         TEST_ASSERT_EQUAL_STRING(jwt_env, config.api.jwt_secret);
     } else {
-        TEST_ASSERT_NOT_NULL(strstr(config.api.jwt_secret, "${env.JWT_SECRET}"));
+        TEST_ASSERT_NOT_NULL(strstr(config.api.jwt_secret, "${env.HYDROGEN_DEMO_JWT_KEY}"));
     }
 
     json_decref(root);
@@ -88,8 +88,8 @@ void test_load_api_config_basic_fields(void) {
     AppConfig config = {0};
     initialize_config_defaults(&config);
 
-    // Check if JWT_SECRET is set and handle accordingly
-    const char* jwt_env = getenv("JWT_SECRET");
+    // Check if HYDROGEN_DEMO_JWT_KEY is set and handle accordingly
+    const char* jwt_env = getenv("HYDROGEN_DEMO_JWT_KEY");
     const char* expected_jwt = jwt_env ? jwt_env : "custom-secret";
 
     json_t* root = json_object();

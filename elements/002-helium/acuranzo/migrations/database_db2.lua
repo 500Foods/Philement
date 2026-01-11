@@ -12,9 +12,10 @@
 -- 2.0.0 - 2025-11-16 - Added BASE64_START and BASE64_END macros
 
 -- NOTES
--- Base64 support provided via a C UDF
--- Brotli decompression provided via a C UDF
--- Source for both UDFs can be found in the elements/001-hydrogen/hydrogen/extras directory
+-- Base64 decode support provided via a C UDF in extras/base64decode_udf_db2
+-- Base64 encode support provided via a C UDF in extras/base64encode_udf_db2
+-- Brotli decompression provided via a C UDF in extras/brotli_udf_db2
+-- Source for all UDFs can be found in the elements/001-hydrogen/hydrogen/extras directory
 -- Unlike other databases, DB2 requires explicit sizes for JSON/VARCHAR/CLOB types
 -- This currently uses 100K for this kind of thing - COLLECTION_SIZE, TEXT_BIG, etc.
 
@@ -59,6 +60,20 @@ return {
 
     BASE64_START = "${SCHEMA}BASE64DECODE(",
     BASE64_END = ")",
+
+    BASE64ENCODE_START = "${SCHEMA}BASE64ENCODE(",
+    BASE64ENCODE_END = ")",
+
+    BASE64ENCODEBINARY_START = "${SCHEMA}BASE64ENCODEBINARY(",
+    BASE64ENCODEBINARY_END = ")",
+
+    -- Password hash: CAST(BASE64ENCODEBINARY(HASH(CONCAT(account_id, password), 2)) AS CHAR(128))
+    -- Returns base64-encoded SHA256 hash as CHAR(128) for password_hash column
+    -- HASH(data, 2) where 2 = SHA256 algorithm; CAST to CHAR(128) for column compatibility
+    -- Usage: ${SHA256_HASH_START}'0'${SHA256_HASH_MID}'${HYDROGEN_DEMO_ADMIN_PASS}'${SHA256_HASH_END}
+    SHA256_HASH_START = "CAST(${SCHEMA}BASE64ENCODEBINARY(HASH(CAST(CONCAT(",
+    SHA256_HASH_MID = ", ",
+    SHA256_HASH_END = ") AS VARCHAR(256) FOR BIT DATA), 2)) AS CHAR(128))",
 
     COMPRESS_START = "${SCHEMA}BROTLI_DECOMPRESS(${SCHEMA}BASE64DECODEBINARY(",
     COMPRESS_END = "))",
