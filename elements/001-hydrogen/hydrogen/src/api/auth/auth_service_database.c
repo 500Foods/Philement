@@ -27,6 +27,17 @@
 #include <src/config/config_databases.h>
 
 /**
+ * Helper function to free QueryResult structure
+ */
+void free_query_result(QueryResult* result) {
+    if (result) {
+        if (result->error_message) free(result->error_message);
+        if (result->data_json) free(result->data_json);
+        free(result);
+    }
+}
+
+/**
  * Execute a database query using the conduit system
  * Returns QueryResult or NULL on error
  */
@@ -159,10 +170,7 @@ account_info_t* lookup_account(const char* login_id, const char* database) {
     if (!result || !result->success) {
         log_this("AUTH", "Failed to lookup account: %s", LOG_LEVEL_ERROR, 1,
                 result ? result->error_message : "Unknown error");
-        if (result) {
-            free(result->error_message);
-            free(result);
-        }
+        free_query_result(result);
         return NULL;
     }
 
@@ -216,8 +224,7 @@ account_info_t* lookup_account(const char* login_id, const char* database) {
 
     // Cleanup
     json_decref(result_json);
-    free(result->data_json);
-    free(result);
+    free_query_result(result);
 
     return account;
 }
@@ -258,11 +265,7 @@ bool verify_password_and_status(const char* password, int account_id, const char
     if (!result || !result->success) {
         log_this("AUTH", "Password verification query failed for account_id=%d: %s", LOG_LEVEL_ERROR, 2,
                 account_id, result ? result->error_message : "Unknown error");
-        if (result) {
-            if (result->error_message) free(result->error_message);
-            if (result->data_json) free(result->data_json);
-            free(result);
-        }
+        free_query_result(result);
         return false;
     }
 
@@ -291,9 +294,7 @@ bool verify_password_and_status(const char* password, int account_id, const char
 
     // Cleanup
     json_decref(result_json);
-    free(result->data_json);
-    if (result->error_message) free(result->error_message);
-    free(result);
+    free_query_result(result);
 
     return verified;
 }
@@ -345,9 +346,7 @@ bool check_username_availability(const char* username, const char* database) {
     bool available = result->success && result->row_count == 0;
 
     // Cleanup
-    if (result->error_message) free(result->error_message);
-    if (result->data_json) free(result->data_json);
-    free(result);
+    free_query_result(result);
 
     return available;
 }
@@ -375,11 +374,7 @@ int create_account_record(const char* username, const char* email,
     if (!result || !result->success) {
         log_this("AUTH", "Failed to create account: %s", LOG_LEVEL_ERROR, 1,
                 result ? result->error_message : "Unknown error");
-        if (result) {
-            if (result->error_message) free(result->error_message);
-            if (result->data_json) free(result->data_json);
-            free(result);
-        }
+        free_query_result(result);
         return -1;
     }
 
@@ -397,9 +392,7 @@ int create_account_record(const char* username, const char* email,
     }
 
     // Cleanup
-    if (result->error_message) free(result->error_message);
-    if (result->data_json) free(result->data_json);
-    free(result);
+    free_query_result(result);
 
     return account_id;
 }
@@ -426,11 +419,7 @@ void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, const ch
     }
 
     // Cleanup
-    if (result) {
-        if (result->error_message) free(result->error_message);
-        if (result->data_json) free(result->data_json);
-        free(result);
-    }
+    free_query_result(result);
 }
 
 /**
@@ -457,11 +446,7 @@ void update_jwt_storage(int account_id, const char* old_jwt_hash,
     }
 
     // Cleanup
-    if (result) {
-        if (result->error_message) free(result->error_message);
-        if (result->data_json) free(result->data_json);
-        free(result);
-    }
+    free_query_result(result);
 }
 
 /**
@@ -484,11 +469,7 @@ void delete_jwt_from_storage(const char* jwt_hash, const char* database) {
     }
 
     // Cleanup
-    if (result) {
-        if (result->error_message) free(result->error_message);
-        if (result->data_json) free(result->data_json);
-        free(result);
-    }
+    free_query_result(result);
 }
 
 /**
@@ -513,9 +494,7 @@ bool is_token_revoked(const char* token_hash, const char* database) {
     bool revoked = result->success && result->row_count > 0;
 
     // Cleanup
-    if (result->error_message) free(result->error_message);
-    if (result->data_json) free(result->data_json);
-    free(result);
+    free_query_result(result);
 
     return revoked;
 }
@@ -549,11 +528,7 @@ int check_failed_attempts(const char* login_id, const char* client_ip,
     if (!result || !result->success) {
         log_this("AUTH", "Failed to check failed attempts: %s", LOG_LEVEL_ERROR, 1,
                 result ? result->error_message : "Unknown error");
-        if (result) {
-            if (result->error_message) free(result->error_message);
-            if (result->data_json) free(result->data_json);
-            free(result);
-        }
+        free_query_result(result);
         return 0;
     }
 
@@ -570,9 +545,7 @@ int check_failed_attempts(const char* login_id, const char* client_ip,
     }
 
     // Cleanup
-    if (result->error_message) free(result->error_message);
-    if (result->data_json) free(result->data_json);
-    free(result);
+    free_query_result(result);
 
     return count;
 }
@@ -609,11 +582,7 @@ void block_ip_address(const char* client_ip, int duration_minutes, const char* d
     }
 
     // Cleanup
-    if (result) {
-        if (result->error_message) free(result->error_message);
-        if (result->data_json) free(result->data_json);
-        free(result);
-    }
+    free_query_result(result);
 }
 
 /**
@@ -651,11 +620,7 @@ void log_login_attempt(const char* login_id, const char* client_ip,
     }
 
     // Cleanup
-    if (result) {
-        if (result->error_message) free(result->error_message);
-        if (result->data_json) free(result->data_json);
-        free(result);
-    }
+    free_query_result(result);
 }
 
 /**
@@ -682,19 +647,14 @@ bool verify_api_key(const char* api_key, const char* database, system_info_t* sy
     if (!result || !result->success) {
         log_this(SR_AUTH, "Failed to verify API key: %s", LOG_LEVEL_ERROR, 1,
                 result ? result->error_message : "Unknown error");
-        if (result) {
-            if (result->error_message) free(result->error_message);
-            if (result->data_json) free(result->data_json);
-            free(result);
-        }
+        free_query_result(result);
         return false;
     }
 
     // Check if API key was found
     if (!result->data_json) {
         log_this(SR_AUTH, "Invalid API key attempted: %s", LOG_LEVEL_ALERT, 1, api_key);
-        if (result->error_message) free(result->error_message);
-        free(result);
+        free_query_result(result);
         return false;
     }
 
@@ -702,9 +662,7 @@ bool verify_api_key(const char* api_key, const char* database, system_info_t* sy
     json_t* result_json = json_loads(result->data_json, 0, NULL);
     if (!result_json) {
         log_this(SR_AUTH, "Failed to parse API key verification result", LOG_LEVEL_ERROR, 0);
-        if (result->error_message) free(result->error_message);
-        free(result->data_json);
-        free(result);
+        free_query_result(result);
         return false;
     }
 
@@ -713,9 +671,7 @@ bool verify_api_key(const char* api_key, const char* database, system_info_t* sy
     if (!row) {
         log_this(SR_AUTH, "Invalid API key: not found in database", LOG_LEVEL_ALERT, 0);
         json_decref(result_json);
-        if (result->error_message) free(result->error_message);
-        free(result->data_json);
-        free(result);
+        free_query_result(result);
         return false;
     }
 
@@ -765,9 +721,7 @@ bool verify_api_key(const char* api_key, const char* database, system_info_t* sy
 
     // Cleanup
     json_decref(result_json);
-    if (result->error_message) free(result->error_message);
-    free(result->data_json);
-    free(result);
+    free_query_result(result);
 
     return true;
 }

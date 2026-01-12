@@ -14,6 +14,7 @@
 
 // Database query execution
 QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params);
+void free_query_result(QueryResult* result);
 
 // Account management
 account_info_t* lookup_account(const char* login_id, const char* database);
