@@ -66,13 +66,13 @@ void test_compute_password_hash_valid_password(void) {
     TEST_ASSERT_GREATER_OR_EQUAL(42, len);
     TEST_ASSERT_LESS_OR_EQUAL(44, len);
     
-    // Verify it's all base64url characters (A-Z, a-z, 0-9, -, _)
+    // Verify it's all standard base64 characters (A-Z, a-z, 0-9, +, /, =)
     for (size_t i = 0; i < len; i++) {
         char c = hash[i];
         bool valid = (c >= 'A' && c <= 'Z') ||
                     (c >= 'a' && c <= 'z') ||
                     (c >= '0' && c <= '9') ||
-                    c == '-' || c == '_';
+                    c == '+' || c == '/' || c == '=';
         TEST_ASSERT_TRUE(valid);
     }
     
@@ -142,13 +142,13 @@ void test_compute_password_hash_special_characters(void) {
     TEST_ASSERT_GREATER_OR_EQUAL(42, len);
     TEST_ASSERT_LESS_OR_EQUAL(44, len);
     
-    // Verify it's valid base64url
+    // Verify it's valid standard base64
     for (size_t i = 0; i < len; i++) {
         char c = hash[i];
         bool valid = (c >= 'A' && c <= 'Z') ||
                     (c >= 'a' && c <= 'z') ||
                     (c >= '0' && c <= '9') ||
-                    c == '-' || c == '_';
+                    c == '+' || c == '/' || c == '=';
         TEST_ASSERT_TRUE(valid);
     }
     

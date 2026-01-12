@@ -52,7 +52,7 @@ int calculate_timezone_offset(const char* tz) {
     if (!tz || strlen(tz) == 0) return 0;
     
     // Save current timezone
-    char* old_tz = getenv("TZ");
+    const char* old_tz = getenv("TZ");
     char* saved_tz = old_tz ? strdup(old_tz) : NULL;
     
     // Get a consistent reference time (use current time)
@@ -120,7 +120,7 @@ bool validate_timezone(const char* tz) {
     }
 
     // Save current timezone
-    char* old_tz = getenv("TZ");
+    const char* old_tz = getenv("TZ");
     char* saved_tz = old_tz ? strdup(old_tz) : NULL;
     
     // Try to set the timezone - if it's invalid, tzset will fail silently
@@ -131,7 +131,7 @@ bool validate_timezone(const char* tz) {
     // Check if timezone was successfully set by trying to get local time
     time_t now = time(NULL);
     struct tm local_tm;
-    struct tm* result = localtime_r(&now, &local_tm);
+    const struct tm* result = localtime_r(&now, &local_tm);
     
     // Restore original timezone
     if (saved_tz) {

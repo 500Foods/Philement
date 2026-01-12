@@ -139,7 +139,6 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
 
         MutexResult lock_result = MUTEX_LOCK(&db_queue->children_lock, SR_DATABASE);
         DatabaseQueue* target_child = NULL;
-        bool routed_to_child = false;
         if (lock_result == MUTEX_SUCCESS) {
             for (int i = 0; i < db_queue->child_queue_count; i++) {
                 if (db_queue->child_queues[i] &&
@@ -155,7 +154,6 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
                 // This prevents race condition where another thread could destroy
                 // the child queue between finding it and using it (use-after-free)
                 // Safe because child queues don't access parent's children_lock
-                routed_to_child = true;
                 bool result = database_queue_submit_query(target_child, query);
                 mutex_unlock(&db_queue->children_lock);
                 return result;
@@ -163,7 +161,7 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
             mutex_unlock(&db_queue->children_lock);
         }
 
-        if (!routed_to_child && !target_child) {
+        if (!target_child) {
             // No appropriate child queue exists, use Lead queue itself for now
             // log_this(SR_DATABASE, "No %s child queue found, using Lead queue for query: %s", LOG_LEVEL_TRACE, 2, target_queue_type, query->query_id);
         }
