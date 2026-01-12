@@ -24,6 +24,8 @@ typedef int (*SQLPrepare_t)(void*, unsigned char*, int);
 typedef int (*SQLExecute_t)(void*);
 typedef int (*SQLFreeStmt_t)(void*, int);
 typedef int (*SQLDescribeCol_t)(void*, int, unsigned char*, int, short*, int*, int*, short*, short*);
+// Parameter binding function pointer
+typedef int (*SQLBindParameter_t)(void*, unsigned short, short, short, short, unsigned long, short, void*, long, long*);
 
 // Additional function pointers for connection and error handling
 typedef int (*SQLDriverConnect_t)(void*, void*, unsigned char*, short, unsigned char*, short, short*, unsigned short);
@@ -46,6 +48,7 @@ extern SQLPrepare_t SQLPrepare_ptr;
 extern SQLExecute_t SQLExecute_ptr;
 extern SQLFreeStmt_t SQLFreeStmt_ptr;
 extern SQLDescribeCol_t SQLDescribeCol_ptr;
+extern SQLBindParameter_t SQLBindParameter_ptr;
 // Additional function pointers for connection and error handling
 extern SQLDriverConnect_t SQLDriverConnect_ptr;
 extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
@@ -82,6 +85,12 @@ extern SQLSetConnectAttr_t SQLSetConnectAttr_ptr;
 #define SQL_ATTR_AUTOCOMMIT 102
 #define SQL_AUTOCOMMIT_OFF 0
 #define SQL_AUTOCOMMIT_ON 1
+
+// Parameter binding constants
+#define SQL_PARAM_INPUT 1
+#define SQL_C_LONG 4
+#define SQL_C_DOUBLE 8
+#define SQL_C_SHORT 5
 
 // Current catalog/database
 #define SQL_ATTR_CURRENT_CATALOG 109

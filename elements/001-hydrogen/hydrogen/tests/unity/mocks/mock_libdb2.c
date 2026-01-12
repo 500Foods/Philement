@@ -93,6 +93,7 @@ static int mock_SQLFreeHandle_result = 0; // 0 = SQL_SUCCESS
 static int mock_SQLEndTran_result = 0; // 0 = SQL_SUCCESS
 static int mock_SQLSetConnectAttr_result = 0; // 0 = SQL_SUCCESS
 static int mock_SQLPrepare_result = 0; // 0 = SQL_SUCCESS
+static int mock_SQLBindParameter_result = 0; // 0 = SQL_SUCCESS
 
 // Mock implementations
 int mock_SQLAllocHandle(int handleType, void* inputHandle, void** outputHandle) {
@@ -296,6 +297,22 @@ int mock_SQLSetConnectAttr(void* connectionHandle, int attribute, long value, in
     return mock_SQLSetConnectAttr_result;
 }
 
+int mock_SQLBindParameter(void* statementHandle, unsigned short parameterNumber, short inputOutputType,
+                          short valueType, short parameterType, unsigned long columnSize, short decimalDigits,
+                          void* parameterValue, long bufferLength, long* strLenOrIndPtr) {
+    (void)statementHandle;
+    (void)parameterNumber;
+    (void)inputOutputType;
+    (void)valueType;
+    (void)parameterType;
+    (void)columnSize;
+    (void)decimalDigits;
+    (void)parameterValue;
+    (void)bufferLength;
+    (void)strLenOrIndPtr;
+    return mock_SQLBindParameter_result;
+}
+
 // Mock control functions
 void mock_libdb2_set_SQLAllocHandle_result(int result) {
     mock_SQLAllocHandle_result = result;
@@ -391,6 +408,10 @@ void mock_libdb2_set_SQLPrepare_result(int result) {
     mock_SQLPrepare_result = result;
 }
 
+void mock_libdb2_set_SQLBindParameter_result(int result) {
+    mock_SQLBindParameter_result = result;
+}
+
 void mock_libdb2_reset_all(void) {
     mock_SQLAllocHandle_result = 0;
     mock_SQLAllocHandle_output_handle = (void*)0x12345678;
@@ -417,4 +438,5 @@ void mock_libdb2_reset_all(void) {
     mock_SQLEndTran_result = 0;
     mock_SQLSetConnectAttr_result = 0;
     mock_SQLPrepare_result = 0;
+    mock_SQLBindParameter_result = 0;
 }

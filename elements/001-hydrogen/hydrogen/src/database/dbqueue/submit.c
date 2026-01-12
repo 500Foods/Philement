@@ -10,38 +10,119 @@
 #include <src/database/database.h>
 #include <src/database/database_pending.h>
 
+// JSON library for proper serialization
+#include <jansson.h>
+
 // Local includes
 #include "dbqueue.h"
 
 /*
- * Placeholder functions for JSON serialization (to be implemented)
+ * Serialize a DatabaseQuery to JSON string for queue storage
+ *
+ * Serializes the essential fields needed for query execution:
+ * - query_id: Unique identifier for tracking the query
+ * - query_template: The SQL template to execute
+ * - parameter_json: JSON string containing named parameters
+ * - queue_type_hint: Queue priority hint for routing
+ *
+ * Returns: Allocated JSON string (caller must free), or NULL on error
  */
 char* serialize_query_to_json(DatabaseQuery* query) {
-    // Placeholder - return basic JSON string for now
     if (!query || !query->query_template) return NULL;
 
-    char* json = malloc(1024);
-    if (!json) return NULL;
+    // Create JSON object using jansson for proper escaping
+    json_t* root = json_object();
+    if (!root) return NULL;
 
-    snprintf(json, 1024, "{\"query_id\":\"%s\",\"template\":\"%s\"}",
-             query->query_id ? query->query_id : "",
-             query->query_template);
+    // Add query_id (may be NULL)
+    if (query->query_id) {
+        json_object_set_new(root, "query_id", json_string(query->query_id));
+    } else {
+        json_object_set_new(root, "query_id", json_null());
+    }
 
-    return json;
+    // Add query_template (required)
+    json_object_set_new(root, "query_template", json_string(query->query_template));
+
+    // Add parameter_json (may be NULL)
+    if (query->parameter_json) {
+        json_object_set_new(root, "parameter_json", json_string(query->parameter_json));
+    } else {
+        json_object_set_new(root, "parameter_json", json_null());
+    }
+
+    // Add queue_type_hint
+    json_object_set_new(root, "queue_type_hint", json_integer(query->queue_type_hint));
+
+    // Serialize to string
+    char* json_str = json_dumps(root, JSON_COMPACT);
+    json_decref(root);
+
+    return json_str;
 }
 
-DatabaseQuery* deserialize_query_from_json(const char* json) {
-    // Placeholder - return basic DatabaseQuery for now
-    // Full implementation will parse JSON and create proper query struct
-    (void)json;  // Suppress unused parameter warning for future implementation
+/*
+ * Deserialize a JSON string back to a DatabaseQuery structure
+ *
+ * Parses JSON and extracts:
+ * - query_id: Unique identifier
+ * - query_template: SQL template to execute
+ * - parameter_json: Named parameters as JSON string
+ * - queue_type_hint: Queue priority
+ *
+ * Returns: Allocated DatabaseQuery (caller must free fields and struct), or NULL on error
+ */
+DatabaseQuery* deserialize_query_from_json(const char* json_str) {
+    if (!json_str) return NULL;
 
+    // Parse JSON string
+    json_error_t error;
+    json_t* root = json_loads(json_str, 0, &error);
+    if (!root) {
+        log_this(SR_DATABASE, "Failed to parse query JSON: %s at line %d", LOG_LEVEL_ERROR, 2, error.text, error.line);
+        return NULL;
+    }
+
+    // Allocate DatabaseQuery structure
     DatabaseQuery* query = malloc(sizeof(DatabaseQuery));
-    if (!query) return NULL;
-
+    if (!query) {
+        json_decref(root);
+        return NULL;
+    }
     memset(query, 0, sizeof(DatabaseQuery));
-    query->query_id = strdup("parsed_query_id");
-    query->query_template = strdup("parsed_template");
 
+    // Extract query_id
+    json_t* query_id_json = json_object_get(root, "query_id");
+    if (query_id_json && json_is_string(query_id_json)) {
+        query->query_id = strdup(json_string_value(query_id_json));
+    }
+
+    // Extract query_template (required)
+    json_t* template_json = json_object_get(root, "query_template");
+    if (template_json && json_is_string(template_json)) {
+        query->query_template = strdup(json_string_value(template_json));
+    } else {
+        // query_template is required - fail if missing
+        log_this(SR_DATABASE, "Query JSON missing required 'query_template' field", LOG_LEVEL_ERROR, 0);
+        free(query->query_id);
+        free(query);
+        json_decref(root);
+        return NULL;
+    }
+
+    // Extract parameter_json
+    json_t* params_json = json_object_get(root, "parameter_json");
+    if (params_json && json_is_string(params_json)) {
+        query->parameter_json = strdup(json_string_value(params_json));
+    }
+
+    // Extract queue_type_hint
+    json_t* hint_json = json_object_get(root, "queue_type_hint");
+    if (hint_json && json_is_integer(hint_json)) {
+        query->queue_type_hint = (int)json_integer_value(hint_json);
+    }
+
+    json_decref(root);
     return query;
 }
 
@@ -58,6 +139,7 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
 
         MutexResult lock_result = MUTEX_LOCK(&db_queue->children_lock, SR_DATABASE);
         DatabaseQueue* target_child = NULL;
+        bool routed_to_child = false;
         if (lock_result == MUTEX_SUCCESS) {
             for (int i = 0; i < db_queue->child_queue_count; i++) {
                 if (db_queue->child_queues[i] &&
@@ -67,13 +149,21 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
                     break;
                 }
             }
+
+            if (target_child) {
+                // Route to child queue while still holding children_lock
+                // This prevents race condition where another thread could destroy
+                // the child queue between finding it and using it (use-after-free)
+                // Safe because child queues don't access parent's children_lock
+                routed_to_child = true;
+                bool result = database_queue_submit_query(target_child, query);
+                mutex_unlock(&db_queue->children_lock);
+                return result;
+            }
             mutex_unlock(&db_queue->children_lock);
         }
 
-        if (target_child) {
-            // Route to child queue
-            return database_queue_submit_query(target_child, query);
-        } else {
+        if (!routed_to_child && !target_child) {
             // No appropriate child queue exists, use Lead queue itself for now
             // log_this(SR_DATABASE, "No %s child queue found, using Lead queue for query: %s", LOG_LEVEL_TRACE, 2, target_queue_type, query->query_id);
         }

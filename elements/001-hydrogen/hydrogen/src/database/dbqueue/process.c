@@ -237,95 +237,23 @@ void* database_queue_worker_thread(void* arg) {
 
 /*
  * Manage child queues based on workload and configuration
+ *
+ * NOTE: Auto-scaling is DISABLED to prevent race conditions.
+ * The scale-up/scale-down logic was causing use-after-free bugs when:
+ * 1. Scale-down destroys a child queue
+ * 2. Concurrent threads still try to use the destroyed queue
+ *
+ * Child queues are spawned at startup based on config and remain until shutdown.
+ * To re-enable auto-scaling, proper reference counting needs to be implemented.
  */
 void database_queue_manage_child_queues(DatabaseQueue* lead_queue) {
     if (!lead_queue || !lead_queue->is_lead_queue) {
         return;
     }
 
-    // TODO: Implement intelligent queue management based on:
-    // - Current queue depths
-    // - Processing rates
-    // - Configuration settings
-    // - System load
-
-    // For now, this is a placeholder that could spawn queues based on simple rules
-    // Real implementation will be added in Phase 2
-
-    // Example logic (commented out for now):
-    /*
-    size_t lead_depth = queue_size(lead_queue->queue);
-    if (lead_depth > 10) {
-        // High load - consider spawning a medium queue if not exists
-        database_queue_spawn_child_queue(lead_queue, "medium");
-    }
-    */
-
-    // Commented out trace logging to reduce log noise during heartbeat
-    // Create DQM component name with full label for logging
-    // char* dqm_label = database_queue_generate_label(lead_queue);
-    // log_this(dqm_label, "Lead queue managing child queues", LOG_LEVEL_TRACE, 0);
-    // free(dqm_label);
-
-    // Implement scaling logic based on queue utilization
-    // NOTE: Removed children_lock here because spawn/shutdown functions handle their own locking
-    // Having the lock here caused nested locking and mutex timeout errors
+    // AUTO-SCALING DISABLED - see note above
+    // Child queues persist for the lifetime of the lead queue
+    // This prevents race conditions where queues are destroyed while in use
     
-    // Get lead queue's designator for proper logging
-    char* lead_dqm_label = database_queue_generate_label(lead_queue);
-    
-    // Check each child queue for scaling decisions
-    for (int i = 0; i < lead_queue->child_queue_count; i++) {
-        // Check for NULL - child might have been removed during iteration
-        if (!lead_queue->child_queues[i]) {
-            continue;
-        }
-        
-        DatabaseQueue* child = lead_queue->child_queues[i];
-        
-        // Use proper designator for depth check instead of SR_DATABASE wrapper
-        size_t queue_depth = database_queue_get_depth_with_designator(child, lead_dqm_label);
-
-        // Scale up: if all queues of this type are non-empty
-        if (queue_depth > 0) {
-            // Check if we can spawn another queue of this type
-            int same_type_count = 0;
-            for (int j = 0; j < lead_queue->child_queue_count; j++) {
-                if (lead_queue->child_queues[j] &&
-                    strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
-                    same_type_count++;
-                }
-            }
-
-            // If we have fewer than max queues of this type, consider scaling up
-            if (same_type_count < 3) {  // Configurable max per type
-                database_queue_spawn_child_queue(lead_queue, child->queue_type);
-            }
-        }
-        // Scale down: if all queues of this type are empty
-        else {
-            // Count empty queues of this type
-            int empty_count = 0;
-            int total_count = 0;
-            for (int j = 0; j < lead_queue->child_queue_count; j++) {
-                // Check for NULL before accessing
-                if (!lead_queue->child_queues[j]) {
-                    continue;
-                }
-                if (strcmp(lead_queue->child_queues[j]->queue_type, child->queue_type) == 0) {
-                    total_count++;
-                    if (database_queue_get_depth_with_designator(lead_queue->child_queues[j], lead_dqm_label) == 0) {
-                        empty_count++;
-                    }
-                }
-            }
-
-            // If all queues of this type are empty and we have more than minimum, scale down
-            if (empty_count == total_count && total_count > 1) {  // Keep at least 1
-                database_queue_shutdown_child_queue(lead_queue, child->queue_type);
-            }
-        }
-    }
-    
-    free(lead_dqm_label);
+    (void)lead_queue;  // Suppress unused warning
 }

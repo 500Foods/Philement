@@ -69,9 +69,18 @@ jwt_config_t* get_jwt_config(void) {
     jwt_config_t* config = calloc(1, sizeof(jwt_config_t));
     if (!config) return NULL;
 
-    // TODO: Load from actual configuration
-    // For now, use defaults
-    config->hmac_secret = strdup("default-jwt-secret-change-me-in-production");
+    // Load JWT secret from application configuration
+    if (app_config && app_config->api.jwt_secret) {
+        config->hmac_secret = strdup(app_config->api.jwt_secret);
+        log_this(SR_AUTH, "Using JWT secret from configuration (length: %zu)",
+                 LOG_LEVEL_DEBUG, 1, strlen(config->hmac_secret));
+    } else {
+        // Fallback to default if not configured
+        config->hmac_secret = strdup("default-jwt-secret-change-me-in-production");
+        log_this(SR_AUTH, "Using default JWT secret - configure API.JWTSecret in production!",
+                 LOG_LEVEL_ALERT, 0);
+    }
+    
     config->use_rsa = false;
     config->rotation_interval_days = 90;
 
@@ -82,8 +91,8 @@ jwt_config_t* get_jwt_config(void) {
  * Generate a JWT token
  */
 char* generate_jwt(account_info_t* account, system_info_t* system,
-                   const char* client_ip, const char* database, time_t issued_at) {
-    if (!account || !system || !client_ip || !database) {
+                   const char* client_ip, const char* tz, const char* database, time_t issued_at) {
+    if (!account || !system || !client_ip || !tz || !database) {
         log_this(SR_AUTH, "Invalid parameters for JWT generation", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
@@ -115,15 +124,18 @@ char* generate_jwt(account_info_t* account, system_info_t* system,
         return NULL;
     }
 
+    // Calculate timezone offset
+    int tzoffset = calculate_timezone_offset(tz);
+    
     char* payload_json = NULL;
     asprintf(&payload_json,
-             "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"database\":\"%s\"}",
+             "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\"}",
              account->id, system->app_id, exp, now, now, jti,
              account->id, system->system_id, system->app_id,
              account->username ? account->username : "",
              account->email ? account->email : "",
              account->roles ? account->roles : "",
-             client_ip, "UTC", database); // TODO: Pass timezone
+             client_ip, tz, tzoffset, database);
 
     free(jti);
 
@@ -425,7 +437,12 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
         result.claims->tz = strdup(json_string_value(tz_json));
     }
     
-    // Extract database field (NEW)
+    // Extract tzoffset field
+    json_t* tzoffset_json = json_object_get(payload_json, "tzoffset");
+    result.claims->tzoffset = (tzoffset_json && json_is_integer(tzoffset_json)) ?
+                              (int)json_integer_value(tzoffset_json) : 0;
+    
+    // Extract database field
     json_t* database_json = json_object_get(payload_json, "database");
     if (database_json && json_is_string(database_json)) {
         result.claims->database = strdup(json_string_value(database_json));

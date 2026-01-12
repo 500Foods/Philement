@@ -50,8 +50,9 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     INSERT INTO ${SCHEMA}actions (
+                        action_id,
                         action_type_a24,
-                        application_version,
+                        app_version,
                         feature_a21,
                         action,
                         action_msecs,
@@ -59,16 +60,21 @@ table.insert(queries,{sql=[[
                         created_id,
                         created_at
                     )
-                    VALUES (
+                    WITH next_action_id AS (
+                        SELECT COALESCE(MAX(action_id), 0) + 1 AS new_action_id
+                        FROM ${SCHEMA}actions
+                    )
+                    SELECT
+                        new_action_id,
                         2,
-                        :APPLICATIONVER,
+                        :APPVERSION,
                         100,
                         :LOGINID,
                         :LOGINTIMER,
                         :IPADDRESS,
                         :LOGINLOGID,
                         ${NOW}
-                    )
+                    FROM next_action_id
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
@@ -80,7 +86,7 @@ table.insert(queries,{sql=[[
 
                     ## Parameters
 
-                    - `APPLICATIONVER` (string): The version of the application making the login attempt.
+                    - `APPVERSION` (string): The version of the application making the login attempt.
                     - `LOGINID` (string): The login identifier used in the attempt.
                     - `LOGINTIMER` (integer): The time taken to process the login attempt in
                         milliseconds.

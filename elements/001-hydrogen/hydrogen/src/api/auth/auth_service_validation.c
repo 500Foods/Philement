@@ -13,6 +13,8 @@
 #include <src/hydrogen.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
+#include <stdlib.h>
 #include <src/logging/logging.h>
 #include <jansson.h>
 
@@ -41,33 +43,137 @@ bool validate_login_input(const char* login_id, const char* password,
 }
 
 /**
- * Validate timezone format
+ * Calculate timezone offset in minutes for a given timezone
+ * Returns the offset from UTC/GMT in minutes (negative for timezones west of UTC)
+ * Examples: PST = -480, CET = +60, IST = +330
+ * Returns 0 if timezone is invalid or UTC
+ */
+int calculate_timezone_offset(const char* tz) {
+    if (!tz || strlen(tz) == 0) return 0;
+    
+    // Save current timezone
+    char* old_tz = getenv("TZ");
+    char* saved_tz = old_tz ? strdup(old_tz) : NULL;
+    
+    // Get a consistent reference time (use current time)
+    time_t now = time(NULL);
+    
+    // Set timezone to the target timezone and get local time
+    setenv("TZ", tz, 1);
+    tzset();
+    struct tm local_tm;
+    localtime_r(&now, &local_tm);
+    
+    // Set timezone to UTC and get UTC time
+    setenv("TZ", "UTC", 1);
+    tzset();
+    struct tm utc_tm;
+    gmtime_r(&now, &utc_tm);
+    
+    // Calculate offset by comparing the hour and minute fields
+    // Offset = (local time) - (UTC time) in minutes
+    int local_minutes = local_tm.tm_hour * 60 + local_tm.tm_min;
+    int utc_minutes = utc_tm.tm_hour * 60 + utc_tm.tm_min;
+    
+    // Handle day boundary crossing
+    int day_diff = local_tm.tm_mday - utc_tm.tm_mday;
+    // Adjust for month boundary (e.g., day 31 -> day 1 or day 1 -> day 31)
+    if (day_diff > 1) day_diff = -1;  // Wrapped backwards (e.g., 31 -> 1)
+    if (day_diff < -1) day_diff = 1;  // Wrapped forwards (e.g., 1 -> 31)
+    
+    int offset_minutes = local_minutes - utc_minutes + (day_diff * 24 * 60);
+    
+    // Restore original timezone
+    if (saved_tz) {
+        setenv("TZ", saved_tz, 1);
+        free(saved_tz);
+    } else {
+        unsetenv("TZ");
+    }
+    tzset();
+    
+    log_this(SR_AUTH, "Calculated timezone offset for %s: %+d minutes (%+.1f hours)",
+             LOG_LEVEL_DEBUG, 3, tz, offset_minutes, (double)offset_minutes / 60.0);
+    
+    return offset_minutes;
+}
+
+/**
+ * Validate timezone format using system timezone database
+ * This performs a comprehensive check:
+ * 1. Basic character validation
+ * 2. Checks against system timezone database by attempting to set it
+ * 3. Returns true if timezone is valid
  */
 bool validate_timezone(const char* tz) {
     if (!tz || strlen(tz) == 0) return false;
 
-    // Basic validation: allow alphanumeric, /, _, -, +, and common timezone patterns
+    // Check length constraints
+    if (strlen(tz) > 50) return false;
+
+    // Basic validation: allow alphanumeric, /, _, -, +, :, and common timezone patterns
     for (size_t i = 0; i < strlen(tz); i++) {
         char c = tz[i];
-        if (!(isalnum(c) || c == '/' || c == '_' || c == '-' || c == '+')) {
+        if (!(isalnum(c) || c == '/' || c == '_' || c == '-' || c == '+' || c == ':')) {
             return false;
         }
     }
 
-    // Check for common timezone prefixes or exact matches
+    // Save current timezone
+    char* old_tz = getenv("TZ");
+    char* saved_tz = old_tz ? strdup(old_tz) : NULL;
+    
+    // Try to set the timezone - if it's invalid, tzset will fail silently
+    // but we can detect it by checking if the timezone name is set
+    setenv("TZ", tz, 1);
+    tzset();
+    
+    // Check if timezone was successfully set by trying to get local time
+    time_t now = time(NULL);
+    struct tm local_tm;
+    struct tm* result = localtime_r(&now, &local_tm);
+    
+    // Restore original timezone
+    if (saved_tz) {
+        setenv("TZ", saved_tz, 1);
+        free(saved_tz);
+    } else {
+        unsetenv("TZ");
+    }
+    tzset();
+    
+    // If localtime_r failed, timezone was invalid
+    if (!result) {
+        log_this(SR_AUTH, "Invalid timezone: %s (localtime_r failed)", LOG_LEVEL_DEBUG, 1, tz);
+        return false;
+    }
+    
+    // Additional validation: check for common valid patterns
+    // This catches most valid timezones even if system validation might be permissive
+    bool has_valid_pattern = false;
+    
     if (strstr(tz, "America/") == tz || strstr(tz, "Europe/") == tz ||
         strstr(tz, "Asia/") == tz || strstr(tz, "Africa/") == tz ||
         strstr(tz, "Australia/") == tz || strstr(tz, "Pacific/") == tz ||
-        strcmp(tz, "UTC") == 0 || strcmp(tz, "GMT") == 0) {
-        return true;
+        strstr(tz, "Atlantic/") == tz || strstr(tz, "Indian/") == tz ||
+        strstr(tz, "Arctic/") == tz || strstr(tz, "Antarctica/") == tz ||
+        strcmp(tz, "UTC") == 0 || strcmp(tz, "GMT") == 0 ||
+        strncmp(tz, "Etc/", 4) == 0) {
+        has_valid_pattern = true;
     }
-
-    // Allow UTC offsets like UTC+05:00, but basic check
-    if (strlen(tz) >= 3 && strncmp(tz, "UTC", 3) == 0) {
-        return true;
+    
+    // Allow UTC offsets like UTC+05:00 or +05:00
+    if (strlen(tz) >= 3 && (strncmp(tz, "UTC", 3) == 0 || tz[0] == '+' || tz[0] == '-')) {
+        has_valid_pattern = true;
     }
-
-    return false;
+    
+    if (!has_valid_pattern) {
+        log_this(SR_AUTH, "Timezone does not match known patterns: %s", LOG_LEVEL_DEBUG, 1, tz);
+        return false;
+    }
+    
+    log_this(SR_AUTH, "Timezone validated successfully: %s", LOG_LEVEL_DEBUG, 1, tz);
+    return true;
 }
 
 /**
@@ -148,8 +254,12 @@ bool check_ip_whitelist(const char* client_ip, const char* database) {
     }
 
     // Create parameters for QueryRef #002: Get IP Whitelist
+    // Use typed parameter format: {"STRING": {"IPADDRESS": "value"}}
+    // Parameter name must match SQL placeholder :IPADDRESS
     json_t* params = json_object();
-    json_object_set_new(params, "ip_address", json_string(client_ip));
+    json_t* string_params = json_object();
+    json_object_set_new(string_params, "IPADDRESS", json_string(client_ip));
+    json_object_set_new(params, "STRING", string_params);
 
     // Execute query against specified database
     QueryResult* result = execute_auth_query(2, database, params);
@@ -187,8 +297,12 @@ bool check_ip_blacklist(const char* client_ip, const char* database) {
     }
 
     // Create parameters for QueryRef #003: Get IP Blacklist
+    // Use typed parameter format: {"STRING": {"IPADDRESS": "value"}}
+    // Parameter name must match SQL placeholder :IPADDRESS
     json_t* params = json_object();
-    json_object_set_new(params, "ip_address", json_string(client_ip));
+    json_t* string_params = json_object();
+    json_object_set_new(string_params, "IPADDRESS", json_string(client_ip));
+    json_object_set_new(params, "STRING", string_params);
 
     // Execute query against specified database
     QueryResult* result = execute_auth_query(3, database, params);

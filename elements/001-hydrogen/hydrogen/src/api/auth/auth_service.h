@@ -76,6 +76,7 @@ typedef struct {
     char* roles;               // User roles
     char* ip;                  // Client IP address
     char* tz;                  // Client timezone
+    int tzoffset;              // Timezone offset from UTC in minutes (e.g., -480 for PST, +60 for CET)
     char* database;            // Database name (for routing authenticated queries)
 } jwt_claims_t;
 
@@ -144,12 +145,17 @@ bool handle_rate_limiting(const char* client_ip, int failed_count,
 
 // Account management functions
 account_info_t* lookup_account(const char* login_id, const char* database);
+
+// New secure verification: password + status in one database query
+bool verify_password_and_status(const char* password, int account_id, const char* database, account_info_t* account);
+
+// Deprecated - kept for compatibility
 char* get_password_hash(int account_id, const char* database);
 bool verify_password(const char* password, const char* stored_hash, int account_id);
 
 // JWT functions
 char* generate_jwt(account_info_t* account, system_info_t* system,
-                  const char* client_ip, const char* database, time_t issued_at);
+                  const char* client_ip, const char* tz, const char* database, time_t issued_at);
 void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, const char* database);
 jwt_validation_result_t validate_jwt(const char* token, const char* database);
 char* generate_new_jwt(jwt_claims_t* old_claims);
@@ -198,6 +204,7 @@ char* generate_jti(void);
 char* compute_password_hash(const char* password, int account_id);
 char* compute_token_hash(const char* token);
 bool is_valid_timezone(const char* tz);
+int calculate_timezone_offset(const char* tz);
 bool is_valid_email(const char* email);
 bool is_alphanumeric_underscore_hyphen(const char* str);
 

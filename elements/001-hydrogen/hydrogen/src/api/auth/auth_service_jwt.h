@@ -23,7 +23,7 @@ void free_jwt_config(jwt_config_t* config);
 
 // JWT generation and validation
 char* generate_jwt(account_info_t* account, system_info_t* system,
-                   const char* client_ip, const char* database, time_t issued_at);
+                   const char* client_ip, const char* tz, const char* database, time_t issued_at);
 jwt_validation_result_t validate_jwt(const char* token, const char* database);
 char* generate_new_jwt(jwt_claims_t* old_claims);
 
