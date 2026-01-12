@@ -79,12 +79,12 @@ table.insert(queries,{sql=[[
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
                 (${LOOKUP_ID}, 0, 1, 'Username',        0, 0, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1, 1, 'E-Mail',          0, 0, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 2, 1, 'Office Phone',    0, 1, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 3, 1, 'Home Phone',      0, 2, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 4, 1, 'Office Fax',      0, 3, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 5, 1, 'Home Fax',        0, 4, '', '', '{}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 6, 1, 'Mobile Pone',     0, 5, '', '', '{}', ${COMMON_VALUES});
+                (${LOOKUP_ID}, 1, 1, 'E-Mail',          0, 1, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 2, 1, 'Office Phone',    0, 2, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 3, 1, 'Home Phone',      0, 3, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 4, 1, 'Office Fax',      0, 4, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 5, 1, 'Home Fax',        0, 5, '', '', '{}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 6, 1, 'Mobile Phone',    0, 6, '', '', '{}', ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
@@ -133,7 +133,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0, 1, 2, 3, 4, 5);
+            AND key_idx IN (0, 1, 2, 3, 4, 5, 6);
 
             ${SUBQUERY_DELIMITER}
 
