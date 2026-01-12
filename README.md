@@ -53,14 +53,14 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-01-12 09:08:03 UTC
+Last updated at 2026-01-12 10:11:47 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 JSON                           165            107              0         434855
-C                              915          37646          36535         132579
-SVG                            106            204           2502          94710
-Markdown                       532          15731            122          45309
+C                              916          37761          36596         133058
+SVG                            106            204           2502          94704
+Markdown                       532          15731            122          45308
 Text                           106            107              0          37622
 Lua                            158           3714           3138          25523
 Bourne Shell                   106           5096          73237          23981
@@ -78,7 +78,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          2394          66984         123820         813421
+SUM:                          2395          67099         123881         813893
 -------------------------------------------------------------------------------
 635 Files were skipped (duplicate, binary, or without source code):
   svg: 484
