@@ -16,6 +16,16 @@
 char* get_password_hash(int account_id, const char* database);
 bool verify_password(const char* password, const char* stored_hash, int account_id);
 
+// Forward declarations for test functions
+void test_get_password_hash_returns_null(void);
+void test_get_password_hash_with_zero_account_id(void);
+void test_get_password_hash_with_null_database(void);
+void test_verify_password_returns_false(void);
+void test_verify_password_with_null_password(void);
+void test_verify_password_with_null_hash(void);
+void test_verify_password_with_zero_account_id(void);
+void test_verify_password_with_all_null_params(void);
+
 void setUp(void) {
     // Set up test fixtures, if any
 }
