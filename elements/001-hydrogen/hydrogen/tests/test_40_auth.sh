@@ -34,7 +34,7 @@ set -euo pipefail
 
 # Test Configuration
 TEST_NAME="Auth  {BLUE}engines: 4{RESET}"
-TEST_ABBR="AUTH"
+TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
 TEST_VERSION="1.2.0"
