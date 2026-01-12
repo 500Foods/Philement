@@ -16,6 +16,7 @@
 // Include necessary headers for the module being tested
 #include <src/webserver/web_server_request.h>
 #include <src/webserver/web_server_core.h>
+#include <src/api/api_utils.h>
 
 // Standard library includes
 #include <string.h>
@@ -255,6 +256,79 @@ static void test_request_completed_termination_codes(void) {
     }
 }
 
+static void test_request_completed_with_api_post_buffer(void) {
+    // Test cleanup of ApiPostBuffer (lines 278-279)
+    // This tests the API buffer cleanup path
+
+    struct MHD_Connection *mock_connection = (struct MHD_Connection *)0x12345678;
+
+    // Create an ApiPostBuffer structure
+    ApiPostBuffer *api_buffer = calloc(1, sizeof(ApiPostBuffer));
+    TEST_ASSERT_NOT_NULL(api_buffer);
+
+    // Set the magic number to identify it as an API buffer
+    api_buffer->magic = API_POST_BUFFER_MAGIC;
+    api_buffer->data = strdup("test json data");
+    api_buffer->size = 14;
+    api_buffer->capacity = 100;
+
+    void *con_cls = api_buffer;
+
+    // Call the function - should clean up API buffer
+    request_completed(NULL, mock_connection, (void **)&con_cls, MHD_REQUEST_TERMINATED_COMPLETED_OK);
+
+    // con_cls should be set to NULL after cleanup
+    TEST_ASSERT_NULL(con_cls);
+}
+
+static void test_request_completed_connection_info_with_file_pointer(void) {
+    // Test cleanup when con_info->fp is set (line 269)
+    // This ensures the fclose(con_info->fp) path is covered
+
+    struct MHD_Connection *mock_connection = (struct MHD_Connection *)0x12345678;
+
+    // Create ConnectionInfo with magic number and file pointer
+    struct ConnectionInfo *con_info = calloc(1, sizeof(struct ConnectionInfo));
+    TEST_ASSERT_NOT_NULL(con_info);
+    
+    con_info->magic = CONNECTION_INFO_MAGIC;
+    con_info->fp = (FILE *)0xCAFEBABE;  // Mock file pointer
+    con_info->original_filename = strdup("test.txt");
+
+    void *con_cls = con_info;
+
+    // Call the function - should close file pointer and cleanup
+    request_completed(NULL, mock_connection, (void **)&con_cls, MHD_REQUEST_TERMINATED_COMPLETED_OK);
+
+    // con_cls should be set to NULL after cleanup
+    TEST_ASSERT_NULL(con_cls);
+}
+
+static void test_request_completed_unknown_magic(void) {
+    // Test handling of unknown magic number
+    // This tests the else branch that logs a warning
+
+    struct MHD_Connection *mock_connection = (struct MHD_Connection *)0x12345678;
+
+    // Allocate a structure on the heap with unknown magic number
+    struct {
+        uint32_t magic;
+        char data[64];
+    } *unknown_struct = calloc(1, sizeof(*unknown_struct));
+    TEST_ASSERT_NOT_NULL(unknown_struct);
+    
+    unknown_struct->magic = 0xDEADBEEF;  // Unknown magic
+
+    void *con_cls = unknown_struct;
+
+    // Call the function - should log warning and free raw pointer
+    request_completed(NULL, mock_connection, (void **)&con_cls, MHD_REQUEST_TERMINATED_COMPLETED_OK);
+
+    // con_cls should be set to NULL after cleanup
+    TEST_ASSERT_NULL(con_cls);
+    // Note: The function should have freed unknown_struct, so don't free it again
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -268,6 +342,9 @@ int main(void) {
     RUN_TEST(test_request_completed_thread_cleanup);
     RUN_TEST(test_request_completed_multiple_calls_safe);
     RUN_TEST(test_request_completed_termination_codes);
+    RUN_TEST(test_request_completed_with_api_post_buffer);
+    RUN_TEST(test_request_completed_connection_info_with_file_pointer);
+    RUN_TEST(test_request_completed_unknown_magic);
 
     return UNITY_END();
 }

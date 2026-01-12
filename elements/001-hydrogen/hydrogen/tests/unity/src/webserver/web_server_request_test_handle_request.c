@@ -112,7 +112,7 @@ static void test_handle_request_integration_note(void) {
     // Document that comprehensive testing requires integration tests
     // handle_request() coordinates multiple subsystems:
     // 1. Thread registration
-    // 2. API endpoint routing  
+    // 2. API endpoint routing
     // 3. Swagger request handling
     // 4. Static file serving
     // 5. Upload processing
@@ -129,11 +129,61 @@ static void test_handle_request_integration_note(void) {
     TEST_PASS_MESSAGE("Integration tests verify complete request handling");
 }
 
+static void test_handle_request_unsupported_method(void) {
+    // Test unsupported HTTP methods (lines 234-240)
+    // Methods other than GET, POST, OPTIONS should return 400 Bad Request
+    struct MockMHDConnection mock_conn = {0};
+    void *con_cls = NULL;
+    size_t upload_size = 0;
+    
+    // Setup mock to return success for response operations
+    mock_mhd_set_queue_response_result(MHD_YES);
+    
+    // Test unsupported methods
+    enum MHD_Result result = handle_request(NULL, (struct MHD_Connection *)&mock_conn,
+                                           "/test", "PUT", "HTTP/1.1", NULL,
+                                           &upload_size, &con_cls);
+    
+    // Unsupported method should return success (response was queued)
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+    
+    // Test another unsupported method
+    con_cls = NULL;
+    result = handle_request(NULL, (struct MHD_Connection *)&mock_conn,
+                           "/test", "DELETE", "HTTP/1.1", NULL,
+                           &upload_size, &con_cls);
+    
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+}
+
+static void test_handle_request_get_static_file_simulation(void) {
+    // Test GET request path (lines 207-208 indirectly)
+    // Note: Full file serving requires filesystem access and is better tested
+    // through integration tests. This test verifies the routing logic.
+    struct MockMHDConnection mock_conn = {0};
+    void *con_cls = NULL;
+    size_t upload_size = 0;
+    
+    // Setup mock to return success
+    mock_mhd_set_queue_response_result(MHD_YES);
+    
+    // Test GET request - this will attempt to serve a file
+    // Since we don't have a real filesystem in unit tests, it will return 404
+    enum MHD_Result result = handle_request(NULL, (struct MHD_Connection *)&mock_conn,
+                                           "/nonexistent.html", "GET", "HTTP/1.1", NULL,
+                                           &upload_size, &con_cls);
+    
+    // Should complete successfully (404 response queued)
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_handle_request_function_exists);
     RUN_TEST(test_handle_request_with_options_method);
+    RUN_TEST(test_handle_request_unsupported_method);
+    RUN_TEST(test_handle_request_get_static_file_simulation);
     RUN_TEST(test_handle_request_integration_note);
 
     // Clean up test config
