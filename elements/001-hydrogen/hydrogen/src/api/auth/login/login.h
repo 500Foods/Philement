@@ -52,4 +52,17 @@ enum MHD_Result handle_auth_login_request(
     void **con_cls
 );
 
+// Helper functions for error response building (exported for testing)
+enum MHD_Result login_send_missing_params_error(struct MHD_Connection *connection);
+enum MHD_Result login_send_validation_error(struct MHD_Connection *connection, const char* login_id);
+enum MHD_Result login_send_license_expired_error(struct MHD_Connection *connection, int system_id);
+enum MHD_Result login_send_client_ip_error(struct MHD_Connection *connection);
+enum MHD_Result login_send_ip_blacklist_error(struct MHD_Connection *connection, const char* client_ip);
+enum MHD_Result login_send_rate_limit_error(struct MHD_Connection *connection, const char* login_id, const char* client_ip);
+enum MHD_Result login_send_account_not_found_error(struct MHD_Connection *connection, const char* login_id);
+enum MHD_Result login_send_account_disabled_error(struct MHD_Connection *connection, const char* login_id, int account_id);
+enum MHD_Result login_send_account_not_authorized_error(struct MHD_Connection *connection, const char* login_id, int account_id);
+enum MHD_Result login_send_jwt_generation_error(struct MHD_Connection *connection, int account_id);
+enum MHD_Result login_send_jwt_hash_error(struct MHD_Connection *connection, int account_id);
+
 #endif /* HYDROGEN_AUTH_LOGIN_H */

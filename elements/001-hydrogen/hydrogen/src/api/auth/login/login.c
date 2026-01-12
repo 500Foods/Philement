@@ -14,6 +14,106 @@
 // Local includes
 #include "login.h"
 
+// ============================================================================
+// Helper Functions for Error Response Building
+// ============================================================================
+
+// Send missing required parameters error
+enum MHD_Result login_send_missing_params_error(struct MHD_Connection *connection) {
+    log_this(SR_AUTH, "Missing required parameters in login request", LOG_LEVEL_ERROR, 0);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("Missing required parameters: login_id, password, api_key, tz, database"));
+    return api_send_json_response(connection, response, MHD_HTTP_BAD_REQUEST);
+}
+
+// Send login input validation error
+enum MHD_Result login_send_validation_error(struct MHD_Connection *connection, const char* login_id) {
+    log_this(SR_AUTH, "Login input validation failed for login_id: %s", LOG_LEVEL_ALERT, 1, login_id);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("Invalid input parameters"));
+    return api_send_json_response(connection, response, MHD_HTTP_BAD_REQUEST);
+}
+
+// Send license expired error
+enum MHD_Result login_send_license_expired_error(struct MHD_Connection *connection, int system_id) {
+    log_this(SR_AUTH, "License expired for system_id=%d", LOG_LEVEL_ALERT, 1, system_id);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("License has expired"));
+    return api_send_json_response(connection, response, MHD_HTTP_FORBIDDEN);
+}
+
+// Send client IP retrieval error
+enum MHD_Result login_send_client_ip_error(struct MHD_Connection *connection) {
+    log_this(SR_AUTH, "Failed to retrieve client IP address", LOG_LEVEL_ERROR, 0);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("Unable to determine client IP"));
+    return api_send_json_response(connection, response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+}
+
+// Send IP blacklist error
+enum MHD_Result login_send_ip_blacklist_error(struct MHD_Connection *connection, const char* client_ip) {
+    log_this(SR_AUTH, "Login attempt from blacklisted IP: %s", LOG_LEVEL_ALERT, 1, client_ip);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("Access denied"));
+    return api_send_json_response(connection, response, MHD_HTTP_FORBIDDEN);
+}
+
+// Send rate limit exceeded error
+enum MHD_Result login_send_rate_limit_error(struct MHD_Connection *connection, const char* login_id, const char* client_ip) {
+    log_this(SR_AUTH, "Rate limit exceeded for %s from %s - access denied",
+             LOG_LEVEL_ALERT, 2, login_id, client_ip);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("Too many failed attempts"));
+    json_object_set_new(response, "retry_after", json_integer(900)); // 15 minutes in seconds
+    return api_send_json_response(connection, response, MHD_HTTP_TOO_MANY_REQUESTS);
+}
+
+// Send account not found error
+enum MHD_Result login_send_account_not_found_error(struct MHD_Connection *connection, const char* login_id) {
+    log_this(SR_AUTH, "Account not found for login_id: %s", LOG_LEVEL_ALERT, 1, login_id);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("Invalid credentials"));
+    return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
+}
+
+// Send account disabled error
+enum MHD_Result login_send_account_disabled_error(struct MHD_Connection *connection, const char* login_id, int account_id) {
+    log_this(SR_AUTH, "Account disabled for login_id: %s (account_id=%d)",
+             LOG_LEVEL_ALERT, 2, login_id, account_id);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("Account is disabled"));
+    return api_send_json_response(connection, response, MHD_HTTP_FORBIDDEN);
+}
+
+// Send account not authorized error
+enum MHD_Result login_send_account_not_authorized_error(struct MHD_Connection *connection, const char* login_id, int account_id) {
+    log_this(SR_AUTH, "Account not authorized for login_id: %s (account_id=%d)",
+             LOG_LEVEL_ALERT, 2, login_id, account_id);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("Account is not authorized"));
+    return api_send_json_response(connection, response, MHD_HTTP_FORBIDDEN);
+}
+
+// Send JWT generation error
+enum MHD_Result login_send_jwt_generation_error(struct MHD_Connection *connection, int account_id) {
+    log_this(SR_AUTH, "Failed to generate JWT for account_id=%d", LOG_LEVEL_ERROR, 1, account_id);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("Failed to generate authentication token"));
+    return api_send_json_response(connection, response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+}
+
+// Send JWT hash computation error
+enum MHD_Result login_send_jwt_hash_error(struct MHD_Connection *connection, int account_id) {
+    log_this(SR_AUTH, "Failed to compute JWT hash for account_id=%d", LOG_LEVEL_ERROR, 1, account_id);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("Failed to store authentication token"));
+    return api_send_json_response(connection, response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+}
+
+// ============================================================================
+// Main Handler Function
+// ============================================================================
+
 // Handle POST /api/auth/login requests
 // Authenticates user and returns JWT token on success
 // Success: 200 OK with JWT token and user details
@@ -104,20 +204,14 @@ enum MHD_Result handle_auth_login_request(
     
     // Validate that all required parameters are present
     if (!login_id || !password || !api_key || !tz || !database) {
-        log_this(SR_AUTH, "Missing required parameters in login request", LOG_LEVEL_ERROR, 0);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Missing required parameters: login_id, password, api_key, tz, database"));
-        return api_send_json_response(connection, response, MHD_HTTP_BAD_REQUEST);
+        return login_send_missing_params_error(connection);
     }
     
     // Step 1 & 2: Validate input parameters and timezone
     if (!validate_login_input(login_id, password, api_key, tz)) {
-        log_this(SR_AUTH, "Login input validation failed for login_id: %s", LOG_LEVEL_ALERT, 1, login_id);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Invalid input parameters"));
-        return api_send_json_response(connection, response, MHD_HTTP_BAD_REQUEST);
+        return login_send_validation_error(connection, login_id);
     }
     
     log_this(SR_AUTH, "Login input validation passed for login_id: %s", LOG_LEVEL_DEBUG, 1, login_id);
@@ -137,11 +231,8 @@ enum MHD_Result handle_auth_login_request(
     
     // Step 4: Check if license has expired
     if (!check_license_expiry(sys_info.license_expiry)) {
-        log_this(SR_AUTH, "License expired for system_id=%d", LOG_LEVEL_ALERT, 1, sys_info.system_id);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("License has expired"));
-        return api_send_json_response(connection, response, MHD_HTTP_FORBIDDEN);
+        return login_send_license_expired_error(connection, sys_info.system_id);
     }
     
     log_this(SR_AUTH, "License validation passed for system_id=%d", LOG_LEVEL_DEBUG, 1, sys_info.system_id);
@@ -149,11 +240,8 @@ enum MHD_Result handle_auth_login_request(
     // Get client IP address for security checks
     char* client_ip = api_get_client_ip(connection);
     if (!client_ip) {
-        log_this(SR_AUTH, "Failed to retrieve client IP address", LOG_LEVEL_ERROR, 0);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Unable to determine client IP"));
-        return api_send_json_response(connection, response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        return login_send_client_ip_error(connection);
     }
     
     // Step 5: Check IP whitelist
@@ -162,12 +250,10 @@ enum MHD_Result handle_auth_login_request(
     // Step 6: Check IP blacklist
     bool is_blacklisted = check_ip_blacklist(client_ip, database);
     if (is_blacklisted) {
-        log_this(SR_AUTH, "Login attempt from blacklisted IP: %s", LOG_LEVEL_ALERT, 1, client_ip);
-        free(client_ip);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Access denied"));
-        return api_send_json_response(connection, response, MHD_HTTP_FORBIDDEN);
+        enum MHD_Result result = login_send_ip_blacklist_error(connection, client_ip);
+        free(client_ip);
+        return result;
     }
     
     log_this(SR_AUTH, "IP security checks passed for client: %s (whitelisted=%d)",
@@ -191,25 +277,18 @@ enum MHD_Result handle_auth_login_request(
     // Step 9: Handle rate limiting - block IP if too many failed attempts
     bool should_block = handle_rate_limiting(client_ip, failed_count, is_whitelisted, database);
     if (should_block) {
-        log_this(SR_AUTH, "Rate limit exceeded for %s from %s - access denied",
-                 LOG_LEVEL_ALERT, 2, login_id, client_ip);
-        free(client_ip);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Too many failed attempts"));
-        json_object_set_new(response, "retry_after", json_integer(900)); // 15 minutes in seconds
-        return api_send_json_response(connection, response, MHD_HTTP_TOO_MANY_REQUESTS);
+        enum MHD_Result result = login_send_rate_limit_error(connection, login_id, client_ip);
+        free(client_ip);
+        return result;
     }
     
     // Step 10: Lookup account information by login_id
     account_info_t* account = lookup_account(login_id, database);
     if (!account) {
-        log_this(SR_AUTH, "Account not found for login_id: %s", LOG_LEVEL_ALERT, 1, login_id);
         free(client_ip);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Invalid credentials"));
-        return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
+        return login_send_account_not_found_error(connection, login_id);
     }
     
     log_this(SR_AUTH, "Account found for login_id: %s (account_id=%d, username=%s)",
@@ -217,26 +296,18 @@ enum MHD_Result handle_auth_login_request(
     
     // Step 11: Verify account is enabled
     if (!account->enabled) {
-        log_this(SR_AUTH, "Account disabled for login_id: %s (account_id=%d)",
-                 LOG_LEVEL_ALERT, 2, login_id, account->id);
         free_account_info(account);
         free(client_ip);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Account is disabled"));
-        return api_send_json_response(connection, response, MHD_HTTP_FORBIDDEN);
+        return login_send_account_disabled_error(connection, login_id, account->id);
     }
     
     // Step 12: Verify account is authorized
     if (!account->authorized) {
-        log_this(SR_AUTH, "Account not authorized for login_id: %s (account_id=%d)",
-                 LOG_LEVEL_ALERT, 2, login_id, account->id);
         free_account_info(account);
         free(client_ip);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Account is not authorized"));
-        return api_send_json_response(connection, response, MHD_HTTP_FORBIDDEN);
+        return login_send_account_not_authorized_error(connection, login_id, account->id);
     }
     
     log_this(SR_AUTH, "Account enabled and authorized for account_id=%d", LOG_LEVEL_DEBUG, 1, account->id);
@@ -262,13 +333,10 @@ enum MHD_Result handle_auth_login_request(
     time_t issued_at = time(NULL);
     char* jwt_token = generate_jwt(account, &sys_info, client_ip, tz, database, issued_at);
     if (!jwt_token) {
-        log_this(SR_AUTH, "Failed to generate JWT for account_id=%d", LOG_LEVEL_ERROR, 1, account->id);
         free_account_info(account);
         free(client_ip);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Failed to generate authentication token"));
-        return api_send_json_response(connection, response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        return login_send_jwt_generation_error(connection, account->id);
     }
     
     log_this(SR_AUTH, "JWT token generated for account_id=%d", LOG_LEVEL_DEBUG, 1, account->id);
@@ -277,14 +345,11 @@ enum MHD_Result handle_auth_login_request(
     // Compute token hash for storage
     char* jwt_hash = compute_token_hash(jwt_token);
     if (!jwt_hash) {
-        log_this(SR_AUTH, "Failed to compute JWT hash for account_id=%d", LOG_LEVEL_ERROR, 1, account->id);
         free(jwt_token);
         free_account_info(account);
         free(client_ip);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Failed to store authentication token"));
-        return api_send_json_response(connection, response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        return login_send_jwt_hash_error(connection, account->id);
     }
     
     // JWT token lifetime is 1 hour (3600 seconds)
