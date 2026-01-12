@@ -159,6 +159,10 @@ QUALITY CHECKLIST (before completing)
 
 ## January 2026
 
+- [2026-Jan-12 (Mon)](/releases/2026-01/2026-01-12.md): (H) Auth service testing framework, comprehensive unit tests, web server testing
+- [2026-Jan-11 (Sun)](/releases/2026-01/2026-01-11.md): (H) Auth service enhancements, DB2 database support, database migrations
+- [2026-Jan-10 (Sat)](/releases/2026-01/2026-01-10.md): (H) Auth endpoints implementation, query conduits, comprehensive testing framework
+- [2026-Jan-09 (Fri)](/releases/2026-01/2026-01-09.md): (H) Auth service implementation, JWT validation, database operations
 - [2026-Jan-08 (Thu)](/releases/2026-01/2026-01-08.md): (H) Runtime config validation, auth service implementation
 - [2026-Jan-07 (Wed)](/releases/2026-01/2026-01-07.md): (H) JSON Schema validation, configuration file validation system
 - [2026-Jan-06 (Tue)](/releases/2026-01/2026-01-06.md): (H) Web server custom headers, pattern matching, comprehensive testing
