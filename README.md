@@ -53,14 +53,14 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-01-12 11:29:52 UTC
+Last updated at 2026-01-12 11:58:34 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           165            107              0         434855
+JSON                           165            107              0         434921
 C                              917          37820          36652         133192
 SVG                            106            204           2502          94704
-Markdown                       532          15731            122          45308
+Markdown                       536          15803            122          45476
 Text                           106            107              0          37622
 Lua                            158           3714           3138          25523
 Bourne Shell                   106           5096          73236          23981
@@ -78,7 +78,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          2396          67159         123937         814038
+SUM:                          2400          67231         123937         814272
 -------------------------------------------------------------------------------
 635 Files were skipped (duplicate, binary, or without source code):
   svg: 484
