@@ -8,9 +8,26 @@
         "EnableIPv6": false,
         "Port": 5401
     },              
-    "API": {
+    "API": {              
+        "Enabled": true,
+        "Prefix": "/api",
         "JWTSecret": "${env.HYDROGEN_DEMO_JWT_KEY}"
     },
+    "Swagger": {
+        "Enabled": true,
+        "Prefix": "/swagger",
+        "UIOptions": {
+            "TryItEnabled": true,
+            "AlwaysExpanded": true,
+            "DisplayOperationId": true,
+            "DefaultModelsExpandDepth": 1,
+            "DefaultModelExpandDepth": 1,
+            "ShowExtensions": false,
+            "ShowCommonExtensions": true,
+            "DocExpansion": "list",
+            "SyntaxHighlightTheme": "agate"
+        }
+    },    
     "Databases": {
         "Connections": [
             {
@@ -25,7 +42,12 @@
                 "StmtCache": 100,
                 "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
                 "AutoMigration": true,
-                "TestMigration": false,
+                "TestMigration": false,         
+                "Parameters": {
+                    "LOGINRETRYWINDOW": 15,
+                    "IPADDRESS": "10.10.10.10",
+                    "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
+                },                
                 "Migrations":"PAYLOAD:acuranzo",
                 "Schema": "demo",
                 "Queues": {
