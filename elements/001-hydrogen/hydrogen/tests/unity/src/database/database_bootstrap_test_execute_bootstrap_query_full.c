@@ -551,7 +551,7 @@ void test_successful_execution_with_qtc(void) {
 
     // JSON with QTC fields and migration
     const char* json_data = "["
-        "{\"ref\": 1001, \"query\": \"SELECT * FROM users\", \"name\": \"Users Query\", \"queue\": 3, \"timeout\": 30, \"type\": 999},"
+        "{\"ref\": 1001, \"query\": \"SELECT * FROM users\", \"name\": \"Users Query\", \"queue\": 3, \"timeout\": 30, \"type\": 0},"
         "{\"type\": 1000, \"ref\": 10}"
     "]";
     mock_database_engine_set_execute_json_data(json_data);
