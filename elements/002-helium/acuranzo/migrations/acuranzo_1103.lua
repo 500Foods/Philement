@@ -50,43 +50,51 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     SELECT
+                        name,
                         first_name,
                         middle_name,
-                        last_name,
-                        name
+                        last_name
                     FROM
                         ${SCHEMA}accounts
                     WHERE
                         (account_id = :ACCOUNTID)
                         AND (password_hash = :PASSWORDHASH)
+                        AND (status_a16 = 1)
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query retrieves the account details for a given account ID
-                    and password hash from the `accounts` table.
+                    This query verifies account credentials by matching account ID, password hash, AND active status.
+                    Returns account details ONLY if all three conditions match. This performs authentication and
+                    authorization in one secure database query without exposing password hashes or revealing
+                    whether an account exists but is disabled.
 
                     ## Parameters
 
-                    - `ACCOUNTID` (integer): The account ID to check.
-                    - `PASSWORDHASH` (string): The password hash to verify.
+                    - `ACCOUNTID` (integer): The account ID to verify.
+                    - `PASSWORDHASH` (string): The computed password hash to verify.
 
                     ## Returns
 
+                    Returns a single row if ALL conditions match:
+                    - `name` (string): The username of the account holder.
                     - `first_name` (string): The first name of the account holder.
                     - `middle_name` (string): The middle name of the account holder.
                     - `last_name` (string): The last name of the account holder.
-                    - `name` (string): The full name of the account holder.
+
+                    Returns empty result set if ANY condition fails (password mismatch OR account not active).
 
                     ## Tables
 
                     - `${SCHEMA}accounts`: The table containing account information.
 
-                    ## Notes
+                    ## Security
 
-                    - Ensure that the `PASSWORDHASH` parameter is securely hashed
-                      before executing this query to maintain security best practices.
+                    - Never exposes password hashes to the application
+                    - Never reveals if account exists but is disabled vs wrong password
+                    - Single query verifies identity + authorization (status_a16=1 means Active)
+                    - More secure than checking status separately
 
                 ]==]
                                                                                     AS summary,

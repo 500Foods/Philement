@@ -241,27 +241,12 @@ enum MHD_Result handle_auth_login_request(
     
     log_this(SR_AUTH, "Account enabled and authorized for account_id=%d", LOG_LEVEL_DEBUG, 1, account->id);
     
-    // Steps 13-14: Account email and roles are already retrieved in account structure
-    // No additional action needed
-    
-    // Step 15: Verify password
-    char* stored_password_hash = get_password_hash(account->id, database);
-    if (!stored_password_hash) {
-        log_this(SR_AUTH, "Failed to retrieve password hash for account_id=%d",
-                 LOG_LEVEL_ERROR, 1, account->id);
-        free_account_info(account);
-        free(client_ip);
-        json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Authentication error"));
-        return api_send_json_response(connection, response, MHD_HTTP_INTERNAL_SERVER_ERROR);
-    }
-    
-    bool password_valid = verify_password(password, stored_password_hash, account->id);
-    free(stored_password_hash); // Clean up sensitive data immediately
-    
-    if (!password_valid) {
-        log_this(SR_AUTH, "Invalid password for account_id=%d from IP %s",
+    // Steps 13-15: Verify password AND account status in one secure database query
+    // QueryRef #012 checks: password_hash match AND status_a16=1 (Active)
+    // Returns row ONLY if BOTH conditions are met
+    // More secure: never exposes hash, doesn't reveal if account disabled vs wrong password
+    if (!verify_password_and_status(password, account->id, database, account)) {
+        log_this(SR_AUTH, "Invalid credentials for account_id=%d from IP %s (password incorrect OR account not active)",
                  LOG_LEVEL_ALERT, 2, account->id, client_ip);
         free_account_info(account);
         free(client_ip);
@@ -271,11 +256,11 @@ enum MHD_Result handle_auth_login_request(
         return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
     }
     
-    log_this(SR_AUTH, "Password verified for account_id=%d", LOG_LEVEL_DEBUG, 1, account->id);
+    log_this(SR_AUTH, "Password and status verified for account_id=%d", LOG_LEVEL_DEBUG, 1, account->id);
     
     // Step 16: Generate JWT token
     time_t issued_at = time(NULL);
-    char* jwt_token = generate_jwt(account, &sys_info, client_ip, database, issued_at);
+    char* jwt_token = generate_jwt(account, &sys_info, client_ip, tz, database, issued_at);
     if (!jwt_token) {
         log_this(SR_AUTH, "Failed to generate JWT for account_id=%d", LOG_LEVEL_ERROR, 1, account->id);
         free_account_info(account);

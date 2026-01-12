@@ -49,9 +49,51 @@ table.insert(queries,{sql=[[
                 ${COMMON_FIELDS}
             )
             VALUES
-                (9001, 1, '${HYDROGEN_DEMO_API_KEY}', 1, 'Demo API Key',         'Valid API key for testing',  ${JIS}[==[ {"auth": true}                   ]==]${JIE}, ${COMMON_VALUES}),
-                (9002, 1, 'demo-api-key-admin',       1, 'Demo Admin API Key',   'Admin API key for testing',  ${JIS}[==[ {"auth": true, "admin": true}    ]==]${JIE}, ${COMMON_VALUES}),
-                (9003, 0, 'demo-api-key-expired',     1, 'Expired API Key',      'Expired API key for testing', ${JIS}[==[ {"auth": true}                   ]==]${JIE}, ${COMMON_VALUES});
+                (
+                    9001,
+                    1,
+                    '${HYDROGEN_DEMO_API_KEY}',
+                    1,
+                    'Demo API Key',
+                    'Valid API key for testing',
+                    ${JIS}[==[ {"auth": true} ]==]${JIE},
+                    '2025-01-01 00:00:00',
+                    '2035-01-01 00:00:00',
+                    0,
+                    ${NOW},
+                    0,
+                    ${NOW}
+                ),
+                (
+                    9002,
+                    1,
+                    'demo-api-key-admin',
+                    1,
+                    'Demo Admin API Key',
+                    'Admin API key for testing',
+                    ${JIS}[==[ {"auth": true, "admin": true} ]==]${JIE},
+                    '2025-01-01 00:00:00',
+                    '2035-01-01 00:00:00',
+                    0,
+                    ${NOW},
+                    0,
+                    ${NOW}
+                ),
+                (
+                    9003,
+                    0,
+                    'demo-api-key-expired',
+                    1,
+                    'Expired API Key',
+                    'Expired API key for testing',
+                    ${JIS}[==[ {"auth": true} ]==]${JIE},
+                    '2025-01-01 00:00:00',
+                    '2026-01-01 00:00:00',
+                    0,
+                    ${NOW},
+                    0,
+                    ${NOW}
+                );
 
             ${SUBQUERY_DELIMITER}
 

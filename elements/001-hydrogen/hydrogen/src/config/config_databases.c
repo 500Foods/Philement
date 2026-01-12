@@ -195,6 +195,35 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 conn->prepared_statement_cache_size = 1000;
             }
 
+            // Extract Parameters object and resolve environment variables
+            json_t* parameters_obj = json_object_get(conn_obj, "Parameters");
+            if (parameters_obj && json_is_object(parameters_obj)) {
+                // Create new object with resolved environment variables
+                conn->parameters = json_object();
+                const char* param_key;
+                json_t* param_value;
+                json_object_foreach(parameters_obj, param_key, param_value) {
+                    if (json_is_string(param_value)) {
+                        // Resolve environment variables in string parameters
+                        const char* value_str = json_string_value(param_value);
+                        char* resolved_value = process_env_variable_string(value_str);
+                        if (resolved_value) {
+                            json_object_set_new(conn->parameters, param_key, json_string(resolved_value));
+                            free(resolved_value);
+                        } else {
+                            // Keep original if resolution fails
+                            json_object_set(conn->parameters, param_key, param_value);
+                        }
+                    } else {
+                        // Copy non-string values as-is (integers, booleans, etc.)
+                        json_object_set(conn->parameters, param_key, param_value);
+                    }
+                }
+                log_this(SR_CONFIG_CURRENT, "Database config: Loaded Parameters object with env vars resolved", LOG_LEVEL_DEBUG, 0);
+            } else {
+                conn->parameters = NULL;
+            }
+
             // Only extract network fields for non-SQLite databases
             if (conn->type && strcmp(conn->type, "sqlite") != 0) {
                 json_t* host_obj = json_object_get(conn_obj, "Host");
@@ -493,9 +522,75 @@ void cleanup_database_connection(DatabaseConnection* conn) {
     free(conn->bootstrap_query);
     free(conn->schema);
     free(conn->migrations);
+    if (conn->parameters) {
+        json_decref(conn->parameters);
+    }
 
     // Zero out the structure
     memset(conn, 0, sizeof(DatabaseConnection));
+}
+
+// Find database connection by name
+const DatabaseConnection* find_database_connection(const DatabaseConfig* config, const char* database_name) {
+    if (!config || !database_name) return NULL;
+
+    for (int i = 0; i < config->connection_count; i++) {
+        const DatabaseConnection* conn = &config->connections[i];
+        if (conn->enabled && conn->connection_name &&
+            strcmp(conn->connection_name, database_name) == 0) {
+            return conn;
+        }
+    }
+    return NULL;
+}
+
+// Merge database connection parameters with query parameters
+// Config parameters override query parameters (for testing purposes)
+// Handles both flat and typed parameter formats intelligently
+json_t* merge_database_parameters(const DatabaseConnection* conn, json_t* query_params) {
+    if (!conn || !conn->parameters) {
+        return query_params ? json_deep_copy(query_params) : json_object();
+    }
+
+    // Start with a deep copy of query parameters if provided, otherwise empty object
+    json_t* merged_params = query_params ? json_deep_copy(query_params) : json_object();
+
+    // Iterate through config parameters and merge them into typed objects
+    // Config parameters OVERRIDE query parameters to allow test control
+    const char* param_name;
+    json_t* param_value;
+    json_object_foreach(conn->parameters, param_name, param_value) {
+        // Determine the type of the parameter and merge into appropriate typed object
+        const char* type_key = NULL;
+        
+        if (json_is_integer(param_value)) {
+            type_key = "INTEGER";
+        } else if (json_is_string(param_value)) {
+            type_key = "STRING";
+        } else if (json_is_boolean(param_value)) {
+            type_key = "BOOLEAN";
+        } else if (json_is_real(param_value)) {
+            type_key = "FLOAT";
+        }
+
+        if (type_key) {
+            // Get or create the typed parameter object
+            json_t* type_obj = json_object_get(merged_params, type_key);
+            if (!type_obj) {
+                type_obj = json_object();
+                json_object_set_new(merged_params, type_key, type_obj);
+            }
+
+            // Override query param with config value (config takes precedence)
+            json_object_set(type_obj, param_name, json_deep_copy(param_value));
+        } else {
+            // For any other type (objects, arrays, etc.), keep at top level
+            // Override with config value
+            json_object_set(merged_params, param_name, json_deep_copy(param_value));
+        }
+    }
+
+    return merged_params;
 }
 
 // Clean up database configuration

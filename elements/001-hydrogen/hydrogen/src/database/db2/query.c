@@ -8,6 +8,7 @@
 #include <src/hydrogen.h>
 #include <src/database/database.h>
 #include <src/database/dbqueue/dbqueue.h>
+#include <src/database/database_params.h>
 
 // Local includes
 #include "types.h"
@@ -26,6 +27,8 @@ extern SQLFreeHandle_t SQLFreeHandle_ptr;
 extern SQLFreeStmt_t SQLFreeStmt_ptr;
 extern SQLDescribeCol_t SQLDescribeCol_ptr;
 extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
+extern SQLPrepare_t SQLPrepare_ptr;
+extern SQLBindParameter_t SQLBindParameter_ptr;
 
 // Helper function to cleanup column names (non-static for testing)
 void db2_cleanup_column_names(char** column_names, int column_count) {
@@ -304,6 +307,94 @@ bool db2_process_query_results(void* stmt_handle, const char* designator, struct
     return true;
 }
 
+// Helper function to bind a single parameter
+static bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, TypedParameter* param,
+                                       void** bound_values, long* str_len_indicators, const char* designator) {
+    if (!SQLBindParameter_ptr) {
+        log_this(designator, "SQLBindParameter function not available", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    int bind_result = SQL_SUCCESS;
+
+    log_this(designator, "Binding parameter %u: name=%s, type=%d", LOG_LEVEL_TRACE, 3,
+             (unsigned int)param_index, param->name, param->type);
+
+    switch (param->type) {
+        case PARAM_TYPE_INTEGER: {
+            bound_values[param_index - 1] = malloc(sizeof(int));
+            if (!bound_values[param_index - 1]) return false;
+            *(int*)bound_values[param_index - 1] = (int)param->value.int_value;
+            str_len_indicators[param_index - 1] = 0;
+            log_this(designator, "Binding INTEGER parameter %u: value=%d", LOG_LEVEL_TRACE, 2,
+                     (unsigned int)param_index, (int)param->value.int_value);
+            bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
+                                               SQL_C_LONG, SQL_INTEGER, 0, 0,
+                                               bound_values[param_index - 1], 0,
+                                               &str_len_indicators[param_index - 1]);
+            break;
+        }
+        case PARAM_TYPE_STRING: {
+            size_t str_len = param->value.string_value ? strlen(param->value.string_value) : 0;
+            bound_values[param_index - 1] = param->value.string_value ? strdup(param->value.string_value) : strdup("");
+            if (!bound_values[param_index - 1]) return false;
+            str_len_indicators[param_index - 1] = (long)str_len;
+            log_this(designator, "Binding STRING parameter %u: value='%s', len=%zu", LOG_LEVEL_TRACE, 3,
+                     (unsigned int)param_index, (char*)bound_values[param_index - 1], str_len);
+            bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
+                                               SQL_C_CHAR, SQL_CHAR, str_len > 0 ? str_len : 1, 0,
+                                               bound_values[param_index - 1], (long)(str_len + 1),
+                                               &str_len_indicators[param_index - 1]);
+            break;
+        }
+        case PARAM_TYPE_BOOLEAN: {
+            bound_values[param_index - 1] = malloc(sizeof(short));
+            if (!bound_values[param_index - 1]) return false;
+            *(short*)bound_values[param_index - 1] = param->value.bool_value ? 1 : 0;
+            str_len_indicators[param_index - 1] = 0;
+            log_this(designator, "Binding BOOLEAN parameter %u: value=%d", LOG_LEVEL_TRACE, 2,
+                     (unsigned int)param_index, param->value.bool_value ? 1 : 0);
+            bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
+                                               SQL_C_SHORT, SQL_SMALLINT, 0, 0,
+                                               bound_values[param_index - 1], 0,
+                                               &str_len_indicators[param_index - 1]);
+            break;
+        }
+        case PARAM_TYPE_FLOAT: {
+            bound_values[param_index - 1] = malloc(sizeof(double));
+            if (!bound_values[param_index - 1]) return false;
+            *(double*)bound_values[param_index - 1] = param->value.float_value;
+            str_len_indicators[param_index - 1] = 0;
+            log_this(designator, "Binding FLOAT parameter %u: value=%f", LOG_LEVEL_TRACE, 2,
+                     (unsigned int)param_index, param->value.float_value);
+            bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
+                                               SQL_C_DOUBLE, SQL_DOUBLE, 0, 0,
+                                               bound_values[param_index - 1], 0,
+                                               &str_len_indicators[param_index - 1]);
+            break;
+        }
+    }
+
+    if (bind_result != SQL_SUCCESS && bind_result != SQL_SUCCESS_WITH_INFO) {
+        log_this(designator, "Failed to bind parameter %u (type %d) - result: %d", LOG_LEVEL_ERROR, 3,
+                 (unsigned int)param_index, param->type, bind_result);
+        return false;
+    }
+
+    log_this(designator, "Successfully bound parameter %u", LOG_LEVEL_TRACE, 1, (unsigned int)param_index);
+    return true;
+}
+
+// Helper function to cleanup bound values
+static void db2_cleanup_bound_values(void** bound_values, size_t count) {
+    if (bound_values) {
+        for (size_t i = 0; i < count; i++) {
+            free(bound_values[i]);
+        }
+        free(bound_values);
+    }
+}
+
 // Query Execution Functions
 bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result) {
     if (!connection || !request || !result || connection->engine_type != DB_ENGINE_DB2) {
@@ -336,8 +427,99 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
     struct timespec start_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-    // Execute the query
-    int exec_result = SQLExecDirect_ptr(stmt_handle, (char*)request->sql_template, SQL_NTS);
+    // Variables for parameter binding
+    ParameterList* param_list = NULL;
+    TypedParameter** ordered_params = NULL;
+    size_t param_count = 0;
+    char* positional_sql = NULL;
+    void** bound_values = NULL;
+    long* str_len_indicators = NULL;
+    int exec_result = -1;
+
+    // Check if we have parameters to bind
+    bool has_params = request->parameters_json && strlen(request->parameters_json) > 2; // More than "{}"
+    
+    if (has_params && SQLPrepare_ptr && SQLBindParameter_ptr) {
+        // Parse parameters
+        log_this(designator, "DB2 execute_query: Parsing parameters: %s", LOG_LEVEL_TRACE, 1, request->parameters_json);
+        param_list = parse_typed_parameters(request->parameters_json, designator);
+        
+        if (param_list && param_list->count > 0) {
+            // Convert named parameters to positional
+            positional_sql = convert_named_to_positional(
+                request->sql_template, param_list, DB_ENGINE_DB2,
+                &ordered_params, &param_count, designator
+            );
+            
+            if (!positional_sql) {
+                log_this(designator, "DB2 execute_query: Failed to convert named to positional parameters", LOG_LEVEL_ERROR, 0);
+                free_parameter_list(param_list);
+                SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                return false;
+            }
+            
+            log_this(designator, "DB2 execute_query: Converted SQL: %s", LOG_LEVEL_TRACE, 1, positional_sql);
+            log_this(designator, "DB2 execute_query: Parameter count: %zu", LOG_LEVEL_TRACE, 1, param_count);
+            
+            // Prepare the statement
+            int prepare_result = SQLPrepare_ptr(stmt_handle, (unsigned char*)positional_sql, SQL_NTS);
+            if (prepare_result != SQL_SUCCESS && prepare_result != SQL_SUCCESS_WITH_INFO) {
+                log_this(designator, "DB2 execute_query: SQLPrepare failed with result %d", LOG_LEVEL_ERROR, 1, prepare_result);
+                free(positional_sql);
+                free(ordered_params);
+                free_parameter_list(param_list);
+                SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                return false;
+            }
+            
+            // Allocate arrays for bound values and indicators
+            bound_values = calloc(param_count, sizeof(void*));
+            str_len_indicators = calloc(param_count, sizeof(long));
+            if (!bound_values || !str_len_indicators) {
+                log_this(designator, "DB2 execute_query: Failed to allocate binding arrays", LOG_LEVEL_ERROR, 0);
+                free(bound_values);
+                free(str_len_indicators);
+                free(positional_sql);
+                free(ordered_params);
+                free_parameter_list(param_list);
+                SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                return false;
+            }
+            
+            // Bind each parameter
+            for (size_t i = 0; i < param_count; i++) {
+                if (!db2_bind_single_parameter(stmt_handle, (unsigned short)(i + 1), ordered_params[i],
+                                                bound_values, str_len_indicators, designator)) {
+                    log_this(designator, "DB2 execute_query: Failed to bind parameter %zu", LOG_LEVEL_ERROR, 1, i + 1);
+                    db2_cleanup_bound_values(bound_values, i);
+                    free(str_len_indicators);
+                    free(positional_sql);
+                    free(ordered_params);
+                    free_parameter_list(param_list);
+                    SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                    return false;
+                }
+            }
+            
+            // Execute the prepared statement
+            exec_result = SQLExecute_ptr(stmt_handle);
+            
+            // Cleanup binding resources
+            db2_cleanup_bound_values(bound_values, param_count);
+            free(str_len_indicators);
+            free(positional_sql);
+            free(ordered_params);
+            free_parameter_list(param_list);
+        } else {
+            // No actual parameters or parsing failed, fall back to direct execution
+            if (param_list) free_parameter_list(param_list);
+            exec_result = SQLExecDirect_ptr(stmt_handle, (char*)request->sql_template, SQL_NTS);
+        }
+    } else {
+        // No parameters, use direct execution
+        exec_result = SQLExecDirect_ptr(stmt_handle, (char*)request->sql_template, SQL_NTS);
+    }
+
     if (exec_result != SQL_SUCCESS && exec_result != SQL_SUCCESS_WITH_INFO) {
         // Get detailed error information
         unsigned char sql_state[6] = {0};
@@ -353,7 +535,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
             char *msg = (char*)error_msg;
             while (*msg) {
                 if (*msg == '\n') {
-                    *msg = ' ';  
+                    *msg = ' ';
                 }
                 msg++;
             }

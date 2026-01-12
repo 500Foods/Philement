@@ -47,6 +47,7 @@ typedef struct DatabaseConnection {
     char* migrations;      // Migration source (PAYLOAD:name or path)
     int prepared_statement_cache_size; // Size of prepared statement cache (default: 1000)
     DatabaseQueues queues; // Queue configuration for this connection
+    json_t* parameters;    // JSON object containing parameter values for queries
 } DatabaseConnection;
 
 // Structure for overall database configuration
@@ -59,11 +60,17 @@ typedef struct DatabaseConfig {
 // Initialize database configuration with defaults
 void init_database_config(DatabaseConfig* config);
 
+// Find database connection by name
+const DatabaseConnection* find_database_connection(const DatabaseConfig* config, const char* database_name);
+
 // Clean up a single database connection
 void cleanup_database_connection(DatabaseConnection* conn);
 
 // Clean up database configuration
 void cleanup_database_config(DatabaseConfig* config);
+
+// Merge database connection parameters with query parameters
+json_t* merge_database_parameters(const DatabaseConnection* conn, json_t* query_params);
 
 void dump_database_config(const DatabaseConfig* config);
 

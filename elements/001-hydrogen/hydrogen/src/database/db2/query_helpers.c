@@ -2,6 +2,9 @@
  * DB2 Database Engine - Query Helper Functions Implementation
  */
 
+// Standard library includes
+#include <ctype.h>
+
 // Project includes
 #include <src/hydrogen.h>
 #include <src/database/database.h>
@@ -21,13 +24,19 @@ bool db2_get_column_name(void* stmt_handle, int col_index, char** column_name) {
     // Try to get the actual column name
     char col_name[256] = {0};
     short col_name_len = 0;
-    int desc_result = SQLDescribeCol_ptr ? 
-        SQLDescribeCol_ptr(stmt_handle, col_index + 1, (unsigned char*)col_name, 
+    int desc_result = SQLDescribeCol_ptr ?
+        SQLDescribeCol_ptr(stmt_handle, col_index + 1, (unsigned char*)col_name,
                           sizeof(col_name), &col_name_len, NULL, NULL, NULL, NULL) : -1;
 
     if (desc_result == SQL_SUCCESS || desc_result == SQL_SUCCESS_WITH_INFO) {
-        // Successfully retrieved column name
+        // Successfully retrieved column name - convert to lowercase for cross-engine consistency
+        // DB2 returns uppercase by default, but we want lowercase to match other engines
         *column_name = strdup(col_name);
+        if (*column_name) {
+            for (char* p = *column_name; *p; p++) {
+                *p = (char)tolower((unsigned char)*p);
+            }
+        }
         return (*column_name != NULL);
     }
 

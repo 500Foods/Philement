@@ -61,6 +61,7 @@ SQLPrepare_t SQLPrepare_ptr = NULL;
 SQLExecute_t SQLExecute_ptr = NULL;
 SQLFreeStmt_t SQLFreeStmt_ptr = NULL;
 SQLDescribeCol_t SQLDescribeCol_ptr = NULL;
+SQLBindParameter_t SQLBindParameter_ptr = NULL;
 // Transaction control function
 SQLSetConnectAttr_t SQLSetConnectAttr_ptr = NULL;
 SQLDriverConnect_t SQLDriverConnect_ptr = NULL;
@@ -96,6 +97,7 @@ bool load_libdb2_functions(const char* designator __attribute__((unused))) {
     SQLDescribeCol_ptr = mock_SQLDescribeCol;
     SQLGetDiagRec_ptr = mock_SQLGetDiagRec;
     SQLSetConnectAttr_ptr = mock_SQLSetConnectAttr;
+    SQLBindParameter_ptr = mock_SQLBindParameter;
     return true;
 #else
     if (libdb2_handle) {
@@ -142,6 +144,7 @@ bool load_libdb2_functions(const char* designator __attribute__((unused))) {
     SQLDescribeCol_ptr = (SQLDescribeCol_t)dlsym(libdb2_handle, "SQLDescribeCol");
     SQLGetDiagRec_ptr = (SQLGetDiagRec_t)dlsym(libdb2_handle, "SQLGetDiagRec");
     SQLSetConnectAttr_ptr = (SQLSetConnectAttr_t)(void*)dlsym(libdb2_handle, "SQLSetConnectAttr");
+    SQLBindParameter_ptr = (SQLBindParameter_t)dlsym(libdb2_handle, "SQLBindParameter");
 #pragma GCC diagnostic pop
 
     // Check if all required functions were loaded

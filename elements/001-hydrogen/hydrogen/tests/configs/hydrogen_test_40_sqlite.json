@@ -14,7 +14,7 @@
     "Databases": {
         "Connections": [
             {
-                "Name": "Helium",
+                "Name": "Acuranzo",
                 "Engine": "sqlite",
                 "Enabled": true,
                 "Database": "tests/artifacts/database/sqlite/hydrodemo.sqlite",
