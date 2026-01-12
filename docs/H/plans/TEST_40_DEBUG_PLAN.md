@@ -89,7 +89,7 @@ ORDER BY query_type_a28 desc;
 
 ### 2. Query Execution Pipeline
 
-**File:** [`auth_service_database.c`](/elements/001-hydrogen/hydrogen/src/api/auth/auth_service_database.c:32)
+**File:** [`auth_service_database.c`](/elements/001-hydrogen/hydrogen/src/api/auth/auth_service_database.c)
 
 **Function:** `execute_auth_query(int query_ref, const char* database, json_t* params)`
 

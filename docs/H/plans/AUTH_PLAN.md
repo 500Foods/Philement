@@ -48,6 +48,7 @@ A thorough review of the authentication system architecture and implementation p
 | **[AUTH_PLAN_ACURANZO.md](/docs/H/plans/AUTH_PLAN_ACURANZO.md)** | Database integration and migrations | ✅ Complete |
 | **[AUTH_PLAN_PROGRESS.md](/docs/H/plans/AUTH_PLAN_PROGRESS.md)** | Implementation progress tracking, risk analysis, team assignments, phase checklists | ✅ Consolidated |
 | **[AUTH_PLAN_TESTS.md](/docs/H/plans/AUTH_PLAN_TESTS.md)** | Comprehensive testing strategy | ✅ Complete |
+| **[TEST_40_DEBUG_PLAN.md](/docs/H/plans/TEST_40_DEBUG_PLAN.md)** | Debugging plan for Test 40 failures | Incomplete |
 
 ## Quick Start Guide
 

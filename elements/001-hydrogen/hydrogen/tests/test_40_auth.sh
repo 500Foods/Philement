@@ -60,7 +60,9 @@ STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=10
 
 # Demo credentials from environment variables (set in shell and used in migrations)
+# shellcheck disable=SC2034 # Used in heredocs for JSON payloads
 DEMO_USER_NAME="${HYDROGEN_DEMO_USER_NAME:-}"
+# shellcheck disable=SC2034 # Used in heredocs for JSON payloads
 DEMO_USER_PASS="${HYDROGEN_DEMO_USER_PASS:-}"
 # shellcheck disable=SC2034 # These variables are defined for future test expansion
 DEMO_ADMIN_NAME="${HYDROGEN_DEMO_ADMIN_NAME:-}"
@@ -68,6 +70,7 @@ DEMO_ADMIN_NAME="${HYDROGEN_DEMO_ADMIN_NAME:-}"
 DEMO_ADMIN_PASS="${HYDROGEN_DEMO_ADMIN_PASS:-}"
 # shellcheck disable=SC2034 # These variables are defined for future test expansion
 DEMO_EMAIL="${HYDROGEN_DEMO_EMAIL:-}"
+# shellcheck disable=SC2034 # Used in heredocs for JSON payloads
 DEMO_API_KEY="${HYDROGEN_DEMO_API_KEY:-}"
 
 # Function to validate auth request
