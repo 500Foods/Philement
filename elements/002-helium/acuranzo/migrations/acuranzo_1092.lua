@@ -65,7 +65,7 @@ table.insert(queries,{sql=[[
                     FROM
                         ${SCHEMA}licenses
                     WHERE
-                        LOWER(application_key) = :APIKEY
+                        LOWER(app_key) = LOWER(:APIKEY)
                         AND (valid_after < CURRENT_TIMESTAMP)
                         AND (valid_until > CURRENT_TIMESTAMP);
                 ]==]                                                                AS code,

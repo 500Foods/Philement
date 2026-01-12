@@ -49,11 +49,11 @@ table.insert(queries,{sql=[[
             )
             VALUES
             (
-                0,
+                1,
                 '${HYDROGEN_DEMO_ADMIN_NAME}',
                 'Demo',
                 'Admin',
-                ${SHA256_HASH_START}'0'${SHA256_HASH_MID}'${HYDROGEN_DEMO_ADMIN_PASS}'${SHA256_HASH_END},
+                ${SHA256_HASH_START}'1'${SHA256_HASH_MID}'${HYDROGEN_DEMO_ADMIN_PASS}'${SHA256_HASH_END},
                 1,
                 1,
                 'Demo Admin Account',
@@ -61,11 +61,11 @@ table.insert(queries,{sql=[[
                 ${COMMON_VALUES}
             ),
             (
-                1,
+                2,
                 '${HYDROGEN_DEMO_USER_NAME}',
                 'Demo',
                 'User',
-                ${SHA256_HASH_START}'1'${SHA256_HASH_MID}'${HYDROGEN_DEMO_USER_PASS}'${SHA256_HASH_END},
+                ${SHA256_HASH_START}'2'${SHA256_HASH_MID}'${HYDROGEN_DEMO_USER_PASS}'${SHA256_HASH_END},
                 1,
                 1,
                 'Demo User Account',
@@ -73,7 +73,7 @@ table.insert(queries,{sql=[[
                 ${COMMON_VALUES}
             ),
             (
-                2,
+                3,
                 'disableduser',
                 'Disabled',
                 'User',
@@ -85,7 +85,7 @@ table.insert(queries,{sql=[[
                 ${COMMON_VALUES}
             ),
             (
-                3,
+                4,
                 'unauthorizeduser',
                 'Unauthorized',
                 'User',
@@ -99,7 +99,7 @@ table.insert(queries,{sql=[[
 
             ${SUBQUERY_DELIMITER}
 
-            -- Insert email contacts for each test account
+            -- Insert email contacts for each test account, as well as username contacts
             -- Uses fixed account_ids (0=admin, 1=user, 2=disabled, 3=unauthorized)
             INSERT INTO ${SCHEMA}account_contacts (
                 contact_id,
@@ -114,8 +114,20 @@ table.insert(queries,{sql=[[
                 ${COMMON_FIELDS}
             )
             VALUES (
+                1,
+                1,
                 0,
                 0,
+                1,
+                1,
+                '${HYDROGEN_DEMO_ADMIN_NAME}',
+                'Admin primary username',
+                '{}',
+                ${COMMON_VALUES}
+            ),
+            (
+                2,
+                1,
                 1,
                 1,
                 1,
@@ -126,8 +138,20 @@ table.insert(queries,{sql=[[
                 ${COMMON_VALUES}
             ),
             (
+                3,
+                2,
+                0,
+                0,
                 1,
                 1,
+                '${HYDROGEN_DEMO_USER_NAME}',
+                'User primary username',
+                '{}',
+                ${COMMON_VALUES}
+            ),
+            (
+                4,
+                2,
                 1,
                 1,
                 1,
@@ -138,8 +162,8 @@ table.insert(queries,{sql=[[
                 ${COMMON_VALUES}
             ),
             (
-                2,
-                2,
+                5,
+                3,
                 1,
                 1,
                 1,
@@ -150,8 +174,8 @@ table.insert(queries,{sql=[[
                 ${COMMON_VALUES}
             ),
             (
-                3,
-                3,
+                6,
+                4,
                 1,
                 1,
                 1,
@@ -201,16 +225,16 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-            -- Remove test account contacts first (foreign key constraint)
-            -- Uses fixed account_ids (0=admin, 1=user, 2=disabled, 3=unauthorized)
+            -- Remove contacts first
+            -- Uses fixed account_ids (1=admin, 2=user, 3=disabled, 4=unauthorized)
             DELETE FROM ${SCHEMA}account_contacts
-            WHERE account_id IN (0, 1, 2, 3);
+            WHERE account_id IN (1, 2, 3, 4);
 
             ${SUBQUERY_DELIMITER}
 
-            -- Remove test accounts (fixed IDs 0-3)
+            -- Then remove accounts
             DELETE FROM ${SCHEMA}accounts
-            WHERE account_id IN (0, 1, 2, 3);
+            WHERE account_id IN (1, 2, 3, 4);
 
             ${SUBQUERY_DELIMITER}
 

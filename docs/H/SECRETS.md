@@ -1,255 +1,841 @@
-# Welcome to Secrets Management in Hydrogen
+# Hydrogen Environment Variables and Secrets
 
-Hello! If you're new to the Hydrogen project or not very tech-savvy, don't worry. This guide is designed to help you understand and set up the essential security components for Hydrogen in a simple, step-by-step way. We're going to focus on setting up two important pieces: **PAYLOAD_LOCK** and **PAYLOAD_KEY**. These help protect sensitive information in our project. Let's get started!
+This document provides a comprehensive reference for all environment variables used in the Hydrogen project. Variables are organized by their purpose and usage context.
 
-## What Are Secrets and Why Do They Matter?
+## Table of Contents
 
-In the Hydrogen project, "secrets" are like special keys or passwords that keep sensitive information safe. Instead of writing these secrets directly into our code (which could be risky), we store them in a way that only the right people or systems can access them. This guide will walk you through setting up your secrets so that Hydrogen can work securely.
+1. [Project Path Variables](#1-project-path-variables)
+   - [PHILEMENT_ROOT](#philement_root)
+   - [HYDROGEN_ROOT](#hydrogen_root)
+   - [HYDROGEN_DOCS_ROOT](#hydrogen_docs_root)
+   - [HELIUM_ROOT](#helium_root)
+   - [HELIUM_DOCS_ROOT](#helium_docs_root)
 
-## Step-by-Step Guide to Setting Up Your Secrets
+2. [Key Project Parameters](#2-key-project-parameters)
+   - [HYDROGEN_SCHEMA](#hydrogen_schema)
+   - [HYDROGEN_DEV_EMAIL](#hydrogen_dev_email)
 
-We're going to create and set up three secrets: **PAYLOAD_LOCK**, **PAYLOAD_KEY**, and **WEBSOCKET_KEY**. Think of PAYLOAD_LOCK as a lock that secures data when we build the project, PAYLOAD_KEY as the key that unlocks it when the project runs, and WEBSOCKET_KEY as a password that protects WebSocket connections. Here's how to do it:
+3. [Security and Encryption Keys](#3-security-and-encryption-keys)
+   - [PAYLOAD_LOCK](#payload_lock)
+   - [PAYLOAD_KEY](#payload_key)
+   - [WEBSOCKET_KEY](#websocket_key)
+   - [HYDROGEN_INSTALLER_LOCK](#hydrogen_installer_lock)
+   - [HYDROGEN_INSTALLER_KEY](#hydrogen_installer_key)
 
-### Step 1: Make Sure You Have the Right Tools
+4. [Demo and Test Authentication](#4-demo-and-test-authentication)
+   - [HYDROGEN_DEMO_API_KEY](#hydrogen_demo_api_key)
+   - [HYDROGEN_DEMO_JWT_KEY](#hydrogen_demo_jwt_key)
+   - [HYDROGEN_DEMO_USER_NAME](#hydrogen_demo_user_name)
+   - [HYDROGEN_DEMO_USER_PASS](#hydrogen_demo_user_pass)
+   - [HYDROGEN_DEMO_ADMIN_NAME](#hydrogen_demo_admin_name)
+   - [HYDROGEN_DEMO_ADMIN_PASS](#hydrogen_demo_admin_pass)
+   - [HYDROGEN_DEMO_EMAIL](#hydrogen_demo_email)
 
-To create these secrets, you'll need a tool called **OpenSSL**. It's like a Swiss Army knife for security tasks. Most computers running Linux or macOS already have it installed. If you're on Windows, you might need to install it (you can download it from a trusted source or use a tool like Git Bash which includes OpenSSL).
+5. [Database Credentials - PostgreSQL (Acuranzo)](#5-database-credentials---postgresql-acuranzo)
+   - [ACURANZO_DB_HOST](#acuranzo_db_host)
+   - [ACURANZO_DB_NAME](#acuranzo_db_name)
+   - [ACURANZO_DB_USER](#acuranzo_db_user)
+   - [ACURANZO_DB_PASS](#acuranzo_db_pass)
+   - [ACURANZO_DB_PORT](#acuranzo_db_port)
+   - [ACURANZO_DB_TYPE](#acuranzo_db_type)
 
-To check if you have OpenSSL, open a terminal or command prompt and type:
+6. [Database Credentials - MySQL (Canvas)](#6-database-credentials---mysql-canvas)
+   - [CANVAS_DB_HOST](#canvas_db_host)
+   - [CANVAS_DB_NAME](#canvas_db_name)
+   - [CANVAS_DB_USER](#canvas_db_user)
+   - [CANVAS_DB_PASS](#canvas_db_pass)
+   - [CANVAS_DB_PORT](#canvas_db_port)
+   - [CANVAS_DB_TYPE](#canvas_db_type)
+
+7. [Database Credentials - DB2 (Hydrotst)](#7-database-credentials---db2-hydrotst)
+   - [HYDROTST_DB_NAME](#hydrotst_db_name)
+   - [HYDROTST_DB_USER](#hydrotst_db_user)
+   - [HYDROTST_DB_PASS](#hydrotst_db_pass)
+   - [HYDROTST_DB_TYPE](#hydrotst_db_type)
+
+---
+
+## 1. Project Path Variables
+
+These variables define the root directories for the project and are required by all test scripts and build processes.
+
+### PHILEMENT_ROOT
+
+**Description:** Root directory path of the Philement repository.
+
+**Tests:** All tests
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_04_check_links.sh](/elements/001-hydrogen/hydrogen/tests/test_04_check_links.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_90_markdownlint.sh](/elements/001-hydrogen/hydrogen/tests/test_90_markdownlint.sh)
+- [/elements/001-hydrogen/hydrogen/tests/lib/github-sitemap.sh](/elements/001-hydrogen/hydrogen/tests/lib/github-sitemap.sh)
+
+**Setup:**
 
 ```bash
-openssl version
+export PHILEMENT_ROOT="/path/to/Philement"
 ```
 
-If it shows a version number, you're good to go! If not, ask a friend or search online for "install OpenSSL on [your operating system]."
+### HYDROGEN_ROOT
 
-### Step 2: Create Your Secret Keys
+**Description:** Root directory path of the Hydrogen project. Required for all test scripts and build processes.
 
-Now, let's create the two keys using OpenSSL. Open your terminal or command prompt and follow these steps carefully. We'll do this in a temporary folder to keep things organized.
+**Tests:** All tests
 
-1. **Create a temporary folder to store your keys:**
+**Files:**
 
-   ```bash
-   mkdir temp_keys
-   cd temp_keys
-   ```
+- [/elements/001-hydrogen/hydrogen/tests/test_00_all.sh](/elements/001-hydrogen/hydrogen/tests/test_00_all.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_89_coverage.sh](/elements/001-hydrogen/hydrogen/tests/test_89_coverage.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_99_code_size.sh](/elements/001-hydrogen/hydrogen/tests/test_99_code_size.sh)
+- [/elements/001-hydrogen/hydrogen/tests/lib/framework.sh](/elements/001-hydrogen/hydrogen/tests/lib/framework.sh)
+- [/elements/001-hydrogen/hydrogen/tests/lib/coverage.sh](/elements/001-hydrogen/hydrogen/tests/lib/coverage.sh)
+- [/elements/001-hydrogen/hydrogen/tests/lib/cloc.sh](/elements/001-hydrogen/hydrogen/tests/lib/cloc.sh)
+- [/elements/001-hydrogen/hydrogen/payloads/payload-generate.sh](/elements/001-hydrogen/hydrogen/payloads/payload-generate.sh)
+- [/elements/001-hydrogen/hydrogen/payloads/swagger-generate.sh](/elements/001-hydrogen/hydrogen/payloads/swagger-generate.sh)
+- [/elements/001-hydrogen/hydrogen/extras/make-trial.sh](/elements/001-hydrogen/hydrogen/extras/make-trial.sh)
 
-2. **Generate a private key (this is PAYLOAD_KEY):**
-
-   ```bash
-   openssl genrsa -out private_key.pem 2048
-   ```
-
-   This creates a file called `private_key.pem` which holds your private key. Keep this safe—it's like the key to your house!
-
-3. **Generate a public key (this is PAYLOAD_LOCK):**
-
-   ```bash
-   openssl rsa -in private_key.pem -pubout -out public_key.pem
-   ```
-
-   This creates a file called `public_key.pem` which holds your public key. This is like the lock that matches your key.
-
-### Step 3: Set Up Your Secrets for Hydrogen
-
-Now that you have your keys, we need to tell Hydrogen where to find them. We do this by setting "environment variables"—think of them as little notes your computer keeps to remember important information.
-
-Here’s how to set them for the current session (they’ll disappear when you restart your computer):
+**Setup:**
 
 ```bash
+export HYDROGEN_ROOT="/path/to/Philement/elements/001-hydrogen/hydrogen"
+```
+
+### HYDROGEN_DOCS_ROOT
+
+**Description:** Root directory path for Hydrogen documentation.
+
+**Tests:** All tests
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_00_all.sh](/elements/001-hydrogen/hydrogen/tests/test_00_all.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_04_check_links.sh](/elements/001-hydrogen/hydrogen/tests/test_04_check_links.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_90_markdownlint.sh](/elements/001-hydrogen/hydrogen/tests/test_90_markdownlint.sh)
+- [/elements/001-hydrogen/hydrogen/tests/lib/cloc.sh](/elements/001-hydrogen/hydrogen/tests/lib/cloc.sh)
+- [/elements/001-hydrogen/hydrogen/tests/lib/log_output.sh](/elements/001-hydrogen/hydrogen/tests/lib/log_output.sh)
+- [/elements/001-hydrogen/hydrogen/extras/make-email.sh](/elements/001-hydrogen/hydrogen/extras/make-email.sh)
+- [/elements/001-hydrogen/hydrogen/extras/hbm_browser/hbm_browser_cli.js](/elements/001-hydrogen/hydrogen/extras/hbm_browser/hbm_browser_cli.js)
+
+**Setup:**
+
+```bash
+export HYDROGEN_DOCS_ROOT="/path/to/Philement/docs/H"
+```
+
+### HELIUM_ROOT
+
+**Description:** Root directory path of the Helium project. Required for payload generation and cross-project operations.
+
+**Tests:** All tests
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_00_all.sh](/elements/001-hydrogen/hydrogen/tests/test_00_all.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_71_database_diagrams.sh](/elements/001-hydrogen/hydrogen/tests/test_71_database_diagrams.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_98_luacheck.sh](/elements/001-hydrogen/hydrogen/tests/test_98_luacheck.sh)
+- [/elements/001-hydrogen/hydrogen/tests/lib/framework.sh](/elements/001-hydrogen/hydrogen/tests/lib/framework.sh)
+- [/elements/001-hydrogen/hydrogen/tests/lib/get_diagram.sh](/elements/001-hydrogen/hydrogen/tests/lib/get_diagram.sh)
+- [/elements/001-hydrogen/hydrogen/tests/lib/get_migration.sh](/elements/001-hydrogen/hydrogen/tests/lib/get_migration.sh)
+- [/elements/001-hydrogen/hydrogen/payloads/payload-generate.sh](/elements/001-hydrogen/hydrogen/payloads/payload-generate.sh)
+
+**Setup:**
+
+```bash
+export HELIUM_ROOT="/path/to/Philement/elements/002-helium"
+```
+
+### HELIUM_DOCS_ROOT
+
+**Description:** Root directory path for Helium documentation.
+
+**Tests:** All tests
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+
+**Setup:**
+
+```bash
+export HELIUM_DOCS_ROOT="/path/to/Philement/elements/002-helium/docs"
+```
+
+---
+
+## 2. Key Project Parameters
+
+### HYDROGEN_SCHEMA
+
+**Description:** The location of the JSON schema file (2020-12) used for validating Hydrogen configuration files.
+
+**Tests:** 10-69
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/src/config/config.c](/elements/001-hydrogen/hydrogen/src/config/config.c)
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_93_jsonlint.sh](/elements/001-hydrogen/hydrogen/tests/test_93_jsonlint.sh)
+
+**Setup:**
+
+```bash
+export HYDROGEN_SCHEMA="/path/to/hydrogen_config_schema.json"
+```
+
+### HYDROGEN_DEV_EMAIL
+
+**Description:** The email address of the developer responsible for this Hydrogen instance. Used for notifications and support contact.
+
+**Tests:** 02, 12
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/extras/make-email.sh](/elements/001-hydrogen/hydrogen/extras/make-email.sh)
+- [/elements/001-hydrogen/hydrogen/extras/README.md](/elements/001-hydrogen/hydrogen/extras/README.md)
+
+**Setup:**
+
+```bash
+export HYDROGEN_DEV_EMAIL="your-email@example.com"
+```
+
+---
+
+## 3. Security and Encryption Keys
+
+These keys are critical for payload encryption/decryption, WebSocket authentication, and installer signing.
+
+### PAYLOAD_LOCK
+
+**Description:** RSA public key (base64-encoded) used for encrypting payload data during build.
+
+**Tests:** 02, 12
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_02_secrets.sh](/elements/001-hydrogen/hydrogen/tests/test_02_secrets.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/payloads/payload-generate.sh](/elements/001-hydrogen/hydrogen/payloads/payload-generate.sh)
+- [/elements/001-hydrogen/hydrogen/payloads/README.md](/elements/001-hydrogen/hydrogen/payloads/README.md)
+
+**Generation:**
+
+```bash
+# Generate RSA key pair
+openssl genrsa -out private_key.pem 2048
+openssl rsa -in private_key.pem -pubout -out public_key.pem
+
+# Export as base64 (PAYLOAD_LOCK is the public key)
 export PAYLOAD_LOCK=$(cat public_key.pem | base64 -w 0)
+```
+
+**Validation:**
+
+```bash
+echo "${PAYLOAD_LOCK}" | base64 -d | openssl pkey -pubin -check -noout
+```
+
+### PAYLOAD_KEY
+
+**Description:** RSA private key (base64-encoded) used for decrypting payload data at runtime.
+
+**Tests:** 02, 12
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_02_secrets.sh](/elements/001-hydrogen/hydrogen/tests/test_02_secrets.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/src/config/config_defaults.c](/elements/001-hydrogen/hydrogen/src/config/config_defaults.c)
+- [/elements/001-hydrogen/hydrogen/src/config/config_server.c](/elements/001-hydrogen/hydrogen/src/config/config_server.c)
+- [/elements/001-hydrogen/hydrogen/tests/configs/*.json](/elements/001-hydrogen/hydrogen/tests/configs/) (multiple config files)
+- [/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json)
+
+**Generation:**
+
+```bash
+# Use the private key generated with PAYLOAD_LOCK
 export PAYLOAD_KEY=$(cat private_key.pem | base64 -w 0)
 ```
 
-### INSTALLER KEYS
+**Validation:**
 
 ```bash
-openssl genrsa -out HYDROGEN_INSTALLER_KEY.pem 2048  # Private key (keep the key)
-openssl rsa -in HYDROGEN_INSTALLER_KEY.pem -pubout -out HYDROGEN_INSTALLER_LOCK.pem  # Public key (share the lock)
-export HYDROGEN_INSTALLER_KEY=$(cat HYDROGEN_INSTALLER_KEY.pem | base64 -w 0)
+echo "${PAYLOAD_KEY}" | base64 -d | openssl rsa -check -noout
+```
+
+### WEBSOCKET_KEY
+
+**Description:** Key used for WebSocket connections and authentication. Must be at least 8 characters.
+
+**Tests:** 02, 12
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_02_secrets.sh](/elements/001-hydrogen/hydrogen/tests/test_02_secrets.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_23_websockets.sh](/elements/001-hydrogen/hydrogen/tests/test_23_websockets.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_26_terminal.sh](/elements/001-hydrogen/hydrogen/tests/test_26_terminal.sh)
+- [/elements/001-hydrogen/hydrogen/src/config/config_defaults.c](/elements/001-hydrogen/hydrogen/src/config/config_defaults.c)
+- [/elements/001-hydrogen/hydrogen/src/config/config_websocket.c](/elements/001-hydrogen/hydrogen/src/config/config_websocket.c)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_17_startup_max.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_17_startup_max.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_23_websocket_*.json](/elements/001-hydrogen/hydrogen/tests/configs/)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_26_terminal_*.json](/elements/001-hydrogen/hydrogen/tests/configs/)
+- [/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json)
+
+**Generation:**
+
+```bash
+# Generate a secure random 64-character hex key
+export WEBSOCKET_KEY=$(openssl rand -hex 32)
+```
+
+**Requirements:**
+
+- Minimum 8 characters
+- Printable ASCII characters only (no spaces or control characters)
+- Should be random and unique per installation
+
+### HYDROGEN_INSTALLER_LOCK
+
+**Description:** RSA public key (base64-encoded) used for verifying installer signatures.
+
+**Tests:** 02
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_02_secrets.sh](/elements/001-hydrogen/hydrogen/tests/test_02_secrets.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_70_installer.sh](/elements/001-hydrogen/hydrogen/tests/test_70_installer.sh)
+- [/elements/001-hydrogen/hydrogen/installer/installer_wrapper.sh](/elements/001-hydrogen/hydrogen/installer/installer_wrapper.sh)
+- [/elements/001-hydrogen/hydrogen/installer/README.md](/elements/001-hydrogen/hydrogen/installer/README.md)
+
+**Generation:**
+
+```bash
+# Generate RSA key pair for installer
+openssl genrsa -out HYDROGEN_INSTALLER_KEY.pem 2048
+openssl rsa -in HYDROGEN_INSTALLER_KEY.pem -pubout -out HYDROGEN_INSTALLER_LOCK.pem
+
+# Export as base64
 export HYDROGEN_INSTALLER_LOCK=$(cat HYDROGEN_INSTALLER_LOCK.pem | base64 -w 0)
-echo $HYDROGEN_INSTALLER_KEY
-echo $HYDROGEN_INSTALLER_LOCK
-
 ```
 
-What does this do? It reads the contents of your key files, turns them into a format Hydrogen can understand, and stores them in PAYLOAD_LOCK and PAYLOAD_KEY.
-
-If you want these settings to stick around even after restarting your computer, you’ll need to add them to a special file:
-
-- **For Bash users** (common on Linux or Git Bash on Windows), open `~/.bashrc` or `~/.bash_profile` in a text editor and add those two `export` lines.
-- **For Zsh users** (common on macOS), open `~/.zshrc` in a text editor and add the lines.
-
-After adding them, run `source ~/.bashrc` (or `~/.zshrc`) to apply the changes.
-
-### Step 4: Set Up Your WebSocket Key
-
-The **WEBSOCKET_KEY** is different from the RSA keys above. It's a simpler password-like secret that protects WebSocket connections. Unlike the RSA keys, you can create this yourself using any secure method.
-
-Here's how to set up a WebSocket key:
-
-1. **Generate a secure random key:**
-
-   ```bash
-   openssl rand -hex 32
-   ```
-
-   This creates a 64-character hexadecimal string. Copy this value.
-
-2. **Set the environment variable:**
-
-   ```bash
-   export WEBSOCKET_KEY="your_generated_key_here"
-   ```
-
-   Replace `your_generated_key_here` with the key you generated above.
-
-3. **Make it permanent (optional):**
-
-   Add the export line to your `~/.bashrc` or `~/.zshrc` file just like you did for the payload keys.
-
-**Important WebSocket Key Requirements:**
-
-- Must be at least 8 characters long
-- Should contain only printable ASCII characters (no spaces or control characters)
-- Should be random and unique to your installation
-- Keep it secret - don't share it or commit it to version control
-
-### Step 5: Test That Everything Works
-
-Hydrogen comes with handy tests to make sure your secrets are set up correctly:
-
-**For payload keys (PAYLOAD_LOCK and PAYLOAD_KEY):**
+**Validation:**
 
 ```bash
-./tests/test_12_env_payload.sh
+echo "${HYDROGEN_INSTALLER_LOCK}" | base64 -d | openssl pkey -pubin -check -noout
 ```
 
-**For WebSocket key (WEBSOCKET_KEY):**
+### HYDROGEN_INSTALLER_KEY
+
+**Description:** RSA private key (base64-encoded) used for signing installer packages.
+
+**Tests:** 02
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_02_secrets.sh](/elements/001-hydrogen/hydrogen/tests/test_02_secrets.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_70_installer.sh](/elements/001-hydrogen/hydrogen/tests/test_70_installer.sh)
+- [/elements/001-hydrogen/hydrogen/installer/README.md](/elements/001-hydrogen/hydrogen/installer/README.md)
+
+**Generation:**
 
 ```bash
-./tests/test_36_websockets.sh
+# Use the private key generated with HYDROGEN_INSTALLER_LOCK
+export HYDROGEN_INSTALLER_KEY=$(cat HYDROGEN_INSTALLER_KEY.pem | base64 -w 0)
 ```
 
-If everything is set up right, you’ll see a success message. If something’s wrong, it will tell you what needs fixing. Don’t hesitate to ask for help if you’re stuck!
-
-### Step 6: Clean Up
-
-Once you’ve set up your secrets, you don’t need the temporary files anymore. You can delete the `temp_keys` folder to keep things tidy:
+**Validation:**
 
 ```bash
-cd ..
-rm -rf temp_keys
+echo "${HYDROGEN_INSTALLER_KEY}" | base64 -d | openssl rsa -check -noout
 ```
 
-## Keeping Your Secrets Safe
+---
 
-Remember, your PAYLOAD_KEY (the private key) is very important. Don’t share it with anyone or commit it to version control (like Git). If you think it’s been compromised, generate a new pair of keys by following the steps above again.
+## 4. Demo and Test Authentication
 
-## For Curious Minds: How Does This Work Behind the Scenes?
+These variables are used for testing authentication systems and are incorporated into database migrations.
 
-If you’re interested in the technical details of how Hydrogen uses these secrets to protect data, we’ve got a section just for you. This part is optional and a bit more advanced, so feel free to skip it if you’re just getting started.
+### HYDROGEN_DEMO_API_KEY
 
-### The Magic of Encryption in Hydrogen
+**Description:** API key used for authenticating client applications to the Hydrogen API.
 
-Hydrogen uses a clever system to keep data safe, combining two types of security: **RSA** and **AES**. Here’s a simple breakdown:
+**Tests:** 40-49
 
-- When we build Hydrogen, PAYLOAD_LOCK (the public key) helps lock up sensitive data so no one can peek at it.
-- When Hydrogen runs, PAYLOAD_KEY (the private key) unlocks that data so the program can use it.
+**Files:**
 
-Here’s a more detailed look at the process:
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh)
+- [/elements/002-helium/acuranzo/migrations/acuranzo_1145.lua](/elements/002-helium/acuranzo/migrations/acuranzo_1145.lua)
 
-1. **During Build Time:**
-   - A random secret code (AES key) is created just for this build.
-   - The data we want to protect (like a web interface) is squeezed down small (compressed) and then locked with this AES key.
-   - The AES key itself is locked with PAYLOAD_LOCK, so even it is protected.
-   - Everything is bundled together and added to the Hydrogen program.
+**Setup:**
 
-2. **During Run Time:**
-   - Hydrogen finds the locked data inside itself.
-   - It uses PAYLOAD_KEY to unlock the AES key.
-   - With the AES key, it unlocks the actual data, expands it, and uses it.
-
-This double-locking system means that even if someone gets a piece of the puzzle, they can’t see the whole picture without PAYLOAD_KEY.
-
-### Technical Specs (For Experts)
-
-- **AES Details**: Uses AES-256-CBC, a strong encryption method with a random 256-bit key and a 16-byte random start value (IV). It’s like a super-secure safe.
-- **RSA Details**: Uses 2048-bit keys with PKCS1 padding, a trusted way to protect smaller pieces of data like the AES key.
-- **Compression**: Data is squeezed with Brotli at maximum quality to make it smaller before locking.
-
-## Demo and Test Authentication Secrets
-
-For testing the authentication system (Test 40), Hydrogen uses environment variables to store demo credentials. These credentials are used both in database migrations (to create test accounts) and in test scripts (to authenticate).
-
-### Demo Credential Environment Variables
-
-| Variable | Description | Example |
-| ---------- | ------------- | --------- |
-| `HYDROGEN_DEMO_USER_NAME` | Demo user username | `demouser` |
-| `HYDROGEN_DEMO_USER_PASS` | Demo user password | `DemoPass123!` |
-| `HYDROGEN_DEMO_ADMIN_NAME` | Demo admin username | `demoadmin` |
-| `HYDROGEN_DEMO_ADMIN_PASS` | Demo admin password | `AdminPass123!` |
-| `HYDROGEN_DEMO_EMAIL` | Demo email address | `demo@example.com` |
-| `HYDROGEN_DEMO_API_KEY` | Demo API key for authorization | `demo-api-key-valid` |
-| `HYDROGEN_DEMO_JWT_KEY` | Secret key for JWT signing | (use `openssl rand -hex 32`) |
-
-### Setting Up Demo Credentials
-
-1. **Generate a secure JWT key:**
-
-   ```bash
-   export HYDROGEN_DEMO_JWT_KEY=$(openssl rand -hex 32)
-   ```
-
-2. **Set the demo credentials:**
-
-   ```bash
-   export HYDROGEN_DEMO_USER_NAME="demouser"
-   export HYDROGEN_DEMO_USER_PASS="DemoPass123!"
-   export HYDROGEN_DEMO_ADMIN_NAME="demoadmin"
-   export HYDROGEN_DEMO_ADMIN_PASS="AdminPass123!"
-   export HYDROGEN_DEMO_EMAIL="demo@example.com"
-   export HYDROGEN_DEMO_API_KEY="demo-api-key-valid"
-   ```
-
-3. **Make permanent (optional):**
-
-   Add these to your `~/.bashrc` or `~/.zshrc` file.
-
-### Password Hashing
-
-Hydrogen uses SHA256 with account_id as salt for password hashing:
-
-```SQL
-hash = BASE64URL(SHA256(account_id + password))
+```bash
+export HYDROGEN_DEMO_API_KEY="demo-api-key-valid"
 ```
 
-**Important:** Since the account_id is used as the salt and is auto-generated in the database, migrations cannot pre-compute password hashes. Instead:
+### HYDROGEN_DEMO_JWT_KEY
 
-1. Migrations create accounts with a placeholder hash
-2. A post-migration step updates the password hash using the actual account_id
-3. Alternatively, use a fixed account_id for demo accounts in migrations
+**Description:** Secret key used for signing JWT tokens for Hydrogen API authentication.
 
-### JWT Configuration
+**Tests:** 40-49
 
-The JWT secret key is configured in the `API.JWTSecret` setting of your Hydrogen config file:
+**Files:**
 
-```json
-{
-    "API": {
-        "JWTSecret": "${env.HYDROGEN_DEMO_JWT_KEY}"
-    }
-}
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/unity/src/config/config_api_test_load_api_config.c](/elements/001-hydrogen/hydrogen/tests/unity/src/config/config_api_test_load_api_config.c)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_*.json](/elements/001-hydrogen/hydrogen/tests/configs/)
+- [/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json](/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json)
+
+**Generation:**
+
+```bash
+export HYDROGEN_DEMO_JWT_KEY=$(openssl rand -hex 32)
 ```
 
-## What's Next for Secrets in Hydrogen?
+### HYDROGEN_DEMO_USER_NAME
 
-As Hydrogen grows, we'll add more secrets for different features, like authentication for a terminal system or secure logins with OpenID Connect. They'll all follow the same idea of using environment variables to keep things safe.
+**Description:** Demo user username for testing login and authentication processes.
 
-## Need More Help or Info?
+**Tests:** 40-49
 
-- Check out [README.md](/docs/H/README.md) for general info on Hydrogen.
-- Look at [payloads/README.md](/elements/001-hydrogen/hydrogen/payloads/README.md) for more on the payload system.
-- Visit the [OpenSSL Documentation](https://www.openssl.org/docs/) if you're curious about the tools we used.
+**Files:**
 
-If you have questions or run into trouble, don't hesitate to ask someone on the team or look for help online. We're all in this together!
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh)
+- [/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua)
+
+**Setup:**
+
+```bash
+export HYDROGEN_DEMO_USER_NAME="demouser"
+```
+
+### HYDROGEN_DEMO_USER_PASS
+
+**Description:** Demo user password for testing login and authentication processes.
+
+**Tests:** 40-49
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh)
+- [/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua)
+
+**Setup:**
+
+```bash
+export HYDROGEN_DEMO_USER_PASS="DemoPass123!"
+```
+
+### HYDROGEN_DEMO_ADMIN_NAME
+
+**Description:** Demo admin username for testing admin login and authentication processes.
+
+**Tests:** 40-49
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh)
+- [/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua)
+
+**Setup:**
+
+```bash
+export HYDROGEN_DEMO_ADMIN_NAME="demoadmin"
+```
+
+### HYDROGEN_DEMO_ADMIN_PASS
+
+**Description:** Demo admin password for testing admin login and authentication processes.
+
+**Tests:** 40-49
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh)
+- [/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua)
+
+**Setup:**
+
+```bash
+export HYDROGEN_DEMO_ADMIN_PASS="AdminPass123!"
+```
+
+### HYDROGEN_DEMO_EMAIL
+
+**Description:** Demo email address used in authentication testing and account creation.
+
+**Tests:** 40-49
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh)
+- [/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua)
+
+**Setup:**
+
+```bash
+export HYDROGEN_DEMO_EMAIL="demo@example.com"
+```
+
+---
+
+## 5. Database Credentials - PostgreSQL (Acuranzo)
+
+These variables configure the PostgreSQL database connection for the Acuranzo schema.
+
+### ACURANZO_DB_HOST
+
+**Description:** Hostname or IP address of the Acuranzo PostgreSQL database server.
+
+**Tests:** 30-35
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_postgres.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_postgres.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_32_postgres.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_32_postgres.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_postgres.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_postgres.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_41_conduit.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_41_conduit.json)
+- [/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json)
+
+**Setup:**
+
+```bash
+export ACURANZO_DB_HOST="localhost"
+```
+
+### ACURANZO_DB_NAME
+
+**Description:** Name of the Acuranzo database.
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export ACURANZO_DB_NAME="acuranzo"
+```
+
+### ACURANZO_DB_USER
+
+**Description:** Username for connecting to the Acuranzo database.
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export ACURANZO_DB_USER="postgres"
+```
+
+### ACURANZO_DB_PASS
+
+**Description:** Password for connecting to the Acuranzo database.
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export ACURANZO_DB_PASS="your_secure_password"
+```
+
+### ACURANZO_DB_PORT
+
+**Description:** Port number for the Acuranzo PostgreSQL database server.
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export ACURANZO_DB_PORT="5432"
+```
+
+### ACURANZO_DB_TYPE
+
+**Description:** Type of the Acuranzo database (should be `postgresql` or `postgres`).
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export ACURANZO_DB_TYPE="postgresql"
+```
+
+---
+
+## 6. Database Credentials - MySQL (Canvas)
+
+These variables configure the MySQL database connection for the Canvas schema.
+
+### CANVAS_DB_HOST
+
+**Description:** Hostname or IP address of the Canvas MySQL database server.
+
+**Tests:** 30-35
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_mysql.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_mysql.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_33_mysql.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_33_mysql.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_mysql.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_mysql.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_41_conduit.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_41_conduit.json)
+- [/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json)
+
+**Setup:**
+
+```bash
+export CANVAS_DB_HOST="localhost"
+```
+
+### CANVAS_DB_NAME
+
+**Description:** Name of the Canvas database.
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export CANVAS_DB_NAME="canvas"
+```
+
+### CANVAS_DB_USER
+
+**Description:** Username for connecting to the Canvas database.
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export CANVAS_DB_USER="root"
+```
+
+### CANVAS_DB_PASS
+
+**Description:** Password for connecting to the Canvas database.
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export CANVAS_DB_PASS="your_secure_password"
+```
+
+### CANVAS_DB_PORT
+
+**Description:** Port number for the Canvas MySQL database server.
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export CANVAS_DB_PORT="3306"
+```
+
+### CANVAS_DB_TYPE
+
+**Description:** Type of the Canvas database (should be `mysql` or `mariadb`).
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export CANVAS_DB_TYPE="mysql"
+```
+
+---
+
+## 7. Database Credentials - DB2 (Hydrotst)
+
+These variables configure the DB2 database connection for the Hydrotst schema.
+
+### HYDROTST_DB_NAME
+
+**Description:** Name of the Hydrotst DB2 database.
+
+**Tests:** 30-35
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh](/elements/001-hydrogen/hydrogen/tests/test_03_shell.sh)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_db2.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_db2.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_35_db2.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_35_db2.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_db2.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_db2.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_41_conduit.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_41_conduit.json)
+
+**Setup:**
+
+```bash
+export HYDROTST_DB_NAME="HYDROTST"
+```
+
+### HYDROTST_DB_USER
+
+**Description:** Username for connecting to the Hydrotst DB2 database.
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export HYDROTST_DB_USER="db2admin"
+```
+
+### HYDROTST_DB_PASS
+
+**Description:** Password for connecting to the Hydrotst DB2 database.
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export HYDROTST_DB_PASS="your_secure_password"
+```
+
+### HYDROTST_DB_TYPE
+
+**Description:** Type of the Hydrotst database (should be `db2`).
+
+**Tests:** 30-35
+
+**Setup:**
+
+```bash
+export HYDROTST_DB_TYPE="db2"
+```
+
+---
+
+## Quick Setup Script
+
+Here's a complete script to set up all required environment variables:
+
+```bash
+#!/bin/bash
+# Hydrogen Environment Setup Script
+
+# Project Paths
+export PHILEMENT_ROOT="/path/to/Philement"
+export HYDROGEN_ROOT="${PHILEMENT_ROOT}/elements/001-hydrogen/hydrogen"
+export HYDROGEN_DOCS_ROOT="${PHILEMENT_ROOT}/docs/H"
+export HELIUM_ROOT="${PHILEMENT_ROOT}/elements/002-helium"
+export HELIUM_DOCS_ROOT="${HELIUM_ROOT}/docs"
+
+# Key Project Parameters
+export HYDROGEN_SCHEMA="${HYDROGEN_ROOT}/tests/artifacts/hydrogen_config_schema.json"
+export HYDROGEN_DEV_EMAIL="developer@example.com"
+
+# Generate Security Keys (run once, then save the output)
+mkdir -p /tmp/hydrogen_keys
+cd /tmp/hydrogen_keys
+
+# Payload keys
+openssl genrsa -out payload_private.pem 2048
+openssl rsa -in payload_private.pem -pubout -out payload_public.pem
+export PAYLOAD_LOCK=$(cat payload_public.pem | base64 -w 0)
+export PAYLOAD_KEY=$(cat payload_private.pem | base64 -w 0)
+
+# Installer keys
+openssl genrsa -out installer_private.pem 2048
+openssl rsa -in installer_private.pem -pubout -out installer_public.pem
+export HYDROGEN_INSTALLER_LOCK=$(cat installer_public.pem | base64 -w 0)
+export HYDROGEN_INSTALLER_KEY=$(cat installer_private.pem | base64 -w 0)
+
+# WebSocket key
+export WEBSOCKET_KEY=$(openssl rand -hex 32)
+
+# Demo Authentication (customize as needed)
+export HYDROGEN_DEMO_API_KEY="demo-api-key-valid"
+export HYDROGEN_DEMO_JWT_KEY=$(openssl rand -hex 32)
+export HYDROGEN_DEMO_USER_NAME="demouser"
+export HYDROGEN_DEMO_USER_PASS="DemoPass123!"
+export HYDROGEN_DEMO_ADMIN_NAME="demoadmin"
+export HYDROGEN_DEMO_ADMIN_PASS="AdminPass123!"
+export HYDROGEN_DEMO_EMAIL="demo@example.com"
+
+# PostgreSQL (Acuranzo) - customize for your environment
+export ACURANZO_DB_HOST="localhost"
+export ACURANZO_DB_NAME="acuranzo"
+export ACURANZO_DB_USER="postgres"
+export ACURANZO_DB_PASS="your_postgres_password"
+export ACURANZO_DB_PORT="5432"
+export ACURANZO_DB_TYPE="postgresql"
+
+# MySQL (Canvas) - customize for your environment
+export CANVAS_DB_HOST="localhost"
+export CANVAS_DB_NAME="canvas"
+export CANVAS_DB_USER="root"
+export CANVAS_DB_PASS="your_mysql_password"
+export CANVAS_DB_PORT="3306"
+export CANVAS_DB_TYPE="mysql"
+
+# DB2 (Hydrotst) - customize for your environment
+export HYDROTST_DB_NAME="HYDROTST"
+export HYDROTST_DB_USER="db2admin"
+export HYDROTST_DB_PASS="your_db2_password"
+export HYDROTST_DB_TYPE="db2"
+
+cd -
+echo "Environment setup complete!"
+```
+
+---
+
+## Security Best Practices
+
+1. **Never commit secrets to version control** - Use environment variables or secure secrets management
+2. **Rotate keys periodically** - Generate new RSA key pairs and update configurations
+3. **Use strong passwords** - For database credentials, use complex, unique passwords
+4. **Restrict key access** - Keep private keys secure with appropriate file permissions
+5. **Use different keys per environment** - Development, staging, and production should have separate keys
+
+---
+
+## Validation Tests
+
+Run these tests to verify your environment is properly configured:
+
+```bash
+# Test 02: Validates security keys
+./tests/test_02_secrets.sh
+
+# Test 03: Validates all environment variables
+./tests/test_03_shell.sh
+
+# Test 12: Tests environment variable processing
+./tests/test_12_env_variables.sh
+```
+
+---
+
+## References
+
+- [README.md](/docs/H/README.md) - General Hydrogen documentation
+- [payloads/README.md](/elements/001-hydrogen/hydrogen/payloads/README.md) - Payload system details
+- [installer/README.md](/elements/001-hydrogen/hydrogen/installer/README.md) - Installer documentation
+- [OpenSSL Documentation](https://www.openssl.org/docs/) - OpenSSL reference

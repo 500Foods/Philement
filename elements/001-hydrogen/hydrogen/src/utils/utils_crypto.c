@@ -22,7 +22,11 @@
 // Base64url encoding table (URL-safe base64)
 static const char base64url_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
+// Standard Base64 encoding table (RFC 4648)
+static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
 // Function prototypes
+char* utils_base64_encode(const unsigned char* data, size_t length);
 char* utils_base64url_encode(const unsigned char* data, size_t length);
 unsigned char* utils_base64url_decode(const char* input, size_t* output_length);
 char* utils_sha256_hash(const unsigned char* data, size_t length);
@@ -33,7 +37,38 @@ char* utils_password_hash(const char* password, int account_id);
 bool utils_random_bytes(unsigned char* buffer, size_t length);
 
 /**
- * Base64url encode data
+ * Standard Base64 encode data WITH padding (RFC 4648)
+ * Used for password hashing to match database storage format
+ */
+char* utils_base64_encode(const unsigned char* data, size_t length) {
+    if (!data || length == 0) return NULL;
+
+    // Calculate output length WITH padding
+    size_t output_length = ((length + 2) / 3) * 4;
+    char* encoded = calloc(output_length + 1, sizeof(char));
+    if (!encoded) return NULL;
+
+    size_t i, j;
+    for (i = 0, j = 0; i < length; i += 3) {
+        uint32_t octet_a = data[i];
+        uint32_t octet_b = (i + 1 < length) ? data[i + 1] : 0;
+        uint32_t octet_c = (i + 2 < length) ? data[i + 2] : 0;
+
+        uint32_t triple = (octet_a << 16) | (octet_b << 8) | octet_c;
+
+        encoded[j++] = base64_table[(triple >> 18) & 0x3F];
+        encoded[j++] = base64_table[(triple >> 12) & 0x3F];
+        encoded[j++] = (i + 1 < length) ? base64_table[(triple >> 6) & 0x3F] : '=';
+        encoded[j++] = (i + 2 < length) ? base64_table[triple & 0x3F] : '=';
+    }
+
+    // String is already null-terminated from calloc
+    return encoded;
+}
+
+/**
+ * Base64url encode data WITHOUT padding (URL-safe)
+ * Used for JWTs and other URL-safe encoding needs
  */
 char* utils_base64url_encode(const unsigned char* data, size_t length) {
     if (!data || length == 0) return NULL;
@@ -134,6 +169,7 @@ unsigned char* utils_hmac_sha256(const unsigned char* data, size_t data_len,
 
 /**
  * Compute password hash using account_id + password
+ * Uses standard Base64 encoding WITH padding to match database format
  */
 char* utils_password_hash(const char* password, int account_id) {
     if (!password) return NULL;
@@ -144,7 +180,8 @@ char* utils_password_hash(const char* password, int account_id) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256((const unsigned char*)combined, strlen(combined), hash);
 
-    return utils_base64url_encode(hash, sizeof(hash));
+    // Use standard base64 WITH padding to match database storage
+    return utils_base64_encode(hash, sizeof(hash));
 }
 
 /**

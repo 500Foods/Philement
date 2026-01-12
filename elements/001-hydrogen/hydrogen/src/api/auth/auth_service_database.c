@@ -24,6 +24,7 @@
 #include <src/database/database_params.h>
 #include <src/api/conduit/query/query.h>
 #include <jansson.h>
+#include <src/config/config_databases.h>
 
 /**
  * Execute a database query using the conduit system
@@ -49,10 +50,23 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
         return NULL;
     }
 
+    // Merge database connection parameters with query parameters
+    json_t* merged_params = params; // Default to original params
+    if (app_config) {
+        const DatabaseConnection* conn = find_database_connection(&app_config->databases, database);
+        if (conn && conn->parameters) {
+            merged_params = merge_database_parameters(conn, params);
+            log_this("AUTH", "Merged database connection parameters for database: %s", LOG_LEVEL_DEBUG, 1, database);
+        }
+    }
+
     // Convert parameters to JSON string
-    char* params_json = json_dumps(params, JSON_COMPACT);
+    char* params_json = json_dumps(merged_params, JSON_COMPACT);
     if (!params_json) {
         log_this("AUTH", "Failed to serialize parameters to JSON", LOG_LEVEL_ERROR, 0);
+        if (merged_params != params) {
+            json_decref(merged_params);
+        }
         return NULL;
     }
 
@@ -107,29 +121,39 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
         log_this("AUTH", "Query execution error: %s", LOG_LEVEL_ERROR, 1, result->error_message);
     } else {
         result->success = true;
-        result->data_json = strdup(result_query->parameter_json); // Result data
+        // Note: await_result stores data_json in query_template (see submit.c line 298)
+        result->data_json = result_query->query_template ? strdup(result_query->query_template) : NULL;
         result->execution_time_ms = time(NULL) - result_query->submitted_at;
     }
 
     // Cleanup
     free(query_id);
     free(db_query.query_template);
+    if (merged_params != params) {
+        json_decref(merged_params);
+    }
 
     return result;
 }
 
 /**
  * Lookup account information from database
+ * Note: Actual authorization (status check) happens during password verification in QueryRef #012
+ * which requires both correct password AND status_a16=1 (Active)
  */
 account_info_t* lookup_account(const char* login_id, const char* database) {
     if (!login_id || !database) return NULL;
 
-    // Create parameters for QueryRef #001: Get Account by Login ID
+    // Create parameters for QueryRef #008: Get Account ID
+    // Use typed parameter format: {"STRING": {"LOGINID": "value"}}
+    // Parameter name must match SQL placeholder :LOGINID
     json_t* params = json_object();
-    json_object_set_new(params, "login_id", json_string(login_id));
+    json_t* string_params = json_object();
+    json_object_set_new(string_params, "LOGINID", json_string(login_id));
+    json_object_set_new(params, "STRING", string_params);
 
     // Execute query
-    QueryResult* result = execute_auth_query(1, database, params);
+    QueryResult* result = execute_auth_query(8, database, params);
     json_decref(params);
 
     if (!result || !result->success) {
@@ -162,21 +186,32 @@ account_info_t* lookup_account(const char* login_id, const char* database) {
     }
 
     // Extract account data from JSON
+    // QueryRef #008 returns only account_id from account_contacts table
     json_t* row = json_array_get(result_json, 0); // First row
     if (row) {
-        json_t* id_json = json_object_get(row, "id");
-        json_t* username_json = json_object_get(row, "username");
-        json_t* email_json = json_object_get(row, "email");
-        json_t* enabled_json = json_object_get(row, "enabled");
-        json_t* authorized_json = json_object_get(row, "authorized");
-        json_t* roles_json = json_object_get(row, "roles");
-
-        if (id_json) account->id = (int)json_integer_value(id_json);
-        if (username_json) account->username = strdup(json_string_value(username_json));
-        if (email_json) account->email = strdup(json_string_value(email_json));
-        if (enabled_json) account->enabled = json_is_true(enabled_json);
-        if (authorized_json) account->authorized = json_is_true(authorized_json);
-        if (roles_json) account->roles = strdup(json_string_value(roles_json));
+        json_t* account_id_json = json_object_get(row, "account_id");
+        
+        if (account_id_json) {
+            account->id = (int)json_integer_value(account_id_json);
+        } else {
+            // Fallback: try uppercase column name (DB2)
+            account_id_json = json_object_get(row, "ACCOUNT_ID");
+            if (account_id_json) {
+                account->id = (int)json_integer_value(account_id_json);
+            }
+        }
+        
+        // Set enabled/authorized to true here
+        // The actual status check happens in QueryRef #012 during password verification
+        // which requires both password_hash AND status_a16=1
+        // This prevents revealing whether accounts exist but are disabled
+        account->enabled = true;
+        account->authorized = true;
+        
+        // Username, email, and roles will be populated during password verification
+        account->username = NULL;
+        account->email = NULL;
+        account->roles = NULL;
     }
 
     // Cleanup
@@ -188,48 +223,69 @@ account_info_t* lookup_account(const char* login_id, const char* database) {
 }
 
 /**
- * Get stored password hash for an account
- * Uses QueryRef #001 which returns account and password information
+ * Verify password AND account status in one secure database query
+ * Uses QueryRef #012 which checks password_hash AND status_a16=1
+ * Returns true only if BOTH password correct AND account active
+ * More secure: never exposes hash, doesn't reveal if account exists but disabled
  */
-char* get_password_hash(int account_id, const char* database) {
-    if (account_id <= 0 || !database) return NULL;
+bool verify_password_and_status(const char* password, int account_id, const char* database, account_info_t* account) {
+    if (!password || account_id <= 0 || !database || !account) return false;
 
-    // Create parameters for QueryRef #009: Get Password Hash
-    // For now, we use QueryRef #001 to get all account info including password hash
+    // Compute password hash
+    char* computed_hash = compute_password_hash(password, account_id);
+    if (!computed_hash) {
+        log_this("AUTH", "Failed to compute password hash", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    // Create parameters for QueryRef #012: Check Password (with status)
+    // Uses typed parameter format for DB2 compatibility
     json_t* params = json_object();
-    json_object_set_new(params, "account_id", json_integer(account_id));
+    json_t* integer_params = json_object();
+    json_t* string_params = json_object();
+   
+    json_object_set_new(integer_params, "ACCOUNTID", json_integer(account_id));
+    json_object_set_new(string_params, "PASSWORDHASH", json_string(computed_hash));
+    
+    json_object_set_new(params, "INTEGER", integer_params);
+    json_object_set_new(params, "STRING", string_params);
 
-    // Execute query
-    QueryResult* result = execute_auth_query(1, database, params);
+    // Execute query - returns row ONLY if password correct AND status_a16=1
+    QueryResult* result = execute_auth_query(12, database, params);
     json_decref(params);
+    free(computed_hash); // Clean up sensitive data immediately
 
     if (!result || !result->success) {
-        log_this("AUTH", "Failed to get password hash for account_id=%d: %s", LOG_LEVEL_ERROR, 2,
+        log_this("AUTH", "Password verification query failed for account_id=%d: %s", LOG_LEVEL_ERROR, 2,
                 account_id, result ? result->error_message : "Unknown error");
         if (result) {
             if (result->error_message) free(result->error_message);
             if (result->data_json) free(result->data_json);
             free(result);
         }
-        return NULL;
+        return false;
     }
 
     // Parse result JSON
     json_t* result_json = json_loads(result->data_json, 0, NULL);
     if (!result_json) {
-        log_this("AUTH", "Failed to parse password hash result", LOG_LEVEL_ERROR, 0);
+        log_this("AUTH", "Failed to parse password verification result", LOG_LEVEL_ERROR, 0);
         free(result->data_json);
         free(result);
-        return NULL;
+        return false;
     }
 
-    // Extract password hash from first row
-    char* password_hash = NULL;
+    // Check if we got a row back - if yes, password correct AND account active
     json_t* row = json_array_get(result_json, 0);
-    if (row) {
-        json_t* hash_json = json_object_get(row, "password_hash");
-        if (hash_json && json_is_string(hash_json)) {
-            password_hash = strdup(json_string_value(hash_json));
+    bool verified = (row != NULL);
+
+    if (verified && account) {
+        // Populate account info from returned row
+        json_t* name_json = json_object_get(row, "name");
+        if (!name_json) name_json = json_object_get(row, "NAME"); // DB2 uppercase
+        if (name_json && json_is_string(name_json)) {
+            if (account->username) free(account->username);
+            account->username = strdup(json_string_value(name_json));
         }
     }
 
@@ -239,29 +295,32 @@ char* get_password_hash(int account_id, const char* database) {
     if (result->error_message) free(result->error_message);
     free(result);
 
-    return password_hash;
+    return verified;
 }
 
 /**
- * Verify password against stored hash
+ * DEPRECATED: Use verify_password_and_status() instead
+ * This function is kept for compatibility but should not be used
+ * The new approach verifies password AND status in one secure database query
+ */
+char* get_password_hash(int account_id, const char* database) {
+    (void)account_id;
+    (void)database;
+    log_this("AUTH", "get_password_hash() is deprecated - use verify_password_and_status() instead", LOG_LEVEL_ERROR, 0);
+    return NULL;
+}
+
+/**
+ * DEPRECATED: Use verify_password_and_status() instead
+ * This function is kept for compatibility but should not be used
+ * The new approach verifies password AND status in one secure database query
  */
 bool verify_password(const char* password, const char* stored_hash, int account_id) {
-    if (!password || !stored_hash || account_id <= 0) return false;
-
-    // Hash the provided password using account_id as salt
-    char* computed_hash = compute_password_hash(password, account_id);
-    if (!computed_hash) {
-        log_this("AUTH", "Failed to compute password hash", LOG_LEVEL_ERROR, 0);
-        return false;
-    }
-
-    // Compare hashes
-    bool match = strcmp(computed_hash, stored_hash) == 0;
-
-    // Cleanup
-    free(computed_hash);
-
-    return match;
+    (void)password;
+    (void)stored_hash;
+    (void)account_id;
+    log_this("AUTH", "verify_password() is deprecated - use verify_password_and_status() instead", LOG_LEVEL_ERROR, 0);
+    return false;
 }
 
 /**
@@ -351,14 +410,14 @@ int create_account_record(const char* username, const char* email,
 void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, const char* database) {
     if (!jwt_hash || account_id <= 0 || !database) return;
 
-    // Create parameters for QueryRef #002: Store JWT
+    // Create parameters for QueryRef #013: Store JWT
     json_t* params = json_object();
     json_object_set_new(params, "account_id", json_integer(account_id));
     json_object_set_new(params, "jwt_hash", json_string(jwt_hash));
     json_object_set_new(params, "expires_at", json_integer(expires_at));
 
     // Execute query
-    QueryResult* result = execute_auth_query(2, database, params);
+    QueryResult* result = execute_auth_query(13, database, params);
     json_decref(params);
 
     if (!result || !result->success) {
@@ -411,12 +470,12 @@ void update_jwt_storage(int account_id, const char* old_jwt_hash,
 void delete_jwt_from_storage(const char* jwt_hash, const char* database) {
     if (!jwt_hash || !database) return;
 
-    // Create parameters for QueryRef #004: Delete JWT
+    // Create parameters for QueryRef #019: Delete JWT
     json_t* params = json_object();
     json_object_set_new(params, "jwt_hash", json_string(jwt_hash));
 
     // Execute query
-    QueryResult* result = execute_auth_query(4, database, params);
+    QueryResult* result = execute_auth_query(19, database, params);
     json_decref(params);
 
     if (!result || !result->success) {
@@ -438,12 +497,12 @@ void delete_jwt_from_storage(const char* jwt_hash, const char* database) {
 bool is_token_revoked(const char* token_hash, const char* database) {
     if (!token_hash || !database) return true; // Assume revoked if invalid
 
-    // Create parameters for QueryRef #006: Check Token Revoked
+    // Create parameters for QueryRef #018: Validate JWT
     json_t* params = json_object();
     json_object_set_new(params, "token_hash", json_string(token_hash));
 
     // Execute query
-    QueryResult* result = execute_auth_query(6, database, params);
+    QueryResult* result = execute_auth_query(18, database, params);
     json_decref(params);
 
     if (!result) {
@@ -466,13 +525,22 @@ bool is_token_revoked(const char* token_hash, const char* database) {
  */
 int check_failed_attempts(const char* login_id, const char* client_ip,
                            time_t window_start, const char* database) {
+    (void)window_start; // Unused - LOGINRETRYWINDOW comes from database config Parameters
     if (!login_id || !client_ip || !database) return 0;
 
     // Create parameters for QueryRef #005: Get Login Attempt Count
+    // Use typed parameter format: {"STRING": {...}, "INTEGER": {...}}
+    // Parameter names must match SQL placeholders :LOGINID, :IPADDRESS, :LOGINRETRYWINDOW
+    // Note: LOGINRETRYWINDOW is provided by database config Parameters section (e.g., 15 minutes)
+    // We don't override it here - the config value will be used from merge_database_parameters
     json_t* params = json_object();
-    json_object_set_new(params, "login_id", json_string(login_id));
-    json_object_set_new(params, "ip", json_string(client_ip));
-    json_object_set_new(params, "since", json_integer(window_start));
+    json_t* string_params = json_object();
+    json_t* integer_params = json_object();
+    json_object_set_new(string_params, "LOGINID", json_string(login_id));
+    json_object_set_new(string_params, "IPADDRESS", json_string(client_ip));
+    // Don't set LOGINRETRYWINDOW here - it will come from database config
+    json_object_set_new(params, "STRING", string_params);
+    json_object_set_new(params, "INTEGER", integer_params);
 
     // Execute query
     QueryResult* result = execute_auth_query(5, database, params);
@@ -515,10 +583,21 @@ int check_failed_attempts(const char* login_id, const char* client_ip,
 void block_ip_address(const char* client_ip, int duration_minutes, const char* database) {
     if (!client_ip || !database) return;
 
-    // Create parameters for QueryRef #007: Block IP Address
+    // Create parameters for QueryRef #007: Block IP Address Temporarily
+    // Use typed parameter format: {"STRING": {...}, "INTEGER": {...}}
+    // Parameter names must match SQL placeholders:
+    // :IPADDRESS, :LOGINID, :REASON (STRING)
+    // :LOGINBLOCKDURATION, :LOGINLOGID (INTEGER)
     json_t* params = json_object();
-    json_object_set_new(params, "ip", json_string(client_ip));
-    json_object_set_new(params, "duration_minutes", json_integer(duration_minutes));
+    json_t* string_params = json_object();
+    json_t* integer_params = json_object();
+    json_object_set_new(string_params, "IPADDRESS", json_string(client_ip));
+    json_object_set_new(string_params, "LOGINID", json_string("")); // Not available, use empty
+    json_object_set_new(string_params, "REASON", json_string("Rate limit exceeded"));
+    json_object_set_new(integer_params, "LOGINBLOCKDURATION", json_integer(duration_minutes));
+    json_object_set_new(integer_params, "LOGINLOGID", json_integer(0)); // Not available
+    json_object_set_new(params, "STRING", string_params);
+    json_object_set_new(params, "INTEGER", integer_params);
 
     // Execute query
     QueryResult* result = execute_auth_query(7, database, params);
@@ -543,15 +622,24 @@ void block_ip_address(const char* client_ip, int duration_minutes, const char* d
 void log_login_attempt(const char* login_id, const char* client_ip,
                        const char* user_agent, time_t timestamp, const char* database) {
     if (!login_id || !client_ip || !database) return;
+    (void)user_agent; // Unused - query doesn't have a placeholder for user_agent
+    (void)timestamp;  // Unused - query uses ${NOW} instead
 
     // Create parameters for QueryRef #004: Log Login Attempt
+    // Use typed parameter format: {"STRING": {...}, "INTEGER": {...}}
+    // Parameter names must match SQL placeholders:
+    // :APPVERSION, :LOGINID, :IPADDRESS (STRING)
+    // :LOGINTIMER, :LOGINLOGID (INTEGER)
     json_t* params = json_object();
-    json_object_set_new(params, "login_id", json_string(login_id));
-    json_object_set_new(params, "ip", json_string(client_ip));
-    if (user_agent) {
-        json_object_set_new(params, "user_agent", json_string(user_agent));
-    }
-    json_object_set_new(params, "timestamp", json_integer(timestamp));
+    json_t* string_params = json_object();
+    json_t* integer_params = json_object();
+    json_object_set_new(string_params, "APPVERSION", json_string("1.0.0"));
+    json_object_set_new(string_params, "LOGINID", json_string(login_id));
+    json_object_set_new(string_params, "IPADDRESS", json_string(client_ip));
+    json_object_set_new(integer_params, "LOGINTIMER", json_integer(0)); // Time taken, not available
+    json_object_set_new(integer_params, "LOGINLOGID", json_integer(0)); // Log ID, not available
+    json_object_set_new(params, "STRING", string_params);
+    json_object_set_new(params, "INTEGER", integer_params);
 
     // Execute query
     QueryResult* result = execute_auth_query(4, database, params);
@@ -580,8 +668,12 @@ bool verify_api_key(const char* api_key, const char* database, system_info_t* sy
     }
 
     // Create parameters for QueryRef #001: Verify API Key
+    // Use typed parameter format: {"STRING": {"APIKEY": "value"}}
+    // Parameter name must match SQL placeholder :APIKEY
     json_t* params = json_object();
-    json_object_set_new(params, "api_key", json_string(api_key));
+    json_t* string_params = json_object();
+    json_object_set_new(string_params, "APIKEY", json_string(api_key));
+    json_object_set_new(params, "STRING", string_params);
 
     // Execute query against specified database
     QueryResult* result = execute_auth_query(1, database, params);
@@ -627,10 +719,12 @@ bool verify_api_key(const char* api_key, const char* database, system_info_t* sy
         return false;
     }
 
-    // Extract system_id, app_id, and license_expiry
+    // Extract system_id, license_id (as app_id), and valid_until (as license_expiry)
+    // All database engines now return lowercase column names for consistency
+    // Query returns: name, valid_until, license_id, system_id
     json_t* system_id_json = json_object_get(row, "system_id");
-    json_t* app_id_json = json_object_get(row, "app_id");
-    json_t* license_expiry_json = json_object_get(row, "license_expiry");
+    json_t* license_id_json = json_object_get(row, "license_id");
+    json_t* valid_until_json = json_object_get(row, "valid_until");
 
     if (system_id_json) {
         sys_info->system_id = (int)json_integer_value(system_id_json);
@@ -638,14 +732,30 @@ bool verify_api_key(const char* api_key, const char* database, system_info_t* sy
         sys_info->system_id = 0;
     }
 
-    if (app_id_json) {
-        sys_info->app_id = (int)json_integer_value(app_id_json);
+    // Use license_id as app_id
+    if (license_id_json) {
+        sys_info->app_id = (int)json_integer_value(license_id_json);
     } else {
         sys_info->app_id = 0;
     }
 
-    if (license_expiry_json) {
-        sys_info->license_expiry = (time_t)json_integer_value(license_expiry_json);
+    // Parse valid_until timestamp string to time_t
+    // DB2 TIMESTAMP format: "YYYY-MM-DD-HH.MM.SS.FFFFFF"
+    if (valid_until_json && json_is_string(valid_until_json)) {
+        const char* ts_str = json_string_value(valid_until_json);
+        struct tm tm_time = {0};
+        // Parse DB2 timestamp format: "2035-01-01-00.00.00.000000"
+        if (sscanf(ts_str, "%d-%d-%d-%d.%d.%d",
+                   &tm_time.tm_year, &tm_time.tm_mon, &tm_time.tm_mday,
+                   &tm_time.tm_hour, &tm_time.tm_min, &tm_time.tm_sec) >= 3) {
+            tm_time.tm_year -= 1900;  // struct tm year is years since 1900
+            tm_time.tm_mon -= 1;      // struct tm month is 0-11
+            sys_info->license_expiry = mktime(&tm_time);
+        } else {
+            sys_info->license_expiry = 0;
+        }
+    } else if (valid_until_json && json_is_integer(valid_until_json)) {
+        sys_info->license_expiry = (time_t)json_integer_value(valid_until_json);
     } else {
         sys_info->license_expiry = 0;
     }

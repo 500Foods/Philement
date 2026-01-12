@@ -58,7 +58,7 @@ table.insert(queries,{sql=[[
                         AND (feature_a21 = 100)
                         AND (action = :LOGINID)
                         AND (ip_address = :IPADDRESS)
-                        AND (created_at > ${TRMS}:LOGINRETRYWINDOW{$TRME})
+                        AND (created_at > ${TRMS} :LOGINRETRYWINDOW ${TRME})
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[

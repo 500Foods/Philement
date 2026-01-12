@@ -165,7 +165,8 @@
                   "login_id",
                   "password",
                   "api_key",
-                  "tz"
+                  "tz",
+                  "database"
                 ],
                 "properties": {
                   "login_id": {
@@ -191,6 +192,12 @@
                     "minLength": 1,
                     "maxLength": 50,
                     "description": "Client timezone (e.g., 'America/Vancouver')"
+                  },
+                  "database": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "Database name for routing queries"
                   }
                 }
               }
