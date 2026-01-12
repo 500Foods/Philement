@@ -279,6 +279,9 @@ void reset_all_mocks(void) {
 
 ApiPostBuffer* create_mock_buffer(const char* json_data, char method) {
     ApiPostBuffer* buffer = calloc(1, sizeof(ApiPostBuffer));
+    if (!buffer) {
+        return NULL;
+    }
     buffer->magic = API_POST_BUFFER_MAGIC;
     buffer->http_method = method;
     if (json_data) {
@@ -291,6 +294,9 @@ ApiPostBuffer* create_mock_buffer(const char* json_data, char method) {
 account_info_t* create_mock_account(int id, const char* username, const char* email,
                                    bool enabled, bool authorized) {
     account_info_t* account = calloc(1, sizeof(account_info_t));
+    if (!account) {
+        return NULL;
+    }
     account->id = id;
     account->username = username ? strdup(username) : NULL;
     account->email = email ? strdup(email) : NULL;
