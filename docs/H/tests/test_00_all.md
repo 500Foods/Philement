@@ -65,6 +65,7 @@ The script sources several library modules:
 - `log_output.sh` - Log output formatting
 - `framework.sh` - Test framework functions
 - `cloc.sh` - Code line counting utilities
+- `discrepancy.sh` - Coverage discrepancy analysis utilities
 
 ### Test Execution Flow
 

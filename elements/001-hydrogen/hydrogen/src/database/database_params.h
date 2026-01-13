@@ -21,7 +21,12 @@ typedef enum {
     PARAM_TYPE_INTEGER,
     PARAM_TYPE_STRING,
     PARAM_TYPE_BOOLEAN,
-    PARAM_TYPE_FLOAT
+    PARAM_TYPE_FLOAT,
+    PARAM_TYPE_TEXT,       // New - Large text fields (CLOBs, TEXT columns)
+    PARAM_TYPE_DATE,       // New - Date values (YYYY-MM-DD)
+    PARAM_TYPE_TIME,       // New - Time values (HH:MM:SS)
+    PARAM_TYPE_DATETIME,   // New - Combined date and time (YYYY-MM-DD HH:MM:SS)
+    PARAM_TYPE_TIMESTAMP   // New - Date, time with milliseconds (YYYY-MM-DD HH:MM:SS.fff)
 } ParameterType;
 
 // Typed parameter structure
@@ -33,6 +38,11 @@ typedef struct TypedParameter {
         char* string_value;
         bool bool_value;
         double float_value;
+        char* text_value;       // For TEXT (large text fields)
+        char* date_value;       // For DATE (format: YYYY-MM-DD)
+        char* time_value;       // For TIME (format: HH:MM:SS)
+        char* datetime_value;   // For DATETIME (format: YYYY-MM-DD HH:MM:SS)
+        char* timestamp_value;  // For TIMESTAMP (format: YYYY-MM-DD HH:MM:SS.fff)
     } value;
 } TypedParameter;
 

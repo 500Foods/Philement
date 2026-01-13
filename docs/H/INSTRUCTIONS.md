@@ -92,6 +92,7 @@ tests/          Test framework
 - tests/test_33_mysql_migrations.sh - MySQL migration performance test
 - tests/test_34_sqlite_migrations.sh - SQLite migration performance test
 - tests/test_35_db2_migrations.sh - DB2 migration performance test
+- tests/test_40_auth.sh - Authentication endpoints testing (JWT tokens across multiple database engines)
 - tests/test_41_conduit.sh - Conduit Query endpoint test
 - tests/test_70_installer.sh - Standalone installer building test
 - tests/test_71_database_diagrams.sh - Database diagram generation
@@ -115,6 +116,23 @@ tests/          Test framework
 - /docs/H/STRUCTURE.md - links to all files
 - /docs/H/tests/TESTING.md - blackbox/integration tests tests
 - /docs/H/tests/TESTING_UNITY.md - Unity unit tests
+
+## MARKDOWN CODING REQUIREMENTS
+
+- Use consistent headings (# H1, ## H2)
+- Use absolute links starting with /docs/H or with /elements/001-hydrogen/hydrogen/
+- DO NOT USE RELATIVE LINKS LIKE ../../../elements/...
+- DO NOT ADD LINE REFS TO LINKS LIKE /docs/H/README.md:123 - they don't work
+- Use headings instead of **topic** for emphasis
+- Fix common markdown issues such as these
+  - MD009/no-trailing-spaces: Trailing spaces
+  - MD012/no-multiple-blanks: Multiple consecutive blank lines
+  - MD022/blanks-around-headings: Headings should be surrounded by blank lines
+  - MD032/blanks-around-lists: Lists should be surrounded by blank lines
+  - Unique headings
+  - Label code snippets
+- Resolve any problems reported by Visual Studo Code
+- Run Test 04 after adding new documents
 
 ## C CODING REQUIREMENTS
 
@@ -152,21 +170,6 @@ IMPORTANT: The alias `mkp` can be used to run cppcheck against all project sourc
 - Run tests/test_92_cppcheck.sh whenever Bash code is changed
 
 IMPORTANT: The alias `mks` can be used to run shellcheck against all project scripts.
-
-## MARKDOWN CODING REQUIREMENTS
-
-- Use consistent headings (# H1, ## H2)
-- Use absolute links starting with /docs/H or with /elements/001-hydrogen/hydrogen/
-- Use headings instead of **topic** for emphasis
-- Fix common markdown issues such as these
-  - MD009/no-trailing-spaces: Trailing spaces
-  - MD012/no-multiple-blanks: Multiple consecutive blank lines
-  - MD022/blanks-around-headings: Headings should be surrounded by blank lines
-  - MD032/blanks-around-lists: Lists should be surrounded by blank lines
-  - Unique headings
-  - Label code snippets
-- Resolve any problems reported by Visual Studo Code
-- Run Test 04 after adding new documents
 
 ## CONFIGURATION
 

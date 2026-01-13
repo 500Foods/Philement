@@ -19,7 +19,12 @@ static const char* PARAM_TYPE_STRINGS[] = {
     "INTEGER",
     "STRING",
     "BOOLEAN",
-    "FLOAT"
+    "FLOAT",
+    "TEXT",
+    "DATE",
+    "TIME",
+    "DATETIME",
+    "TIMESTAMP"
 };
 
 // Parse typed JSON parameters into parameter list
@@ -54,7 +59,7 @@ ParameterList* parse_typed_parameters(const char* json_params, const char* dqm_l
 
     // Count total parameters across all types
     size_t total_params = 0;
-    const char* type_keys[] = {"INTEGER", "STRING", "BOOLEAN", "FLOAT"};
+    const char* type_keys[] = {"INTEGER", "STRING", "BOOLEAN", "FLOAT", "TEXT", "DATE", "TIME", "DATETIME", "TIMESTAMP"};
     size_t num_types = sizeof(type_keys) / sizeof(type_keys[0]);
 
     for (size_t i = 0; i < num_types; i++) {
@@ -103,7 +108,8 @@ ParameterList* parse_typed_parameters(const char* json_params, const char* dqm_l
                 return NULL;
             }
 
-            // Initialize parameter
+            // Initialize parameter (zero out the union to prevent double-free on error)
+            memset(param, 0, sizeof(TypedParameter));
             param->name = strdup(param_name);
             param->type = param_type;
 
@@ -149,6 +155,19 @@ ParameterList* parse_typed_parameters(const char* json_params, const char* dqm_l
                         // Allow integers for float parameters
                         param->value.float_value = (double)json_integer_value(param_value);
                         parse_success = true;
+                    }
+                    break;
+
+                case PARAM_TYPE_TEXT:
+                case PARAM_TYPE_DATE:
+                case PARAM_TYPE_TIME:
+                case PARAM_TYPE_DATETIME:
+                case PARAM_TYPE_TIMESTAMP:
+                    if (json_is_string(param_value)) {
+                        param->value.text_value = strdup(json_string_value(param_value));
+                        if (param->value.text_value) {
+                            parse_success = true;
+                        }
                     }
                     break;
             }
@@ -347,8 +366,13 @@ void free_typed_parameter(TypedParameter* param) {
     if (!param) return;
 
     free(param->name);
-    if (param->type == PARAM_TYPE_STRING) {
-        free(param->value.string_value);
+    if (param->type == PARAM_TYPE_STRING ||
+        param->type == PARAM_TYPE_TEXT ||
+        param->type == PARAM_TYPE_DATE ||
+        param->type == PARAM_TYPE_TIME ||
+        param->type == PARAM_TYPE_DATETIME ||
+        param->type == PARAM_TYPE_TIMESTAMP) {
+        free(param->value.string_value);  // All use same union position
     }
     free(param);
 }

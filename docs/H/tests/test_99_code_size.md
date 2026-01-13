@@ -29,6 +29,7 @@ This test analyzes the codebase to ensure no files exceed line limits, detects l
 - `file_utils.sh` - File utilities
 - `framework.sh` - Test framework
 - `cloc.sh` - CLOC analysis
+- `discrepancy.sh` - Coverage discrepancy analysis
 
 ### Test Execution Flow
 
