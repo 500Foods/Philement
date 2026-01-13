@@ -92,6 +92,14 @@ extern SQLSetConnectAttr_t SQLSetConnectAttr_ptr;
 #define SQL_C_DOUBLE 8
 #define SQL_C_SHORT 5
 
+// Date/time SQL types
+#define SQL_TYPE_DATE 91
+#define SQL_TYPE_TIME 92
+#define SQL_TYPE_TIMESTAMP 93
+#define SQL_C_TYPE_DATE 91
+#define SQL_C_TYPE_TIME 92
+#define SQL_C_TYPE_TIMESTAMP 93
+
 // Current catalog/database
 #define SQL_ATTR_CURRENT_CATALOG 109
 
@@ -100,6 +108,29 @@ extern SQLSetConnectAttr_t SQLSetConnectAttr_ptr;
 
 // Type definitions
 typedef void* SQLPOINTER;
+
+// Date/time structure definitions
+typedef struct {
+    short year;
+    unsigned short month;
+    unsigned short day;
+} SQL_DATE_STRUCT;
+
+typedef struct {
+    unsigned short hour;
+    unsigned short minute;
+    unsigned short second;
+} SQL_TIME_STRUCT;
+
+typedef struct {
+    short year;
+    unsigned short month;
+    unsigned short day;
+    unsigned short hour;
+    unsigned short minute;
+    unsigned short second;
+    unsigned long fraction;
+} SQL_TIMESTAMP_STRUCT;
 
 // Prepared statement cache structure
 typedef struct PreparedStatementCache {

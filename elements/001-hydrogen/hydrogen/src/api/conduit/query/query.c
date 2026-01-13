@@ -288,6 +288,21 @@ bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_i
                     case PARAM_TYPE_FLOAT:
                         json_object_set_new(param_json, param->name, json_real(param->value.float_value));
                         break;
+                    case PARAM_TYPE_TEXT:
+                        json_object_set_new(param_json, param->name, json_string(param->value.text_value));
+                        break;
+                    case PARAM_TYPE_DATE:
+                        json_object_set_new(param_json, param->name, json_string(param->value.date_value));
+                        break;
+                    case PARAM_TYPE_TIME:
+                        json_object_set_new(param_json, param->name, json_string(param->value.time_value));
+                        break;
+                    case PARAM_TYPE_DATETIME:
+                        json_object_set_new(param_json, param->name, json_string(param->value.datetime_value));
+                        break;
+                    case PARAM_TYPE_TIMESTAMP:
+                        json_object_set_new(param_json, param->name, json_string(param->value.timestamp_value));
+                        break;
                 }
             }
         }

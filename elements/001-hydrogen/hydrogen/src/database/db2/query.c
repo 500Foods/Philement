@@ -373,6 +373,146 @@ static bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_in
                                                &str_len_indicators[param_index - 1]);
             break;
         }
+        case PARAM_TYPE_TEXT: {
+            size_t text_len = param->value.text_value ? strlen(param->value.text_value) : 0;
+            bound_values[param_index - 1] = param->value.text_value ? strdup(param->value.text_value) : strdup("");
+            if (!bound_values[param_index - 1]) return false;
+            str_len_indicators[param_index - 1] = (long)text_len;
+            log_this(designator, "Binding TEXT parameter %u: len=%zu", LOG_LEVEL_TRACE, 2,
+                     (unsigned int)param_index, text_len);
+            bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
+                                               SQL_C_CHAR, SQL_LONGVARCHAR, text_len > 0 ? text_len : 1, 0,
+                                               bound_values[param_index - 1], (long)(text_len + 1),
+                                               &str_len_indicators[param_index - 1]);
+            break;
+        }
+        case PARAM_TYPE_DATE: {
+            // DATE_STRUCT: year, month, day
+            // Allocate DATE_STRUCT
+            SQL_DATE_STRUCT* date_struct = malloc(sizeof(SQL_DATE_STRUCT));
+            if (!date_struct) return false;
+            
+            // Parse date string (YYYY-MM-DD format)
+            const char* date_value = param->value.date_value ? param->value.date_value : "1970-01-01";
+            int year = 0, month = 0, day = 0;
+            if (sscanf(date_value, "%d-%d-%d", &year, &month, &day) != 3) {
+                log_this(designator, "Invalid DATE format (expected YYYY-MM-DD): %s", LOG_LEVEL_ERROR, 1, date_value);
+                free(date_struct);
+                return false;
+            }
+            
+            date_struct->year = (short)year;
+            date_struct->month = (unsigned short)month;
+            date_struct->day = (unsigned short)day;
+            
+            bound_values[param_index - 1] = date_struct;
+            str_len_indicators[param_index - 1] = 0;
+            log_this(designator, "Binding DATE parameter %u: %04d-%02d-%02d", LOG_LEVEL_TRACE, 4,
+                     (unsigned int)param_index, year, month, day);
+            bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
+                                               SQL_C_TYPE_DATE, SQL_TYPE_DATE, 0, 0,
+                                               bound_values[param_index - 1], 0,
+                                               &str_len_indicators[param_index - 1]);
+            break;
+        }
+        case PARAM_TYPE_TIME: {
+            // TIME_STRUCT: hour, minute, second
+            // Allocate TIME_STRUCT
+            SQL_TIME_STRUCT* time_struct = malloc(sizeof(SQL_TIME_STRUCT));
+            if (!time_struct) return false;
+            
+            // Parse time string (HH:MM:SS format)
+            const char* time_value = param->value.time_value ? param->value.time_value : "00:00:00";
+            int hour = 0, minute = 0, second = 0;
+            if (sscanf(time_value, "%d:%d:%d", &hour, &minute, &second) != 3) {
+                log_this(designator, "Invalid TIME format (expected HH:MM:SS): %s", LOG_LEVEL_ERROR, 1, time_value);
+                free(time_struct);
+                return false;
+            }
+            
+            time_struct->hour = (unsigned short)hour;
+            time_struct->minute = (unsigned short)minute;
+            time_struct->second = (unsigned short)second;
+            
+            bound_values[param_index - 1] = time_struct;
+            str_len_indicators[param_index - 1] = 0;
+            log_this(designator, "Binding TIME parameter %u: %02d:%02d:%02d", LOG_LEVEL_TRACE, 4,
+                     (unsigned int)param_index, hour, minute, second);
+            bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
+                                               SQL_C_TYPE_TIME, SQL_TYPE_TIME, 0, 0,
+                                               bound_values[param_index - 1], 0,
+                                               &str_len_indicators[param_index - 1]);
+            break;
+        }
+        case PARAM_TYPE_DATETIME: {
+            // TIMESTAMP_STRUCT: year, month, day, hour, minute, second, fraction
+            // Allocate TIMESTAMP_STRUCT
+            SQL_TIMESTAMP_STRUCT* timestamp_struct = malloc(sizeof(SQL_TIMESTAMP_STRUCT));
+            if (!timestamp_struct) return false;
+            
+            // Parse datetime string (YYYY-MM-DD HH:MM:SS format)
+            const char* datetime_value = param->value.datetime_value ? param->value.datetime_value : "1970-01-01 00:00:00";
+            int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
+            if (sscanf(datetime_value, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &minute, &second) != 6) {
+                log_this(designator, "Invalid DATETIME format (expected YYYY-MM-DD HH:MM:SS): %s", LOG_LEVEL_ERROR, 1, datetime_value);
+                free(timestamp_struct);
+                return false;
+            }
+            
+            timestamp_struct->year = (short)year;
+            timestamp_struct->month = (unsigned short)month;
+            timestamp_struct->day = (unsigned short)day;
+            timestamp_struct->hour = (unsigned short)hour;
+            timestamp_struct->minute = (unsigned short)minute;
+            timestamp_struct->second = (unsigned short)second;
+            timestamp_struct->fraction = 0; // No fractional seconds in this format
+            
+            bound_values[param_index - 1] = timestamp_struct;
+            str_len_indicators[param_index - 1] = 0;
+            log_this(designator, "Binding DATETIME parameter %u: %04d-%02d-%02d %02d:%02d:%02d", LOG_LEVEL_TRACE, 7,
+                     (unsigned int)param_index, year, month, day, hour, minute, second);
+            bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
+                                               SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP, 0, 0,
+                                               bound_values[param_index - 1], 0,
+                                               &str_len_indicators[param_index - 1]);
+            break;
+        }
+        case PARAM_TYPE_TIMESTAMP: {
+            // TIMESTAMP_STRUCT: year, month, day, hour, minute, second, fraction (milliseconds)
+            // Allocate TIMESTAMP_STRUCT
+            SQL_TIMESTAMP_STRUCT* timestamp_struct = malloc(sizeof(SQL_TIMESTAMP_STRUCT));
+            if (!timestamp_struct) return false;
+            
+            // Parse timestamp string (YYYY-MM-DD HH:MM:SS.fff format)
+            const char* timestamp_value = param->value.timestamp_value ? param->value.timestamp_value : "1970-01-01 00:00:00.000";
+            int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, milliseconds = 0;
+            int parsed = sscanf(timestamp_value, "%d-%d-%d %d:%d:%d.%d", &year, &month, &day, &hour, &minute, &second, &milliseconds);
+            if (parsed < 6) {
+                log_this(designator, "Invalid TIMESTAMP format (expected YYYY-MM-DD HH:MM:SS.fff): %s", LOG_LEVEL_ERROR, 1, timestamp_value);
+                free(timestamp_struct);
+                return false;
+            }
+            // If only 6 fields parsed, milliseconds is 0 (fractional seconds are optional)
+            
+            timestamp_struct->year = (short)year;
+            timestamp_struct->month = (unsigned short)month;
+            timestamp_struct->day = (unsigned short)day;
+            timestamp_struct->hour = (unsigned short)hour;
+            timestamp_struct->minute = (unsigned short)minute;
+            timestamp_struct->second = (unsigned short)second;
+            // Convert milliseconds to nanoseconds (fraction field is nanoseconds)
+            timestamp_struct->fraction = (unsigned long)(milliseconds * 1000000);
+            
+            bound_values[param_index - 1] = timestamp_struct;
+            str_len_indicators[param_index - 1] = 0;
+            log_this(designator, "Binding TIMESTAMP parameter %u: %04d-%02d-%02d %02d:%02d:%02d.%03d", LOG_LEVEL_TRACE, 8,
+                     (unsigned int)param_index, year, month, day, hour, minute, second, milliseconds);
+            bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
+                                               SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP, 0, 0,
+                                               bound_values[param_index - 1], 0,
+                                               &str_len_indicators[param_index - 1]);
+            break;
+        }
     }
 
     if (bind_result != SQL_SUCCESS && bind_result != SQL_SUCCESS_WITH_INFO) {
