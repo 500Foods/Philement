@@ -15,6 +15,7 @@
 # calculate_blackbox_coverage()
 
 # CHANGELOG
+# 4.1.0 - 2026-01-13 - Fixed crypto filter that was excluding utils_crypto.c from coverage
 # 4.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 3.5.0 - 2025-12-05 - Updated timestamp checks to use nanosecond precision to prevent regeneration when timestamps are equal
 # 3.4.0 - 2025-10-15 - Added calculate_test_instrumented_lines() function for counting test file instrumentation
@@ -59,12 +60,12 @@ export COVERAGE_GUARD="true"
 # - EG: if coverage shows 19977, and unity = 19973 and blackbox = 19975,
 #       then we'd need to add 4 to unity and 2 to coverage below to fix
 #
-DISCREPANCY_UNITY=307
-DISCREPANCY_COVERAGE=141
+DISCREPANCY_UNITY=241
+DISCREPANCY_COVERAGE=75
   
 # Library metadata
 COVERAGE_NAME="Coverage Library"
-COVERAGE_VERSION="4.0.0"
+COVERAGE_VERSION="4.1.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${COVERAGE_NAME} ${COVERAGE_VERSION}" "info" 2> /dev/null || true
 
@@ -335,12 +336,13 @@ calculate_coverage_generic() {
             fi
             
             # Skip system libraries and external dependencies
+            # Note: We no longer skip "crypto" as we have our own utils_crypto.c
+            # External crypto libs (like libcrypto.so) would show as /usr/lib paths
             if [[ "${basename_file}" == *"jansson"* ]] || \
                [[ "${basename_file}" == *"mock"* ]] || \
                [[ "${basename_file}" == *"json"* ]] || \
                [[ "${basename_file}" == *"curl"* ]] || \
                [[ "${basename_file}" == *"ssl"* ]] || \
-               [[ "${basename_file}" == *"crypto"* ]] || \
                [[ "${basename_file}" == *"pthread"* ]] || \
                [[ "${basename_file}" == *"uuid"* ]] || \
                [[ "${basename_file}" == *"zlib"* ]] || \

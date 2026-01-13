@@ -17,6 +17,7 @@ This is a separate executable file that takes a JSON layout file and a JSON data
 These libraries were created as part of the test suite migration to replace support_utils.sh with modular, focused scripts.
 
 - **[CLOC Library](/docs/H/tests/cloc.md)** - Documentation for `cloc.sh`, providing code analysis and line counting functionality with linting integration for test scripts. [Script](/elements/001-hydrogen/hydrogen/tests/lib/cloc.sh)
+- **[Discrepancy Analysis Library](/docs/H/tests/discrepancy.md)** - Documentation for `discrepancy.sh`, providing coverage discrepancy analysis between Test 89 and coverage_table.sh calculation methods. [Script](/elements/001-hydrogen/hydrogen/tests/lib/discrepancy.sh)
 - **[Log Output Library](/docs/H/tests/log_output.md)** - Documentation for `log_output.sh`, providing consistent logging, formatting, and display functions for test scripts. [Script](/elements/001-hydrogen/hydrogen/tests/lib/log_output.sh)
 - **[File Utils Library](/docs/H/tests/file_utils.md)** - Documentation for `file_utils.sh`, providing file and path manipulation functions for test scripts. [Script](/elements/001-hydrogen/hydrogen/tests/lib/file_utils.sh)
 - **[Test Framework Library](/docs/H/tests/framework.md)** - Documentation for `framework.sh`, providing test lifecycle management and result tracking functions. [Script](/elements/001-hydrogen/hydrogen/tests/lib/framework.sh)

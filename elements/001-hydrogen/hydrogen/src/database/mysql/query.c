@@ -8,6 +8,7 @@
 #include <src/hydrogen.h>
 #include <src/database/database.h>
 #include <src/database/dbqueue/dbqueue.h>
+#include <src/database/database_params.h>
 
 // Local includes
 #include "types.h"

@@ -198,6 +198,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_33_mysql_migrations.md](/docs/H/tests/test_33_mysql_migrations.md): MySQL migration performance test
 - [test_34_sqlite_migrations.md](/docs/H/tests/test_34_sqlite_migrations.md): SQLite migration performance test
 - [test_35_db2_migrations.md](/docs/H/tests/test_35_db2_migrations.md): DB2 migration performance test
+- [test_40_auth.md](/docs/H/tests/test_40_auth.md): Authentication endpoints testing (JWT tokens across multiple database engines)
 - [test_41_conduit.md](/docs/H/tests/test_41_conduit.md): Query mechanism
 - [test_70_installer.md](/docs/H/tests/test_70_installer.md): Standalone installer building test
 - [test_71_database_diagrams.md](/docs/H/tests/test_71_database_diagrams.md): Standalone installer building test

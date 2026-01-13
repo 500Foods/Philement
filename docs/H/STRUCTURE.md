@@ -561,6 +561,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_33_mysql_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_33_mysql_migrations.sh) - MySQL migration performance test
 - [tests/test_34_sqlite_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_34_sqlite_migrations.sh) - SQLite migration performance test
 - [tests/test_35_db2_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_35_db2_migrations.sh) - DB2 migration performance test
+- [tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh) - Authentication endpoints testing (JWT tokens across multiple database engines)
 
 ### Deliverables
 
@@ -588,6 +589,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 - [tests/lib/](/elements/001-hydrogen/hydrogen/tests/lib/) - Test library functions
   - [cloc.sh](/elements/001-hydrogen/hydrogen/tests/lib/cloc.sh) - Code line counting utilities
+  - [discrepancy.sh](/elements/001-hydrogen/hydrogen/tests/lib/discrepancy.sh) - Coverage discrepancy analysis utilities
   - [coverage.sh](/elements/001-hydrogen/hydrogen/tests/lib/coverage.sh) - Main coverage orchestration and API functions
   - [coverage-combinedn.sh](/elements/001-hydrogen/hydrogen/tests/lib/coverage-combined.sh) - Deals with Blackbox and Unity data aggregation
   - [coverage-common.sh](/elements/001-hydrogen/hydrogen/tests/lib/coverage-common.sh) - Shared coverage utilities and variables
