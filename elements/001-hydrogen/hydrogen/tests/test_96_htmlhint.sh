@@ -44,7 +44,7 @@ if [[ "${HTML_COUNT}" -gt 0 ]]; then
     TEMP_LOG="${LOG_PREFIX}${TIMESTAMP}_temp.log"
     
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running htmlhint on ${HTML_COUNT} HTML files..."
-    TEST_NAME="${TEST_NAME}  {BLUE}htmlhint: ${HTML_COUNT files){RESET}"
+    TEST_NAME="${TEST_NAME}  {BLUE}htmlhint: ${HTML_COUNT} files{RESET}"
 
     # List files being checked for debugging
     for file in "${HTML_FILES[@]}"; do

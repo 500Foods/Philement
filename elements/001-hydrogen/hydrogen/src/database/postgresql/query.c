@@ -8,6 +8,7 @@
 #include <src/hydrogen.h>
 #include <src/database/database.h>
 #include <src/database/database_serialize.h>
+#include <src/database/database_params.h>
 #include <src/database/dbqueue/dbqueue.h>
 
 // Local includes
@@ -19,6 +20,7 @@
 typedef int (*PQftype_t)(void* res, int column_number);
 
 extern PQexec_t PQexec_ptr;
+extern PQexecParams_t PQexecParams_ptr;
 extern PQresultStatus_t PQresultStatus_ptr;
 extern PQclear_t PQclear_ptr;
 extern PQntuples_t PQntuples_ptr;
@@ -55,6 +57,53 @@ static bool postgresql_is_numeric_type(int oid) {
 
 // External declarations for constants (defined in connection.c)
 extern bool check_timeout_expired(time_t start_time, int timeout_seconds);
+
+// Helper function to convert TypedParameter to PostgreSQL string format
+// PostgreSQL PQexecParams accepts all parameters as text strings
+// Returns allocated string that caller must free
+static char* postgresql_convert_param_value(const TypedParameter* param, const char* designator) {
+    if (!param) {
+        log_this(designator, "postgresql_convert_param_value: NULL parameter", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
+    char buffer[256];
+    
+    switch (param->type) {
+        case PARAM_TYPE_INTEGER:
+            snprintf(buffer, sizeof(buffer), "%lld", param->value.int_value);
+            return strdup(buffer);
+            
+        case PARAM_TYPE_STRING:
+            return param->value.string_value ? strdup(param->value.string_value) : strdup("");
+            
+        case PARAM_TYPE_BOOLEAN:
+            return strdup(param->value.bool_value ? "true" : "false");
+            
+        case PARAM_TYPE_FLOAT:
+            snprintf(buffer, sizeof(buffer), "%.15g", param->value.float_value);
+            return strdup(buffer);
+            
+        case PARAM_TYPE_TEXT:
+            return param->value.text_value ? strdup(param->value.text_value) : strdup("");
+            
+        case PARAM_TYPE_DATE:
+            return param->value.date_value ? strdup(param->value.date_value) : strdup("");
+            
+        case PARAM_TYPE_TIME:
+            return param->value.time_value ? strdup(param->value.time_value) : strdup("");
+            
+        case PARAM_TYPE_DATETIME:
+            return param->value.datetime_value ? strdup(param->value.datetime_value) : strdup("");
+            
+        case PARAM_TYPE_TIMESTAMP:
+            return param->value.timestamp_value ? strdup(param->value.timestamp_value) : strdup("");
+            
+        default:
+            log_this(designator, "postgresql_convert_param_value: Unknown parameter type %d", LOG_LEVEL_ERROR, 1, param->type);
+            return NULL;
+    }
+}
 
 // Query Execution Functions
 bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result) {
@@ -95,9 +144,70 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
         log_this(designator, "PostgreSQL execute_query: Failed to set statement timeout", LOG_LEVEL_ERROR, 0);
     }
 
+    // Parse and process parameters if provided
+    ParameterList* params = NULL;
+    char* positional_sql = NULL;
+    TypedParameter** ordered_params = NULL;
+    size_t ordered_param_count = 0;
+    char** param_values = NULL;
+    
+    if (request->parameters_json && strlen(request->parameters_json) > 0) {
+        // Parse typed parameters from JSON
+        params = parse_typed_parameters(request->parameters_json, designator);
+        if (params) {
+            // Convert named parameters to PostgreSQL positional format ($1, $2, ...)
+            positional_sql = convert_named_to_positional(
+                request->sql_template,
+                params,
+                DB_ENGINE_POSTGRESQL,
+                &ordered_params,
+                &ordered_param_count,
+                designator
+            );
+            
+            if (positional_sql && ordered_params && ordered_param_count > 0) {
+                // Build parameter value array for PQexecParams
+                param_values = calloc(ordered_param_count, sizeof(char*));
+                if (param_values) {
+                    for (size_t i = 0; i < ordered_param_count; i++) {
+                        param_values[i] = postgresql_convert_param_value(ordered_params[i], designator);
+                    }
+                }
+            }
+        }
+    }
+    
     // Execute the query (now with PostgreSQL-level timeout protection)
     time_t query_start_time = time(NULL);
-    void* pg_result = PQexec_ptr(pg_conn->connection, request->sql_template);
+    void* pg_result = NULL;
+    
+    if (positional_sql && param_values && ordered_param_count > 0 && PQexecParams_ptr) {
+        // Use parameterized execution
+        log_this(designator, "PostgreSQL execute_query: Executing with %zu parameters", LOG_LEVEL_TRACE, 1, ordered_param_count);
+        pg_result = PQexecParams_ptr(pg_conn->connection, positional_sql, (int)ordered_param_count,
+                                      NULL, (const char* const*)param_values, NULL, NULL, 0);
+    } else {
+        // Fall back to direct execution
+        log_this(designator, "PostgreSQL execute_query: Executing without parameters", LOG_LEVEL_TRACE, 0);
+        pg_result = PQexec_ptr(pg_conn->connection, request->sql_template);
+    }
+    
+    // Cleanup parameter resources
+    if (param_values) {
+        for (size_t i = 0; i < ordered_param_count; i++) {
+            free(param_values[i]);
+        }
+        free(param_values);
+    }
+    if (ordered_params) {
+        free(ordered_params);
+    }
+    if (positional_sql) {
+        free(positional_sql);
+    }
+    if (params) {
+        free_parameter_list(params);
+    }
 
     // Check if query took too long (timing now handled at engine abstraction layer, but we still need timeout checking)
     if (check_timeout_expired(query_start_time, query_timeout)) {
@@ -339,19 +449,57 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
         log_this(designator, "PostgreSQL execute_prepared: Failed to set statement timeout", LOG_LEVEL_ERROR, 0);
     }
 
+    // Parse and process parameters if provided
+    ParameterList* params = NULL;
+    size_t ordered_param_count = 0;
+    char** param_values = NULL;
+    
+    if (request->parameters_json && strlen(request->parameters_json) > 0) {
+        // Parse typed parameters from JSON
+        params = parse_typed_parameters(request->parameters_json, designator);
+        if (params && params->count > 0) {
+            // For prepared statements, parameters are already in positional order
+            // Just convert the parameter values to string format for PQexecPrepared
+            ordered_param_count = params->count;
+            param_values = calloc(ordered_param_count, sizeof(char*));
+            if (param_values) {
+                for (size_t i = 0; i < ordered_param_count; i++) {
+                    param_values[i] = postgresql_convert_param_value(params->params[i], designator);
+                }
+            }
+        }
+    }
+
     // Execute the prepared statement using PQexecPrepared API
     time_t query_start_time = time(NULL);
     void* pg_result = NULL;
 
     if (PQexecPrepared_ptr) {
         // Use true prepared statement execution with PQexecPrepared
-        // For migration queries with no parameters, use nParams=0 and NULL parameter arrays
-        log_this(designator, "PostgreSQL execute_prepared: Using PQexecPrepared API", LOG_LEVEL_TRACE, 0);
-        pg_result = PQexecPrepared_ptr(pg_conn->connection, stmt->name, 0, NULL, NULL, NULL, 0);
+        if (param_values && ordered_param_count > 0) {
+            log_this(designator, "PostgreSQL execute_prepared: Using PQexecPrepared with %zu parameters", LOG_LEVEL_TRACE, 1, ordered_param_count);
+            pg_result = PQexecPrepared_ptr(pg_conn->connection, stmt->name, (int)ordered_param_count,
+                                          (const char* const*)param_values, NULL, NULL, 0);
+        } else {
+            // For queries with no parameters, use nParams=0 and NULL parameter arrays
+            log_this(designator, "PostgreSQL execute_prepared: Using PQexecPrepared without parameters", LOG_LEVEL_TRACE, 0);
+            pg_result = PQexecPrepared_ptr(pg_conn->connection, stmt->name, 0, NULL, NULL, NULL, 0);
+        }
     } else {
         // Fallback to simple execution if PQexecPrepared is not available
         log_this(designator, "PostgreSQL execute_prepared: Falling back to PQexec (PQexecPrepared not available)", LOG_LEVEL_TRACE, 0);
         pg_result = PQexec_ptr(pg_conn->connection, stmt->name);
+    }
+    
+    // Cleanup parameter resources
+    if (param_values) {
+        for (size_t i = 0; i < ordered_param_count; i++) {
+            free(param_values[i]);
+        }
+        free(param_values);
+    }
+    if (params) {
+        free_parameter_list(params);
     }
 
     // Check if query took too long (timing now handled at engine abstraction layer, but we still need timeout checking)

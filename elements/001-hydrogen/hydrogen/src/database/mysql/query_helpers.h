@@ -31,4 +31,8 @@ void* mysql_store_query_result(void* mysql_connection, const char* designator);
 bool mysql_process_query_result(void* mysql_result, QueryResult* db_result, const char* designator);
 bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, void* stmt_handle, const char* designator);
 
+// New helper functions for prepared statement result processing
+bool mysql_process_prepared_stmt_result(void* stmt, QueryResult* result, const char* designator);
+bool mysql_process_direct_result(void* mysql_conn, void* mysql_result, QueryResult* result, const char* designator);
+
 #endif // DATABASE_ENGINE_MYSQL_QUERY_HELPERS_H
