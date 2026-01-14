@@ -2,7 +2,7 @@
 
 ## Overview
 
-The [`test_40_auth.sh`](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh) script is a comprehensive authentication testing tool within the Hydrogen test suite, focused on validating JWT-based authentication endpoints across multiple database engines in parallel. This test ensures that authentication functionality works correctly with PostgreSQL, MySQL, SQLite, and DB2 databases.
+The [`test_40_auth.sh`](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh) script is a comprehensive authentication testing tool within the Hydrogen test suite, focused on validating JWT-based authentication endpoints across multiple database engines in parallel. This test ensures that authentication functionality works correctly with PostgreSQL, MySQL, SQLite, DB2, MariaDB, CockroachDB, and YugabyteDB databases.
 
 ## Purpose
 
@@ -11,7 +11,7 @@ This script validates that the Hydrogen server correctly handles JWT-based authe
 ## Script Details
 
 - **Script Name**: `test_40_auth.sh`
-- **Test Name**: Auth (engines: 4)
+- **Test Name**: Auth (engines: 7)
 - **Test Abbreviation**: JWT
 - **Version**: 1.2.0
 - **Dependencies**: Uses modular libraries from `lib/` directory
@@ -20,7 +20,7 @@ This script validates that the Hydrogen server correctly handles JWT-based authe
 
 ### Core Functionality
 
-- **Multi-Engine Parallel Testing**: Tests authentication against PostgreSQL, MySQL, SQLite, and DB2 simultaneously
+- **Multi-Engine Parallel Testing**: Tests authentication against PostgreSQL, MySQL, SQLite, DB2, MariaDB, CockroachDB, and YugabyteDB simultaneously
 - **JWT Token Management**: Validates JWT token generation, renewal, and invalidation
 - **User Registration**: Tests new user registration endpoint
 - **Invalid Credentials Handling**: Validates proper rejection of incorrect credentials
@@ -60,6 +60,9 @@ Test configurations are stored in `configs/` directory:
 - **`hydrogen_test_40_mysql.json`**: MySQL configuration with demo schema
 - **`hydrogen_test_40_sqlite.json`**: SQLite configuration with demo schema
 - **`hydrogen_test_40_db2.json`**: DB2 configuration with demo schema
+- **`hydrogen_test_40_mariadb.json`**: MariaDB configuration with demo schema
+- **`hydrogen_test_40_cockroachdb.json`**: CockroachDB configuration with demo schema
+- **`hydrogen_test_40_yugabytedb.json`**: YugabyteDB configuration with demo schema
 
 ### Environment Variables Required
 
@@ -113,7 +116,7 @@ To run this test individually:
 
 - All configuration files validated successfully
 - Required environment variables are set
-- All four database engine servers start successfully
+- All seven database engine servers start successfully
 - Login succeeds with valid credentials for all engines
 - Invalid credentials correctly rejected with HTTP 401 for all engines
 - JWT token renewal works correctly for all engines
@@ -181,6 +184,8 @@ The test uses parallel execution patterns similar to [`test_30_database.sh`](/do
 
 ## Version History
 
+- **1.4.0** (2026-01-14): Expanded to cover all 7 database engines (PostgreSQL, MySQL, SQLite, DB2, MariaDB, CockroachDB, YugabyteDB)
+- **1.3.0** (2026-01-13): Fixed JWT token passing for renew/logout endpoints
 - **1.2.0** (2026-01-10): Updated to use environment variables for demo credentials
 - **1.1.0** (2026-01-10): Restructured for parallel execution across multiple database engines
 - **1.0.0** (2026-01-10): Initial implementation of auth endpoint tests
