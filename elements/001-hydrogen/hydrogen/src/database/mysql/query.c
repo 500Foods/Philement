@@ -30,6 +30,7 @@ extern mysql_affected_rows_t mysql_affected_rows_ptr;
 extern mysql_stmt_execute_t mysql_stmt_execute_ptr;
 extern mysql_stmt_result_metadata_t mysql_stmt_result_metadata_ptr;
 extern mysql_stmt_fetch_t mysql_stmt_fetch_ptr;
+extern mysql_stmt_bind_param_t mysql_stmt_bind_param_ptr;
 extern mysql_stmt_error_t mysql_stmt_error_ptr;
 extern mysql_stmt_affected_rows_t mysql_stmt_affected_rows_ptr;
 extern mysql_stmt_store_result_t mysql_stmt_store_result_ptr;
@@ -51,6 +52,307 @@ void mysql_cleanup_column_names(char** column_names, size_t column_count) {
 }
 
 /*
+ * MySQL Parameter Binding
+ */
+
+// MySQL type constants (since we can't include mysql.h)
+#define MYSQL_TYPE_LONG 3
+#define MYSQL_TYPE_STRING 254
+#define MYSQL_TYPE_SHORT 2
+#define MYSQL_TYPE_DOUBLE 5
+#define MYSQL_TYPE_LONG_BLOB 251
+#define MYSQL_TYPE_DATE 10
+#define MYSQL_TYPE_TIME 11
+#define MYSQL_TYPE_DATETIME 12
+#define MYSQL_TYPE_TIMESTAMP 7
+
+// Forward declaration for MYSQL_BIND
+// cppcheck-suppress unusedStructMember
+struct MYSQL_BIND_STRUCT;
+
+// MYSQL_BIND structure (simplified version to match libmysqlclient)
+typedef struct MYSQL_BIND_STRUCT {
+    unsigned long* length;
+    char* is_null;
+    void* buffer;
+    unsigned long* error;
+    unsigned char* row_ptr;
+    void (*store_param_func)(void*, struct MYSQL_BIND_STRUCT*, unsigned char**, unsigned char**);
+    void (*fetch_result)(struct MYSQL_BIND_STRUCT*, unsigned int, unsigned char**);
+    void (*skip_result)(struct MYSQL_BIND_STRUCT*, unsigned int, unsigned char**);
+    unsigned long buffer_length;
+    unsigned long offset;
+    unsigned long length_value;
+    unsigned int param_number;
+    unsigned int pack_length;
+    unsigned int buffer_type;  // MySQL type constant
+    char error_value;
+    char is_unsigned;
+    char long_data_used;
+    char is_null_value;
+    void* extension;
+} MYSQL_BIND;
+
+// MySQL DATE_TIME structure for date/time binding
+typedef struct {
+    unsigned int year;
+    unsigned int month;
+    unsigned int day;
+    unsigned int hour;
+    unsigned int minute;
+    unsigned int second;
+    unsigned long second_part;  // microseconds
+    char neg;
+    unsigned int time_type;
+} MYSQL_TIME;
+
+// Helper function to bind a single parameter (will be used in Step 3)
+// cppcheck-suppress unusedFunction
+static bool mysql_bind_single_parameter(MYSQL_BIND* bind, unsigned int param_index, TypedParameter* param,
+                                         void** bound_values, size_t total_param_count, const char* designator) __attribute__((unused));
+static bool mysql_bind_single_parameter(MYSQL_BIND* bind, unsigned int param_index, TypedParameter* param,
+                                         void** bound_values, size_t total_param_count, const char* designator) {
+    if (!bind || !param || !bound_values) {
+        log_this(designator, "mysql_bind_single_parameter: invalid parameters", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    log_this(designator, "Binding parameter %u: name=%s, type=%d", LOG_LEVEL_TRACE, 3,
+             param_index, param->name, param->type);
+
+    switch (param->type) {
+        case PARAM_TYPE_INTEGER: {
+            long long* int_val = malloc(sizeof(long long));
+            if (!int_val) return false;
+            *int_val = param->value.int_value;
+            bound_values[param_index] = int_val;
+
+            bind[param_index].buffer_type = MYSQL_TYPE_LONG;
+            bind[param_index].buffer = int_val;
+            bind[param_index].buffer_length = sizeof(long long);
+            bind[param_index].is_null = NULL;
+            bind[param_index].length = NULL;
+
+            log_this(designator, "Bound INTEGER parameter %u: value=%lld", LOG_LEVEL_TRACE, 2,
+                     param_index, *int_val);
+            break;
+        }
+        case PARAM_TYPE_STRING: {
+            const char* str_val = param->value.string_value ? param->value.string_value : "";
+            size_t str_len = strlen(str_val);
+            char* str_copy = strdup(str_val);
+            if (!str_copy) return false;
+            bound_values[param_index] = str_copy;
+
+            unsigned long* length = malloc(sizeof(unsigned long));
+            if (!length) {
+                free(str_copy);
+                return false;
+            }
+            *length = (unsigned long)str_len;
+            bound_values[total_param_count + param_index] = length;  // Store length pointer in second half
+
+            bind[param_index].buffer_type = MYSQL_TYPE_STRING;
+            bind[param_index].buffer = str_copy;
+            bind[param_index].buffer_length = (unsigned long)(str_len + 1);
+            bind[param_index].is_null = NULL;
+            bind[param_index].length = length;
+
+            log_this(designator, "Bound STRING parameter %u: value='%s', len=%zu", LOG_LEVEL_TRACE, 3,
+                     param_index, str_copy, str_len);
+            break;
+        }
+        case PARAM_TYPE_BOOLEAN: {
+            short* bool_val = malloc(sizeof(short));
+            if (!bool_val) return false;
+            *bool_val = param->value.bool_value ? 1 : 0;
+            bound_values[param_index] = bool_val;
+
+            bind[param_index].buffer_type = MYSQL_TYPE_SHORT;
+            bind[param_index].buffer = bool_val;
+            bind[param_index].buffer_length = sizeof(short);
+            bind[param_index].is_null = NULL;
+            bind[param_index].length = NULL;
+
+            log_this(designator, "Bound BOOLEAN parameter %u: value=%d", LOG_LEVEL_TRACE, 2,
+                     param_index, *bool_val);
+            break;
+        }
+        case PARAM_TYPE_FLOAT: {
+            double* float_val = malloc(sizeof(double));
+            if (!float_val) return false;
+            *float_val = param->value.float_value;
+            bound_values[param_index] = float_val;
+
+            bind[param_index].buffer_type = MYSQL_TYPE_DOUBLE;
+            bind[param_index].buffer = float_val;
+            bind[param_index].buffer_length = sizeof(double);
+            bind[param_index].is_null = NULL;
+            bind[param_index].length = NULL;
+
+            log_this(designator, "Bound FLOAT parameter %u: value=%f", LOG_LEVEL_TRACE, 2,
+                     param_index,*float_val);
+            break;
+        }
+        case PARAM_TYPE_TEXT: {
+            const char* text_val = param->value.text_value ? param->value.text_value : "";
+            size_t text_len = strlen(text_val);
+            char* text_copy = strdup(text_val);
+            if (!text_copy) return false;
+            bound_values[param_index] = text_copy;
+
+            unsigned long* length = malloc(sizeof(unsigned long));
+            if (!length) {
+                free(text_copy);
+                return false;
+            }
+            *length = (unsigned long)text_len;
+            bound_values[total_param_count + param_index] = length;  // Store length pointer in second half
+
+            bind[param_index].buffer_type = MYSQL_TYPE_LONG_BLOB;
+            bind[param_index].buffer = text_copy;
+            bind[param_index].buffer_length = (unsigned long)(text_len + 1);
+            bind[param_index].is_null = NULL;
+            bind[param_index].length = length;
+
+            log_this(designator, "Bound TEXT parameter %u: len=%zu", LOG_LEVEL_TRACE, 2,
+                     param_index, text_len);
+            break;
+        }
+        case PARAM_TYPE_DATE: {
+            MYSQL_TIME* date_time = calloc(1, sizeof(MYSQL_TIME));
+            if (!date_time) return false;
+
+            const char* date_value = param->value.date_value ? param->value.date_value : "1970-01-01";
+            int year = 0, month = 0, day = 0;
+            if (sscanf(date_value, "%d-%d-%d", &year, &month, &day) != 3) {
+                log_this(designator, "Invalid DATE format (expected YYYY-MM-DD): %s", LOG_LEVEL_ERROR, 1, date_value);
+                free(date_time);
+                return false;
+            }
+
+            date_time->year = (unsigned int)year;
+            date_time->month = (unsigned int)month;
+            date_time->day = (unsigned int)day;
+            date_time->hour = 0;
+            date_time->minute = 0;
+            date_time->second = 0;
+            date_time->second_part = 0;
+            date_time->neg = 0;
+            date_time->time_type = 1;  // MYSQL_TIMESTAMP_DATE
+
+            bound_values[param_index] = date_time;
+
+            bind[param_index].buffer_type = MYSQL_TYPE_DATE;
+            bind[param_index].buffer = date_time;
+            bind[param_index].buffer_length = sizeof(MYSQL_TIME);
+            bind[param_index].is_null = NULL;
+            bind[param_index].length = NULL;
+
+            log_this(designator, "Bound DATE parameter %u: %04d-%02d-%02d", LOG_LEVEL_TRACE, 4,
+                     param_index, year, month, day);
+            break;
+        }
+        case PARAM_TYPE_TIME: {
+            MYSQL_TIME* date_time = calloc(1, sizeof(MYSQL_TIME));
+            if (!date_time) return false;
+
+            const char* time_value = param->value.time_value ? param->value.time_value : "00:00:00";
+            int hour = 0, minute = 0, second = 0;
+            if (sscanf(time_value, "%d:%d:%d", &hour, &minute, &second) != 3) {
+                log_this(designator, "Invalid TIME format (expected HH:MM:SS): %s", LOG_LEVEL_ERROR, 1, time_value);
+                free(date_time);
+                return false;
+            }
+
+            date_time->year = 0;
+            date_time->month = 0;
+            date_time->day = 0;
+            date_time->hour = (unsigned int)hour;
+            date_time->minute = (unsigned int)minute;
+            date_time->second = (unsigned int)second;
+            date_time->second_part = 0;
+            date_time->neg = 0;
+            date_time->time_type = 2;  // MYSQL_TIMESTAMP_TIME
+
+            bound_values[param_index] = date_time;
+
+            bind[param_index].buffer_type = MYSQL_TYPE_TIME;
+            bind[param_index].buffer = date_time;
+            bind[param_index].buffer_length = sizeof(MYSQL_TIME);
+            bind[param_index].is_null = NULL;
+            bind[param_index].length = NULL;
+
+            log_this(designator, "Bound TIME parameter %u: %02d:%02d:%02d", LOG_LEVEL_TRACE, 4,
+                     param_index, hour, minute, second);
+            break;
+        }
+        case PARAM_TYPE_DATETIME:
+        case PARAM_TYPE_TIMESTAMP: {
+            MYSQL_TIME* date_time = calloc(1, sizeof(MYSQL_TIME));
+            if (!date_time) return false;
+
+            const char* datetime_value = (param->type == PARAM_TYPE_DATETIME) ?
+                (param->value.datetime_value ? param->value.datetime_value : "1970-01-01 00:00:00") :
+                (param->value.timestamp_value ? param->value.timestamp_value : "1970-01-01 00:00:00.000");
+
+            int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, milliseconds = 0;
+            int parsed = sscanf(datetime_value, "%d-%d-%d %d:%d:%d.%d",
+                               &year, &month, &day, &hour, &minute, &second, &milliseconds);
+            if (parsed < 6) {
+                log_this(designator, "Invalid DATETIME/TIMESTAMP format: %s", LOG_LEVEL_ERROR, 1, datetime_value);
+                free(date_time);
+                return false;
+            }
+
+            date_time->year = (unsigned int)year;
+            date_time->month = (unsigned int)month;
+            date_time->day = (unsigned int)day;
+            date_time->hour = (unsigned int)hour;
+            date_time->minute = (unsigned int)minute;
+            date_time->second = (unsigned int)second;
+            date_time->second_part = (parsed >= 7) ? (unsigned long)(milliseconds * 1000) : 0;
+            date_time->neg = 0;
+            date_time->time_type = 3;  // MYSQL_TIMESTAMP_DATETIME
+
+            bound_values[param_index] = date_time;
+
+            bind[param_index].buffer_type = (param->type == PARAM_TYPE_DATETIME) ?
+                MYSQL_TYPE_DATETIME : MYSQL_TYPE_TIMESTAMP;
+            bind[param_index].buffer = date_time;
+            bind[param_index].buffer_length = sizeof(MYSQL_TIME);
+            bind[param_index].is_null = NULL;
+            bind[param_index].length = NULL;
+
+            log_this(designator, "Bound DATETIME/TIMESTAMP parameter %u: %04d-%02d-%02d %02d:%02d:%02d.%03d",
+                     LOG_LEVEL_TRACE, 8, param_index, year, month, day, hour, minute, second, milliseconds);
+            break;
+        }
+        default: {
+            log_this(designator, "Unsupported parameter type %d for parameter %u", LOG_LEVEL_ERROR, 2,
+                     param->type, param_index);
+            return false;
+        }
+    }
+
+    log_this(designator, "Successfully bound parameter %u", LOG_LEVEL_TRACE, 1, param_index);
+    return true;
+}
+
+// Helper function to cleanup bound values (will be used in Step 3)
+// cppcheck-suppress unusedFunction
+static void mysql_cleanup_bound_values(void** bound_values, size_t count) __attribute__((unused));
+static void mysql_cleanup_bound_values(void** bound_values, size_t count) {
+    if (bound_values) {
+        for (size_t i = 0; i < count; i++) {
+            free(bound_values[i]);  // Free buffer
+            free(bound_values[count + i]);  // Free length pointer if exists (stored in second half)
+        }
+        free(bound_values);
+    }
+}
+
+/*
  * Query Execution
  */
 
@@ -64,8 +366,6 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     const char* designator = connection->designator ? connection->designator : SR_DATABASE;
     log_this(designator, "mysql_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_TRACE, 3, (void*)connection, (void*)request, (void*)result);
 
-    log_this(designator, "mysql_execute_query: Parameters validated, proceeding", LOG_LEVEL_TRACE, 0);
-
     // cppcheck-suppress constVariablePointer
     // Justification: MySQL API requires non-const MYSQL* connection handle
     const MySQLConnection* mysql_conn = (const MySQLConnection*)connection->connection_handle;
@@ -76,6 +376,157 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
 
     log_this(designator, "MySQL execute_query: Executing query: %s", LOG_LEVEL_TRACE, 1, request->sql_template);
 
+    // Check if we have parameters to bind
+    bool has_parameters = (request->parameters_json && strlen(request->parameters_json) > 2);  // More than "{}"
+    
+    if (has_parameters) {
+        log_this(designator, "MySQL execute_query: Parameters detected, using prepared statement path", LOG_LEVEL_TRACE, 0);
+        
+        // Parse typed parameters
+        ParameterList* param_list = parse_typed_parameters(request->parameters_json, designator);
+        if (!param_list) {
+            log_this(designator, "MySQL execute_query: Failed to parse parameters", LOG_LEVEL_ERROR, 0);
+            return false;
+        }
+        
+        // Convert named to positional parameters
+        TypedParameter** ordered_params = NULL;
+        size_t ordered_count = 0;
+        
+        char* positional_sql = convert_named_to_positional(request->sql_template, param_list, DB_ENGINE_MYSQL,
+                                                            &ordered_params, &ordered_count, designator);
+        
+        if (!positional_sql) {
+            log_this(designator, "MySQL execute_query: Failed to convert parameters", LOG_LEVEL_ERROR, 0);
+            free_parameter_list(param_list);
+            return false;
+        }
+        
+        log_this(designator, "MySQL execute_query: Converted to positional SQL with %zu parameters", LOG_LEVEL_TRACE, 1, ordered_count);
+        
+        // Initialize prepared statement
+        void* stmt = NULL;
+        if (mysql_stmt_init_ptr) {
+            stmt = mysql_stmt_init_ptr(mysql_conn->connection);
+        }
+        
+        if (!stmt) {
+            log_this(designator, "MySQL execute_query: Failed to initialize prepared statement", LOG_LEVEL_ERROR, 0);
+            free(positional_sql);
+            free(ordered_params);
+            free_parameter_list(param_list);
+            return false;
+        }
+        
+        // Prepare statement
+        if (!mysql_stmt_prepare_ptr || mysql_stmt_prepare_ptr(stmt, positional_sql, (unsigned long)strlen(positional_sql)) != 0) {
+            log_this(designator, "MySQL execute_query: Failed to prepare statement", LOG_LEVEL_ERROR, 0);
+            if (mysql_stmt_error_ptr) {
+                const char* error_msg = mysql_stmt_error_ptr(stmt);
+                if (error_msg && strlen(error_msg) > 0) {
+                    log_this(designator, "MySQL prepare error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+                }
+            }
+            if (mysql_stmt_close_ptr) {
+                mysql_stmt_close_ptr(stmt);
+            }
+            free(positional_sql);
+            free(ordered_params);
+            free_parameter_list(param_list);
+            return false;
+        }
+        
+        // Allocate MYSQL_BIND array and bound values storage
+        MYSQL_BIND* bind = calloc(ordered_count, sizeof(MYSQL_BIND));
+        void** bound_values = calloc(ordered_count * 2, sizeof(void*));  // *2 for length indicators
+        
+        if (!bind || !bound_values) {
+            log_this(designator, "MySQL execute_query: Failed to allocate binding structures", LOG_LEVEL_ERROR, 0);
+            free(bind);
+            free(bound_values);
+            if (mysql_stmt_close_ptr) {
+                mysql_stmt_close_ptr(stmt);
+            }
+            free(positional_sql);
+            free(ordered_params);
+            free_parameter_list(param_list);
+            return false;
+        }
+        
+        // Bind each parameter
+        bool bind_success = true;
+        for (size_t i = 0; i < ordered_count; i++) {
+            if (!mysql_bind_single_parameter(bind, (unsigned int)i, ordered_params[i], bound_values, ordered_count, designator)) {
+                log_this(designator, "MySQL execute_query: Failed to bind parameter %zu", LOG_LEVEL_ERROR, 1, i);
+                bind_success = false;
+                break;
+            }
+        }
+        
+        // Bind parameters to statement
+        if (bind_success && mysql_stmt_bind_param_ptr) {
+            if (mysql_stmt_bind_param_ptr(stmt, bind) != 0) {
+                log_this(designator, "MySQL execute_query: mysql_stmt_bind_param failed", LOG_LEVEL_ERROR, 0);
+                if (mysql_stmt_error_ptr) {
+                    const char* error_msg = mysql_stmt_error_ptr(stmt);
+                    if (error_msg && strlen(error_msg) > 0) {
+                        log_this(designator, "MySQL bind error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+                    }
+                }
+                bind_success = false;
+            }
+        }
+        
+        // Execute prepared statement and process results
+        QueryResult* db_result = NULL;
+        if (bind_success && mysql_stmt_execute_ptr) {
+            if (mysql_stmt_execute_ptr(stmt) != 0) {
+                log_this(designator, "MySQL execute_query: Prepared statement execution failed", LOG_LEVEL_ERROR, 0);
+                if (mysql_stmt_error_ptr) {
+                    const char* error_msg = mysql_stmt_error_ptr(stmt);
+                    if (error_msg && strlen(error_msg) > 0) {
+                        log_this(designator, "MySQL execution error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+                    }
+                }
+                bind_success = false;
+            } else {
+                // Create result structure and use helper to process results
+                db_result = calloc(1, sizeof(QueryResult));
+                if (db_result && !mysql_process_prepared_stmt_result(stmt, db_result, designator)) {
+                    free(db_result->data_json);
+                    free(db_result);
+                    db_result = NULL;
+                    bind_success = false;
+                }
+            }
+        }
+        
+        // Cleanup
+        mysql_cleanup_bound_values(bound_values, ordered_count);
+        free(bind);
+        if (mysql_stmt_close_ptr) {
+            mysql_stmt_close_ptr(stmt);
+        }
+        free(positional_sql);
+        free(ordered_params);
+        free_parameter_list(param_list);
+        
+        if (!bind_success || !db_result) {
+            if (db_result) {
+                free(db_result->data_json);
+                free(db_result);
+            }
+            return false;
+        }
+        
+        *result = db_result;
+        log_this(designator, "MySQL execute_query: Prepared statement completed successfully", LOG_LEVEL_DEBUG, 0);
+        return true;
+    }
+    
+    // No parameters - use direct execution path
+    log_this(designator, "MySQL execute_query: No parameters, using direct execution", LOG_LEVEL_TRACE, 0);
+    
     // Execute query
     if (mysql_query_ptr(mysql_conn->connection, request->sql_template) != 0) {
         log_this(designator, "MySQL query execution failed", LOG_LEVEL_TRACE, 0);
@@ -89,15 +540,9 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     }
 
     // Store result
-    void* mysql_result = NULL;
-    if (mysql_store_result_ptr) {
-        mysql_result = mysql_store_result_ptr(mysql_conn->connection);
-        if (!mysql_result) {
-            log_this(designator, "MySQL execute_query: No result set returned", LOG_LEVEL_DEBUG, 0);
-        }
-    }
+    void* mysql_result = mysql_store_result_ptr ? mysql_store_result_ptr(mysql_conn->connection) : NULL;
 
-    // Create result structure
+    // Create result structure and use helper to process results
     QueryResult* db_result = calloc(1, sizeof(QueryResult));
     if (!db_result) {
         if (mysql_result && mysql_free_result_ptr) {
@@ -106,193 +551,13 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         return false;
     }
 
-    db_result->success = true;
-    // db_result->execution_time_ms is now set by the engine abstraction layer
-
-    // Get result metadata
-    if (mysql_result) {
-        if (mysql_num_rows_ptr && mysql_num_fields_ptr) {
-            db_result->row_count = (size_t)mysql_num_rows_ptr(mysql_result);
-            db_result->column_count = (size_t)mysql_num_fields_ptr(mysql_result);
-
-            // Complete MYSQL_FIELD structure definition to match libmysqlclient
-            // This ensures correct memory alignment and array indexing
-            typedef struct {
-                char *name;                  /* Name of column */
-                char *org_name;              /* Original column name, if an alias */
-                char *table;                 /* Table of column if column was a field */
-                char *org_table;             /* Org table name, if table was an alias */
-                char *db;                    /* Database for table */
-                char *catalog;               /* Catalog for table */
-                char *def;                   /* Default value (set by mysql_list_fields) */
-                unsigned long length;        /* Width of column (create length) */
-                unsigned long max_length;    /* Max width for selected set */
-                unsigned int name_length;
-                unsigned int org_name_length;
-                unsigned int table_length;
-                unsigned int org_table_length;
-                unsigned int db_length;
-                unsigned int catalog_length;
-                unsigned int def_length;
-                unsigned int flags;          /* Div flags */
-                unsigned int decimals;       /* Number of decimals in field */
-                unsigned int charsetnr;      /* Character set */
-                unsigned int type;           /* Type of field */
-                void *extension;
-            } MYSQL_FIELD_COMPLETE;
-            
-            // Get fields for type checking (declared at broader scope for use in row loop)
-            const MYSQL_FIELD_COMPLETE* fields = NULL;
-            if (mysql_fetch_fields_ptr) {
-                fields = (const MYSQL_FIELD_COMPLETE*)mysql_fetch_fields_ptr(mysql_result);
-            }
-
-            // Extract column names
-            if (db_result->column_count > 0 && fields) {
-                db_result->column_names = calloc(db_result->column_count, sizeof(char*));
-                if (db_result->column_names) {
-                    for (size_t i = 0; i < db_result->column_count; i++) {
-                        // Extract actual field name from MYSQL_FIELD structure
-                        if (fields[i].name) {
-                            db_result->column_names[i] = strdup(fields[i].name);
-                        } else {
-                            // Fallback for NULL field names
-                            char col_name[32];
-                            snprintf(col_name, sizeof(col_name), "col_%zu", i);
-                            db_result->column_names[i] = strdup(col_name);
-                        }
-                    }
-                }
-            }
-
-            // Convert result to JSON
-            if (db_result->row_count > 0 && db_result->column_count > 0 && mysql_fetch_row_ptr) {
-                // Increase buffer size to handle large query templates (migration SQL can be 10KB+)
-                size_t json_size = 16384 * db_result->row_count; // Larger estimate for query templates
-                db_result->data_json = calloc(1, json_size);
-                if (db_result->data_json) {
-                    strcpy(db_result->data_json, "[");
-                    for (size_t row = 0; row < db_result->row_count; row++) {
-                        if (row > 0) strcat(db_result->data_json, ",");
-
-                        // Track start of this row for debug logging
-                        size_t row_start_pos = strlen(db_result->data_json);
-
-                        // MYSQL_ROW is char** (array of strings)
-                        char** row_data = (char**)mysql_fetch_row_ptr(mysql_result);
-                        if (row_data) {
-                            strcat(db_result->data_json, "{");
-                            for (size_t col = 0; col < db_result->column_count; col++) {
-                                if (col > 0) strcat(db_result->data_json, ",");
-                                
-                                // Get column type to determine if we should quote the value
-                                bool is_numeric = false;
-                                if (fields && mysql_fetch_fields_ptr) {
-                                    is_numeric = mysql_is_numeric_type(fields[col].type);
-                                }
-                                
-                                const char* col_name = db_result->column_names ? db_result->column_names[col] : "unknown";
-                                const char* value = row_data[col];
-                                
-                                // Calculate needed size for this column (name + value + escaping overhead)
-                                size_t value_len = value ? strlen(value) : 0;
-                                size_t needed_size = strlen(col_name) + (value_len * 2) + 20; // Extra for escaping
-                                
-                                // Ensure buffer has enough space
-                                size_t current_len = strlen(db_result->data_json);
-                                if (current_len + needed_size > json_size) {
-                                    json_size = (current_len + needed_size) * 2;
-                                    char* new_json = realloc(db_result->data_json, json_size);
-                                    if (!new_json) continue; // Skip column on allocation failure
-                                    db_result->data_json = new_json;
-                                }
-                                
-                                // Append column to JSON
-                                char* append_pos = db_result->data_json + current_len;
-                                
-                                if (value == NULL) {
-                                    // NULL value
-                                    sprintf(append_pos, "\"%s\":null", col_name);
-                                } else if (is_numeric && strlen(value) > 0) {
-                                    // Numeric type - no quotes around value
-                                    sprintf(append_pos, "\"%s\":%s", col_name, value);
-                                } else {
-                                    // String type - escape and quote
-                                    sprintf(append_pos, "\"%s\":\"", col_name);
-                                    char* dst = append_pos + strlen(append_pos);
-                                    const char* src = value;
-                                    while (*src) {
-                                        if (*src == '"' || *src == '\\') {
-                                            *dst++ = '\\';
-                                            *dst++ = *src++;
-                                        } else if (*src == '\n') {
-                                            *dst++ = '\\';
-                                            *dst++ = 'n';
-                                            src++;
-                                        } else if (*src == '\r') {
-                                            *dst++ = '\\';
-                                            *dst++ = 'r';
-                                            src++;
-                                        } else if (*src == '\t') {
-                                            *dst++ = '\\';
-                                            *dst++ = 't';
-                                            src++;
-                                        } else {
-                                            *dst++ = *src++;
-                                        }
-                                    }
-                                    *dst++ = '"';
-                                    *dst = '\0';
-                                }
-                            }
-                            strcat(db_result->data_json, "}");
-                            
-                            // Debug: Log first row JSON for diagnosis
-                            if (row == 0) {
-                                size_t row_len = strlen(db_result->data_json) - row_start_pos;
-                                char* row_json = strndup(db_result->data_json + row_start_pos, row_len);
-                                if (row_json) {
-                                    log_this(designator, "MySQL first row JSON: %s", LOG_LEVEL_DEBUG, 1, row_json);
-                                    free(row_json);
-                                }
-                            }
-                        }
-                    }
-                    strcat(db_result->data_json, "]");
-
-                    log_this(designator, "MySQL execute_query: Generated result JSON", LOG_LEVEL_TRACE, 0);
-                }
-            } else {
-                db_result->data_json = strdup("[]");
-                log_this(designator, "MySQL execute_query: Query returned no data", LOG_LEVEL_TRACE, 0);
-            }
-        }
-
-        // Free result
-        if (mysql_free_result_ptr) {
-            mysql_free_result_ptr(mysql_result);
-        }
-    } else {
-        // No result set (e.g., INSERT, UPDATE, DELETE)
-        db_result->row_count = 0;
-        db_result->column_count = 0;
-        db_result->data_json = strdup("[]");
-        // Get affected rows from mysql_affected_rows
-        if (mysql_affected_rows_ptr) {
-            // mysql_affected_rows returns unsigned long long, cast to size_t safely
-            unsigned long long affected = mysql_affected_rows_ptr(mysql_conn->connection);
-            // Suppress conversion warning - we're explicitly handling the potential truncation
-            #pragma GCC diagnostic push
-            #pragma GCC diagnostic ignored "-Wconversion"
-            db_result->affected_rows = (size_t)affected;
-            #pragma GCC diagnostic pop
-        } else {
-            db_result->affected_rows = 0;
-        }
+    // Use helper function to process the direct query result
+    if (!mysql_process_direct_result(mysql_conn->connection, mysql_result, db_result, designator)) {
+        free(db_result);
+        return false;
     }
 
     *result = db_result;
-
     log_this(designator, "MySQL execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
     return true;
 }
@@ -358,288 +623,20 @@ bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
         return false;
     }
 
-    // Create result structure
+    // Create result structure and use helper to process results
     QueryResult* db_result = calloc(1, sizeof(QueryResult));
     if (!db_result) {
         return false;
     }
 
-    db_result->success = true;
-    // db_result->execution_time_ms is now set by the engine abstraction layer
-
-    // Get result metadata
-    void* mysql_result = NULL;
-    if (mysql_stmt_result_metadata_ptr) {
-        mysql_result = mysql_stmt_result_metadata_ptr(stmt_handle);
-    }
-
-    if (mysql_result) {
-        // This is a SELECT query with results
-        if (mysql_stmt_store_result_ptr) {
-            mysql_stmt_store_result_ptr(stmt_handle);
-        }
-
-        // Get column count
-        unsigned int column_count = 0;
-        if (mysql_stmt_field_count_ptr) {
-            column_count = mysql_stmt_field_count_ptr(stmt_handle);
-        } else if (mysql_num_fields_ptr) {
-            column_count = mysql_num_fields_ptr(mysql_result);
-        }
-        db_result->column_count = (size_t)column_count;
-
-        // Complete MYSQL_FIELD structure definition to match libmysqlclient
-        // This ensures correct memory alignment and array indexing
-        typedef struct {
-            char *name;                  /* Name of column */
-            char *org_name;              /* Original column name, if an alias */
-            char *table;                 /* Table of column if column was a field */
-            char *org_table;             /* Org table name, if table was an alias */
-            char *db;                    /* Database for table */
-            char *catalog;               /* Catalog for table */
-            char *def;                   /* Default value (set by mysql_list_fields) */
-            unsigned long length;        /* Width of column (create length) */
-            unsigned long max_length;    /* Max width for selected set */
-            unsigned int name_length;
-            unsigned int org_name_length;
-            unsigned int table_length;
-            unsigned int org_table_length;
-            unsigned int db_length;
-            unsigned int catalog_length;
-            unsigned int def_length;
-            unsigned int flags;          /* Div flags */
-            unsigned int decimals;       /* Number of decimals in field */
-            unsigned int charsetnr;      /* Character set */
-            unsigned int type;           /* Type of field */
-            void *extension;
-        } MYSQL_FIELD_COMPLETE;
-        
-        // Get fields for type checking (declared at broader scope for use in row loop)
-        const MYSQL_FIELD_COMPLETE* fields = NULL;
-        if (mysql_fetch_fields_ptr) {
-            fields = (const MYSQL_FIELD_COMPLETE*)mysql_fetch_fields_ptr(mysql_result);
-        }
-
-        // Extract column names
-        if (column_count > 0 && fields) {
-            db_result->column_names = calloc(db_result->column_count, sizeof(char*));
-            if (db_result->column_names) {
-                for (size_t i = 0; i < db_result->column_count; i++) {
-                    if (fields[i].name) {
-                        db_result->column_names[i] = strdup(fields[i].name);
-                    } else {
-                        char col_name[32];
-                        snprintf(col_name, sizeof(col_name), "col_%zu", i);
-                        db_result->column_names[i] = strdup(col_name);
-                    }
-                }
-            }
-        }
-
-        // Allocate buffer for fetching rows - using simple string buffers
-        #define MAX_COL_SIZE 4096
-        char** col_buffers = calloc(column_count, sizeof(char*));
-        long* col_lengths = calloc(column_count, sizeof(long));
-        char* col_is_null = calloc(column_count, sizeof(char));
-        
-        if (!col_buffers || !col_lengths || !col_is_null) {
-            free(col_buffers);
-            free(col_lengths);
-            free(col_is_null);
-            if (mysql_result && mysql_free_result_ptr) {
-                mysql_free_result_ptr(mysql_result);
-            }
-            free(db_result->column_names);
-            free(db_result);
-            return false;
-        }
-
-        // Allocate column buffers
-        for (size_t i = 0; i < column_count; i++) {
-            col_buffers[i] = calloc(1, MAX_COL_SIZE);
-            if (!col_buffers[i]) {
-                for (size_t j = 0; j < i; j++) {
-                    free(col_buffers[j]);
-                }
-                free(col_buffers);
-                free(col_lengths);
-                free(col_is_null);
-                if (mysql_result && mysql_free_result_ptr) {
-                    mysql_free_result_ptr(mysql_result);
-                }
-                free(db_result->column_names);
-                free(db_result);
-                return false;
-            }
-        }
-
-        // Create MYSQL_BIND structures for result binding
-        typedef struct {
-            unsigned long length;
-            char is_null;
-            char error;
-            void* buffer;
-            unsigned long buffer_length;
-            unsigned int buffer_type;  // enum_field_types
-        } MYSQL_BIND_WRAPPER;
-
-        MYSQL_BIND_WRAPPER* bind = calloc(column_count, sizeof(MYSQL_BIND_WRAPPER));
-        if (!bind) {
-            for (size_t i = 0; i < column_count; i++) {
-                free(col_buffers[i]);
-            }
-            free(col_buffers);
-            free(col_lengths);
-            free(col_is_null);
-            if (mysql_result && mysql_free_result_ptr) {
-                mysql_free_result_ptr(mysql_result);
-            }
-            free(db_result->column_names);
-            free(db_result);
-            return false;
-        }
-
-        // Bind result columns
-        for (size_t i = 0; i < column_count; i++) {
-            bind[i].buffer_type = 253; // MYSQL_TYPE_STRING
-            bind[i].buffer = col_buffers[i];
-            bind[i].buffer_length = MAX_COL_SIZE;
-            bind[i].length = (unsigned long)col_lengths[i];
-            bind[i].is_null = col_is_null[i];
-        }
-
-        if (mysql_stmt_bind_result_ptr && mysql_stmt_bind_result_ptr(stmt_handle, bind) != 0) {
-            log_this(designator, "MySQL prepared statement bind result failed", LOG_LEVEL_ERROR, 0);
-            free(bind);
-            for (size_t i = 0; i < column_count; i++) {
-                free(col_buffers[i]);
-            }
-            free(col_buffers);
-            free(col_lengths);
-            free(col_is_null);
-            if (mysql_result && mysql_free_result_ptr) {
-                mysql_free_result_ptr(mysql_result);
-            }
-            free(db_result->column_names);
-            free(db_result);
-            return false;
-        }
-
-        // Fetch all rows into JSON
-        size_t json_size = 16384; // Larger initial size for query templates
-        db_result->data_json = calloc(1, json_size);
-        if (db_result->data_json) {
-            strcpy(db_result->data_json, "[");
-            size_t row_count = 0;
-
-            while (mysql_stmt_fetch_ptr && mysql_stmt_fetch_ptr(stmt_handle) == 0) {
-                if (row_count > 0) strcat(db_result->data_json, ",");
-
-                strcat(db_result->data_json, "{");
-                for (size_t col = 0; col < column_count; col++) {
-                    if (col > 0) strcat(db_result->data_json, ",");
-                    
-                    // Get column type to determine if we should quote the value
-                    bool is_numeric = false;
-                    if (fields && mysql_fetch_fields_ptr) {
-                        is_numeric = mysql_is_numeric_type(fields[col].type);
-                    }
-                    
-                    const char* col_name = db_result->column_names ? db_result->column_names[col] : "unknown";
-                    const char* value = col_buffers[col];
-                    
-                    // Calculate needed size for this column (name + value + escaping overhead)
-                    size_t value_len = col_is_null[col] ? 0 : strlen(value);
-                    size_t needed_size = strlen(col_name) + (value_len * 2) + 20;
-                    
-                    // Ensure buffer has enough space
-                    size_t current_len = strlen(db_result->data_json);
-                    if (current_len + needed_size > json_size) {
-                        json_size = (current_len + needed_size) * 2;
-                        char* new_json = realloc(db_result->data_json, json_size);
-                        if (!new_json) break;
-                        db_result->data_json = new_json;
-                    }
-                    
-                    // Append column to JSON
-                    char* append_pos = db_result->data_json + current_len;
-                    
-                    if (col_is_null[col]) {
-                        sprintf(append_pos, "\"%s\":null", col_name);
-                    } else if (is_numeric && strlen(value) > 0) {
-                        // Numeric type - no quotes around value
-                        sprintf(append_pos, "\"%s\":%s", col_name, value);
-                    } else {
-                        // String type - escape and quote
-                        sprintf(append_pos, "\"%s\":\"", col_name);
-                        char* dst = append_pos + strlen(append_pos);
-                        const char* src = value;
-                        while (*src) {
-                            if (*src == '"' || *src == '\\') {
-                                *dst++ = '\\';
-                                *dst++ = *src++;
-                            } else if (*src == '\n') {
-                                *dst++ = '\\';
-                                *dst++ = 'n';
-                                src++;
-                            } else if (*src == '\r') {
-                                *dst++ = '\\';
-                                *dst++ = 'r';
-                                src++;
-                            } else if (*src == '\t') {
-                                *dst++ = '\\';
-                                *dst++ = 't';
-                                src++;
-                            } else {
-                                *dst++ = *src++;
-                            }
-                        }
-                        *dst++ = '"';
-                        *dst = '\0';
-                    }
-                }
-                strcat(db_result->data_json, "}");
-                row_count++;
-            }
-            strcat(db_result->data_json, "]");
-            db_result->row_count = row_count;
-        }
-
-        // Cleanup
-        free(bind);
-        for (size_t i = 0; i < column_count; i++) {
-            free(col_buffers[i]);
-        }
-        free(col_buffers);
-        free(col_lengths);
-        free(col_is_null);
-
-        if (mysql_stmt_free_result_ptr) {
-            mysql_stmt_free_result_ptr(stmt_handle);
-        }
-        if (mysql_result && mysql_free_result_ptr) {
-            mysql_free_result_ptr(mysql_result);
-        }
-    } else {
-        // No result set (e.g., INSERT, UPDATE, DELETE)
-        db_result->row_count = 0;
-        db_result->column_count = 0;
-        db_result->data_json = strdup("[]");
-        
-        // Get affected rows
-        if (mysql_stmt_affected_rows_ptr) {
-            unsigned long long affected = mysql_stmt_affected_rows_ptr(stmt_handle);
-            #pragma GCC diagnostic push
-            #pragma GCC diagnostic ignored "-Wconversion"
-            db_result->affected_rows = (size_t)affected;
-            #pragma GCC diagnostic pop
-        } else {
-            db_result->affected_rows = 0;
-        }
+    // Use helper function to process prepared statement results
+    if (!mysql_process_prepared_stmt_result(stmt_handle, db_result, designator)) {
+        free(db_result->data_json);
+        free(db_result);
+        return false;
     }
 
     *result = db_result;
-
     log_this(designator, "MySQL execute_prepared: Query completed successfully", LOG_LEVEL_TRACE, 0);
     return true;
 }

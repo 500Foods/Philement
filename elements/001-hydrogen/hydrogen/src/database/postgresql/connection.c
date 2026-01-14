@@ -22,6 +22,7 @@ typedef int (*PQstatus_t)(void* conn);
 typedef char* (*PQerrorMessage_t)(void* conn);
 typedef void (*PQfinish_t)(void* conn);
 typedef void* (*PQexec_t)(void* conn, const char* query);
+typedef void* (*PQexecParams_t)(void* conn, const char* command, int nParams, const void* paramTypes, const char* const* paramValues, const int* paramLengths, const int* paramFormats, int resultFormat);
 typedef int (*PQresultStatus_t)(void* res);
 typedef void (*PQclear_t)(void* res);
 typedef int (*PQntuples_t)(void* res);
@@ -44,6 +45,7 @@ PQstatus_t PQstatus_ptr = mock_PQstatus;
 PQerrorMessage_t PQerrorMessage_ptr = mock_PQerrorMessage;
 PQfinish_t PQfinish_ptr = mock_PQfinish;
 PQexec_t PQexec_ptr = mock_PQexec;
+PQexecParams_t PQexecParams_ptr = NULL;  // No mock for PQexecParams yet
 PQresultStatus_t PQresultStatus_ptr = mock_PQresultStatus;
 PQclear_t PQclear_ptr = mock_PQclear;
 PQntuples_t PQntuples_ptr = mock_PQntuples;
@@ -63,6 +65,7 @@ PQstatus_t PQstatus_ptr = NULL;
 PQerrorMessage_t PQerrorMessage_ptr = NULL;
 PQfinish_t PQfinish_ptr = NULL;
 PQexec_t PQexec_ptr = NULL;
+PQexecParams_t PQexecParams_ptr = NULL;
 PQresultStatus_t PQresultStatus_ptr = NULL;
 PQclear_t PQclear_ptr = NULL;
 PQntuples_t PQntuples_ptr = NULL;
@@ -114,6 +117,7 @@ bool load_libpq_functions(const char* designator __attribute__((unused))) {
     PQerrorMessage_ptr = mock_PQerrorMessage;
     PQfinish_ptr = mock_PQfinish;
     PQexec_ptr = mock_PQexec;
+    PQexecParams_ptr = NULL;  // No mock for PQexecParams yet
     PQresultStatus_ptr = mock_PQresultStatus;
     PQclear_ptr = mock_PQclear;
     PQntuples_ptr = mock_PQntuples;
@@ -160,6 +164,7 @@ bool load_libpq_functions(const char* designator __attribute__((unused))) {
     PQerrorMessage_ptr = (PQerrorMessage_t)dlsym(libpq_handle, "PQerrorMessage");
     PQfinish_ptr = (PQfinish_t)dlsym(libpq_handle, "PQfinish");
     PQexec_ptr = (PQexec_t)dlsym(libpq_handle, "PQexec");
+    PQexecParams_ptr = (PQexecParams_t)dlsym(libpq_handle, "PQexecParams");
     PQresultStatus_ptr = (PQresultStatus_t)dlsym(libpq_handle, "PQresultStatus");
     PQclear_ptr = (PQclear_t)dlsym(libpq_handle, "PQclear");
     PQntuples_ptr = (PQntuples_t)dlsym(libpq_handle, "PQntuples");

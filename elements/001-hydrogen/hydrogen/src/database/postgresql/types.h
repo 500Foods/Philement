@@ -15,6 +15,7 @@ typedef int (*PQstatus_t)(void* conn);
 typedef char* (*PQerrorMessage_t)(void* conn);
 typedef void (*PQfinish_t)(void* conn);
 typedef void* (*PQexec_t)(void* conn, const char* query);
+typedef void* (*PQexecParams_t)(void* conn, const char* command, int nParams, const void* paramTypes, const char* const* paramValues, const int* paramLengths, const int* paramFormats, int resultFormat);
 typedef int (*PQresultStatus_t)(void* res);
 typedef void (*PQclear_t)(void* res);
 typedef int (*PQntuples_t)(void* res);

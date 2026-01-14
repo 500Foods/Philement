@@ -56,12 +56,13 @@ return {
     BASE64_START = "cast(FROM_BASE64(",
     BASE64_END = ") as char character set utf8mb4)",
 
-    -- Password hash: TO_BASE64(SHA2(CONCAT(account_id, password), 256))
+    -- Password hash: TO_BASE64(UNHEX(SHA2(CONCAT(account_id, password), 256)))
     -- Returns base64-encoded SHA256 hash
+    -- Note: UNHEX() converts SHA2's hex string output to binary before base64-encoding
     -- Usage: ${SHA256_HASH_START}'0'${SHA256_HASH_MID}'${HYDROGEN_DEMO_ADMIN_PASS}'${SHA256_HASH_END}
-    SHA256_HASH_START = "TO_BASE64(SHA2(CONCAT(",
+    SHA256_HASH_START = "TO_BASE64(UNHEX(SHA2(CONCAT(",
     SHA256_HASH_MID = ", ",
-    SHA256_HASH_END = "), 256))",
+    SHA256_HASH_END = "), 256)))",
 
     COMPRESS_START = "brotli_decompress(FROM_BASE64(",
     COMPRESS_END = "))",
