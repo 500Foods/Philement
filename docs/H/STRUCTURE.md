@@ -561,6 +561,9 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_33_mysql_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_33_mysql_migrations.sh) - MySQL migration performance test
 - [tests/test_34_sqlite_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_34_sqlite_migrations.sh) - SQLite migration performance test
 - [tests/test_35_db2_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_35_db2_migrations.sh) - DB2 migration performance test
+- [tests/test_36_mariadb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_36_mariadb_migrations.sh) - MariaDB migration performance test
+- [tests/test_37_cockroachdb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_37_cockroachdb_migrations.sh) - CockroachDB migration performance test
+- [tests/test_38_yugabytedb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_38_yugabytedb_migrations.sh) - YugabyteDB migration performance test
 - [tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh) - Authentication endpoints testing (JWT tokens across multiple database engines)
 
 ### Deliverables
