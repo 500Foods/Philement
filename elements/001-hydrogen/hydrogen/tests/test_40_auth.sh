@@ -21,6 +21,10 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.3.0 - 2026-01-13 - Fixed JWT token passing for renew/logout endpoints
+#                    - Added Authorization: Bearer header support to validate_auth_request()
+#                    - Changed renew/logout to use empty JSON body with auth header
+#                    - Fixes authentication failures for protected endpoints
 # 1.2.0 - 2026-01-10 - Updated to use environment variables for demo credentials
 #                    - Uses HYDROGEN_DEMO_USER_NAME, HYDROGEN_DEMO_USER_PASS, etc.
 #                    - Aligns with migration 1144 and 1145 environment variable usage
@@ -37,7 +41,7 @@ TEST_NAME="Auth  {BLUE}engines: 4{RESET}"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="1.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -80,17 +84,22 @@ validate_auth_request() {
     local data="$3"
     local expected_status="$4"
     local output_file="$5"
+    local jwt_token="${6:-}"  # Optional JWT token for authenticated requests
+    
+    # Build curl command with optional Authorization header
+    local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json")
+    
+    # Add Authorization header if JWT token is provided
+    if [[ -n "${jwt_token}" ]]; then
+        curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
+    fi
+    
+    # Complete curl command
+    curl_cmd+=(-d "${data}" -w "%{http_code}" -o "${output_file}" --compressed --max-time 5 "${url}")
     
     # Run curl and capture HTTP status
     local http_status
-    http_status=$(curl -s -X "${method}" \
-        -H "Content-Type: application/json" \
-        -d "${data}" \
-        -w "%{http_code}" \
-        -o "${output_file}" \
-        --compressed \
-        --max-time 5 \
-        "${url}" 2>/dev/null)
+    http_status=$("${curl_cmd[@]}" 2>/dev/null)
     
     if [[ "${http_status}" == "${expected_status}" ]]; then
         return 0
@@ -176,11 +185,11 @@ test_auth_renew() {
         return
     fi
     
-    local renew_data="{\"token\": \"${jwt_token}\"}"
+    local renew_data="{}"
     local response_file="${result_file}.renew.json"
     
     # shellcheck disable=SC2310 # We want to continue even if the test fails
-    if validate_auth_request "${base_url}/api/auth/renew" "POST" "${renew_data}" "200" "${response_file}"; then
+    if validate_auth_request "${base_url}/api/auth/renew" "POST" "${renew_data}" "200" "${response_file}" "${jwt_token}"; then
         echo "RENEW_SUCCESS" >> "${result_file}"
     else
         echo "RENEW_FAILED" >> "${result_file}"
@@ -198,11 +207,11 @@ test_auth_logout() {
         return
     fi
     
-    local logout_data="{\"token\": \"${jwt_token}\"}"
+    local logout_data="{}"
     local response_file="${result_file}.logout.json"
     
     # shellcheck disable=SC2310 # We want to continue even if the test fails
-    if validate_auth_request "${base_url}/api/auth/logout" "POST" "${logout_data}" "200" "${response_file}"; then
+    if validate_auth_request "${base_url}/api/auth/logout" "POST" "${logout_data}" "200" "${response_file}" "${jwt_token}"; then
         echo "LOGOUT_SUCCESS" >> "${result_file}"
     else
         echo "LOGOUT_FAILED" >> "${result_file}"

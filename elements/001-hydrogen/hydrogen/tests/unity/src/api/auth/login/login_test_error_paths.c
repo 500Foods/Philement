@@ -168,8 +168,8 @@ char* compute_token_hash(const char* token) {
 }
 
 __attribute__((weak))
-void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, const char* database) {
-    (void)account_id; (void)jwt_hash; (void)expires_at; (void)database;
+void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database) {
+    (void)account_id; (void)jwt_hash; (void)expires_at; (void)system_id; (void)app_id; (void)database;
 }
 
 __attribute__((weak))
