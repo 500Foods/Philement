@@ -83,7 +83,7 @@ static int mock_SQLRowCount_row_count = 1;
 static int mock_SQLDescribeCol_result = 0; // 0 = SQL_SUCCESS
 static char mock_SQLDescribeCol_column_name[256] = "test_column";
 static int mock_SQLGetData_result = 0; // 0 = SQL_SUCCESS
-static char mock_SQLGetData_data[256] = "test_data";
+static char mock_SQLGetData_data[4096] = "test_data";
 static int mock_SQLGetData_data_len = 9; // strlen("test_data")
 static int mock_SQLGetDiagRec_result = 0; // 0 = SQL_SUCCESS
 static char mock_SQLGetDiagRec_sqlstate[6] = "42000";
