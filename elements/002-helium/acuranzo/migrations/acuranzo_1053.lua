@@ -140,7 +140,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0, 1, 2, 3, 101, 102, 103, 104, 105, 1000, 1001, 1002, 1003);
+            AND key_idx IN (0, 1, 2, 3, 10, 101, 102, 103, 104, 105, 1000, 1001, 1002, 1003);
 
             ${SUBQUERY_DELIMITER}
 
