@@ -53,6 +53,9 @@ return {
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
 
+    -- PostgreSQL doesn't require FROM clause for SELECT without tables
+    DUMMY_TABLE = "",
+
     BASE64_START = "CONVERT_FROM(DECODE(",
     BASE64_END = ", 'base64'), 'UTF8')",
 

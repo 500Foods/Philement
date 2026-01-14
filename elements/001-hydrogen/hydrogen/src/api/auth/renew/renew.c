@@ -91,6 +91,7 @@ enum MHD_Result handle_post_auth_renew(
     
     token = auth_header + prefix_len;  // Skip "Bearer " prefix
     
+    // cppcheck-suppress knownConditionTrueFalse - token cannot be NULL here but we check strlen for empty string
     if (!token || strlen(token) == 0) {
         log_this(SR_AUTH, "Empty token in Authorization header", LOG_LEVEL_ERROR, 0);
         response = json_object();
