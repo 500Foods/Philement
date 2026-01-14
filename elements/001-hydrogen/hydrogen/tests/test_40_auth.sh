@@ -21,6 +21,10 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.4.0 - 2026-01-14 - Expanded to cover all 7 database engines
+#                    - Added MariaDB, CockroachDB, and YugabyteDB support
+#                    - Updated parallel execution to handle 7 concurrent database instances
+#                    - Added corresponding configuration files for new engines
 # 1.3.0 - 2026-01-13 - Fixed JWT token passing for renew/logout endpoints
 #                    - Added Authorization: Bearer header support to validate_auth_request()
 #                    - Changed renew/logout to use empty JSON body with auth header
@@ -37,11 +41,11 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Auth  {BLUE}engines: 4{RESET}"
+TEST_NAME="Auth  {BLUE}engines: 7{RESET}"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.3.0"
+TEST_VERSION="1.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -57,6 +61,9 @@ AUTH_TEST_CONFIGS=(
     ["MySQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mysql.json:mysql:mysql:MySQL Engine"
     ["SQLite"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json:sqlite:sqlite:SQLite Engine"
     ["DB2"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_db2.json:db2:db2:DB2 Engine"
+    ["MariaDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mariadb.json:mariadb:mariadb:MariaDB Engine"
+    ["CockroachDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_cockroachdb.json:cockroachdb:cockroachdb:CockroachDB Engine"
+    ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB Engine"
 )
 
 # Test timeouts
