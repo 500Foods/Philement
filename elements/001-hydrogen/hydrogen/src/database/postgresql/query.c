@@ -61,7 +61,7 @@ extern bool check_timeout_expired(time_t start_time, int timeout_seconds);
 // Helper function to convert TypedParameter to PostgreSQL string format
 // PostgreSQL PQexecParams accepts all parameters as text strings
 // Returns allocated string that caller must free
-static char* postgresql_convert_param_value(const TypedParameter* param, const char* designator) {
+char* postgresql_convert_param_value(const TypedParameter* param, const char* designator) {
     if (!param) {
         log_this(designator, "postgresql_convert_param_value: NULL parameter", LOG_LEVEL_ERROR, 0);
         return NULL;
