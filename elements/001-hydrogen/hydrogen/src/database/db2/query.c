@@ -139,16 +139,16 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
             // Don't trust data_len if it's negative or zero as it's an SQL indicator
             size_t actual_data_len = (col_data && data_len > 0) ? strlen(col_data) : 0;
             size_t needed_json_space = strlen(column_names[col]) + (actual_data_len * 2) + 20;
-            
+
             // Ensure we have enough capacity
             if (!db2_ensure_json_buffer_capacity(json_buffer, *json_buffer_size, json_buffer_capacity, needed_json_space)) {
                 free(col_data);
                 return false;
             }
-            
+
             // Build JSON for this column
             char* current_pos = *json_buffer + *json_buffer_size;
-            
+
             if (data_len == SQL_NULL_DATA) {
                 int written = snprintf(current_pos, needed_json_space, "\"%s\":null", column_names[col]);
                 // Check for truncation - snprintf returns what WOULD be written, not what WAS written
@@ -173,7 +173,7 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
                     free(col_data);
                     return false;
                 }
-                
+
                 database_json_escape_string(col_data, escaped_data, escaped_size);
                 int written = snprintf(current_pos, needed_json_space, "\"%s\":\"%s\"", column_names[col], escaped_data);
                 // Check for truncation - snprintf returns what WOULD be written, not what WAS written
@@ -181,9 +181,13 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
                     written = (int)needed_json_space - 1; // Actual bytes written (excluding null terminator)
                 }
                 *json_buffer_size += (size_t)written;
-                
+
                 free(escaped_data);
             }
+        } else {
+            // SQLGetData failed - cannot retrieve column data, fail the entire row
+            free(col_data);
+            return false;
         }
         
         free(col_data);
@@ -307,9 +311,13 @@ bool db2_process_query_results(void* stmt_handle, const char* designator, struct
     return true;
 }
 
-// Helper function to bind a single parameter
-static bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, TypedParameter* param,
+// Helper function to bind a single parameter (non-static for testing)
+bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, TypedParameter* param,
                                        void** bound_values, long* str_len_indicators, const char* designator) {
+    if (!stmt_handle || !param || !bound_values || !str_len_indicators || !designator) {
+        return false;
+    }
+
     if (!SQLBindParameter_ptr) {
         log_this(designator, "SQLBindParameter function not available", LOG_LEVEL_ERROR, 0);
         return false;
