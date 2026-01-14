@@ -1730,6 +1730,156 @@
         ]
       }
     },
+    "/conduit/queries": {
+      "get": {
+        "summary": "Execute multiple database queries in parallel",
+        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel without authentication. Requires explicit database parameter in request. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "operationId": "executeQueriesByReferenceGet",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message",
+                      "example": "Missing required parameter: database"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message",
+                      "example": "Failed to execute queries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "database",
+            "in": "query",
+            "required": true,
+            "description": "Target database name",
+            "schema": {
+              "type": "string",
+              "example": "Acuranzo"
+            }
+          }
+        ]
+      },
+      "post": {
+        "summary": "Execute multiple database queries in parallel",
+        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel without authentication. Requires explicit database parameter in request. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "operationId": "executeQueriesByReferencePost",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message",
+                      "example": "Missing required parameter: database"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message",
+                      "example": "Failed to execute queries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "database",
+            "in": "query",
+            "required": true,
+            "description": "Target database name",
+            "schema": {
+              "type": "string",
+              "example": "Acuranzo"
+            }
+          }
+        ]
+      }
+    },
     "/conduit/query": {
       "get": {
         "summary": "Execute database query by reference",

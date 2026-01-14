@@ -36,6 +36,10 @@ const unsigned char* mock_sqlite3_column_text(void* stmt, int col);
 int mock_sqlite3_column_type(void* stmt, int col);
 int mock_sqlite3_changes(void* db);
 int mock_sqlite3_reset(void* stmt);
+int mock_sqlite3_bind_int(void* stmt, int col, int value);
+int mock_sqlite3_bind_double(void* stmt, int col, double value);
+int mock_sqlite3_bind_text(void* stmt, int col, const char* text, int nBytes, void(*destructor)(void*));
+int mock_sqlite3_bind_null(void* stmt, int col);
 void mock_libsqlite3_set_sqlite3_open_result(int result);
 void mock_libsqlite3_set_sqlite3_close_result(int result);
 void mock_libsqlite3_set_sqlite3_exec_result(int result);
@@ -52,6 +56,10 @@ void mock_libsqlite3_set_sqlite3_column_text_result(const unsigned char* text);
 void mock_libsqlite3_set_sqlite3_column_type_result(int type);
 void mock_libsqlite3_set_sqlite3_changes_result(int changes);
 void mock_libsqlite3_set_sqlite3_reset_result(int result);
+void mock_libsqlite3_set_sqlite3_bind_int_result(int result);
+void mock_libsqlite3_set_sqlite3_bind_double_result(int result);
+void mock_libsqlite3_set_sqlite3_bind_text_result(int result);
+void mock_libsqlite3_set_sqlite3_bind_null_result(int result);
 void mock_libsqlite3_reset_all(void);
 
 // Static variables to store mock state
@@ -72,6 +80,10 @@ static const unsigned char* mock_sqlite3_column_text_result = (const unsigned ch
 static int mock_sqlite3_column_type_result = 1; // SQLITE_INTEGER
 static int mock_sqlite3_changes_result = 0;
 static int mock_sqlite3_reset_result = 0; // 0 = SQLITE_OK
+static int mock_sqlite3_bind_int_result = 0; // 0 = SQLITE_OK
+static int mock_sqlite3_bind_double_result = 0; // 0 = SQLITE_OK
+static int mock_sqlite3_bind_text_result = 0; // 0 = SQLITE_OK
+static int mock_sqlite3_bind_null_result = 0; // 0 = SQLITE_OK
 
 // Mock implementation of sqlite3_open
 int mock_sqlite3_open(const char* filename, void** ppDb) {
@@ -219,6 +231,39 @@ int mock_sqlite3_reset(void* stmt) {
     return mock_sqlite3_reset_result;
 }
 
+// Mock implementation of sqlite3_bind_int
+int mock_sqlite3_bind_int(void* stmt, int col, int value) {
+    (void)stmt; // Suppress unused parameter
+    (void)col;  // Suppress unused parameter
+    (void)value; // Suppress unused parameter
+    return mock_sqlite3_bind_int_result;
+}
+
+// Mock implementation of sqlite3_bind_double
+int mock_sqlite3_bind_double(void* stmt, int col, double value) {
+    (void)stmt; // Suppress unused parameter
+    (void)col;  // Suppress unused parameter
+    (void)value; // Suppress unused parameter
+    return mock_sqlite3_bind_double_result;
+}
+
+// Mock implementation of sqlite3_bind_text
+int mock_sqlite3_bind_text(void* stmt, int col, const char* text, int nBytes, void(*destructor)(void*)) {
+    (void)stmt;      // Suppress unused parameter
+    (void)col;       // Suppress unused parameter
+    (void)text;      // Suppress unused parameter
+    (void)nBytes;    // Suppress unused parameter
+    (void)destructor; // Suppress unused parameter
+    return mock_sqlite3_bind_text_result;
+}
+
+// Mock implementation of sqlite3_bind_null
+int mock_sqlite3_bind_null(void* stmt, int col) {
+    (void)stmt; // Suppress unused parameter
+    (void)col;  // Suppress unused parameter
+    return mock_sqlite3_bind_null_result;
+}
+
 // Mock control functions
 void mock_libsqlite3_set_sqlite3_open_result(int result) {
     mock_sqlite3_open_result = result;
@@ -285,6 +330,22 @@ void mock_libsqlite3_set_sqlite3_reset_result(int result) {
     mock_sqlite3_reset_result = result;
 }
 
+void mock_libsqlite3_set_sqlite3_bind_int_result(int result) {
+    mock_sqlite3_bind_int_result = result;
+}
+
+void mock_libsqlite3_set_sqlite3_bind_double_result(int result) {
+    mock_sqlite3_bind_double_result = result;
+}
+
+void mock_libsqlite3_set_sqlite3_bind_text_result(int result) {
+    mock_sqlite3_bind_text_result = result;
+}
+
+void mock_libsqlite3_set_sqlite3_bind_null_result(int result) {
+    mock_sqlite3_bind_null_result = result;
+}
+
 void mock_libsqlite3_reset_all(void) {
     mock_sqlite3_open_result = 0; // SQLITE_OK
     mock_sqlite3_close_result = 0; // SQLITE_OK
@@ -303,4 +364,8 @@ void mock_libsqlite3_reset_all(void) {
     mock_sqlite3_column_type_result = 1; // SQLITE_INTEGER
     mock_sqlite3_changes_result = 0;
     mock_sqlite3_reset_result = 0; // SQLITE_OK
+    mock_sqlite3_bind_int_result = 0; // SQLITE_OK
+    mock_sqlite3_bind_double_result = 0; // SQLITE_OK
+    mock_sqlite3_bind_text_result = 0; // SQLITE_OK
+    mock_sqlite3_bind_null_result = 0; // SQLITE_OK
 }

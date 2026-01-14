@@ -27,6 +27,10 @@ const unsigned char* mock_sqlite3_column_text(void* stmt, int col);
 int mock_sqlite3_column_type(void* stmt, int col);
 int mock_sqlite3_changes(void* db);
 int mock_sqlite3_reset(void* stmt);
+int mock_sqlite3_bind_int(void* stmt, int col, int value);
+int mock_sqlite3_bind_double(void* stmt, int col, double value);
+int mock_sqlite3_bind_text(void* stmt, int col, const char* text, int nBytes, void(*destructor)(void*));
+int mock_sqlite3_bind_null(void* stmt, int col);
 
 // Mock control functions for tests
 void mock_libsqlite3_set_sqlite3_open_result(int result);
@@ -45,6 +49,10 @@ void mock_libsqlite3_set_sqlite3_column_text_result(const unsigned char* text);
 void mock_libsqlite3_set_sqlite3_column_type_result(int type);
 void mock_libsqlite3_set_sqlite3_changes_result(int changes);
 void mock_libsqlite3_set_sqlite3_reset_result(int result);
+void mock_libsqlite3_set_sqlite3_bind_int_result(int result);
+void mock_libsqlite3_set_sqlite3_bind_double_result(int result);
+void mock_libsqlite3_set_sqlite3_bind_text_result(int result);
+void mock_libsqlite3_set_sqlite3_bind_null_result(int result);
 void mock_libsqlite3_reset_all(void);
 
 #endif // MOCK_LIBSQLITE3_H

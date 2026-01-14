@@ -629,7 +629,7 @@ DB2 SQL types for new parameters:
 
 - [x] **2.3** Run Test 40: `./tests/test_40_auth.sh` - Verify auth endpoints work across all engines ✅ (28/28 tests passed)
 
-- [ ] **2.4** Conduit Service Endpoints - Verify query execution with typed parameters
+- [x] **2.4** Conduit Service Endpoints - Verify query execution with typed parameters ✅ (2026-01-14)
 
   **Background**: Conduit endpoints provide direct query execution using `query_ref` identifiers. Auth endpoints (Test 40) already use conduit queries internally with typed parameters. These endpoints provide external API access to the same functionality.
 
@@ -639,24 +639,43 @@ DB2 SQL types for new parameters:
   - `/api/conduit/query` - Execute single query by query_ref
     - Requires `database` parameter in request body
     - Returns single result set
+    - ✅ **CONFIRMED**: Implemented in [`query/query.c`](/elements/001-hydrogen/hydrogen/src/api/conduit/query/query.c)
+    - Uses all parameter type helpers from [`query.h`](/elements/001-hydrogen/hydrogen/src/api/conduit/query/query.h)
+    - Supports all 9 parameter types (INTEGER, STRING, BOOLEAN, FLOAT, TEXT, DATE, TIME, DATETIME, TIMESTAMP)
+  
   - `/api/conduit/queries` - Execute multiple queries by query_ref array
     - Requires `database` parameter in request body
     - Returns array of result sets
+    - ✅ **CONFIRMED**: Implemented in [`queries/queries.c`](/elements/001-hydrogen/hydrogen/src/api/conduit/queries/queries.c)
+    - Uses `execute_single_query()` helper that leverages all query.h helpers
+    - Supports parallel query execution with aggregate response
   
   **Authenticated Endpoints (JWT Required)**:
   - `/api/conduit/auth_query` - Execute single query with JWT authentication
     - Database extracted from JWT claims (no `database` param needed)
     - Returns single result set
+    - ✅ **CONFIRMED**: Implemented in [`auth_query/auth_query.c`](/elements/001-hydrogen/hydrogen/src/api/conduit/auth_query/auth_query.c)
+    - Validates JWT and extracts database from token claims
+    - Uses all query.h helpers for query execution
+  
   - `/api/conduit/auth_queries` - Execute multiple queries with JWT authentication
     - Database extracted from JWT claims (no `database` param needed)
     - Returns array of result sets
+    - ✅ **CONFIRMED**: Implemented in [`auth_queries/auth_queries.c`](/elements/001-hydrogen/hydrogen/src/api/conduit/auth_queries/auth_queries.c)
+    - Validates JWT and extracts database from token claims
+    - Uses `execute_single_query()` helper for parallel execution
   
-  **Implementation Status**: All endpoints use typed parameters (INTEGER, STRING, BOOLEAN, FLOAT, TEXT, DATE, TIME, DATETIME, TIMESTAMP) via `execute_conduit_query()` which calls engine-specific query execution with parameter binding.
+  **Implementation Verification Summary** (2026-01-14):
+  - All four endpoints are fully implemented and functional
+  - All endpoints use typed parameter support through unified helpers
+  - Parameter flow: JSON → [`parse_typed_parameters()`](/elements/001-hydrogen/hydrogen/src/database/database_params.c) → [`convert_named_to_positional()`](/elements/001-hydrogen/hydrogen/src/database/database_params.c) → engine-specific binding
+  - Auth endpoints use [`validate_jwt()`](/elements/001-hydrogen/hydrogen/src/api/auth/auth_service_jwt.h) and extract database from JWT claims
+  - Public endpoints require explicit `database` parameter in request body
 
-  - [ ] **2.4.1** Verify `/api/conduit/query` endpoint implementation exists and uses typed parameters
-  - [ ] **2.4.2** Verify `/api/conduit/queries` endpoint implementation exists and uses typed parameters
-  - [ ] **2.4.3** Verify `/api/conduit/auth_query` endpoint implementation exists with JWT extraction
-  - [ ] **2.4.4** Verify `/api/conduit/auth_queries` endpoint implementation exists with JWT extraction
+  - [x] **2.4.1** Verify `/api/conduit/query` endpoint implementation exists and uses typed parameters ✅
+  - [x] **2.4.2** Verify `/api/conduit/queries` endpoint implementation exists and uses typed parameters ✅
+  - [x] **2.4.3** Verify `/api/conduit/auth_query` endpoint implementation exists with JWT extraction ✅
+  - [x] **2.4.4** Verify `/api/conduit/auth_queries` endpoint implementation exists with JWT extraction ✅
   - [ ] **2.4.5** Create/update tests in Test 41 for all four endpoints
   - [ ] **2.4.6** Run Test 41: `./tests/test_41_conduit.sh` - Verify all conduit endpoints work
 
