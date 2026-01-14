@@ -60,8 +60,8 @@ export COVERAGE_GUARD="true"
 # - EG: if coverage shows 19977, and unity = 19973 and blackbox = 19975,
 #       then we'd need to add 4 to unity and 2 to coverage below to fix
 #
-DISCREPANCY_UNITY=241
-DISCREPANCY_COVERAGE=75
+DISCREPANCY_UNITY=243
+DISCREPANCY_COVERAGE=76
   
 # Library metadata
 COVERAGE_NAME="Coverage Library"

@@ -54,6 +54,8 @@ void test_sqlite_execute_prepared_errmsg_ptr_null(void);
 
 // External function pointers that need to be initialized
 extern sqlite3_exec_t sqlite3_exec_ptr;
+extern sqlite3_prepare_v2_t sqlite3_prepare_v2_ptr;
+extern sqlite3_finalize_t sqlite3_finalize_ptr;
 extern sqlite3_step_t sqlite3_step_ptr;
 extern sqlite3_column_count_t sqlite3_column_count_ptr;
 extern sqlite3_column_name_t sqlite3_column_name_ptr;
@@ -70,6 +72,8 @@ void setUp(void) {
     
     // Initialize function pointers with mock functions
     sqlite3_exec_ptr = mock_sqlite3_exec;
+    sqlite3_prepare_v2_ptr = mock_sqlite3_prepare_v2;
+    sqlite3_finalize_ptr = mock_sqlite3_finalize;
     sqlite3_step_ptr = mock_sqlite3_step;
     sqlite3_column_count_ptr = mock_sqlite3_column_count;
     sqlite3_column_name_ptr = mock_sqlite3_column_name;
@@ -226,8 +230,12 @@ void test_sqlite_execute_query_success_empty_result(void) {
     request.sql_template = (char*)"SELECT 1 WHERE 0";
     QueryResult* result = NULL;
     
-    mock_libsqlite3_set_sqlite3_exec_result(SQLITE_OK);
-    mock_libsqlite3_set_sqlite3_exec_callback_calls(0);
+    // Set up mocks for prepared statement approach
+    void* mock_stmt = (void*)0x87654321;
+    mock_libsqlite3_set_sqlite3_prepare_v2_result(SQLITE_OK);
+    mock_libsqlite3_set_sqlite3_prepare_v2_output_handle(mock_stmt);
+    mock_libsqlite3_set_sqlite3_step_result(SQLITE_DONE); // No rows
+    mock_libsqlite3_set_sqlite3_column_count_result(0);
     
     bool query_result = sqlite_execute_query(&connection, &request, &result);
     
@@ -256,8 +264,16 @@ void test_sqlite_execute_query_success_with_data(void) {
     request.sql_template = (char*)"SELECT * FROM users";
     QueryResult* result = NULL;
     
-    mock_libsqlite3_set_sqlite3_exec_result(SQLITE_OK);
-    mock_libsqlite3_set_sqlite3_exec_callback_calls(2);
+    // Set up mocks for prepared statement approach
+    void* mock_stmt = (void*)0x87654321;
+    mock_libsqlite3_set_sqlite3_prepare_v2_result(SQLITE_OK);
+    mock_libsqlite3_set_sqlite3_prepare_v2_output_handle(mock_stmt);
+    mock_libsqlite3_set_sqlite3_step_row_count(2);
+    mock_libsqlite3_set_sqlite3_step_result(SQLITE_DONE);
+    mock_libsqlite3_set_sqlite3_column_count_result(2);
+    mock_libsqlite3_set_sqlite3_column_name_result("id");
+    mock_libsqlite3_set_sqlite3_column_text_result((const unsigned char*)"1");
+    mock_libsqlite3_set_sqlite3_column_type_result(1); // Not NULL
     mock_libsqlite3_set_sqlite3_changes_result(2);
     
     bool query_result = sqlite_execute_query(&connection, &request, &result);
@@ -265,7 +281,7 @@ void test_sqlite_execute_query_success_with_data(void) {
     TEST_ASSERT_TRUE(query_result);
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_TRUE(result->success);
-    // Note: callback is invoked but row_count depends on callback implementation
+    TEST_ASSERT_EQUAL(2, result->row_count);
     TEST_ASSERT_EQUAL(2, result->affected_rows);
     TEST_ASSERT_NOT_NULL(result->data_json);
     
@@ -293,7 +309,12 @@ void test_sqlite_execute_query_success_changes_ptr_null(void) {
     request.sql_template = (char*)"SELECT 1";
     QueryResult* result = NULL;
     
-    mock_libsqlite3_set_sqlite3_exec_result(SQLITE_OK);
+    // Set up mocks for prepared statement approach
+    void* mock_stmt = (void*)0x87654321;
+    mock_libsqlite3_set_sqlite3_prepare_v2_result(SQLITE_OK);
+    mock_libsqlite3_set_sqlite3_prepare_v2_output_handle(mock_stmt);
+    mock_libsqlite3_set_sqlite3_step_result(SQLITE_DONE);
+    mock_libsqlite3_set_sqlite3_column_count_result(0);
     sqlite3_changes_ptr = NULL;
     
     bool query_result = sqlite_execute_query(&connection, &request, &result);
@@ -327,7 +348,9 @@ void test_sqlite_execute_query_exec_failure_with_error_msg(void) {
     request.sql_template = (char*)"INVALID SQL";
     QueryResult* result = NULL;
     
-    mock_libsqlite3_set_sqlite3_exec_result(1); // SQLITE_ERROR
+    // Set up mocks for prepare statement failure
+    mock_libsqlite3_set_sqlite3_prepare_v2_result(1); // SQLITE_ERROR
+    mock_libsqlite3_set_sqlite3_prepare_v2_output_handle(NULL);
     mock_libsqlite3_set_sqlite3_errmsg_result("syntax error");
     
     bool query_result = sqlite_execute_query(&connection, &request, &result);

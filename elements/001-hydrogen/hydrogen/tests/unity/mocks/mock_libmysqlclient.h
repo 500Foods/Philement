@@ -101,6 +101,7 @@ int mock_mysql_stmt_close(void* stmt);
 void* mock_mysql_stmt_result_metadata(void* stmt);
 int mock_mysql_stmt_store_result(void* stmt);
 int mock_mysql_stmt_fetch(void* stmt);
+int mock_mysql_stmt_bind_param(void* stmt, void* bind);
 int mock_mysql_stmt_bind_result(void* stmt, void* bind);
 const char* mock_mysql_stmt_error(void* stmt);
 unsigned long long mock_mysql_stmt_affected_rows(void* stmt);
