@@ -21,7 +21,7 @@ bool check_username_availability(const char* username, const char* database);
 int create_account_record(const char* username, const char* email,
                           const char* hashed_password, const char* full_name, const char* database);
 void update_jwt_storage(int account_id, const char* old_jwt_hash,
-                        const char* new_jwt_hash, time_t new_expires, const char* database);
+                        const char* new_jwt_hash, time_t new_expires, int system_id, int app_id, const char* database);
 void delete_jwt_from_storage(const char* jwt_hash, const char* database);
 void block_ip_address(const char* client_ip, int duration_minutes, const char* database);
 
@@ -264,7 +264,7 @@ void test_create_account_record_with_null_full_name(void) {
  */
 void test_update_jwt_storage_with_null_old_jwt_hash(void) {
     // Function returns void, so we just ensure it doesn't crash
-    update_jwt_storage(1, NULL, "new_hash", time(NULL), "test_db");
+    update_jwt_storage(1, NULL, "new_hash", time(NULL), 1, 1, "test_db");
     // If we get here without crashing, the test passes
     TEST_ASSERT_TRUE(true);
 }
@@ -275,7 +275,7 @@ void test_update_jwt_storage_with_null_old_jwt_hash(void) {
  * Coverage: Line 441
  */
 void test_update_jwt_storage_with_null_new_jwt_hash(void) {
-    update_jwt_storage(1, "old_hash", NULL, time(NULL), "test_db");
+    update_jwt_storage(1, "old_hash", NULL, time(NULL), 1, 1, "test_db");
     TEST_ASSERT_TRUE(true);
 }
 
@@ -285,7 +285,7 @@ void test_update_jwt_storage_with_null_new_jwt_hash(void) {
  * Coverage: Line 441
  */
 void test_update_jwt_storage_with_zero_account_id(void) {
-    update_jwt_storage(0, "old_hash", "new_hash", time(NULL), "test_db");
+    update_jwt_storage(0, "old_hash", "new_hash", time(NULL), 1, 1, "test_db");
     TEST_ASSERT_TRUE(true);
 }
 
@@ -295,7 +295,7 @@ void test_update_jwt_storage_with_zero_account_id(void) {
  * Coverage: Line 441
  */
 void test_update_jwt_storage_with_null_database(void) {
-    update_jwt_storage(1, "old_hash", "new_hash", time(NULL), NULL);
+    update_jwt_storage(1, "old_hash", "new_hash", time(NULL), 1, 1, NULL);
     TEST_ASSERT_TRUE(true);
 }
 

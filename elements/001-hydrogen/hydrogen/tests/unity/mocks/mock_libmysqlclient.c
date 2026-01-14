@@ -475,6 +475,9 @@ void mock_libmysqlclient_setup_result_data(size_t num_rows, size_t num_fields, c
         mock_libmysqlclient_reset_all();
     }
 
+    // Reset the row counter to start from the beginning
+    mock_current_row = 0;
+
     mock_result_data = calloc(1, sizeof(MockMYSQL_RES));
     if (!mock_result_data) return;
 
@@ -490,6 +493,9 @@ void mock_libmysqlclient_setup_result_data(size_t num_rows, size_t num_fields, c
                 mock_result_data->fields[i].name = column_names[i] ? strdup(column_names[i]) : NULL;
             }
         }
+
+        // Also set up the global mock_fields array so mysql_fetch_fields() works
+        mock_libmysqlclient_setup_fields(num_fields, column_names);
     }
 
     // Set up rows

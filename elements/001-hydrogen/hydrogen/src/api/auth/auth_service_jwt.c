@@ -295,16 +295,27 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
         return result;
     }
 
-    // Check if token is revoked
-    char* token_hash = compute_token_hash(token);
-    if (is_token_revoked(token_hash, database)) {
-        free(token_hash);
-        free(payload_decoded);
-        free(token_copy);
-        result.error = JWT_ERROR_REVOKED;
-        return result;
+    // If database not provided, extract it from JWT claims first
+    const char* db_to_use = database;
+    if (!db_to_use) {
+        json_t* database_json = json_object_get(payload_json, "database");
+        if (database_json && json_is_string(database_json)) {
+            db_to_use = json_string_value(database_json);
+        }
     }
-    free(token_hash);
+
+    // Check if token is revoked (requires database)
+    if (db_to_use) {
+        char* token_hash = compute_token_hash(token);
+        if (is_token_revoked(token_hash, db_to_use)) {
+            free(token_hash);
+            json_decref(payload_json);
+            free(token_copy);
+            result.error = JWT_ERROR_REVOKED;
+            return result;
+        }
+        free(token_hash);
+    }
 
     // Verify signature
     jwt_config_t* config = get_jwt_config();
@@ -461,14 +472,129 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
 
 /**
  * Generate a new JWT from old claims (token renewal)
+ * Creates a new JWT with updated timestamps while preserving user/system info
  */
 char* generate_new_jwt(jwt_claims_t* old_claims) {
     if (!old_claims) return NULL;
 
-    // TODO: Implement token renewal logic
-    // For now, return NULL
-    (void)old_claims; // Suppress unused parameter warning
-    return NULL;
+    jwt_config_t* config = get_jwt_config();
+    if (!config) {
+        log_this("AUTH", "Failed to get JWT configuration for renewal", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
+    // Create JWT header
+    char* header_json = NULL;
+    asprintf(&header_json, "{\"alg\":\"%s\",\"typ\":\"%s\"}",
+             config->use_rsa ? "RS256" : "HS256", JWT_TYPE);
+    if (!header_json) {
+        log_this("AUTH", "Failed to create JWT header for renewal", LOG_LEVEL_ERROR, 0);
+        free_jwt_config(config);
+        return NULL;
+    }
+
+    // Generate new timestamps and JTI
+    time_t now = time(NULL);
+    time_t exp = now + JWT_LIFETIME;
+    char* jti = generate_jti();
+    if (!jti) {
+        log_this("AUTH", "Failed to generate JTI for renewal", LOG_LEVEL_ERROR, 0);
+        free(header_json);
+        free_jwt_config(config);
+        return NULL;
+    }
+
+    // Create JWT payload preserving original claims but with new timestamps
+    char* payload_json = NULL;
+    asprintf(&payload_json,
+             "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\"}",
+             old_claims->user_id, old_claims->app_id, exp, now, now, jti,
+             old_claims->user_id, old_claims->system_id, old_claims->app_id,
+             old_claims->username ? old_claims->username : "",
+             old_claims->email ? old_claims->email : "",
+             old_claims->roles ? old_claims->roles : "",
+             old_claims->ip ? old_claims->ip : "",
+             old_claims->tz ? old_claims->tz : "",
+             old_claims->tzoffset,
+             old_claims->database ? old_claims->database : "");
+
+    free(jti);
+
+    if (!payload_json) {
+        log_this("AUTH", "Failed to create JWT payload for renewal", LOG_LEVEL_ERROR, 0);
+        free(header_json);
+        free_jwt_config(config);
+        return NULL;
+    }
+
+    // Base64url encode header and payload
+    char* header_b64 = utils_base64url_encode((const unsigned char*)header_json, strlen(header_json));
+    char* payload_b64 = utils_base64url_encode((const unsigned char*)payload_json, strlen(payload_json));
+
+    free(header_json);
+    free(payload_json);
+
+    if (!header_b64 || !payload_b64) {
+        log_this("AUTH", "Failed to encode JWT parts for renewal", LOG_LEVEL_ERROR, 0);
+        free(header_b64);
+        free(payload_b64);
+        free_jwt_config(config);
+        return NULL;
+    }
+
+    // Create signing input
+    char* signing_input = NULL;
+    asprintf(&signing_input, "%s.%s", header_b64, payload_b64);
+    if (!signing_input) {
+        log_this("AUTH", "Failed to create signing input for renewal", LOG_LEVEL_ERROR, 0);
+        free(header_b64);
+        free(payload_b64);
+        free_jwt_config(config);
+        return NULL;
+    }
+
+    // Create signature
+    unsigned char signature[SHA256_DIGEST_LENGTH];
+    unsigned int signature_len = SHA256_DIGEST_LENGTH;
+
+    if (HMAC(EVP_sha256(), config->hmac_secret, (int)strlen(config->hmac_secret),
+             (const unsigned char*)signing_input, strlen(signing_input),
+             signature, &signature_len) == NULL) {
+        log_this("AUTH", "Failed to create HMAC signature for renewal", LOG_LEVEL_ERROR, 0);
+        free(header_b64);
+        free(payload_b64);
+        free(signing_input);
+        free_jwt_config(config);
+        return NULL;
+    }
+
+    char* signature_b64 = utils_base64url_encode(signature, signature_len);
+    if (!signature_b64) {
+        log_this("AUTH", "Failed to encode signature for renewal", LOG_LEVEL_ERROR, 0);
+        free(header_b64);
+        free(payload_b64);
+        free(signing_input);
+        free_jwt_config(config);
+        return NULL;
+    }
+
+    // Create final JWT
+    char* jwt = NULL;
+    asprintf(&jwt, "%s.%s.%s", header_b64, payload_b64, signature_b64);
+
+    free(header_b64);
+    free(payload_b64);
+    free(signature_b64);
+    free(signing_input);
+    free_jwt_config(config);
+
+    if (!jwt) {
+        log_this("AUTH", "Failed to create final JWT for renewal", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
+    log_this("AUTH", "Generated renewed JWT for user_id=%d", LOG_LEVEL_DEBUG, 1, old_claims->user_id);
+    return jwt;
 }
 
 
@@ -526,13 +652,15 @@ void free_jwt_claims(jwt_claims_t* claims) {
 }
 
 /**
- * Free JWT validation result
+ * Free JWT validation result contents (not the result struct itself)
+ * The result struct may be stack-allocated, so we only free the heap-allocated claims
  */
 void free_jwt_validation_result(jwt_validation_result_t* result) {
     if (result) {
         if (result->claims) {
             free_jwt_claims(result->claims);
+            result->claims = NULL;  // Prevent double-free
         }
-        free(result);
+        // Note: Do NOT free(result) - it may be stack-allocated
     }
 }

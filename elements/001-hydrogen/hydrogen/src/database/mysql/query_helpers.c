@@ -199,7 +199,8 @@ bool mysql_build_json_from_result(void* mysql_result, size_t row_count, size_t c
                     } else {
                         // String types - escape and quote the value
                         // For large strings (like migration SQL), use dynamic allocation for escaped data
-                        size_t escaped_size = (row_data[col] ? strlen(row_data[col]) * 2 : 0) + 1;
+                        // row_data[col] is guaranteed non-NULL here (in else block of NULL check)
+                        size_t escaped_size = strlen(row_data[col]) * 2 + 1;
                         char* escaped_data = calloc(1, escaped_size);
                         if (!escaped_data) {
                             size_t needed = strlen(col_name) + 10;
@@ -396,7 +397,8 @@ bool mysql_process_query_result(void* mysql_result, QueryResult* db_result, cons
                                 } else {
                                     // String types - escape and quote the value
                                     // For large strings (like migration SQL), use dynamic allocation for escaped data
-                                    size_t escaped_size = (row_data[col] ? strlen(row_data[col]) * 2 : 0) + 1;
+                                    // row_data[col] is guaranteed non-NULL here (in else block of NULL check)
+                                    size_t escaped_size = strlen(row_data[col]) * 2 + 1;
                                     char* escaped_data = calloc(1, escaped_size);
                                     if (!escaped_data) {
                                         size_t needed = strlen(col_name) + 10;

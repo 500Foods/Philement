@@ -357,7 +357,7 @@ enum MHD_Result handle_auth_login_request(
     time_t expires_at = issued_at + JWT_LIFETIME;
     
     // Store JWT hash in database
-    store_jwt(account->id, jwt_hash, expires_at, database);
+    store_jwt(account->id, jwt_hash, expires_at, sys_info.system_id, sys_info.app_id, database);
     free(jwt_hash); // Clean up hash after storage
     
     log_this(SR_AUTH, "JWT token stored for account_id=%d, expires_at=%ld", LOG_LEVEL_DEBUG, 2,
@@ -379,10 +379,9 @@ enum MHD_Result handle_auth_login_request(
     response = json_object();
     json_object_set_new(response, "success", json_true());
     
-    // Create token with Bearer prefix for Swagger authorization
-    char bearer_token[2048]; // JWT tokens are typically < 1KB, this gives plenty of room
-    snprintf(bearer_token, sizeof(bearer_token), "Bearer %s", jwt_token);
-    json_object_set_new(response, "token", json_string(bearer_token));
+    // Return raw JWT token - client adds "Bearer " prefix when needed for Authorization header
+    // This ensures the token hash matches between storage and validation
+    json_object_set_new(response, "token", json_string(jwt_token));
     json_object_set_new(response, "expires_at", json_integer(expires_at));
     json_object_set_new(response, "user_id", json_integer(account->id));
     json_object_set_new(response, "username", json_string(account->username ? account->username : ""));
