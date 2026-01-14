@@ -331,8 +331,12 @@ bool check_username_availability(const char* username, const char* database) {
     if (!username || !database) return false;
 
     // Create parameters for QueryRef #050: Check Username Availability
+    // Use typed parameter format: {"STRING": {"username": "value"}}
     json_t* params = json_object();
-    json_object_set_new(params, "username", json_string(username));
+    json_t* string_params = json_object();
+    
+    json_object_set_new(string_params, "username", json_string(username));
+    json_object_set_new(params, "STRING", string_params);
 
     // Execute query
     QueryResult* result = execute_auth_query(50, database, params);
@@ -359,13 +363,18 @@ int create_account_record(const char* username, const char* email,
     if (!username || !email || !hashed_password || !database) return -1;
 
     // Create parameters for QueryRef #051: Create Account
+    // Use typed parameter format: {"STRING": {...}}
     json_t* params = json_object();
-    json_object_set_new(params, "username", json_string(username));
-    json_object_set_new(params, "email", json_string(email));
-    json_object_set_new(params, "password_hash", json_string(hashed_password));
+    json_t* string_params = json_object();
+    
+    json_object_set_new(string_params, "username", json_string(username));
+    json_object_set_new(string_params, "email", json_string(email));
+    json_object_set_new(string_params, "password_hash", json_string(hashed_password));
     if (full_name) {
-        json_object_set_new(params, "full_name", json_string(full_name));
+        json_object_set_new(string_params, "full_name", json_string(full_name));
     }
+    
+    json_object_set_new(params, "STRING", string_params);
 
     // Execute query
     QueryResult* result = execute_auth_query(51, database, params);
@@ -400,14 +409,28 @@ int create_account_record(const char* username, const char* email,
 /**
  * Store JWT in database
  */
-void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, const char* database) {
+void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database) {
     if (!jwt_hash || account_id <= 0 || !database) return;
 
     // Create parameters for QueryRef #013: Store JWT
+    // Use typed parameter format: {"STRING": {...}, "INTEGER": {...}}
+    // QueryRef #013 expects: TOKENHASH, ACCOUNTID, SYSTEMID, APPID, APPVERSION, IPADDRESS, JWTDURATION
     json_t* params = json_object();
-    json_object_set_new(params, "account_id", json_integer(account_id));
-    json_object_set_new(params, "jwt_hash", json_string(jwt_hash));
-    json_object_set_new(params, "expires_at", json_integer(expires_at));
+    json_t* string_params = json_object();
+    json_t* integer_params = json_object();
+    
+    json_object_set_new(string_params, "TOKENHASH", json_string(jwt_hash));
+    json_object_set_new(string_params, "APPVERSION", json_string(VERSION)); // Required by QueryRef #013
+    // IPADDRESS will be provided by merge_database_parameters from connection config
+    json_object_set_new(integer_params, "ACCOUNTID", json_integer(account_id));
+    json_object_set_new(integer_params, "SYSTEMID", json_integer(system_id));
+    json_object_set_new(integer_params, "APPID", json_integer(app_id));
+    // Calculate JWT duration from expires_at (expires_at - now)
+    time_t jwt_duration = expires_at - time(NULL);
+    json_object_set_new(integer_params, "JWTDURATION", json_integer(jwt_duration));
+    
+    json_object_set_new(params, "STRING", string_params);
+    json_object_set_new(params, "INTEGER", integer_params);
 
     // Execute query
     QueryResult* result = execute_auth_query(13, database, params);
@@ -426,27 +449,18 @@ void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, const ch
  * Update JWT storage (for renewal)
  */
 void update_jwt_storage(int account_id, const char* old_jwt_hash,
-                        const char* new_jwt_hash, time_t new_expires, const char* database) {
+                        const char* new_jwt_hash, time_t new_expires, int system_id, int app_id, const char* database) {
     if (!old_jwt_hash || !new_jwt_hash || account_id <= 0 || !database) return;
 
-    // Create parameters for QueryRef #003: Update JWT
-    json_t* params = json_object();
-    json_object_set_new(params, "account_id", json_integer(account_id));
-    json_object_set_new(params, "old_jwt_hash", json_string(old_jwt_hash));
-    json_object_set_new(params, "new_jwt_hash", json_string(new_jwt_hash));
-    json_object_set_new(params, "new_expires", json_integer(new_expires));
-
-    // Execute query
-    QueryResult* result = execute_auth_query(3, database, params);
-    json_decref(params);
-
-    if (!result || !result->success) {
-        log_this("AUTH", "Failed to update JWT storage: %s", LOG_LEVEL_ERROR, 1,
-                result ? result->error_message : "Unknown error");
-    }
-
-    // Cleanup
-    free_query_result(result);
+    // JWT renewal is implemented as: store new token + delete old token
+    // Store first to ensure old token remains valid until new token is safely stored
+    // This prevents a window where no valid token exists
+    
+    // Step 1: Store new JWT (atomic operation)
+    store_jwt(account_id, new_jwt_hash, new_expires, system_id, app_id, database);
+    
+    // Step 2: Delete old JWT (old token remains valid until this point)
+    delete_jwt_from_storage(old_jwt_hash, database);
 }
 
 /**
@@ -456,8 +470,13 @@ void delete_jwt_from_storage(const char* jwt_hash, const char* database) {
     if (!jwt_hash || !database) return;
 
     // Create parameters for QueryRef #019: Delete JWT
+    // Use typed parameter format: {"STRING": {"TOKENHASH": "value"}}
+    // QueryRef #019 expects :TOKENHASH parameter
     json_t* params = json_object();
-    json_object_set_new(params, "jwt_hash", json_string(jwt_hash));
+    json_t* string_params = json_object();
+    
+    json_object_set_new(string_params, "TOKENHASH", json_string(jwt_hash));
+    json_object_set_new(params, "STRING", string_params);
 
     // Execute query
     QueryResult* result = execute_auth_query(19, database, params);
@@ -479,8 +498,14 @@ bool is_token_revoked(const char* token_hash, const char* database) {
     if (!token_hash || !database) return true; // Assume revoked if invalid
 
     // Create parameters for QueryRef #018: Validate JWT
+    // Use typed parameter format: {"STRING": {"TOKENHASH": "value", "IPADDRESS": "value"}}
+    // QueryRef #018 expects :TOKENHASH and :IPADDRESS parameters
     json_t* params = json_object();
-    json_object_set_new(params, "token_hash", json_string(token_hash));
+    json_t* string_params = json_object();
+    
+    json_object_set_new(string_params, "TOKENHASH", json_string(token_hash));
+    // IPADDRESS will be provided by merge_database_parameters from connection config
+    json_object_set_new(params, "STRING", string_params);
 
     // Execute query
     QueryResult* result = execute_auth_query(18, database, params);

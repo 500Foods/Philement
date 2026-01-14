@@ -156,11 +156,11 @@ bool verify_password(const char* password, const char* stored_hash, int account_
 // JWT functions
 char* generate_jwt(account_info_t* account, system_info_t* system,
                   const char* client_ip, const char* tz, const char* database, time_t issued_at);
-void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, const char* database);
+void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database);
 jwt_validation_result_t validate_jwt(const char* token, const char* database);
 char* generate_new_jwt(jwt_claims_t* old_claims);
 void update_jwt_storage(int account_id, const char* old_jwt_hash,
-                       const char* new_jwt_hash, time_t new_expires, const char* database);
+                        const char* new_jwt_hash, time_t new_expires, int system_id, int app_id, const char* database);
 void delete_jwt_from_storage(const char* jwt_hash, const char* database);
 
 // Password functions
@@ -182,14 +182,7 @@ jwt_validation_result_t validate_jwt_for_logout(const char* token, const char* d
 // Database query wrapper functions
 QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params);
 
-int create_account_record(const char* username, const char* email,
-                          const char* hashed_password, const char* full_name, const char* database);
-
-// JWT storage functions
-void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, const char* database);
-void update_jwt_storage(int account_id, const char* old_jwt_hash,
-                        const char* new_jwt_hash, time_t new_expires, const char* database);
-void delete_jwt_from_storage(const char* jwt_hash, const char* database);
+// JWT storage functions (is_token_revoked is not a duplicate)
 bool is_token_revoked(const char* token_hash, const char* database);
 
 // Rate limiting and security functions

@@ -68,47 +68,54 @@ enum MHD_Result handle_post_auth_renew(
     
     log_this(SR_AUTH, "Handling auth/renew endpoint request", LOG_LEVEL_DEBUG, 0);
     
-    // For POST requests, require a body
-    if (buffer->http_method == 'P') {
-        if (!buffer->data || buffer->size == 0) {
-            log_this(SR_AUTH, "Empty request body for renew", LOG_LEVEL_ERROR, 0);
-            return api_send_error_and_cleanup(connection, con_cls,
-                "Request body is required", MHD_HTTP_BAD_REQUEST);
-        }
-        
-        // Parse the JSON body
-        request = api_parse_json_body(buffer);
-        if (!request) {
-            return api_send_error_and_cleanup(connection, con_cls,
-                "Invalid JSON in request body", MHD_HTTP_BAD_REQUEST);
-        }
-    } else {
-        // GET request - not supported for renew
-        log_this(SR_AUTH, "GET request not supported for renew endpoint", LOG_LEVEL_ERROR, 0);
-        return api_send_error_and_cleanup(connection, con_cls,
-            "Method not allowed - use POST", MHD_HTTP_METHOD_NOT_ALLOWED);
-    }
-    
-    // Free the buffer now that we've parsed the data
-    api_free_post_buffer(con_cls);
-    
-    // Step 1: Parse renew request - extract token and database from JSON
-    token = json_string_value(json_object_get(request, "token"));
-    database = json_string_value(json_object_get(request, "database"));
-    
-    // Validate that required parameters are present
-    if (!token || !database) {
-        log_this(SR_AUTH, "Missing required parameters in renew request", LOG_LEVEL_ERROR, 0);
-        json_decref(request);
+    // Step 1: Extract JWT token from Authorization header
+    const char* auth_header = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");
+    if (!auth_header) {
+        log_this(SR_AUTH, "Missing Authorization header in renew request", LOG_LEVEL_ERROR, 0);
         response = json_object();
         json_object_set_new(response, "success", json_false());
-        json_object_set_new(response, "error", json_string("Missing required parameters: token, database"));
-        return api_send_json_response(connection, response, MHD_HTTP_BAD_REQUEST);
+        json_object_set_new(response, "error", json_string("Missing Authorization header"));
+        return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
     }
     
-    log_this(SR_AUTH, "Renew request received with token", LOG_LEVEL_DEBUG, 0);
+    // Extract Bearer token from "Authorization: Bearer <token>" header
+    const char* bearer_prefix = "Bearer ";
+    size_t prefix_len = strlen(bearer_prefix);
+    if (strncmp(auth_header, bearer_prefix, prefix_len) != 0) {
+        log_this(SR_AUTH, "Invalid Authorization header format in renew request", LOG_LEVEL_ERROR, 0);
+        response = json_object();
+        json_object_set_new(response, "success", json_false());
+        json_object_set_new(response, "error", json_string("Invalid Authorization header format (expected: Bearer <token>)"));
+        return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
+    }
     
-    // Step 2: Validate JWT token
+    token = auth_header + prefix_len;  // Skip "Bearer " prefix
+    
+    if (!token || strlen(token) == 0) {
+        log_this(SR_AUTH, "Empty token in Authorization header", LOG_LEVEL_ERROR, 0);
+        response = json_object();
+        json_object_set_new(response, "success", json_false());
+        json_object_set_new(response, "error", json_string("Empty token in Authorization header"));
+        return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
+    }
+    
+    log_this(SR_AUTH, "Authorization header present and valid format for auth/renew", LOG_LEVEL_DEBUG, 0);
+    
+    // Step 2: Parse optional database from request body (if provided)
+    // Otherwise will extract from JWT claims
+    if (buffer->http_method == 'P' && buffer->data && buffer->size > 0) {
+        request = api_parse_json_body(buffer);
+        if (request) {
+            database = json_string_value(json_object_get(request, "database"));
+        }
+    }
+    
+    // Free the buffer now that we've parsed any optional data
+    api_free_post_buffer(con_cls);
+    
+    log_this(SR_AUTH, "Renew request received with token from Authorization header", LOG_LEVEL_DEBUG, 0);
+    
+    // Step 3: Validate JWT token (pass NULL for database initially, will be extracted from token claims)
     jwt_validation_result_t validation = validate_jwt_token(token, database);
     if (!validation.valid) {
         const char* error_msg = "Invalid or expired token";
@@ -149,23 +156,39 @@ enum MHD_Result handle_post_auth_renew(
     // Check that claims were parsed successfully
     if (!validation.claims) {
         log_this(SR_AUTH, "JWT validation succeeded but claims are NULL", LOG_LEVEL_ERROR, 0);
-        json_decref(request);
+        if (request) json_decref(request);
         response = json_object();
         json_object_set_new(response, "success", json_false());
         json_object_set_new(response, "error", json_string("Failed to parse token claims"));
         return api_send_json_response(connection, response, MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
     
+    // Extract database from token claims if not provided in request body
+    if (!database && validation.claims->database) {
+        database = validation.claims->database;
+        log_this(SR_AUTH, "Using database from JWT claims: %s", LOG_LEVEL_DEBUG, 1, database);
+    }
+    
+    if (!database) {
+        log_this(SR_AUTH, "No database specified in request or JWT claims", LOG_LEVEL_ERROR, 0);
+        free_jwt_validation_result(&validation);
+        if (request) json_decref(request);
+        response = json_object();
+        json_object_set_new(response, "success", json_false());
+        json_object_set_new(response, "error", json_string("Database not specified"));
+        return api_send_json_response(connection, response, MHD_HTTP_BAD_REQUEST);
+    }
+    
     log_this(SR_AUTH, "JWT token validated successfully for user_id=%d", 
              LOG_LEVEL_DEBUG, 1, validation.claims->user_id);
     
-    // Step 3: Generate new JWT token with updated timestamps
+    // Step 4: Generate new JWT token with updated timestamps
     char* new_token = generate_new_jwt(validation.claims);
     if (!new_token) {
         log_this(SR_AUTH, "Failed to generate new JWT for user_id=%d", 
                  LOG_LEVEL_ERROR, 1, validation.claims->user_id);
         free_jwt_validation_result(&validation);
-        json_decref(request);
+        if (request) json_decref(request);
         response = json_object();
         json_object_set_new(response, "success", json_false());
         json_object_set_new(response, "error", json_string("Failed to generate new token"));
@@ -183,7 +206,7 @@ enum MHD_Result handle_post_auth_renew(
                  LOG_LEVEL_ERROR, 1, validation.claims->user_id);
         free(new_token);
         free_jwt_validation_result(&validation);
-        json_decref(request);
+        if (request) json_decref(request);
         response = json_object();
         json_object_set_new(response, "success", json_false());
         json_object_set_new(response, "error", json_string("Failed to update token storage"));
@@ -198,7 +221,7 @@ enum MHD_Result handle_post_auth_renew(
         free(old_jwt_hash);
         free(new_token);
         free_jwt_validation_result(&validation);
-        json_decref(request);
+        if (request) json_decref(request);
         response = json_object();
         json_object_set_new(response, "success", json_false());
         json_object_set_new(response, "error", json_string("Failed to update token storage"));
@@ -210,7 +233,8 @@ enum MHD_Result handle_post_auth_renew(
     time_t new_expires_at = now + JWT_LIFETIME;
     
     // Update JWT storage in database
-    update_jwt_storage(validation.claims->user_id, old_jwt_hash, new_jwt_hash, new_expires_at, database);
+    update_jwt_storage(validation.claims->user_id, old_jwt_hash, new_jwt_hash, new_expires_at,
+                       validation.claims->system_id, validation.claims->app_id, database);
     
     // Clean up hashes after database update
     free(old_jwt_hash);
@@ -237,7 +261,7 @@ enum MHD_Result handle_post_auth_renew(
     // Cleanup
     free(new_token);
     free_jwt_validation_result(&validation);
-    json_decref(request);
+    if (request) json_decref(request);
     
     // Return successful response
     return api_send_json_response(connection, response, MHD_HTTP_OK);
