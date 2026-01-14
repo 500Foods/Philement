@@ -53,6 +53,9 @@ return {
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
 
+    -- MySQL doesn't require FROM clause for SELECT without tables
+    DUMMY_TABLE = "",
+
     BASE64_START = "cast(FROM_BASE64(",
     BASE64_END = ") as char character set utf8mb4)",
 

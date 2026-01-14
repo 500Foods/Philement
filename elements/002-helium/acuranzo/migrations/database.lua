@@ -33,6 +33,7 @@ local database = {
         system_sql = 1,
         system_ddl = 2,
         reporting_sql = 3,
+        public = 10,
         forward_migration = 1000,
         reverse_migration = 1001,
         diagram_migration = 1002,
@@ -215,6 +216,7 @@ local database = {
 
         -- Lookup #28
         cfg.TYPE_SQL = self.query_types.system_sql
+        cfg.TYPE_PUBLIC = self.query_types.public
         cfg.TYPE_FORWARD_MIGRATION = self.query_types.forward_migration
         cfg.TYPE_REVERSE_MIGRATION = self.query_types.reverse_migration
         cfg.TYPE_DIAGRAM_MIGRATION = self.query_types.diagram_migration

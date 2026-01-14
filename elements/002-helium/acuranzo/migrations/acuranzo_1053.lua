@@ -82,6 +82,7 @@ table.insert(queries,{sql=[[
                 (${LOOKUP_ID},    1, 1, 'SQL - System',                 0,  1, '', '', ${JIS}[==[{"icon":"<i class='fa fa-code fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID},    2, 1, 'DDL - APP',                    0,  2, '', '', ${JIS}[==[{"icon":"<i class='fa fa-code fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID},    3, 1, 'SQL - Reporting',              0,  3, '', '', ${JIS}[==[{"icon":"<i class='fa fa-code fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},   10, 1, 'SQL - Public',                 0,  3, '', '', ${JIS}[==[{"icon":"<i class='fa fa-code fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID},  101, 1, 'AI Prompts - Auditor',         0,  4, '', '', ${JIS}[==[{"icon":"<i class='fa fa-robot fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID},  102, 1, 'AI Prompts - Validation',      0,  5, '', '', ${JIS}[==[{"icon":"<i class='fa fa-robot fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID},  103, 1, 'AI Prompts - Playground',      0,  6, '', '', ${JIS}[==[{"icon":"<i class='fa fa-robot fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),

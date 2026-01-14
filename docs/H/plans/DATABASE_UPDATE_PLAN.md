@@ -6,6 +6,8 @@
 
 [`tests/test_40_auth.sh`](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh) tests user authentication across all four database engines (PostgreSQL, MySQL, SQLite, DB2). Currently, DB2 has full parameter support with typed parameter binding, while the other three engines lack this capability.
 
+The index to the queries we're running can be found in /elements/002-helium/acuranzo/README.md
+
 This plan:
 
 1. **First**: Extends DB2's parameter type support to include TEXT, DATE, TIME, and DATETIME
@@ -617,17 +619,46 @@ DB2 SQL types for new parameters:
 
 - [x] **1.3** Auth service implementation already uses typed parameters - No changes needed ✅
 
-- [x] **1.4** Run Test 40: `./tests/test_40_auth.sh` to verify all four engines pass ✅ (16/28 tests passed - Parameter binding working correctly for login/invalid credentials. Failures in renew/logout/register are pre-existing test script issues with token management, not parameter binding issues)
+- [x] **1.4** Run Test 40: `./tests/test_40_auth.sh` to verify all four engines pass ✅ (28/28 tests passed - ALL auth endpoints working perfectly across all four engines! 2026-01-14)
 
 #### Step 2: Comprehensive Testing
 
 - [x] **2.1** Run `mka` - Build all targets and verify no regressions ✅ (Fixed 2 cppcheck issues in [`query_helpers.c`](/elements/001-hydrogen/hydrogen/src/database/mysql/query_helpers.c) - redundant NULL checks on lines 202 and 399. Build now passes cleanly.)
 
-- [ ] **2.2** Run Test 10: `./tests/test_10_unity.sh` - Verify all Unity tests pass
+- [x] **2.2** Run Test 10: `./tests/test_10_unity.sh` - Verify all Unity tests pass ✅ (All tests passing 2026-01-14)
 
-- [ ] **2.3** Run Test 40: `./tests/test_40_auth.sh` - Verify auth endpoints work across all engines
+- [x] **2.3** Run Test 40: `./tests/test_40_auth.sh` - Verify auth endpoints work across all engines ✅ (28/28 tests passed)
 
-- [ ] **2.4** Run Test 41: `./tests/test_41_conduit.sh` - Verify conduit query endpoint
+- [ ] **2.4** Conduit Service Endpoints - Verify query execution with typed parameters
+
+  **Background**: Conduit endpoints provide direct query execution using `query_ref` identifiers. Auth endpoints (Test 40) already use conduit queries internally with typed parameters. These endpoints provide external API access to the same functionality.
+
+  **Four Endpoint Types**:
+  
+  **Public Endpoints (No JWT Required)**:
+  - `/api/conduit/query` - Execute single query by query_ref
+    - Requires `database` parameter in request body
+    - Returns single result set
+  - `/api/conduit/queries` - Execute multiple queries by query_ref array
+    - Requires `database` parameter in request body
+    - Returns array of result sets
+  
+  **Authenticated Endpoints (JWT Required)**:
+  - `/api/conduit/auth_query` - Execute single query with JWT authentication
+    - Database extracted from JWT claims (no `database` param needed)
+    - Returns single result set
+  - `/api/conduit/auth_queries` - Execute multiple queries with JWT authentication
+    - Database extracted from JWT claims (no `database` param needed)
+    - Returns array of result sets
+  
+  **Implementation Status**: All endpoints use typed parameters (INTEGER, STRING, BOOLEAN, FLOAT, TEXT, DATE, TIME, DATETIME, TIMESTAMP) via `execute_conduit_query()` which calls engine-specific query execution with parameter binding.
+
+  - [ ] **2.4.1** Verify `/api/conduit/query` endpoint implementation exists and uses typed parameters
+  - [ ] **2.4.2** Verify `/api/conduit/queries` endpoint implementation exists and uses typed parameters
+  - [ ] **2.4.3** Verify `/api/conduit/auth_query` endpoint implementation exists with JWT extraction
+  - [ ] **2.4.4** Verify `/api/conduit/auth_queries` endpoint implementation exists with JWT extraction
+  - [ ] **2.4.5** Create/update tests in Test 41 for all four endpoints
+  - [ ] **2.4.6** Run Test 41: `./tests/test_41_conduit.sh` - Verify all conduit endpoints work
 
 - [ ] **2.5** Run Test 89: `./tests/test_89_coverage.sh` - Verify code coverage improvements
 
