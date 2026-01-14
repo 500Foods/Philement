@@ -330,12 +330,14 @@ bool verify_password(const char* password, const char* stored_hash, int account_
 bool check_username_availability(const char* username, const char* database) {
     if (!username || !database) return false;
 
-    // Create parameters for QueryRef #050: Check Username Availability
-    // Use typed parameter format: {"STRING": {"username": "value"}}
+    // Create parameters for QueryRef #050: Check Username/Email Availability
+    // Use typed parameter format: {"STRING": {"USERNAME": "value", "EMAIL": "value"}}
+    // Parameter names must match SQL placeholders :USERNAME and :EMAIL
     json_t* params = json_object();
     json_t* string_params = json_object();
     
-    json_object_set_new(string_params, "username", json_string(username));
+    json_object_set_new(string_params, "USERNAME", json_string(username));
+    json_object_set_new(string_params, "EMAIL", json_string("")); // Empty email for username-only check
     json_object_set_new(params, "STRING", string_params);
 
     // Execute query
@@ -347,7 +349,23 @@ bool check_username_availability(const char* username, const char* database) {
         return false;
     }
 
-    bool available = result->success && result->row_count == 0;
+    // Query returns username_count and email_count
+    // Username is available if username_count is 0
+    bool available = false;
+    if (result->success && result->data_json) {
+        json_t* result_json = json_loads(result->data_json, 0, NULL);
+        if (result_json) {
+            json_t* row = json_array_get(result_json, 0);
+            if (row) {
+                json_t* username_count = json_object_get(row, "username_count");
+                if (!username_count) username_count = json_object_get(row, "USERNAME_COUNT"); // DB2 uppercase
+                if (username_count && json_integer_value(username_count) == 0) {
+                    available = true;
+                }
+            }
+            json_decref(result_json);
+        }
+    }
 
     // Cleanup
     free_query_result(result);
@@ -363,18 +381,43 @@ int create_account_record(const char* username, const char* email,
     if (!username || !email || !hashed_password || !database) return -1;
 
     // Create parameters for QueryRef #051: Create Account
-    // Use typed parameter format: {"STRING": {...}}
+    // QueryRef #051 expects: USERNAME, FIRST_NAME, LAST_NAME, PASSWORD_HASH, SUMMARY
+    // Note: Email is NOT stored by QueryRef #051 - it goes into account_contacts separately
     json_t* params = json_object();
     json_t* string_params = json_object();
     
-    json_object_set_new(string_params, "username", json_string(username));
-    json_object_set_new(string_params, "email", json_string(email));
-    json_object_set_new(string_params, "password_hash", json_string(hashed_password));
-    if (full_name) {
-        json_object_set_new(string_params, "full_name", json_string(full_name));
+    // Split full_name into first and last name (simple split on first space)
+    char* first_name = NULL;
+    char* last_name = NULL;
+    if (full_name && strlen(full_name) > 0) {
+        const char* space = strchr(full_name, ' ');
+        if (space) {
+            // Has space - split into first and last
+            size_t first_len = (size_t)(space - full_name);
+            first_name = strndup(full_name, first_len);
+            last_name = strdup(space + 1); // Skip the space
+        } else {
+            // No space - use entire string as first name
+            first_name = strdup(full_name);
+            last_name = strdup(""); // Empty last name
+        }
+    } else {
+        // No full_name provided - use empty strings
+        first_name = strdup("");
+        last_name = strdup("");
     }
     
+    json_object_set_new(string_params, "USERNAME", json_string(username));
+    json_object_set_new(string_params, "FIRST_NAME", json_string(first_name));
+    json_object_set_new(string_params, "LAST_NAME", json_string(last_name));
+    json_object_set_new(string_params, "PASSWORD_HASH", json_string(hashed_password));
+    json_object_set_new(string_params, "SUMMARY", json_string("")); // Empty summary for now
+    
     json_object_set_new(params, "STRING", string_params);
+
+    // Cleanup name strings
+    free(first_name);
+    free(last_name);
 
     // Execute query
     QueryResult* result = execute_auth_query(51, database, params);
@@ -388,20 +431,32 @@ int create_account_record(const char* username, const char* email,
     }
 
     // Parse result to get new account ID
+    // QueryRef #051 returns array format: [{"account_id": <value>}]
     int account_id = -1;
     if (result->data_json) {
         json_t* result_json = json_loads(result->data_json, 0, NULL);
-        if (result_json) {
-            json_t* id_json = json_object_get(result_json, "id");
-            if (id_json) {
-                account_id = (int)json_integer_value(id_json);
+        if (result_json && json_is_array(result_json)) {
+            // Get first row from array
+            json_t* row = json_array_get(result_json, 0);
+            if (row) {
+                // Extract account_id field (with DB2 uppercase fallback)
+                json_t* id_json = json_object_get(row, "account_id");
+                if (!id_json) id_json = json_object_get(row, "ACCOUNT_ID"); // DB2 uppercase
+                if (id_json) {
+                    account_id = (int)json_integer_value(id_json);
+                }
             }
+        }
+        if (result_json) {
             json_decref(result_json);
         }
     }
 
     // Cleanup
     free_query_result(result);
+
+    // TODO: Store email in account_contacts using QueryRef #052
+    (void)email; // Suppress unused parameter warning for now
 
     return account_id;
 }

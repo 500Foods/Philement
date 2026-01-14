@@ -59,6 +59,7 @@ table.insert(queries,{sql=[[
                             FROM ${SCHEMA}account_contacts
                             WHERE LOWER(contact) = LOWER(:EMAIL)
                         ) as email_count
+                    ${DUMMY_TABLE}
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[

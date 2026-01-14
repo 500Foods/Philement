@@ -48,28 +48,42 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-
-                    INSERT INTO ${SCHEMA}accounts (
-                        name,
-                        first_name,
-                        last_name,
-                        password_hash,
-                        status_a16,
-                        iana_timezone_a17,
-                        summary,
-                        collection
-                    )
-                    VALUES (
-                        :USERNAME,
-                        :FIRST_NAME,
-                        :LAST_NAME,
-                        :PASSWORD_HASH,
-                        1,
-                        1,
-                        :SUMMARY,
-                        '{}'
-                    )
-                    -- RETURNING account_id
+                    ${INSERT_KEY_START} account_id ${INSERT_KEY_END}
+                        INSERT INTO ${SCHEMA}accounts (
+                            account_id,
+                            name,
+                            first_name,
+                            last_name,
+                            password_hash,
+                            status_a16,
+                            iana_timezone_a17,
+                            summary,
+                            collection,
+                            ${COMMON_FIELDS}
+                        )
+                        WITH next_account_id AS (
+                            SELECT COALESCE(MAX(account_id), 0) + 1 AS new_account_id
+                            FROM ${SCHEMA}accounts
+                        )
+                        SELECT
+                            new_account_id,
+                            :USERNAME,
+                            :FIRST_NAME,
+                            :LAST_NAME,
+                            :PASSWORD_HASH,
+                            1,
+                            1,
+                            :SUMMARY,
+                            '{}',
+                            '2025-01-01 00:00:00',
+                            '2035-01-01 00:00:00',
+                            0,
+                            ${NOW},
+                            0,
+                            ${NOW}
+                        FROM next_account_id
+                    ${INSERT_KEY_RETURN} account_id
+                    ;
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[

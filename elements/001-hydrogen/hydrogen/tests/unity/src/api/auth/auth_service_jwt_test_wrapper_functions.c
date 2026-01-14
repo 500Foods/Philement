@@ -153,25 +153,32 @@ void test_generate_new_jwt_null_claims(void) {
     TEST_ASSERT_NULL(new_jwt);
 }
 
-// Test that generate_new_jwt returns NULL (stub implementation)
+// Test that generate_new_jwt generates a new JWT token successfully
 void test_generate_new_jwt_returns_null_stub(void) {
-    // Create test claims
+    // Create test claims - using correct field names from jwt_claims_t
     jwt_claims_t claims = {0};
     claims.user_id = 123;
     claims.system_id = 456;
     claims.app_id = 789;
     claims.username = strdup("testuser");
     claims.email = strdup("test@example.com");
+    claims.ip = strdup("192.168.1.1");      // Field is 'ip', not 'ip_address'
+    claims.tz = strdup("UTC");               // Field is 'tz', not 'timezone'
+    claims.database = strdup("Acuranzo");
     
-    // Call function (currently a stub)
+    // Call function - now implements full JWT generation
     char* new_jwt = generate_new_jwt(&claims);
     
-    // Should return NULL (stub implementation)
-    TEST_ASSERT_NULL(new_jwt);
+    // Should return a valid JWT token (not NULL)
+    TEST_ASSERT_NOT_NULL(new_jwt);
     
     // Cleanup
+    free(new_jwt);
     free(claims.username);
     free(claims.email);
+    free(claims.ip);
+    free(claims.tz);
+    free(claims.database);
 }
 
 int main(void) {

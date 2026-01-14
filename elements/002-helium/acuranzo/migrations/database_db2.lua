@@ -58,6 +58,9 @@ return {
     VARCHAR_128 = "VARCHAR(128)",
     VARCHAR_500 = "VARCHAR(500)",
 
+    -- DB2 requires FROM clause for SELECT without tables
+    DUMMY_TABLE = "FROM SYSIBM.SYSDUMMY1",
+
     BASE64_START = "${SCHEMA}BASE64DECODE(",
     BASE64_END = ")",
 

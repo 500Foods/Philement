@@ -55,6 +55,9 @@ return {
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
 
+    -- SQLite doesn't require FROM clause for SELECT without tables
+    DUMMY_TABLE = "",
+
     BASE64_START = "CRYPTO_DECODE(",
     BASE64_END = ",'base64')",
 

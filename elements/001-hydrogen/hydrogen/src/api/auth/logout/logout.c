@@ -93,6 +93,7 @@ enum MHD_Result handle_post_auth_logout(
     
     token = auth_header + prefix_len; // Skip "Bearer " prefix
     
+    // cppcheck-suppress knownConditionTrueFalse - token cannot be NULL here but we check strlen for empty string
     if (!token || strlen(token) == 0) {
         log_this(SR_AUTH, "Empty token in Authorization header", LOG_LEVEL_ERROR, 0);
         response = json_object();
@@ -228,3 +229,4 @@ enum MHD_Result handle_post_auth_logout(
     // Return successful response
     return api_send_json_response(connection, response, MHD_HTTP_OK);
 }
+
