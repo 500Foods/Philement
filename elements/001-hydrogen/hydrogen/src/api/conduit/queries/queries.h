@@ -30,6 +30,9 @@
 #include <src/database/database_queue_select.h>
 #include <src/database/dbqueue/dbqueue.h>
 
+// Forward declaration for internal function (used for testing)
+json_t* execute_single_query(const char *database, json_t *query_obj);
+
 /**
  * @brief Handle GET/POST /api/conduit/queries requests
  *
