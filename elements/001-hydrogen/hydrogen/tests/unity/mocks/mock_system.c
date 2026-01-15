@@ -6,6 +6,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
@@ -61,6 +62,7 @@ typedef long ssize_t;
 #undef kill
 #undef close
 #undef gettimeofday
+#undef asprintf
 
 // Function prototypes - these are defined in the header when USE_MOCK_SYSTEM is set
 void *mock_malloc(size_t size);
@@ -88,6 +90,7 @@ int mock_kill(pid_t pid, int sig);
 int mock_close(int fd);
 int mock_sem_init(sem_t *sem, int pshared, unsigned int value);
 int mock_gettimeofday(struct timeval *tv, void *tz);
+int mock_asprintf(char **strp, const char *fmt, ...);
 void mock_system_set_malloc_failure(int should_fail);
 void mock_system_set_calloc_failure(int should_fail);
 void mock_system_set_realloc_failure(int should_fail);
@@ -114,6 +117,7 @@ void mock_system_set_waitpid_status(int status);
 void mock_system_set_kill_failure(int should_fail);
 void mock_system_set_close_failure(int should_fail);
 void mock_system_set_sem_init_failure(int should_fail);
+void mock_system_set_asprintf_failure(int should_fail);
 void mock_system_set_fork_failure(int should_fail);
 void mock_system_set_read_eagain(int should_return_eagain);
 void mock_system_reset_all(void);
@@ -155,6 +159,7 @@ int mock_waitpid_status = 0;
 int mock_kill_should_fail = 0;
 int mock_close_should_fail = 0;
 int mock_sem_init_should_fail = 0;
+int mock_asprintf_should_fail = 0;
 
 // Mock implementation of malloc
 void *mock_malloc(size_t size) {
@@ -464,6 +469,7 @@ void mock_system_reset_all(void) {
     mock_kill_should_fail = 0;
     mock_close_should_fail = 0;
     mock_sem_init_should_fail = 0;
+    mock_asprintf_should_fail = 0;
 }
 
 // Mock implementation of dlopen
@@ -634,4 +640,24 @@ int mock_sem_init(sem_t *sem, int pshared, unsigned int value) {
     }
 
     return 0;
+}
+
+// Mock implementation of asprintf
+int mock_asprintf(char **strp, const char *fmt, ...) {
+    if (mock_asprintf_should_fail) {
+        return -1;
+    }
+
+    // Use the real asprintf function
+    va_list args;
+    va_start(args, fmt);
+    int result = vasprintf(strp, fmt, args);
+    va_end(args);
+
+    return result;
+}
+
+// Mock control function for asprintf
+void mock_system_set_asprintf_failure(int should_fail) {
+    mock_asprintf_should_fail = should_fail;
 }
