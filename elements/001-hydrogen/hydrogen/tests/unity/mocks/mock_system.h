@@ -49,6 +49,7 @@
 #define select mock_select
 #define sem_init mock_sem_init
 #define gettimeofday mock_gettimeofday
+#define asprintf mock_asprintf
 
 // Always declare mock function prototypes for the .c file
 void *mock_malloc(size_t size);
@@ -77,6 +78,7 @@ int mock_close(int fd);
 int mock_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
 int mock_sem_init(sem_t *sem, int pshared, unsigned int value);
 int mock_gettimeofday(struct timeval *tv, void *tz);
+int mock_asprintf(char **strp, const char *fmt, ...);
 
 // Mock control functions for tests - always available
 void mock_system_set_malloc_failure(int should_fail);
@@ -110,6 +112,7 @@ void mock_system_set_select_result(int result);
 void mock_system_set_sem_init_failure(int should_fail);
 void mock_system_set_gettimeofday_time(time_t sec, suseconds_t usec);
 void mock_system_set_gettimeofday_failure(int should_fail);
+void mock_system_set_asprintf_failure(int should_fail);
 void mock_system_reset_all(void);
 
 // Extern declarations for global mock state variables (defined in mock_system.c)
@@ -146,6 +149,7 @@ extern int mock_sem_init_should_fail;
 extern time_t mock_gettimeofday_sec;
 extern suseconds_t mock_gettimeofday_usec;
 extern int mock_gettimeofday_should_fail;
+extern int mock_asprintf_should_fail;
 
 #endif // USE_MOCK_SYSTEM
 

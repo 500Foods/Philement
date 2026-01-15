@@ -103,11 +103,17 @@ char* generate_jwt(account_info_t* account, system_info_t* system,
         return NULL;
     }
 
+    if (!config->hmac_secret) {
+        log_this("AUTH", "JWT configuration missing secret", LOG_LEVEL_ERROR, 0);
+        free_jwt_config(config);
+        return NULL;
+    }
+
     // Create JWT header
     char* header_json = NULL;
-    asprintf(&header_json, "{\"alg\":\"%s\",\"typ\":\"%s\"}",
-             config->use_rsa ? "RS256" : "HS256", JWT_TYPE);
-    if (!header_json) {
+    int ret = asprintf(&header_json, "{\"alg\":\"%s\",\"typ\":\"%s\"}",
+                       config->use_rsa ? "RS256" : "HS256", JWT_TYPE);
+    if (ret == -1) {
         log_this("AUTH", "Failed to create JWT header", LOG_LEVEL_ERROR, 0);
         free_jwt_config(config);
         return NULL;
@@ -128,18 +134,18 @@ char* generate_jwt(account_info_t* account, system_info_t* system,
     int tzoffset = calculate_timezone_offset(tz);
     
     char* payload_json = NULL;
-    asprintf(&payload_json,
-             "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\"}",
-             account->id, system->app_id, exp, now, now, jti,
-             account->id, system->system_id, system->app_id,
-             account->username ? account->username : "",
-             account->email ? account->email : "",
-             account->roles ? account->roles : "",
-             client_ip, tz, tzoffset, database);
+    ret = asprintf(&payload_json,
+                   "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\"}",
+                   account->id, system->app_id, exp, now, now, jti,
+                   account->id, system->system_id, system->app_id,
+                   account->username ? account->username : "",
+                   account->email ? account->email : "",
+                   account->roles ? account->roles : "",
+                   client_ip, tz, tzoffset, database);
 
     free(jti);
 
-    if (!payload_json) {
+    if (ret == -1) {
         log_this("AUTH", "Failed to create JWT payload", LOG_LEVEL_ERROR, 0);
         free(header_json);
         free_jwt_config(config);
@@ -163,8 +169,8 @@ char* generate_jwt(account_info_t* account, system_info_t* system,
 
     // Create signing input
     char* signing_input = NULL;
-    asprintf(&signing_input, "%s.%s", header_b64, payload_b64);
-    if (!signing_input) {
+    ret = asprintf(&signing_input, "%s.%s", header_b64, payload_b64);
+    if (ret == -1) {
         log_this("AUTH", "Failed to create signing input", LOG_LEVEL_ERROR, 0);
         free(header_b64);
         free(payload_b64);
@@ -199,7 +205,7 @@ char* generate_jwt(account_info_t* account, system_info_t* system,
 
     // Create final JWT
     char* jwt = NULL;
-    asprintf(&jwt, "%s.%s.%s", header_b64, payload_b64, signature_b64);
+    ret = asprintf(&jwt, "%s.%s.%s", header_b64, payload_b64, signature_b64);
 
     free(header_b64);
     free(payload_b64);
@@ -207,7 +213,7 @@ char* generate_jwt(account_info_t* account, system_info_t* system,
     free(signing_input);
     free_jwt_config(config);
 
-    if (!jwt) {
+    if (ret == -1) {
         log_this("AUTH", "Failed to create final JWT", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
@@ -327,8 +333,8 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
     }
 
     char* signing_input = NULL;
-    asprintf(&signing_input, "%s.%s", header_b64, payload_b64);
-    if (!signing_input) {
+    int ret = asprintf(&signing_input, "%s.%s", header_b64, payload_b64);
+    if (ret == -1) {
         free_jwt_config(config);
         free(payload_decoded);
         free(token_copy);
@@ -483,11 +489,17 @@ char* generate_new_jwt(jwt_claims_t* old_claims) {
         return NULL;
     }
 
+    if (!config->hmac_secret) {
+        log_this("AUTH", "JWT configuration missing secret for renewal", LOG_LEVEL_ERROR, 0);
+        free_jwt_config(config);
+        return NULL;
+    }
+
     // Create JWT header
     char* header_json = NULL;
-    asprintf(&header_json, "{\"alg\":\"%s\",\"typ\":\"%s\"}",
-             config->use_rsa ? "RS256" : "HS256", JWT_TYPE);
-    if (!header_json) {
+    int ret = asprintf(&header_json, "{\"alg\":\"%s\",\"typ\":\"%s\"}",
+                       config->use_rsa ? "RS256" : "HS256", JWT_TYPE);
+    if (ret == -1) {
         log_this("AUTH", "Failed to create JWT header for renewal", LOG_LEVEL_ERROR, 0);
         free_jwt_config(config);
         return NULL;
@@ -506,21 +518,21 @@ char* generate_new_jwt(jwt_claims_t* old_claims) {
 
     // Create JWT payload preserving original claims but with new timestamps
     char* payload_json = NULL;
-    asprintf(&payload_json,
-             "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\"}",
-             old_claims->user_id, old_claims->app_id, exp, now, now, jti,
-             old_claims->user_id, old_claims->system_id, old_claims->app_id,
-             old_claims->username ? old_claims->username : "",
-             old_claims->email ? old_claims->email : "",
-             old_claims->roles ? old_claims->roles : "",
-             old_claims->ip ? old_claims->ip : "",
-             old_claims->tz ? old_claims->tz : "",
-             old_claims->tzoffset,
-             old_claims->database ? old_claims->database : "");
+    ret = asprintf(&payload_json,
+                   "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\"}",
+                   old_claims->user_id, old_claims->app_id, exp, now, now, jti,
+                   old_claims->user_id, old_claims->system_id, old_claims->app_id,
+                   old_claims->username ? old_claims->username : "",
+                   old_claims->email ? old_claims->email : "",
+                   old_claims->roles ? old_claims->roles : "",
+                   old_claims->ip ? old_claims->ip : "",
+                   old_claims->tz ? old_claims->tz : "",
+                   old_claims->tzoffset,
+                   old_claims->database ? old_claims->database : "");
 
     free(jti);
 
-    if (!payload_json) {
+    if (ret == -1) {
         log_this("AUTH", "Failed to create JWT payload for renewal", LOG_LEVEL_ERROR, 0);
         free(header_json);
         free_jwt_config(config);
@@ -544,8 +556,8 @@ char* generate_new_jwt(jwt_claims_t* old_claims) {
 
     // Create signing input
     char* signing_input = NULL;
-    asprintf(&signing_input, "%s.%s", header_b64, payload_b64);
-    if (!signing_input) {
+    ret = asprintf(&signing_input, "%s.%s", header_b64, payload_b64);
+    if (ret == -1) {
         log_this("AUTH", "Failed to create signing input for renewal", LOG_LEVEL_ERROR, 0);
         free(header_b64);
         free(payload_b64);
@@ -580,7 +592,7 @@ char* generate_new_jwt(jwt_claims_t* old_claims) {
 
     // Create final JWT
     char* jwt = NULL;
-    asprintf(&jwt, "%s.%s.%s", header_b64, payload_b64, signature_b64);
+    ret = asprintf(&jwt, "%s.%s.%s", header_b64, payload_b64, signature_b64);
 
     free(header_b64);
     free(payload_b64);
@@ -588,7 +600,7 @@ char* generate_new_jwt(jwt_claims_t* old_claims) {
     free(signing_input);
     free_jwt_config(config);
 
-    if (!jwt) {
+    if (ret == -1) {
         log_this("AUTH", "Failed to create final JWT for renewal", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
