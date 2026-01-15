@@ -32,6 +32,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_landing.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_network.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_crypto.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_threads.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_pthread.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libpq.c
@@ -76,7 +77,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     endif()
 
-    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, migration, bootstrap, conduit, launch, or queue source file to include mock headers
+    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, migration, bootstrap, conduit, launch, queue, or auth source file to include mock headers
     string(FIND "${SOURCE_FILE}" "websocket" IS_WEBSOCKET_SOURCE)
     string(FIND "${SOURCE_FILE}" "terminal" IS_TERMINAL_SOURCE)
     string(FIND "${SOURCE_FILE}" "mdns" IS_MDNS_SOURCE)
@@ -89,6 +90,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     string(FIND "${SOURCE_FILE}" "conduit" IS_CONDUIT_SOURCE)
     string(FIND "${SOURCE_FILE}" "launch" IS_LAUNCH_SOURCE)
     string(FIND "${SOURCE_FILE}" "queue" IS_QUEUE_SOURCE)
+    string(FIND "${SOURCE_FILE}" "auth" IS_AUTH_SOURCE)
     if(IS_WEBSOCKET_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_LIBWEBSOCKETS")
@@ -178,6 +180,16 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     elseif(IS_QUEUE_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SYSTEM")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.h")
+        set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
+        unset(MOCK_DEFINES_LIST)
+    elseif(IS_AUTH_SOURCE GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_CRYPTO")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SYSTEM")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_crypto.h")
         list(APPEND MOCK_DEFINES_LIST "-include")
         list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.h")
         set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
@@ -277,6 +289,7 @@ target_compile_options(unity_mocks PRIVATE
     -DUSE_MOCK_LIBWEBSOCKETS
     -DUSE_MOCK_TERMINAL_WEBSOCKET
     -DUSE_MOCK_SYSTEM
+    -DUSE_MOCK_CRYPTO
     -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks
     -I${UNITY_FRAMEWORK_DIR}/src
     ${JANSSON_CFLAGS}
@@ -323,7 +336,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(TEST_OUTPUT_DIR "${CMAKE_BINARY_DIR}/unity/src")
     endif()
 
-    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, database, conduit, launch, print, or webserver test to include mock headers
+    # Check if this is a websocket, terminal, mdns, postgresql, mysql, db2, sqlite, database, conduit, launch, print, webserver, or auth test to include mock headers
     string(FIND "${TEST_SOURCE}" "websocket" IS_WEBSOCKET_TEST)
     string(FIND "${TEST_SOURCE}" "terminal" IS_TERMINAL_TEST)
     string(FIND "${TEST_SOURCE}" "mdns" IS_MDNS_TEST)
@@ -336,6 +349,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     string(FIND "${TEST_SOURCE}" "launch" IS_LAUNCH_TEST)
     string(FIND "${TEST_SOURCE}" "print" IS_PRINT_TEST)
     string(FIND "${TEST_SOURCE}" "webserver" IS_WEBSERVER_TEST)
+    string(FIND "${TEST_SOURCE}" "auth" IS_AUTH_TEST)
     string(FIND "${TEST_SOURCE}" "terminal_shell_test_error_paths" IS_TERMINAL_ERROR_PATHS_TEST)
     string(FIND "${TEST_SOURCE}" "terminal_shell_test_mock_failures" IS_TERMINAL_MOCK_FAILURES_TEST)
     string(FIND "${TEST_SOURCE}" "mdns_server_init_test_error_paths" IS_MDNS_ERROR_PATHS_TEST)
@@ -412,6 +426,9 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     elseif(IS_WEBSERVER_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_WEBSERVER_CORE -DUSE_MOCK_LOGGING -DUSE_MOCK_LIBMICROHTTPD -DUSE_MOCK_SYSTEM -Dlog_this=mock_log_this")
+    elseif(IS_AUTH_TEST GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        set(MOCK_DEFINES "-DUSE_MOCK_CRYPTO -DUSE_MOCK_SYSTEM -DUSE_MOCK_LOGGING -DUSE_MOCK_LIBMICROHTTPD -Dlog_this=mock_log_this")
     else()
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LOGGING -DUSE_MOCK_LIBMICROHTTPD -DUSE_MOCK_SYSTEM -Dlog_this=mock_log_this")
