@@ -81,9 +81,9 @@ static enum MHD_Result validate_token_and_extract_database(
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
         MHD_add_response_header(response, "Content-Type", "application/json");
-        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
+        MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
         MHD_destroy_response(response);
-        return ret;
+        return MHD_NO;
     }
 
     // Extract database from JWT claims
@@ -100,9 +100,9 @@ static enum MHD_Result validate_token_and_extract_database(
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
         MHD_add_response_header(response, "Content-Type", "application/json");
-        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
+        MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
         MHD_destroy_response(response);
-        return ret;
+        return MHD_NO;
     }
 
     // Allocate and copy database name
@@ -120,9 +120,9 @@ static enum MHD_Result validate_token_and_extract_database(
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
         MHD_add_response_header(response, "Content-Type", "application/json");
-        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
+        MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
         MHD_destroy_response(response);
-        return ret;
+        return MHD_NO;
     }
 
     log_this(SR_AUTH, "validate_token_and_extract_database: JWT validated, database=%s", LOG_LEVEL_DEBUG, 1, *database);
@@ -172,9 +172,9 @@ static enum MHD_Result parse_auth_request(
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
         MHD_add_response_header(response, "Content-Type", "application/json");
-        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
+        MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
         MHD_destroy_response(response);
-        return ret;
+        return MHD_NO;
     }
 
     // Extract token field
@@ -192,9 +192,9 @@ static enum MHD_Result parse_auth_request(
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
         MHD_add_response_header(response, "Content-Type", "application/json");
-        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
+        MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
         MHD_destroy_response(response);
-        return ret;
+        return MHD_NO;
     }
 
     *token = strdup(json_string_value(token_json));
@@ -220,9 +220,9 @@ static enum MHD_Result parse_auth_request(
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
         MHD_add_response_header(response, "Content-Type", "application/json");
-        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
+        MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
         MHD_destroy_response(response);
-        return ret;
+        return MHD_NO;
     }
 
     *query_ref = (int)json_integer_value(query_ref_json);

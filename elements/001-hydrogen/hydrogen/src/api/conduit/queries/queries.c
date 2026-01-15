@@ -43,7 +43,7 @@
  * @param query_obj Query object containing query_ref and optional params
  * @return JSON object with query result or error
  */
-static json_t* execute_single_query(const char *database, json_t *query_obj)
+json_t* execute_single_query(const char *database, json_t *query_obj)
 {
     if (!database || !query_obj) {
         log_this(SR_API, "execute_single_query: NULL parameters", LOG_LEVEL_ERROR, 0);
