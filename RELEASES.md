@@ -159,6 +159,8 @@ QUALITY CHECKLIST (before completing)
 
 ## January 2026
 
+- [2026-Jan-14 (Thu)](/releases/2026-01/2026-01-14.md): (H, He) Database query enhancements, auth service updates, comprehensive testing
+- [2026-Jan-13 (Wed)](/releases/2026-01/2026-01-13.md): (H, He) Database migrations, auth service enhancements, query parameter handling
 - [2026-Jan-12 (Mon)](/releases/2026-01/2026-01-12.md): (H) Auth service testing framework, comprehensive unit tests, web server testing
 - [2026-Jan-11 (Sun)](/releases/2026-01/2026-01-11.md): (H) Auth service enhancements, DB2 database support, database migrations
 - [2026-Jan-10 (Sat)](/releases/2026-01/2026-01-10.md): (H) Auth endpoints implementation, query conduits, comprehensive testing framework
