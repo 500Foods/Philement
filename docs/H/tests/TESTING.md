@@ -92,7 +92,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 ### API
 
 - **[test_40_auth.sh](/docs/H/tests/test_40_auth.md)**: Authentication endpoints testing (JWT tokens across multiple database engines)
-- **[test_41_conduit.sh](/docs/H/tests/test_41_conduit.md)**: Conduit Query endpoint test
+- **[test_51_conduit.sh](/docs/H/tests/test_51_conduit.md)**: Conduit endpoints testing (all 4 endpoints with full parameter support across 7 database engines)
 
 ### Deliverables
 
