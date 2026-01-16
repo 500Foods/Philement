@@ -551,7 +551,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_24_uploads.sh](/elements/001-hydrogen/hydrogen/tests/test_24_uploads.sh) - File upload functionality tests
 - [tests/test_25_mdns.sh](/elements/001-hydrogen/hydrogen/tests/test_25_mdns.sh) - mDNS service discovery tests
 - [tests/test_26_terminal.sh](/elements/001-hydrogen/hydrogen/tests/test_26_terminal.sh) - Terminal interface tests
-- [tests/test_41_conduit.sh](/elements/001-hydrogen/hydrogen/tests/test_41_conduit.sh) - Conduit Query endpoint test
+- [tests/test_51_conduit.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit.sh) - Conduit endpoints testing (all 4 endpoints with full parameter support across 7 database engines)
 
 ### Database Tests
 
