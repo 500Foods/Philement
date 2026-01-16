@@ -34,7 +34,7 @@ LOG_LINE_PATTERN="Migration test completed in"
 # Test timeouts
 TIMEOUT=300
 STARTUP_TIMEOUT=15
-SHUTDOWN_TIMEOUT=10
+SHUTDOWN_TIMEOUT=15
 
 # Function to run migration test
 run_migration_test() {

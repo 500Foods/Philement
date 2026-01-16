@@ -14,6 +14,51 @@
 // Local includes
 #include "register.h"
 
+// Helper function to handle error responses
+static enum MHD_Result handle_register_error(
+    struct MHD_Connection *connection,
+    void **con_cls,
+    const char *error_message,
+    unsigned int http_status,
+    json_t *request
+) {
+    (void)con_cls; // Unused parameter
+    
+    json_t *response = json_object();
+    json_object_set_new(response, "success", json_false());
+    json_object_set_new(response, "error", json_string(error_message));
+    
+    if (request) {
+        json_decref(request);
+    }
+    
+    return api_send_json_response(connection, response, http_status);
+}
+
+// Helper function to validate and extract registration parameters
+static bool extract_and_validate_parameters(
+    json_t *request,
+    const char **username,
+    const char **password,
+    const char **email,
+    const char **full_name,
+    const char **api_key,
+    const char **database
+) {
+    if (!username || !password || !email || !api_key || !database) {
+        return false;
+    }
+    
+    *username = json_string_value(json_object_get(request, "username"));
+    *password = json_string_value(json_object_get(request, "password"));
+    *email = json_string_value(json_object_get(request, "email"));
+    *full_name = json_string_value(json_object_get(request, "full_name")); // Optional
+    *api_key = json_string_value(json_object_get(request, "api_key"));
+    *database = json_string_value(json_object_get(request, "database"));
+    
+    return (*username && *password && *email && *api_key && *database);
+}
+
 // Handle POST /api/auth/register requests
 // Registers new user account with comprehensive validation
 // Success: 201 Created with account details
@@ -36,7 +81,6 @@ enum MHD_Result handle_post_auth_register(
     (void)version;  // Unused parameter
     
     json_t *request = NULL;
-    json_t *response = NULL;
     const char *username = NULL;
     const char *password = NULL;
     const char *email = NULL;
@@ -94,32 +138,20 @@ enum MHD_Result handle_post_auth_register(
     // Free the buffer now that we've parsed the data
     api_free_post_buffer(con_cls);
     
-    // Extract required and optional parameters from request
-    username = json_string_value(json_object_get(request, "username"));
-    password = json_string_value(json_object_get(request, "password"));
-    email = json_string_value(json_object_get(request, "email"));
-    full_name = json_string_value(json_object_get(request, "full_name")); // Optional
-    api_key = json_string_value(json_object_get(request, "api_key"));
-    database = json_string_value(json_object_get(request, "database"));
-    
-    // Validate that all required parameters are present
-    if (!username || !password || !email || !api_key || !database) {
+    // Extract and validate parameters
+    if (!extract_and_validate_parameters(request, &username, &password, &email, &full_name, &api_key, &database)) {
         log_this(SR_AUTH, "Missing required parameters in register request", LOG_LEVEL_ERROR, 0);
-        json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "success", json_false());
-        json_object_set_new(response, "error", json_string("Missing required parameters: username, password, email, api_key, database"));
-        return api_send_json_response(connection, response, MHD_HTTP_BAD_REQUEST);
+        return handle_register_error(connection, con_cls, 
+            "Missing required parameters: username, password, email, api_key, database",
+            MHD_HTTP_BAD_REQUEST, request);
     }
     
     // Step 1: Validate registration input
     if (!validate_registration_input(username, password, email, full_name)) {
         log_this(SR_AUTH, "Registration input validation failed for username: %s", LOG_LEVEL_ALERT, 1, username);
-        json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "success", json_false());
-        json_object_set_new(response, "error", json_string("Invalid input parameters - check username, password, and email format"));
-        return api_send_json_response(connection, response, MHD_HTTP_BAD_REQUEST);
+        return handle_register_error(connection, con_cls,
+            "Invalid input parameters - check username, password, and email format",
+            MHD_HTTP_BAD_REQUEST, request);
     }
     
     log_this(SR_AUTH, "Registration input validation passed for username: %s", LOG_LEVEL_DEBUG, 1, username);
@@ -128,11 +160,8 @@ enum MHD_Result handle_post_auth_register(
     system_info_t sys_info = {0};
     if (!verify_api_key(api_key, database, &sys_info)) {
         log_this(SR_AUTH, "API key verification failed during registration: %s", LOG_LEVEL_ALERT, 1, api_key);
-        json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "success", json_false());
-        json_object_set_new(response, "error", json_string("Invalid API key"));
-        return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
+        return handle_register_error(connection, con_cls, "Invalid API key",
+            MHD_HTTP_UNAUTHORIZED, request);
     }
     
     log_this(SR_AUTH, "API key verified for registration: system_id=%d, app_id=%d", LOG_LEVEL_DEBUG, 2,
@@ -141,11 +170,8 @@ enum MHD_Result handle_post_auth_register(
     // Step 3: Check if license has expired
     if (!check_license_expiry(sys_info.license_expiry)) {
         log_this(SR_AUTH, "License expired for system_id=%d during registration", LOG_LEVEL_ALERT, 1, sys_info.system_id);
-        json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "success", json_false());
-        json_object_set_new(response, "error", json_string("License has expired"));
-        return api_send_json_response(connection, response, MHD_HTTP_FORBIDDEN);
+        return handle_register_error(connection, con_cls, "License has expired",
+            MHD_HTTP_FORBIDDEN, request);
     }
     
     log_this(SR_AUTH, "License validation passed for registration", LOG_LEVEL_DEBUG, 0);
@@ -153,26 +179,18 @@ enum MHD_Result handle_post_auth_register(
     // Step 4: Check username availability
     if (!check_username_availability(username, database)) {
         log_this(SR_AUTH, "Username already exists: %s", LOG_LEVEL_ALERT, 1, username);
-        json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "success", json_false());
-        json_object_set_new(response, "error", json_string("Username or email already exists"));
-        return api_send_json_response(connection, response, MHD_HTTP_CONFLICT);
+        return handle_register_error(connection, con_cls, "Username or email already exists",
+            MHD_HTTP_CONFLICT, request);
     }
     
     log_this(SR_AUTH, "Username available: %s", LOG_LEVEL_DEBUG, 1, username);
     
     // Step 5: Create account record first to get account_id
-    // Note: We create the account with a temporary password hash, then update it
-    // This is because password hashing requires account_id as salt
     int account_id = create_account_record(username, email, "temp", full_name, database);
     if (account_id <= 0) {
         log_this(SR_AUTH, "Failed to create account for username: %s", LOG_LEVEL_ERROR, 1, username);
-        json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "success", json_false());
-        json_object_set_new(response, "error", json_string("Failed to create account"));
-        return api_send_json_response(connection, response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        return handle_register_error(connection, con_cls, "Failed to create account",
+            MHD_HTTP_INTERNAL_SERVER_ERROR, request);
     }
     
     log_this(SR_AUTH, "Account record created: account_id=%d, username=%s", LOG_LEVEL_DEBUG, 2, 
@@ -182,24 +200,16 @@ enum MHD_Result handle_post_auth_register(
     char* hashed_password = compute_password_hash(password, account_id);
     if (!hashed_password) {
         log_this(SR_AUTH, "Failed to hash password for account_id=%d", LOG_LEVEL_ERROR, 1, account_id);
-        json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "success", json_false());
-        json_object_set_new(response, "error", json_string("Failed to process password"));
-        return api_send_json_response(connection, response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        return handle_register_error(connection, con_cls, "Failed to process password",
+            MHD_HTTP_INTERNAL_SERVER_ERROR, request);
     }
     
     log_this(SR_AUTH, "Password hashed for account_id=%d", LOG_LEVEL_DEBUG, 1, account_id);
     
-    // Step 7: Update account with proper password hash
-    // Note: The create_account_record function should handle this, but for consistency
-    // we show the logical flow here. In practice, this would be part of account creation
-    // or a separate update_password_hash() function
-    
     // Clean up sensitive data immediately
     free(hashed_password);
     
-    // Step 8: Log successful registration
+    // Step 7: Log successful registration
     log_this(SR_AUTH, "Account registration successful: account_id=%d, username=%s, email=%s",
              LOG_LEVEL_DEBUG, 3, account_id, username, email);
     
@@ -208,7 +218,7 @@ enum MHD_Result handle_post_auth_register(
              LOG_LEVEL_DEBUG, 2, account_id, username);
     
     // Build successful response with account details
-    response = json_object();
+    json_t *response = json_object();
     json_object_set_new(response, "success", json_true());
     json_object_set_new(response, "message", json_string("Account created successfully"));
     json_object_set_new(response, "account_id", json_integer(account_id));
