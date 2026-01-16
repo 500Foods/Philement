@@ -96,7 +96,7 @@ tests/          Test framework
 - tests/test_37_cockroachdb_migrations.sh - CockroachDB migration performance test
 - tests/test_38_yugabytedb_migrations.sh - YugabyteDB migration performance test
 - tests/test_40_auth.sh - Authentication endpoints testing (JWT tokens across multiple database engines)
-- tests/test_41_conduit.sh - Conduit Query endpoint test
+- tests/test_51_conduit.sh - Conduit endpoints testing (all 4 endpoints with full parameter support across 7 database engines)
 - tests/test_70_installer.sh - Standalone installer building test
 - tests/test_71_database_diagrams.sh - Database diagram generation
 - tests/test_89_coverage.sh - Shows Unity and Blackbox test coverage
