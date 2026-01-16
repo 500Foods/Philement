@@ -34,7 +34,7 @@ in the migrations themselves so that they get populated in the database directly
 
 | M# | Table | Version | Updated | Stmts | Diagram | Description |
 | ---- | ------- | --------- | --------- | ------- | --------- | ------------- |
-| [1000](/elements/002-helium/acuranzo/migrations/acuranzo_1000.lua) | queries | 4.0.0 | 2025-11-27 | 17 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
+| [1000](/elements/002-helium/acuranzo/migrations/acuranzo_1000.lua) | queries | 5.0.0 | 2026-01-16 | 18 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
 | [1001](/elements/002-helium/acuranzo/migrations/acuranzo_1001.lua) | lookups | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the lookups table |
 | [1002](/elements/002-helium/acuranzo/migrations/acuranzo_1002.lua) | account_access | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_access table |
 | [1003](/elements/002-helium/acuranzo/migrations/acuranzo_1003.lua) | account_contacts | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_contacts table |
@@ -181,4 +181,4 @@ in the migrations themselves so that they get populated in the database directly
 | [1144](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua) | queries | 1.1.0 | 2026-01-10 | 6 | ✗ | Create Auth Test Accounts |
 | [1145](/elements/002-helium/acuranzo/migrations/acuranzo_1145.lua) | queries | 1.4.0 | 2026-01-11 | 7 | ✗ | Test Data - Auth Test API Keys |
 | [1146](/elements/002-helium/acuranzo/migrations/acuranzo_1146.lua) | queries | 1.0.0 | 2026-01-13 | 4 | ✗ | QueryRef #053 - Get Themes |
-| **147** | | | | **772** | **147** | |
+| **147** | | | | **773** | **147** | |
