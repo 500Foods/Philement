@@ -1,0 +1,187 @@
+-- Migration: acuranzo_1142.lua
+-- QueryRef #051 - Create New Account
+
+-- luacheck: no max line length
+-- luacheck: no unused args
+
+-- CHANGELOG
+-- 1.0.0 - 2026-01-08 - Initial creation
+
+return function(engine, design_name, schema_name, cfg)
+local queries = {}
+
+cfg.TABLE = "queries"
+cfg.MIGRATION = "1142"
+cfg.QUERY_REF = "051"
+cfg.QUERY_NAME = "Create New Account"
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+table.insert(queries,{sql=[[
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_FORWARD_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_MEDIUM}                                                       AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            INSERT INTO ${SCHEMA}${QUERIES} (
+                ${QUERIES_INSERT}
+            )
+            WITH next_query_id AS (
+                SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+                FROM ${SCHEMA}${QUERIES}
+            )
+            SELECT
+                new_query_id                                                        AS query_id,
+                ${QUERY_REF}                                                        AS query_ref,
+                ${STATUS_ACTIVE}                                                    AS query_status_a27,
+                ${TYPE_SQL}                                                         AS query_type_a28,
+                ${DIALECT}                                                          AS query_dialect_a30,
+                ${QTC_MEDIUM}                                                       AS query_queue_a58,
+                ${TIMEOUT}                                                          AS query_timeout,
+                [==[
+                    ${INSERT_KEY_START} account_id ${INSERT_KEY_END}
+                        INSERT INTO ${SCHEMA}accounts (
+                            account_id,
+                            name,
+                            first_name,
+                            last_name,
+                            password_hash,
+                            status_a16,
+                            iana_timezone_a17,
+                            summary,
+                            collection,
+                            ${COMMON_FIELDS}
+                        )
+                        WITH next_account_id AS (
+                            SELECT COALESCE(MAX(account_id), 0) + 1 AS new_account_id
+                            FROM ${SCHEMA}accounts
+                        )
+                        SELECT
+                            new_account_id,
+                            :USERNAME,
+                            :FIRST_NAME,
+                            :LAST_NAME,
+                            :PASSWORD_HASH,
+                            1,
+                            1,
+                            :SUMMARY,
+                            '{}',
+                            '2025-01-01 00:00:00',
+                            '2035-01-01 00:00:00',
+                            0,
+                            ${NOW},
+                            0,
+                            ${NOW}
+                        FROM next_account_id
+                    ${INSERT_KEY_RETURN} account_id
+                    ;
+                ]==]                                                                AS code,
+                '${QUERY_NAME}'                                                     AS name,
+                [==[
+                    #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
+
+                    This query creates a new user account in the system during registration.
+
+                    ## Parameters
+
+                    - `USERNAME`: The unique username for the new account (stored in accounts.name)
+                    - `FIRST_NAME`: The user's first name
+                    - `LAST_NAME`: The user's last name
+                    - `PASSWORD_HASH`: The hashed password for the account
+                    - `SUMMARY`: Summary/description of the account
+
+                    ## Returns
+
+                    - `account_id`: The ID of the newly created account
+
+                    ## Tables
+
+                    - `accounts`: The user accounts table
+
+                    ## Notes
+
+                    - Account is created with status_a16=1 (active) by default
+                    - iana_timezone_a17=1 sets default timezone
+                    - Username (name) must be unique (enforced by database constraints)
+                    - Email is NOT stored in accounts table - use QueryRef #XXX to add email to account_contacts
+                    - After calling this query, you must insert the email into account_contacts separately
+
+                ]==]
+                                                                                AS summary,
+                '{}'                                                            AS collection,
+                ${COMMON_INSERT}
+            FROM next_query_id;
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+        ]=]
+                                                                            AS code,
+        'Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}'                   AS name,
+        [=[
+            # Forward Migration ${MIGRATION}: Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}
+
+            This migration creates the query for creating new user accounts during registration.
+        ]=]
+                                                                            AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]]})
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+table.insert(queries,{sql=[[
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_REVERSE_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            DELETE FROM ${SCHEMA}${TABLE}
+            WHERE query_ref = ${QUERY_REF};
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_FORWARD_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
+        ]=]
+                                                                            AS code,
+        'Remove QueryRef #${QUERY_REF} - ${QUERY_NAME}'                     AS name,
+        [=[
+            # Reverse Migration ${MIGRATION}: Remove QueryRef #${QUERY_REF} - ${QUERY_NAME}
+
+            This is provided for completeness when testing the migration system
+            to ensure that forward and reverse migrations are complete.
+        ]=]
+                                                                            AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]]})
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+return queries end

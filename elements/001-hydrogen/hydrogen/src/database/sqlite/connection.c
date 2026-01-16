@@ -227,10 +227,24 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
         log_this(log_subsystem, dlerror(), LOG_LEVEL_ERROR, 0);
         // Continue anyway - brotli functions may not be needed for all operations
     } else {
+
         const char* log_subsystem = designator ? designator : SR_DATABASE;
         log_this(log_subsystem, "Successfully loaded brotli_decompress.so library from %s", LOG_LEVEL_TRACE, 1, brotli_path);
     }
 
+    // Load convert_tz.so library for CONVERT_TZ() function
+    const char* convert_tz_path = "/usr/local/lib/convert_tz.so";
+    void* convert_tz_handle = dlopen(convert_tz_path, RTLD_LAZY);
+    if (!convert_tz_handle) {
+        const char* log_subsystem = designator ? designator : SR_DATABASE;
+        log_this(log_subsystem, "Failed to load convert_tz.so library from %s", LOG_LEVEL_ERROR, 1, convert_tz_path);
+        log_this(log_subsystem, dlerror(), LOG_LEVEL_ERROR, 0);
+        // Continue anyway - convert_tz functions may not be needed for all operations
+    } else {
+
+        const char* log_subsystem = designator ? designator : SR_DATABASE;
+        log_this(log_subsystem, "Successfully loaded convert_tz.so library from %s", LOG_LEVEL_TRACE, 1, convert_tz_path);
+    }
     // Determine database file path
     const char* db_path = NULL;
     if (config->database && strlen(config->database) > 0) {
@@ -359,6 +373,50 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
         log_this(log_subsystem, "Brotli library not loaded, skipping SQLite extension loading", LOG_LEVEL_TRACE, 0);
     }
 
+    // Load convert_tz extension if convert_tz.so was loaded
+    if (convert_tz_handle) {
+        const char* log_subsystem = designator ? designator : SR_DATABASE;
+        log_this(log_subsystem, "Convert TZ library loaded, attempting to load SQLite extension", LOG_LEVEL_TRACE, 0);
+
+        // Extension loading should already be enabled from crypto/brotli sections above
+        // If neither crypto nor brotli were loaded, enable it now
+        if (!crypto_handle && !brotli_handle && sqlite3_db_config_ptr) {
+            int config_result = sqlite3_db_config_ptr(sqlite_db, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 1, NULL);
+            if (config_result == 1) {
+                log_this(log_subsystem, "Successfully enabled SQLite extension loading for convert_tz", LOG_LEVEL_TRACE, 0);
+            } else if (config_result == 0) {
+                log_this(log_subsystem, "SQLite extension loading already enabled (config_result=%d)", LOG_LEVEL_TRACE, 1, config_result);
+            } else {
+                log_this(log_subsystem, "Unexpected result from sqlite3_db_config for convert_tz: %d", LOG_LEVEL_ERROR, 1, config_result);
+            }
+        }
+
+        // Try to load the convert_tz extension
+        log_this(log_subsystem, "Attempting to load convert_tz extension from: %s", LOG_LEVEL_TRACE, 1, convert_tz_path);
+        char* error_msg = NULL;
+        int load_result = sqlite3_load_extension_ptr ?
+            sqlite3_load_extension_ptr(sqlite_db, convert_tz_path, 0, &error_msg) : -1;
+        if (load_result != SQLITE_OK) {
+            log_this(log_subsystem, "Failed to load convert_tz extension into SQLite (result=%d)", LOG_LEVEL_ERROR, 1, load_result);
+            if (error_msg) {
+                log_this(log_subsystem, "Convert TZ extension load error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+                if (sqlite3_free_ptr) {
+                    sqlite3_free_ptr(error_msg);
+                } else {
+                    free(error_msg);
+                }
+            } else {
+                log_this(log_subsystem, "No error message provided for convert_tz extension load failure", LOG_LEVEL_ERROR, 0);
+            }
+            // Continue anyway - convert_tz functions may not be needed for all operations
+        } else {
+            log_this(log_subsystem, "Successfully loaded convert_tz extension into SQLite", LOG_LEVEL_TRACE, 0);
+        }
+    } else {
+        const char* log_subsystem = designator ? designator : SR_DATABASE;
+        log_this(log_subsystem, "Convert TZ library not loaded, skipping SQLite extension loading", LOG_LEVEL_TRACE, 0);
+    }
+
     // Enable extended result codes if available
     if (sqlite3_extended_result_codes_ptr) {
         sqlite3_extended_result_codes_ptr(sqlite_db, 1);
@@ -383,6 +441,7 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
     sqlite_wrapper->db_path = strdup(db_path);
     sqlite_wrapper->crypto_handle = crypto_handle;  // Store crypto library handle
     sqlite_wrapper->brotli_handle = brotli_handle;  // Store brotli library handle
+    sqlite_wrapper->convert_tz_handle = convert_tz_handle;  // Store convert_tz library handle
     sqlite_wrapper->prepared_statements = sqlite_create_prepared_statement_cache();
     if (!sqlite_wrapper->db_path || !sqlite_wrapper->prepared_statements) {
         if (crypto_handle) {
@@ -440,6 +499,9 @@ bool sqlite_disconnect(DatabaseHandle* connection) {
         }
         if (sqlite_conn->brotli_handle) {
             dlclose(sqlite_conn->brotli_handle);
+        }
+        if (sqlite_conn->convert_tz_handle) {
+            dlclose(sqlite_conn->convert_tz_handle);
         }
         free(sqlite_conn->db_path);
         free(sqlite_conn);
