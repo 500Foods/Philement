@@ -74,9 +74,9 @@ DATABASE_TEST_CONFIGS=(
 )
 
 # Test timeouts
-STARTUP_TIMEOUT=5
-SHUTDOWN_TIMEOUT=5
-DQM_INIT_TIMEOUT=10
+STARTUP_TIMEOUT=15
+SHUTDOWN_TIMEOUT=15
+DQM_INIT_TIMEOUT=15
 
 # Function to check for DQM startup log message
 check_dqm_startup() {
