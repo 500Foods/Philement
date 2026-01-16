@@ -53,6 +53,7 @@ MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 e
 - [brotli_udf_mysql](/elements/001-hydrogen/hydrogen/extras/brotli_udf_mysql/README.md) Brotli Decompress UDF for MySQL/MariaDB
 - [brotli_udf_postgresql](/elements/001-hydrogen/hydrogen/extras/brotli_udf_postgresql/README.md) Brotli Decompress UDF for PostgreSQL
 - [brotli_udf_sqlite](/elements/001-hydrogen/hydrogen/extras/brotli_udf_sqlite/README.md) Brotli Decompress UDF for SQLite
+- [converttz_udf_sqlite](/elements/001-hydrogen/hydrogen/extras/converttz_udf_sqlite/README.md) Timezone Conversion UDF for SQLite
 
 ### Available UDF Functions
 
@@ -61,7 +62,7 @@ MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 e
 | **DB2** | `BASE64_DECODE_CHUNK`<br>`BASE64DECODE`<br>`BASE64_DECODE_CHUNK_BINARY`<br>`BASE64DECODEBINARY`<br>`BASE64_ENCODE_CHUNK`<br>`BASE64ENCODE`<br>`BASE64_ENCODE_CHUNK_BINARY`<br>`BASE64ENCODEBINARY` | `BROTLI_DECOMPRESS_CHUNK`<br>`BROTLI_DECOMPRESS` | `HYDROGEN_CHECK`<br>`ScalarUDF`<br>`HELIUM_BROTLI_CHECK` |
 | **MySQL** | `FROM_BASE64`¹<br>`TO_BASE64`¹ | `BROTLI_DECOMPRESS` | - |
 | **PostgreSQL** | `DECODE(..., 'base64')`<br>`ENCODE(..., 'base64')`<br>`CONVERT_FROM(..., 'UTF8')`² | `brotli_decompress` | - |
-| **SQLite** | `CRYPTO_DECODE`³<br>`CRYPTO_ENCODE`³ | `BROTLI_DECOMPRESS` | - |
+| **SQLite** | `CRYPTO_DECODE`³<br>`CRYPTO_ENCODE`³ | `BROTLI_DECOMPRESS` | `CONVERT_TZ` |
 
 ¹ *Native MySQL function*  
 ² *Native PostgreSQL functions*  

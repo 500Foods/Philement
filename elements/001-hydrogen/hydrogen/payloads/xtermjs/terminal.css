@@ -1,0 +1,58 @@
+/* Additional terminal-specific styling */
+.terminal {
+    background: transparent !important;
+}
+
+.terminal .xterm-rows {
+    background: transparent !important;
+}
+
+.terminal .xterm-viewport {
+    background: #1e1e1e !important;
+}
+
+.terminal .xterm-scroll-area {
+    background: #1e1e1e !important;
+}
+
+/* Custom scrollbar styling */
+.terminal .xterm-viewport::-webkit-scrollbar {
+    width: 12px;
+    background: #1e1e1e;
+}
+
+.terminal .xterm-viewport::-webkit-scrollbar-track {
+    background: #2d2d30;
+}
+
+.terminal .xterm-viewport::-webkit-scrollbar-thumb {
+    background: #3e3e42;
+    border-radius: 6px;
+}
+
+.terminal .xterm-viewport::-webkit-scrollbar-thumb:hover {
+    background: #569cd6;
+}
+
+/* Better font rendering */
+.terminal {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-variant-ligatures: none;
+    text-rendering: optimizeSpeed;
+}
+
+/* Focus styling */
+.terminal:focus {
+    outline: none;
+}
+
+.terminal.focus .xterm-cursor {
+    background-color: #d4d4d4 !important;
+    color: #1e1e1e !important;
+}
+
+/* Selection styling */
+.terminal .xterm-selection div {
+    background-color: rgba(86, 156, 214, 0.5) !important;
+}
