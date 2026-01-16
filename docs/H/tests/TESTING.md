@@ -117,6 +117,51 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 
 The `configs/` directory contains JSON files for various test scenarios:
 
+## Port Numbering Scheme
+
+To prevent port conflicts between simultaneously running tests, the Hydrogen testing framework uses a structured port numbering scheme:
+
+### **Port Format**: `5<T#>x`
+
+Where:
+
+- **T#** = Test number (e.g., 40, 51)
+- **x** = Database index (0-6 for 7 databases)
+
+### **Examples**
+
+| Test | Database | Port | Configuration File |
+| ------ | ---------- | ------ | ------------------- |
+| Test 40 | PostgreSQL | 5400 | `hydrogen_test_40_postgres.json` |
+| Test 40 | MySQL | 5401 | `hydrogen_test_40_mysql.json` |
+| Test 40 | SQLite | 5402 | `hydrogen_test_40_sqlite.json` |
+| Test 40 | DB2 | 5403 | `hydrogen_test_40_db2.json` |
+| Test 40 | MariaDB | 5404 | `hydrogen_test_40_mariadb.json` |
+| Test 40 | CockroachDB | 5405 | `hydrogen_test_40_cockroachdb.json` |
+| Test 40 | YugabyteDB | 5406 | `hydrogen_test_40_yugabytedb.json` |
+| Test 51 | PostgreSQL | 5510 | `hydrogen_test_51_postgres.json` |
+| Test 51 | MySQL | 5511 | `hydrogen_test_51_mysql.json` |
+| ... | ... | ... | ... |
+
+### **Guidelines**
+
+1. **Test Isolation**: Each test gets its own 10-port range (e.g., 540x for Test 40, 551x for Test 51)
+2. **Database Order**: Maintain consistent database ordering across tests
+3. **Port Conflicts**: Never reuse ports between tests
+4. **Future Tests**: Reserve 10-port ranges for new tests (e.g., Test 52 would use 552x)
+
+### **Implementation**
+
+When creating new test configurations, update the port in the `WebServer.Port` field:
+
+```json
+{
+  "WebServer": {
+    "Port": 55XX
+  }
+}
+```
+
 ## Linting Configurations
 
 Linting behavior is controlled by configuration files to ensure code quality:
