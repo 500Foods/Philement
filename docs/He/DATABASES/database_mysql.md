@@ -7,7 +7,7 @@
 ## Data Type Mappings
 
 | Macro | MySQL Type | Description |
-|-------|------------|-------------|
+| ------- | ------------ | ------------- |
 | `CHAR_2` | `char(2)` | Fixed 2-character string |
 | `CHAR_20` | `char(20)` | Fixed 20-character string |
 | `CHAR_50` | `char(50)` | Fixed 50-character string |
@@ -88,6 +88,13 @@ Defines the SQL to create the `brotli_decompress` function using MySQL's UDF int
 - MySQL 5.7+ or MariaDB 10.0+
 - `brotli_decompress` UDF installed (extras/brotli_udf_mysql/)
 - `json_ingest` function created by migrations
+
+## Timezones
+
+In order to support queries using IANA timezone names like "America/New_York", an extra step is required to load the timezone tables. Note that PostgreSQL and DB2 support using IANA timezone names natively, and SQLite requires a UDF to do this at all.  Running this command enables CONVERT_TZ(timestamp, source_tz, target_tz) to work properly. Failing to populate these tables will result in CONVERT_TZ returning NULL.
+
+MySQL: `mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u root -p mysql`
+MariaDB: `mariadb-tzinfo-to-sql /usr/share/zoneinfo | mariadb -u root -p mysql`
 
 ## Notes
 
