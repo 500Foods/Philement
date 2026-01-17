@@ -61,17 +61,23 @@ STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=10
 
 # Demo credentials from environment variables (set in shell and used in migrations)
-# shellcheck disable=SC2034 # Used in heredocs for JSON payloads
+# Used in heredocs for JSON payloads
+# shellcheck disable=SC2034 # Used in heredocs that may be expanded in future versions
 DEMO_USER_NAME="${HYDROGEN_DEMO_USER_NAME:-}"
-# shellcheck disable=SC2034 # Used in heredocs for JSON payloads
+# Used in heredocs for JSON payloads
+# shellcheck disable=SC2034 # Used in heredocs that may be expanded in future versions
 DEMO_USER_PASS="${HYDROGEN_DEMO_USER_PASS:-}"
-# shellcheck disable=SC2034 # These variables are defined for future test expansion
+# These variables are defined for future test expansion
+# shellcheck disable=SC2034 # Reserved for future test expansion
 DEMO_ADMIN_NAME="${HYDROGEN_DEMO_ADMIN_NAME:-}"
-# shellcheck disable=SC2034 # These variables are defined for future test expansion
+# These variables are defined for future test expansion
+# shellcheck disable=SC2034 # Reserved for future test expansion
 DEMO_ADMIN_PASS="${HYDROGEN_DEMO_ADMIN_PASS:-}"
-# shellcheck disable=SC2034 # Used in heredocs for JSON payloads
+# Used in heredocs for JSON payloads
+# shellcheck disable=SC2034 # Used in heredocs that may be expanded in future versions
 DEMO_EMAIL="${HYDROGEN_DEMO_EMAIL:-}"
-# shellcheck disable=SC2034 # Used in heredocs for JSON payloads
+# Used in heredocs for JSON payloads
+# shellcheck disable=SC2034 # Used in heredocs that may be expanded in future versions
 DEMO_API_KEY="${HYDROGEN_DEMO_API_KEY:-}"
 
 # Real query references from Acuranzo migrations (001-053)
@@ -145,7 +151,7 @@ test_conduit_single_query() {
 
     # Test each query reference
     for query_ref in "${!QUERY_REFS[@]}"; do
-        IFS=':' read -r description requires_auth <<< "${QUERY_REFS[${query_ref}]}"
+        IFS=':' read -r description _ <<< "${QUERY_REFS[${query_ref}]}"
 
         # Prepare JSON payload for single query
         local payload
