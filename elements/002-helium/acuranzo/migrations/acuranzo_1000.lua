@@ -296,7 +296,7 @@ table.insert(queries,{sql=[[
 ]]})
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- NOTE: Timezone conversion function convert_tz added for SQLite
-if engine == 'mysql' then table.insert(queries,{sql=[[
+if engine == 'sqlite' then table.insert(queries,{sql=[[
 
     ${CONVERT_TZ_FUNCTION}
 

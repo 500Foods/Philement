@@ -86,7 +86,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_34_sqlite_migrations.sh](/docs/H/tests/test_34_sqlite_migrations.md)**: SQLite migration performance test
 - **[test_35_db2_migrations.sh](/docs/H/tests/test_35_db2_migrations.md)**: DB2 migration performance test
 - **[test_71_database_diagrams.sh](/docs/H/tests/test_71_database_diagrams.md)**: Database diagram generation
-- **[test_41_conduit.sh](/docs/H/tests/test_41_conduit.md)**: Conduit Query endpoint test
+- **[test_51_conduit.sh](/docs/H/tests/test_51_conduit.md)**: Conduit Query endpoint test
 
 ### Static Analysis & Code Quality Tests
 

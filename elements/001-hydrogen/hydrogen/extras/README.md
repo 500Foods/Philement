@@ -14,6 +14,7 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
 - [Development Workflow](#development-workflow)
 - [Error Handling](#error-handling)
 - [Utility Scripts](#utility-scripts)
+  - [`hydrogen_flush.sh`](#hydrogen_flushsh)
   - [`add_coverage.sh`](#add_coveragesh)
   - [`comment-analysis.sh`](#comment-analysissh)
   - [`filter-log.sh`](#filter-logsh)
@@ -141,6 +142,76 @@ All scripts include proper error handling and return appropriate exit codes:
 - Scripts provide colored output for better visibility of results
 
 ## Utility Scripts
+
+### `hydrogen_flush.sh`
+
+**Purpose:** Database Schema Flush Utility
+**Description:** Flushes all test and demo database schemas by dropping all tables and recreating empty schemas. This utility is used to reset databases before major migration changes or when you need a clean database state. The script:
+
+- Identifies all test databases (tests 32-38) and demo databases (test 40)
+- Counts objects in each schema before and after flushing
+- Drops all tables and recreates empty schemas
+- Supports all 7 database engines: PostgreSQL, MySQL, SQLite, DB2, MariaDB, CockroachDB, and YugabyteDB
+- Provides detailed output showing flush results for each database
+- Requires confirmation (type "HYDROGEN" in all caps) to prevent accidental execution
+
+**Usage:**
+
+```bash
+# Run in normal mode (shows progress, suppresses detailed output)
+./hydrogen_flush.sh
+
+# Run in debug mode (shows all database commands)
+./hydrogen_flush.sh --debug
+```
+
+**Features:**
+
+- ✅ Comprehensive database coverage (7 engines)
+- ✅ Safety confirmation to prevent accidental execution
+- ✅ Detailed before/after object counting
+- ✅ Schema recreation after dropping tables
+- ✅ Support for both test and demo databases
+- ✅ Debug mode for troubleshooting
+- ✅ Handles special characters in passwords (disables history expansion)
+
+**Example Output:**
+
+```bash
+TESTS:
+- Test 32 - PostgreSQL  - Acuranzo/acuranzo
+- Test 33 - MySQL       - Acuranzo/acuranzo
+- Test 34 - SQLite      - /path/to/acuranzo_test_34.db
+- Test 35 - DB2         - Acuranzo/
+- Test 36 - MariaDB     - Acuranzo/acuranzo
+- Test 37 - CockroachDB - Acuranzo/acuranzo
+- Test 38 - YugabyteDB  - Acuranzo/acuranzo
+
+DEMOS:
+- Test 40 - PostgreSQL  - Acuranzo/acuranzo
+- Test 40 - MySQL       - Acuranzo/acuranzo
+- Test 40 - SQLite      - /path/to/acuranzo_test_40.db
+- Test 40 - DB2         - Acuranzo/
+- Test 40 - MariaDB     - Acuranzo/acuranzo
+- Test 40 - CockroachDB - Acuranzo/acuranzo
+- Test 40 - YugabyteDB  - Acuranzo/acuranzo
+
+Enter HYDROGEN in all caps to continue: HYDROGEN
+
+Flushing TEST databases...
+— Flushing Test 32 - PostgreSQL...
+——— Start: 42 objects found
+——— After: 0 objects found
+——— Successfully flushed Test 32 - PostgreSQL
+
+Flushing DEMO databases...
+— Flushing Test 40 - PostgreSQL...
+——— Start: 15 objects found
+——— After: 0 objects found
+——— Successfully flushed Test 40 - PostgreSQL
+
+Flush operation completed.
+```
 
 ### `add_coverage.sh`
 
