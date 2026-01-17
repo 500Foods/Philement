@@ -50,7 +50,7 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     DELETE FROM
-                        ${SCHEME}tokens
+                        ${SCHEMA}tokens
                     WHERE
                         (token_hash = :TOKENHASH)
                 ]==]                                                                AS code,
