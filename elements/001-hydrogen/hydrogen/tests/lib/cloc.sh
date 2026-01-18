@@ -857,15 +857,15 @@ EOF
      },
      {
          "section": "file_sizes",
-         "metric": "Hydrogen Binary",
-         "value": "${release_size} KB",
-         "description": "Hydrogen Release Executable with Payload"
-     },
-     {
-         "section": "file_sizes",
          "metric": "Hydrogen Naked",
          "value": "${naked_size} KB",
          "description": "Hydrogen Release Executable without Payload"
+     },
+     {
+         "section": "file_sizes",
+         "metric": "Hydrogen Binary",
+         "value": "${release_size} KB",
+         "description": "Hydrogen Release Executable with Payload"
      },
      {
          "section": "file_sizes",
@@ -883,7 +883,7 @@ EOF
          "section": "file_sizes",
          "metric": "Hydrogen Repository",
          "value": "${repo_size} MB",
-         "description": "Repository -Build -Unity Framework"
+         "description": "Repository without Git, Build, Unity Framework"
      }
 ]
 EOF

@@ -344,7 +344,7 @@ done
 echo ""
 echo "Flush operation completed."
  
-cd ${HYDROGEN_ROOT}
+cd "${HYDROGEN_ROOT}"
 
 # echo ""
 # echo "Validating TEST databases"
