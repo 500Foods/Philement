@@ -19,7 +19,7 @@
 
 // Forward declarations for functions being tested
 bool execute_load_migrations(DatabaseQueue* db_queue, DatabaseHandle* connection);
-bool execute_migration_files_load_only(DatabaseHandle* connection, char** migration_files,
+bool execute_migration_files_load_only(DatabaseQueue* db_queue, DatabaseHandle* connection, char** migration_files,
                                       size_t migration_count, const char* engine_name,
                                       const char* migration_name, const char* schema_name,
                                       const char* dqm_label);
@@ -252,7 +252,9 @@ void test_execute_migration_files_load_only_null_files_with_count(void) {
     DatabaseHandle connection = {0};
     connection.engine_type = DB_ENGINE_SQLITE;
     
+    DatabaseQueue db_queue = {0};
     bool result = execute_migration_files_load_only(
+        &db_queue,
         &connection,
         NULL,           // migration_files - NULL
         1,              // migration_count > 0
@@ -269,7 +271,9 @@ void test_execute_migration_files_load_only_null_files_zero_count(void) {
     DatabaseHandle connection = {0};
     connection.engine_type = DB_ENGINE_SQLITE;
     
+    DatabaseQueue db_queue = {0};
     bool result = execute_migration_files_load_only(
+        &db_queue,
         &connection,
         NULL,           // migration_files - NULL
         0,              // migration_count = 0
@@ -292,7 +296,9 @@ void test_execute_migration_files_load_only_get_payload_failure(void) {
     char* files[1];
     files[0] = strdup(files_const[0]);
     
+    DatabaseQueue db_queue = {0};
     bool result = execute_migration_files_load_only(
+        &db_queue,
         &connection,
         files,
         1,
@@ -360,7 +366,9 @@ void test_execute_migration_files_load_only_batch_failure(void) {
     }
     
     // All will fail because payload doesn't exist
+    DatabaseQueue db_queue = {0};
     bool result = execute_migration_files_load_only(
+        &db_queue,
         &connection,
         files,
         3,
@@ -487,7 +495,9 @@ void test_execute_migration_files_load_only_empty_sql_result(void) {
     
     // With nonexistent payload, function will fail early
     // but this exercises the error handling paths
+    DatabaseQueue db_queue = {0};
     bool result = execute_migration_files_load_only(
+        &db_queue,
         &connection,
         files,
         1,
@@ -536,7 +546,9 @@ void test_execute_migration_files_load_only_cleanup_on_failure(void) {
     files[0] = strdup("test.lua");
     
     // Function should handle cleanup even when it fails
+    DatabaseQueue db_queue = {0};
     bool result = execute_migration_files_load_only(
+        &db_queue,
         &connection,
         files,
         1,

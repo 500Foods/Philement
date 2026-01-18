@@ -13,7 +13,7 @@ This script validates that the Hydrogen server correctly handles JWT-based authe
 - **Script Name**: `test_40_auth.sh`
 - **Test Name**: Auth (engines: 7)
 - **Test Abbreviation**: JWT
-- **Version**: 1.2.0
+- **Version**: 1.5.0
 - **Dependencies**: Uses modular libraries from `lib/` directory
 
 ## Key Features
@@ -81,12 +81,13 @@ Each database engine runs through the following test sequence:
 
 1. **Configuration Validation**: Verifies configuration file exists and is valid
 2. **Server Startup**: Launches Hydrogen server with specific database configuration
-3. **Login Test**: Tests successful login with valid credentials, extracts JWT token
-4. **Invalid Login Test**: Tests rejection of invalid credentials (expects HTTP 401)
-5. **Token Renewal Test**: Tests JWT token renewal using obtained token
-6. **Logout Test**: Tests logout and token invalidation
-7. **Registration Test**: Tests new user registration with unique credentials
-8. **Server Shutdown**: Gracefully stops the server instance
+3. **Migration Wait**: Waits for database migrations to complete (if running) before proceeding with auth tests
+4. **Login Test**: Tests successful login with valid credentials, extracts JWT token
+5. **Invalid Login Test**: Tests rejection of invalid credentials (expects HTTP 401)
+6. **Token Renewal Test**: Tests JWT token renewal using obtained token
+7. **Logout Test**: Tests logout and token invalidation
+8. **Registration Test**: Tests new user registration with unique credentials
+9. **Server Shutdown**: Gracefully stops the server instance
 
 ### Response Validation Criteria
 
@@ -184,6 +185,7 @@ The test uses parallel execution patterns similar to [`test_30_database.sh`](/do
 
 ## Version History
 
+- **1.5.0** (2026-01-18): Added migration completion wait before auth tests to prevent failures when databases are cleared
 - **1.4.0** (2026-01-14): Expanded to cover all 7 database engines (PostgreSQL, MySQL, SQLite, DB2, MariaDB, CockroachDB, YugabyteDB)
 - **1.3.0** (2026-01-13): Fixed JWT token passing for renew/logout endpoints
 - **1.2.0** (2026-01-10): Updated to use environment variables for demo credentials

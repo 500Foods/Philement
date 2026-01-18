@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1147.lua
--- Creates the numbers table
+-- Creates and populates the numbers table
 
 -- luacheck: no max line length
 -- luacheck: no unused args

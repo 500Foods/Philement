@@ -92,7 +92,7 @@ bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, siz
                             const char* migration_file, const char* dqm_label);
 
 // LOAD phase functions (metadata population only)
-bool execute_migration_files_load_only(DatabaseHandle* connection, char** migration_files,
+bool execute_migration_files_load_only(struct DatabaseQueue* db_queue, DatabaseHandle* connection, char** migration_files,
                                       size_t migration_count, const char* engine_name,
                                       const char* migration_name, const char* schema_name,
                                       const char* dqm_label);
