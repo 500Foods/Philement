@@ -19,6 +19,39 @@
 #include "migration.h"
 
 /*
+ * Extract migration reference number from filename
+ * e.g., "acuranzo_1148.lua" -> 1148
+ * Returns -1 on error
+ */
+static long long extract_migration_ref_from_filename(const char* filename) {
+    if (!filename) return -1;
+
+    // Find the last underscore
+    const char* last_underscore = strrchr(filename, '_');
+    if (!last_underscore) return -1;
+
+    // Find the .lua extension
+    const char* dot_lua = strstr(last_underscore, ".lua");
+    if (!dot_lua) return -1;
+
+    // Extract the number between underscore and .lua
+    char ref_str[32];
+    ptrdiff_t diff = dot_lua - last_underscore - 1;
+    if (diff <= 0 || diff >= (ptrdiff_t)sizeof(ref_str)) return -1;
+    size_t len = (size_t)diff;
+
+    memcpy(ref_str, last_underscore + 1, len);
+    ref_str[len] = '\0';
+
+    // Convert to long long
+    char* endptr;
+    long long ref = strtoll(ref_str, &endptr, 10);
+    if (*endptr != '\0') return -1; // Not a valid number
+
+    return ref;
+}
+
+/*
  * Helper function to validate migration configuration and extract parameters
  * Returns true if configuration is valid, false otherwise
  * Extracts engine_name, schema_name, and migration_name on success
@@ -134,7 +167,7 @@ bool execute_load_migrations(DatabaseQueue* db_queue, DatabaseHandle* connection
 
     // LOAD PHASE: Execute each migration file to populate Queries table metadata
     // This should generate INSERT statements for the Queries table with type = 1000
-    bool all_success = execute_migration_files_load_only(connection, migration_files, migration_count,
+    bool all_success = execute_migration_files_load_only(db_queue, connection, migration_files, migration_count,
                                                         engine_name, migration_name, schema_name, dqm_label);
 
     // Cleanup migration files list
@@ -162,7 +195,7 @@ bool execute_load_migrations(DatabaseQueue* db_queue, DatabaseHandle* connection
  * Lua's parser internal state accumulates corruption across compilations.
  * Fresh state per migration is the most reliable approach.
  */
-bool execute_migration_files_load_only(DatabaseHandle* connection, char** migration_files,
+bool execute_migration_files_load_only(DatabaseQueue* db_queue, DatabaseHandle* connection, char** migration_files,
                                       size_t migration_count, const char* engine_name,
                                       const char* migration_name, const char* schema_name,
                                       const char* dqm_label) {
@@ -184,12 +217,28 @@ bool execute_migration_files_load_only(DatabaseHandle* connection, char** migrat
     bool all_success = true;
 
     // Process each migration with a FRESH Lua state
+    // Skip migrations that are already applied (ref <= latest_applied_migration)
     // Passing NULL for L forces execute_single_migration_load_only_with_state to create its own
     for (size_t i = 0; i < migration_count; i++) {
+        // Extract migration reference number from filename (e.g., "acuranzo_1148.lua" -> 1148)
+        long long migration_ref = extract_migration_ref_from_filename(migration_files[i]);
+        if (migration_ref == -1) {
+            log_this(dqm_label, "Failed to extract migration ref from filename: %s", LOG_LEVEL_ERROR, 1, migration_files[i]);
+            all_success = false;
+            break;
+        }
+
+        // Skip migrations that are already applied
+        if (migration_ref <= db_queue->latest_applied_migration) {
+            log_this(dqm_label, "Skipping already applied migration: %s (ref=%lld, applied=%lld)",
+                     LOG_LEVEL_DEBUG, 3, migration_files[i], migration_ref, db_queue->latest_applied_migration);
+            continue;
+        }
+
         bool migration_success = execute_single_migration_load_only_with_state(
             connection, migration_files[i], engine_name, migration_name, schema_name,
             dqm_label, NULL, payload_files, payload_count);
-        
+
         if (!migration_success) {
             all_success = false;
             break;  // Stop on first failure

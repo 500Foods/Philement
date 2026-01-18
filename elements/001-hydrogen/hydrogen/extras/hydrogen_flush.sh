@@ -343,3 +343,21 @@ done
 
 echo ""
 echo "Flush operation completed."
+ 
+cd ${HYDROGEN_ROOT}
+
+# echo ""
+# echo "Validating TEST databases"
+# tests/test_32_postgres_migrations.sh    2>&1 | grep -A3 -B1 "Test #"
+# tests/test_33_mysql_migrations.sh       2>&1 | grep -A3 -B1 "Test #"
+# tests/test_34_sqlite_migrations.sh      2>&1 | grep -A3 -B1 "Test #"
+# tests/test_35_db2_migrations.sh         2>&1 | grep -A3 -B1 "Test #"
+# tests/test_36_mariadb_migrations.sh     2>&1 | grep -A3 -B1 "Test #"
+# tests/test_37_cockroachdb_migrations.sh 2>&1 | grep -A3 -B1 "Test #"
+# tests/test_38_yugabytedb_migrations.sh  2>&1 | grep -A3 -B1 "Test #"
+
+echo "Rebuilding DEMO databases"
+tests/test_40_auth.sh                   2>&1 | grep -A3 -B1 "Test #"
+
+
+
