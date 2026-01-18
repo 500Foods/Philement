@@ -83,47 +83,67 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
             bool success = database_engine_execute(db_queue->persistent_connection, &request, &result);
             
             if (success && result) {
-                log_this(dqm_label_exec, "Query executed successfully: %s (rows: %zu, time: %ld ms)",
-                        LOG_LEVEL_TRACE, 3,
-                        query->query_id ? query->query_id : "unknown",
-                        result->row_count,
-                        result->execution_time_ms);
+               log_this(dqm_label_exec, "Query executed successfully: %s (rows: %zu, time: %ld ms)",
+                       LOG_LEVEL_TRACE, 3,
+                       query->query_id ? query->query_id : "unknown",
+                       result->row_count,
+                       result->execution_time_ms);
 
-                // Signal pending result if this query was synchronous
-                if (query->query_id) {
-                    PendingResultManager* pending_mgr = get_pending_result_manager();
-                    if (pending_mgr) {
-                        pending_result_signal_ready(pending_mgr, query->query_id, result, dqm_label_exec);
-                        result = NULL; // Ownership transferred to pending result
-                    }
-                }
+               // Record DQM statistics
+               if (global_queue_manager) {
+                   int queue_type_index = database_queue_type_from_string(db_queue->queue_type);
+                   if (queue_type_index >= 0 && queue_type_index < 4) {
+                       database_queue_manager_record_query_completion(global_queue_manager, queue_type_index, (unsigned long long)result->execution_time_ms);
+                   } else if (db_queue->is_lead_queue) {
+                       database_queue_manager_record_query_completion(global_queue_manager, 4, (unsigned long long)result->execution_time_ms);
+                   }
+               }
 
-                // Update query statistics
-                if (database_subsystem) {
-                    __sync_fetch_and_add(&database_subsystem->successful_queries, 1);
-                }
+               // Signal pending result if this query was synchronous
+               if (query->query_id) {
+                   PendingResultManager* pending_mgr = get_pending_result_manager();
+                   if (pending_mgr) {
+                       pending_result_signal_ready(pending_mgr, query->query_id, result, dqm_label_exec);
+                       result = NULL; // Ownership transferred to pending result
+                   }
+               }
 
-                // Clean up result (only if not transferred to pending result)
-                if (result) {
-                    database_engine_cleanup_result(result);
-                }
+               // Update query statistics
+               if (database_subsystem) {
+                   __sync_fetch_and_add(&database_subsystem->successful_queries, 1);
+               }
+
+               // Clean up result (only if not transferred to pending result)
+               if (result) {
+                   database_engine_cleanup_result(result);
+               }
             } else {
-                log_this(dqm_label_exec, "Query execution failed: %s",
-                        LOG_LEVEL_TRACE, 1,
-                        query->query_id ? query->query_id : "unknown");
+               log_this(dqm_label_exec, "Query execution failed: %s",
+                       LOG_LEVEL_TRACE, 1,
+                       query->query_id ? query->query_id : "unknown");
 
-                // Signal pending result with NULL result on failure
-                if (query->query_id) {
-                    PendingResultManager* pending_mgr = get_pending_result_manager();
-                    if (pending_mgr) {
-                        pending_result_signal_ready(pending_mgr, query->query_id, NULL, dqm_label_exec);
-                    }
-                }
+               // Record DQM statistics for failure
+               if (global_queue_manager) {
+                   int queue_type_index = database_queue_type_from_string(db_queue->queue_type);
+                   if (queue_type_index >= 0 && queue_type_index < 4) {
+                       database_queue_manager_record_query_failure(global_queue_manager, queue_type_index);
+                   } else if (db_queue->is_lead_queue) {
+                       database_queue_manager_record_query_failure(global_queue_manager, 4);
+                   }
+               }
 
-                // Update failure statistics
-                if (database_subsystem) {
-                    __sync_fetch_and_add(&database_subsystem->failed_queries, 1);
-                }
+               // Signal pending result with NULL result on failure
+               if (query->query_id) {
+                   PendingResultManager* pending_mgr = get_pending_result_manager();
+                   if (pending_mgr) {
+                       pending_result_signal_ready(pending_mgr, query->query_id, NULL, dqm_label_exec);
+                   }
+               }
+
+               // Update failure statistics
+               if (database_subsystem) {
+                   __sync_fetch_and_add(&database_subsystem->failed_queries, 1);
+               }
             }
         } else {
             // No persistent connection or query template - simulate processing time

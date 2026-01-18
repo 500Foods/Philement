@@ -334,6 +334,48 @@ PendingResultManager* get_pending_result_manager(void) {
 }
 
 /**
+ * @brief Wait for multiple pending results to complete
+ */
+int pending_result_wait_multiple(PendingQueryResult **pendings, size_t count,
+                                int collective_timeout_seconds, const char* dqm_label) {
+    if (!pendings || count == 0) {
+        return -1;
+    }
+
+    // Wait for all pendings to complete, but respect collective timeout
+    time_t start_time = time(NULL);
+    for (size_t i = 0; i < count; i++) {
+        PendingQueryResult* pending = pendings[i];
+        if (!pending) continue;
+
+        // Check if already completed
+        if (pending_result_is_completed(pending)) {
+            continue;
+        }
+
+        // Check if we've exceeded collective timeout
+        time_t elapsed = time(NULL) - start_time;
+        if (elapsed >= collective_timeout_seconds) {
+            log_this(dqm_label ? dqm_label : SR_DATABASE,
+                    "Collective timeout exceeded for batch", LOG_LEVEL_ERROR, 0);
+            return -1;
+        }
+
+        // Wait for this specific pending result
+        int rc = pending_result_wait(pending, dqm_label);
+        if (rc != 0) {
+            log_this(dqm_label ? dqm_label : SR_DATABASE,
+                    "Query in batch failed or timed out", LOG_LEVEL_ERROR, 0);
+            return -1;  // If any query fails, the whole batch fails
+        }
+    }
+
+    log_this(dqm_label ? dqm_label : SR_DATABASE,
+            "All queries in batch completed successfully", LOG_LEVEL_DEBUG, 0);
+    return 0;
+}
+
+/**
  * @brief Cleanup the global pending result manager
  * Should be called during database subsystem shutdown
  */

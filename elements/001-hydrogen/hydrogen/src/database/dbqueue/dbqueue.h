@@ -102,6 +102,22 @@ struct DatabaseQueue {
     pthread_cond_t initial_connection_cond;
 };
 
+// DQM Statistics tracking structure
+typedef struct DQMStatistics {
+    volatile unsigned long long queue_selection_counters[5];  // Indexed by QUEUE_TYPE_* (0=slow, 1=medium, 2=fast, 3=cache, 4=lead)
+    volatile unsigned long long total_queries_submitted;
+    volatile unsigned long long total_queries_completed;
+    volatile unsigned long long total_queries_failed;
+    volatile unsigned long long total_timeouts;
+    struct {
+        volatile unsigned long long submitted;
+        volatile unsigned long long completed;
+        volatile unsigned long long failed;
+        volatile unsigned long long avg_execution_time_ms;
+        volatile time_t last_used;
+    } per_queue_stats[5];
+} DQMStatistics;
+
 // Database queue manager that coordinates multiple databases
 typedef struct DatabaseQueueManager {
     DatabaseQueue** databases;      // Array of database queues
@@ -115,6 +131,9 @@ typedef struct DatabaseQueueManager {
     volatile long long total_queries;
     volatile long long successful_queries;
     volatile long long failed_queries;
+
+    // Comprehensive DQM statistics
+    DQMStatistics dqm_stats;
 
     // Thread pool management
     pthread_mutex_t manager_lock;
@@ -231,6 +250,15 @@ size_t database_queue_get_depth(DatabaseQueue* db_queue);
 size_t database_queue_get_depth_with_designator(DatabaseQueue* db_queue, const char* designator);
 void database_queue_get_stats(DatabaseQueue* db_queue, char* buffer, size_t buffer_size);
 bool database_queue_health_check(DatabaseQueue* db_queue);
+
+// DQM Statistics management
+void database_queue_manager_init_stats(DatabaseQueueManager* manager);
+void database_queue_manager_increment_queue_selection(DatabaseQueueManager* manager, int queue_type_index);
+void database_queue_manager_record_query_submission(DatabaseQueueManager* manager, int queue_type_index);
+void database_queue_manager_record_query_completion(DatabaseQueueManager* manager, int queue_type_index, unsigned long long execution_time_ms);
+void database_queue_manager_record_query_failure(DatabaseQueueManager* manager, int queue_type_index);
+void database_queue_manager_record_timeout(DatabaseQueueManager* manager);
+json_t* database_queue_manager_get_stats_json(DatabaseQueueManager* manager);
 
 // Utility functions
 const char* database_queue_type_to_string(int queue_type);

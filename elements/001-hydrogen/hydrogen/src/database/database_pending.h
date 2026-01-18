@@ -153,4 +153,19 @@ PendingResultManager* get_pending_result_manager(void);
  */
 void cleanup_global_pending_manager(const char* dqm_label);
 
+/**
+ * @brief Wait for multiple pending results to complete
+ *
+ * Waits for all pending results in the array to complete or timeout.
+ * Returns when all queries have finished or the collective timeout is reached.
+ *
+ * @param pendings Array of pending results to wait for
+ * @param count Number of pending results in the array
+ * @param collective_timeout_seconds Maximum time to wait for all queries
+ * @param dqm_label Label for logging purposes
+ * @return 0 on success (all completed), -1 on timeout or error
+ */
+int pending_result_wait_multiple(PendingQueryResult **pendings, size_t count,
+                                int collective_timeout_seconds, const char* dqm_label);
+
 #endif // DATABASE_PENDING_H

@@ -189,6 +189,15 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
         // Update last request time for queue selection algorithm
         db_queue->last_request_time = time(NULL);
 
+        // Record DQM statistics
+        if (global_queue_manager) {
+            int queue_type_index = query->queue_type_hint;  // 0=slow, 1=medium, 2=fast, 3=cache
+            if (db_queue->is_lead_queue) {
+                queue_type_index = 4;  // Lead queue
+            }
+            database_queue_manager_record_query_submission(global_queue_manager, queue_type_index);
+        }
+
         // Signal worker thread that work is available
         sem_post(&db_queue->worker_semaphore);
 
@@ -274,6 +283,10 @@ DatabaseQuery* database_queue_await_result(DatabaseQueue* db_queue, const char* 
         // Timeout or error occurred
         if (pending_result_is_timed_out(pending)) {
             log_this(dqm_label, "Query timed out: %s", LOG_LEVEL_ALERT, 1, query_id);
+            // Record timeout in DQM statistics
+            if (global_queue_manager) {
+                database_queue_manager_record_timeout(global_queue_manager);
+            }
         } else {
             log_this(dqm_label, "Query wait failed: %s", LOG_LEVEL_ERROR, 1, query_id);
         }
