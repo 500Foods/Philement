@@ -21,6 +21,10 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.5.0 - 2026-01-18 - Added migration completion wait before auth tests
+#                    - Prevents test failures when databases are cleared and migrations run during startup
+#                    - Waits for "Migration completed in" or "Migration Current:" messages
+#                    - 2-minute timeout for migration completion
 # 1.4.0 - 2026-01-14 - Expanded to cover all 7 database engines
 #                    - Added MariaDB, CockroachDB, and YugabyteDB support
 #                    - Updated parallel execution to handle 7 concurrent database instances
@@ -45,7 +49,7 @@ TEST_NAME="Auth  {BLUE}engines: 7{RESET}"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.4.0"
+TEST_VERSION="1.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -66,9 +70,10 @@ AUTH_TEST_CONFIGS=(
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB Engine"
 )
 
-# Test timeouts
+# Test timeouts (seconds)
 STARTUP_TIMEOUT=15
-SHUTDOWN_TIMEOUT=10
+SHUTDOWN_TIMEOUT=15
+MIGRATION_TIMEOUT=180
 
 # Demo credentials from environment variables (set in shell and used in migrations)
 # shellcheck disable=SC2034 # Used in heredocs for JSON payloads
@@ -306,10 +311,38 @@ run_auth_test_parallel() {
     
     if [[ "${startup_success}" = true ]]; then
         echo "STARTUP_SUCCESS" >> "${result_file}"
-        
-        # Wait a bit for server to be fully ready
-        sleep 1
-        
+
+        # Wait for migration completion if migrations are running
+        local migration_complete=false
+        local migration_start_time=${SECONDS}
+
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking for migration completion..."
+        while true; do
+            if [[ $((SECONDS - migration_start_time)) -ge ${MIGRATION_TIMEOUT} ]]; then  
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Migration wait timeout - proceeding with auth tests"
+                break
+            fi
+
+            # Check for migration completion message
+            if "${GREP}" -q "Migration completed in" "${log_file}" 2>/dev/null; then
+                migration_complete=true
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Migration completed - proceeding with auth tests"
+                break
+            fi
+
+            # Also check if no migration was needed (when migrations are already up to date)
+            if "${GREP}" -q "Migration Current:" "${log_file}" 2>/dev/null; then
+                migration_complete=true
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Migrations already current - proceeding with auth tests"
+                break
+            fi
+
+            sleep 0.5
+        done
+
+        # Wait a bit for server to be fully ready after migrations
+        sleep 2
+
         # Run auth endpoint tests
         test_auth_login "${base_url}" "${result_file}"
         

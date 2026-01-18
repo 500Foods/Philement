@@ -181,5 +181,6 @@ in the migrations themselves so that they get populated in the database directly
 | [1144](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua) | queries | 1.1.0 | 2026-01-10 | 6 | ✗ | Create Auth Test Accounts |
 | [1145](/elements/002-helium/acuranzo/migrations/acuranzo_1145.lua) | queries | 1.4.0 | 2026-01-11 | 7 | ✗ | Test Data - Auth Test API Keys |
 | [1146](/elements/002-helium/acuranzo/migrations/acuranzo_1146.lua) | queries | 1.0.0 | 2026-01-13 | 4 | ✗ | QueryRef #053 - Get Themes |
-| [1147](/elements/002-helium/acuranzo/migrations/acuranzo_1147.lua) | numbers | 1.0.0 | 2026-01-16 | 6 | ✓ | Creates the numbers table |
-| **148** | | | | **779** | **148** | |
+| [1147](/elements/002-helium/acuranzo/migrations/acuranzo_1147.lua) | numbers | 1.0.0 | 2026-01-16 | 6 | ✓ | Creates and populates the numbers table |
+| [1148](/elements/002-helium/acuranzo/migrations/acuranzo_1148.lua) | queries | 1.0.0 | 2026-01-17 | 4 | ✗ | QueryRef #054 - Get Icons |
+| **149** | | | | **783** | **149** | |

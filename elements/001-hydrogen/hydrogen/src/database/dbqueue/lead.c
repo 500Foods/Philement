@@ -84,6 +84,12 @@ MigrationAction database_queue_lead_determine_migration_action(const DatabaseQue
     long long loaded = lead_queue->latest_loaded_migration;
     long long applied = lead_queue->latest_applied_migration;
 
+    // Fix inconsistency: if LOAD is 0 but APPLY > 0, migrations were applied without LOAD tracking
+    // Assume LOAD = APPLY in this case, since applied migrations must have been loaded first
+    if (loaded == 0 && applied > 0) {
+        loaded = applied;
+    }
+
     // CASE 0: Migrations are up to date - no action needed
     // if AVAIL = APPLY, our migration is up to date and we don't need to do anything
     if (available == applied) {
@@ -305,7 +311,7 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
         if (migration_timer_running) {
             clock_gettime(CLOCK_MONOTONIC, &migration_end_time);
             double elapsed_seconds = calc_elapsed_time(&migration_end_time, &migration_start_time);
-            log_this(dqm_label, "Migration completed in %.3fs", LOG_LEVEL_TRACE, 1, elapsed_seconds);
+            log_this(dqm_label, "Migration completed in %.3fs", LOG_LEVEL_STATE, 1, elapsed_seconds);
             migration_timer_running = false;
         }
 
@@ -331,7 +337,7 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
     if (migration_timer_running) {
         clock_gettime(CLOCK_MONOTONIC, &migration_end_time);
         double elapsed_seconds = calc_elapsed_time(&migration_end_time, &migration_start_time);
-        log_this(dqm_label, "Migration completed in %.3fs", LOG_LEVEL_TRACE, 1, elapsed_seconds);
+        log_this(dqm_label, "Migration completed in %.3fs", LOG_LEVEL_STATE, 1, elapsed_seconds);
 //        migration_timer_running = false;
     }
 
