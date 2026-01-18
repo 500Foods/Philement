@@ -1,971 +1,258 @@
-# Conduit Service Implementation Plan
+# Conduit Service - Action Plan
 
-## Quick Start Guide
+## Current Status
 
-1. **Read This First**: [`CONDUIT.md`](/docs/H/plans/CONDUIT.md) - This document (comprehensive plan)
-2. **Check Context**: [`DATABASE_PLAN.md`](/docs/H/plans/DATABASE_PLAN.md) - Existing database architecture
-3. **Review Code**: [`src/database/`](/elements/001-hydrogen/hydrogen/src/database/) - Current database implementation
-4. **Start With**: Phase 1 (Query Table Cache) - Foundation for everything else
-5. **Build Order**: QTC → Queue Selection → Parameter Processing → Pending Results → API Endpoint
-6. **Test As You Go**: Write unit tests for each component before moving to next phase
+**Endpoints** (6 total):
 
-## Executive Summary
+- ✅ `query` - Single query execution
+- ✅ `queries` - Multiple parallel queries (implemented but not registered)
+- ✅ `auth_query` - Authenticated single query
+- ✅ `auth_queries` - Authenticated multiple queries
+- ❌ `alt_query` - Authenticated single query with database override
+- ❌ `alt_queries` - Authenticated multiple queries with database override
 
-The Conduit Service adds a RESTful query execution endpoint to Hydrogen that allows clients to execute pre-defined database queries by ID reference rather than sending raw SQL.
+**Core Features**:
 
-**Key Innovation**: Named parameters (`:userId`) in SQL are automatically converted to database-specific formats (PostgreSQL `$1`, MySQL `?`) based on the target database engine.
+- Named parameters (`:userId`) → database-specific formats (`$1`, `?`)
+- Synchronous execution with timeout and webserver resource suspension
+- Intelligent queue selection with DQM statistics tracking
+- Brotli compression for cached query results
+- JWT authentication for auth/alt endpoints
 
-## Architecture at a Glance
+**Next Actions**:
 
-```todo
-POST /api/conduit/query
-[1] Lookup query_ref in QTC → Get SQL template + metadata
-[2] Parse typed JSON params → Build parameter list
-[3] Convert :named to positional → Generate final SQL
-[4] Select optimal DQM → Consider depth + timestamp
-[5] Submit + Wait → Block with timeout via condition variable
-[6] Return JSON result → Success or error
-```
+1. Register `/api/conduit/queries` endpoint in `api_service.c`
+2. Implement `alt_query` and `alt_queries` endpoints
+3. Add DQM statistics to all responses
+4. Complete test_51_conduit.sh validation
 
-## Key Design Decisions & Rationale
+## Conduit Implementation Checklist
 
-### 1. Query Table Cache (QTC) Design
+### Phase 1: Query Table Cache (QTC) Foundation ✅ **COMPLETED**
 
-In-memory cache per database, loaded during bootstrap, protected by read-write lock
+- [x] **Create QTC structures**: Implement `QueryCacheEntry` and `QueryTableCache` in `src/database/database_cache.h` with query_ref, sql_template, description, queue_type, timeout_seconds, last_used, and usage_count fields
+- [x] **Implement cache management functions**: Create `query_cache_create()`, `query_cache_add_entry()`, `query_cache_lookup()`, `query_cache_update_usage()`, and `query_cache_destroy()` in `src/database/database_cache.c`
+- [x] **Add QTC to DatabaseQueue**: Integrate `query_cache` field into `DatabaseQueue` structure in `src/database/dbqueue/dbqueue.h`
+- [x] **Bootstrap QTC loading**: Modify `database_queue_execute_bootstrap_query()` in `src/database/database_bootstrap.c` to populate QTC from bootstrap query results (query_ref, code, name, query_queue_lu_58, query_timeout)
+- [x] **Add QTC unit tests**: Create comprehensive tests in `tests/unity/src/database/database_cache_test.c` for all cache operations
+- [x] **Verify QTC integration**: Run `mkt` to ensure compilation and `mku database_cache_test` to validate functionality
 
-### 2. Typed Parameter Format
+### Phase 2: Enhanced Queue Selection ✅ **COMPLETED**
 
-Explicit type grouping in JSON (`INTEGER`, `STRING`, `BOOLEAN`, `FLOAT`)
+- [x] **Add last_request_time field**: Extend `DatabaseQueue` structure in `src/database/dbqueue/dbqueue.h` with `volatile time_t last_request_time` for LRU-style selection
+- [x] **Implement selection algorithm**: Create `select_optimal_queue()` in `src/database/database_queue_select.c` that filters by database name, prefers recommended queue type, selects minimum depth queue, and uses earliest `last_request_time` as tie-breaker
+- [x] **Update queue submission**: Modify `database_queue_submit_query()` in `src/database/dbqueue/submit.c` to atomically update `last_request_time` when queries are submitted
+- [x] **Initialize timestamps**: Set `last_request_time` to queue creation time in queue initialization functions
+- [x] **Add selection unit tests**: Create comprehensive tests in `tests/unity/src/database/database_queue_select_test.c` covering all selection criteria and edge cases
+- [x] **Verify queue selection**: Run `mkt` for compilation and `mku database_queue_select_test` for validation
 
-**Example**:
+### Phase 3: Parameter Processing ✅ **COMPLETED**
+
+- [x] **Create parameter structures**: Implement `ParameterType` enum and `TypedParameter` union in `src/database/database_params.h` supporting INTEGER, STRING, BOOLEAN, FLOAT, TEXT, DATE, TIME, DATETIME, TIMESTAMP
+- [x] **Implement parsing functions**: Create `parse_typed_parameters()` in `src/database/database_params.c` to parse JSON parameter format into `ParameterList` structure
+- [x] **Add named-to-positional conversion**: Implement `convert_named_to_positional()` to replace `:paramName` with database-specific placeholders (`$1` for PostgreSQL, `?` for MySQL/SQLite/DB2)
+- [x] **Handle parameter ordering**: Build ordered parameter arrays maintaining the order of appearance in SQL templates for correct binding
+- [x] **Add parameter unit tests**: Create comprehensive tests in `tests/unity/src/database/database_params_test.c` for all parameter types and conversion scenarios
+- [x] **Verify parameter processing**: Run `mkt` for compilation and `mku database_params_test` for validation
+
+### Phase 4: Synchronous Query Execution ✅ **COMPLETED**
+
+- [x] **Create pending result structures**: Implement `PendingQueryResult` and `PendingResultManager` in `src/database/database_pending.h` with mutex, condition variable, and timeout support
+- [x] **Implement wait mechanism**: Create `pending_result_register()`, `pending_result_wait()`, and `pending_result_signal_ready()` functions in `src/database/database_pending.c`
+- [x] **Integrate with DQM worker**: Modify DQM worker thread to call `pending_result_signal_ready()` when query execution completes
+- [x] **Add timeout handling**: Implement proper condition variable waiting with timeout support and spurious wakeup protection
+- [x] **Add cleanup management**: Implement periodic cleanup of expired pending results to prevent memory leaks
+- [x] **Add pending result unit tests**: Create comprehensive tests in `tests/unity/src/database/database_pending_test.c` for wait, signal, and timeout scenarios
+- [x] **Verify synchronous execution**: Run `mkt` for compilation and `mku database_pending_test` for validation
+
+### Phase 5: Conduit API Endpoints - **PARTIALLY COMPLETE**
+
+- [x] **Create Conduit directory structure**: Set up `src/api/conduit/` with `conduit_service.h`, `conduit_service.c`, and subdirectories for each endpoint
+- [x] **Implement `/api/conduit/query` endpoint**: Create `query/query.h` and `query/query.c` with Swagger documentation, JSON parsing, parameter processing, queue selection, and synchronous execution
+- [x] **Register `/api/conduit/query`**: Add endpoint registration in `src/api/api_service.c` and update logging
+- [x] **Implement `/api/conduit/auth_query` endpoint**: Create `auth_query/auth_query.h` and `auth_query/auth_query.c` with JWT validation, database extraction from claims, and authenticated query execution
+- [x] **Implement `/api/conduit/auth_queries` endpoint**: Create `auth_queries/auth_queries.h` and `auth_queries/auth_queries.c` for parallel authenticated queries with JWT validation
+- [ ] **Register `/api/conduit/queries` endpoint**: Add endpoint registration in `src/api/api_service.c` for the existing multiple query implementation
+- [ ] **Implement `/api/conduit/alt_query` endpoint**: Create `alt_query/alt_query.h` and `alt_query/alt_query.c` with JWT validation and database override from request body parameter
+- [ ] **Implement `/api/conduit/alt_queries` endpoint**: Create `alt_queries/alt_queries.h` and `alt_queries/alt_queries.c` for parallel queries with database override
+- [ ] **Add DQM statistics tracking**: Extend `DatabaseQueueManager` with comprehensive statistics tracking using structure:
+
+  ```c
+  typedef struct DQMStatistics {
+      volatile unsigned long long queue_selection_counters[5];  // Indexed by QUEUE_TYPE_*
+      volatile unsigned long long total_queries_submitted;
+      volatile unsigned long long total_queries_completed;
+      volatile unsigned long long total_queries_failed;
+      volatile unsigned long long total_timeouts;
+      struct {
+          volatile unsigned long long submitted;
+          volatile unsigned long long completed;
+          volatile unsigned long long failed;
+          volatile unsigned long long avg_execution_time_ms;
+          volatile time_t last_used;
+      } per_queue_stats[5];
+  } DQMStatistics;
+  ```
+
+- [ ] **Include DQM stats in responses**: Add DQM statistics to all endpoint JSON responses showing queue distribution and performance metrics
+- [ ] **Implement cached query loading**: After QTC bootstrap, load queries marked as "cache" type and compress results with Brotli for improved response times
+- [ ] **Add Brotli compression utilities**: Create `src/utils/utils_compression.c` with `compress_json_result()` and `decompress_cached_result()` functions for memory-efficient caching
+
+### Phase 6: Webserver Resource Suspension
+
+- [ ] **Implement suspension mechanism**: Add webserver resource suspension for long-running queries in `/api/conduit/queries` and `/api/conduit/auth_queries` endpoints using:
+
+  ```c
+  // In endpoint handler after submitting queries
+  pthread_mutex_lock(&webserver_suspend_lock);
+  webserver_thread_suspended = true;
+  MHD_suspend_connection(connection);
+  // Wait for all queries to complete
+  wait_for_all_pending_results(pending_results_array);
+  // Resume connection processing
+  MHD_resume_connection(connection);
+  webserver_thread_suspended = false;
+  pthread_mutex_unlock(&webserver_suspend_lock);
+  ```
+
+- [ ] **Add suspension to plural endpoints**: Integrate resource suspension into both `/api/conduit/queries` and `/api/conduit/auth_queries` handlers
+- [ ] **Test thread pool protection**: Verify that suspension prevents thread pool exhaustion during batch operations
+- [ ] **Validate synchronous semantics**: Ensure clients still receive synchronous API responses despite internal parallel execution
+
+### Phase 7: Comprehensive Testing
+
+- [ ] **Complete test_51_conduit.sh**: Update test script to validate all 6 endpoints across all 7 database engines (PostgreSQL, MySQL, SQLite, DB2, MariaDB, CockroachDB, YugabyteDB)
+- [ ] **Test parameter datatypes**: Validate parameter passing for all supported types (INTEGER, STRING, BOOLEAN, FLOAT, JSON, ARRAY) across all engines
+- [ ] **Test JWT authentication**: Verify JWT validation and database extraction for auth endpoints
+- [ ] **Test database override**: Validate alt_query and alt_queries endpoints properly override database from JWT claims
+- [ ] **Test parallel execution**: Verify queries endpoint executes multiple queries in parallel with proper result aggregation
+- [ ] **Test timeout handling**: Validate timeout scenarios for individual queries and batch operations
+- [ ] **Test error scenarios**: Verify proper error responses for invalid query_ref, parameter validation failures, and database connection issues
+- [ ] **Performance testing**: Run concurrent request tests to validate queue selection and resource suspension effectiveness
+- [ ] **Memory leak testing**: Use Valgrind to ensure no memory leaks in parameter processing and result handling
+- [ ] **Integration testing**: Run full test suite with `mka` to ensure no regressions in other components
+
+### Phase 8: Final Integration and Documentation
+
+- [ ] **Update Swagger documentation**: Ensure all endpoints have complete OpenAPI specifications with security annotations
+- [ ] **Add code documentation**: Update function comments in all conduit implementation files
+- [ ] **Create parameter type documentation**: Document all supported parameter types and JSON formats
+- [ ] **Update testing documentation**: Document test_51_conduit.sh coverage and validation procedures
+- [ ] **Performance documentation**: Document DQM statistics, caching benefits, and resource suspension advantages
+- [ ] **Security documentation**: Document JWT validation, database override security, and authentication flows
+- [ ] **Run final test suite**: Execute complete test suite including test_51_conduit.sh across all engines
+- [ ] **Verify production readiness**: Confirm all endpoints functional, tested, and documented
+
+## Architecture Overview
+
+### Query Table Cache (QTC)
+
+In-memory cache per database, loaded during bootstrap, protected by read-write lock. Contains query_ref, sql_template, description, queue_type, timeout_seconds, last_used, and usage_count fields.
+
+### Parameter Types
+
+Supports INTEGER, STRING, BOOLEAN, FLOAT, TEXT, DATE, TIME, DATETIME, TIMESTAMP with JSON format:
 
 ```json
 {
-  "INTEGER": {"userId": 123},
-  "STRING": {"username": "john"}
+  "INTEGER": {"userId": 123, "limit": 50},
+  "STRING": {"username": "johndoe", "email": "user@example.com"},
+  "BOOLEAN": {"isActive": true, "sendEmail": false},
+  "FLOAT": {"price": 19.99, "discount": 0.15},
+  "TEXT": {"description": "Large text content"},
+  "DATE": {"birth_date": "1990-01-01"},
+  "TIME": {"login_time": "14:30:00"},
+  "DATETIME": {"created_at": "2023-12-01 10:00:00"},
+  "TIMESTAMP": {"updated_at": "2023-12-01 10:00:00.123"}
 }
 ```
 
-### 3. Named Parameter Conversion
+### Named Parameter Conversion
 
-Convert `:paramName` to positional parameters (`?` or `$1`) at runtime
-
-**Conversion Rules**:
+Converts `:paramName` to positional parameters at runtime:
 
 - PostgreSQL: `:userId` → `$1`, `:email` → `$2`
 - MySQL/SQLite/DB2: `:userId` → `?`, `:email` → `?`
 
-### 4. Queue Selection Algorithm
+### Queue Selection Algorithm
 
-Select queue with minimum depth; tie-break by earliest `last_request_time`
+Selects optimal queue by: filtering by database name → preferring recommended queue type → selecting minimum depth queue → using earliest `last_request_time` as tie-breaker.
 
-**Algorithm**:
+### Synchronous Execution with Timeouts
 
-```list
-1. Filter by database name
-2. Filter by queue type (from QTC)
-3. Find minimum depth
-4. If tie, select earliest timestamp
-5. Update timestamp on submission
-```
+Blocks calling thread on condition variable with timeout. For long-running queries, webserver resources are suspended to prevent thread exhaustion.
 
-### 5. Synchronous Execution Model
+### Parallel Query Execution
 
-Block calling thread on condition variable with timeout
+For plural endpoints (`/api/conduit/queries`, `/api/conduit/auth_queries`), submits individual queries to DQMs for parallel execution with collective timeout and result aggregation.
 
-**Workflow**:
+### DQM Statistics Tracking
 
-- Thread registers pending result
-- Submits query to DQM
-- Blocks on `pthread_cond_timedwait()`
-- DQM worker signals completion
-- Thread wakes, returns result
+Lead DQM maintains comprehensive statistics on query distribution across queue types for operational visibility and performance monitoring.
 
-## Common Pitfalls & Gotchas
+## Common Implementation Notes
 
-### 1. Bootstrap Query Format
+### Bootstrap Query Requirements
 
-**Pitfall**: Bootstrap query doesn't return expected columns
+Bootstrap query must return exactly: `query_ref` (INTEGER), `code` (TEXT), `name` (TEXT), `query_queue_lu_58` (INTEGER), `query_timeout` (INTEGER). Test manually before implementing parser.
 
-Ensure bootstrap query returns exactly:
+### Named Parameter Parsing
 
-- `query_ref` (INTEGER)
-- `code` (TEXT)
-- `name` (TEXT)
-- `query_queue_lu_58` (INTEGER) (0 = slow, 1 = medium, 2 = fast 3 = cached)
-- `query_timeout` (INTEGER)
+Use regex with word boundaries `:\w+\b` to avoid false matches in strings/comments. Include edge cases in unit tests.
 
-**Test**: Manually run bootstrap query before implementing parser
+### Thread Safety Considerations
 
-### 2. Named Parameter Parsing
+Use atomic operations for `last_request_time` updates. Selection is advisory - minor races acceptable.
 
-**Pitfall**: `:paramName` in strings or comments causes false matches
+### Memory Management
 
-**Example Problem**:
+Pair every `malloc` with `free`. Use consistent cleanup patterns. Test with Valgrind (`tests/test_11_leaks_like_a_sieve.sh`).
 
-```sql
--- This comment mentions :userId for reference
-SELECT * FROM users WHERE id = :userId
-```
+### Timeout Handling
 
-**Solution**: Use proper regex with word boundaries: `:\w+\b`
+Check completion flag before timeout flag. Use proper condition variable wait loop with spurious wakeup protection.
 
-**Test**: Include edge cases in unit tests
+### Database-Specific Syntax
 
-### 3. Thread Safety
-
-**Pitfall**: Race condition updating `last_request_time`
-
-**Solution**: Use atomic operations or accept minor races (selection is advisory, not critical)
-
-**Test**: Load test with concurrent requests
-
-### 4. Memory Leaks
-
-**Pitfall**: Forgotten `free()` calls in error paths
-
-**Solution**:
-
-- Use consistent cleanup patterns
-- Every `malloc` paired with `free`
-- Test with Valgrind (`tests/test_11_leaks_like_a_sieve.sh`)
-
-### 5. Timeout Edge Cases
-
-**Pitfall**: Query completes just as timeout occurs
-
-**Solution**:
-
-- Check completion flag before timeout flag
-- Use proper condition variable wait loop
-- Handle spurious wakeups
-
-**Pattern**:
-
-```c
-while (!pending->completed && !pending->timed_out) {
-    pthread_cond_timedwait(...);
-}
-```
-
-### 6. Database-Specific Syntax
-
-**Pitfall**: PostgreSQL requires `$1`, MySQL requires `?`
-
-**Solution**: Check `DatabaseEngine` type before conversion
-
-**Test**: Unit test all database types
+Check `DatabaseEngine` type before parameter conversion. PostgreSQL uses `$1`, others use `?`.
 
 ## Resuming Work Checklist
 
-When picking up this work in a future session:
-
 - [ ] Read this CONDUIT.md document top to bottom
-- [ ] Review current [`DATABASE_PLAN.md`](/docs/H/plans/DATABASE_PLAN.md) status
-- [ ] Check existing [`src/database/`](/elements/001-hydrogen/hydrogen/src/database/) implementation
-- [ ] Identify which phase was last worked on (check todo list)
-- [ ] Review any existing code in `src/api/conduit/` (if created)
+- [ ] Review current database implementation status
+- [ ] Check existing `src/api/conduit/` code
+- [ ] Identify current phase progress
 - [ ] Run existing tests: `./tests/test_30_database.sh`
-- [ ] Check if bootstrap query is configured in test database
-- [ ] Verify all required libraries are installed
-- [ ] Review any recent changes to database subsystem
-- [ ] Check for any blocking issues or dependencies
+- [ ] Verify bootstrap query configuration
+- [ ] Check for blocking dependencies
 
-## Implementation Sequence
+## Implementation Dependencies
 
-**Critical Path**: Must implement in this order due to dependencies
+**Critical Path**: QTC → Queue Selection → Parameters → Pending Results → API Endpoints
 
-```plan
-Phase 1 (QTC) → Phase 2 (Selection) → Phase 3 (Params) → Phase 4 (Pending) → Phase 5 (API)
-     ↓              ↓                    ↓                   ↓                    ↓
-  Foundation    Enhancement          Parsing            Blocking            Integration
-```
-
-**Parallel Work Possible**:
-
-- Unit tests can be written in parallel with implementation
-- Documentation can be updated incrementally
-- Swagger annotations can be added as endpoints are created
+**Parallel Work**: Unit tests, documentation, and Swagger annotations can be developed alongside implementation.
 
 **Integration Points**:
 
-- Phase 1 integrates with bootstrap execution
-- Phase 2 integrates with query submission
-- Phase 4 integrates with DQM worker thread
-- Phase 5 integrates with API subsystem
-
-## Overview
-
-The Conduit Service is a new API service for Hydrogen that provides a query execution endpoint. It enables clients to execute database queries by referencing query IDs from the Query Table Cache (QTC), passing typed parameters, and receiving results through a synchronous request-response pattern.
-
-## Key Features
-
-- **Query Table Cache (QTC)**: In-memory cache of pre-defined SQL queries loaded during bootstrap
-- **Typed Parameters**: JSON-based parameter format supporting INTEGER, STRING, BOOLEAN, FLOAT types
-- **Named Parameter Conversion**: Automatic conversion from named parameters (`:name`) to database-specific formats
-- **Intelligent Queue Selection**: Selects optimal DQM based on queue depth and last request timestamp
-- **Synchronous Execution**: Blocks until query completes with configurable timeout
-- **Multi-Database Support**: Works across PostgreSQL, SQLite, MySQL, and DB2 engines
-
-## Architecture Overview
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API as Conduit API
-    participant QTC as Query Cache
-    participant QS as Queue Selector
-    participant DQM as Database Queue
-    participant DB as Database
-
-    Client->>API: POST /api/conduit/query
-    API->>QTC: Lookup query_ref
-    QTC-->>API: SQL template + metadata
-    API->>API: Parse typed parameters
-    API->>API: Convert named params to ?
-    API->>QS: Find best queue
-    QS->>QS: Check queue depths
-    QS->>QS: Check timestamps
-    QS-->>API: Selected DQM
-    API->>DQM: Submit query + wait
-    DQM->>DB: Execute query
-    DB-->>DQM: Result
-    DQM-->>API: Wake thread + return
-    API-->>Client: JSON result
-```
-
-## Component Architecture
-
-```mermaid
-graph TB
-    API[Conduit API Endpoint]
-    QTC[Query Table Cache]
-    PS[Parameter Service]
-    QS[Queue Selector]
-    PR[Pending Results]
-    DQM[Database Queue Manager]
-    
-    API -->|1. Lookup query_ref| QTC
-    API -->|2. Parse params| PS
-    PS -->|Named to positional| PS
-    API -->|3. Select best queue| QS
-    QS -->|Check depths/times| DQM
-    API -->|4. Submit + register| PR
-    API -->|5. Submit query| DQM
-    API -->|6. Wait with timeout| PR
-    DQM -->|7. Signal complete| PR
-    PR -->|8. Return result| API
-```
-
-## Implementation Phases
-
-### Phase 1: Query Table Cache (QTC) Foundation
-
-**Purpose**: Create in-memory cache structure for storing query templates loaded during bootstrap.
-
-**Components**:
-
-```c
-// src/database/database_cache.h
-
-typedef struct QueryCacheEntry {
-    int query_ref;                 // Unique query identifier
-    char* sql_template;            // SQL with named parameters (e.g., :userId)
-    char* description;             // Human-readable description for logging
-    char* queue_type;              // Recommended queue: "slow", "medium", "fast", "cache"
-    int timeout_seconds;           // Query-specific timeout
-    time_t last_used;              // LRU tracking for future optimization
-    volatile int usage_count;      // Usage statistics
-} QueryCacheEntry;
-
-typedef struct QueryTableCache {
-    QueryCacheEntry** entries;     // Array of cache entries
-    size_t entry_count;            // Number of entries
-    size_t capacity;               // Allocated capacity
-    pthread_rwlock_t cache_lock;   // Reader-writer lock for concurrent access
-} QueryTableCache;
-```
-
-**Key Functions**:
-
-- `query_cache_create()` - Initialize QTC structure
-- `query_cache_add_entry()` - Add entry from bootstrap results
-- `query_cache_lookup()` - Thread-safe lookup by query_ref
-- `query_cache_update_usage()` - Update last_used and usage_count
-- `query_cache_destroy()` - Cleanup all entries
-
-**Integration**:
-
-Add to src/database/dbqueue/dbqueue.h:DatabaseQueue structure:
-
-```c
-struct DatabaseQueue {
-    // ... existing fields ...
-    QueryTableCache* query_cache;  // Shared QTC for this database
-    // ... rest of fields ...
-};
-```
-
-**Bootstrap Loading**:
-
-Modify src/database/database_bootstrap.c:database_queue_execute_bootstrap_query to:
-
-1. Execute bootstrap query
-2. Parse result rows into QueryCacheEntry structures
-3. Populate QTC with entries
-4. Log number of queries loaded
-
-**Expected Bootstrap Query Result Schema**:
-
-```sql
--- Bootstrap query should return:
-SELECT 
-    query_ref,        -- INTEGER
-    sql_template,     -- TEXT with named parameters
-    description,      -- TEXT
-    queue_type,       -- TEXT (slow/medium/fast/cache)
-    timeout_seconds   -- INTEGER
-FROM queries
-WHERE active = true
-ORDER BY query_ref;
-```
-
-### Phase 2: Enhanced Queue Selection ✅ **COMPLETED**
-
-**Purpose**: Implement intelligent DQM selection algorithm considering queue depth and request timing.
-
-**New Field**:
-
-Added to src/database/dbqueue/dbqueue.h:DatabaseQueue structure:
-
-```c
-struct DatabaseQueue {
-    // ... existing fields ...
-    volatile time_t last_request_time;  // Timestamp of last query submission
-    // ... rest of fields ...
-};
-```
-
-**Queue Selection Algorithm**:
-
-```c
-// src/database/database_queue_select.c
-
-DatabaseQueue* select_optimal_queue(
-    const char* database_name,
-    const char* queue_type_hint,
-    DatabaseQueueManager* manager
-) {
-    // Algorithm:
-    // 1. Filter queues by database name
-    // 2. Filter by queue type (from QTC recommendation)
-    // 3. Find minimum queue depth
-    // 4. Among queues with min depth, select earliest last_request_time
-    // 5. If all depths are 0, naturally round-robins via timestamps
-}
-```
-
-**Selection Criteria**:
-
-1. **Database Match**: Only consider queues for the target database
-2. **Queue Type**: Prefer queue type recommended by QTC entry
-3. **Queue Depth**: Select queue with fewest pending queries
-4. **Tie-Breaking**: Use earliest `last_request_time` (LRU-style)
-5. **Initialization**: Set `last_request_time` to queue creation time
-
-**Update Logic**:
-
-In src/database/dbqueue/submit.c:database_queue_submit_query:
-
-```c
-// Update last_request_time atomically when query is submitted
-db_queue->last_request_time = time(NULL);
-```
-
-**Implementation Status**: ✅ **FULLY IMPLEMENTED**
-
-- Queue selection algorithm implemented in `src/database/database_queue_select.c`
-- `last_request_time` field added to DatabaseQueue structure
-- Timestamp updates implemented in queue submission
-- Comprehensive unit tests added in `tests/unity/src/database/database_queue_select_test.c`
-- All static analysis warnings resolved
-- Memory leak free with proper cleanup in all test cases
-
-### Phase 3: Parameter Processing
-
-**Purpose**: Parse typed JSON parameters and convert named parameters to database-specific formats.
-
-**Components**:
-
-```c
-// src/database/database_params.h
-
-typedef enum {
-    PARAM_TYPE_INTEGER,
-    PARAM_TYPE_STRING,
-    PARAM_TYPE_BOOLEAN,
-    PARAM_TYPE_FLOAT
-} ParameterType;
-
-typedef struct TypedParameter {
-    char* name;              // Parameter name (e.g., "userId")
-    ParameterType type;      // Data type
-    union {
-        long long int_value;
-        char* string_value;
-        bool bool_value;
-        double float_value;
-    } value;
-} TypedParameter;
-
-typedef struct ParameterList {
-    TypedParameter** params;
-    size_t count;
-} ParameterList;
-```
-
-**Input Format**:
-
-```json
-{
-  "INTEGER": {
-    "userId": 123,
-    "quantity": 50,
-    "port": 8080
-  },
-  "STRING": {
-    "username": "johndoe",
-    "email": "john@example.com",
-    "description": "Sample user profile"
-  },
-  "FLOAT": {
-    "temperature": 22.5,
-    "discount": 0.15,
-    "latitude": 37.7749
-  }
-}
-```
-
-**Key Functions**:
-
-```c
-// Parse typed JSON into parameter list
-ParameterList* parse_typed_parameters(const char* json_params);
-
-// Convert SQL template from named to positional parameters
-// Returns modified SQL and ordered parameter array
-char* convert_named_to_positional(
-    const char* sql_template,
-    ParameterList* params,
-    DatabaseEngine engine_type,
-    TypedParameter*** ordered_params,
-    size_t* param_count
-);
-
-// Build parameter array in correct order for database execution
-bool build_parameter_array(
-    const char* sql_template,
-    ParameterList* params,
-    TypedParameter*** ordered_params,
-    size_t* param_count
-);
-
-// Cleanup
-void free_parameter_list(ParameterList* params);
-```
-
-**Named Parameter Conversion Examples**:
-
-**PostgreSQL**:
-
-```sql
--- Input:
-SELECT * FROM users WHERE user_id = :userId AND username = :username
-
--- Output:
-SELECT * FROM users WHERE user_id = $1 AND username = $2
--- Parameters: [userId, username]
-```
-
-**MySQL/SQLite/DB2**:
-
-```sql
--- Input:
-SELECT * FROM users WHERE user_id = :userId AND username = :username
-
--- Output:
-SELECT * FROM users WHERE user_id = ? AND username = ?
--- Parameters: [userId, username]
-```
-
-**Algorithm**:
-
-1. Scan SQL template for `:paramName` patterns
-2. Build list of parameter names in order of appearance
-3. Replace each `:paramName` with appropriate placeholder
-4. Create ordered array of TypedParameter pointers
-5. Return modified SQL and parameter array
-
-### Phase 4: Synchronous Query Execution ✅ **COMPLETED**
-
-**Purpose**: Implement blocking wait mechanism for query results with timeout support.
-
-**Components**:
-
-```c
-// src/database/database_pending.h
-
-typedef struct PendingQueryResult {
-    char* query_id;                    // Unique identifier
-    QueryResult* result;               // Result data (NULL until complete)
-    bool completed;                    // Completion flag
-    bool timed_out;                    // Timeout flag
-    pthread_mutex_t result_lock;       // Protects result access
-    pthread_cond_t result_ready;       // Signals completion
-    time_t submitted_at;               // Submission timestamp
-    int timeout_seconds;               // Query-specific timeout
-} PendingQueryResult;
-
-typedef struct PendingResultManager {
-    PendingQueryResult** results;      // Array of pending results
-    size_t count;
-    size_t capacity;
-    pthread_mutex_t manager_lock;      // Protects result array
-} PendingResultManager;
-```
-
-**Key Functions**:
-
-```c
-// Create and register pending result
-PendingQueryResult* pending_result_register(
-    PendingResultManager* manager,
-    const char* query_id,
-    int timeout_seconds
-);
-
-// Wait for result with timeout
-int pending_result_wait(PendingQueryResult* pending);
-
-// Signal result completion (called by DQM worker)
-bool pending_result_signal_ready(
-    PendingResultManager* manager,
-    const char* query_id,
-    QueryResult* result
-);
-
-// Cleanup expired results
-size_t pending_result_cleanup_expired(PendingResultManager* manager);
-```
-
-**Workflow**:
-
-1. **Endpoint**: Register pending result before submitting query
-2. **Endpoint**: Submit query to selected DQM
-3. **Endpoint**: Call `pending_result_wait()` with timeout
-4. **DQM Worker**: Execute query
-5. **DQM Worker**: Call `pending_result_signal_ready()` with result
-6. **Endpoint**: Wake up and return result to client
-
-**Timeout Handling**:
-
-```c
-int pending_result_wait(PendingQueryResult* pending) {
-    struct timespec timeout;
-    gettimeofday(&tv, NULL);
-    timeout.tv_sec = tv.tv_sec + pending->timeout_seconds;
-    timeout.tv_nsec = tv.tv_usec * 1000;
-
-    pthread_mutex_lock(&pending->result_lock);
-
-    while (!pending->completed && !pending->timed_out) {
-        int rc = pthread_cond_timedwait(
-            &pending->result_ready,
-            &pending->result_lock,
-            &timeout
-        );
-
-        if (rc == ETIMEDOUT) {
-            pending->timed_out = true;
-            log_this("DATABASE", "Query timeout occurred", LOG_LEVEL_ERROR, true, true, true);
-            break;
-        } else if (rc != 0) {
-            log_this("DATABASE", "Error waiting for query result", LOG_LEVEL_ERROR, true, true, true);
-            pthread_mutex_unlock(&pending->result_lock);
-            return -1;
-        }
-    }
-
-    pthread_mutex_unlock(&pending->result_lock);
-
-    if (pending->timed_out) {
-        return -1;
-    }
-
-    return 0;
-}
-```
-
-### Phase 5: Conduit Service API
-
-**Purpose**: Implement REST API endpoint for query execution.
-
-**Directory Structure**:
-
-```files
-src/api/conduit/
-├── conduit_service.h      # Service-level definitions + swagger
-├── conduit_service.c      # Service initialization
-└── query/
-    ├── query.h            # Query endpoint declarations + swagger
-    └── query.c            # Query endpoint implementation
-```
-
-**API Specification**:
-
-**Endpoint**: `POST /api/conduit/query`
-
-**Request Body**:
-
-```json
-{
-  "query_ref": 1234,
-  "params": {
-    "INTEGER": {
-      "userId": 123,
-      "quantity": 50
-    },
-    "STRING": {
-      "username": "johndoe",
-      "email": "john@example.com"
-    },
-    "BOOLEAN": {
-      "isActive": true
-    },
-    "FLOAT": {
-      "discount": 0.15
-    }
-  },
-  "database": "Acuranzo"
-}
-```
-
-**Success Response** (200):
-
-```json
-{
-  "success": true,
-  "query_ref": 1234,
-  "description": "Fetch user profile",
-  "rows": [
-    {
-      "user_id": 123,
-      "username": "johndoe",
-      "email": "john@example.com",
-      "is_active": true
-    }
-  ],
-  "row_count": 1,
-  "column_count": 4,
-  "execution_time_ms": 45,
-  "queue_used": "fast"
-}
-```
-
-**Error Response - Query Not Found** (404):
-
-```json
-{
-  "success": false,
-  "error": "Query not found",
-  "query_ref": 9999,
-  "database": "Acuranzo"
-}
-```
-
-**Error Response - Parameter Validation** (400):
-
-```json
-{
-  "success": false,
-  "error": "Missing required parameter: userId",
-  "query_ref": 1234,
-  "database": "Acuranzo"
-}
-```
-
-**Error Response - Timeout** (408):
-
-```json
-{
-  "success": false,
-  "error": "Query execution timeout",
-  "query_ref": 1234,
-  "timeout_seconds": 30,
-  "database": "Acuranzo"
-}
-```
-
-**Error Response - Database Error** (500):
-
-```json
-{
-  "success": false,
-  "error": "Database error",
-  "database_error": "Table not found: users",
-  "query_ref": 1234,
-  "database": "Acuranzo"
-}
-```
-
-**Implementation**:
-
-```c
-// src/api/conduit/query/query.h
-
-//@ swagger:path /api/conduit/query
-//@ swagger:method POST
-//@ swagger:summary Execute database query by reference
-//@ swagger:description Executes a pre-defined query from the Query Table Cache
-//@ swagger:operationId executeQuery
-//@ swagger:request body application/json QueryRequest
-//@ swagger:response 200 application/json QueryResponse
-//@ swagger:response 400 application/json ErrorResponse
-//@ swagger:response 404 application/json ErrorResponse
-//@ swagger:response 408 application/json ErrorResponse
-//@ swagger:response 500 application/json ErrorResponse
-
-int conduit_query_handler(
-    struct MHD_Connection* connection,
-    const char* url,
-    const char* method,
-    const char* upload_data,
-    size_t* upload_data_size,
-    void** con_cls
-);
-```
-
-**Handler Workflow**:
-
-1. Parse JSON request body
-2. Validate required fields (query_ref, database)
-3. Lookup query in QTC
-4. Parse typed parameters
-5. Convert named parameters to positional
-6. Select optimal DQM
-7. Register pending result
-8. Submit query to DQM
-9. Wait for result with timeout
-10. Format and return JSON response
-
-**Service Registration**:
-
-Add to src/api/api_service.c:
-
-```c
-#include "conduit/conduit_service.h"
-
-// Register conduit endpoints during API initialization
-register_endpoint("/api/conduit/query", conduit_query_handler);
-```
-
-## Data Flow
-
-### Request Flow
-
-```mermaid
-graph TB
-    A[Client POST Request] --> B[Parse JSON Body]
-    B --> C[Lookup query_ref in QTC]
-    C --> D[Parse Typed Parameters]
-    D --> E[Convert Named to Positional]
-    E --> F[Select Optimal DQM]
-    F --> G[Register Pending Result]
-    G --> H[Submit to DQM Queue]
-    H --> I[Wait with Timeout]
-    I --> J[Return Result or Error]
-```
-
-### DQM Processing Flow
-
-```mermaid
-graph TB
-    A[DQM Worker Dequeues] --> B[Deserialize Query]
-    B --> C[Acquire DB Connection]
-    C --> D[Execute Query]
-    D --> E[Serialize Result]
-    E --> F[Signal Pending Result]
-    F --> G[Release Connection]
-```
-
-## Thread Safety Considerations
-
-### Query Table Cache (QTC)
-
-- **Read-Write Lock**: Many concurrent readers, single writer
-- **Read Operations**: Lookup query by query_ref
-- **Write Operations**: Bootstrap loading, cache refresh
-- **Access Pattern**: Read-heavy after initialization
-
-### Pending Result Manager
-
-- **Manager Lock**: Protects result array during add/remove
-- **Individual Locks**: Each PendingQueryResult has own mutex
-- **Condition Variables**: One per pending result for signaling
-- **Cleanup**: Periodic cleanup of expired results
-
-### Queue Selection
-
-- **Atomic Reads**: Queue depth via atomic operations
-- **Timestamp Updates**: Atomic time_t write on submission
-- **No Locks**: Selection algorithm uses atomic reads only
-- **Race Condition**: Acceptable if multiple threads select same queue
-
-### Parameter Processing
-
-- **Stateless**: No shared state
-- **Thread-Safe**: Each request has own parameter structures
-- **Memory Management**: Caller owns all allocated memory
-
-## Error Handling
-
-### Query Not Found
-
-- **Cause**: query_ref not in QTC
-- **Response**: 404 with error message
-- **Logging**: Log lookup failure with query_ref
-
-### Parameter Validation
-
-- **Missing Parameter**: 400 with parameter name
-- **Type Mismatch**: 400 with expected vs actual type
-- **Invalid Format**: 400 with JSON parse error
-
-### Timeout
-
-- **Cause**: Query exceeds timeout_seconds
-- **Response**: 408 with timeout details
-- **Logging**: Log timeout with query details
-- **Cleanup**: Mark result as expired
-
-### Database Error
-
-- **Cause**: SQL error, connection lost, etc.
-- **Response**: 500 with sanitized error
-- **Logging**: Log full error with stack trace
-- **Connection**: Attempt reconnection on next query
-
-### Queue Selection Failure
-
-- **Cause**: No DQM available for database
-- **Response**: 503 Service Unavailable
-- **Logging**: Log database name and available queues
-- **Fallback**: None - return error immediately
-
-## Performance Considerations
-
-### Query Cache Lookup
-
-- **Complexity**: O(log n) with binary search or O(1) with hash map
-- **Implementation**: Start with sorted array, optimize later
-- **Memory**: ~100 bytes per entry, 10K entries = ~1MB
-
-### Parameter Parsing
-
-- **Complexity**: O(n) where n = number of parameters
-- **Memory**: Temporary allocations freed after query submission
-- **Optimization**: Reuse parameter buffers per thread
-
-### DQM Selection
-
-- **Complexity**: O(m) where m = number of queues for database
-- **Typical**: m = 1-5 queues per database
-- **Optimization**: Cache queue list per database
-
-### Result Waiting
-
-- **Blocking**: Thread blocks on condition variable
-- **Resource**: No CPU usage while waiting
-- **Scalability**: Limited by thread pool size
-
-## Testing Strategy
-
-### Unit Tests
-
-**QTC Management** tests/unity/src/database/database_cache_test.c:
-
-- Create and destroy cache
-- Add entries
-- Lookup by query_ref
-- Update usage statistics
-- Thread-safety with concurrent readers
-
-**Parameter Parsing** tests/unity/src/database/database_params_test.c:
-
-- Parse all parameter types
-- Handle malformed JSON
-- Edge cases (empty, null, oversized)
-- Named parameter conversion
-- Database-specific format conversion
-
-**Queue Selection** tests/unity/src/database/database_queue_select_test.c:
-
-- Filter by database
-- Filter by queue type
-- Select by depth
-- Tie-breaking by timestamp
-- Edge cases (no queues, all queues full)
-
-**Pending Results** tests/unity/src/database/database_pending_test.c:
-
-- Register result
-- Wait with success
-- Wait with timeout
-- Signal completion
-- Concurrent access
-
-## Implementation Tasks
-
-### Phase 1: Query Table Cache
-
-- [x] Create src/database/database_cache.h with QTC structures
-- [x] Implement src/database/database_cache.c with cache management functions
-- [x] Add `query_cache` field to src/database/dbqueue/dbqueue.h:DatabaseQueue structure
-- [x] Modify src/database/database_bootstrap.c:database_queue_execute_bootstrap_query to populate QTC
-- [x] Add unit tests for QTC operations
-
-### Phase 2: Queue Selection
-
-- [x] Add `last_request_time` field to src/database/dbqueue/dbqueue.h:DatabaseQueue
-- [x] Create src/database/database_queue_select.c with selection algorithm
-- [x] Update src/database/dbqueue/submit.c:database_queue_submit_query to set timestamp
-- [x] Initialize `last_request_time` in queue creation functions
-- [x] Add unit tests for selection algorithm
-
-### Phase 3: JSON Parameter Processing
-
-- [x] Create src/database/database_params.h with parameter structures
-- [x] Implement src/database/database_params.c with parsing functions
-- [x] Implement typed JSON parser
-- [x] Implement named-to-positional converter
-- [x] Add database-specific format handlers
-- [x] Add unit tests for parameter processing
-
-### Phase 4: Synchronous Execution
-
-- [x] Create src/database/database_pending.h with pending result structures
-- [x] Implement src/database/database_pending.c with wait mechanism
-- [x] Integrate signaling into DQM worker thread
-- [x] Add periodic cleanup of expired results
-- [x] Add unit tests for pending results
-
-### Phase 5: API Service
-
-- [x] Create directory structure: src/api/conduit/
-- [x] Implement src/api/conduit/conduit_service.h with swagger annotations
-- [x] Implement src/api/conduit/conduit_service.c
-- [x] Create src/api/conduit/query/ subdirectory
-- [x] Implement src/api/conduit/query/query.h with endpoint swagger
-- [x] Implement src/api/conduit/query/query.c with handler logic
-- [x] Register endpoint in src/api/api_service.c
-- [x] Add integration tests
+- Phase 1: Bootstrap execution
+- Phase 2: Query submission
+- Phase 4: DQM worker thread
+- Phase 5: API subsystem
+
+## Service Overview
+
+Conduit Service provides synchronous database query execution via REST API. Clients reference pre-defined queries by ID, pass typed JSON parameters, and receive results with intelligent queue selection and timeout handling.
+
+**Key Features**:
+
+- Query Table Cache (QTC) with in-memory query storage
+- Typed parameter support (INTEGER, STRING, BOOLEAN, FLOAT, TEXT, DATE, TIME, DATETIME, TIMESTAMP)
+- Named-to-positional parameter conversion
+- Intelligent DQM selection with statistics tracking
+- Synchronous execution with configurable timeouts
+- JWT authentication for secure endpoints
+- Multi-database support across 7 engines
+- Parallel batch query execution
+- Brotli compression for cached results
+
+See [CONDUIT_DIAGRAMS.md](/docs/H/plans/CONDUIT_DIAGRAMS.md) for detailed architecture diagrams.
