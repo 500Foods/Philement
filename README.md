@@ -53,19 +53,19 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-01-18 06:27:11 UTC
+Last updated at 2026-01-18 22:11:38 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           182            112              0         457284
-C                              959          40862          38917         143750
-SVG                            106            204           2502          94822
-Markdown                       546          16198            130          46350
-Text                           111            112              0          39557
+JSON                           184            113              0         463045
+C                              963          41180          39319         145282
+SVG                            106            204           2502          94898
+Markdown                       546          16277            130          46536
+Text                           112            113              0          39950
 Lua                            161           3788           3179          25963
-Bourne Shell                   112           5384          74775          25490
+Bourne Shell                   112           5429          74951          25700
+C/C++ Header                   203           2197           6023           6510
 JavaScript                      38           1298           1829           6436
-C/C++ Header                   199           2167           5839           6404
 CSS                             13            354            175           2221
 HTML                            15            167             62           1194
 CMake                           17            171            318           1173
@@ -78,9 +78,9 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          2489          71092         127925         852294
+SUM:                          2500          71566         128687         860558
 -------------------------------------------------------------------------------
-633 Files were skipped (duplicate, binary, or without source code):
+636 Files were skipped (duplicate, binary, or without source code):
   svg: 484
   woff2: 30
   ttf: 22
@@ -106,8 +106,10 @@ SUM:                          2489          71092         127925         852294
   sqruff_sqlite: 2
   3mf: 1
   ansi: 1
+  auth_code_flow_debug: 1
   backup: 1
   br: 1
+  client_credentials_debug: 1
   control: 1
   detailed: 1
   disabled: 1
@@ -116,6 +118,7 @@ SUM:                          2489          71092         127925         852294
   ggignore: 1
   gitattributes: 1
   html: 1
+  password_flow_debug: 1
   payload_generated: 1
   stl: 1
   stylelintcache: 1
