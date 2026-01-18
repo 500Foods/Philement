@@ -70,7 +70,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
     if (connection_count_obj && json_is_integer(connection_count_obj)) {
         db_config->connection_count = (int)json_integer_value(connection_count_obj);
     } else {
-        db_config->connection_count = 5;  // Default to max supported
+        db_config->connection_count = MAX_DATABASES;  // Default to max supported
     }
 
 
@@ -195,10 +195,26 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 conn->prepared_statement_cache_size = 1000;
             }
 
+            // Extract MaxQueriesPerRequest
+            json_t* max_queries_obj = json_object_get(conn_obj, "MaxQueriesPerRequest");
+            if (max_queries_obj && json_is_integer(max_queries_obj)) {
+                int value = (int)json_integer_value(max_queries_obj);
+                if (value >= 1 && value <= 100) {
+                    conn->max_queries_per_request = value;
+                    log_this(SR_CONFIG_CURRENT, "Database config: Loaded MaxQueriesPerRequest: %d", LOG_LEVEL_DEBUG, 1, conn->max_queries_per_request);
+                } else {
+                    log_this(SR_CONFIG_CURRENT, "Database config: WARNING - MaxQueriesPerRequest %d out of range (1-100), using default %d" , LOG_LEVEL_ERROR, 2, value, MAX_QUERIES_PER_REQUEST);
+                    conn->max_queries_per_request = MAX_QUERIES_PER_REQUEST;
+                }
+            } else {
+                // Use default value (10)
+                conn->max_queries_per_request = MAX_QUERIES_PER_REQUEST;
+            }
+
             // Extract Parameters object and resolve environment variables
             json_t* parameters_obj = json_object_get(conn_obj, "Parameters");
             if (parameters_obj && json_is_object(parameters_obj)) {
-                // Create new object with resolved environment variables
+                // Create new object with resolved environment variables 
                 conn->parameters = json_object();
                 const char* param_key;
                 json_t* param_value;

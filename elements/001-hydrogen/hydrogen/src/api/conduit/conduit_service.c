@@ -6,6 +6,16 @@
 
 #include "conduit_service.h"
 
+// Standard libraries
+#include <pthread.h>
+
+// Third-party libraries
+#include <microhttpd.h>
+
+// Webserver suspension mechanism for long-running queries
+extern pthread_mutex_t webserver_suspend_lock;
+extern volatile bool webserver_thread_suspended;
+
 // Initialize conduit service
 bool conduit_service_init(void) {
     log_this(conduit_service_name(), "Conduit service initialized", LOG_LEVEL_DEBUG, 0);
