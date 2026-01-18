@@ -138,6 +138,8 @@ declare -a ENV_WHITELIST=(
     "BASE_URL" "CONFIG_FILE" "FIRST_LOG" "FIRST_PID" "PORT" "SECOND_LOG" "SECOND_PID" 
     # First found in tests/test_22_swagger.sh
     "CUSTOM_HEADERS_TEST_RESULT"
+    # First found in tests/test_40_auth.sh
+    "MIGRATION_TIMEOUT"
     # First found in tests/test_91_cppcheck.sh
     "CACHE_HITS_FMT" "FILES_TO_RUN_FMT" "OTHER_ISSUES_FMT"
     # First found in tests/test_93_jsonlint.sh
@@ -196,6 +198,7 @@ declare -a ENV_VARS=(
     "HELIUM_DOCS_ROOT|all|Helium project root|Root directory path of the Helium project. Required for payload generation and cross-project operations."
                               
     # Key project parameters
+    "HYDROGEN_ENGINES|30-59|supported databases|Database engines that can be tested against - used when running build on platforms like GitHub where not all DBs are installed"
     "HYDROGEN_SCHEMA|10-69|schema validation|The location of the JSON schma file (2020-12) used for validating Hydrogen configuration files."
     "HYDROGEN_DEV_EMAIL|02,12|Developer email|The email address of the developer responsible for this Hydrogen instance. Used for notifications and support contact."
 
