@@ -356,6 +356,14 @@ json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry
     json_object_set_new(response, "execution_time_ms", json_integer(result->execution_time_ms));
     json_object_set_new(response, "queue_used", json_string(selected_queue->queue_type));
 
+    // Add DQM statistics
+    if (global_queue_manager) {
+        json_t* dqm_stats = database_queue_manager_get_stats_json(global_queue_manager);
+        if (dqm_stats) {
+            json_object_set_new(response, "dqm_statistics", dqm_stats);
+        }
+    }
+
     return response;
 }
 

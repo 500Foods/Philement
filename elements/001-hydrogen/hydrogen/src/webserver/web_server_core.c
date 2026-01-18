@@ -24,6 +24,10 @@ static pthread_mutex_t endpoint_mutex = PTHREAD_MUTEX_INITIALIZER;
 struct MHD_Daemon *webserver_daemon = NULL;
 WebServerConfig *server_web_config = NULL;
 
+// Webserver suspension mechanism for long-running queries
+pthread_mutex_t webserver_suspend_lock = PTHREAD_MUTEX_INITIALIZER;
+volatile bool webserver_thread_suspended = false;
+
 // Endpoint registration functions
 bool register_web_endpoint(const WebServerEndpoint* endpoint) {
     if (!endpoint || !endpoint->prefix || !endpoint->validator || !endpoint->handler) {

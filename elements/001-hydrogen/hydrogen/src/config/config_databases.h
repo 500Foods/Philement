@@ -46,15 +46,16 @@ typedef struct DatabaseConnection {
     bool test_migration;   // Whether to run migrations in test mode
     char* migrations;      // Migration source (PAYLOAD:name or path)
     int prepared_statement_cache_size; // Size of prepared statement cache (default: 1000)
+    int max_queries_per_request;       // Maximum queries allowed per request (default: 10, range: 1-100)
     DatabaseQueues queues; // Queue configuration for this connection
     json_t* parameters;    // JSON object containing parameter values for queries
 } DatabaseConnection;
 
 // Structure for overall database configuration
 typedef struct DatabaseConfig {
-    DatabaseQueues default_queues;            // Default queue configuration
-    int connection_count;                     // Number of configured connections (auto-calculated)
-    DatabaseConnection connections[5];        // Array of database connections (max 5)
+    DatabaseQueues default_queues;                  // Default queue configuration
+    int connection_count;                           // Number of configured connections (auto-calculated)
+    DatabaseConnection connections[MAX_DATABASES];  // Array of database connections (max 5)
 } DatabaseConfig;
 
 // Initialize database configuration with defaults

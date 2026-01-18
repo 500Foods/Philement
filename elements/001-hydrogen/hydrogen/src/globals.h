@@ -262,6 +262,10 @@ void init_startup_log_level(void);
 #define MIN_CONNECTION_TIMEOUT 1
 #define MAX_CONNECTION_TIMEOUT 3600
 
+// DATABASES //////////////////////////////////////////////////////////////////////////////////////
+#define MAX_DATABASES 10           
+#define MAX_QUERIES_PER_REQUEST 10                                                                
+
 // WEBSOCKET SERVER ///////////////////////////////////////////////////////////////////////////////
 
 #define MIN_PORT 1024

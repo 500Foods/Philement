@@ -620,10 +620,1016 @@
         ]
       }
     },
+    "/conduit/alt_queries": {
+      "get": {
+        "summary": "Execute multiple authenticated database queries in parallel with database override",
+        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel with JWT authentication and database override capability. The database name can be specified in the request body, allowing access to different databases than the one in the JWT claims. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "operationId": "executeAuthenticatedQueriesWithDatabaseOverrideGet",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "results"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Indicates all queries executed successfully",
+                      "example": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "description": "Array of query results",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "success",
+                          "query_ref"
+                        ],
+                        "properties": {
+                          "success": {
+                            "type": "boolean",
+                            "description": "Indicates successful query execution",
+                            "example": true
+                          },
+                          "query_ref": {
+                            "type": "integer",
+                            "description": "The query reference ID that was executed",
+                            "example": 1234
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Human-readable description of the query",
+                            "example": "Fetch user profile by ID"
+                          },
+                          "rows": {
+                            "type": "array",
+                            "description": "Array of result rows as JSON objects",
+                            "items": {
+                              "type": "object"
+                            },
+                            "example": [
+                              {
+                                "user_id": 123,
+                                "username": "johndoe",
+                                "email": "john@example.com",
+                                "is_active": true
+                              }
+                            ]
+                          },
+                          "row_count": {
+                            "type": "integer",
+                            "description": "Number of rows returned",
+                            "example": 1
+                          },
+                          "column_count": {
+                            "type": "integer",
+                            "description": "Number of columns in result",
+                            "example": 4
+                          },
+                          "execution_time_ms": {
+                            "type": "integer",
+                            "description": "Query execution time in milliseconds",
+                            "example": 45
+                          },
+                          "queue_used": {
+                            "type": "string",
+                            "description": "Database queue that handled the request",
+                            "example": "fast"
+                          },
+                          "error": {
+                            "type": "string",
+                            "description": "Error message if query failed",
+                            "example": "Query not found"
+                          }
+                        }
+                      }
+                    },
+                    "database": {
+                      "type": "string",
+                      "description": "Database name from request (overridden from JWT)",
+                      "example": "Acuranzo"
+                    },
+                    "total_execution_time_ms": {
+                      "type": "integer",
+                      "description": "Total time for all queries in milliseconds",
+                      "example": 145
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message",
+                      "example": "Missing required parameter: database"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Authentication error",
+                      "example": "Invalid or expired JWT token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to execute queries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "database",
+            "in": "query",
+            "required": true,
+            "description": "Acuranzo",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "description": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Execute multiple authenticated database queries in parallel with database override",
+        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel with JWT authentication and database override capability. The database name can be specified in the request body, allowing access to different databases than the one in the JWT claims. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "operationId": "executeAuthenticatedQueriesWithDatabaseOverridePost",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "results"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Indicates all queries executed successfully",
+                      "example": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "description": "Array of query results",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "success",
+                          "query_ref"
+                        ],
+                        "properties": {
+                          "success": {
+                            "type": "boolean",
+                            "description": "Indicates successful query execution",
+                            "example": true
+                          },
+                          "query_ref": {
+                            "type": "integer",
+                            "description": "The query reference ID that was executed",
+                            "example": 1234
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Human-readable description of the query",
+                            "example": "Fetch user profile by ID"
+                          },
+                          "rows": {
+                            "type": "array",
+                            "description": "Array of result rows as JSON objects",
+                            "items": {
+                              "type": "object"
+                            },
+                            "example": [
+                              {
+                                "user_id": 123,
+                                "username": "johndoe",
+                                "email": "john@example.com",
+                                "is_active": true
+                              }
+                            ]
+                          },
+                          "row_count": {
+                            "type": "integer",
+                            "description": "Number of rows returned",
+                            "example": 1
+                          },
+                          "column_count": {
+                            "type": "integer",
+                            "description": "Number of columns in result",
+                            "example": 4
+                          },
+                          "execution_time_ms": {
+                            "type": "integer",
+                            "description": "Query execution time in milliseconds",
+                            "example": 45
+                          },
+                          "queue_used": {
+                            "type": "string",
+                            "description": "Database queue that handled the request",
+                            "example": "fast"
+                          },
+                          "error": {
+                            "type": "string",
+                            "description": "Error message if query failed",
+                            "example": "Query not found"
+                          }
+                        }
+                      }
+                    },
+                    "database": {
+                      "type": "string",
+                      "description": "Database name from request (overridden from JWT)",
+                      "example": "Acuranzo"
+                    },
+                    "total_execution_time_ms": {
+                      "type": "integer",
+                      "description": "Total time for all queries in milliseconds",
+                      "example": 145
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message",
+                      "example": "Missing required parameter: database"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Authentication error",
+                      "example": "Invalid or expired JWT token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to execute queries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "database",
+            "in": "query",
+            "required": true,
+            "description": "Acuranzo",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "description": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/conduit/alt_query": {
+      "get": {
+        "summary": "Execute authenticated database query with database override",
+        "description": "Executes a pre-defined query from the Query Table Cache using a query reference ID with JWT authentication and database override capability. The database name can be specified in the request body, allowing access to different databases than the one in the JWT claims. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT). Returns query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "operationId": "executeAuthenticatedQueryWithDatabaseOverrideGet",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "query_ref",
+                    "rows"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Indicates successful query execution",
+                      "example": true
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "description": "The query reference ID that was executed",
+                      "example": 1234
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Human-readable description of the query",
+                      "example": "Fetch user profile by ID"
+                    },
+                    "rows": {
+                      "type": "array",
+                      "description": "Array of result rows as JSON objects",
+                      "items": {
+                        "type": "object"
+                      },
+                      "example": [
+                        {
+                          "user_id": 123,
+                          "username": "johndoe",
+                          "email": "john@example.com",
+                          "is_active": true
+                        }
+                      ]
+                    },
+                    "row_count": {
+                      "type": "integer",
+                      "description": "Number of rows returned",
+                      "example": 1
+                    },
+                    "column_count": {
+                      "type": "integer",
+                      "description": "Number of columns in result",
+                      "example": 4
+                    },
+                    "execution_time_ms": {
+                      "type": "integer",
+                      "description": "Query execution time in milliseconds",
+                      "example": 45
+                    },
+                    "queue_used": {
+                      "type": "string",
+                      "description": "Database queue that handled the request",
+                      "example": "fast"
+                    },
+                    "database": {
+                      "type": "string",
+                      "description": "Database name from request (overridden from JWT)",
+                      "example": "Acuranzo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message",
+                      "example": "Missing required parameter: database"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Authentication error",
+                      "example": "Invalid or expired JWT token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Query not found"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 9999
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Query execution timeout"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 1234
+                    },
+                    "timeout_seconds": {
+                      "type": "integer",
+                      "example": 30
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Database error"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 1234
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "database",
+            "in": "query",
+            "required": true,
+            "description": "Acuranzo",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "query_ref",
+            "in": "query",
+            "required": true,
+            "description": "Query identifier from Query Table Cache",
+            "schema": {
+              "type": "integer",
+              "example": 1234
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "description": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token",
+                  "database",
+                  "query_ref"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "JWT bearer token (required)",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  },
+                  "database": {
+                    "type": "string",
+                    "description": "Target database name (required, overrides JWT claims)",
+                    "example": "Acuranzo"
+                  },
+                  "query_ref": {
+                    "type": "integer",
+                    "description": "Query identifier from Query Table Cache (required)",
+                    "example": 1234
+                  },
+                  "params": {
+                    "type": "object",
+                    "description": "Typed parameters for query execution (optional)",
+                    "properties": {
+                      "INTEGER": {
+                        "type": "object",
+                        "description": "Integer parameters as key-value pairs",
+                        "example": {
+                          "userId": 123,
+                          "quantity": 50
+                        }
+                      },
+                      "STRING": {
+                        "type": "object",
+                        "description": "String parameters as key-value pairs",
+                        "example": {
+                          "username": "johndoe",
+                          "email": "john@example.com"
+                        }
+                      },
+                      "BOOLEAN": {
+                        "type": "object",
+                        "description": "Boolean parameters as key-value pairs",
+                        "example": {
+                          "isActive": true,
+                          "requireAuth": false
+                        }
+                      },
+                      "FLOAT": {
+                        "type": "object",
+                        "description": "Float parameters as key-value pairs",
+                        "example": {
+                          "discount": 0.15,
+                          "tax": 0.07
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Execute authenticated database query with database override",
+        "description": "Executes a pre-defined query from the Query Table Cache using a query reference ID with JWT authentication and database override capability. The database name can be specified in the request body, allowing access to different databases than the one in the JWT claims. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT). Returns query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "operationId": "executeAuthenticatedQueryWithDatabaseOverridePost",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "query_ref",
+                    "rows"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Indicates successful query execution",
+                      "example": true
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "description": "The query reference ID that was executed",
+                      "example": 1234
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Human-readable description of the query",
+                      "example": "Fetch user profile by ID"
+                    },
+                    "rows": {
+                      "type": "array",
+                      "description": "Array of result rows as JSON objects",
+                      "items": {
+                        "type": "object"
+                      },
+                      "example": [
+                        {
+                          "user_id": 123,
+                          "username": "johndoe",
+                          "email": "john@example.com",
+                          "is_active": true
+                        }
+                      ]
+                    },
+                    "row_count": {
+                      "type": "integer",
+                      "description": "Number of rows returned",
+                      "example": 1
+                    },
+                    "column_count": {
+                      "type": "integer",
+                      "description": "Number of columns in result",
+                      "example": 4
+                    },
+                    "execution_time_ms": {
+                      "type": "integer",
+                      "description": "Query execution time in milliseconds",
+                      "example": 45
+                    },
+                    "queue_used": {
+                      "type": "string",
+                      "description": "Database queue that handled the request",
+                      "example": "fast"
+                    },
+                    "database": {
+                      "type": "string",
+                      "description": "Database name from request (overridden from JWT)",
+                      "example": "Acuranzo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message",
+                      "example": "Missing required parameter: database"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Authentication error",
+                      "example": "Invalid or expired JWT token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Query not found"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 9999
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Query execution timeout"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 1234
+                    },
+                    "timeout_seconds": {
+                      "type": "integer",
+                      "example": 30
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Database error"
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "example": 1234
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "database",
+            "in": "query",
+            "required": true,
+            "description": "Acuranzo",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "query_ref",
+            "in": "query",
+            "required": true,
+            "description": "Query identifier from Query Table Cache",
+            "schema": {
+              "type": "integer",
+              "example": 1234
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "description": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token",
+                  "database",
+                  "query_ref"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "JWT bearer token (required)",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  },
+                  "database": {
+                    "type": "string",
+                    "description": "Target database name (required, overrides JWT claims)",
+                    "example": "Acuranzo"
+                  },
+                  "query_ref": {
+                    "type": "integer",
+                    "description": "Query identifier from Query Table Cache (required)",
+                    "example": 1234
+                  },
+                  "params": {
+                    "type": "object",
+                    "description": "Typed parameters for query execution (optional)",
+                    "properties": {
+                      "INTEGER": {
+                        "type": "object",
+                        "description": "Integer parameters as key-value pairs",
+                        "example": {
+                          "userId": 123,
+                          "quantity": 50
+                        }
+                      },
+                      "STRING": {
+                        "type": "object",
+                        "description": "String parameters as key-value pairs",
+                        "example": {
+                          "username": "johndoe",
+                          "email": "john@example.com"
+                        }
+                      },
+                      "BOOLEAN": {
+                        "type": "object",
+                        "description": "Boolean parameters as key-value pairs",
+                        "example": {
+                          "isActive": true,
+                          "requireAuth": false
+                        }
+                      },
+                      "FLOAT": {
+                        "type": "object",
+                        "description": "Float parameters as key-value pairs",
+                        "example": {
+                          "discount": 0.15,
+                          "tax": 0.07
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/conduit/auth_queries": {
       "get": {
         "summary": "Execute multiple authenticated database queries in parallel",
-        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel with JWT authentication. The database name is extracted from the JWT token claims, ensuring secure routing. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel with JWT authentication. The database name is extracted from the JWT token claims, ensuring secure routing. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body. Subject to rate limiting based on MaxQueriesPerRequest configuration (default: 10).",
         "operationId": "executeAuthenticatedQueriesByReferenceGet",
         "tags": [
           "Conduit Service"
@@ -770,6 +1776,27 @@
               }
             }
           },
+          "429": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Rate limiting error",
+                      "example": "Too many queries requested (max: 10)"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "500": {
             "description": "Server error",
             "content": {
@@ -886,7 +1913,7 @@
       },
       "post": {
         "summary": "Execute multiple authenticated database queries in parallel",
-        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel with JWT authentication. The database name is extracted from the JWT token claims, ensuring secure routing. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel with JWT authentication. The database name is extracted from the JWT token claims, ensuring secure routing. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body. Subject to rate limiting based on MaxQueriesPerRequest configuration (default: 10).",
         "operationId": "executeAuthenticatedQueriesByReferencePost",
         "tags": [
           "Conduit Service"
@@ -1027,6 +2054,27 @@
                       "type": "string",
                       "description": "Authentication error",
                       "example": "Invalid or expired JWT token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Rate limiting error",
+                      "example": "Too many queries requested (max: 10)"
                     }
                   }
                 }
@@ -1733,7 +2781,7 @@
     "/conduit/queries": {
       "get": {
         "summary": "Execute multiple database queries in parallel",
-        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel without authentication. Requires explicit database parameter in request. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel without authentication. Requires explicit database parameter in request. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body. Subject to rate limiting based on MaxQueriesPerRequest configuration (default: 10).",
         "operationId": "executeQueriesByReferenceGet",
         "tags": [
           "Conduit Service"
@@ -1807,7 +2855,7 @@
       },
       "post": {
         "summary": "Execute multiple database queries in parallel",
-        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel without authentication. Requires explicit database parameter in request. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.",
+        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel without authentication. Requires explicit database parameter in request. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body. Subject to rate limiting based on MaxQueriesPerRequest configuration (default: 10).",
         "operationId": "executeQueriesByReferencePost",
         "tags": [
           "Conduit Service"
@@ -2491,6 +3539,108 @@
                           "tax": 0.07
                         }
                       }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conduit/status": {
+      "get": {
+        "summary": "Get database readiness status",
+        "description": "Returns the readiness status of all configured databases for Conduit operations. Shows migration completion and QTC population status.",
+        "operationId": "getConduitStatus",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "databases"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Indicates successful status retrieval",
+                      "example": true
+                    },
+                    "databases": {
+                      "type": "object",
+                      "description": "Database readiness status by name",
+                      "properties": {
+                        "postgresql_demo": {
+                          "type": "object",
+                          "required": [
+                            "ready",
+                            "migration_status",
+                            "query_cache_entries",
+                            "last_checked"
+                          ],
+                          "properties": {
+                            "ready": {
+                              "type": "boolean",
+                              "description": "Whether database is ready for queries",
+                              "example": true
+                            },
+                            "migration_status": {
+                              "type": "string",
+                              "description": "Migration completion status",
+                              "enum": [
+                                "completed",
+                                "failed",
+                                "in_progress",
+                                "not_started"
+                              ],
+                              "example": "completed"
+                            },
+                            "query_cache_entries": {
+                              "type": "integer",
+                              "description": "Number of queries in QTC",
+                              "example": 150
+                            },
+                            "last_checked": {
+                              "type": "string",
+                              "description": "ISO 8601 timestamp of last status check",
+                              "example": "2026-01-18T12:15:00Z"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message",
+                      "example": "Internal server error"
+                    },
+                    "details": {
+                      "type": "string",
+                      "description": "Additional error details",
+                      "example": "Failed to access database manager"
                     }
                   }
                 }
