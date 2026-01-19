@@ -350,8 +350,8 @@ PendingQueryResult* submit_single_auth_query(const char *database, json_t *query
     }
 
     // Submit query using helper from query.h
-    if (!prepare_and_submit_query(selected_queue, query_id, converted_sql, ordered_params,
-                                 param_count, cache_entry)) {
+    if (!prepare_and_submit_query(selected_queue, query_id, cache_entry->sql_template, ordered_params,
+                                  param_count, cache_entry)) {
         free(query_id);
         free(converted_sql);
         free_parameter_list(param_list);
@@ -383,7 +383,7 @@ PendingQueryResult* submit_single_auth_query(const char *database, json_t *query
  * @return JSON response object
  */
 json_t* wait_and_build_single_auth_response(const char *database, int query_ref,
-                                          QueryCacheEntry *cache_entry, DatabaseQueue *selected_queue,
+                                          const QueryCacheEntry *cache_entry, const DatabaseQueue *selected_queue,
                                           PendingQueryResult *pending)
 {
     // Build response using helper from query.h (this waits internally)

@@ -328,10 +328,13 @@ void* run_web_server(void* arg) {
 
     // Configure server flags for proper thread handling
     unsigned int flags = MHD_USE_INTERNAL_POLLING_THREAD;  // Base flag for internal polling
-    
+
     // Add thread pool support
     flags |= MHD_USE_SELECT_INTERNALLY;
-    
+
+    // Enable suspend/resume for long-running queries
+    flags |= MHD_ALLOW_SUSPEND_RESUME;
+
     if (server_web_config->enable_ipv6) {
         flags |= MHD_USE_DUAL_STACK;
         log_this(SR_WEBSERVER, "Starting with IPv6 dual-stack support", LOG_LEVEL_DEBUG, 0);
