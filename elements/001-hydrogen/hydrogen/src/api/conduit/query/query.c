@@ -71,10 +71,10 @@ char* generate_query_id(void) {
 #endif
 }
 
-// Validate HTTP method - only GET and POST are allowed
+// Validate HTTP method - only POST is allowed
 bool validate_http_method(const char* method) {
     if (!method) return false;
-    return strcmp(method, "GET") == 0 || strcmp(method, "POST") == 0;
+    return strcmp(method, "POST") == 0;
 }
 
 // Parse request data from either POST JSON body (using ApiPostBuffer) or GET query parameters
@@ -389,6 +389,27 @@ json_t* build_error_response(int query_ref, const char* database, const QueryCac
     return response;
 }
 
+// Build invalid queryref response JSON
+json_t* build_invalid_queryref_response(int query_ref, const char* database) {
+    json_t* response = json_object();
+
+    json_object_set_new(response, "success", json_string("fail"));
+    json_object_set_new(response, "query_ref", json_integer(query_ref));
+    json_object_set_new(response, "database", json_string(database));
+    json_object_set_new(response, "rows", json_array());
+    json_object_set_new(response, "message", json_string("queryref not found or not public"));
+
+    // Add DQM statistics if available
+    if (global_queue_manager) {
+        json_t* dqm_stats = database_queue_manager_get_stats_json(global_queue_manager);
+        if (dqm_stats) {
+            json_object_set_new(response, "dqm_statistics", dqm_stats);
+        }
+    }
+
+    return response;
+}
+
 // Helper function to create error response for validation failures
 json_t* create_validation_error_response(const char* error_msg, const char* error_detail) {
     json_t* response = json_object();
@@ -453,7 +474,7 @@ enum MHD_Result handle_method_validation(struct MHD_Connection *connection, cons
     if (!validate_http_method(method)) {
         json_t *error_response = create_validation_error_response(
             "Method not allowed",
-            "Only GET and POST requests are supported"
+            "Only POST requests are supported"
         );
 
         api_send_json_response(connection, error_response, MHD_HTTP_METHOD_NOT_ALLOWED);
@@ -543,17 +564,27 @@ enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_
 
 // Helper function to handle database and query lookup
 enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const char* database,
-                                      int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry) {
+                                      int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
+                                      bool* query_not_found) {
     if (!lookup_database_and_query(db_queue, cache_entry, database, query_ref)) {
-        const char* error_msg = !*db_queue ? "Database not found" : "Query not found";
-        unsigned int http_status = MHD_HTTP_NOT_FOUND;
+        if (!*db_queue) {
+            // Database not found - this is still an error
+            const char* error_msg = "Database not found";
+            unsigned int http_status = MHD_HTTP_NOT_FOUND;
 
-        json_t *error_response = create_lookup_error_response(error_msg, database, query_ref, !*db_queue);
+            json_t *error_response = create_lookup_error_response(error_msg, database, query_ref, true);
 
-        api_send_json_response(connection, error_response, http_status);
-        json_decref(error_response);
-        return MHD_NO; // Stop processing - error handled
+            api_send_json_response(connection, error_response, http_status);
+            json_decref(error_response);
+            return MHD_NO; // Stop processing - error handled
+        } else {
+            // Query not found - continue processing but mark as not found
+            *query_not_found = true;
+            *cache_entry = NULL;
+            return MHD_YES; // Continue processing
+        }
     }
+    *query_not_found = false;
     return MHD_YES; // Continue processing
 }
 
@@ -767,10 +798,20 @@ enum MHD_Result handle_conduit_query_request(
     // Step 4: Lookup database queue and query cache entry
     DatabaseQueue* db_queue = NULL;
     QueryCacheEntry* cache_entry = NULL;
-    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry);
+    bool query_not_found = false;
+    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found);
     if (result != MHD_YES) {
         json_decref(request_json);
         return result;
+    }
+
+    // Handle invalid queryref case
+    if (query_not_found) {
+        json_t* response = build_invalid_queryref_response(query_ref, database);
+        enum MHD_Result http_result = api_send_json_response(connection, response, MHD_HTTP_OK);
+        json_decref(response);
+        json_decref(request_json);
+        return http_result;
     }
 
     log_this(SR_API, "%s: Database and query lookup successful", LOG_LEVEL_TRACE, 1, conduit_service_name());

@@ -226,8 +226,8 @@ static enum MHD_Result validate_token_and_extract_database(
         return api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
     }
 
-    // Validate JWT token - pass "unknown" as placeholder since database comes from token
-    jwt_validation_result_t result = validate_jwt(token, "unknown");
+    // Validate JWT token - pass NULL since database comes from token
+    jwt_validation_result_t result = validate_jwt(token, NULL);
     if (!result.valid || !result.claims) {
         log_this(SR_AUTH, "validate_token_and_extract_database: JWT validation failed", LOG_LEVEL_ALERT, 0);
         free_jwt_validation_result(&result);

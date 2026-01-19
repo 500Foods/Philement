@@ -298,8 +298,8 @@ bool db2_process_query_results(void* stmt_handle, const char* designator, struct
     // End timing after all result processing is complete
     struct timespec end_time;
     clock_gettime(CLOCK_MONOTONIC, &end_time);
-    db_result->execution_time_ms = (end_time.tv_sec - start_time.tv_sec) * 1000 +
-                                     (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
+    db_result->execution_time_ms = (end_time.tv_sec - start_time.tv_sec) * 1000000 +
+                                     (end_time.tv_nsec - start_time.tv_nsec) / 1000;
 
     log_this(designator, "DB2 query results: %zu columns, %zu rows, %d affected", LOG_LEVEL_TRACE, 3,
         db_result->column_count, db_result->row_count, db_result->affected_rows);

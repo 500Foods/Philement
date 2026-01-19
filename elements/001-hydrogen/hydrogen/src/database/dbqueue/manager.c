@@ -173,21 +173,21 @@ void database_queue_manager_record_query_submission(DatabaseQueueManager* manage
 /*
  * Record query completion with execution time
  */
-void database_queue_manager_record_query_completion(DatabaseQueueManager* manager, int queue_type_index, unsigned long long execution_time_ms) {
+void database_queue_manager_record_query_completion(DatabaseQueueManager* manager, int queue_type_index, unsigned long long execution_time_us) {
     if (!manager || queue_type_index < 0 || queue_type_index >= 5) return;
 
     __sync_fetch_and_add(&manager->dqm_stats.total_queries_completed, 1);
     __sync_fetch_and_add(&manager->dqm_stats.per_queue_stats[queue_type_index].completed, 1);
 
     // Update average execution time (simple moving average)
-    volatile unsigned long long* avg_ptr = &manager->dqm_stats.per_queue_stats[queue_type_index].avg_execution_time_ms;
+    volatile unsigned long long* avg_ptr = &manager->dqm_stats.per_queue_stats[queue_type_index].avg_execution_time_us;
     unsigned long long current_avg = *avg_ptr;
     unsigned long long total_completed = manager->dqm_stats.per_queue_stats[queue_type_index].completed;
 
     if (total_completed == 1) {
-        *avg_ptr = execution_time_ms;
+        *avg_ptr = execution_time_us;
     } else {
-        *avg_ptr = (current_avg * (total_completed - 1) + execution_time_ms) / total_completed;
+        *avg_ptr = (current_avg * (total_completed - 1) + execution_time_us) / total_completed;
     }
 }
 
@@ -208,6 +208,97 @@ void database_queue_manager_record_timeout(DatabaseQueueManager* manager) {
     if (!manager) return;
 
     __sync_fetch_and_add(&manager->dqm_stats.total_timeouts, 1);
+}
+
+/*
+ * Record query submission for a specific database queue
+ */
+void database_queue_record_query_submission(DatabaseQueue* db_queue, int queue_type_index) {
+    if (!db_queue || queue_type_index < 0 || queue_type_index >= 5) return;
+
+    __sync_fetch_and_add(&db_queue->dqm_stats.total_queries_submitted, 1);
+    __sync_fetch_and_add(&db_queue->dqm_stats.per_queue_stats[queue_type_index].submitted, 1);
+    db_queue->dqm_stats.per_queue_stats[queue_type_index].last_used = time(NULL);
+}
+
+/*
+ * Record query completion for a specific database queue
+ */
+void database_queue_record_query_completion(DatabaseQueue* db_queue, int queue_type_index, unsigned long long execution_time_us) {
+    if (!db_queue || queue_type_index < 0 || queue_type_index >= 5) return;
+
+    __sync_fetch_and_add(&db_queue->dqm_stats.total_queries_completed, 1);
+    __sync_fetch_and_add(&db_queue->dqm_stats.per_queue_stats[queue_type_index].completed, 1);
+
+    // Update average execution time (simple moving average)
+    volatile unsigned long long* avg_ptr = &db_queue->dqm_stats.per_queue_stats[queue_type_index].avg_execution_time_us;
+    unsigned long long current_avg = *avg_ptr;
+    unsigned long long total_completed = db_queue->dqm_stats.per_queue_stats[queue_type_index].completed;
+
+    if (total_completed == 1) {
+        *avg_ptr = execution_time_us;
+    } else {
+        *avg_ptr = (current_avg * (total_completed - 1) + execution_time_us) / total_completed;
+    }
+}
+
+/*
+ * Record query failure for a specific database queue
+ */
+void database_queue_record_query_failure(DatabaseQueue* db_queue, int queue_type_index) {
+    if (!db_queue || queue_type_index < 0 || queue_type_index >= 5) return;
+
+    __sync_fetch_and_add(&db_queue->dqm_stats.total_queries_failed, 1);
+    __sync_fetch_and_add(&db_queue->dqm_stats.per_queue_stats[queue_type_index].failed, 1);
+}
+
+/*
+ * Record timeout for a specific database queue
+ */
+void database_queue_record_timeout(DatabaseQueue* db_queue) {
+    if (!db_queue) return;
+
+    __sync_fetch_and_add(&db_queue->dqm_stats.total_timeouts, 1);
+}
+
+/*
+ * Get DQM statistics as JSON for a specific database queue
+ */
+json_t* database_queue_get_stats_json(DatabaseQueue* db_queue) {
+    if (!db_queue) return NULL;
+
+    json_t* stats = json_object();
+
+    // Overall statistics
+    json_object_set_new(stats, "total_queries_submitted", json_integer((json_int_t)db_queue->dqm_stats.total_queries_submitted));
+    json_object_set_new(stats, "total_queries_completed", json_integer((json_int_t)db_queue->dqm_stats.total_queries_completed));
+    json_object_set_new(stats, "total_queries_failed", json_integer((json_int_t)db_queue->dqm_stats.total_queries_failed));
+    json_object_set_new(stats, "total_timeouts", json_integer((json_int_t)db_queue->dqm_stats.total_timeouts));
+
+    // Queue selection counters
+    json_t* selection_counters = json_array();
+    for (int i = 0; i < 5; i++) {
+        json_array_append_new(selection_counters, json_integer((json_int_t)db_queue->dqm_stats.queue_selection_counters[i]));
+    }
+    json_object_set_new(stats, "queue_selection_counters", selection_counters);
+
+    // Per-queue statistics
+    json_t* per_queue = json_array();
+    const char* queue_names[] = {"slow", "medium", "fast", "cache", "lead"};
+
+    for (int i = 0; i < 5; i++) {
+        json_t* queue_stat = json_object();
+        json_object_set_new(queue_stat, "queue_type", json_string(queue_names[i]));
+        json_object_set_new(queue_stat, "submitted", json_integer((json_int_t)db_queue->dqm_stats.per_queue_stats[i].submitted));
+        json_object_set_new(queue_stat, "completed", json_integer((json_int_t)db_queue->dqm_stats.per_queue_stats[i].completed));
+        json_object_set_new(queue_stat, "failed", json_integer((json_int_t)db_queue->dqm_stats.per_queue_stats[i].failed));
+        json_object_set_new(queue_stat, "avg_execution_time_us", json_integer((json_int_t)db_queue->dqm_stats.per_queue_stats[i].avg_execution_time_us));
+        json_object_set_new(queue_stat, "last_used", json_integer((json_int_t)db_queue->dqm_stats.per_queue_stats[i].last_used));
+        json_array_append_new(per_queue, queue_stat);
+    }
+    json_object_set_new(stats, "per_queue_stats", per_queue);
+
+    return stats;
 }
 
 /*
@@ -241,7 +332,7 @@ json_t* database_queue_manager_get_stats_json(DatabaseQueueManager* manager) {
         json_object_set_new(queue_stat, "submitted", json_integer((json_int_t)manager->dqm_stats.per_queue_stats[i].submitted));
         json_object_set_new(queue_stat, "completed", json_integer((json_int_t)manager->dqm_stats.per_queue_stats[i].completed));
         json_object_set_new(queue_stat, "failed", json_integer((json_int_t)manager->dqm_stats.per_queue_stats[i].failed));
-        json_object_set_new(queue_stat, "avg_execution_time_ms", json_integer((json_int_t)manager->dqm_stats.per_queue_stats[i].avg_execution_time_ms));
+        json_object_set_new(queue_stat, "avg_execution_time_us", json_integer((json_int_t)manager->dqm_stats.per_queue_stats[i].avg_execution_time_us));
         json_object_set_new(queue_stat, "last_used", json_integer((json_int_t)manager->dqm_stats.per_queue_stats[i].last_used));
         json_array_append_new(per_queue, queue_stat);
     }
