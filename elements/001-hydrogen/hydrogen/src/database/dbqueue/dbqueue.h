@@ -25,6 +25,22 @@ typedef struct ConnectionConfig ConnectionConfig;
 #define QUEUE_TYPE_FAST    "fast"
 #define QUEUE_TYPE_CACHE   "cache"
 
+// DQM Statistics tracking structure
+typedef struct DQMStatistics {
+    volatile unsigned long long queue_selection_counters[5];  // Indexed by QUEUE_TYPE_* (0=slow, 1=medium, 2=fast, 3=cache, 4=lead)
+    volatile unsigned long long total_queries_submitted;
+    volatile unsigned long long total_queries_completed;
+    volatile unsigned long long total_queries_failed;
+    volatile unsigned long long total_timeouts;
+    struct {
+        volatile unsigned long long submitted;
+        volatile unsigned long long completed;
+        volatile unsigned long long failed;
+        volatile unsigned long long avg_execution_time_us;
+        volatile time_t last_used;
+    } per_queue_stats[5];
+} DQMStatistics;
+
 // Forward declaration for self-referencing structure
 typedef struct DatabaseQueue DatabaseQueue;
 
@@ -86,6 +102,9 @@ struct DatabaseQueue {
     // Query Table Cache (QTC) - shared across all queues for this database
     QueryTableCache* query_cache;                  // In-memory cache of query templates
 
+    // DQM Statistics for this database
+    DQMStatistics dqm_stats;
+
     // Flags
     volatile bool shutdown_requested;
     volatile bool is_connected;
@@ -101,22 +120,6 @@ struct DatabaseQueue {
     pthread_mutex_t initial_connection_lock;
     pthread_cond_t initial_connection_cond;
 };
-
-// DQM Statistics tracking structure
-typedef struct DQMStatistics {
-    volatile unsigned long long queue_selection_counters[5];  // Indexed by QUEUE_TYPE_* (0=slow, 1=medium, 2=fast, 3=cache, 4=lead)
-    volatile unsigned long long total_queries_submitted;
-    volatile unsigned long long total_queries_completed;
-    volatile unsigned long long total_queries_failed;
-    volatile unsigned long long total_timeouts;
-    struct {
-        volatile unsigned long long submitted;
-        volatile unsigned long long completed;
-        volatile unsigned long long failed;
-        volatile unsigned long long avg_execution_time_ms;
-        volatile time_t last_used;
-    } per_queue_stats[5];
-} DQMStatistics;
 
 // Database queue manager that coordinates multiple databases
 typedef struct DatabaseQueueManager {
@@ -146,7 +149,8 @@ typedef struct DatabaseQuery {
     char* query_template;          // Parameterized SQL template
     char* parameter_json;          // JSON parameters for injection
     int queue_type_hint;           // Suggested queue type (0=slow, 1=medium, 2=fast, 3=cache)
-    time_t submitted_at;
+    time_t submitted_at;           // Legacy seconds timestamp (for backward compatibility)
+    uint64_t submitted_at_ns;      // High-precision nanoseconds timestamp
     time_t processed_at;
     int retry_count;
     char* error_message;
@@ -255,9 +259,14 @@ bool database_queue_health_check(DatabaseQueue* db_queue);
 void database_queue_manager_init_stats(DatabaseQueueManager* manager);
 void database_queue_manager_increment_queue_selection(DatabaseQueueManager* manager, int queue_type_index);
 void database_queue_manager_record_query_submission(DatabaseQueueManager* manager, int queue_type_index);
-void database_queue_manager_record_query_completion(DatabaseQueueManager* manager, int queue_type_index, unsigned long long execution_time_ms);
+void database_queue_manager_record_query_completion(DatabaseQueueManager* manager, int queue_type_index, unsigned long long execution_time_us);
 void database_queue_manager_record_query_failure(DatabaseQueueManager* manager, int queue_type_index);
 void database_queue_manager_record_timeout(DatabaseQueueManager* manager);
+void database_queue_record_query_submission(DatabaseQueue* db_queue, int queue_type_index);
+void database_queue_record_query_completion(DatabaseQueue* db_queue, int queue_type_index, unsigned long long execution_time_us);
+void database_queue_record_query_failure(DatabaseQueue* db_queue, int queue_type_index);
+void database_queue_record_timeout(DatabaseQueue* db_queue);
+json_t* database_queue_get_stats_json(DatabaseQueue* db_queue);
 json_t* database_queue_manager_get_stats_json(DatabaseQueueManager* manager);
 
 // Utility functions

@@ -140,6 +140,8 @@ declare -a ENV_WHITELIST=(
     "CUSTOM_HEADERS_TEST_RESULT"
     # First found in tests/test_40_auth.sh
     "MIGRATION_TIMEOUT"
+    # First found in tests/test_51_conduit.sh
+    "CONDUIT_CONFIG_FILE" "CONDUIT_DESCRIPTION" "CONDUIT_ENGINE_NAME" "CONDUIT_LOG_SUFFIX"
     # First found in tests/test_91_cppcheck.sh
     "CACHE_HITS_FMT" "FILES_TO_RUN_FMT" "OTHER_ISSUES_FMT"
     # First found in tests/test_93_jsonlint.sh

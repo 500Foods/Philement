@@ -54,6 +54,12 @@ char* serialize_query_to_json(DatabaseQuery* query) {
     // Add queue_type_hint
     json_object_set_new(root, "queue_type_hint", json_integer(query->queue_type_hint));
 
+    // Add submitted_at
+    json_object_set_new(root, "submitted_at", json_integer((json_int_t)query->submitted_at));
+
+    // Add submitted_at_ns
+    json_object_set_new(root, "submitted_at_ns", json_integer((json_int_t)query->submitted_at_ns));
+
     // Serialize to string
     char* json_str = json_dumps(root, JSON_COMPACT);
     json_decref(root);
@@ -122,6 +128,18 @@ DatabaseQuery* deserialize_query_from_json(const char* json_str) {
         query->queue_type_hint = (int)json_integer_value(hint_json);
     }
 
+    // Extract submitted_at
+    json_t* submitted_json = json_object_get(root, "submitted_at");
+    if (submitted_json && json_is_integer(submitted_json)) {
+        query->submitted_at = (time_t)json_integer_value(submitted_json);
+    }
+
+    // Extract submitted_at_ns
+    json_t* submitted_ns_json = json_object_get(root, "submitted_at_ns");
+    if (submitted_ns_json && json_is_integer(submitted_ns_json)) {
+        query->submitted_at_ns = (uint64_t)json_integer_value(submitted_ns_json);
+    }
+
     json_decref(root);
     return query;
 }
@@ -173,6 +191,14 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
         return false;
     }
 
+    // Set timestamps before serialization
+    query->submitted_at = time(NULL);
+
+    // Set high-precision timestamp for accurate timing
+    struct timeval submit_time;
+    gettimeofday(&submit_time, NULL);
+    query->submitted_at_ns = (uint64_t)submit_time.tv_sec * 1000000ULL + (uint64_t)submit_time.tv_usec;
+
     // Serialize query to JSON for queue storage
     char* query_json = serialize_query_to_json(query);
     if (!query_json) return false;
@@ -184,19 +210,16 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
 
     if (success) {
         __sync_fetch_and_add(&db_queue->current_queue_depth, 1);
-        query->submitted_at = time(NULL);
 
         // Update last request time for queue selection algorithm
         db_queue->last_request_time = time(NULL);
 
         // Record DQM statistics
-        if (global_queue_manager) {
-            int queue_type_index = query->queue_type_hint;  // 0=slow, 1=medium, 2=fast, 3=cache
-            if (db_queue->is_lead_queue) {
-                queue_type_index = 4;  // Lead queue
-            }
-            database_queue_manager_record_query_submission(global_queue_manager, queue_type_index);
+        int queue_type_index = query->queue_type_hint;  // 0=slow, 1=medium, 2=fast, 3=cache
+        if (db_queue->is_lead_queue) {
+            queue_type_index = 4;  // Lead queue
         }
+        database_queue_record_query_submission(db_queue, queue_type_index);
 
         // Signal worker thread that work is available
         sem_post(&db_queue->worker_semaphore);
@@ -284,9 +307,7 @@ DatabaseQuery* database_queue_await_result(DatabaseQueue* db_queue, const char* 
         if (pending_result_is_timed_out(pending)) {
             log_this(dqm_label, "Query timed out: %s", LOG_LEVEL_ALERT, 1, query_id);
             // Record timeout in DQM statistics
-            if (global_queue_manager) {
-                database_queue_manager_record_timeout(global_queue_manager);
-            }
+            database_queue_record_timeout(db_queue);
         } else {
             log_this(dqm_label, "Query wait failed: %s", LOG_LEVEL_ERROR, 1, query_id);
         }

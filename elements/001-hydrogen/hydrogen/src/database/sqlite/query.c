@@ -506,8 +506,8 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
     // End timing after all result processing is complete
     struct timespec end_time;
     clock_gettime(CLOCK_MONOTONIC, &end_time);
-    db_result->execution_time_ms = (end_time.tv_sec - start_time.tv_sec) * 1000 +
-                                     (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
+    db_result->execution_time_ms = (end_time.tv_sec - start_time.tv_sec) * 1000000 +
+                                     (end_time.tv_nsec - start_time.tv_nsec) / 1000;
 
     db_result->success = true;
 
@@ -664,8 +664,8 @@ bool sqlite_execute_prepared(DatabaseHandle* connection, const PreparedStatement
     // End timing after all result processing is complete
     struct timespec end_time;
     clock_gettime(CLOCK_MONOTONIC, &end_time);
-    db_result->execution_time_ms = (end_time.tv_sec - start_time.tv_sec) * 1000 +
-                                     (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
+    db_result->execution_time_ms = (end_time.tv_sec - start_time.tv_sec) * 1000000 +
+                                     (end_time.tv_nsec - start_time.tv_nsec) / 1000;
 
     db_result->success = true;
 

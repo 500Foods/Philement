@@ -49,14 +49,11 @@
  * @return MHD_Result indicating success or failure
  */
 //@ swagger:path /api/conduit/query
-//@ swagger:method GET
 //@ swagger:method POST
 //@ swagger:operationId executeQueryByReference
 //@ swagger:tags "Conduit Service"
 //@ swagger:summary Execute database query by reference
-//@ swagger:description Executes a pre-defined query from the Query Table Cache using a query reference ID. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) that are automatically converted to database-specific parameter formats. Returns query results in JSON format with execution metadata. Accepts both GET with query parameters and POST with JSON body.
-//@ swagger:parameter query_ref query integer true "Query identifier from Query Table Cache" 1234
-//@ swagger:parameter database query string true "Target database name" Acuranzo
+//@ swagger:description Executes a pre-defined query from the Query Table Cache using a query reference ID. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) that are automatically converted to database-specific parameter formats. Returns query results in JSON format with execution metadata.
 //@ swagger:request body application/json {"type":"object","required":["query_ref","database"],"properties":{"query_ref":{"type":"integer","description":"Query identifier from Query Table Cache (required)","example":1234},"database":{"type":"string","description":"Target database name (required)","example":"Acuranzo"},"params":{"type":"object","description":"Typed parameters for query execution (optional)","properties":{"INTEGER":{"type":"object","description":"Integer parameters as key-value pairs","example":{"userId":123,"quantity":50}},"STRING":{"type":"object","description":"String parameters as key-value pairs","example":{"username":"johndoe","email":"john@example.com"}},"BOOLEAN":{"type":"object","description":"Boolean parameters as key-value pairs","example":{"isActive":true,"requireAuth":false}},"FLOAT":{"type":"object","description":"Float parameters as key-value pairs","example":{"discount":0.15,"tax":0.07}}}}}}
 //@ swagger:response 200 application/json {"type":"object","required":["success","query_ref","rows"],"properties":{"success":{"type":"boolean","description":"Indicates successful query execution","example":true},"query_ref":{"type":"integer","description":"The query reference ID that was executed","example":1234},"description":{"type":"string","description":"Human-readable description of the query","example":"Fetch user profile by ID"},"rows":{"type":"array","description":"Array of result rows as JSON objects","items":{"type":"object"},"example":[{"user_id":123,"username":"johndoe","email":"john@example.com","is_active":true}]},"row_count":{"type":"integer","description":"Number of rows returned","example":1},"column_count":{"type":"integer","description":"Number of columns in result","example":4},"execution_time_ms":{"type":"integer","description":"Query execution time in milliseconds","example":45},"queue_used":{"type":"string","description":"Database queue that handled the request","example":"fast"}}}
 //@ swagger:response 400 application/json {"type":"object","properties":{"success":{"type":"boolean","example":false},"error":{"type":"string","description":"Error message","example":"Missing required parameter: query_ref"},"details":{"type":"string","description":"Additional error details","example":"The query_ref parameter is required"}}}
@@ -88,6 +85,7 @@ json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry
                              const QueryResult* result, const DatabaseQueue* selected_queue);
 json_t* build_error_response(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
                            const PendingQueryResult* pending, const QueryResult* result);
+json_t* build_invalid_queryref_response(int query_ref, const char* database);
 json_t* build_response_json(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
                            const DatabaseQueue* selected_queue, PendingQueryResult* pending);
 unsigned int determine_http_status(const PendingQueryResult* pending, const QueryResult* result);
@@ -105,7 +103,8 @@ enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const 
 enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_t* request_json,
                                        int* query_ref, const char** database, json_t** params_json);
 enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const char* database,
-                                      int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry);
+                                      int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
+                                      bool* query_not_found);
 enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, json_t* params_json,
                                            const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
                                            const char* database, int query_ref,

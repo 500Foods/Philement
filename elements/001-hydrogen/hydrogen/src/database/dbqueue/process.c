@@ -89,14 +89,17 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
                        result->row_count,
                        result->execution_time_ms);
 
-               // Record DQM statistics
-               if (global_queue_manager) {
-                   int queue_type_index = database_queue_type_from_string(db_queue->queue_type);
-                   if (queue_type_index >= 0 && queue_type_index < 4) {
-                       database_queue_manager_record_query_completion(global_queue_manager, queue_type_index, (unsigned long long)result->execution_time_ms);
-                   } else if (db_queue->is_lead_queue) {
-                       database_queue_manager_record_query_completion(global_queue_manager, 4, (unsigned long long)result->execution_time_ms);
-                   }
+               // Record DQM statistics with high-precision total time from submission to completion
+               struct timeval completion_time;
+               gettimeofday(&completion_time, NULL);
+               uint64_t completion_us = (uint64_t)completion_time.tv_sec * 1000000ULL + (uint64_t)completion_time.tv_usec;
+               uint64_t total_execution_time_us = completion_us - query->submitted_at_ns; // Already in microseconds
+
+               int queue_type_index = database_queue_type_from_string(db_queue->queue_type);
+               if (queue_type_index >= 0 && queue_type_index < 4) {
+                   database_queue_record_query_completion(db_queue, queue_type_index, (unsigned long long)total_execution_time_us);
+               } else if (db_queue->is_lead_queue) {
+                   database_queue_record_query_completion(db_queue, 4, (unsigned long long)total_execution_time_us);
                }
 
                // Signal pending result if this query was synchronous
@@ -123,13 +126,11 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
                        query->query_id ? query->query_id : "unknown");
 
                // Record DQM statistics for failure
-               if (global_queue_manager) {
-                   int queue_type_index = database_queue_type_from_string(db_queue->queue_type);
-                   if (queue_type_index >= 0 && queue_type_index < 4) {
-                       database_queue_manager_record_query_failure(global_queue_manager, queue_type_index);
-                   } else if (db_queue->is_lead_queue) {
-                       database_queue_manager_record_query_failure(global_queue_manager, 4);
-                   }
+               int queue_type_index = database_queue_type_from_string(db_queue->queue_type);
+               if (queue_type_index >= 0 && queue_type_index < 4) {
+                   database_queue_record_query_failure(db_queue, queue_type_index);
+               } else if (db_queue->is_lead_queue) {
+                   database_queue_record_query_failure(db_queue, 4);
                }
 
                // Signal pending result with NULL result on failure

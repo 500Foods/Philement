@@ -313,7 +313,6 @@ run_auth_test_parallel() {
         echo "STARTUP_SUCCESS" >> "${result_file}"
 
         # Wait for migration completion if migrations are running
-        local migration_complete=false
         local migration_start_time=${SECONDS}
 
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking for migration completion..."
@@ -325,14 +324,12 @@ run_auth_test_parallel() {
 
             # Check for migration completion message
             if "${GREP}" -q "Migration completed in" "${log_file}" 2>/dev/null; then
-                migration_complete=true
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Migration completed - proceeding with auth tests"
                 break
             fi
 
             # Also check if no migration was needed (when migrations are already up to date)
             if "${GREP}" -q "Migration Current:" "${log_file}" 2>/dev/null; then
-                migration_complete=true
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Migrations already current - proceeding with auth tests"
                 break
             fi
