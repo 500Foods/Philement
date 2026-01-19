@@ -46,7 +46,7 @@
  * @param mapping_array Output array mapping original indices to deduplicated indices
  * @return MHD_YES on success, MHD_NO on rate limit exceeded
  */
-static enum MHD_Result deduplicate_and_validate_queries(
+enum MHD_Result deduplicate_and_validate_queries(
     json_t *queries_array,
     const char *database,
     json_t **deduplicated_queries,

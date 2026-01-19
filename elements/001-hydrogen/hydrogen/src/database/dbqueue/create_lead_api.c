@@ -100,6 +100,13 @@ void database_queue_init_lead_final_flags(DatabaseQueue* db_queue) {
     db_queue->total_queries_processed = 0;
     db_queue->current_queue_depth = 0;
     db_queue->child_queue_count = 0;
+
+    // Initialize DQM statistics
+    memset(&db_queue->dqm_stats, 0, sizeof(DQMStatistics));
+    time_t now = time(NULL);
+    for (int i = 0; i < 5; i++) {
+        db_queue->dqm_stats.per_queue_stats[i].last_used = now;
+    }
 }
 
 // Create a complete Lead queue with all initialization steps

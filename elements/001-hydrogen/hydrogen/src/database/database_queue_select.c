@@ -14,10 +14,11 @@
  *
  * Algorithm:
  * 1. Filter queues by database name
- * 2. Filter by queue type (from QTC recommendation)
+ * 2. Prefer recommended queue type (from QTC recommendation) if available
  * 3. Find minimum depth
  * 4. Among queues with min depth, select earliest last_request_time
  * 5. If all depths are 0, naturally round-robins via timestamps
+ * 6. If no queues match the preferred type, fall back to any available queue
  */
 DatabaseQueue* select_optimal_queue(
     const char* database_name,
@@ -32,18 +33,57 @@ DatabaseQueue* select_optimal_queue(
     int min_depth = INT_MAX;
     time_t earliest_timestamp = (time_t)LONG_MAX;
 
-    // Iterate through all databases managed by this manager
+    // First pass: try to find queues matching the preferred queue type
+    if (queue_type_hint) {
+        for (size_t i = 0; i < manager->database_count; i++) {
+            DatabaseQueue* db_queue = manager->databases[i];
+            if (!db_queue) continue;
+
+            // Filter by database name
+            if (strcmp(db_queue->database_name, database_name) != 0) {
+                continue;
+            }
+
+            // Filter by queue type (preferred)
+            if (strcmp(db_queue->queue_type, queue_type_hint) != 0) {
+                continue;
+            }
+
+            // Get current queue depth
+            int current_depth = db_queue->current_queue_depth;
+
+            // Check if this queue has better (lower) depth
+            if (current_depth < min_depth) {
+                min_depth = current_depth;
+                earliest_timestamp = db_queue->last_request_time;
+                selected_queue = db_queue;
+            }
+            // If same depth, check timestamp (earlier timestamp wins)
+            else if (current_depth == min_depth) {
+                if (db_queue->last_request_time < earliest_timestamp) {
+                    earliest_timestamp = db_queue->last_request_time;
+                    selected_queue = db_queue;
+                }
+            }
+        }
+
+        // If we found a queue with the preferred type, return it
+        if (selected_queue) {
+            return selected_queue;
+        }
+    }
+
+    // Second pass: fall back to any available queue for this database
+    min_depth = INT_MAX;
+    earliest_timestamp = (time_t)LONG_MAX;
+    selected_queue = NULL;
+
     for (size_t i = 0; i < manager->database_count; i++) {
         DatabaseQueue* db_queue = manager->databases[i];
         if (!db_queue) continue;
 
         // Filter by database name
         if (strcmp(db_queue->database_name, database_name) != 0) {
-            continue;
-        }
-
-        // Filter by queue type (if hint provided)
-        if (queue_type_hint && strcmp(db_queue->queue_type, queue_type_hint) != 0) {
             continue;
         }
 
@@ -61,6 +101,20 @@ DatabaseQueue* select_optimal_queue(
             if (db_queue->last_request_time < earliest_timestamp) {
                 earliest_timestamp = db_queue->last_request_time;
                 selected_queue = db_queue;
+            }
+        }
+    }
+
+    // If still no queue found, use the Lead DQM for this database (should always exist)
+    if (!selected_queue) {
+        for (size_t i = 0; i < manager->database_count; i++) {
+            DatabaseQueue* db_queue = manager->databases[i];
+            if (!db_queue) continue;
+
+            // Filter by database name and Lead queue
+            if (strcmp(db_queue->database_name, database_name) == 0 && db_queue->is_lead_queue) {
+                selected_queue = db_queue;
+                break;
             }
         }
     }

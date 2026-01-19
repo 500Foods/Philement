@@ -405,16 +405,18 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     // log_this(designator, "database_engine_execute: Calling engine->execute_query", LOG_LEVEL_TRACE, 0);
 
     // Execute query with timing measurement - no connection lock needed since thread owns connection exclusively
-    time_t query_start_time = time(NULL);
+    struct timespec query_start_time, query_end_time;
+    clock_gettime(CLOCK_MONOTONIC, &query_start_time);
     bool result_success = engine->execute_query(connection, request, result);
-    time_t query_end_time = time(NULL);
+    clock_gettime(CLOCK_MONOTONIC, &query_end_time);
 
-    // Calculate execution time in milliseconds and store in result if successful
+    // Calculate execution time in microseconds and store in result if successful
     if (result_success && *result) {
-        time_t execution_time_seconds = query_end_time - query_start_time;
-        (*result)->execution_time_ms = (time_t)(execution_time_seconds * 1000); // Convert to milliseconds
+        time_t execution_time_us = (query_end_time.tv_sec - query_start_time.tv_sec) * 1000000 +
+                                   (query_end_time.tv_nsec - query_start_time.tv_nsec) / 1000;
+        (*result)->execution_time_ms = execution_time_us; // Store microseconds in ms field
 
-        // log_this(designator, "database_engine_execute: Query executed in %ld ms", LOG_LEVEL_TRACE, 1, (*result)->execution_time_ms);
+        // log_this(designator, "database_engine_execute: Query executed in %ld us", LOG_LEVEL_TRACE, 1, (*result)->execution_time_ms);
     }
 
     // log_this(designator, "database_engine_execute: Engine execute_query returned %s", LOG_LEVEL_TRACE, 1, result_success ? "SUCCESS" : "FAILURE");

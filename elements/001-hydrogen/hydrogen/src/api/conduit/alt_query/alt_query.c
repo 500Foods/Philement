@@ -64,8 +64,8 @@ static enum MHD_Result validate_jwt_for_auth(
         return ret;
     }
 
-    // Validate JWT token - pass "unknown" as placeholder since database comes from request
-    jwt_validation_result_t result = validate_jwt(token, "unknown");
+    // Validate JWT token - pass NULL since database comes from request
+    jwt_validation_result_t result = validate_jwt(token, NULL);
     if (!result.valid || !result.claims) {
         log_this(SR_AUTH, "validate_jwt_for_auth: JWT validation failed", LOG_LEVEL_ALERT, 0);
         free_jwt_validation_result(&result);
@@ -293,13 +293,26 @@ enum MHD_Result handle_conduit_alt_query_request(
     // Step 4: Look up database queue and query cache entry
     DatabaseQueue *db_queue = NULL;
     QueryCacheEntry *cache_entry = NULL;
-    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry);
+    bool query_not_found = false;
+    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found);
     if (result != MHD_YES) {
         free(database);
         if (params_json) {
             json_decref(params_json);
         }
         return result;
+    }
+
+    // Handle invalid queryref case
+    if (query_not_found) {
+        json_t* response = build_invalid_queryref_response(query_ref, database);
+        enum MHD_Result http_result = api_send_json_response(connection, response, MHD_HTTP_OK);
+        json_decref(response);
+        free(database);
+        if (params_json) {
+            json_decref(params_json);
+        }
+        return http_result;
     }
 
     // Step 5: Process parameters

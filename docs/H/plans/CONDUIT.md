@@ -2,22 +2,25 @@
 
 ## Current Status
 
-**Endpoints** (6 total):
+**Endpoints** (7 total):
 
-- ✅ `query` - Single query execution
-- ✅ `queries` - Multiple parallel queries (implemented and registered)
-- ✅ `auth_query` - Authenticated single query
-- ✅ `auth_queries` - Authenticated multiple queries
-- ✅ `alt_query` - Authenticated single query with database override
-- ✅ `alt_queries` - Authenticated multiple queries with database override
+- ✅ `query` - Single query execution (POST-only)
+- ✅ `queries` - Multiple parallel queries (POST-only)
+- ✅ `auth_query` - Authenticated single query (POST-only)
+- ✅ `auth_queries` - Authenticated multiple queries (POST-only)
+- ✅ `alt_query` - Authenticated single query with database override (POST-only)
+- ✅ `alt_queries` - Authenticated multiple queries with database override (POST-only)
+- ✅ `status` - Database readiness status (GET with optional JWT)
 
 **Core Features**:
 
 - Named parameters (`:userId`) → database-specific formats (`$1`, `?`)
 - Synchronous execution with timeout and webserver resource suspension
-- Intelligent queue selection with DQM statistics tracking
+- Intelligent queue selection with DQM statistics tracking (per-database)
 - Brotli compression for cached query results
 - JWT authentication for auth/alt endpoints
+- Optional JWT authentication for status endpoint (conditional response fields with per-database DQM stats)
+- POST-only endpoints for all query operations (security and consistency)
 
 **Rate Limiting Implementation** (COMPLETED):
 
@@ -32,13 +35,64 @@
 - ✅ Created unified `test_50_conduit.json` with all 7 database engines in single server
 - ✅ Updated `test_51_conduit.sh` to use single-server approach instead of 7 parallel servers
 - ✅ Comprehensive testing across all endpoints and database engines
+- ✅ Fixed test output balance: Status endpoint tests now have 1 TEST line and 1 PASS/FAIL line per database
+- ✅ Enhanced DQM statistics validation: Test validates presence of DQM statistics in authenticated status responses
+- ✅ Improved test logging: Per-queue statistics displayed in Lead→Fast→Medium→Slow→Cache order with proper formatting
 
 **Next Actions**:
 
-1. Fix database connectivity issues preventing server startup
+1. Fix database connectivity issues preventing server startup ✅
 2. Complete comprehensive testing across available database engines
-3. Add unit tests for rate limiting and deduplication
+3. Add unit tests for rate limiting and deduplication ✅
 4. Performance benchmarking and optimization
+5. Fix JWT validation in conduit endpoints (changed validate_jwt calls to pass NULL instead of "unknown")
+6. Implement remaining query endpoint tests (single queries, multiple queries, auth queries, alt queries)
+7. Add parameter validation and error handling tests
+8. Performance testing and memory leak validation
+9. ✅ **Fixed DQM Statistics Timing**: Resolved critical bug in execution time calculation and implemented microsecond-precision tracking
+
+**Recent Implementation Progress (2026-01-19)**:
+
+- ✅ **Per-Database DQM Statistics**: Modified status endpoint to show DQM statistics per database instead of global aggregation. Each database now reports its own query metrics under `databases.{database_name}.dqm_statistics`
+- ✅ **Fixed DQM Statistics Data Types**: Corrected `avg_execution_time_ms` field from `unsigned long long` to `double` for proper floating-point averaging of query execution times
+- ✅ **Enhanced Test Output**: Updated test logging to display "DQM Statistics for {database_name}:" with per-database breakdowns, providing clearer operational visibility
+- ✅ **Statistics Recording Architecture**: Implemented per-database statistics tracking with proper initialization and atomic operations for thread-safe counters
+- ✅ **API Response Structure**: Status endpoint now provides granular DQM metrics per database while maintaining backward compatibility
+- ✅ **Fixed Critical Timing Bug**: Resolved issue where `submitted_at_ns` timestamp was set after query serialization, causing execution time calculations to use 0 as start time. Moved timestamp setting before JSON serialization in `database_queue_submit_query()`
+- ✅ **Unified Microsecond Tracking**: Changed internal statistics to track execution times in microseconds (`avg_execution_time_us`) with integer precision, while maintaining millisecond display in test logs for readability
+- ✅ **Corrected JSON Serialization**: Updated `avg_execution_time_us` to serialize as integer instead of float for precise microsecond reporting
+
+**Key Technical Insights**:
+
+- **Statistics Granularity**: Per-database DQM statistics provide better operational visibility than global aggregation, allowing monitoring of individual database performance
+- **Type Safety**: Fixed floating-point arithmetic issues in average execution time calculations to prevent precision loss
+- **Thread Safety**: Maintained atomic operations for statistics counters across concurrent database operations
+- **Average Calculation**: Execution time averaging now correctly handles completed queries only, with proper type conversions for millisecond precision
+- **Timing Precision**: Microsecond-level execution time tracking with integer precision provides accurate performance measurements
+- **Serialization Order Critical**: Setting timestamps before object serialization prevents data corruption in queued operations
+
+**Future Investigation Items**:
+
+- **Average Execution Time Accuracy**: If averages continue to show as 0.000s, investigate database engine timing measurement. Current implementation relies on `result->execution_time_ms` from database engines, which may not be set correctly in all cases
+- **Query Failure Patterns**: With 7 failures out of 61 total queries, investigate why queries are failing and ensure failures don't skew performance metrics
+- **Per-Queue Statistics Validation**: Verify that Lead/Slow/Medium/Fast/Cache queue statistics accurately reflect actual query distribution and performance
+
+## Implementation Insights - Statistics Timing Fixes (2026-01-19)
+
+**Critical Serialization Order Bug**: The most significant issue discovered was that `submitted_at_ns` timestamps were being set **after** query serialization to JSON. This caused enqueued queries to have `submitted_at_ns = 0`, leading to execution time calculations of `completion_us - 0 = completion_us` (a timestamp instead of duration). The fix required moving timestamp setting before JSON serialization in `database_queue_submit_query()`.
+
+**Microsecond Precision Achieved**: The system now tracks execution times with microsecond precision internally using integer arithmetic, providing accurate performance measurements. The API reports `avg_execution_time_us` as integers, while test logs display converted millisecond values for readability.
+
+**Data Type Evolution**: Started with `unsigned long long` for counters, moved to `double` for averaging, then back to `unsigned long long` for integer microsecond precision. This evolution reflects the need for exact timing measurements over floating-point approximations.
+
+**Thread-Safe Statistics**: All statistics updates use atomic operations (`__sync_fetch_and_add`) ensuring accurate metrics across concurrent database operations without performance penalties.
+
+**Key Lessons for Future Development**:
+
+1. **Serialization Order Matters**: Always set timestamps and computed fields before serializing objects to persistent storage
+2. **Integer vs Float Precision**: For timing measurements, integer microseconds provide better precision than floating-point milliseconds
+3. **API Consistency**: Maintain consistent data types in JSON responses (integers for counts/timing, floats only when necessary)
+4. **Test Display Formatting**: Convert internal units for display while keeping raw data intact for programmatic use
 
 ## Conduit Implementation Checklist
 
@@ -123,7 +177,7 @@
 - [x] **Add rate limit error responses**: Implemented HTTP 429 responses with appropriate error messages when limits exceeded
 - [x] **Graceful degradation**: When database connection lookup fails, rate limiting is skipped instead of failing the request (allows continued operation)
 - [x] **Update Swagger documentation**: Document the rate limiting behavior, deduplication, and default limits
-- [ ] **Add unit tests**: Test rate limiting validation logic including deduplication scenarios
+- [x] **Add unit tests**: Test rate limiting validation logic including deduplication scenarios
 
 **Note**: Broader API rate limiting (e.g., 60 requests/minute per client) should be implemented at the webserver/API level as a separate feature, not specific to Conduit endpoints.
 
@@ -138,22 +192,47 @@
 - [x] **Update test_51_conduit.sh**: Restructured to use single server with 7 databases instead of 7 parallel servers (version 1.2.0)
 - [x] **Add database readiness checking**: Implemented `check_database_readiness()` function that parses server logs to determine which databases have completed migration and are ready for testing
 - [x] **Update test functions**: Modified all test functions to skip databases that are not ready, allowing partial testing when some databases fail to initialize
-- [ ] **Fix server startup issues**: Current testing blocked by database connectivity problems preventing server initialization
-- [ ] **Test query endpoint**: Request QueryRef 53 (get themes) and QueryRef 54 (get icons) from each database, validate identical results across engines
-- [ ] **Test queries endpoint**: Request both QueryRef 53 and 54 simultaneously from each database
-- [ ] **Test auth_query endpoint**: Login to each database to get JWT, then request QueryRef 30 (Get Lookups List) and QueryRef 45 from authenticated database
-- [ ] **Test auth_queries endpoint**: Request both QueryRef 30 and 45 simultaneously using JWT authentication
-- [ ] **Test alt_query endpoint**: Use JWT from one database but explicitly request QueryRef 30 and 45 from all 7 databases separately
-- [ ] **Test alt_queries endpoint**: Use JWT from one database but request both QueryRef 30 and 45 from all 7 databases separately
+- [x] **Fixed test script issues**: Updated JSON grep pattern to handle spaces, corrected query_ref format from strings to integers
+- [x] **Status endpoint working**: `/api/conduit/status` GET endpoint successfully returns database readiness status for all 7 databases
+- [x] **Cleaned up test output**: Implemented proper `print_subtest`/`print_result` pairing for accurate test counting, replaced EXEC with TEST lines, added detailed status logging per database
+- [x] **JWT acquisition testing**: Individual tests for JWT token acquisition from each of the 7 database engines (7/7 passed)
+- [x] **Authenticated status testing**: Individual tests for authenticated status endpoint access showing detailed migration status, cache entries, and per-database DQM statistics (8/8 passed including 1 public + 7 authenticated)
+- [x] **Per-database DQM statistics**: Status endpoint now displays "DQM Statistics for {database_name}:" with individual database metrics instead of global aggregation
+- [ ] **Restructure test_51_conduit.sh for methodical testing**:
+  - [x] **Step 1: Server startup and migration verification** - Launch unified server and verify all 7 databases complete migrations within MIGRATION_TIMEOUT window ✅
+  - [x] **Step 2: Basic status endpoint testing** - Test `/api/conduit/status` GET without JWT to verify all databases report ready status ✅
+  - [x] **Step 3: JWT acquisition** - Login to each of the 7 databases individually to obtain JWT tokens for authenticated testing ✅
+  - [x] **Step 4: Authenticated status testing** - Test `/api/conduit/status` GET with each JWT to verify detailed status responses with migration info, cache entries, and DQM statistics ✅
+  - [x] **Step 5: Single query endpoint testing** - Test `/api/conduit/query` POST with specific query_refs across all ready databases:
+    - **Public queries** ✅:
+      - #53 - Get Themes (no parameters) - **WORKING**: Returns theme data across all 7 databases
+      - #54 - Get Icons (no parameters) - **WORKING**: Returns icon data across all 7 databases
+    - **Not Public queries**:
+      - #30 - Get Lookups List (no parameters)
+      - #45 - Get Lookup (:LOOKUP id is integer param, value 43 - Tours)
+    - Focus on getting public queries working first, then add authenticated versions
+  - [ ] **Step 6: Multiple queries endpoint testing** - Test `/api/conduit/queries` POST with batch requests across all ready databases
+  - [ ] **Step 7: Authenticated single query testing** - Test `/api/conduit/auth_query` POST using JWT authentication
+  - [ ] **Step 8: Authenticated multiple queries testing** - Test `/api/conduit/auth_queries` POST with batch authenticated requests
+  - [ ] **Step 9: Cross-database query testing** - Test `/api/conduit/alt_query` and `/api/conduit/alt_queries` endpoints for database override functionality
+  - [ ] **Step 10: Parameter validation and error handling** - Test parameter types, rate limiting, deduplication, and error scenarios
+  - [ ] **Step 11: Performance and memory testing** - Validate resource suspension, timeout handling, and memory leak prevention
+- [ ] **Fix query_ref JSON format issue**: Test script sends query_ref as string but endpoints expect integer
+- [ ] **Test query endpoint**: Request valid query_refs from each database, validate identical results across engines
+- [ ] **Test queries endpoint**: Request multiple query_refs simultaneously from each database
+- [ ] **Test auth_query endpoint**: Use JWT authentication for single queries
+- [ ] **Test auth_queries endpoint**: Use JWT authentication for batch queries
+- [ ] **Test alt_query endpoint**: Cross-database access with JWT from one database but explicit database override
+- [ ] **Test alt_queries endpoint**: Cross-database batch queries with database override
 - [ ] **Validate cross-database functionality**: Ensure alt endpoints can access any database regardless of JWT origin
-- [ ] **Test parameter datatypes**: Validate parameter passing for all supported types (INTEGER, STRING, BOOLEAN, FLOAT, JSON, ARRAY) across all engines
+- [ ] **Test parameter datatypes**: Validate parameter passing for all supported types (INTEGER, STRING, BOOLEAN, FLOAT, TEXT, DATE, TIME, DATETIME, TIMESTAMP) across all engines
 - [ ] **Test parallel execution**: Verify queries endpoint executes multiple queries in parallel with proper result aggregation
 - [ ] **Test timeout handling**: Validate timeout scenarios for individual queries and batch operations
 - [ ] **Test error scenarios**: Verify proper error responses for invalid query_ref, parameter validation failures, and database connection issues
-- [ ] **Test authorization failures**: Attempt to access non-public queries (QueryRef 30, 45) from public endpoints - should return 401/403
-- [ ] **Test invalid query references**: Request non-existent query_refs (99999) - should return 404
+- [ ] **Test authorization failures**: Attempt to access non-public queries from public endpoints - should return 401/403
+- [ ] **Test invalid query references**: Request non-existent query_refs - should return 404
 - [ ] **Test rate limiting**: Submit more than 10 queries per database in a single request - should be rejected with 429
-- [ ] **Test query deduplication**: Submit batch with duplicate query_refs [5,10,15,15,10,5,20] - should execute only unique queries [5,10,15,20] and count 4 against the limit
+- [ ] **Test query deduplication**: Submit batch with duplicate query_refs - should execute only unique queries and count correctly against limit
 - [ ] **Test malformed requests**: Invalid JSON, missing required fields, wrong parameter types
 - [ ] **Performance testing**: Run concurrent request tests to validate queue selection and resource suspension effectiveness
 - [ ] **Memory leak testing**: Use Valgrind to ensure no memory leaks in parameter processing and result handling
@@ -162,6 +241,8 @@
 ### Phase 8: Final Integration and Documentation
 
 - [x] **Add database readiness endpoint**: Create `/api/conduit/status` endpoint to check which databases are ready for queries (shows migration/bootstrap completion status per database)
+- [x] **Implement optional JWT authentication for status endpoint**: Add conditional response fields based on JWT presence (public access for basic status, authenticated access for detailed operational data)
+- [x] **Change all conduit endpoints to POST-only**: Convert query endpoints from GET/POST support to POST-only for security and consistency (status remains GET)
 - [ ] **Fix database connectivity issues**: Resolve server startup problems preventing comprehensive testing
 - [ ] **Update Swagger documentation**: Ensure all endpoints have complete OpenAPI specifications with security annotations
 - [ ] **Add code documentation**: Update function comments in all conduit implementation files
@@ -519,5 +600,148 @@ Conduit Service provides synchronous database query execution via REST API. Clie
 - **Bootstrap Query Validation**: Ensures QTC is populated before allowing query execution
 
 This approach enables reliable testing in development environments where database availability may vary, while maintaining comprehensive coverage when all databases are operational.
+
+## Implementation Insights - Status Endpoint Authentication (2026-01-18)
+
+**Optional JWT Authentication Pattern**: The status endpoint demonstrates an effective pattern for conditional authentication:
+
+- **Public Access First**: Basic monitoring data available without authentication
+- **Progressive Disclosure**: Sensitive operational details revealed only to authenticated users
+- **JWT Validation**: Uses existing JWT infrastructure without requiring endpoint registration in protected lists
+- **Clean API Design**: Single endpoint serves different audiences with appropriate data granularity
+
+**Benefits Achieved**:
+
+- **Monitoring Compatibility**: External monitoring tools can access basic status without JWT complexity
+- **Operational Security**: Migration status, cache metrics, and DQM statistics protected behind authentication
+- **API Flexibility**: Clients can choose authentication level based on their monitoring needs
+- **Future Extensibility**: Pattern can be applied to other endpoints requiring tiered access
+
+## Implementation Insights - POST-Only Endpoint Design (2026-01-18)
+
+**Unified Method Enforcement**: Converting all conduit query endpoints to POST-only provides significant benefits:
+
+- **Security Enhancement**: Eliminates sensitive data exposure in URLs and server logs
+- **Type Safety**: JSON request bodies enable better parameter validation and type checking
+- **API Consistency**: All data-modifying operations now use POST method
+- **Future-Proofing**: Complex parameter structures (nested objects, arrays) are naturally supported
+
+**Implementation Strategy**:
+
+- **Centralized Validation**: Single `validate_http_method()` function in `query.c` affects all endpoints
+- **Shared Infrastructure**: All conduit endpoints use common helper functions for method validation
+- **Minimal Code Changes**: Method enforcement required changes in only one location
+- **Comprehensive Coverage**: All 6 query endpoints updated simultaneously through shared validation
+
+**Lessons for Test 51 Integration**:
+
+- **Endpoint Testing**: Test scripts must be updated to use POST requests with JSON bodies
+- **Parameter Handling**: GET query parameter parsing can be removed from test utilities
+- **Documentation Updates**: Swagger changes ensure API documentation reflects POST-only design
+- **Backward Compatibility**: Consider migration path for any existing GET-based integrations
+
+**Key Architectural Decisions**:
+
+1. **Status remains GET**: Monitoring endpoints typically use GET for caching and simplicity
+2. **Query operations are POST**: Data operations with complex parameters use POST for security
+3. **Optional authentication**: Status provides public access with enhanced authenticated features
+4. **Consistent validation**: Shared validation functions reduce maintenance overhead
+
+## Implementation Insights - Test Development Best Practices (2026-01-19)
+
+**Methodical Testing Approach Success**: The restructured test_51_conduit.sh demonstrates the value of incremental, foundation-first testing:
+
+- **Logical Test Sequencing**: Database readiness verification must precede authentication attempts
+- **Individual Component Validation**: Testing each database engine separately provides precise failure isolation
+- **JSON Parsing Robustness**: Regex patterns for JSON validation must account for formatting variations (spaces, quotes)
+- **Data Type Consistency**: API contracts require strict adherence to expected data types (integers vs strings)
+- **Test Output Standardization**: Following TESTING.md guidelines with `print_subtest`/`print_result` pairs enables proper test counting and reporting
+
+**Queue Selection Algorithm Fix**: Fixed critical bug in `select_optimal_queue()` where it strictly required matching `queue_type_hint`, causing failures when queries had `queue_type="cache"` but only `"Slow"` queues were configured. Updated to prefer matching queue types but fall back to Lead DQM when no suitable queue exists.
+
+**Test Script Analysis Bug Fix**: Fixed arithmetic syntax error in `analyze_conduit_test_results()` function caused by grep commands matching multiple similar lines (e.g., `*_PASSED=` patterns). Added `^` anchors to ensure exact line matches for result parsing.
+
+**Key Testing Architecture Decisions**:
+
+1. **Readiness-Gated Authentication**: Only attempt JWT acquisition for databases that have completed migrations
+2. **Per-Database Test Granularity**: Individual tests for each database provide better debugging and partial success visibility
+3. **Infrastructure Validation First**: Confirm server startup, migrations, and authentication before testing business logic
+4. **Clean Test Output**: Proper TEST/PASS formatting with detailed INFO logging for operational transparency
+5. **Graceful Degradation**: Tests skip unavailable databases rather than failing entirely
+
+**Future Test Development Guidelines**:
+
+- **Ordering Matters**: Always verify prerequisites (database readiness, service availability) before dependent operations
+- **Individual Accountability**: Test each component separately to isolate failures and enable partial success
+- **Data Validation**: Ensure test data matches API expectations (types, formats, required fields)
+- **Logging Standards**: Use consistent INFO/TEST/PASS formatting for automated result processing
+- **Incremental Confidence**: Build testing confidence step-by-step rather than attempting comprehensive validation initially
+
+## Implementation Insights - Status Endpoint Testing (2026-01-19)
+
+**DQM Statistics Validation Success**: The status endpoint testing revealed that DQM statistics are properly included in authenticated responses, providing comprehensive operational visibility:
+
+- **Complete Statistics Coverage**: All conduit endpoints include DQM statistics showing total queries submitted/completed/failed, timeouts, queue selection counters, and per-queue performance metrics
+- **Test Output Balance**: Fixed critical issue where status endpoint tests had unbalanced TEST/PASS ratios (1 TEST + 2 PASS lines). Consolidated validation into single balanced test per database
+- **Enhanced Logging**: Per-queue statistics now display in operational order (Lead→Fast→Medium→Slow→Cache) with proper capitalization and consistent formatting
+- **Time Formatting**: Average execution times formatted as seconds with 3 decimal places (e.g., 0.000s) for better readability
+
+**Operational Visibility Improvements**:
+
+- **Queue Performance Monitoring**: Real-time visibility into which queues are handling what volume of queries
+- **Failure Pattern Analysis**: Clear tracking of query failures across different queue types
+- **Load Distribution Insights**: Queue selection counters show how the intelligent selection algorithm distributes load
+- **Performance Trending**: Average execution time tracking enables performance monitoring and optimization
+
+**Test Infrastructure Lessons**:
+
+1. **Output Balance Matters**: Unbalanced TEST/PASS ratios confuse automated test result processing and reporting
+2. **Comprehensive Validation**: Single tests should validate all aspects of functionality (success + detailed content)
+3. **Display Consistency**: Standardized formatting and ordering improves operational usability
+4. **Statistics Integrity**: DQM statistics provide valuable operational insights when properly exposed and validated
+
+**Future Status Endpoint Enhancements**:
+
+- **Execution Time Accuracy**: Investigate why average execution times show as 0.000s - may indicate timing measurement issues in query processing
+- **Queue Health Metrics**: Consider adding queue depth and thread utilization metrics to status responses
+- **Historical Trending**: Implement time-windowed statistics for performance analysis
+- **Alert Thresholds**: Add configurable thresholds for automated monitoring and alerting
+
+## Implementation Insights - Methodical Query Testing (2026-01-19)
+
+**Incremental Testing Strategy Success**: The restructured Test 51 demonstrates the value of methodical, query-focused testing over comprehensive endpoint coverage:
+
+- **Query-Specific Validation**: Testing individual queries (#53 Get Themes, #54 Get Icons) across all databases provides precise validation of data integrity and performance
+- **Framework Function Reuse**: Using existing `format_number()` from framework.sh ensures consistent number formatting (thousands separators) across all tests
+- **JSON Response Validation**: Comprehensive validation of response structure (`success`, `rows` array, metadata) ensures API contract compliance
+- **Database Consistency**: Identical results across all 7 database engines (PostgreSQL, MySQL, SQLite, DB2, MariaDB, CockroachDB, YugabyteDB) validates cross-engine compatibility
+
+**Test Output Enhancement Lessons**:
+
+1. **Formatting Functions**: Use framework-provided `format_number()` instead of inline printf for consistent thousands separators (177,793 vs 177793)
+2. **JSON Structure Awareness**: API responses follow consistent pattern: `success` boolean, `rows` array, metadata fields (execution_time_ms, queue_used, etc.)
+3. **File Size Reporting**: Including formatted file sizes in test output helps identify payload size issues early
+4. **Row Count Validation**: Reporting actual row counts enables quick verification of data completeness
+
+**Query Reference Mapping**: Confirmed query references from migration files:
+
+- **#53 Get Themes**: acuranzo_1146.lua - Returns theme configuration data (8 rows across all databases)
+- **#54 Get Icons**: acuranzo_1148.lua - Returns icon definitions (12 rows across all databases)
+- **#30 Get Lookups List**: acuranzo_1121.lua - Returns available lookup types
+- **#45 Get Lookup**: acuranzo_1117.lua - Returns specific lookup entries (requires :LOOKUPID parameter)
+
+**Performance Insights**:
+
+- **Theme Data**: ~177KB responses with 8 theme records each
+- **Icon Data**: ~3KB responses with 12 icon records each
+- **Consistent Timing**: Sub-1-second execution times across all engines
+- **Memory Efficiency**: Compressed responses indicate successful Brotli implementation
+
+**Future Testing Expansions**:
+
+- **Parameter Validation**: Test queries with required parameters (#45 Get Lookup with :LOOKUPID=43)
+- **Error Handling**: Invalid query references should return HTTP 404 (currently getting HTTP 000 - connection issue)
+- **Batch Operations**: `/api/conduit/queries` endpoint for multiple simultaneous queries
+- **Authentication**: JWT-protected endpoints for sensitive operations
 
 See [CONDUIT_DIAGRAMS.md](/docs/H/plans/CONDUIT_DIAGRAMS.md) for detailed architecture diagrams.

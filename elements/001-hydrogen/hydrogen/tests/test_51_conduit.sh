@@ -18,6 +18,14 @@
 # analyze_conduit_test_results()
 
 # CHANGELOG
+# 1.4.0 - 2026-01-19 - Further refactored to extract JWT acquisition and test helper functions
+#                    - Added acquire_jwt_tokens(), test_conduit_single_queries(), test_conduit_multiple_queries_endpoint() to lib
+#                    - Simplified test functions using new generic helpers
+#                    - Improved code reusability and maintainability
+# 1.3.0 - 2026-01-19 - Refactored to extract conduit utilities into tests/lib/conduit_utils.sh
+#                    - Moved validate_conduit_request() and check_database_readiness() to lib
+#                    - Moved DATABASE_NAMES, PUBLIC_QUERY_REFS, NON_PUBLIC_QUERY_REFS to lib
+#                    - Reduced script size and improved reusability for other conduit tests
 # 1.2.0 - 2026-01-18 - Updated to use unified single-server approach with test_50_conduit.json
 #                    - Single server with 7 databases instead of 7 parallel servers
 #                    - Tests all conduit endpoints across all database engines in one server
@@ -40,29 +48,19 @@ TEST_NAME="Conduit Endpoints  {BLUE}CDT: 0{RESET}"
 TEST_ABBR="QRY"
 TEST_NUMBER="51"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="1.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/conduit_utils.sh # Conduit testing utilities
+[[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 setup_test_environment
 
 # Single server configuration with all 7 database engines
-CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_50_conduit.json"
+CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_51_conduit.json"
 CONDUIT_LOG_SUFFIX="conduit"
 CONDUIT_ENGINE_NAME="multi"
-CONDUIT_DESCRIPTION="Multi-Database Conduit Server"
-
-# Database names in the unified configuration
-declare -A DATABASE_NAMES
-DATABASE_NAMES=(
-    ["PostgreSQL"]="Demo_PG"
-    ["MySQL"]="Demo_MY"
-    ["SQLite"]="Demo_SQL"
-    ["DB2"]="Demo_DB2"
-    ["MariaDB"]="Demo_MR"
-    ["CockroachDB"]="Demo_CR"
-    ["YugabyteDB"]="Demo_YB"
-)
+CONDUIT_DESCRIPTION="Conduit"
 
 # Test timeouts
 STARTUP_TIMEOUT=15
@@ -89,97 +87,24 @@ DEMO_EMAIL="${HYDROGEN_DEMO_EMAIL:-}"
 # shellcheck disable=SC2034 # Used in heredocs that may be expanded in future versions
 DEMO_API_KEY="${HYDROGEN_DEMO_API_KEY:-}"
 
-# Real query references from Acuranzo migrations (001-053)
-# Format: "query_ref:description:requires_auth"
-declare -A QUERY_REFS
-QUERY_REFS=(
-    ["001"]="Get System Information:false"
-    ["008"]="Get Account ID:false"
-    ["025"]="Get Queries List:false"
-    ["026"]="Get Lookup:false"
-    ["044"]="Get Filtered Lookup: AI Models:false"
-    ["053"]="Get Themes:false"
-)
 
-# Function to validate conduit request with optional JWT authentication
-validate_conduit_request() {
-    local endpoint="$1"
-    local method="$2"
-    local data="$3"
-    local expected_status="$4"
-    local output_file="$5"
-    local jwt_token="${6:-}"  # Optional JWT token for authenticated requests
-    local description="$7"
 
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing ${endpoint}: ${description}"
-
-    # Build curl command with optional Authorization header
-    local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json")
-
-    # Add Authorization header if JWT token is provided
-    if [[ -n "${jwt_token}" ]]; then
-        curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
-    fi
-
-    # Complete curl command
-    curl_cmd+=(-d "${data}" -w "%{http_code}" -o "${output_file}" --compressed --max-time 60 "${endpoint}")
-
-    # Run curl and capture HTTP status
-    local http_status
-    http_status=$("${curl_cmd[@]}" 2>/dev/null)
-
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${http_status}"
-
-    if [[ "${http_status}" == "${expected_status}" ]]; then
-        # Check for success in JSON response for successful requests
-        if [[ "${expected_status}" -eq 200 ]]; then
-            if "${GREP}" -q '"success":true' "${output_file}"; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} - Request successful"
-                return 0
-            else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} - Request failed (success=false in response)"
-                return 1
-            fi
-        else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} - Request returned expected status ${expected_status}"
-            return 0
-        fi
-    else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} - Expected HTTP ${expected_status}, got ${http_status}"
-        return 1
-    fi
-}
-
-# Function to check which databases are ready for testing
-check_database_readiness() {
-    local log_file="$1"
+# Function to test conduit single query endpoint with public queries across ready databases
+test_conduit_single_public_query() {
+    local base_url="$1"
     local result_file="$2"
 
-    declare -A ready_databases
+    local result
+    result=$(test_conduit_single_queries "${base_url}" "${result_file}" "/api/conduit/query" "" "Public Query")
 
-    # Check each database for migration completion
-    for db_engine in "${!DATABASE_NAMES[@]}"; do
-        local db_name="${DATABASE_NAMES[${db_engine}]}"
-        local db_ready=false
+    IFS=':' read -r tests_passed total_tests <<< "${result}"
 
-        # Check for successful migration completion
-        if "${GREP}" -q "${db_name}.*Migration process completed.*QTC populated from bootstrap queries" "${log_file}" 2>/dev/null; then
-            db_ready=true
-        fi
-
-        if [[ "${db_ready}" = true ]]; then
-            ready_databases["${db_engine}"]=true
-            echo "DATABASE_READY_${db_engine}=true" >> "${result_file}"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine} database ready for testing"
-        else
-            echo "DATABASE_READY_${db_engine}=false" >> "${result_file}"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine} database not ready - skipping tests"
-        fi
-    done
+    echo "SINGLE_PUBLIC_QUERY_TESTS_PASSED=${tests_passed}" >> "${result_file}"
+    echo "SINGLE_PUBLIC_QUERY_TESTS_TOTAL=${total_tests}" >> "${result_file}"
 }
 
-# Function to test conduit single query endpoint across ready databases
-test_conduit_single_query() {
+# Function to test conduit single query endpoint with invalid query refs
+test_conduit_single_invalid_query() {
     local base_url="$1"
     local result_file="$2"
 
@@ -195,40 +120,29 @@ test_conduit_single_query() {
 
         local db_name="${DATABASE_NAMES[${db_engine}]}"
 
-        # Test each query reference for this database
-        for query_ref in "${!QUERY_REFS[@]}"; do
-            IFS=':' read -r description _ <<< "${QUERY_REFS[${query_ref}]}"
-
-            # Prepare JSON payload for single query
-            local payload
-            payload=$(cat <<EOF
+        # Test invalid query ref -100
+        local payload
+        payload=$(cat <<EOF
 {
-  "query_ref": "${query_ref}",
+  "query_ref": -100,
   "database": "${db_name}",
-  "params": {
-    "INTEGER": {
-      "limit": 10
-    },
-    "STRING": {
-      "status": "active"
-    }
-  }
+  "params": {}
 }
 EOF
 )
 
-            local response_file="${result_file}.single_${db_engine}_${query_ref}.json"
+        local response_file="${result_file}.single_invalid_${db_engine}.json"
 
-            # shellcheck disable=SC2310 # We want to continue even if the test fails
-            if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload}" "200" "${response_file}" "" "${db_engine} Single Query ${query_ref}: ${description}"; then
-                tests_passed=$(( tests_passed + 1 ))
-            fi
-            total_tests=$(( total_tests + 1 ))
-        done
+        # Expect 200 with "fail" response for invalid query ref
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload}" "200" "${response_file}" "" "${db_engine} Invalid Query -100" "\"fail\""; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+        total_tests=$(( total_tests + 1 ))
     done
 
-    echo "SINGLE_QUERY_TESTS_PASSED=${tests_passed}" >> "${result_file}"
-    echo "SINGLE_QUERY_TESTS_TOTAL=${total_tests}" >> "${result_file}"
+    echo "SINGLE_INVALID_QUERY_TESTS_PASSED=${tests_passed}" >> "${result_file}"
+    echo "SINGLE_INVALID_QUERY_TESTS_TOTAL=${total_tests}" >> "${result_file}"
 }
 
 # Function to test conduit multiple queries endpoint across ready databases
@@ -236,51 +150,29 @@ test_conduit_multiple_queries() {
     local base_url="$1"
     local result_file="$2"
 
-    local tests_passed=0
-    local total_tests=0
-
-    # Test each database that is ready
-    for db_engine in "${!DATABASE_NAMES[@]}"; do
-        # Check if database is ready
-        if ! "${GREP}" -q "DATABASE_READY_${db_engine}=true" "${result_file}" 2>/dev/null; then
-            continue
-        fi
-
-        local db_name="${DATABASE_NAMES[${db_engine}]}"
-
-        # Prepare JSON payload for multiple queries
-        local payload
-        payload=$(cat <<EOF
-{
-  "database": "${db_name}",
-  "queries": [
-    {
-      "query_ref": "001",
-      "params": {
-        "INTEGER": { "limit": 5 }
-      }
-    },
-    {
-      "query_ref": "025",
-      "params": {
-        "STRING": { "status": "active" }
-      }
+    local queries_json
+    queries_json=$(cat <<EOF
+[
+  {
+    "query_ref": 1005,
+    "params": {
+      "INTEGER": { "limit": 5 }
     }
-  ]
-}
+  },
+  {
+    "query_ref": 1006,
+    "params": {
+      "STRING": { "status": "active" }
+    }
+  }
+]
 EOF
 )
 
-        local response_file="${result_file}.multiple_${db_engine}.json"
+    local result
+    result=$(test_conduit_multiple_queries_endpoint "${base_url}" "${result_file}" "/api/conduit/queries" "" "Multiple Queries: System Info + Query List" "${queries_json}")
 
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload}" "200" "${response_file}" "" "${db_engine} Multiple Queries: System Info + Query List"; then
-            tests_passed=$(( tests_passed + 1 ))
-        else
-            echo "MULTIPLE_QUERIES_FAILED_${db_engine}" >> "${result_file}"
-        fi
-        total_tests=$(( total_tests + 1 ))
-    done
+    IFS=':' read -r tests_passed total_tests <<< "${result}"
 
     echo "MULTIPLE_QUERIES_TESTS_PASSED=${tests_passed}" >> "${result_file}"
     echo "MULTIPLE_QUERIES_TESTS_TOTAL=${total_tests}" >> "${result_file}"
@@ -313,7 +205,7 @@ test_conduit_auth_single_query() {
         local payload
         payload=$(cat <<EOF
 {
-  "query_ref": "008",
+  "query_ref": 1005,
   "params": {
     "STRING": {
       "username": "${HYDROGEN_DEMO_USER_NAME}"
@@ -367,11 +259,11 @@ test_conduit_auth_multiple_queries() {
 {
   "queries": [
     {
-      "query_ref": "001",
+      "query_ref": 1005,
       "params": {}
     },
     {
-      "query_ref": "025",
+      "query_ref": 1006,
       "params": {
         "STRING": { "status": "active" }
       }
@@ -425,7 +317,7 @@ test_conduit_alt_single_query() {
 {
   "token": "${jwt_token}",
   "database": "${db_name}",
-  "query_ref": "008",
+  "query_ref": 1005,
   "params": {
     "STRING": {
       "username": "${HYDROGEN_DEMO_USER_NAME}"
@@ -481,11 +373,11 @@ test_conduit_alt_multiple_queries() {
   "database": "${db_name}",
   "queries": [
     {
-      "query_ref": "001",
+      "query_ref": 1005,
       "params": {}
     },
     {
-      "query_ref": "025",
+      "query_ref": 1006,
       "params": {
         "STRING": { "status": "active" }
       }
@@ -510,13 +402,135 @@ EOF
     echo "ALT_MULTIPLE_QUERY_TESTS_TOTAL=${total_tests}" >> "${result_file}"
 }
 
+# Function to test conduit status endpoint
+test_conduit_status() {
+    local base_url="$1"
+    local jwt_tokens_string="$2"  # Space-separated string of JWT tokens (one per database)
+    local result_file="$3"
+
+    local tests_passed=0
+    local total_tests=0
+
+    # Test status endpoint without authentication (basic status)
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Status Endpoint (Public)"
+    local response_file="${result_file}.status_public.json"
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    if validate_conduit_request "${base_url}/api/conduit/status" "GET" "" "200" "${response_file}" "" "Status Endpoint (Public)"; then
+        # Parse and log status of each database
+        if command -v jq >/dev/null 2>&1 && [[ -f "${response_file}" ]]; then
+            for db_engine in "${!DATABASE_NAMES[@]}"; do
+                local db_name="${DATABASE_NAMES[${db_engine}]}"
+                local ready_status
+                ready_status=$(jq -r ".databases.[\"${db_name}\"].ready" "${response_file}" 2>/dev/null || echo "unknown")
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${db_engine}: ready=${ready_status}"
+            done
+        fi
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Status Endpoint (Public) - All databases reported status"
+        tests_passed=$(( tests_passed + 1 ))
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Status Endpoint (Public) - Failed to get status"
+    fi
+    total_tests=$(( total_tests + 1 ))
+
+    # Test status endpoint with authentication for each database
+    # Use read -a to properly split the jwt_tokens_string into an array
+    local jwt_array=()
+    read -r -a jwt_array <<< "${jwt_tokens_string}"
+    local jwt_index=0
+    for db_engine in "${!DATABASE_NAMES[@]}"; do
+        if [[ ${jwt_index} -lt ${#jwt_array[@]} ]] && [[ -n "${jwt_array[${jwt_index}]}" ]]; then
+            local jwt_token="${jwt_array[${jwt_index}]}"
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Status Endpoint (${db_engine} Auth)"
+            local response_file_auth="${result_file}.status_auth_${db_engine}.json"
+
+            # Make the request and check basic success
+            local http_status
+            http_status=$(curl -s -X GET "${base_url}/api/conduit/status" \
+                -H "Authorization: Bearer ${jwt_token}" \
+                -w "%{http_code}" \
+                -o "${response_file_auth}" 2>/dev/null)
+
+            if [[ "${http_status}" -eq 200 ]]; then
+                # Check for success in JSON response
+                if "${GREP}" -q '"success"[[:space:]]*:[[:space:]]*true' "${response_file_auth}"; then
+                    # Parse and validate detailed status including DQM statistics
+                    if command -v jq >/dev/null 2>&1 && [[ -f "${response_file_auth}" ]]; then
+                        local db_name="${DATABASE_NAMES[${db_engine}]}"
+                        local ready_status migration_status cache_entries dqm_stats_present
+                        ready_status=$(jq -r ".databases.[\"${db_name}\"].ready" "${response_file_auth}" 2>/dev/null || echo "unknown")
+                        migration_status=$(jq -r ".databases.[\"${db_name}\"].migration_status" "${response_file_auth}" 2>/dev/null || echo "unknown")
+                        cache_entries=$(jq -r ".databases.[\"${db_name}\"].query_cache_entries" "${response_file_auth}" 2>/dev/null || echo "unknown")
+                        dqm_stats_present=$(jq -r ".databases.[\"${db_name}\"].dqm_statistics.total_queries_submitted" "${response_file_auth}" 2>/dev/null || echo "null")
+
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${db_engine} authenticated status: ready=${ready_status}, migration=${migration_status}, cache_entries=${cache_entries}"
+
+                        if [[ "${dqm_stats_present}" != "null" ]]; then
+                            local total_submitted total_completed total_failed
+                            total_submitted=$(jq -r ".databases.[\"${db_name}\"].dqm_statistics.total_queries_submitted" "${response_file_auth}" 2>/dev/null || echo "0")
+                            total_completed=$(jq -r ".databases.[\"${db_name}\"].dqm_statistics.total_queries_completed" "${response_file_auth}" 2>/dev/null || echo "0")
+                            total_failed=$(jq -r ".databases.[\"${db_name}\"].dqm_statistics.total_queries_failed" "${response_file_auth}" 2>/dev/null || echo "0")
+                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  DQM Statistics for ${db_name}: submitted=${total_submitted}, completed=${total_completed}, failed=${total_failed}"
+
+                            # Log per-queue statistics in order: Lead, Fast, Medium, Slow, Cache
+                            local queue_indices=(4 2 1 0 3)
+                            local queue_names=("Lead" "Fast" "Medium" "Slow" "Cache")
+                            local i=0
+                            for queue_name in "${queue_names[@]}"; do
+                                local queue_index=${queue_indices[${i}]}
+                                local q_submitted q_completed q_failed q_avg_time
+                                q_submitted=$(jq -r ".databases.[\"${db_name}\"].dqm_statistics.per_queue_stats[${queue_index}].submitted" "${response_file_auth}" 2>/dev/null || echo "0")
+                                q_completed=$(jq -r ".databases.[\"${db_name}\"].dqm_statistics.per_queue_stats[${queue_index}].completed" "${response_file_auth}" 2>/dev/null || echo "0")
+                                q_failed=$(jq -r ".databases.[\"${db_name}\"].dqm_statistics.per_queue_stats[${queue_index}].failed" "${response_file_auth}" 2>/dev/null || echo "0")
+                                q_avg_time=$(jq -r ".databases.[\"${db_name}\"].dqm_statistics.per_queue_stats[${queue_index}].avg_execution_time_us" "${response_file_auth}" 2>/dev/null || echo "0")
+
+                                # Format average time as milliseconds with 3 decimal places (convert from microseconds)
+                                local avg_ms
+                                if [[ "${q_avg_time}" == "0" ]]; then
+                                    avg_ms="0.000ms"
+                                else
+                                    # Calculate average time in milliseconds
+                                    local calc_result
+                                    calc_result=$(echo "scale=3; ${q_avg_time}/1000" | bc -l 2>/dev/null || echo "0.000")
+                                    avg_ms=$(printf "%.3fms" "${calc_result}")
+                                fi
+
+                                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${queue_name} DQM: submitted=${q_submitted}, completed=${q_completed}, failed=${q_failed}, avg=${avg_ms}"
+                                i=$(( i + 1 ))
+                            done
+
+                            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Status Endpoint (${db_engine} Auth) - Authenticated status with DQM statistics retrieved"
+                            tests_passed=$(( tests_passed + 1 ))
+                        else
+                            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Status Endpoint (${db_engine} Auth) - DQM statistics missing from response"
+                        fi
+                    else
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Status Endpoint (${db_engine} Auth) - Request successful (jq not available for detailed validation)"
+                        tests_passed=$(( tests_passed + 1 ))
+                    fi
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Status Endpoint (${db_engine} Auth) - Request failed (success=false in response)"
+                fi
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Status Endpoint (${db_engine} Auth) - Expected HTTP 200, got ${http_status}"
+            fi
+            total_tests=$(( total_tests + 1 ))
+        else
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Status Endpoint (${db_engine} Auth)"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Status Endpoint (${db_engine} Auth) - Skipped (no JWT available)"
+        fi
+        jwt_index=$(( jwt_index + 1 ))
+    done
+
+    echo "STATUS_TESTS_PASSED=${tests_passed}" >> "${result_file}"
+    echo "STATUS_TESTS_TOTAL=${total_tests}" >> "${result_file}"
+}
+
 # Function to run conduit tests in parallel for a specific database engine
 run_conduit_test_parallel() {
     local test_name="$1"
     local config_file="$2"
     local log_suffix="$3"
-    local engine_name="$4"
-    local description="$5"
+    local description="$4"
 
     local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
     local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
@@ -604,48 +618,40 @@ run_conduit_test_parallel() {
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for webserver to be fully ready..."
         sleep 5
 
-        # Get JWT token for authenticated endpoints (similar to test_40)
-        local jwt_token=""
-        local login_data
-        login_data=$(cat <<EOF
-{
-    "database": "Acuranzo",
-    "login_id": "${HYDROGEN_DEMO_USER_NAME}",
-    "password": "${HYDROGEN_DEMO_USER_PASS}",
-    "api_key": "${HYDROGEN_DEMO_API_KEY}",
-    "tz": "America/Vancouver"
-}
-EOF
-)
-
-        local login_response_file="${result_file}.login.json"
-        local login_curl_output
-        login_curl_output=$(curl -s -X POST "${base_url}/api/auth/login" \
-            -H "Content-Type: application/json" \
-            -d "${login_data}" \
-            -w "HTTP_CODE:%{http_code}" \
-            -o "${login_response_file}" 2>/dev/null)
-
-        local login_http_code
-        login_http_code=$(echo "${login_curl_output}" | grep "HTTP_CODE:" | cut -d: -f2)
-
-        if [[ "${login_http_code}" -eq 200 ]] && command -v jq >/dev/null 2>&1; then
-            jwt_token=$(jq -r '.token' "${login_response_file}" 2>/dev/null || echo "")
-            if [[ -n "${jwt_token}" ]] && [[ "${jwt_token}" != "null" ]]; then
-                echo "JWT_TOKEN=${jwt_token}" >> "${result_file}"
-            fi
-        fi
-
         # Check which databases are ready for testing
         check_database_readiness "${log_file}" "${result_file}"
 
-        # Run all conduit endpoint tests
-        test_conduit_single_query "${base_url}" "${result_file}"
-        test_conduit_multiple_queries "${base_url}" "${result_file}"
-        test_conduit_auth_single_query "${base_url}" "${jwt_token}" "${result_file}"
-        test_conduit_auth_multiple_queries "${base_url}" "${jwt_token}" "${result_file}"
-        test_conduit_alt_single_query "${base_url}" "${jwt_token}" "${result_file}"
-        test_conduit_alt_multiple_queries "${base_url}" "${jwt_token}" "${result_file}"
+        # Get JWT tokens for authenticated endpoints - one for each database
+        local jwt_tokens_string
+        jwt_tokens_string=$(acquire_jwt_tokens "${base_url}" "${result_file}")
+        # shellcheck disable=SC2206,SC2178 # We want word splitting here, variable is assigned a string but used as array
+        local jwt_tokens=(${jwt_tokens_string})
+
+        # Count JWT acquisition results
+        local jwt_tests_passed=0
+        local jwt_tests_total=0
+        for db_engine in "${!DATABASE_NAMES[@]}"; do
+            if [[ -n "${jwt_tokens[${jwt_tests_total}]}" ]]; then
+                jwt_tests_passed=$(( jwt_tests_passed + 1 ))
+            fi
+            jwt_tests_total=$(( jwt_tests_total + 1 ))
+        done
+
+        echo "JWT_ACQUISITION_TESTS_PASSED=${jwt_tests_passed}" >> "${result_file}"
+        echo "JWT_ACQUISITION_TESTS_TOTAL=${jwt_tests_total}" >> "${result_file}"
+
+        # Test status endpoint first
+        test_conduit_status "${base_url}" "${jwt_tokens[*]}" "${result_file}"
+
+        # Run conduit endpoint tests in methodical order
+        test_conduit_single_public_query "${base_url}" "${result_file}"
+        test_conduit_single_invalid_query "${base_url}" "${result_file}"
+        # TODO: Add more test functions as we progress
+        # test_conduit_multiple_queries "${base_url}" "${result_file}"
+        # test_conduit_auth_single_query "${base_url}" "${jwt_token}" "${result_file}"
+        # test_conduit_auth_multiple_queries "${base_url}" "${jwt_token}" "${result_file}"
+        # test_conduit_alt_single_query "${base_url}" "${jwt_token}" "${result_file}"
+        # test_conduit_alt_multiple_queries "${base_url}" "${jwt_token}" "${result_file}"
 
         echo "CONDUIT_TEST_COMPLETE" >> "${result_file}"
 
@@ -674,7 +680,6 @@ EOF
 analyze_conduit_test_results() {
     local test_name="$1"
     local log_suffix="$2"
-    local engine_name="$3"
     local description="$4"
     local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
 
@@ -698,28 +703,44 @@ analyze_conduit_test_results() {
     local total_passed=0
     local total_tests=0
 
-    # Check single query tests across all databases
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Single Query Tests"
-    if "${GREP}" -q "SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
-        local single_passed single_total
-        single_passed=$("${GREP}" "SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
-        single_total=$("${GREP}" "SINGLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+    # Check single public query tests across all databases
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Single Public Query Tests"
+    if "${GREP}" -q "^SINGLE_PUBLIC_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        local single_public_passed single_public_total
+        single_public_passed=$("${GREP}" "^SINGLE_PUBLIC_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        single_public_total=$("${GREP}" "^SINGLE_PUBLIC_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
 
-        if [[ "${single_passed}" -eq "${single_total}" ]]; then
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Single Query Tests (${single_passed}/${single_total} passed across ${#DATABASE_NAMES[@]} databases)"
+        if [[ "${single_public_passed}" -eq "${single_public_total}" ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Single Public Query Tests (${single_public_passed}/${single_public_total} passed across ${#DATABASE_NAMES[@]} databases)"
             total_passed=$(( total_passed + 1 ))
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Single Query Tests (${single_passed}/${single_total} passed across ${#DATABASE_NAMES[@]} databases)"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Single Public Query Tests (${single_public_passed}/${single_public_total} passed across ${#DATABASE_NAMES[@]} databases)"
+        fi
+        total_tests=$(( total_tests + 1 ))
+    fi
+
+    # Check single invalid query tests across all databases
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Single Invalid Query Tests"
+    if "${GREP}" -q "^SINGLE_INVALID_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        local single_invalid_passed single_invalid_total
+        single_invalid_passed=$("${GREP}" "^SINGLE_INVALID_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        single_invalid_total=$("${GREP}" "^SINGLE_INVALID_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+
+        if [[ "${single_invalid_passed}" -eq "${single_invalid_total}" ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Single Invalid Query Tests (${single_invalid_passed}/${single_invalid_total} passed across ${#DATABASE_NAMES[@]} databases)"
+            total_passed=$(( total_passed + 1 ))
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Single Invalid Query Tests (${single_invalid_passed}/${single_invalid_total} passed across ${#DATABASE_NAMES[@]} databases)"
         fi
         total_tests=$(( total_tests + 1 ))
     fi
 
     # Check multiple queries tests across all databases
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Multiple Queries Tests"
-    if "${GREP}" -q "MULTIPLE_QUERIES_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "^MULTIPLE_QUERIES_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
         local multiple_passed multiple_total
-        multiple_passed=$("${GREP}" "MULTIPLE_QUERIES_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
-        multiple_total=$("${GREP}" "MULTIPLE_QUERIES_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        multiple_passed=$("${GREP}" "^MULTIPLE_QUERIES_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        multiple_total=$("${GREP}" "^MULTIPLE_QUERIES_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
 
         if [[ "${multiple_passed}" -eq "${multiple_total}" ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Multiple Queries Tests (${multiple_passed}/${multiple_total} passed across ${#DATABASE_NAMES[@]} databases)"
@@ -732,10 +753,10 @@ analyze_conduit_test_results() {
 
     # Check auth single query tests across all databases
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Auth Single Query Tests"
-    if "${GREP}" -q "AUTH_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "^AUTH_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
         local auth_single_passed auth_single_total
-        auth_single_passed=$("${GREP}" "AUTH_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
-        auth_single_total=$("${GREP}" "AUTH_SINGLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        auth_single_passed=$("${GREP}" "^AUTH_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        auth_single_total=$("${GREP}" "^AUTH_SINGLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
 
         if [[ "${auth_single_passed}" -eq "${auth_single_total}" ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Auth Single Query Tests (${auth_single_passed}/${auth_single_total} passed across ${#DATABASE_NAMES[@]} databases)"
@@ -752,10 +773,10 @@ analyze_conduit_test_results() {
 
     # Check auth multiple query tests across all databases
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Auth Multiple Query Tests"
-    if "${GREP}" -q "AUTH_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "^AUTH_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
         local auth_multiple_passed auth_multiple_total
-        auth_multiple_passed=$("${GREP}" "AUTH_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
-        auth_multiple_total=$("${GREP}" "AUTH_MULTIPLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        auth_multiple_passed=$("${GREP}" "^AUTH_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        auth_multiple_total=$("${GREP}" "^AUTH_MULTIPLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
 
         if [[ "${auth_multiple_passed}" -eq "${auth_multiple_total}" ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Auth Multiple Query Tests (${auth_multiple_passed}/${auth_multiple_total} passed across ${#DATABASE_NAMES[@]} databases)"
@@ -772,10 +793,10 @@ analyze_conduit_test_results() {
 
     # Check alt single query tests across all databases
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Alt Single Query Tests"
-    if "${GREP}" -q "ALT_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "^ALT_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
         local alt_single_passed alt_single_total
-        alt_single_passed=$("${GREP}" "ALT_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
-        alt_single_total=$("${GREP}" "ALT_SINGLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        alt_single_passed=$("${GREP}" "^ALT_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        alt_single_total=$("${GREP}" "^ALT_SINGLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
 
         if [[ "${alt_single_passed}" -eq "${alt_single_total}" ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Alt Single Query Tests (${alt_single_passed}/${alt_single_total} passed across ${#DATABASE_NAMES[@]} databases)"
@@ -792,10 +813,10 @@ analyze_conduit_test_results() {
 
     # Check alt multiple query tests across all databases
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Alt Multiple Query Tests"
-    if "${GREP}" -q "ALT_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "^ALT_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
         local alt_multiple_passed alt_multiple_total
-        alt_multiple_passed=$("${GREP}" "ALT_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
-        alt_multiple_total=$("${GREP}" "ALT_MULTIPLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        alt_multiple_passed=$("${GREP}" "^ALT_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        alt_multiple_total=$("${GREP}" "^ALT_MULTIPLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
 
         if [[ "${alt_multiple_passed}" -eq "${alt_multiple_total}" ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Alt Multiple Query Tests (${alt_multiple_passed}/${alt_multiple_total} passed across ${#DATABASE_NAMES[@]} databases)"
@@ -808,6 +829,32 @@ analyze_conduit_test_results() {
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Alt Multiple Query Tests skipped (no JWT token)"
         total_passed=$(( total_passed + 1 ))
         total_tests=$(( total_tests + 1 ))
+    fi
+
+    # JWT acquisition and status tests are already counted individually in their respective functions
+    # Just aggregate the totals here
+    if "${GREP}" -q "^JWT_ACQUISITION_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        local jwt_passed
+        jwt_passed=$("${GREP}" "^JWT_ACQUISITION_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        total_passed=$(( total_passed + jwt_passed ))
+    fi
+
+    if "${GREP}" -q "^JWT_ACQUISITION_TESTS_TOTAL=" "${result_file}" 2>/dev/null; then
+        local jwt_total
+        jwt_total=$("${GREP}" "^JWT_ACQUISITION_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        total_tests=$(( total_tests + jwt_total ))
+    fi
+
+    if "${GREP}" -q "^STATUS_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        local status_passed
+        status_passed=$("${GREP}" "^STATUS_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        total_passed=$(( total_passed + status_passed ))
+    fi
+
+    if "${GREP}" -q "^STATUS_TESTS_TOTAL=" "${result_file}" 2>/dev/null; then
+        local status_total
+        status_total=$("${GREP}" "^STATUS_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        total_tests=$(( total_tests + status_total ))
     fi
 
     # Overall result
