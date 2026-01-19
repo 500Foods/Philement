@@ -25,7 +25,7 @@
  * - Bootstrap has completed
  * - Query cache is populated
  */
-static bool check_database_readiness(DatabaseQueue* db_queue) {
+static bool check_database_readiness(const DatabaseQueue* db_queue) {
     if (!db_queue) {
         return false;
     }
@@ -46,7 +46,7 @@ static bool check_database_readiness(DatabaseQueue* db_queue) {
 /**
  * Get migration status string based on database queue state.
  */
-static const char* get_migration_status(DatabaseQueue* db_queue) {
+static const char* get_migration_status(const DatabaseQueue* db_queue) {
     if (!db_queue) {
         return "not_found";
     }

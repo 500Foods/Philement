@@ -1682,6 +1682,100 @@
               }
             }
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "database",
+                  "queries"
+                ],
+                "properties": {
+                  "database": {
+                    "type": "string",
+                    "description": "Target database name (required)",
+                    "example": "Demo_PG"
+                  },
+                  "queries": {
+                    "type": "array",
+                    "description": "Array of queries to execute in parallel (required)",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "query_ref"
+                      ],
+                      "properties": {
+                        "query_ref": {
+                          "type": "integer",
+                          "description": "Query identifier from Query Table Cache (required)",
+                          "example": 53
+                        },
+                        "params": {
+                          "type": "object",
+                          "description": "Typed parameters for query execution (optional)",
+                          "properties": {
+                            "INTEGER": {
+                              "type": "object",
+                              "description": "Integer parameters as key-value pairs",
+                              "example": {
+                                "START": 10,
+                                "FINISH": 20
+                              }
+                            },
+                            "STRING": {
+                              "type": "object",
+                              "description": "String parameters as key-value pairs",
+                              "example": {
+                                "username": "johndoe",
+                                "email": "john@example.com"
+                              }
+                            },
+                            "BOOLEAN": {
+                              "type": "object",
+                              "description": "Boolean parameters as key-value pairs",
+                              "example": {
+                                "isActive": true,
+                                "requireAuth": false
+                              }
+                            },
+                            "FLOAT": {
+                              "type": "object",
+                              "description": "Float parameters as key-value pairs",
+                              "example": {
+                                "discount": 0.15,
+                                "tax": 0.07
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "example": {
+                    "database": "Demo_PG",
+                    "queries": [
+                      {
+                        "query_ref": 53,
+                        "params": {}
+                      },
+                      {
+                        "query_ref": 55,
+                        "params": {
+                          "INTEGER": {
+                            "START": 10,
+                            "FINISH": 20
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1963,6 +2057,46 @@
                         "example": {
                           "discount": 0.15,
                           "tax": 0.07
+                        }
+                      },
+                      "TEXT": {
+                        "type": "object",
+                        "description": "Text parameters as key-value pairs",
+                        "example": {
+                          "description": "Large text content",
+                          "notes": "Additional information"
+                        }
+                      },
+                      "DATE": {
+                        "type": "object",
+                        "description": "Date parameters as key-value pairs (YYYY-MM-DD format)",
+                        "example": {
+                          "birth_date": "1990-01-01",
+                          "hire_date": "2020-03-15"
+                        }
+                      },
+                      "TIME": {
+                        "type": "object",
+                        "description": "Time parameters as key-value pairs (HH:MM:SS format)",
+                        "example": {
+                          "login_time": "14:30:00",
+                          "logout_time": "18:45:30"
+                        }
+                      },
+                      "DATETIME": {
+                        "type": "object",
+                        "description": "DateTime parameters as key-value pairs (YYYY-MM-DD HH:MM:SS format)",
+                        "example": {
+                          "created_at": "2023-12-01 10:00:00",
+                          "updated_at": "2023-12-01 15:30:45"
+                        }
+                      },
+                      "TIMESTAMP": {
+                        "type": "object",
+                        "description": "Timestamp parameters as key-value pairs (YYYY-MM-DD HH:MM:SS.fff format)",
+                        "example": {
+                          "event_time": "2023-12-01 10:00:00.123",
+                          "processed_at": "2023-12-01 10:15:30.456"
                         }
                       }
                     }

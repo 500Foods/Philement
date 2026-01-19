@@ -108,7 +108,7 @@ void test_prepare_and_submit_query_with_parameters(void) {
 
     TypedParameter* ordered_params[] = {&param1, &param2, &param3, &param4};
 
-    bool result = prepare_and_submit_query(NULL, "test_id", "SELECT * FROM users WHERE id = $1 AND name = $2 AND active = $3 AND score = $4",
+    bool result = prepare_and_submit_query(NULL, "test_id", "SELECT * FROM users WHERE id = :userId AND name = :userName AND active = :isActive AND score = :userScore",
                                            ordered_params, 4, &cache_entry);
     // The result depends on queue submission, but we test that it doesn't crash
     (void)result; // Suppress unused variable warning

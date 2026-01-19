@@ -5,7 +5,7 @@
 **Endpoints** (7 total):
 
 - ✅ `query` - Single query execution (POST-only)
-- ✅ `queries` - Multiple parallel queries (POST-only)
+- ✅ `queries` - Multiple parallel queries (POST-only) - **FIXED CRASH AND FULLY OPERATIONAL**
 - ✅ `auth_query` - Authenticated single query (POST-only)
 - ✅ `auth_queries` - Authenticated multiple queries (POST-only)
 - ✅ `alt_query` - Authenticated single query with database override (POST-only)
@@ -46,10 +46,37 @@
 3. Add unit tests for rate limiting and deduplication ✅
 4. Performance benchmarking and optimization
 5. Fix JWT validation in conduit endpoints (changed validate_jwt calls to pass NULL instead of "unknown")
-6. Implement remaining query endpoint tests (single queries, multiple queries, auth queries, alt queries)
-7. Add parameter validation and error handling tests
-8. Performance testing and memory leak validation
-9. ✅ **Fixed DQM Statistics Timing**: Resolved critical bug in execution time calculation and implemented microsecond-precision tracking
+6. ✅ **Implement comprehensive queries endpoint testing**: Added `test_conduit_queries_comprehensive()` with deduplication, error handling, and cross-database validation
+7. Implement remaining query endpoint tests (auth queries, alt queries)
+8. Add parameter validation and error handling tests
+9. Performance testing and memory leak validation
+10. ✅ **Fixed DQM Statistics Timing**: Resolved critical bug in execution time calculation and implemented microsecond-precision tracking
+11. ✅ **Fixed Parameter Passing Bug**: Resolved critical issue where conduit endpoints were pre-converting SQL templates instead of letting database engines handle parameter conversion, causing parameterized queries to fail
+
+**Current Focus: Fix /api/conduit/queries Endpoint Crash (2026-01-19)**:
+
+- **Issue**: The `/api/conduit/queries` endpoint crashes with "Application reported internal error" after processing the request
+- **Symptoms**: Request parsing succeeds, Brotli compression occurs, but server crashes during response sending
+- **Root Cause Analysis**:
+  - Swagger example syntax was incorrect (used "postgresql_demo" instead of "Demo_PG", wrong parameter format)
+  - **Primary Issue**: Webserver daemon not configured with `MHD_ALLOW_SUSPEND_RESUME` flag, causing crash when `MHD_suspend_connection()` is called
+  - Potential crash due to large response size with DQM statistics duplicated in each individual query result
+  - Need to debug the crash in `handle_conduit_queries_request()` function
+- **Fixes Applied**:
+  1. ✅ Update swagger example in `queries.h` to match working syntax from test_51_conduit.sh
+  2. ✅ Remove DQM statistics from ALL query endpoints (`/api/conduit/query`, `/api/conduit/queries`, etc.) - DQM statistics are only included in status endpoints
+  3. ✅ **Critical Fix**: Added `MHD_ALLOW_SUSPEND_RESUME` flag to webserver daemon initialization in `web_server_core.c`
+  4. ✅ **Critical Fix**: Updated queries endpoint to use proper POST buffering mechanism (`api_buffer_post_data`) instead of raw upload_data parsing
+  5. ✅ Added comprehensive diagnostic logging to identify crash location
+  6. Build successful - ready for testing
+- **Testing Results**:
+  1. ✅ Endpoint no longer crashes - processes requests successfully
+  2. ✅ Multiple queries endpoint working: 7/7 databases passing tests
+  3. ✅ Parallel query execution confirmed working
+  4. ✅ Connection suspension for long-running queries operational
+- **Next Steps**:
+  1. ✅ Test completed successfully - queries endpoint fully functional
+  2. Update this plan with completion status
 
 **Recent Implementation Progress (2026-01-19)**:
 
@@ -70,12 +97,135 @@
 - **Average Calculation**: Execution time averaging now correctly handles completed queries only, with proper type conversions for millisecond precision
 - **Timing Precision**: Microsecond-level execution time tracking with integer precision provides accurate performance measurements
 - **Serialization Order Critical**: Setting timestamps before object serialization prevents data corruption in queued operations
+- **Parameter Conversion Architecture**: Database engines must handle their own parameter placeholder conversion (:param → $1, ?) rather than pre-conversion at the API layer
+
+## Implementation Insights - Queries Endpoint Crash Fix (2026-01-19)
+
+**Critical Webserver Configuration Bug Fixed**: Discovered and resolved a fundamental issue where the MHD webserver daemon was not configured with `MHD_ALLOW_SUSPEND_RESUME`, causing immediate crashes when the queries endpoint attempted to suspend connections for long-running parallel queries.
+
+**Root Cause Analysis**:
+
+- Queries endpoint uses `MHD_suspend_connection()` to free webserver threads during parallel query execution
+- Webserver daemon must be started with `MHD_ALLOW_SUSPEND_RESUME` flag to enable suspend/resume functionality
+- Without this flag, MHD throws a fatal error: "Cannot suspend connections without enabling MHD_ALLOW_SUSPEND_RESUME!"
+- This caused the server to abort with SIGABRT, generating core dumps
+
+**Solution Implemented**:
+
+- Added `MHD_ALLOW_SUSPEND_RESUME` flag to webserver daemon initialization in `web_server_core.c`
+- Updated queries endpoint to use proper POST buffering mechanism (`api_buffer_post_data`) instead of raw upload_data parsing
+- Added comprehensive diagnostic logging to identify crash locations during development
+- Ensured all MHD connection suspension operations are properly supported
+
+**Additional Fixes Applied**:
+
+- **POST Buffering Architecture**: Fixed queries endpoint to use the same robust POST body buffering as single query endpoint
+- **Memory Management**: Corrected use-after-free issues in error handling paths
+- **API Consistency**: Ensured all conduit endpoints use consistent request parsing and error handling patterns
+
+**Testing Validation**:
+
+- Queries endpoint now processes multiple parallel queries successfully
+- All 7 database engines pass multiple query tests (7/7)
+- Connection suspension works correctly for long-running batch operations
+- No more crashes or core dumps during query execution
+
+**Key Architectural Lessons**:
+
+1. **Webserver Flags Matter**: MHD daemon configuration flags are critical for advanced features like connection suspension
+2. **Consistent Implementation**: All endpoints using similar functionality (POST buffering, connection suspension) should use identical patterns
+3. **Diagnostic Logging**: Comprehensive logging at each processing step enables rapid identification of crash locations
+4. **Testing Coverage**: Parallel query execution requires thorough testing across all supported database engines
 
 **Future Investigation Items**:
 
 - **Average Execution Time Accuracy**: If averages continue to show as 0.000s, investigate database engine timing measurement. Current implementation relies on `result->execution_time_ms` from database engines, which may not be set correctly in all cases
 - **Query Failure Patterns**: With 7 failures out of 61 total queries, investigate why queries are failing and ensure failures don't skew performance metrics
 - **Per-Queue Statistics Validation**: Verify that Lead/Slow/Medium/Fast/Cache queue statistics accurately reflect actual query distribution and performance
+
+## Implementation Insights - Queries Endpoint Comprehensive Testing (2026-01-19)
+
+**Deduplication Architecture Decision**: The queries endpoint now returns truly deduplicated results instead of replicating them to match input order. This provides significant bandwidth savings and cleaner API semantics:
+
+- **Input**: `[53, 53, 54]` (3 requests with duplication)
+- **Execution**: Only 2 unique queries executed (53, 54)
+- **Output**: `[result53, result54]` (2 deduplicated results)
+- **Client Usage**: Results indexed by `query_ref`, eliminating need for 1:1 input/output mapping
+
+**Test Output Formatting Evolution**: Enhanced `validate_conduit_request()` to provide richer information for batch operations:
+
+- **Queries Endpoint**: "X results, Y total rows, Z bytes"
+- **Single Query Endpoint**: "X rows, Z bytes"
+- **File Path**: Separate line for cleaner log readability
+- **Null Handling**: Robust jq queries with fallback defaults
+
+**Error Handling Patterns Established**: All conduit endpoints now follow consistent error response patterns:
+
+- **Invalid Query Refs**: HTTP 200 with `success=false` + error details
+- **Parameter Errors**: HTTP 200 with `success=false` + validation messages
+- **Empty Arrays**: HTTP 200 with `success=false` + descriptive error
+- **Rate Limits**: HTTP 429 with rate limit details
+
+**Cross-Engine Testing Importance**: Comprehensive testing across all 7 database engines revealed subtle differences in error handling and parameter processing that were addressed uniformly.
+
+## Next Target: Authenticated Single Query Endpoint
+
+Following the same methodical approach as the queries endpoint:
+
+1. **Create `test_conduit_auth_query_comprehensive()`** with scenarios:
+   - Valid authenticated queries with different queryrefs
+   - Invalid JWT tokens
+   - Expired JWT tokens
+   - JWT from wrong database (cross-database access attempts)
+   - Missing authentication headers
+   - Malformed JWT tokens
+
+2. **Expected Behavior**:
+   - Uses JWT database context for query execution
+   - Validates JWT before processing queries
+   - Returns appropriate error responses for auth failures
+   - Maintains same parameter and result formatting as public endpoints
+
+3. **Implementation Path**:
+   - Follow existing `query.c` patterns for JWT validation
+   - Use `lookup_database_and_query()` with JWT-extracted database
+   - Test against authenticated queryrefs (different from public ones)
+   - Ensure proper error responses for authentication failures
+
+This approach will establish the foundation for authenticated query operations before moving to authenticated batch queries and cross-database access patterns.
+
+## Implementation Insights - Parameter Passing Fix (2026-01-19)
+
+**Critical Architecture Bug Fixed**: Discovered and resolved a fundamental design flaw where the Conduit API layer was pre-converting SQL parameter placeholders (:param → $1, ?) instead of letting database engines handle their own parameter conversion. This caused parameterized queries to fail because the database engines expected to perform the conversion themselves.
+
+**Root Cause Analysis**:
+
+- Conduit `process_parameters()` function was converting named parameters to positional format
+- Converted SQL (with $1, $2, etc.) was stored in `DatabaseQuery.query_template`
+- Database engines attempted to re-convert already-converted SQL, leading to parameter binding failures
+- PostgreSQL logged "Executing without parameters" because parameter arrays were NULL or empty
+
+**Solution Implemented**:
+
+- Modified `prepare_and_submit_query()` to accept original SQL template instead of converted SQL
+- Updated all conduit endpoints (`query`, `queries`, `auth_query`, `auth_queries`, `alt_query`, `alt_queries`) to pass `cache_entry->sql_template` directly
+- Database engines now properly handle parameter conversion from :param format to engine-specific placeholders
+- Parameter JSON is correctly passed to database engines for proper binding
+
+**Testing Validation**:
+
+- Single query endpoint tests now pass 21/21 across 7 databases
+- Invalid query reference tests pass 7/7 across 7 databases
+- Parameter parsing and binding now works correctly for all supported datatypes
+
+**Key Architectural Lesson**:
+
+1. **Separation of Concerns**: API layer should handle request parsing and validation, database engines should handle SQL dialect conversion
+2. **Parameter Binding**: Database engines expect original SQL with named parameters (:param) and separate parameter data structures
+3. **Engine-Specific Conversion**: Each database engine (PostgreSQL, MySQL, SQLite, etc.) handles its own placeholder conversion ($1 vs ?)
+4. **Testing Importance**: Parameterized query functionality must be tested end-to-end across all supported database engines
+
+This fix enables proper parameterized query execution, preventing SQL injection vulnerabilities and ensuring type-safe parameter binding across all supported database engines.
 
 ## Implementation Insights - Statistics Timing Fixes (2026-01-19)
 
@@ -207,12 +357,15 @@
     - **Public queries** ✅:
       - #53 - Get Themes (no parameters) - **WORKING**: Returns theme data across all 7 databases
       - #54 - Get Icons (no parameters) - **WORKING**: Returns icon data across all 7 databases
+    - **Parameterized queries** ✅:
+      - Query #55 with integer parameters - **WORKING**: Successfully executes parameterized queries with proper parameter binding
     - **Not Public queries**:
       - #30 - Get Lookups List (no parameters)
       - #45 - Get Lookup (:LOOKUP id is integer param, value 43 - Tours)
     - Focus on getting public queries working first, then add authenticated versions
-  - [ ] **Step 6: Multiple queries endpoint testing** - Test `/api/conduit/queries` POST with batch requests across all ready databases
-  - [ ] **Step 7: Authenticated single query testing** - Test `/api/conduit/auth_query` POST using JWT authentication
+  - [x] **Step 6: Multiple queries endpoint testing** - Test `/api/conduit/queries` POST with batch requests across all ready databases ✅
+  - [x] **Step 6.5: Comprehensive queries testing** - Added `test_conduit_queries_comprehensive()` with deduplication, error handling, and cross-database validation ✅
+  - [ ] **Step 7: Authenticated single query testing** - Test `/api/conduit/auth_query` POST using JWT authentication (NEXT TARGET)
   - [ ] **Step 8: Authenticated multiple queries testing** - Test `/api/conduit/auth_queries` POST with batch authenticated requests
   - [ ] **Step 9: Cross-database query testing** - Test `/api/conduit/alt_query` and `/api/conduit/alt_queries` endpoints for database override functionality
   - [ ] **Step 10: Parameter validation and error handling** - Test parameter types, rate limiting, deduplication, and error scenarios
