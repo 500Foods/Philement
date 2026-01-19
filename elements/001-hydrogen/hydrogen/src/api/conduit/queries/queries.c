@@ -283,8 +283,8 @@ json_t* execute_single_query(const char *database, json_t *query_obj)
     }
 
     // Submit query using helper from query.h
-    if (!prepare_and_submit_query(selected_queue, query_id, converted_sql, ordered_params,
-                                 param_count, cache_entry)) {
+    if (!prepare_and_submit_query(selected_queue, query_id, cache_entry->sql_template, ordered_params,
+                                  param_count, cache_entry)) {
         free(query_id);
         free(converted_sql);
         free_parameter_list(param_list);
@@ -390,8 +390,8 @@ PendingQueryResult* submit_single_query(const char *database, json_t *query_obj,
     }
 
     // Submit query using helper from query.h
-    if (!prepare_and_submit_query(selected_queue, query_id, converted_sql, ordered_params,
-                                 param_count, cache_entry)) {
+    if (!prepare_and_submit_query(selected_queue, query_id, cache_entry->sql_template, ordered_params,
+                                  param_count, cache_entry)) {
         free(query_id);
         free(converted_sql);
         free_parameter_list(param_list);
@@ -423,14 +423,19 @@ PendingQueryResult* submit_single_query(const char *database, json_t *query_obj,
  * @return JSON response object
  */
 json_t* wait_and_build_single_response(const char *database, int query_ref,
-                                      QueryCacheEntry *cache_entry, DatabaseQueue *selected_queue,
+                                      const QueryCacheEntry *cache_entry, const DatabaseQueue *selected_queue,
                                       PendingQueryResult *pending)
 {
+    log_this(SR_API, "wait_and_build_single_response: Waiting for query_ref=%d", LOG_LEVEL_DEBUG, 1, query_ref);
+
     // Build response using helper from query.h (this waits internally)
     json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending);
 
-    log_this(SR_API, "wait_and_build_single_response: Query completed, query_ref=%d",
-             LOG_LEVEL_DEBUG, 1, query_ref);
+    if (!result) {
+        log_this(SR_API, "wait_and_build_single_response: ERROR - build_response_json returned NULL for query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
+    } else {
+        log_this(SR_API, "wait_and_build_single_response: Query completed, query_ref=%d", LOG_LEVEL_DEBUG, 1, query_ref);
+    }
 
     return result;
 }
@@ -480,33 +485,69 @@ enum MHD_Result handle_conduit_queries_request(
     const size_t *upload_data_size,
     void **con_cls)
 {
-    (void)url;
-    (void)con_cls;  // Unused parameter
+    (void)url;  // Unused parameter
+
+    // Use common POST body buffering (handles POST requests)
+    ApiPostBuffer *buffer = NULL;
+    ApiBufferResult buf_result = api_buffer_post_data(method, upload_data, (size_t*)upload_data_size, con_cls, &buffer);
+
+    switch (buf_result) {
+        case API_BUFFER_CONTINUE:
+            // More data expected for POST, continue receiving
+            return MHD_YES;
+
+        case API_BUFFER_ERROR:
+            // Error occurred during buffering
+            return api_send_error_and_cleanup(connection, con_cls,
+                "Request processing error", MHD_HTTP_INTERNAL_SERVER_ERROR);
+
+        case API_BUFFER_METHOD_ERROR:
+            // Unsupported HTTP method
+            return api_send_error_and_cleanup(connection, con_cls,
+                "Method not allowed - use POST", MHD_HTTP_METHOD_NOT_ALLOWED);
+
+        case API_BUFFER_COMPLETE:
+            // All data received, continue with processing
+            break;
+    }
 
     log_this(SR_API, "handle_conduit_queries_request: Processing public queries request", LOG_LEVEL_DEBUG, 0);
 
     struct timespec start_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
+    log_this(SR_API, "handle_conduit_queries_request: Step 1 - Validate HTTP method", LOG_LEVEL_DEBUG, 0);
+
     // Step 1: Validate HTTP method using helper from query.h
     enum MHD_Result result = handle_method_validation(connection, method);
     if (result != MHD_YES) {
+        api_free_post_buffer(con_cls);
+        log_this(SR_API, "handle_conduit_queries_request: Method validation failed", LOG_LEVEL_ERROR, 0);
         return result;
     }
 
+    log_this(SR_API, "handle_conduit_queries_request: Step 2 - Parse request", LOG_LEVEL_DEBUG, 0);
+
     // Step 2: Parse request using helper from query.h
     json_t *request_json = NULL;
-    result = handle_request_parsing(connection, method, upload_data, upload_data_size, &request_json);
+    result = handle_request_parsing_with_buffer(connection, buffer, &request_json);
+
+    // Free the buffer now that we've parsed the data
+    api_free_post_buffer(con_cls);
+
     if (result != MHD_YES) {
+        log_this(SR_API, "handle_conduit_queries_request: Request parsing failed", LOG_LEVEL_ERROR, 0);
         return result;
     }
+
+    log_this(SR_API, "handle_conduit_queries_request: Step 3 - Extract database field", LOG_LEVEL_DEBUG, 0);
 
     // Step 3: Extract database field
     json_t *database_json = json_object_get(request_json, "database");
     if (!database_json || !json_is_string(database_json)) {
         log_this(SR_API, "handle_conduit_queries_request: Missing or invalid database field", LOG_LEVEL_ERROR, 0);
         json_decref(request_json);
-        
+
         json_t *error_response = json_object();
         json_object_set_new(error_response, "success", json_false());
         json_object_set_new(error_response, "error", json_string("Missing required parameter: database"));
@@ -514,6 +555,9 @@ enum MHD_Result handle_conduit_queries_request(
     }
 
     const char *database = json_string_value(database_json);
+    log_this(SR_API, "handle_conduit_queries_request: Database = %s", LOG_LEVEL_DEBUG, 1, database);
+
+    log_this(SR_API, "handle_conduit_queries_request: Step 4 - Extract queries array", LOG_LEVEL_DEBUG, 0);
 
     // Step 4: Extract queries array
     json_t *queries_array = json_object_get(request_json, "queries");
@@ -528,6 +572,8 @@ enum MHD_Result handle_conduit_queries_request(
     }
 
     size_t original_query_count = json_array_size(queries_array);
+    log_this(SR_API, "handle_conduit_queries_request: Found %zu queries in array", LOG_LEVEL_DEBUG, 1, original_query_count);
+
     if (original_query_count == 0) {
         log_this(SR_API, "handle_conduit_queries_request: Empty queries array", LOG_LEVEL_ERROR, 0);
         json_decref(request_json);
@@ -535,14 +581,20 @@ enum MHD_Result handle_conduit_queries_request(
         json_t *error_response = json_object();
         json_object_set_new(error_response, "success", json_false());
         json_object_set_new(error_response, "error", json_string("Queries array cannot be empty"));
-        return api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+        json_object_set_new(error_response, "results", json_array());
+        json_object_set_new(error_response, "database", json_string(database));
+        json_object_set_new(error_response, "total_execution_time_ms", json_integer(0));
+        return api_send_json_response(connection, error_response, MHD_HTTP_OK);
     }
+
+    log_this(SR_API, "handle_conduit_queries_request: Step 5 - Deduplicate queries and validate rate limits", LOG_LEVEL_DEBUG, 0);
 
     // Step 5: Deduplicate queries and validate rate limits
     json_t *deduplicated_queries = NULL;
     size_t *mapping_array = NULL;
     enum MHD_Result dedup_result = deduplicate_and_validate_queries(queries_array, database, &deduplicated_queries, &mapping_array);
     if (dedup_result != MHD_YES) {
+        log_this(SR_API, "handle_conduit_queries_request: Rate limit validation failed", LOG_LEVEL_ERROR, 0);
         json_decref(request_json);
 
         json_t *error_response = json_object();
@@ -576,16 +628,30 @@ enum MHD_Result handle_conduit_queries_request(
     log_this(SR_API, "handle_conduit_queries_request: Submitting %zu unique queries for parallel execution", LOG_LEVEL_DEBUG, 1, unique_query_count);
 
     // Submit all unique queries first
-    bool submission_failed = false;
     for (size_t i = 0; i < unique_query_count; i++) {
         json_t *query_obj = json_array_get(deduplicated_queries, i);
         int query_ref;
 
         PendingQueryResult *pending = submit_single_query(database, query_obj, &query_ref);
         if (!pending) {
-            log_this(SR_API, "handle_conduit_queries_request: Failed to submit unique query %zu", LOG_LEVEL_ERROR, 1, i);
-            submission_failed = true;
-            break;
+            log_this(SR_API, "handle_conduit_queries_request: Failed to submit unique query %zu (query_ref=%d), will return error result", LOG_LEVEL_ERROR, 2, i, query_ref);
+            // Create a failed pending result for error handling
+            pending_results[i] = NULL;  // Mark as failed
+            unique_query_refs[i] = query_ref;
+
+            // Try to look up cache entry for error response building
+            DatabaseQueue *db_queue = NULL;
+            QueryCacheEntry *cache_entry = NULL;
+            if (lookup_database_and_query(&db_queue, &cache_entry, database, query_ref)) {
+                cache_entries[i] = cache_entry;
+                DatabaseQueue *selected_queue = select_query_queue(database, cache_entry->queue_type);
+                selected_queues[i] = selected_queue;
+            } else {
+                // Query not found - create minimal error response
+                cache_entries[i] = NULL;
+                selected_queues[i] = NULL;
+            }
+            continue;
         }
 
         // Store metadata for response building
@@ -597,34 +663,16 @@ enum MHD_Result handle_conduit_queries_request(
         QueryCacheEntry *cache_entry = NULL;
         if (!lookup_database_and_query(&db_queue, &cache_entry, database, query_ref)) {
             log_this(SR_API, "handle_conduit_queries_request: Failed to lookup metadata for unique query %d", LOG_LEVEL_ERROR, 1, query_ref);
-            submission_failed = true;
-            break;
+            // Mark as failed but continue with other queries
+            pending_results[i] = NULL;
+            cache_entries[i] = NULL;
+            selected_queues[i] = NULL;
+            continue;
         }
 
         DatabaseQueue *selected_queue = select_query_queue(database, cache_entry->queue_type);
         cache_entries[i] = cache_entry;
         selected_queues[i] = selected_queue;
-    }
-
-    if (submission_failed) {
-        // Clean up allocated resources
-        for (size_t i = 0; i < unique_query_count; i++) {
-            if (pending_results[i]) {
-                // Note: pending results will be cleaned up by the manager
-            }
-        }
-        free(pending_results);
-        free(unique_query_refs);
-        free(cache_entries);
-        free(selected_queues);
-        json_decref(deduplicated_queries);
-        free(mapping_array);
-        json_decref(request_json);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Failed to submit queries"));
-        return api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
 
     // Step 6: Suspend webserver connection for long-running queries
@@ -647,26 +695,107 @@ enum MHD_Result handle_conduit_queries_request(
     webserver_thread_suspended = false;
     pthread_mutex_unlock(&webserver_suspend_lock);
 
-    // Step 9: Build responses for all original queries (replicating results for duplicates)
+    // Step 9: Build responses for all unique queries (deduplicated results)
+    log_this(SR_API, "handle_conduit_queries_request: Building responses for %zu unique queries", LOG_LEVEL_DEBUG, 1, unique_query_count);
     json_t *results_array = json_array();
     bool all_success = true;
 
-    for (size_t i = 0; i < original_query_count; i++) {
-        size_t unique_index = mapping_array[i];
-        json_t *query_result = wait_and_build_single_response(database, unique_query_refs[unique_index],
-                                                            cache_entries[unique_index], selected_queues[unique_index],
-                                                            pending_results[unique_index]);
+    for (size_t i = 0; i < unique_query_count; i++) {
+        log_this(SR_API, "handle_conduit_queries_request: Building response for unique query %zu", LOG_LEVEL_DEBUG, 1, i);
 
-        // Check if query succeeded
-        json_t *success_field = json_object_get(query_result, "success");
-        if (!success_field || !json_is_true(success_field)) {
+        json_t *query_result = NULL;
+
+        if (!pending_results[i]) {
+            // Query submission failed - create error response
+            log_this(SR_API, "handle_conduit_queries_request: Query submission failed for unique query %zu, creating error response", LOG_LEVEL_ERROR, 1, i);
+            query_result = json_object();
+            json_object_set_new(query_result, "success", json_false());
+            json_object_set_new(query_result, "query_ref", json_integer(unique_query_refs[i]));
+            json_object_set_new(query_result, "database", json_string(database));
+            json_object_set_new(query_result, "error", json_string("Query submission failed"));
             all_success = false;
+        } else if (!cache_entries[i]) {
+            // Query lookup failed - create error response
+            log_this(SR_API, "handle_conduit_queries_request: Query lookup failed for unique query %zu, creating error response", LOG_LEVEL_ERROR, 1, i);
+            query_result = json_object();
+            json_object_set_new(query_result, "success", json_false());
+            json_object_set_new(query_result, "query_ref", json_integer(unique_query_refs[i]));
+            json_object_set_new(query_result, "database", json_string(database));
+            json_object_set_new(query_result, "error", json_string("Query not found"));
+            all_success = false;
+        } else {
+            // Normal case - wait for result
+            query_result = wait_and_build_single_response(database, unique_query_refs[i],
+                                                         cache_entries[i], selected_queues[i],
+                                                         pending_results[i]);
+
+            if (!query_result) {
+                log_this(SR_API, "handle_conduit_queries_request: ERROR - wait_and_build_single_response returned NULL for unique query %zu", LOG_LEVEL_ERROR, 1, i);
+                // Create fallback error response
+                query_result = json_object();
+                json_object_set_new(query_result, "success", json_false());
+                json_object_set_new(query_result, "query_ref", json_integer(unique_query_refs[i]));
+                json_object_set_new(query_result, "database", json_string(database));
+                json_object_set_new(query_result, "error", json_string("Response building failed"));
+                all_success = false;
+            } else {
+                // Check if query succeeded
+                json_t *success_field = json_object_get(query_result, "success");
+                if (!success_field || !json_is_true(success_field)) {
+                    all_success = false;
+                    log_this(SR_API, "handle_conduit_queries_request: Unique query %zu failed", LOG_LEVEL_DEBUG, 1, i);
+                }
+            }
         }
 
+        // Remove DQM statistics from individual query results to avoid duplication and reduce response size
+        json_object_del(query_result, "dqm_statistics");
+
         json_array_append_new(results_array, query_result);
+        log_this(SR_API, "handle_conduit_queries_request: Response built for unique query %zu", LOG_LEVEL_DEBUG, 1, i);
     }
 
-    // Clean up
+    json_decref(request_json);
+
+    // Step 10: Calculate total execution time
+    log_this(SR_API, "handle_conduit_queries_request: Calculating total execution time", LOG_LEVEL_DEBUG, 0);
+    struct timespec end_time;
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    long total_time_ms = ((end_time.tv_sec - start_time.tv_sec) * 1000) +
+                        ((end_time.tv_nsec - start_time.tv_nsec) / 1000000);
+
+    // Step 11: Build response
+    log_this(SR_API, "handle_conduit_queries_request: Building final response object", LOG_LEVEL_DEBUG, 0);
+    json_t *response_obj = json_object();
+    if (!response_obj) {
+        log_this(SR_API, "handle_conduit_queries_request: ERROR - Failed to create response object", LOG_LEVEL_ERROR, 0);
+        json_decref(results_array);
+        // Clean up pending results, etc.
+        free(pending_results);
+        free(unique_query_refs);
+        free(cache_entries);
+        free(selected_queues);
+        json_decref(deduplicated_queries);
+        free(mapping_array);
+        json_decref(request_json);
+        return MHD_NO;
+    }
+
+    json_object_set_new(response_obj, "success", json_boolean(all_success));
+    json_object_set_new(response_obj, "results", results_array);
+    json_object_set_new(response_obj, "database", json_string(database));
+    json_object_set_new(response_obj, "total_execution_time_ms", json_integer(total_time_ms));
+
+    // DQM statistics are only included in status endpoints, not query endpoints
+
+    log_this(SR_API, "handle_conduit_queries_request: Request completed, queries=%zu, time=%ldms",
+             LOG_LEVEL_DEBUG, 2, original_query_count, total_time_ms);
+
+    log_this(SR_API, "handle_conduit_queries_request: Calling api_send_json_response", LOG_LEVEL_DEBUG, 0);
+    enum MHD_Result send_result = api_send_json_response(connection, response_obj, MHD_HTTP_OK);
+    log_this(SR_API, "handle_conduit_queries_request: api_send_json_response returned %d", LOG_LEVEL_DEBUG, 1, send_result);
+
+    // Clean up resources
     free(pending_results);
     free(unique_query_refs);
     free(cache_entries);
@@ -674,31 +803,5 @@ enum MHD_Result handle_conduit_queries_request(
     json_decref(deduplicated_queries);
     free(mapping_array);
 
-    json_decref(request_json);
-
-    // Step 10: Calculate total execution time
-    struct timespec end_time;
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    long total_time_ms = ((end_time.tv_sec - start_time.tv_sec) * 1000) +
-                        ((end_time.tv_nsec - start_time.tv_nsec) / 1000000);
-
-    // Step 11: Build response
-    json_t *response_obj = json_object();
-    json_object_set_new(response_obj, "success", json_boolean(all_success));
-    json_object_set_new(response_obj, "results", results_array);
-    json_object_set_new(response_obj, "database", json_string(database));
-    json_object_set_new(response_obj, "total_execution_time_ms", json_integer(total_time_ms));
-
-    // Add DQM statistics
-    if (global_queue_manager) {
-        json_t* dqm_stats = database_queue_manager_get_stats_json(global_queue_manager);
-        if (dqm_stats) {
-            json_object_set_new(response_obj, "dqm_statistics", dqm_stats);
-        }
-    }
-
-    log_this(SR_API, "handle_conduit_queries_request: Request completed, queries=%zu, time=%ldms",
-             LOG_LEVEL_DEBUG, 2, original_query_count, total_time_ms);
-    
-    return api_send_json_response(connection, response_obj, MHD_HTTP_OK);
+    return send_result;
 }

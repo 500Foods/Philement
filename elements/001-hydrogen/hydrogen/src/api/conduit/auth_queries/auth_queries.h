@@ -33,7 +33,7 @@
 // Forward declarations for internal functions (used for testing)
 PendingQueryResult* submit_single_auth_query(const char *database, json_t *query_obj, int *query_ref_out);
 json_t* wait_and_build_single_auth_response(const char *database, int query_ref,
-                                          QueryCacheEntry *cache_entry, DatabaseQueue *selected_queue,
+                                          const QueryCacheEntry *cache_entry, const DatabaseQueue *selected_queue,
                                           PendingQueryResult *pending);
 
 /**

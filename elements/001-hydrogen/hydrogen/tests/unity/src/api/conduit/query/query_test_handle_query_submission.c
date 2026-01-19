@@ -24,7 +24,7 @@ void mock_json_decref(json_t* json);
 
 // Mock for prepare_and_submit_query
 bool mock_prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_id,
-                                  const char* converted_sql, TypedParameter** ordered_params,
+                                  const char* sql_template, TypedParameter** ordered_params,
                                   size_t param_count, const QueryCacheEntry* cache_entry);
 
 // Mock for free_parameter_list
@@ -72,11 +72,11 @@ void mock_json_decref(json_t* json) {
 }
 
 bool mock_prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_id,
-                                  const char* converted_sql, TypedParameter** ordered_params,
+                                  const char* sql_template, TypedParameter** ordered_params,
                                   size_t param_count, const QueryCacheEntry* cache_entry) {
     (void)selected_queue;
     (void)query_id;
-    (void)converted_sql;
+    (void)sql_template;
     (void)ordered_params;
     (void)param_count;
     (void)cache_entry;

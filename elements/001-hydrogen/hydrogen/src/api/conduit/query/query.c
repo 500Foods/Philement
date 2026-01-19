@@ -255,12 +255,12 @@ DatabaseQueue* select_query_queue(const char* database, const char* queue_type) 
 
 // Prepare and submit database query
 bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_id,
-                             const char* converted_sql, TypedParameter** ordered_params,
-                             size_t param_count, const QueryCacheEntry* cache_entry) {
+                              const char* sql_template, TypedParameter** ordered_params,
+                              size_t param_count, const QueryCacheEntry* cache_entry) {
     // Create query request
     DatabaseQuery db_query = {
         .query_id = (char*)query_id,
-        .query_template = (char*)converted_sql,
+        .query_template = (char*)sql_template,
         .parameter_json = NULL,  // Will be built from ordered_params
         .queue_type_hint = database_queue_type_from_string(cache_entry->queue_type),
         .submitted_at = time(NULL),
@@ -269,49 +269,108 @@ bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_i
         .error_message = NULL
     };
 
-    // Build parameter JSON from ordered parameters
+    // Build parameter JSON from ordered parameters, grouped by type
     if (param_count > 0) {
         json_t* param_json = json_object();
+        json_t* integer_params = json_object();
+        json_t* string_params = json_object();
+        json_t* boolean_params = json_object();
+        json_t* float_params = json_object();
+        json_t* text_params = json_object();
+        json_t* date_params = json_object();
+        json_t* time_params = json_object();
+        json_t* datetime_params = json_object();
+        json_t* timestamp_params = json_object();
+
         for (size_t i = 0; i < param_count; i++) {
             TypedParameter* param = ordered_params[i];
             if (param) {
                 switch (param->type) {
                     case PARAM_TYPE_INTEGER:
-                        json_object_set_new(param_json, param->name, json_integer(param->value.int_value));
+                        json_object_set_new(integer_params, param->name, json_integer(param->value.int_value));
                         break;
                     case PARAM_TYPE_STRING:
-                        json_object_set_new(param_json, param->name, json_string(param->value.string_value));
+                        json_object_set_new(string_params, param->name, json_string(param->value.string_value));
                         break;
                     case PARAM_TYPE_BOOLEAN:
-                        json_object_set_new(param_json, param->name, json_boolean(param->value.bool_value));
+                        json_object_set_new(boolean_params, param->name, json_boolean(param->value.bool_value));
                         break;
                     case PARAM_TYPE_FLOAT:
-                        json_object_set_new(param_json, param->name, json_real(param->value.float_value));
+                        json_object_set_new(float_params, param->name, json_real(param->value.float_value));
                         break;
                     case PARAM_TYPE_TEXT:
-                        json_object_set_new(param_json, param->name, json_string(param->value.text_value));
+                        json_object_set_new(text_params, param->name, json_string(param->value.text_value));
                         break;
                     case PARAM_TYPE_DATE:
-                        json_object_set_new(param_json, param->name, json_string(param->value.date_value));
+                        json_object_set_new(date_params, param->name, json_string(param->value.date_value));
                         break;
                     case PARAM_TYPE_TIME:
-                        json_object_set_new(param_json, param->name, json_string(param->value.time_value));
+                        json_object_set_new(time_params, param->name, json_string(param->value.time_value));
                         break;
                     case PARAM_TYPE_DATETIME:
-                        json_object_set_new(param_json, param->name, json_string(param->value.datetime_value));
+                        json_object_set_new(datetime_params, param->name, json_string(param->value.datetime_value));
                         break;
                     case PARAM_TYPE_TIMESTAMP:
-                        json_object_set_new(param_json, param->name, json_string(param->value.timestamp_value));
+                        json_object_set_new(timestamp_params, param->name, json_string(param->value.timestamp_value));
                         break;
                 }
             }
         }
+
+        // Only add type objects if they have parameters
+        if (json_object_size(integer_params) > 0) {
+            json_object_set_new(param_json, "INTEGER", integer_params);
+        } else {
+            json_decref(integer_params);
+        }
+        if (json_object_size(string_params) > 0) {
+            json_object_set_new(param_json, "STRING", string_params);
+        } else {
+            json_decref(string_params);
+        }
+        if (json_object_size(boolean_params) > 0) {
+            json_object_set_new(param_json, "BOOLEAN", boolean_params);
+        } else {
+            json_decref(boolean_params);
+        }
+        if (json_object_size(float_params) > 0) {
+            json_object_set_new(param_json, "FLOAT", float_params);
+        } else {
+            json_decref(float_params);
+        }
+        if (json_object_size(text_params) > 0) {
+            json_object_set_new(param_json, "TEXT", text_params);
+        } else {
+            json_decref(text_params);
+        }
+        if (json_object_size(date_params) > 0) {
+            json_object_set_new(param_json, "DATE", date_params);
+        } else {
+            json_decref(date_params);
+        }
+        if (json_object_size(time_params) > 0) {
+            json_object_set_new(param_json, "TIME", time_params);
+        } else {
+            json_decref(time_params);
+        }
+        if (json_object_size(datetime_params) > 0) {
+            json_object_set_new(param_json, "DATETIME", datetime_params);
+        } else {
+            json_decref(datetime_params);
+        }
+        if (json_object_size(timestamp_params) > 0) {
+            json_object_set_new(param_json, "TIMESTAMP", timestamp_params);
+        } else {
+            json_decref(timestamp_params);
+        }
+
         db_query.parameter_json = json_dumps(param_json, JSON_COMPACT);
         json_decref(param_json);
     }
 
     // Submit query to selected queue
-    return database_queue_submit_query(selected_queue, &db_query);
+    bool submit_result = database_queue_submit_query(selected_queue, &db_query);
+    return submit_result;
 }
 
 // Wait for query result
@@ -356,13 +415,7 @@ json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry
     json_object_set_new(response, "execution_time_ms", json_integer(result->execution_time_ms));
     json_object_set_new(response, "queue_used", json_string(selected_queue->queue_type));
 
-    // Add DQM statistics
-    if (global_queue_manager) {
-        json_t* dqm_stats = database_queue_manager_get_stats_json(global_queue_manager);
-        if (dqm_stats) {
-            json_object_set_new(response, "dqm_statistics", dqm_stats);
-        }
-    }
+    // DQM statistics are only included in status endpoints, not query endpoints
 
     return response;
 }
@@ -399,13 +452,7 @@ json_t* build_invalid_queryref_response(int query_ref, const char* database) {
     json_object_set_new(response, "rows", json_array());
     json_object_set_new(response, "message", json_string("queryref not found or not public"));
 
-    // Add DQM statistics if available
-    if (global_queue_manager) {
-        json_t* dqm_stats = database_queue_manager_get_stats_json(global_queue_manager);
-        if (dqm_stats) {
-            json_object_set_new(response, "dqm_statistics", dqm_stats);
-        }
-    }
+    // DQM statistics are only included in status endpoints, not query endpoints
 
     return response;
 }
@@ -673,7 +720,7 @@ enum MHD_Result handle_query_submission(struct MHD_Connection *connection, const
                                         char* converted_sql, ParameterList* param_list,
                                         TypedParameter** ordered_params, size_t param_count,
                                         const QueryCacheEntry* cache_entry) {
-    if (!prepare_and_submit_query(selected_queue, query_id, converted_sql, ordered_params,
+    if (!prepare_and_submit_query(selected_queue, query_id, cache_entry->sql_template, ordered_params,
                                   param_count, cache_entry)) {
         // Cleanup on failure
         free(query_id);

@@ -511,7 +511,7 @@ These variables configure the PostgreSQL database connection for the Acuranzo sc
 - [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json)
 - [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_32_postgres.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_32_postgres.json)
 - [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_postgres.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_postgres.json)
-- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_postgres.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_postgres.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_conduit.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_conduit.json)
 - [/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json)
 
 **Setup:**
@@ -599,7 +599,7 @@ These variables configure the MySQL database connection for the Canvas schema.
 - [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json)
 - [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_33_mysql.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_33_mysql.json)
 - [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_mysql.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_mysql.json)
-- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_postgres.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_postgres.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_conduit.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_conduit.json)
 - [/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json)
 
 **Setup:**
@@ -687,7 +687,7 @@ These variables configure the DB2 database connection for the Hydrotst schema.
 - [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_30_multi.json)
 - [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_35_db2.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_35_db2.json)
 - [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_db2.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_40_db2.json)
-- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_db2.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_db2.json)
+- [/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_conduit.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_51_conduit.json)
 
 **Setup:**
 
