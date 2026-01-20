@@ -743,6 +743,12 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
                                          const DatabaseQueue* selected_queue, PendingQueryResult* pending,
                                          char* query_id, char* converted_sql, ParameterList* param_list,
                                          TypedParameter** ordered_params) {
+    // Mark unused parameters
+    (void)query_id;
+    (void)converted_sql;
+    (void)param_list;
+    (void)ordered_params;
+
     // Wait for result and build response
     json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending);
     unsigned int http_status = json_is_true(json_object_get(response, "success")) ?
@@ -750,12 +756,6 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
 
     enum MHD_Result http_result = api_send_json_response(connection, response, http_status);
     json_decref(response);
-
-    // Cleanup
-    free(query_id);
-    free(converted_sql);
-    free_parameter_list(param_list);
-    if (ordered_params) free(ordered_params);
 
     return http_result;
 }

@@ -29,7 +29,7 @@ void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int syst
 void update_jwt_storage(int account_id, const char* old_jwt_hash,
                         const char* new_jwt_hash, time_t new_expires, int system_id, int app_id, const char* database);
 void delete_jwt_from_storage(const char* jwt_hash, const char* database);
-bool is_token_revoked(const char* token_hash, const char* database);
+bool is_token_revoked(const char* token_hash, const char* ip_address, const char* database);
 
 // Rate limiting and security
 int check_failed_attempts(const char* login_id, const char* client_ip,

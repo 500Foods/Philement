@@ -625,23 +625,19 @@ analyze_conduit_results() {
         total_tests=$(( total_tests + 1 ))
     fi
 
-    # Check auth single query tests across all databases
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Auth Single Query Tests"
-    if "${GREP}" -q "^AUTH_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
-        local auth_single_passed auth_single_total
-        auth_single_passed=$("${GREP}" "^AUTH_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
-        auth_single_total=$("${GREP}" "^AUTH_SINGLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+    # Check auth query comprehensive tests across all databases
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Auth Query Comprehensive Tests"
+    if "${GREP}" -q "^AUTH_QUERY_COMPREHENSIVE_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        local auth_comprehensive_passed auth_comprehensive_total
+        auth_comprehensive_passed=$("${GREP}" "^AUTH_QUERY_COMPREHENSIVE_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
+        auth_comprehensive_total=$("${GREP}" "^AUTH_QUERY_COMPREHENSIVE_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
 
-        if [[ "${auth_single_passed}" -eq "${auth_single_total}" ]]; then
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Auth Single Query Tests (${auth_single_passed}/${auth_single_total} passed across ${#DATABASE_NAMES[@]} databases)"
+        if [[ "${auth_comprehensive_passed}" -eq "${auth_comprehensive_total}" ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Auth Query Comprehensive Tests (${auth_comprehensive_passed}/${auth_comprehensive_total} passed across ${#DATABASE_NAMES[@]} databases)"
             total_passed=$(( total_passed + 1 ))
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Auth Single Query Tests (${auth_single_passed}/${auth_single_total} passed across ${#DATABASE_NAMES[@]} databases)"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Auth Query Comprehensive Tests (${auth_comprehensive_passed}/${auth_comprehensive_total} passed across ${#DATABASE_NAMES[@]} databases)"
         fi
-        total_tests=$(( total_tests + 1 ))
-    elif "${GREP}" -q "AUTH_SINGLE_QUERY_SKIPPED_NO_TOKEN" "${result_file}" 2>/dev/null; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Auth Single Query Tests skipped (no JWT token)"
-        total_passed=$(( total_passed + 1 ))
         total_tests=$(( total_tests + 1 ))
     fi
 
