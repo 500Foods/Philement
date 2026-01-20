@@ -70,7 +70,7 @@ static void test_build_error_response_timeout(void) {
     QueryResult* result = create_dummy_query_result(true, NULL);
     TEST_ASSERT_NOT_NULL(result);
 
-    json_t* response = build_error_response(query_ref, database, cache_entry, pending, result);
+    json_t* response = build_error_response(query_ref, database, cache_entry, pending, result, NULL);
 
     TEST_ASSERT_NOT_NULL(response);
     TEST_ASSERT_TRUE(json_is_object(response));
@@ -109,7 +109,7 @@ static void test_build_error_response_database_error(void) {
     QueryResult* result = create_dummy_query_result(false, "Database connection failed");
     TEST_ASSERT_NOT_NULL(result);
 
-    json_t* response = build_error_response(query_ref, database, cache_entry, pending, result);
+    json_t* response = build_error_response(query_ref, database, cache_entry, pending, result, NULL);
 
     TEST_ASSERT_NOT_NULL(response);
     TEST_ASSERT_TRUE(json_is_object(response));
@@ -149,7 +149,7 @@ static void test_build_error_response_general_failure(void) {
     QueryResult* result = create_dummy_query_result(false, NULL);
     TEST_ASSERT_NOT_NULL(result);
 
-    json_t* response = build_error_response(query_ref, database, cache_entry, pending, result);
+    json_t* response = build_error_response(query_ref, database, cache_entry, pending, result, NULL);
 
     TEST_ASSERT_NOT_NULL(response);
     TEST_ASSERT_TRUE(json_is_object(response));
@@ -184,7 +184,7 @@ static void test_build_error_response_null_result(void) {
 
     const QueryResult* result = NULL;
 
-    json_t* response = build_error_response(query_ref, database, cache_entry, pending, result);
+    json_t* response = build_error_response(query_ref, database, cache_entry, pending, result, NULL);
 
     TEST_ASSERT_NOT_NULL(response);
     TEST_ASSERT_TRUE(json_is_object(response));

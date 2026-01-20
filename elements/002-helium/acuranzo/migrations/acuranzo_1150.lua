@@ -1,19 +1,19 @@
--- Migration: acuranzo_1148.lua
--- QueryRef #054 - Get Icons
+-- Migration: acuranzo_1150.lua
+-- QueryRef #056 - Query Error Handling
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2026-01-17 - Initial creation
+-- 1.0.0 - 2026-01-20 - Query Error Handling
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1148"
-cfg.QUERY_REF = "054"
-cfg.QUERY_NAME = "Get Icons"
+cfg.MIGRATION = "1150"
+cfg.QUERY_REF = "056"
+cfg.QUERY_NAME = "Query Error Handling"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -46,51 +46,42 @@ table.insert(queries,{sql=[[
                 ${STATUS_ACTIVE}                                                    AS query_status_a27,
                 ${TYPE_PUBLIC}                                                      AS query_type_a28,
                 ${DIALECT}                                                          AS query_dialect_a30,
-                ${QTC_CACHED}                                                       AS query_queue_a58,
+                ${QTC_FAST}                                                         AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     SELECT
-                        key_idx,
-                        value_txt,
-                        collection
+                        numbers / :DENOMINATOR AS division_result
                     FROM
-                        ${SCHEMA}lookups
+                        ${SCHEMA}numbers
                     WHERE
-                        (lookup_id = 40)
-                        and (status_a1 = 1)
-                    ORDER BY
-                        sort_seq,
-                        value_txt;
+                        (numbers = :NUMERATOR);
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This public query returns the list if icons used throughout the app. The idea here
-                    is to allow a degree of customization or theming at the icon level, allowing overrides
-                    for specific icons, or adjustments to icon sizes, rotation, etc.
+                    THis returns a simple division of :NUMERATOR / :DENOMINATOR
 
                     ## Parameters
 
-                    - None.
+                    - NUMERATOR(number) - Number to be divided, should be an integer in range of 0-10,000
+                    - DENOMINATOR(number) - Number to divide by - supply 0 to generate database error
 
                     ## Returns
 
-                    - `key_idx`: The key index of the icon.
-                    - `value_txt`: The name of the icon.
-                    - `collection`: Details about the icon.
+                    - `division_result`: The integer numbers in the range specified
 
                     ## Tables
 
-                    - `${SCHEMA}lookups`: The lookups table
+                    - `${SCHEMA}numbers`: The numbers table - see migration 1146
 
                     ## Notes
 
-                    This is intended to be a public query, meaning that we should cache it so
-                    that it doesn't unduly impact the database performance. As icons don't
-                    change often, we can cache it typically for the duration of the server's
-                    running time. We should make a note to add this to whatever trigger
-                    mechanism we end up implementing, so that it gets reloaded when it changes.
+                    This is intended to be a public query. It isn't all that meaningful and
+                    certainly doesn't impart any secrets. Should definitely be rate-limited.
+                    The intent here is to provide a query that is used to easily trigger a database
+                    error to test that the error propagates up to where the client caller can
+                    see it specifically.
 
                 ]==]
                                                                                     AS summary,

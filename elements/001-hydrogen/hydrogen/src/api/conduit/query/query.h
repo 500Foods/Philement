@@ -74,10 +74,13 @@ bool extract_request_fields(json_t* request_json, int* query_ref, const char** d
 DatabaseQueue* lookup_database_queue(const char* database);
 QueryCacheEntry* lookup_query_cache_entry(DatabaseQueue* db_queue, int query_ref);
 bool lookup_database_and_query(DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
-                              const char* database, int query_ref);
+                               const char* database, int query_ref);
+bool lookup_database_and_public_query(DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
+                                      const char* database, int query_ref);
 bool process_parameters(json_t* params_json, ParameterList** param_list,
                        const char* sql_template, DatabaseEngineType engine_type,
                        char** converted_sql, TypedParameter*** ordered_params, size_t* param_count);
+char* generate_parameter_messages(const char* sql_template, json_t* params_json);
 DatabaseQueue* select_query_queue(const char* database, const char* queue_type);
 bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_id,
                               const char* sql_template, TypedParameter** ordered_params,
@@ -85,17 +88,17 @@ bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_i
 const QueryResult* wait_for_query_result(PendingQueryResult* pending);
 json_t* parse_query_result_data(const QueryResult* result);
 json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry,
-                             const QueryResult* result, const DatabaseQueue* selected_queue);
+                             const QueryResult* result, const DatabaseQueue* selected_queue, const char* message);
 json_t* build_error_response(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
-                           const PendingQueryResult* pending, const QueryResult* result);
-json_t* build_invalid_queryref_response(int query_ref, const char* database);
+                           const PendingQueryResult* pending, const QueryResult* result, const char* message);
+json_t* build_invalid_queryref_response(int query_ref, const char* database, const char* message);
 json_t* build_response_json(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
-                           const DatabaseQueue* selected_queue, PendingQueryResult* pending);
+                           const DatabaseQueue* selected_queue, PendingQueryResult* pending, const char* message);
 unsigned int determine_http_status(const PendingQueryResult* pending, const QueryResult* result);
 
 // Error response creation functions
 json_t* create_validation_error_response(const char* error_msg, const char* error_detail);
-json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref);
+json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref, const char* message);
 json_t* create_processing_error_response(const char* error_msg, const char* database, int query_ref);
 
 // Request handling helper functions
@@ -108,7 +111,7 @@ enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_
                                         int* query_ref, const char** database, json_t** params_json);
 enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const char* database,
                                        int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
-                                       bool* query_not_found);
+                                       bool* query_not_found, bool require_public);
 enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, json_t* params_json,
                                             const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
                                             const char* database, int query_ref,
@@ -135,7 +138,7 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
                                          const char* database, const QueryCacheEntry* cache_entry,
                                          const DatabaseQueue* selected_queue, PendingQueryResult* pending,
                                          char* query_id, char* converted_sql, ParameterList* param_list,
-                                         TypedParameter** ordered_params);
+                                         TypedParameter** ordered_params, const char* message);
 
 enum MHD_Result handle_conduit_query_request(
     struct MHD_Connection *connection,

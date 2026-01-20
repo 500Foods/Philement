@@ -236,9 +236,10 @@ json_t* execute_single_query(const char *database, json_t *query_obj)
     DatabaseQueue *db_queue = NULL;
     QueryCacheEntry *cache_entry = NULL;
 
-    if (!lookup_database_and_query(&db_queue, &cache_entry, database, query_ref)) {
-        const char *error_msg = !db_queue ? "Database not found" : "Query not found";
-        json_t *error_result = create_lookup_error_response(error_msg, database, query_ref, !db_queue);
+    if (!lookup_database_and_public_query(&db_queue, &cache_entry, database, query_ref)) {
+        const char *error_msg = !db_queue ? "Database not available" : "Public query not found";
+        const char *message = !db_queue ? "Database is not available" : NULL;
+        json_t *error_result = create_lookup_error_response(error_msg, database, query_ref, !db_queue, message);
         return error_result;
     }
 
@@ -249,9 +250,12 @@ json_t* execute_single_query(const char *database, json_t *query_obj)
     size_t param_count = 0;
 
     if (!process_parameters(params, &param_list, cache_entry->sql_template,
-                           db_queue->engine_type, &converted_sql, &ordered_params, &param_count)) {
+                            db_queue->engine_type, &converted_sql, &ordered_params, &param_count)) {
         return create_processing_error_response("Parameter processing failed", database, query_ref);
     }
+
+    // Generate parameter validation messages
+    char* message = generate_parameter_messages(cache_entry->sql_template, params);
 
     // Select queue using helper from query.h
     DatabaseQueue *selected_queue = select_query_queue(database, cache_entry->queue_type);
@@ -293,13 +297,14 @@ json_t* execute_single_query(const char *database, json_t *query_obj)
     }
 
     // Build response using helper from query.h
-    json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending);
+    json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
 
     // Clean up
     free(query_id);
     free(converted_sql);
     free_parameter_list(param_list);
     if (ordered_params) free(ordered_params);
+    if (message) free(message);
 
     log_this(SR_API, "execute_single_query: Query completed, query_ref=%d",
              LOG_LEVEL_DEBUG, 1, query_ref);
@@ -340,8 +345,8 @@ PendingQueryResult* submit_single_query(const char *database, json_t *query_obj,
     DatabaseQueue *db_queue = NULL;
     QueryCacheEntry *cache_entry = NULL;
 
-    if (!lookup_database_and_query(&db_queue, &cache_entry, database, query_ref)) {
-        log_this(SR_API, "submit_single_query: Database or query lookup failed, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
+    if (!lookup_database_and_public_query(&db_queue, &cache_entry, database, query_ref)) {
+        log_this(SR_API, "submit_single_query: Database or public query lookup failed, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
         return NULL;
     }
 
@@ -420,16 +425,23 @@ PendingQueryResult* submit_single_query(const char *database, json_t *query_obj,
  * @param cache_entry Query cache entry
  * @param selected_queue Queue that was used
  * @param pending Pending result to wait for
+ * @param params Query parameters for message generation
  * @return JSON response object
  */
 json_t* wait_and_build_single_response(const char *database, int query_ref,
                                       const QueryCacheEntry *cache_entry, const DatabaseQueue *selected_queue,
-                                      PendingQueryResult *pending)
+                                      PendingQueryResult *pending, json_t *params)
 {
     log_this(SR_API, "wait_and_build_single_response: Waiting for query_ref=%d", LOG_LEVEL_DEBUG, 1, query_ref);
 
+    // Generate parameter validation messages
+    char* message = generate_parameter_messages(cache_entry->sql_template, params);
+
     // Build response using helper from query.h (this waits internally)
-    json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending);
+    json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
+
+    // Clean up message
+    if (message) free(message);
 
     if (!result) {
         log_this(SR_API, "wait_and_build_single_response: ERROR - build_response_json returned NULL for query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
@@ -642,7 +654,7 @@ enum MHD_Result handle_conduit_queries_request(
             // Try to look up cache entry for error response building
             DatabaseQueue *db_queue = NULL;
             QueryCacheEntry *cache_entry = NULL;
-            if (lookup_database_and_query(&db_queue, &cache_entry, database, query_ref)) {
+            if (lookup_database_and_public_query(&db_queue, &cache_entry, database, query_ref)) {
                 cache_entries[i] = cache_entry;
                 DatabaseQueue *selected_queue = select_query_queue(database, cache_entry->queue_type);
                 selected_queues[i] = selected_queue;
@@ -661,8 +673,8 @@ enum MHD_Result handle_conduit_queries_request(
         // Look up cache entry and queue for response building
         DatabaseQueue *db_queue = NULL;
         QueryCacheEntry *cache_entry = NULL;
-        if (!lookup_database_and_query(&db_queue, &cache_entry, database, query_ref)) {
-            log_this(SR_API, "handle_conduit_queries_request: Failed to lookup metadata for unique query %d", LOG_LEVEL_ERROR, 1, query_ref);
+        if (!lookup_database_and_public_query(&db_queue, &cache_entry, database, query_ref)) {
+            log_this(SR_API, "handle_conduit_queries_request: Failed to lookup metadata for unique public query %d", LOG_LEVEL_ERROR, 1, query_ref);
             // Mark as failed but continue with other queries
             pending_results[i] = NULL;
             cache_entries[i] = NULL;
@@ -725,9 +737,11 @@ enum MHD_Result handle_conduit_queries_request(
             all_success = false;
         } else {
             // Normal case - wait for result
+            json_t *query_obj = json_array_get(deduplicated_queries, i);
+            json_t *params = query_obj ? json_object_get(query_obj, "params") : NULL;
             query_result = wait_and_build_single_response(database, unique_query_refs[i],
                                                          cache_entries[i], selected_queues[i],
-                                                         pending_results[i]);
+                                                         pending_results[i], params);
 
             if (!query_result) {
                 log_this(SR_API, "handle_conduit_queries_request: ERROR - wait_and_build_single_response returned NULL for unique query %zu", LOG_LEVEL_ERROR, 1, i);

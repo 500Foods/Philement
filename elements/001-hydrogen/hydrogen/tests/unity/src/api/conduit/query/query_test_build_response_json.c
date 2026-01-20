@@ -61,7 +61,7 @@ void test_build_response_json_error_case(void) {
 
     // Since we can't mock wait_for_query_result easily, the function will go to error path
     // This still provides coverage for the error handling
-    json_t* response = build_response_json(123, "test_db", &cache_entry, &selected_queue, &pending);
+    json_t* response = build_response_json(123, "test_db", &cache_entry, &selected_queue, &pending, NULL);
 
     TEST_ASSERT_NOT_NULL(response);
     TEST_ASSERT_TRUE(json_is_object(response));
@@ -92,7 +92,7 @@ void test_build_response_json_null_pending(void) {
         .queue_type = (char*)"read"
     };
 
-    json_t* response = build_response_json(789, "test_db", &cache_entry, &selected_queue, NULL);
+    json_t* response = build_response_json(789, "test_db", &cache_entry, &selected_queue, NULL, NULL);
 
     // Should handle NULL pending gracefully (though this might not be realistic)
     TEST_ASSERT_NOT_NULL(response);
