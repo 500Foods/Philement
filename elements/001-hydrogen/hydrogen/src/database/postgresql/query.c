@@ -230,11 +230,31 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
     if (result_status != PGRES_TUPLES_OK && result_status != PGRES_COMMAND_OK) {
         log_this(designator, "PostgreSQL query execution failed - status: %d", LOG_LEVEL_TRACE, 1, result_status);
         char* error_msg = PQerrorMessage_ptr(pg_conn->connection);
+        char* error_message = NULL;
         if (error_msg && strlen(error_msg) > 0) {
+            error_message = strdup(error_msg);
             log_this(designator, "PostgreSQL query error: %s", LOG_LEVEL_TRACE, 1, error_msg);
+        } else {
+            error_message = strdup("PostgreSQL query execution failed (no error details)");
         }
+
+        // Create error result
+        QueryResult* error_result = calloc(1, sizeof(QueryResult));
+        if (error_result) {
+            error_result->success = false;
+            error_result->error_message = error_message;
+            error_result->row_count = 0;
+            error_result->column_count = 0;
+            error_result->data_json = strdup("[]");
+            error_result->execution_time_ms = 0;
+            error_result->affected_rows = 0;
+            *result = error_result;
+        } else {
+            free(error_message);
+        }
+
         PQclear_ptr(pg_result);
-        return false;
+        return (error_result != NULL);
     }
 
     // Create result structure
@@ -521,11 +541,31 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
     if (result_status != PGRES_TUPLES_OK && result_status != PGRES_COMMAND_OK) {
         log_this(designator, "PostgreSQL prepared statement execution failed - status: %d", LOG_LEVEL_ERROR, 1, result_status);
         char* error_msg = PQerrorMessage_ptr(pg_conn->connection);
+        char* error_message = NULL;
         if (error_msg && strlen(error_msg) > 0) {
+            error_message = strdup(error_msg);
             log_this(designator, "PostgreSQL prepared statement error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+        } else {
+            error_message = strdup("PostgreSQL prepared statement execution failed (no error details)");
         }
+
+        // Create error result
+        QueryResult* error_result = calloc(1, sizeof(QueryResult));
+        if (error_result) {
+            error_result->success = false;
+            error_result->error_message = error_message;
+            error_result->row_count = 0;
+            error_result->column_count = 0;
+            error_result->data_json = strdup("[]");
+            error_result->execution_time_ms = 0;
+            error_result->affected_rows = 0;
+            *result = error_result;
+        } else {
+            free(error_message);
+        }
+
         PQclear_ptr(pg_result);
-        return false;
+        return (error_result != NULL);
     }
 
     // Create result structure

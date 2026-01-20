@@ -679,6 +679,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
         int diag_result = SQLGetDiagRec_ptr ? SQLGetDiagRec_ptr(SQL_HANDLE_STMT, stmt_handle, 1,
             sql_state, &native_error, error_msg, (short)sizeof(error_msg), &msg_len) : -1;
 
+        char* error_message = NULL;
         if (diag_result == SQL_SUCCESS || diag_result == SQL_SUCCESS_WITH_INFO) {
             char *msg = (char*)error_msg;
             while (*msg) {
@@ -687,16 +688,33 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
                 }
                 msg++;
             }
+            error_message = strdup((char*)error_msg);
             log_this(designator, "DB2 query execution failed - MESSAGE: %s", LOG_LEVEL_TRACE, 1, (char*)error_msg);
             log_this(designator, "DB2 query execution failed - SQLSTATE: %s, Native Error: %ld", LOG_LEVEL_TRACE, 2, (char*)sql_state, (long int)native_error);
             log_this(designator, "DB2 query execution failed - STATEMENT:\n%s", LOG_LEVEL_TRACE, 1, request->sql_template);
 
         } else {
+            error_message = strdup("DB2 query execution failed (could not get error details)");
             log_this(designator, "DB2 query execution failed - result: %d (could not get error details)", LOG_LEVEL_TRACE, 1, exec_result);
         }
 
+        // Create error result
+        QueryResult* error_result = calloc(1, sizeof(QueryResult));
+        if (error_result) {
+            error_result->success = false;
+            error_result->error_message = error_message;
+            error_result->row_count = 0;
+            error_result->column_count = 0;
+            error_result->data_json = strdup("[]");
+            error_result->execution_time_ms = 0;
+            error_result->affected_rows = 0;
+            *result = error_result;
+        } else {
+            free(error_message);
+        }
+
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-        return false;
+        return (error_result != NULL);
     }
 
     // Process query results using helper function
@@ -774,6 +792,7 @@ bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* s
         int diag_result = SQLGetDiagRec_ptr ? SQLGetDiagRec_ptr(SQL_HANDLE_STMT, stmt_handle, 1,
             sql_state, &native_error, error_msg, (short)sizeof(error_msg), &msg_len) : -1;
 
+        char* error_message = NULL;
         if (diag_result == SQL_SUCCESS || diag_result == SQL_SUCCESS_WITH_INFO) {
             char *msg = (char*)error_msg;
             while (*msg) {
@@ -782,13 +801,30 @@ bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* s
                 }
             msg++;
         }
+            error_message = strdup((char*)error_msg);
             log_this(designator, "DB2 prepared statement execution failed - MESSAGE: %s", LOG_LEVEL_ERROR, 1, (char*)error_msg);
             log_this(designator, "DB2 prepared statement execution failed - SQLSTATE: %s, Native Error: %ld", LOG_LEVEL_ERROR, 2, (char*)sql_state, (long int)native_error);
         } else {
+            error_message = strdup("DB2 prepared statement execution failed (could not get error details)");
             log_this(designator, "DB2 prepared statement execution failed - result: %d (could not get error details)", LOG_LEVEL_ERROR, 1, exec_result);
         }
 
-        return false;
+        // Create error result
+        QueryResult* error_result = calloc(1, sizeof(QueryResult));
+        if (error_result) {
+            error_result->success = false;
+            error_result->error_message = error_message;
+            error_result->row_count = 0;
+            error_result->column_count = 0;
+            error_result->data_json = strdup("[]");
+            error_result->execution_time_ms = 0;
+            error_result->affected_rows = 0;
+            *result = error_result;
+        } else {
+            free(error_message);
+        }
+
+        return (error_result != NULL);
     }
 
     // Process query results using helper function

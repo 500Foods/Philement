@@ -41,9 +41,9 @@ extern DatabaseQueue* mock_select_query_queue(const char* database, const char* 
 
 // Forward declarations for helper functions
 json_t* create_validation_error_response(const char* error_msg, const char* error_detail);
-json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref);
+json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref, const char* message);
 json_t* create_processing_error_response(const char* error_msg, const char* database, int query_ref);
-json_t* parse_request_data_from_buffer(struct MHD_Connection* connection, ApiPostBuffer* buffer);
+json_t* parse_request_data_from_buffer(struct MHD_Connection* connection, ApiPostBuffer* buffer, json_error_t* json_error_out);
 enum MHD_Result handle_request_parsing_with_buffer(struct MHD_Connection *connection, ApiPostBuffer* buffer, json_t** request_json);
 // Backwards-compatible wrappers for unit tests (uses raw upload_data)
 json_t* parse_request_data(struct MHD_Connection* connection, const char* method,
@@ -78,7 +78,7 @@ bool validate_http_method(const char* method) {
 }
 
 // Parse request data from either POST JSON body (using ApiPostBuffer) or GET query parameters
-json_t* parse_request_data_from_buffer(struct MHD_Connection* connection, ApiPostBuffer* buffer) {
+json_t* parse_request_data_from_buffer(struct MHD_Connection* connection, ApiPostBuffer* buffer, json_error_t* json_error_out) {
     json_t* request_json = NULL;
     json_error_t json_error;
 
@@ -91,6 +91,9 @@ json_t* parse_request_data_from_buffer(struct MHD_Connection* connection, ApiPos
         request_json = json_loads(buffer->data, 0, &json_error);
         if (!request_json) {
             log_this(SR_API, "Failed to parse JSON in conduit query: %s", LOG_LEVEL_ERROR, 1, json_error.text);
+            if (json_error_out) {
+                *json_error_out = json_error;
+            }
             return NULL; // Invalid JSON
         }
     } else {
@@ -110,6 +113,9 @@ json_t* parse_request_data_from_buffer(struct MHD_Connection* connection, ApiPos
                 json_object_set_new(request_json, "params", params_parsed);
             } else {
                 json_decref(request_json);
+                if (json_error_out) {
+                    *json_error_out = json_error;
+                }
                 return NULL; // Invalid params JSON
             }
         }
@@ -121,7 +127,7 @@ json_t* parse_request_data_from_buffer(struct MHD_Connection* connection, ApiPos
 // Backwards-compatible wrapper for unit tests
 // Creates a temporary ApiPostBuffer from raw upload_data and calls parse_request_data_from_buffer
 json_t* parse_request_data(struct MHD_Connection* connection, const char* method,
-                           const char* upload_data, const size_t* upload_data_size) {
+                            const char* upload_data, const size_t* upload_data_size) {
     // Create temporary buffer structure
     ApiPostBuffer temp_buffer = {
         .data = NULL,
@@ -129,7 +135,7 @@ json_t* parse_request_data(struct MHD_Connection* connection, const char* method
         .capacity = 0,
         .http_method = (method && strcmp(method, "POST") == 0) ? 'P' : 'G'
     };
-    
+
     // Copy upload_data to temporary buffer if provided
     if (upload_data && upload_data_size && *upload_data_size > 0) {
         temp_buffer.data = malloc(*upload_data_size + 1);
@@ -141,15 +147,15 @@ json_t* parse_request_data(struct MHD_Connection* connection, const char* method
         temp_buffer.size = *upload_data_size;
         temp_buffer.capacity = *upload_data_size + 1;
     }
-    
-    // Call the new function with the buffer
-    json_t* result = parse_request_data_from_buffer(connection, &temp_buffer);
-    
+
+    // Call the new function with the buffer (NULL for json_error_out to maintain backwards compatibility)
+    json_t* result = parse_request_data_from_buffer(connection, &temp_buffer, NULL);
+
     // Free temporary buffer
     if (temp_buffer.data) {
         free(temp_buffer.data);
     }
-    
+
     return result;
 }
 
@@ -188,7 +194,7 @@ QueryCacheEntry* lookup_query_cache_entry(DatabaseQueue* db_queue, int query_ref
 // Lookup database queue and query cache entry
 #ifndef USE_MOCK_LOOKUP_DATABASE_AND_QUERY
 bool lookup_database_and_query(DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
-                              const char* database, int query_ref) {
+                               const char* database, int query_ref) {
     if (!db_queue || !cache_entry || !database) {
         return false; // NULL pointer parameters not allowed
     }
@@ -208,41 +214,283 @@ bool lookup_database_and_query(DatabaseQueue** db_queue, QueryCacheEntry** cache
 }
 #endif
 
+// Lookup database queue and public query cache entry (query_type_a28 = 10)
+bool lookup_database_and_public_query(DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
+                                      const char* database, int query_ref) {
+    if (!db_queue || !cache_entry || !database) {
+        return false; // NULL pointer parameters not allowed
+    }
+
+    *db_queue = lookup_database_queue(database);
+    if (!*db_queue) {
+        *cache_entry = NULL; // Ensure cache_entry is NULL when database lookup fails
+        return false;
+    }
+
+    if (!(*db_queue)->query_cache) {
+        *cache_entry = NULL;
+        return false;
+    }
+
+    // Use the type-filtered lookup for public queries (type = 10)
+    *cache_entry = query_cache_lookup_by_ref_and_type((*db_queue)->query_cache, query_ref, 10, SR_API);
+    if (!*cache_entry) {
+        return false;
+    }
+
+    return true;
+}
+
 // Parse and convert parameters
 #ifndef USE_MOCK_PROCESS_PARAMETERS
 bool process_parameters(json_t* params_json, ParameterList** param_list,
                        const char* sql_template, DatabaseEngineType engine_type,
                        char** converted_sql, TypedParameter*** ordered_params, size_t* param_count) {
-    *param_list = NULL;
-    if (params_json && json_is_object(params_json)) {
-        char* params_str = json_dumps(params_json, JSON_COMPACT);
-        if (params_str) {
-            *param_list = parse_typed_parameters(params_str, NULL);
-            free(params_str);
-        }
-    }
+   *param_list = NULL;
+   if (params_json && json_is_object(params_json)) {
+       char* params_str = json_dumps(params_json, JSON_COMPACT);
+       if (params_str) {
+           *param_list = parse_typed_parameters(params_str, NULL);
+           free(params_str);
+       }
+   }
 
-    if (!*param_list) {
-        // Create empty parameter list if none provided
-        *param_list = calloc(1, sizeof(ParameterList));
-        if (!*param_list) {
-            return false;
-        }
-    }
+   if (!*param_list) {
+       // Create empty parameter list if none provided
+       *param_list = calloc(1, sizeof(ParameterList));
+       if (!*param_list) {
+           return false;
+       }
+   }
 
-    // Convert named parameters to positional
-    *converted_sql = convert_named_to_positional(
-        sql_template,
-        *param_list,
-        engine_type,
-        ordered_params,
-        param_count,
-        NULL
-    );
+   // Convert named parameters to positional
+   *converted_sql = convert_named_to_positional(
+       sql_template,
+       *param_list,
+       engine_type,
+       ordered_params,
+       param_count,
+       NULL
+   );
 
-    return (*converted_sql != NULL);
+   return (*converted_sql != NULL);
 }
 #endif
+
+// Generate parameter validation messages
+char* generate_parameter_messages(const char* sql_template, json_t* params_json) {
+    if (!sql_template) {
+        return NULL;
+    }
+
+    // Collect required parameters from SQL template
+    // Find all :paramName patterns
+    const char* sql = sql_template;
+    char** required_params = NULL;
+    size_t required_count = 0;
+
+    while ((sql = strchr(sql, ':')) != NULL) {
+        sql++; // Skip the :
+        const char* end = sql;
+        while (*end && (isalnum(*end) || *end == '_')) {
+            end++;
+        }
+        if (end > sql) {
+            // Found a parameter name
+            size_t len = (size_t)(end - sql);
+            char* param_name = malloc(len + 1);
+            if (param_name) {
+                memcpy(param_name, sql, len);
+                param_name[len] = '\0';
+
+                // Check if already in list
+                bool found = false;
+                for (size_t i = 0; i < required_count; i++) {
+                    if (strcmp(required_params[i], param_name) == 0) {
+                        found = true;
+                        free(param_name);
+                        break;
+                    }
+                }
+                if (!found) {
+                    char** new_required_params = realloc(required_params, (required_count + 1) * sizeof(char*));
+                    if (new_required_params) {
+                        required_params = new_required_params;
+                        required_params[required_count] = param_name;
+                        required_count++;
+                    } else {
+                        free(param_name);
+                        // Cleanup already allocated memory on failure
+                        for (size_t i = 0; i < required_count; i++) {
+                            free(required_params[i]);
+                        }
+                        free(required_params);
+                        required_params = NULL;
+                        required_count = 0;
+                    }
+                }
+            }
+        }
+        sql = end;
+    }
+
+    // Collect provided parameters
+    char** provided_params = NULL;
+    size_t provided_count = 0;
+
+    if (params_json && json_is_object(params_json)) {
+        const char* type_keys[] = {"INTEGER", "STRING", "BOOLEAN", "FLOAT", "TEXT", "DATE", "TIME", "DATETIME", "TIMESTAMP"};
+        size_t type_count = sizeof(type_keys) / sizeof(type_keys[0]);
+
+        for (size_t i = 0; i < type_count; i++) {
+            json_t* type_obj = json_object_get(params_json, type_keys[i]);
+            if (type_obj && json_is_object(type_obj)) {
+                const char* key;
+                json_t* value;
+                json_object_foreach(type_obj, key, value) {
+                    // Check if already in list
+                    bool found = false;
+                    for (size_t j = 0; j < provided_count; j++) {
+                        if (strcmp(provided_params[j], key) == 0) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        char** new_provided_params = realloc(provided_params, (provided_count + 1) * sizeof(char*));
+                        if (new_provided_params) {
+                            provided_params = new_provided_params;
+                            provided_params[provided_count] = strdup(key);
+                            if (provided_params[provided_count]) {
+                                provided_count++;
+                            } else {
+                                // Cleanup on strdup failure
+                                for (size_t prov_idx = 0; prov_idx < provided_count; prov_idx++) {
+                                    free(provided_params[prov_idx]);
+                                }
+                                free(provided_params);
+                                provided_params = NULL;
+                                provided_count = 0;
+                            }
+                        } else {
+                            // Cleanup on realloc failure
+                            for (size_t prov_idx = 0; prov_idx < provided_count; prov_idx++) {
+                                free(provided_params[prov_idx]);
+                            }
+                            free(provided_params);
+                            provided_params = NULL;
+                            provided_count = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Generate messages
+    char* messages = NULL;
+    size_t messages_len = 0;
+
+    // Find missing parameters
+    for (size_t req_idx = 0; req_idx < required_count; req_idx++) {
+        bool found = false;
+        for (size_t prov_idx = 0; prov_idx < provided_count; prov_idx++) {
+            if (strcmp(required_params[req_idx], provided_params[prov_idx]) == 0) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            const char* prefix = "Missing parameters: ";
+            size_t prefix_len = strlen(prefix);
+            size_t param_len = strlen(required_params[req_idx]);
+            char* new_messages = realloc(messages, messages_len + prefix_len + param_len + 3); // ", " + null
+            if (!new_messages) {
+                // Cleanup on realloc failure
+                for (size_t i = 0; i < required_count; i++) {
+                    free(required_params[i]);
+                }
+                free(required_params);
+                for (size_t i = 0; i < provided_count; i++) {
+                    free(provided_params[i]);
+                }
+                free(provided_params);
+                free(messages);
+                return NULL;
+            }
+            messages = new_messages;
+            if (messages_len == 0) {
+                strcpy(messages, prefix);
+                messages_len = prefix_len;
+            } else {
+                strcpy(messages + messages_len, ", ");
+                messages_len += 2;
+            }
+            strcpy(messages + messages_len, required_params[req_idx]);
+            messages_len += param_len;
+        }
+    }
+
+    // Find unused parameters
+    if (messages_len > 0) {
+        for (size_t prov_idx = 0; prov_idx < provided_count; prov_idx++) {
+            bool found = false;
+            for (size_t req_idx = 0; req_idx < required_count; req_idx++) {
+                if (strcmp(provided_params[prov_idx], required_params[req_idx]) == 0) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                const char* prefix = "Parameters unused: ";
+                size_t prefix_len = strlen(prefix);
+                size_t param_len = strlen(provided_params[prov_idx]);
+                char* new_messages = realloc(messages, messages_len + prefix_len + param_len + 3);
+                if (!new_messages) {
+                    // Cleanup on realloc failure
+                    for (size_t i = 0; i < required_count; i++) {
+                        free(required_params[i]);
+                    }
+                    free(required_params);
+                    for (size_t i = 0; i < provided_count; i++) {
+                        free(provided_params[i]);
+                    }
+                    free(provided_params);
+                    free(messages);
+                    return NULL;
+                }
+                messages = new_messages;
+                if (messages_len == 0) {
+                    strcpy(messages, prefix);
+                    messages_len = prefix_len;
+                } else {
+                    strcpy(messages + messages_len, ", ");
+                    messages_len += 2;
+                }
+                strcpy(messages + messages_len, provided_params[prov_idx]);
+                messages_len += param_len;
+            }
+        }
+    }
+
+    // Clean up
+    for (size_t i = 0; i < required_count; i++) {
+        free(required_params[i]);
+    }
+    free(required_params);
+
+    for (size_t i = 0; i < provided_count; i++) {
+        free(provided_params[i]);
+    }
+    free(provided_params);
+
+    if (messages_len > 0) {
+        messages[messages_len] = '\0';
+        return messages;
+    } else {
+        return NULL;
+    }
+}
 
 // Select optimal queue for query execution
 DatabaseQueue* select_query_queue(const char* database, const char* queue_type) {
@@ -399,7 +647,7 @@ json_t* parse_query_result_data(const QueryResult* result) {
 
 // Build success response JSON
 json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry,
-                             const QueryResult* result, const DatabaseQueue* selected_queue) {
+                             const QueryResult* result, const DatabaseQueue* selected_queue, const char* message) {
     json_t* response = json_object();
 
     json_object_set_new(response, "success", json_true());
@@ -415,6 +663,11 @@ json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry
     json_object_set_new(response, "execution_time_ms", json_integer(result->execution_time_ms));
     json_object_set_new(response, "queue_used", json_string(selected_queue->queue_type));
 
+    // Add message if provided
+    if (message && strlen(message) > 0) {
+        json_object_set_new(response, "message", json_string(message));
+    }
+
     // DQM statistics are only included in status endpoints, not query endpoints
 
     return response;
@@ -422,7 +675,7 @@ json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry
 
 // Build error response JSON
 json_t* build_error_response(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
-                           const PendingQueryResult* pending, const QueryResult* result) {
+                           const PendingQueryResult* pending, const QueryResult* result, const char* message) {
     json_t* response = json_object();
 
     json_object_set_new(response, "success", json_false());
@@ -434,23 +687,31 @@ json_t* build_error_response(int query_ref, const char* database, const QueryCac
         json_object_set_new(response, "timeout_seconds", json_integer(cache_entry->timeout_seconds));
     } else if (result && result->error_message) {
         json_object_set_new(response, "error", json_string("Database error"));
-        json_object_set_new(response, "database_error", json_string(result->error_message));
+        json_object_set_new(response, "message", json_string(result->error_message));
     } else {
         json_object_set_new(response, "error", json_string("Query execution failed"));
+    }
+
+    // Add message if provided
+    if (message && strlen(message) > 0) {
+        json_object_set_new(response, "message", json_string(message));
     }
 
     return response;
 }
 
 // Build invalid queryref response JSON
-json_t* build_invalid_queryref_response(int query_ref, const char* database) {
+json_t* build_invalid_queryref_response(int query_ref, const char* database, const char* message) {
     json_t* response = json_object();
 
     json_object_set_new(response, "success", json_string("fail"));
     json_object_set_new(response, "query_ref", json_integer(query_ref));
     json_object_set_new(response, "database", json_string(database));
     json_object_set_new(response, "rows", json_array());
-    json_object_set_new(response, "message", json_string("queryref not found or not public"));
+
+    // Use provided message or default
+    const char* msg = message && strlen(message) > 0 ? message : "queryref not found or not public";
+    json_object_set_new(response, "message", json_string(msg));
 
     // DQM statistics are only included in status endpoints, not query endpoints
 
@@ -465,19 +726,50 @@ json_t* create_validation_error_response(const char* error_msg, const char* erro
     json_object_set_new(response, "message", json_string(error_detail));
     return response;
 }
-
 // Helper function to create error response for lookup failures
-json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref) {
+json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref, const char* message) {
     json_t* response = json_object();
-    json_object_set_new(response, "success", json_false());
-    json_object_set_new(response, "error", json_string(error_msg));
+    if (!response) return NULL;
+
+    json_t* success_val = json_false();
+    if (!success_val) {
+        json_decref(response);
+        return NULL;
+    }
+    json_object_set_new(response, "success", success_val);
+
+    json_t* error_val = json_string(error_msg);
+    if (!error_val) {
+        json_decref(response);
+        return NULL;
+    }
+    json_object_set_new(response, "error", error_val);
 
     if (database) {
-        json_object_set_new(response, "database", json_string(database));
+        json_t* db_val = json_string(database);
+        if (!db_val) {
+            json_decref(response);
+            return NULL;
+        }
+        json_object_set_new(response, "database", db_val);
     }
 
     if (include_query_ref) {
-        json_object_set_new(response, "query_ref", json_integer(query_ref));
+        json_t* ref_val = json_integer(query_ref);
+        if (!ref_val) {
+            json_decref(response);
+            return NULL;
+        }
+        json_object_set_new(response, "query_ref", ref_val);
+    }
+
+    if (message) {
+        json_t* msg_val = json_string(message);
+        if (!msg_val) {
+            json_decref(response);
+            return NULL;
+        }
+        json_object_set_new(response, "message", msg_val);
     }
 
     return response;
@@ -495,13 +787,13 @@ json_t* create_processing_error_response(const char* error_msg, const char* data
 
 // Wait for query result and build response
 json_t* build_response_json(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
-                           const DatabaseQueue* selected_queue, PendingQueryResult* pending) {
+                           const DatabaseQueue* selected_queue, PendingQueryResult* pending, const char* message) {
     const QueryResult* result = wait_for_query_result(pending);
 
     if (result && result->success) {
-        return build_success_response(query_ref, cache_entry, result, selected_queue);
+        return build_success_response(query_ref, cache_entry, result, selected_queue, message);
     } else {
-        return build_error_response(query_ref, database, cache_entry, pending, result);
+        return build_error_response(query_ref, database, cache_entry, pending, result, message);
     }
 }
 
@@ -510,7 +802,7 @@ unsigned int determine_http_status(const PendingQueryResult* pending, const Quer
     if (pending_result_is_timed_out(pending)) {
         return MHD_HTTP_REQUEST_TIMEOUT;
     } else if (result && result->error_message) {
-        return MHD_HTTP_INTERNAL_SERVER_ERROR;
+        return MHD_HTTP_UNPROCESSABLE_ENTITY;
     } else {
         return MHD_HTTP_BAD_REQUEST;
     }
@@ -526,31 +818,37 @@ enum MHD_Result handle_method_validation(struct MHD_Connection *connection, cons
 
         api_send_json_response(connection, error_response, MHD_HTTP_METHOD_NOT_ALLOWED);
         json_decref(error_response);
-        return MHD_NO; // Stop processing - error handled
+        return MHD_YES; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
 
 // Helper function to handle request data parsing using ApiPostBuffer
 enum MHD_Result handle_request_parsing_with_buffer(struct MHD_Connection *connection, ApiPostBuffer* buffer,
-                                                   json_t** request_json) {
-    *request_json = parse_request_data_from_buffer(connection, buffer);
+                                                     json_t** request_json) {
+    json_error_t json_error = {0}; // Initialize to avoid uninitialized warnings
+    *request_json = parse_request_data_from_buffer(connection, buffer, &json_error);
     if (!*request_json) {
         // Determine specific error based on method and data
         const char* error_msg = "Invalid JSON";
         const char* error_detail = "Request body contains invalid JSON";
         unsigned int http_status = MHD_HTTP_BAD_REQUEST;
+        char detailed_error[256];
 
         if (buffer->http_method == 'P' && (!buffer->data || buffer->size == 0)) {
             error_msg = "Missing request body";
             error_detail = "POST requests must include a JSON body";
+        } else if (buffer->http_method == 'P') {
+            // Use detailed JSON error information from jansson
+            snprintf(detailed_error, sizeof(detailed_error), "Unexpected token at position %d", json_error.position);
+            error_detail = detailed_error;
         }
 
         json_t *error_response = create_validation_error_response(error_msg, error_detail);
 
         api_send_json_response(connection, error_response, http_status);
         json_decref(error_response);
-        return MHD_NO; // Stop processing - error handled
+        return MHD_YES; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
@@ -593,7 +891,7 @@ enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const 
 
 // Helper function to handle field extraction and validation
 enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_t* request_json,
-                                       int* query_ref, const char** database, json_t** params_json) {
+                                        int* query_ref, const char** database, json_t** params_json) {
     if (!extract_request_fields(request_json, query_ref, database, params_json)) {
         const char* error_msg = !json_object_get(request_json, "query_ref") || !json_is_integer(json_object_get(request_json, "query_ref"))
                                ? "Missing or invalid query_ref" : "Missing or invalid database";
@@ -604,26 +902,34 @@ enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_
 
         api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
         json_decref(error_response);
-        return MHD_NO; // Stop processing - error handled
+        return MHD_YES; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
 
 // Helper function to handle database and query lookup
 enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const char* database,
-                                      int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
-                                      bool* query_not_found) {
-    if (!lookup_database_and_query(db_queue, cache_entry, database, query_ref)) {
-        if (!*db_queue) {
-            // Database not found - this is still an error
-            const char* error_msg = "Database not found";
-            unsigned int http_status = MHD_HTTP_NOT_FOUND;
+                                        int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
+                                        bool* query_not_found, bool require_public) {
+    bool lookup_success;
+    if (require_public) {
+        lookup_success = lookup_database_and_public_query(db_queue, cache_entry, database, query_ref);
+    } else {
+        lookup_success = lookup_database_and_query(db_queue, cache_entry, database, query_ref);
+    }
 
-            json_t *error_response = create_lookup_error_response(error_msg, database, query_ref, true);
+    if (!lookup_success) {
+        if (!*db_queue) {
+            // Database not found - return 400 with appropriate message
+            const char* error_msg = "Invalid database selection";
+            unsigned int http_status = MHD_HTTP_BAD_REQUEST;
+            const char* message = "The specified database does not exist or is not configured for queries";
+
+            json_t *error_response = create_lookup_error_response(error_msg, database, query_ref, true, message);
 
             api_send_json_response(connection, error_response, http_status);
             json_decref(error_response);
-            return MHD_NO; // Stop processing - error handled
+            return MHD_YES; // Error response sent - main function will check db_queue
         } else {
             // Query not found - continue processing but mark as not found
             *query_not_found = true;
@@ -637,10 +943,10 @@ enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const 
 
 // Helper function to handle parameter processing
 enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, json_t* params_json,
-                                           const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
-                                           const char* database, int query_ref,
-                                           ParameterList** param_list, char** converted_sql,
-                                           TypedParameter*** ordered_params, size_t* param_count) {
+                                            const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
+                                            const char* database, int query_ref,
+                                            ParameterList** param_list, char** converted_sql,
+                                            TypedParameter*** ordered_params, size_t* param_count) {
     if (!db_queue || !process_parameters(params_json, param_list, cache_entry->sql_template,
                            db_queue->engine_type, converted_sql, ordered_params, param_count)) {
         json_t *error_response = create_processing_error_response(
@@ -650,17 +956,17 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
 
         api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
         json_decref(error_response);
-        return MHD_NO; // Stop processing - error handled
+        return MHD_YES; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
 
 // Helper function to handle queue selection
 enum MHD_Result handle_queue_selection(struct MHD_Connection *connection, const char* database,
-                                       int query_ref, const QueryCacheEntry* cache_entry,
-                                       ParameterList* param_list, char* converted_sql,
-                                       TypedParameter** ordered_params,
-                                       DatabaseQueue** selected_queue) {
+                                        int query_ref, const QueryCacheEntry* cache_entry,
+                                        ParameterList* param_list, char* converted_sql,
+                                        TypedParameter** ordered_params,
+                                        DatabaseQueue** selected_queue) {
     *selected_queue = select_query_queue(database, cache_entry->queue_type);
     if (!*selected_queue) {
         free(converted_sql);
@@ -670,15 +976,15 @@ enum MHD_Result handle_queue_selection(struct MHD_Connection *connection, const 
 
         api_send_json_response(connection, error_response, MHD_HTTP_SERVICE_UNAVAILABLE);
         json_decref(error_response);
-        return MHD_NO; // Stop processing - error handled
+        return MHD_YES; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
 
 // Helper function to handle query ID generation
 enum MHD_Result handle_query_id_generation(struct MHD_Connection *connection, const char* database,
-                                          int query_ref, ParameterList* param_list, char* converted_sql,
-                                          TypedParameter** ordered_params, char** query_id) {
+                                           int query_ref, ParameterList* param_list, char* converted_sql,
+                                           TypedParameter** ordered_params, char** query_id) {
     *query_id = generate_query_id();
     if (!*query_id) {
         free(converted_sql);
@@ -688,16 +994,16 @@ enum MHD_Result handle_query_id_generation(struct MHD_Connection *connection, co
 
         api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
         json_decref(error_response);
-        return MHD_NO; // Stop processing - error handled
+        return MHD_YES; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
 
 // Helper function to handle pending result registration
 enum MHD_Result handle_pending_registration(struct MHD_Connection *connection, const char* database,
-                                            int query_ref, char* query_id, ParameterList* param_list,
-                                            char* converted_sql, TypedParameter** ordered_params,
-                                            const QueryCacheEntry* cache_entry, PendingQueryResult** pending) {
+                                             int query_ref, char* query_id, ParameterList* param_list,
+                                             char* converted_sql, TypedParameter** ordered_params,
+                                             const QueryCacheEntry* cache_entry, PendingQueryResult** pending) {
     PendingResultManager* pending_mgr = get_pending_result_manager();
     *pending = pending_result_register(pending_mgr, query_id, cache_entry->timeout_seconds, NULL);
     if (!*pending) {
@@ -709,7 +1015,7 @@ enum MHD_Result handle_pending_registration(struct MHD_Connection *connection, c
 
         api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
         json_decref(error_response);
-        return MHD_NO; // Stop processing - error handled
+        return MHD_YES; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
@@ -742,7 +1048,7 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
                                          const char* database, const QueryCacheEntry* cache_entry,
                                          const DatabaseQueue* selected_queue, PendingQueryResult* pending,
                                          char* query_id, char* converted_sql, ParameterList* param_list,
-                                         TypedParameter** ordered_params) {
+                                         TypedParameter** ordered_params, const char* message) {
     // Mark unused parameters
     (void)query_id;
     (void)converted_sql;
@@ -750,7 +1056,7 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
     (void)ordered_params;
 
     // Wait for result and build response
-    json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending);
+    json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
     unsigned int http_status = json_is_true(json_object_get(response, "success")) ?
                                MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
 
@@ -831,9 +1137,9 @@ enum MHD_Result handle_conduit_query_request(
     log_this(SR_API, "%s: Request data parsed successfully", LOG_LEVEL_TRACE, 1, conduit_service_name());
 
     // Step 3: Extract and validate required fields
-    int query_ref;
-    const char* database;
-    json_t* params_json;
+    int query_ref = 0;
+    const char* database = NULL;
+    json_t* params_json = NULL;
     result = handle_field_extraction(connection, request_json, &query_ref, &database, &params_json);
     if (result != MHD_YES) {
         json_decref(request_json);
@@ -846,15 +1152,21 @@ enum MHD_Result handle_conduit_query_request(
     DatabaseQueue* db_queue = NULL;
     QueryCacheEntry* cache_entry = NULL;
     bool query_not_found = false;
-    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found);
+    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found, true);
     if (result != MHD_YES) {
         json_decref(request_json);
         return result;
     }
 
+    // Check if database lookup failed (error response already sent)
+    if (!db_queue) {
+        json_decref(request_json);
+        return MHD_YES;
+    }
+
     // Handle invalid queryref case
     if (query_not_found) {
-        json_t* response = build_invalid_queryref_response(query_ref, database);
+        json_t* response = build_invalid_queryref_response(query_ref, database, NULL);
         enum MHD_Result http_result = api_send_json_response(connection, response, MHD_HTTP_OK);
         json_decref(response);
         json_decref(request_json);
@@ -875,6 +1187,9 @@ enum MHD_Result handle_conduit_query_request(
         json_decref(request_json);
         return result;
     }
+
+    // Generate parameter validation messages
+    char* message = generate_parameter_messages(cache_entry->sql_template, params_json);
 
     // Step 6: Select optimal queue
     DatabaseQueue* selected_queue;
@@ -915,8 +1230,11 @@ enum MHD_Result handle_conduit_query_request(
     // Step 10: Wait for result and build response
     result = handle_response_building(connection, query_ref, database, cache_entry,
                                      selected_queue, pending, query_id, converted_sql,
-                                     param_list, ordered_params);
+                                     param_list, ordered_params, message);
     json_decref(request_json);
+
+    // Clean up message
+    if (message) free(message);
 
     log_this(SR_API, "%s: Conduit query request processing completed", LOG_LEVEL_TRACE, 1, conduit_service_name());
 

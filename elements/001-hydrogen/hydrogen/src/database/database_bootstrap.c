@@ -187,10 +187,11 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                                  
                                  // Cache useful queries:
                                  // - type 0-3: Regular queries (internal_sql=0, system_sql=1, system_ddl=2, reporting_sql=3)
+                                 // - type 10: Public queries (used by Conduit public endpoints)
                                  // - type 1000: Forward migrations (needed during APPLY phase)
                                  // - type 1001: Reverse migrations (needed during TEST phase)
                                  // Skip type=1002 (diagrams) and type=1003 (applied migrations) - these are never used again
-                                 if (query_type <= 3 || query_type == 1000 || query_type == 1001) {
+                                 if (query_type <= 3 || query_type == 10 || query_type == 1000 || query_type == 1001) {
                                      // Convert integer queue type to string (0=cache, 1=slow, 2=medium, 3=fast)
                                      const char* queue_type_str = NULL;
                                      switch (queue_type_int) {

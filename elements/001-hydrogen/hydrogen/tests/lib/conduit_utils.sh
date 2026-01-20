@@ -132,6 +132,26 @@ validate_conduit_request() {
                         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Valid JSON returned: success=${success_value}, ${rows_formatted} rows, ${file_size_formatted} bytes"
                     fi
 
+                    # Check for message field in response
+                    local message
+                    message=$(jq -r '.message' "${output_file}" 2>/dev/null || echo "")
+                    if [[ -n "${message}" ]] && [[ "${message}" != "null" ]]; then
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Message: ${message}"
+                    fi
+
+                    # Check for messages in results array for queries endpoint
+                    if jq -e '.results' "${output_file}" >/dev/null 2>&1; then
+                        local results_count
+                        results_count=$(jq -r '.results | length' "${output_file}" 2>/dev/null || echo "0")
+                        for ((i=0; i<results_count; i++)); do
+                            local result_message
+                            result_message=$(jq -r ".results[${i}].message" "${output_file}" 2>/dev/null || echo "")
+                            if [[ -n "${result_message}" ]] && [[ "${result_message}" != "null" ]]; then
+                                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Result ${i} Message: ${result_message}"
+                            fi
+                        done
+                    fi
+
                     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${output_file}"
                 fi
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} - Request successful"
@@ -305,11 +325,25 @@ test_conduit_single_queries() {
         # Test each public query reference for this database
         for query_ref in "${!PUBLIC_QUERY_REFS[@]}"; do
             # Parse the format: "description:requires_auth:params_json"
-            local query_info="${PUBLIC_QUERY_REFS[${query_ref}]}"
-            local description=$(echo "${query_info}" | cut -d: -f1)
-            local requires_auth=$(echo "${query_info}" | cut -d: -f2)
-            local params_json=$(echo "${query_info}" | cut -d: -f3-)
-            local query_ref_num=$((10#${query_ref}))
+            local query_info
+            query_info="${PUBLIC_QUERY_REFS[${query_ref}]}"
+            local description
+            description=$(echo "${query_info}" | cut -d: -f1)
+            local requires_auth
+            requires_auth=$(echo "${query_info}" | cut -d: -f2)
+            local params_json
+            params_json=$(echo "${query_info}" | cut -d: -f3-)
+            local query_ref_num
+            query_ref_num=$((10#${query_ref}))
+        
+            # Check if requires_auth is used in this context
+            if [[ "${requires_auth}" == "true" ]]; then
+                # If authentication is required, ensure JWT token is available
+                if [[ -z "${jwt_token:-}" ]]; then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping query ${query_ref} - authentication required but no JWT token available"
+                    return 1
+                fi
+            fi
 
             # Build payload for single query
             local payload

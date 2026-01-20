@@ -34,7 +34,7 @@
 PendingQueryResult* submit_single_auth_query(const char *database, json_t *query_obj, int *query_ref_out);
 json_t* wait_and_build_single_auth_response(const char *database, int query_ref,
                                           const QueryCacheEntry *cache_entry, const DatabaseQueue *selected_queue,
-                                          PendingQueryResult *pending);
+                                          PendingQueryResult *pending, json_t *params);
 
 /**
  * @brief Handle GET/POST /api/conduit/auth_queries requests

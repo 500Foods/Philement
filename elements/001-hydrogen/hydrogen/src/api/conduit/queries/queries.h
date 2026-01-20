@@ -33,9 +33,9 @@
 // Forward declarations for internal functions (used for testing)
 json_t* execute_single_query(const char *database, json_t *query_obj);
 PendingQueryResult* submit_single_query(const char *database, json_t *query_obj, int *query_ref_out);
-json_t* wait_and_build_single_response(const char *database, int query_ref,     
+json_t* wait_and_build_single_response(const char *database, int query_ref,
                                       const QueryCacheEntry *cache_entry, const DatabaseQueue *selected_queue,
-                                      PendingQueryResult *pending);
+                                      PendingQueryResult *pending, json_t *params);
 enum MHD_Result deduplicate_and_validate_queries(
     json_t *queries_array,
     const char *database,
