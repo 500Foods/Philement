@@ -283,7 +283,7 @@ bool build_parameter_array(
     }
 
     // Find all named parameters in SQL template
-    // Use regex to find :paramName patterns
+    // Use regex to find :paramName patterns, but exclude ${...} macro variables
     regex_t regex;
     int reti = regcomp(&regex, ":[a-zA-Z_][a-zA-Z0-9_]*", REG_EXTENDED);
     if (reti) {
@@ -297,7 +297,36 @@ bool build_parameter_array(
     const char* search_ptr = sql_template;
 
     while (regexec(&regex, search_ptr, 1, &match, 0) == 0) {
-        match_count++;
+        // Check if this match is inside a ${} macro
+        bool is_inside_macro = false;
+        const char* current_ptr = sql_template;
+        const char* match_start = search_ptr + match.rm_so;
+        
+        // Find if there's an unclosed ${ before the match
+        int macro_depth = 0;
+        while (current_ptr < match_start) {
+            if (strncmp(current_ptr, "${", 2) == 0) {
+                macro_depth++;
+                current_ptr += 2;
+            } else if (strncmp(current_ptr, "}", 1) == 0) {
+                if (macro_depth > 0) {
+                    macro_depth--;
+                }
+                current_ptr++;
+            } else {
+                current_ptr++;
+            }
+        }
+        
+        // If macro_depth > 0, the match is inside a ${}
+        if (macro_depth > 0) {
+            is_inside_macro = true;
+        }
+        
+        if (!is_inside_macro) {
+            match_count++;
+        }
+        
         search_ptr += match.rm_eo;
     }
 
@@ -321,37 +350,66 @@ bool build_parameter_array(
     size_t param_idx = 0;
 
     while (regexec(&regex, search_ptr, 1, &match, 0) == 0 && param_idx < match_count) {
-        // Extract parameter name (skip the ':')
-        size_t name_len = (size_t)(match.rm_eo - match.rm_so - 1);
-        char param_name[MAX_PARAM_NAME_LEN];
-        if (name_len >= sizeof(param_name)) {
-            log_this(dqm_label ? dqm_label : SR_DATABASE, "Parameter name too long", LOG_LEVEL_ERROR, 0);
-            free(*ordered_params);
-            regfree(&regex);
-            return false;
-        }
-
-        memcpy(param_name, search_ptr + match.rm_so + 1, name_len);
-        param_name[name_len] = '\0';
-
-        // Find matching parameter in our list
-        TypedParameter* found_param = NULL;
-        for (size_t i = 0; i < params->count; i++) {
-            if (strcmp(params->params[i]->name, param_name) == 0) {
-                found_param = params->params[i];
-                break;
+        // Check if this match is inside a ${} macro
+        bool is_inside_macro = false;
+        const char* current_ptr = sql_template;
+        const char* match_start = search_ptr + match.rm_so;
+        
+        // Find if there's an unclosed ${ before the match
+        int macro_depth = 0;
+        while (current_ptr < match_start) {
+            if (strncmp(current_ptr, "${", 2) == 0) {
+                macro_depth++;
+                current_ptr += 2;
+            } else if (strncmp(current_ptr, "}", 1) == 0) {
+                if (macro_depth > 0) {
+                    macro_depth--;
+                }
+                current_ptr++;
+            } else {
+                current_ptr++;
             }
         }
-
-        if (!found_param) {
-            log_this(dqm_label ? dqm_label : SR_DATABASE, "Parameter not found in parameter list", LOG_LEVEL_ERROR, 0);
-            free(*ordered_params);
-            *ordered_params = NULL;
-            regfree(&regex);
-            return false;
+        
+        // If macro_depth > 0, the match is inside a ${}
+        if (macro_depth > 0) {
+            is_inside_macro = true;
         }
+        
+        if (!is_inside_macro) {
+            // Extract parameter name (skip the ':')
+            size_t name_len = (size_t)(match.rm_eo - match.rm_so - 1);
+            char param_name[MAX_PARAM_NAME_LEN];
+            if (name_len >= sizeof(param_name)) {
+                log_this(dqm_label ? dqm_label : SR_DATABASE, "Parameter name too long", LOG_LEVEL_ERROR, 0);
+                free(*ordered_params);
+                regfree(&regex);
+                return false;
+            }
 
-        (*ordered_params)[param_idx++] = found_param;
+            memcpy(param_name, search_ptr + match.rm_so + 1, name_len);
+            param_name[name_len] = '\0';
+
+            // Find matching parameter in our list
+            TypedParameter* found_param = NULL;
+            for (size_t i = 0; i < params->count; i++) {
+                if (strcmp(params->params[i]->name, param_name) == 0) {
+                    found_param = params->params[i];
+                    break;
+                }
+            }
+
+            if (!found_param) {
+                log_this(dqm_label ? dqm_label : SR_DATABASE, "Parameter not found in parameter list: %s", LOG_LEVEL_ERROR, 1, param_name);
+                free(*ordered_params);
+                *ordered_params = NULL;
+                regfree(&regex);
+                return false;
+            }
+
+            (*ordered_params)[param_idx++] = found_param;
+        }
+        
         search_ptr += match.rm_eo;
     }
 

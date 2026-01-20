@@ -182,8 +182,8 @@ jwt_validation_result_t validate_jwt_for_logout(const char* token, const char* d
 // Database query wrapper functions
 QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params);
 
-// JWT storage functions (is_token_revoked is not a duplicate)
-bool is_token_revoked(const char* token_hash, const char* database);
+// JWT storage functions
+bool is_token_revoked(const char* token_hash, const char* ip_address, const char* database);
 
 // Rate limiting and security functions
 int check_failed_attempts(const char* login_id, const char* client_ip,

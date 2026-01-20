@@ -374,6 +374,136 @@ EOF
     echo "QUERIES_COMPREHENSIVE_TESTS_TOTAL=${total_tests}" >> "${result_file}"
 }
 
+# Function to test conduit auth query endpoint comprehensively across ready databases
+test_conduit_auth_query_comprehensive() {
+    local base_url="$1"
+    local jwt_tokens_string="$2"  # Space-separated string of JWT tokens (one per database)
+    local result_file="$3"
+
+    # Parse JWT tokens
+    local jwt_tokens=()
+    read -r -a jwt_tokens <<< "${jwt_tokens_string}"
+
+    local tests_passed=0
+    local total_tests=0
+
+    # Test each database that is ready
+    local jwt_index=0
+    for db_engine in "${!DATABASE_NAMES[@]}"; do
+        # Check if database is ready
+        if ! "${GREP}" -q "DATABASE_READY_${db_engine}=true" "${result_file}" 2>/dev/null; then
+            jwt_index=$(( jwt_index + 1 ))
+            continue
+        fi
+
+        local db_name="${DATABASE_NAMES[${db_engine}]}"
+        local jwt_token="${jwt_tokens[${jwt_index}]}"
+
+        if [[ -z "${jwt_token}" ]]; then
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Auth Query Comprehensive (${db_engine})"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Auth Query Comprehensive (${db_engine}) - No JWT token available"
+            continue
+        fi
+
+        # Test 1: Valid authenticated query
+        local payload_valid
+        payload_valid=$(cat <<EOF
+{
+  "query_ref": 30,
+  "params": {}
+}
+EOF
+)
+
+        local response_file_valid="${result_file}.auth_comprehensive_valid_${db_engine}.json"
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/auth_query" "POST" "${payload_valid}" "200" "${response_file_valid}" "${jwt_token}" "${db_engine} Auth Query Valid: Get Lookups List"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+        total_tests=$(( total_tests + 1 ))
+
+        # Test 2: Invalid JWT token (malformed)
+        local invalid_jwt="invalid.jwt.token"
+        local payload_invalid_jwt
+        payload_invalid_jwt=$(cat <<EOF
+{
+  "query_ref": 30,
+  "params": {}
+}
+EOF
+)
+
+        local response_file_invalid_jwt="${result_file}.auth_comprehensive_invalid_jwt_${db_engine}.json"
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/auth_query" "POST" "${payload_invalid_jwt}" "401" "${response_file_invalid_jwt}" "${invalid_jwt}" "${db_engine} Auth Query Invalid JWT" "false"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+        total_tests=$(( total_tests + 1 ))
+
+        # Test 3: Missing authentication (no JWT token)
+        local payload_no_auth
+        payload_no_auth=$(cat <<EOF
+{
+  "query_ref": 30,
+  "params": {}
+}
+EOF
+)
+
+        local response_file_no_auth="${result_file}.auth_comprehensive_no_auth_${db_engine}.json"
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/auth_query" "POST" "${payload_no_auth}" "401" "${response_file_no_auth}" "" "${db_engine} Auth Query No Auth" "false"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+        total_tests=$(( total_tests + 1 ))
+
+
+        # Test 5: Malformed JWT (valid base64 but invalid JSON)
+        local malformed_jwt="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.payload.signature"
+        local payload_malformed_jwt
+        payload_malformed_jwt=$(cat <<EOF
+{
+  "query_ref": 30,
+  "params": {}
+}
+EOF
+)
+
+        local response_file_malformed_jwt="${result_file}.auth_comprehensive_malformed_jwt_${db_engine}.json"
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/auth_query" "POST" "${payload_malformed_jwt}" "401" "${response_file_malformed_jwt}" "${malformed_jwt}" "${db_engine} Auth Query Malformed JWT" "false"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+        total_tests=$(( total_tests + 1 ))
+
+        # Test 6: Invalid query reference (should fail even with valid JWT)
+        local payload_invalid_ref
+        payload_invalid_ref=$(cat <<EOF
+{
+  "query_ref": -100,
+  "params": {}
+}
+EOF
+)
+
+        local response_file_invalid_ref="${result_file}.auth_comprehensive_invalid_ref_${db_engine}.json"
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/auth_query" "POST" "${payload_invalid_ref}" "200" "${response_file_invalid_ref}" "${jwt_token}" "${db_engine} Auth Query Invalid Ref" "false"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+        total_tests=$(( total_tests + 1 ))
+
+    done
+
+    echo "AUTH_QUERY_COMPREHENSIVE_TESTS_PASSED=${tests_passed}" >> "${result_file}"
+    echo "AUTH_QUERY_COMPREHENSIVE_TESTS_TOTAL=${total_tests}" >> "${result_file}"
+}
+
 # Function to test conduit auth single query endpoint across ready databases
 test_conduit_auth_single_query() {
     local base_url="$1"
@@ -401,12 +531,8 @@ test_conduit_auth_single_query() {
         local payload
         payload=$(cat <<EOF
 {
-  "query_ref": 1005,
-  "params": {
-    "STRING": {
-      "username": "${HYDROGEN_DEMO_USER_NAME}"
-    }
-  }
+  "query_ref": 30,
+  "params": {}
 }
 EOF
 )
@@ -420,6 +546,7 @@ EOF
             echo "AUTH_SINGLE_QUERY_FAILED_${db_engine}" >> "${result_file}"
         fi
         total_tests=$(( total_tests + 1 ))
+        jwt_index=$(( jwt_index + 1 ))
     done
 
     echo "AUTH_SINGLE_QUERY_TESTS_PASSED=${tests_passed}" >> "${result_file}"
@@ -743,6 +870,8 @@ run_conduit_test_unified() {
     base_url=$(echo "${server_info}" | awk -F: '{print $1":"$2":"$3}')
     hydrogen_pid=$(echo "${server_info}" | awk -F: '{print $4}')
 
+    print_message "51" "0" "Server log location: build/tests/logs/test_51_${TIMESTAMP}_conduit.log"
+
     # Get JWT tokens for authenticated endpoints - one for each database
     local jwt_tokens_string
     jwt_tokens_string=$(acquire_jwt_tokens "${base_url}" "${result_file}")
@@ -771,7 +900,7 @@ run_conduit_test_unified() {
     test_conduit_multiple_queries "${base_url}" "${result_file}"
     test_conduit_queries_comprehensive "${base_url}" "${result_file}"
     # TODO: Add more test functions as we progress
-    test_conduit_auth_single_query "${base_url}" "${jwt_tokens[0]}" "${result_file}"
+    test_conduit_auth_query_comprehensive "${base_url}" "${jwt_tokens[*]}" "${result_file}"
     # test_conduit_auth_multiple_queries "${base_url}" "${jwt_token}" "${result_file}"
     # test_conduit_alt_single_query "${base_url}" "${jwt_token}" "${result_file}"
     # test_conduit_alt_multiple_queries "${base_url}" "${jwt_token}" "${result_file}"

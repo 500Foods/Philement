@@ -549,7 +549,7 @@ void delete_jwt_from_storage(const char* jwt_hash, const char* database) {
 /**
  * Check if token is revoked (database lookup)
  */
-bool is_token_revoked(const char* token_hash, const char* database) {
+bool is_token_revoked(const char* token_hash, const char* ip_address, const char* database) {
     if (!token_hash || !database) return true; // Assume revoked if invalid
 
     // Create parameters for QueryRef #018: Validate JWT
@@ -557,9 +557,9 @@ bool is_token_revoked(const char* token_hash, const char* database) {
     // QueryRef #018 expects :TOKENHASH and :IPADDRESS parameters
     json_t* params = json_object();
     json_t* string_params = json_object();
-    
+
     json_object_set_new(string_params, "TOKENHASH", json_string(token_hash));
-    // IPADDRESS will be provided by merge_database_parameters from connection config
+    json_object_set_new(string_params, "IPADDRESS", json_string(ip_address ? ip_address : ""));
     json_object_set_new(params, "STRING", string_params);
 
     // Execute query
