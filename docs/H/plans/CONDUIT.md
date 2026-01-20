@@ -1,4 +1,4 @@
-# Conduit Service - Action Plan
+# Conduit Service - Implementation Checklist
 
 ## Current Status
 
@@ -22,232 +22,7 @@
 - Optional JWT authentication for status endpoint (conditional response fields with per-database DQM stats)
 - POST-only endpoints for all query operations (security and consistency)
 
-**Rate Limiting Implementation** (COMPLETED):
-
-- ✅ Added `MaxQueriesPerRequest` field to `DatabaseConnection` struct (default: 10, range: 1-100)
-- ✅ Updated configuration parsing with validation in `config_databases.c`
-- ✅ Implemented query deduplication logic in `queries` and `auth_queries` endpoints
-- ✅ Added rate limiting validation with HTTP 429 responses for exceeded limits
-- ✅ Graceful handling of missing database connections (skips rate limiting instead of failing)
-
-**Testing Infrastructure** (COMPLETED):
-
-- ✅ Created unified `test_50_conduit.json` with all 7 database engines in single server
-- ✅ Updated `test_51_conduit.sh` to use single-server approach instead of 7 parallel servers
-- ✅ Comprehensive testing across all endpoints and database engines
-- ✅ Fixed test output balance: Status endpoint tests now have 1 TEST line and 1 PASS/FAIL line per database
-- ✅ Enhanced DQM statistics validation: Test validates presence of DQM statistics in authenticated status responses
-- ✅ Improved test logging: Per-queue statistics displayed in Lead→Fast→Medium→Slow→Cache order with proper formatting
-
-**Next Actions**:
-
-1. Fix database connectivity issues preventing server startup ✅
-2. Complete comprehensive testing across available database engines
-3. Add unit tests for rate limiting and deduplication ✅
-4. Performance benchmarking and optimization
-5. Fix JWT validation in conduit endpoints (changed validate_jwt calls to pass NULL instead of "unknown")
-6. ✅ **Implement comprehensive queries endpoint testing**: Added `test_conduit_queries_comprehensive()` with deduplication, error handling, and cross-database validation
-7. Implement remaining query endpoint tests (auth queries, alt queries)
-8. Add parameter validation and error handling tests
-9. Performance testing and memory leak validation
-10. ✅ **Fixed DQM Statistics Timing**: Resolved critical bug in execution time calculation and implemented microsecond-precision tracking
-11. ✅ **Fixed Parameter Passing Bug**: Resolved critical issue where conduit endpoints were pre-converting SQL templates instead of letting database engines handle parameter conversion, causing parameterized queries to fail
-
-**Current Focus: Fix /api/conduit/auth_query Endpoint Parameter Issue (2026-01-20)**:
-
-- **Issue**: The `/api/conduit/auth_query` endpoint fails with "Parameter not found in parameter list" due to incorrect parameter handling
-- **Symptoms**: JWT validation succeeds, but parameter processing fails when executing the QueryRef query
-- **Root Cause Analysis**:
-  - auth_query endpoint was incorrectly adding JWT validation parameters (TOKENHASH, IPADDRESS) to the QueryRef query execution
-  - The QueryRef query (e.g., query_ref=30 "Get Lookups List") was receiving parameters intended for token validation
-  - Parameter format mismatch: code was adding parameters directly to JSON root instead of using typed parameter format
-- **Fixes Applied**:
-  1. ✅ Removed incorrect parameter addition code that was adding TOKENHASH/IPADDRESS for token validation
-  2. ✅ Updated auth_query to use request parameters directly (JWT validation is separate)
-  3. ✅ Fixed step numbering and comments in auth_query.c
-  4. ✅ Build successful - ready for testing
-- **Testing Results**:
-  1. ✅ Code compiles successfully
-  2. ✅ Ready for integration testing with test_51_conduit.sh
-- **Next Steps**:
-  1. Run test_51_conduit.sh to verify auth_query endpoint works correctly
-  2. Update this plan with completion status
-
-**Recent Implementation Progress (2026-01-19)**:
-
-- ✅ **Per-Database DQM Statistics**: Modified status endpoint to show DQM statistics per database instead of global aggregation. Each database now reports its own query metrics under `databases.{database_name}.dqm_statistics`
-- ✅ **Fixed DQM Statistics Data Types**: Corrected `avg_execution_time_ms` field from `unsigned long long` to `double` for proper floating-point averaging of query execution times
-- ✅ **Enhanced Test Output**: Updated test logging to display "DQM Statistics for {database_name}:" with per-database breakdowns, providing clearer operational visibility
-- ✅ **Statistics Recording Architecture**: Implemented per-database statistics tracking with proper initialization and atomic operations for thread-safe counters
-- ✅ **API Response Structure**: Status endpoint now provides granular DQM metrics per database while maintaining backward compatibility
-- ✅ **Fixed Critical Timing Bug**: Resolved issue where `submitted_at_ns` timestamp was set after query serialization, causing execution time calculations to use 0 as start time. Moved timestamp setting before JSON serialization in `database_queue_submit_query()`
-- ✅ **Unified Microsecond Tracking**: Changed internal statistics to track execution times in microseconds (`avg_execution_time_us`) with integer precision, while maintaining millisecond display in test logs for readability
-- ✅ **Corrected JSON Serialization**: Updated `avg_execution_time_us` to serialize as integer instead of float for precise microsecond reporting
-
-**Key Technical Insights**:
-
-- **Statistics Granularity**: Per-database DQM statistics provide better operational visibility than global aggregation, allowing monitoring of individual database performance
-- **Type Safety**: Fixed floating-point arithmetic issues in average execution time calculations to prevent precision loss
-- **Thread Safety**: Maintained atomic operations for statistics counters across concurrent database operations
-- **Average Calculation**: Execution time averaging now correctly handles completed queries only, with proper type conversions for millisecond precision
-- **Timing Precision**: Microsecond-level execution time tracking with integer precision provides accurate performance measurements
-- **Serialization Order Critical**: Setting timestamps before object serialization prevents data corruption in queued operations
-- **Parameter Conversion Architecture**: Database engines must handle their own parameter placeholder conversion (:param → $1, ?) rather than pre-conversion at the API layer
-
-## Implementation Insights - Queries Endpoint Crash Fix (2026-01-19)
-
-**Critical Webserver Configuration Bug Fixed**: Discovered and resolved a fundamental issue where the MHD webserver daemon was not configured with `MHD_ALLOW_SUSPEND_RESUME`, causing immediate crashes when the queries endpoint attempted to suspend connections for long-running parallel queries.
-
-**Root Cause Analysis**:
-
-- Queries endpoint uses `MHD_suspend_connection()` to free webserver threads during parallel query execution
-- Webserver daemon must be started with `MHD_ALLOW_SUSPEND_RESUME` flag to enable suspend/resume functionality
-- Without this flag, MHD throws a fatal error: "Cannot suspend connections without enabling MHD_ALLOW_SUSPEND_RESUME!"
-- This caused the server to abort with SIGABRT, generating core dumps
-
-**Solution Implemented**:
-
-- Added `MHD_ALLOW_SUSPEND_RESUME` flag to webserver daemon initialization in `web_server_core.c`
-- Updated queries endpoint to use proper POST buffering mechanism (`api_buffer_post_data`) instead of raw upload_data parsing
-- Added comprehensive diagnostic logging to identify crash locations during development
-- Ensured all MHD connection suspension operations are properly supported
-
-**Additional Fixes Applied**:
-
-- **POST Buffering Architecture**: Fixed queries endpoint to use the same robust POST body buffering as single query endpoint
-- **Memory Management**: Corrected use-after-free issues in error handling paths
-- **API Consistency**: Ensured all conduit endpoints use consistent request parsing and error handling patterns
-
-**Testing Validation**:
-
-- Queries endpoint now processes multiple parallel queries successfully
-- All 7 database engines pass multiple query tests (7/7)
-- Connection suspension works correctly for long-running batch operations
-- No more crashes or core dumps during query execution
-
-**Key Architectural Lessons**:
-
-1. **Webserver Flags Matter**: MHD daemon configuration flags are critical for advanced features like connection suspension
-2. **Consistent Implementation**: All endpoints using similar functionality (POST buffering, connection suspension) should use identical patterns
-3. **Diagnostic Logging**: Comprehensive logging at each processing step enables rapid identification of crash locations
-4. **Testing Coverage**: Parallel query execution requires thorough testing across all supported database engines
-
-**Future Investigation Items**:
-
-- **Average Execution Time Accuracy**: If averages continue to show as 0.000s, investigate database engine timing measurement. Current implementation relies on `result->execution_time_ms` from database engines, which may not be set correctly in all cases
-- **Query Failure Patterns**: With 7 failures out of 61 total queries, investigate why queries are failing and ensure failures don't skew performance metrics
-- **Per-Queue Statistics Validation**: Verify that Lead/Slow/Medium/Fast/Cache queue statistics accurately reflect actual query distribution and performance
-
-## Implementation Insights - Queries Endpoint Comprehensive Testing (2026-01-19)
-
-**Deduplication Architecture Decision**: The queries endpoint now returns truly deduplicated results instead of replicating them to match input order. This provides significant bandwidth savings and cleaner API semantics:
-
-- **Input**: `[53, 53, 54]` (3 requests with duplication)
-- **Execution**: Only 2 unique queries executed (53, 54)
-- **Output**: `[result53, result54]` (2 deduplicated results)
-- **Client Usage**: Results indexed by `query_ref`, eliminating need for 1:1 input/output mapping
-
-**Test Output Formatting Evolution**: Enhanced `validate_conduit_request()` to provide richer information for batch operations:
-
-- **Queries Endpoint**: "X results, Y total rows, Z bytes"
-- **Single Query Endpoint**: "X rows, Z bytes"
-- **File Path**: Separate line for cleaner log readability
-- **Null Handling**: Robust jq queries with fallback defaults
-
-**Error Handling Patterns Established**: All conduit endpoints now follow consistent error response patterns:
-
-- **Invalid Query Refs**: HTTP 200 with `success=false` + error details
-- **Parameter Errors**: HTTP 200 with `success=false` + validation messages
-- **Empty Arrays**: HTTP 200 with `success=false` + descriptive error
-- **Rate Limits**: HTTP 429 with rate limit details
-
-**Cross-Engine Testing Importance**: Comprehensive testing across all 7 database engines revealed subtle differences in error handling and parameter processing that were addressed uniformly.
-
-## Authenticated Single Query Endpoint - COMPLETED
-
-✅ **COMPLETED**: Implemented `test_conduit_auth_query_comprehensive()` with comprehensive scenarios for valid queries, invalid JWT, expired JWT, wrong database JWT, missing auth, malformed JWT.
-
-**Testing Results**: Test implementation completed, but most tests return HTTP 000 (connection failure). Only "No Auth" test passes with HTTP 401. Server connection issues need to be resolved before full testing can proceed.
-
-This establishes the foundation for authenticated query operations. Next target is authenticated batch queries.
-
-## Next Target: Authenticated Multiple Queries Endpoint
-
-Following the same methodical approach as the auth_query endpoint:
-
-1. **Create `test_conduit_auth_queries_comprehensive()`** with scenarios:
-   - Valid authenticated batch queries with different queryrefs
-   - Invalid JWT tokens in batch requests
-   - JWT from wrong database (cross-database access attempts)
-   - Missing authentication headers
-   - Malformed JWT tokens
-   - Batch with mix of valid and invalid queries
-
-2. **Expected Behavior**:
-   - Uses JWT database context for all queries in batch
-   - Validates JWT before processing any queries
-   - Returns appropriate error responses for authentication failures
-   - Maintains same parameter and result formatting as single auth queries
-
-3. **Implementation Path**:
-   - Follow existing `auth_queries.c` patterns for JWT validation
-   - Use `lookup_database_and_query()` with JWT-extracted database
-   - Test against authenticated queryrefs (different from public ones)
-   - Ensure proper error responses for authentication failures
-
-This approach will establish the foundation for authenticated batch query operations before moving to cross-database access patterns.
-
-## Implementation Insights - Parameter Passing Fix (2026-01-19)
-
-**Critical Architecture Bug Fixed**: Discovered and resolved a fundamental design flaw where the Conduit API layer was pre-converting SQL parameter placeholders (:param → $1, ?) instead of letting database engines handle their own parameter conversion. This caused parameterized queries to fail because the database engines expected to perform the conversion themselves.
-
-**Root Cause Analysis**:
-
-- Conduit `process_parameters()` function was converting named parameters to positional format
-- Converted SQL (with $1, $2, etc.) was stored in `DatabaseQuery.query_template`
-- Database engines attempted to re-convert already-converted SQL, leading to parameter binding failures
-- PostgreSQL logged "Executing without parameters" because parameter arrays were NULL or empty
-
-**Solution Implemented**:
-
-- Modified `prepare_and_submit_query()` to accept original SQL template instead of converted SQL
-- Updated all conduit endpoints (`query`, `queries`, `auth_query`, `auth_queries`, `alt_query`, `alt_queries`) to pass `cache_entry->sql_template` directly
-- Database engines now properly handle parameter conversion from :param format to engine-specific placeholders
-- Parameter JSON is correctly passed to database engines for proper binding
-
-**Testing Validation**:
-
-- Single query endpoint tests now pass 21/21 across 7 databases
-- Invalid query reference tests pass 7/7 across 7 databases
-- Parameter parsing and binding now works correctly for all supported datatypes
-
-**Key Architectural Lesson**:
-
-1. **Separation of Concerns**: API layer should handle request parsing and validation, database engines should handle SQL dialect conversion
-2. **Parameter Binding**: Database engines expect original SQL with named parameters (:param) and separate parameter data structures
-3. **Engine-Specific Conversion**: Each database engine (PostgreSQL, MySQL, SQLite, etc.) handles its own placeholder conversion ($1 vs ?)
-4. **Testing Importance**: Parameterized query functionality must be tested end-to-end across all supported database engines
-
-This fix enables proper parameterized query execution, preventing SQL injection vulnerabilities and ensuring type-safe parameter binding across all supported database engines.
-
-## Implementation Insights - Statistics Timing Fixes (2026-01-19)
-
-**Critical Serialization Order Bug**: The most significant issue discovered was that `submitted_at_ns` timestamps were being set **after** query serialization to JSON. This caused enqueued queries to have `submitted_at_ns = 0`, leading to execution time calculations of `completion_us - 0 = completion_us` (a timestamp instead of duration). The fix required moving timestamp setting before JSON serialization in `database_queue_submit_query()`.
-
-**Microsecond Precision Achieved**: The system now tracks execution times with microsecond precision internally using integer arithmetic, providing accurate performance measurements. The API reports `avg_execution_time_us` as integers, while test logs display converted millisecond values for readability.
-
-**Data Type Evolution**: Started with `unsigned long long` for counters, moved to `double` for averaging, then back to `unsigned long long` for integer microsecond precision. This evolution reflects the need for exact timing measurements over floating-point approximations.
-
-**Thread-Safe Statistics**: All statistics updates use atomic operations (`__sync_fetch_and_add`) ensuring accurate metrics across concurrent database operations without performance penalties.
-
-**Key Lessons for Future Development**:
-
-1. **Serialization Order Matters**: Always set timestamps and computed fields before serializing objects to persistent storage
-2. **Integer vs Float Precision**: For timing measurements, integer microseconds provide better precision than floating-point milliseconds
-3. **API Consistency**: Maintain consistent data types in JSON responses (integers for counts/timing, floats only when necessary)
-4. **Test Display Formatting**: Convert internal units for display while keeping raw data intact for programmatic use
-
-## Conduit Implementation Checklist
+## Implementation Checklist
 
 ### Phase 1: Query Table Cache (QTC) Foundation ✅ **COMPLETED**
 
@@ -321,6 +96,11 @@ This fix enables proper parameterized query execution, preventing SQL injection 
 
 ### Phase 6: Webserver Resource Suspension ✅ **COMPLETED**
 
+- [x] **Implement suspension mechanism**: Added webserver resource suspension for long-running queries in `/api/conduit/queries` and `/api/conduit/auth_queries` endpoints using MHD connection suspension
+- [x] **Add suspension to plural endpoints**: Integrated resource suspension into both `/api/conduit/queries` and `/api/conduit/auth_queries` handlers with proper mutex protection
+- [x] **Test thread pool protection**: Suspension prevents thread pool exhaustion during batch operations by freeing the webserver thread while queries execute
+- [x] **Validate synchronous semantics**: Clients receive synchronous API responses despite internal parallel query execution
+
 ### Phase 6.5: Conduit-Specific Rate Limiting ✅ **COMPLETED**
 
 - [x] **Add MaxQueriesPerRequest parameter**: Added `MaxQueriesPerRequest` (default: 10, range: 1-100) to `DatabaseConnection` struct in `config_databases.h`
@@ -333,11 +113,6 @@ This fix enables proper parameterized query execution, preventing SQL injection 
 - [x] **Add unit tests**: Test rate limiting validation logic including deduplication scenarios
 
 **Note**: Broader API rate limiting (e.g., 60 requests/minute per client) should be implemented at the webserver/API level as a separate feature, not specific to Conduit endpoints.
-
-- [x] **Implement suspension mechanism**: Added webserver resource suspension for long-running queries in `/api/conduit/queries` and `/api/conduit/auth_queries` endpoints using MHD connection suspension
-- [x] **Add suspension to plural endpoints**: Integrated resource suspension into both `/api/conduit/queries` and `/api/conduit/auth_queries` handlers with proper mutex protection
-- [x] **Test thread pool protection**: Suspension prevents thread pool exhaustion during batch operations by freeing the webserver thread while queries execute
-- [x] **Validate synchronous semantics**: Clients receive synchronous API responses despite internal parallel query execution
 
 ### Phase 7: Comprehensive Testing
 
@@ -862,6 +637,38 @@ This approach enables reliable testing in development environments where databas
 - **Queue Health Metrics**: Consider adding queue depth and thread utilization metrics to status responses
 - **Historical Trending**: Implement time-windowed statistics for performance analysis
 - **Alert Thresholds**: Add configurable thresholds for automated monitoring and alerting
+
+## Implementation Insights - JSON Validation Middleware (2026-01-20)
+
+**API-Level JSON Validation Success**: Implemented comprehensive JSON validation middleware at the API service level that validates all incoming POST requests for endpoints expecting JSON bodies. This provides early rejection of malformed requests with detailed error messages.
+
+**Middleware Architecture**:
+
+- **Location**: `handle_api_request()` in `api_service.c` performs JSON validation after JWT auth but before endpoint routing
+- **Coverage**: All endpoints expecting JSON (conduit endpoints + auth endpoints + system endpoints)
+- **Validation**: Uses jansson's `json_loads()` with error reporting to detect invalid JSON
+- **Error Response**: Returns HTTP 400 with structured error response: `{"error": "Invalid JSON", "message": "Unexpected token at position X"}`
+
+**Key Technical Insights**:
+
+1. **Early Validation**: JSON validation occurs before POST data buffering completes, saving server resources
+2. **Detailed Error Messages**: Uses jansson's `json_error_t.position` field to provide precise error location
+3. **Consistent Error Format**: All JSON validation errors follow the same response structure
+4. **Broad Coverage**: Applies to all JSON-expecting endpoints, not just conduit endpoints
+5. **Performance**: Minimal overhead - only validates when endpoint expects JSON and method is POST
+
+**Implementation Benefits**:
+
+- **Security**: Prevents malformed JSON from reaching business logic
+- **User Experience**: Provides clear, actionable error messages for API clients
+- **Consistency**: All JSON endpoints now have uniform validation behavior
+- **Maintainability**: Centralized validation logic reduces code duplication
+
+**Future Considerations**:
+
+- **Content-Type Validation**: Could extend to validate Content-Type: application/json headers
+- **Request Size Limits**: Could add configurable maximum request body size validation
+- **Schema Validation**: Could extend to JSON schema validation for specific endpoints
 
 ## Implementation Insights - Methodical Query Testing (2026-01-19)
 

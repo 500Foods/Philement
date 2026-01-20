@@ -184,4 +184,5 @@ in the migrations themselves so that they get populated in the database directly
 | [1147](/elements/002-helium/acuranzo/migrations/acuranzo_1147.lua) | numbers | 1.0.0 | 2026-01-16 | 6 | ✓ | Creates and populates the numbers table |
 | [1148](/elements/002-helium/acuranzo/migrations/acuranzo_1148.lua) | queries | 1.0.0 | 2026-01-17 | 4 | ✗ | QueryRef #054 - Get Icons |
 | [1149](/elements/002-helium/acuranzo/migrations/acuranzo_1149.lua) | queries | 1.0.0 | 2026-01-19 | 4 | ✗ | QueryRef #055 - Get Number Range |
-| **150** | | | | **787** | **150** | |
+| [1150](/elements/002-helium/acuranzo/migrations/acuranzo_1150.lua) | queries | 1.0.0 | 2026-01-20 | 4 | ✗ | QueryRef #056 - Query Error Handling |
+| **151** | | | | **791** | **151** | |

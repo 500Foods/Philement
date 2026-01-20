@@ -18,6 +18,9 @@
 # analyze_conduit_test_results()
 
 # CHANGELOG
+# 1.7.0 - 2026-01-20 - Added invalid JSON test case to verify JSON validation middleware
+#                    - Added invalid database test case to verify database selection validation
+#                    - Enhanced error handling test coverage for malformed requests and invalid database names
 # 1.5.0 - 2026-01-19 - Major refactoring to simplify unified server testing
 #                    - Renamed run_conduit_test_parallel() to run_conduit_test_unified()
 #                    - Extracted server lifecycle management to conduit_utils.sh
@@ -52,7 +55,7 @@ TEST_NAME="Conduit Endpoints  {BLUE}CDT: 0{RESET}"
 TEST_ABBR="QRY"
 TEST_NUMBER="51"
 TEST_COUNTER=0
-TEST_VERSION="1.5.0"
+TEST_VERSION="1.7.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -321,6 +324,10 @@ EOF
         "FINISH": 600
       }
     }
+  },
+  {
+    "query_ref": 45,
+    "params": {}
   }
 ]
 EOF
@@ -360,11 +367,115 @@ EOF
 EOF
 )
 
+        # Test 6: Query with missing required parameters to generate message
+        local queries_missing_params
+        queries_missing_params=$(cat <<EOF
+[
+  {
+    "query_ref": 45,
+    "params": {}
+  }
+]
+EOF
+)
+
         local response_file_empty="${result_file}.queries_empty_${db_engine}.json"
 
         # Expect 200 with success=false response for empty queries array
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_empty}" "200" "${response_file_empty}" "" "Queries Empty Array (${db_engine})" "false"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+        total_tests=$(( total_tests + 1 ))
+
+        # Test 6: Query with missing required parameters to generate message
+        local payload_missing_params
+        payload_missing_params=$(cat <<EOF
+{
+  "database": "${db_name}",
+  "queries": ${queries_missing_params}
+}
+EOF
+)
+
+        local response_file_missing_params="${result_file}.queries_missing_params_${db_engine}.json"
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_missing_params}" "200" "${response_file_missing_params}" "" "Queries Missing Params (${db_engine})"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+        total_tests=$(( total_tests + 1 ))
+
+        # Test 7: Query that triggers database error (division by zero) to test error message propagation
+        local queries_db_error
+        queries_db_error=$(cat <<EOF
+[
+  {
+    "query_ref": 56,
+    "params": {
+      "INTEGER": {
+        "NUMERATOR": 10,
+        "DENOMINATOR": 0
+      }
+    }
+  }
+]
+EOF
+)
+
+        local payload_db_error
+        payload_db_error=$(cat <<EOF
+{
+  "database": "${db_name}",
+  "queries": ${queries_db_error}
+}
+EOF
+)
+
+        local response_file_db_error="${result_file}.queries_db_error_${db_engine}.json"
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_db_error}" "422" "${response_file_db_error}" "" "Queries DB Error: Division by Zero (${db_engine})" "false"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+        total_tests=$(( total_tests + 1 ))
+
+        # Test 8: Invalid JSON - send malformed JSON to test JSON validation middleware
+        local invalid_json_payload='{ "database": "Demo_PG", "queries": [ { "query_ref": 53, "params": {} } '  # Missing closing brace
+
+        local response_file_invalid_json="${result_file}.queries_invalid_json_${db_engine}.json"
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${invalid_json_payload}" "400" "${response_file_invalid_json}" "" "Queries Invalid JSON (${db_engine})"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+        total_tests=$(( total_tests + 1 ))
+
+        # Test 9: Invalid database - send valid JSON with non-existent database name
+        local queries_invalid_db
+        queries_invalid_db=$(cat <<EOF
+[
+ {
+   "query_ref": 53,
+   "params": {}
+ }
+]
+EOF
+)
+
+        local payload_invalid_db
+        payload_invalid_db=$(cat <<EOF
+{
+ "database": "Invalid_Database",
+ "queries": ${queries_invalid_db}
+}
+EOF
+)
+
+        local response_file_invalid_db="${result_file}.queries_invalid_db_${db_engine}.json"
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_invalid_db}" "400" "${response_file_invalid_db}" "" "Queries Invalid Database (${db_engine})" "false"; then
             tests_passed=$(( tests_passed + 1 ))
         fi
         total_tests=$(( total_tests + 1 ))

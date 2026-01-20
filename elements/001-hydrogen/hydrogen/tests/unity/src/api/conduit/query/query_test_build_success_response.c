@@ -11,7 +11,7 @@
 #include <src/database/database_cache.h>
 // Forward declaration for the function being tested
 json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry,
-                               const QueryResult* result, const DatabaseQueue* selected_queue);
+                               const QueryResult* result, const DatabaseQueue* selected_queue, const char* message);
 
 // Mock structures for testing
 typedef struct MockQueryCacheEntry {
@@ -64,7 +64,7 @@ void test_build_success_response_basic_empty(void) {
     char queue_type1[] = "fast";
     MockDatabaseQueue selected_queue = { .database_name = NULL, .connection_string = NULL, .engine_type = DB_ENGINE_POSTGRESQL, .queue_type = queue_type1 };
 
-    json_t* response = build_success_response(query_ref, (const QueryCacheEntry*)&cache_entry, (const QueryResult*)&result, (const DatabaseQueue*)&selected_queue);
+    json_t* response = build_success_response(query_ref, (const QueryCacheEntry*)&cache_entry, (const QueryResult*)&result, (const DatabaseQueue*)&selected_queue, NULL);
 
     TEST_ASSERT_NOT_NULL(response);
     TEST_ASSERT_TRUE(json_is_object(response));
@@ -114,7 +114,7 @@ void test_build_success_response_with_data(void) {
     char queue_type2[] = "medium";
     MockDatabaseQueue selected_queue = { .database_name = NULL, .connection_string = NULL, .engine_type = DB_ENGINE_POSTGRESQL, .queue_type = queue_type2 };
 
-    json_t* response = build_success_response(query_ref, (const QueryCacheEntry*)&cache_entry, (const QueryResult*)&result, (const DatabaseQueue*)&selected_queue);
+    json_t* response = build_success_response(query_ref, (const QueryCacheEntry*)&cache_entry, (const QueryResult*)&result, (const DatabaseQueue*)&selected_queue, NULL);
 
     TEST_ASSERT_NOT_NULL(response);
 
@@ -146,7 +146,7 @@ void test_build_success_response_null_description(void) {
     char queue_type3[] = "slow";
     MockDatabaseQueue selected_queue = { .database_name = NULL, .connection_string = NULL, .engine_type = DB_ENGINE_POSTGRESQL, .queue_type = queue_type3 };
 
-    json_t* response = build_success_response(query_ref, (const QueryCacheEntry*)&cache_entry, (const QueryResult*)&result, (const DatabaseQueue*)&selected_queue);
+    json_t* response = build_success_response(query_ref, (const QueryCacheEntry*)&cache_entry, (const QueryResult*)&result, (const DatabaseQueue*)&selected_queue, NULL);
 
     TEST_ASSERT_NOT_NULL(response);
 

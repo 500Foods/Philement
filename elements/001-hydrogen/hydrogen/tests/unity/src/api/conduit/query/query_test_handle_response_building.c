@@ -21,7 +21,7 @@
 
 // Mock for build_response_json
 json_t* mock_build_response_json(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
-                                const DatabaseQueue* selected_queue, PendingQueryResult* pending);
+                                const DatabaseQueue* selected_queue, PendingQueryResult* pending, const char* message);
 
 // Mock for api_send_json_response
 enum MHD_Result mock_api_send_json_response(struct MHD_Connection *connection, json_t* response, unsigned int status);
@@ -48,7 +48,7 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
                                         const char* database, const QueryCacheEntry* cache_entry,
                                         const DatabaseQueue* selected_queue, PendingQueryResult* pending,
                                         char* query_id, char* converted_sql, ParameterList* param_list,
-                                        TypedParameter** ordered_params);
+                                        TypedParameter** ordered_params, const char* message);
 
 void setUp(void) {
     mock_system_reset_all();
@@ -65,12 +65,13 @@ void tearDown(void) {
 
 // Mock implementations
 json_t* mock_build_response_json(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
-                                const DatabaseQueue* selected_queue, PendingQueryResult* pending) {
+                                const DatabaseQueue* selected_queue, PendingQueryResult* pending, const char* message) {
     (void)query_ref;
     (void)database;
     (void)cache_entry;
     (void)selected_queue;
     (void)pending;
+    (void)message;
 
     if (mock_response_result) {
         return json_copy(mock_response_result);
@@ -116,7 +117,7 @@ void test_handle_response_building_success(void) {
 
     enum MHD_Result result = handle_response_building((struct MHD_Connection*)&mock_connection, 123, "test_db",
                                                      &cache_entry, &selected_queue, &pending, query_id,
-                                                     converted_sql, param_list, ordered_params);
+                                                     converted_sql, param_list, ordered_params, NULL);
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
 

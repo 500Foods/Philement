@@ -44,7 +44,7 @@ table.insert(queries,{sql=[[
                 new_query_id                                                        AS query_id,
                 ${QUERY_REF}                                                        AS query_ref,
                 ${STATUS_ACTIVE}                                                    AS query_status_a27,
-                ${TYPE_SQL}                                                         AS query_type_a28,
+                ${TYPE_PUBLIC}                                                      AS query_type_a28,
                 ${DIALECT}                                                          AS query_dialect_a30,
                 ${QTC_CACHED}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,

@@ -6,27 +6,30 @@
  */
 
  // Project includes
-#include <src/hydrogen.h>
-#include <src/webserver/web_server_core.h>
-
-// Local includes
-#include "api_service.h"
-#include "api_utils.h"
-#include "system/version/version.h"
-#include "system/system_service.h"
-#include "system/upload/upload.h"
-#include "conduit/conduit_service.h"
-#include "conduit/query/query.h"
-#include "conduit/auth_query/auth_query.h"
-#include "conduit/auth_queries/auth_queries.h"
-#include "conduit/queries/queries.h"
-#include "conduit/alt_query/alt_query.h"
-#include "conduit/alt_queries/alt_queries.h"
-#include "conduit/status/status.h"
-#include "auth/login/login.h"
-#include "auth/renew/renew.h"
-#include "auth/logout/logout.h"
-#include "auth/register/register.h"
+ #include <src/hydrogen.h>
+ #include <src/webserver/web_server_core.h>
+ 
+ // Third-party libraries
+ #include <jansson.h>
+ 
+ // Local includes
+ #include "api_service.h"
+ #include "api_utils.h"
+ #include "system/version/version.h"
+ #include "system/system_service.h"
+ #include "system/upload/upload.h"
+ #include "conduit/conduit_service.h"
+ #include "conduit/query/query.h"
+ #include "conduit/auth_query/auth_query.h"
+ #include "conduit/auth_queries/auth_queries.h"
+ #include "conduit/queries/queries.h"
+ #include "conduit/alt_query/alt_query.h"
+ #include "conduit/alt_queries/alt_queries.h"
+ #include "conduit/status/status.h"
+ #include "auth/login/login.h"
+ #include "auth/renew/renew.h"
+ #include "auth/logout/logout.h"
+ #include "auth/register/register.h"
 
 
 // Simple hardcoded endpoint validator and handler for /api/version
@@ -310,13 +313,45 @@ static bool endpoint_requires_auth(const char *path) {
         "conduit/alt_queries",
         NULL  // Sentinel
     };
-    
+
     for (int i = 0; protected_endpoints[i] != NULL; i++) {
         if (strcmp(path, protected_endpoints[i]) == 0) {
             return true;
         }
     }
-    
+
+    return false;
+}
+
+/**
+ * Check if an endpoint path expects JSON in the request body.
+ * Returns true if the endpoint expects JSON, false otherwise.
+ */
+static bool endpoint_expects_json(const char *path) {
+    // List of endpoints that expect JSON in POST body
+    static const char *json_endpoints[] = {
+        "auth/login",
+        "auth/renew",
+        "auth/logout",
+        "auth/register",
+        "system/test",
+        "system/config",
+        "system/upload",
+        "conduit/query",
+        "conduit/queries",
+        "conduit/auth_query",
+        "conduit/auth_queries",
+        "conduit/alt_query",
+        "conduit/alt_queries",
+        NULL  // Sentinel
+    };
+
+    for (int i = 0; json_endpoints[i] != NULL; i++) {
+        if (strcmp(path, json_endpoints[i]) == 0) {
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -383,10 +418,12 @@ static enum MHD_Result check_jwt_auth(struct MHD_Connection *connection,
  * in app_config->api.prefix - there is no default prefix.
  *
  * MIDDLEWARE ARCHITECTURE:
- * On the FIRST callback (*con_cls == NULL), this function performs JWT
- * authentication for protected endpoints BEFORE any POST data buffering.
- * This saves server resources by immediately rejecting unauthorized requests
- * without allocating buffers or processing POST data.
+ * 1. On the FIRST callback (*con_cls == NULL), perform JWT authentication
+ *    for protected endpoints BEFORE any POST data buffering.
+ * 2. For endpoints expecting JSON, validate POST data is valid JSON
+ *    before routing to endpoint handlers.
+ * This saves server resources by immediately rejecting invalid requests
+ * without processing them further.
  *
  * Example request flow with prefix "/custom":
  * 1. Webserver receives: GET "/custom/system/health"
@@ -453,7 +490,7 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     if (*con_cls == NULL) {
         json_t *auth_error_response = NULL;
         enum MHD_Result auth_result = check_jwt_auth(connection, path, &auth_error_response);
-        
+
         if (auth_result == MHD_NO) {
             // Authentication failed - send 401 response immediately
             log_this(SR_AUTH, "Early JWT authentication failed for %s - returning 401",
@@ -461,6 +498,64 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
             return api_send_json_response(connection, auth_error_response, MHD_HTTP_UNAUTHORIZED);
         }
         // Note: check_jwt_auth returns MHD_YES if auth passes OR if endpoint doesn't require auth
+    }
+
+    // ========================================================================
+    // JSON VALIDATION MIDDLEWARE
+    // For endpoints that expect JSON in the request body, validate that the
+    // POST data is valid JSON before routing to the endpoint handler.
+    // ========================================================================
+    if (endpoint_expects_json(path) && strcmp(method, "POST") == 0) {
+        // Use common POST body buffering for JSON validation
+        ApiPostBuffer *buffer = NULL;
+        ApiBufferResult buf_result = api_buffer_post_data(method, upload_data, upload_data_size, con_cls, &buffer);
+
+        switch (buf_result) {
+            case API_BUFFER_CONTINUE:
+                // More data expected for POST, continue receiving
+                return MHD_YES;
+
+            case API_BUFFER_ERROR:
+                // Error occurred during buffering
+                return api_send_error_and_cleanup(connection, con_cls,
+                    "Request processing error", MHD_HTTP_INTERNAL_SERVER_ERROR);
+
+            case API_BUFFER_METHOD_ERROR:
+                // Unsupported HTTP method
+                return api_send_error_and_cleanup(connection, con_cls,
+                    "Method not allowed - use POST", MHD_HTTP_METHOD_NOT_ALLOWED);
+
+            case API_BUFFER_COMPLETE:
+                // All data received, validate JSON
+                if (!buffer->data || buffer->size == 0) {
+                    // Missing request body
+                    api_free_post_buffer(con_cls);
+                    json_t *error_response = json_object();
+                    json_object_set_new(error_response, "error", json_string("Invalid JSON"));
+                    json_object_set_new(error_response, "message", json_string("Request body is empty"));
+                    return api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+                }
+
+                // Validate JSON
+                json_error_t json_error;
+                json_t *test_json = json_loads(buffer->data, 0, &json_error);
+                if (!test_json) {
+                    // Invalid JSON - send detailed error response
+                    api_free_post_buffer(con_cls);
+                    char error_msg[256];
+                    snprintf(error_msg, sizeof(error_msg), "Unexpected token at position %d", json_error.position);
+                    json_t *error_response = json_object();
+                    json_object_set_new(error_response, "error", json_string("Invalid JSON"));
+                    json_object_set_new(error_response, "message", json_string(error_msg));
+                    log_this(SR_API, "JSON validation failed for %s: %s", LOG_LEVEL_ERROR, 2, path, json_error.text);
+                    return api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+                }
+
+                // JSON is valid, clean up test parse
+                json_decref(test_json);
+                // Note: buffer will be freed by the endpoint handler
+                break;
+        }
     }
 
     /*

@@ -294,7 +294,7 @@ enum MHD_Result handle_conduit_alt_query_request(
     DatabaseQueue *db_queue = NULL;
     QueryCacheEntry *cache_entry = NULL;
     bool query_not_found = false;
-    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found);
+    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found, false);
     if (result != MHD_YES) {
         free(database);
         if (params_json) {
@@ -305,7 +305,7 @@ enum MHD_Result handle_conduit_alt_query_request(
 
     // Handle invalid queryref case
     if (query_not_found) {
-        json_t* response = build_invalid_queryref_response(query_ref, database);
+        json_t* response = build_invalid_queryref_response(query_ref, database, NULL);
         enum MHD_Result http_result = api_send_json_response(connection, response, MHD_HTTP_OK);
         json_decref(response);
         free(database);
@@ -433,7 +433,7 @@ enum MHD_Result handle_conduit_alt_query_request(
     pthread_mutex_unlock(&webserver_suspend_lock);
 
     // Step 13: Build response
-    json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending);
+    json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, NULL);
     unsigned int http_status = json_is_true(json_object_get(response, "success")) ?
                               MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
 

@@ -351,7 +351,7 @@ print_command() {
     else
         truncated_cmd="${processed_cmd}"
     fi
-    local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${EXEC_COLOR}${EXEC_ICON} ${EXEC_COLOR}EXEC${NC}   ${EXEC_COLOR}${truncated_cmd}${NC}"
+    local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${EXEC_COLOR}${EXEC_ICON} ${EXEC_COLOR}EXEC${NC}     ${EXEC_COLOR}${truncated_cmd}${NC}"
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         OUTPUT_COLLECTION+="${formatted_output}\n"
     else
@@ -376,7 +376,11 @@ print_output() {
 
     # Skip output if message is empty or contains only whitespace
     if [[ -n "${processed_message}" && ! "${processed_message}" =~ ^[[:space:]]*$ ]]; then
-        local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${processed_message}${NC}"
+        if [[ "${TEST_COUNTER}" -ne $((TEST_PASSED_COUNT + TEST_FAILED_COUNT)) ]]; then
+            local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}     ${DATA_COLOR}${processed_message}${NC}"
+        else
+            local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${processed_message}${NC}"
+        fi
         if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
             OUTPUT_COLLECTION+="${formatted_output}\n"
         else
@@ -432,7 +436,7 @@ print_warning() {
     # Process message to replace full paths with relative paths
     processed_message=$(process_message "${message}")
 
-    local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${processed_message}"
+    local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}     ${processed_message}"
 
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         OUTPUT_COLLECTION+="${formatted_output}\n"
@@ -488,7 +492,11 @@ print_message() {
         processed_message="${message}"
     fi
 
-    local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${processed_message}"
+    if [[ "${TEST_COUNTER}" -ne $((TEST_PASSED_COUNT + TEST_FAILED_COUNT)) ]]; then
+        local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}     ${processed_message}"
+    else
+        local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${processed_message}"
+    fi
 
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         OUTPUT_COLLECTION+="${formatted_output}\n"

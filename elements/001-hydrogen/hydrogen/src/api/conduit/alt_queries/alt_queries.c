@@ -313,14 +313,21 @@ static PendingQueryResult* submit_single_query(const char *database, json_t *que
  * @param cache_entry Query cache entry
  * @param selected_queue Queue that was used
  * @param pending Pending result to wait for
+ * @param params Query parameters for message generation
  * @return JSON response object
  */
 static json_t* wait_and_build_single_response(const char *database, int query_ref,
                                              const QueryCacheEntry *cache_entry, const DatabaseQueue *selected_queue,
-                                             PendingQueryResult *pending)
+                                             PendingQueryResult *pending, json_t *params)
 {
+    // Generate parameter validation messages
+    char* message = generate_parameter_messages(cache_entry->sql_template, params);
+
     // Build response using helper from query.h (this waits internally)
-    json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending);
+    json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
+
+    // Clean up message
+    if (message) free(message);
 
     log_this(SR_AUTH, "wait_and_build_single_response: Query completed, query_ref=%d",
              LOG_LEVEL_DEBUG, 1, query_ref);
@@ -483,9 +490,11 @@ enum MHD_Result handle_conduit_alt_queries_request(
     bool all_success = true;
 
     for (size_t i = 0; i < query_count; i++) {
+        json_t *query_obj = json_array_get(queries_array, i);
+        json_t *params = query_obj ? json_object_get(query_obj, "params") : NULL;
         json_t *query_result = wait_and_build_single_response(database, query_refs[i],
                                                             cache_entries[i], selected_queues[i],
-                                                            pending_results[i]);
+                                                            pending_results[i], params);
 
         // Check if query succeeded
         json_t *success_field = json_object_get(query_result, "success");

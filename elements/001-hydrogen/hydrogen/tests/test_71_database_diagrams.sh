@@ -60,8 +60,7 @@ find_project_root() {
 
 # Calculate absolute path to helium directory
 PROJECT_DIR="$(find_project_root)"
-HELIUM_DIR="${PROJECT_DIR}/elements/002-helium"
-HELIUM_DIR="$(cd "${HELIUM_DIR}" && pwd 2>/dev/null || echo "${HELIUM_DIR}")"
+HELIUM_DIR=${HELIUM_ROOT}
 
 # List of designs to process
 # DESIGNS=( "acuranzo" "helium" "glm" "gaius")
