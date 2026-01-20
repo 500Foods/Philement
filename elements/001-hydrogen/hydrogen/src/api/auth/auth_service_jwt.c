@@ -310,10 +310,17 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
         }
     }
 
+    // Extract IP address for revocation check
+    const char* ip_address = NULL;
+    json_t* ip_json_revocation = json_object_get(payload_json, "ip");
+    if (ip_json_revocation && json_is_string(ip_json_revocation)) {
+        ip_address = json_string_value(ip_json_revocation);
+    }
+
     // Check if token is revoked (requires database)
     if (db_to_use) {
         char* token_hash = compute_token_hash(token);
-        if (is_token_revoked(token_hash, db_to_use)) {
+        if (is_token_revoked(token_hash, ip_address, db_to_use)) {
             free(token_hash);
             json_decref(payload_json);
             free(token_copy);
