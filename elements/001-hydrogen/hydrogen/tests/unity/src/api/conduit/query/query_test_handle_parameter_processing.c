@@ -41,10 +41,11 @@ void test_handle_parameter_processing_failure(void);
 
 // Forward declaration for the function being tested
 enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, json_t* params_json,
-                                          const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
-                                          const char* database, int query_ref,
-                                          ParameterList** param_list, char** converted_sql,
-                                          TypedParameter*** ordered_params, size_t* param_count);
+                                           const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
+                                           const char* database, int query_ref,
+                                           ParameterList** param_list, char** converted_sql,
+                                           TypedParameter*** ordered_params, size_t* param_count,
+                                           char** message);
 
 void setUp(void) {
     mock_system_reset_all();
@@ -97,10 +98,11 @@ void test_handle_parameter_processing_success(void) {
     char* converted_sql = NULL;
     TypedParameter** ordered_params = NULL;
     size_t param_count = 0;
+    char* message = NULL;
 
     enum MHD_Result result = handle_parameter_processing((struct MHD_Connection*)&mock_connection, params_json,
-                                                       &db_queue, &cache_entry, "test_db", 123,
-                                                       &param_list, &converted_sql, &ordered_params, &param_count);
+                                                        &db_queue, &cache_entry, "test_db", 123,
+                                                        &param_list, &converted_sql, &ordered_params, &param_count, &message);
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
     TEST_ASSERT_NOT_NULL(param_list);
@@ -127,10 +129,11 @@ void test_handle_parameter_processing_failure(void) {
     char* converted_sql = NULL;
     TypedParameter** ordered_params = NULL;
     size_t param_count = 0;
+    char* message = NULL;
 
     enum MHD_Result result = handle_parameter_processing((struct MHD_Connection*)&mock_connection, params_json,
-                                                       NULL, &cache_entry, "test_db", 123,
-                                                       &param_list, &converted_sql, &ordered_params, &param_count);
+                                                        NULL, &cache_entry, "test_db", 123,
+                                                        &param_list, &converted_sql, &ordered_params, &param_count, &message);
 
     TEST_ASSERT_EQUAL(MHD_NO, result);
 

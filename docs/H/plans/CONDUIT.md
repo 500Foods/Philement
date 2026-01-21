@@ -142,8 +142,22 @@
     - **Invalid query references** ✅:
       - Query -100 - **WORKING**: Correctly returns "fail" with "queryref not found or not public" message
     - **Invalid JSON validation** ✅:
-      - Malformed JSON (missing closing bracket) - **WORKING**: Correctly returns HTTP 400 Bad Request
+      - Malformed JSON (missing closing bracket) - **WORKING**: Correctly returns HTTP 400 Bad Request with detailed error messages
+    - **Parameter validation** ✅:
+      - Wrong parameter names/types - **WORKING**: Returns HTTP 400 with clear error messages
+      - Missing required parameters - **WORKING**: Returns HTTP 400 with parameter requirement details
+    - **Database error handling** ✅:
+      - Division by zero (Query #56) - **WORKING**: Returns HTTP 422 for engines that treat it as error, HTTP 200 with warning for engines that don't
+    - **Response format validation** ✅:
+      - All responses include Success, Rows, Response size summary
+      - Error responses include Error and Message fields when applicable
+      - Result files saved for debugging with formatted file sizes
     - **Database delimiters** ✅: Added clear visual separators between each database test for improved readability
+    - **Test framework improvements** ✅:
+      - Fixed false failure detection for error cases
+      - Enhanced response summary display
+      - Dynamic engine count in test titles
+      - Special handling for database-specific behaviors (division by zero)
   - [x] **Step 6: Multiple queries endpoint testing** - Test `/api/conduit/queries` POST with batch requests across all ready databases ✅
   - [x] **Step 6.5: Comprehensive queries testing** - Added `test_conduit_queries_comprehensive()` with deduplication, error handling, and cross-database validation ✅
   - [x] **Step 7: Authenticated single query testing** - Test `/api/conduit/auth_query` POST using JWT authentication ✅
@@ -445,19 +459,24 @@ The current implementation has complex parameter processing with 10 steps. We ne
 
 ### Phase 9: Parameter Processing Refactor
 
-#### Step 9.1: Simplify Parameter Validation Logic ✅ **READY TO START**
+#### Step 9.1: Simplify Parameter Validation Logic ✅ **COMPLETED**
 
 - **Objective**: Replace complex `analyze_parameter_validation()` with simple, clear validation functions
 - **Current State**: 200+ lines of complex analysis with multiple memory allocations
 - **Target State**: Simple functions that fail fast with clear error messages
-- **Implementation**:
+- **Implementation** ✅:
   - Create `validate_parameter_types_simple()` - checks type mismatches only
   - Create `check_missing_parameters_simple()` - finds missing required params
   - Create `check_unused_parameters_simple()` - identifies unused params (warning only)
-  - Replace `handle_parameter_processing()` main logic
-- **Testing**: Test with existing parameterless queries first, then add parameter validation
-- **Files**: `parameter_processing.c`, `query.c`
-- **Verification**: Run `mkt` and test with `test_50_conduit_query.sh`
+  - Replace `handle_parameter_processing()` main logic with 5-step flow
+- **Testing**: Verified with parameterless queries, parameterized queries, and error cases
+- **Files**: `parameter_processing.c`, `query.c`, `query_execution.c`, headers, and tests
+- **Verification**: `mkt` passes, `test_50_conduit_query.sh` validates functionality
+- **Key Insights**:
+  - **Message Flow**: Parameter processing now sets `message` for unused parameters in successful responses
+  - **Error Combination**: Database errors are combined with parameter messages using " | " separator
+  - **Memory Management**: Proper cleanup in all error paths prevents leaks
+  - **Type Safety**: All function signatures updated consistently across endpoints
 
 #### Step 9.2: Reorder Validation to Match Desired Flow
 
@@ -723,6 +742,34 @@ This approach enables reliable testing in development environments where databas
 
 **Foundation for Future Tests**: Test 50's success validates the testing framework and provides a proven pattern for implementing tests 51-55 with minimal additional development effort.
 
+## Implementation Insights - Test Framework Robustness (2026-01-21)
+
+**Database Engine Behavioral Variations Success**: The Test 50 implementation revealed and properly handled significant behavioral differences between database engines:
+
+- **Division by Zero Handling**: Some engines (MySQL) return successful results for division by zero operations, while others (PostgreSQL) correctly treat it as a database error. The test framework now accommodates both behaviors with appropriate warnings and pass/fail logic.
+
+- **Error Response Validation**: Enhanced test validation to accept both expected error codes (422) and unexpected success codes (200) for operations that may behave differently across engines, ensuring comprehensive testing without false failures.
+
+- **Response Format Standardization**: Implemented consistent response summary display across all test cases, showing Success, Rows, and Response size in a single readable line, with Error/Message fields for failures.
+
+**Test Framework Architecture Improvements**:
+
+1. **Flexible Success Criteria**: Modified `validate_conduit_request()` to support "none" as expected_success parameter to skip success field validation for error cases.
+
+2. **Dynamic Test Configuration**: Test titles now dynamically display engine count using `${#DATABASE_NAMES[@]}` instead of hardcoded values.
+
+3. **Special Case Handling**: Custom test logic for operations with known cross-engine behavioral differences, providing warnings rather than failures.
+
+4. **Response Summary Enhancement**: All API responses now display key metrics (success status, row count, response size) in a standardized format for better debugging and validation.
+
+**Key Technical Lessons**:
+
+- **Engine-Specific Behaviors**: Database engines have significant behavioral differences that must be accommodated in testing frameworks rather than treated as uniform expectations.
+
+- **Warning vs Failure Logic**: Some "unexpected" behaviors are valid engine differences that should generate warnings but not test failures.
+
+- **Test Framework Flexibility**: Robust test frameworks must handle both expected and acceptable unexpected behaviors to provide meaningful validation across diverse systems.
+
 ## Implementation Insights - Test Development Best Practices (2026-01-19)
 
 **Methodical Testing Approach Success**: The restructured test_51_conduit.sh demonstrates the value of incremental, foundation-first testing:
@@ -814,6 +861,26 @@ This approach enables reliable testing in development environments where databas
 - **Content-Type Validation**: Could extend to validate Content-Type: application/json headers
 - **Request Size Limits**: Could add configurable maximum request body size validation
 - **Schema Validation**: Could extend to JSON schema validation for specific endpoints
+
+## Implementation Insights - Parameter Processing Refactor (2026-01-21)
+
+**Phase 9.1 Success**: The parameter processing refactor dramatically simplified the codebase while improving functionality:
+
+- **Code Reduction**: Replaced 200+ lines of complex analysis with three focused, testable functions
+- **Clear Separation**: Validation, assignment, and execution now have distinct responsibilities
+- **Better Error Messages**: Unused parameters now display as "Unused Parameters: param1, param2"
+- **Combined Error Handling**: Database errors are combined with parameter messages using " | " separator
+- **Memory Safety**: Proper cleanup in all error paths prevents memory leaks
+- **Type Consistency**: All endpoint function signatures updated to maintain API consistency
+
+**Key Technical Lessons**:
+
+1. **Message Flow Design**: Parameter processing sets messages for successful responses, error building combines database errors with existing messages
+2. **Function Signature Updates**: When changing helper function signatures, update all callers (query.c, auth_query.c, alt_query.c) and test files
+3. **Error Response Architecture**: Success responses include parameter warnings in "message", error responses combine database errors with parameter issues
+4. **Memory Management**: Complex parameter analysis requires careful allocation/deallocation patterns
+
+**Database Query Discovery**: Identified that SQL integer division (numbers / :DENOMINATOR) returns truncated results even with FLOAT parameters. Requires explicit casting (numbers::float / :DENOMINATOR) for true float division.
 
 ## Implementation Insights - Code Refactoring (2026-01-20)
 

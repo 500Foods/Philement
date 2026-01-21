@@ -248,14 +248,29 @@ json_t* build_error_response(int query_ref, const char* database, const QueryCac
         json_object_set_new(response, "timeout_seconds", json_integer(cache_entry->timeout_seconds));
     } else if (result && result->error_message) {
         json_object_set_new(response, "error", json_string("Database error"));
-        json_object_set_new(response, "message", json_string(result->error_message));
+
+        // Combine database error with existing message (e.g., unused parameters)
+        if (message && strlen(message) > 0) {
+            size_t combined_len = strlen(result->error_message) + strlen(message) + 4; // " | " + null
+            char* combined_message = malloc(combined_len);
+            if (combined_message) {
+                snprintf(combined_message, combined_len, "%s | %s", result->error_message, message);
+                json_object_set_new(response, "message", json_string(combined_message));
+                free(combined_message);
+            } else {
+                // Fallback to just database error
+                json_object_set_new(response, "message", json_string(result->error_message));
+            }
+        } else {
+            json_object_set_new(response, "message", json_string(result->error_message));
+        }
     } else {
         json_object_set_new(response, "error", json_string("Query execution failed"));
-    }
 
-    // Add message if provided
-    if (message && strlen(message) > 0) {
-        json_object_set_new(response, "message", json_string(message));
+        // Add message if provided
+        if (message && strlen(message) > 0) {
+            json_object_set_new(response, "message", json_string(message));
+        }
     }
 
     return response;
