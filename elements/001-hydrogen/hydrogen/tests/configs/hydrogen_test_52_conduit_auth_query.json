@@ -1,0 +1,213 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-52-conduit-auth-query",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5520
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api",
+        "JWTSecret": "${env.HYDROGEN_DEMO_JWT_KEY}"
+    },
+    "Swagger": {
+        "Enabled": true,
+        "Prefix": "/swagger",
+        "UIOptions": {
+            "TryItEnabled": true,
+            "AlwaysExpanded": true,
+            "DisplayOperationId": true,
+            "DefaultModelsExpandDepth": 1,
+            "DefaultModelExpandDepth": 1,
+            "ShowExtensions": false,
+            "ShowCommonExtensions": true,
+            "DocExpansion": "list",
+            "SyntaxHighlightTheme": "agate"
+        }
+    },
+    "Databases": {
+        "Connections": [
+            {
+                "Enabled": true,
+                "Name": "Demo_PG",
+                "Engine": "${env.ACURANZO_DB_TYPE}",
+                "Host": "${env.ACURANZO_DB_HOST}",
+                "Port": "${env.ACURANZO_DB_PORT}",
+                "Database": "${env.ACURANZO_DB_NAME}",
+                "User": "${env.ACURANZO_DB_USER}",
+                "Pass": "${env.ACURANZO_DB_PASS}",
+                "StmtCache": 100,
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": true,
+                "TestMigration": false,
+                "Parameters": {
+                    "LOGINRETRYWINDOW": 15,
+                    "IPADDRESS": "10.10.10.10",
+                    "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
+                },
+                "Schema": "demo",
+                "Migrations": "PAYLOAD:acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            },
+            {
+                "Enabled": true,
+                "Name": "Demo_MY",
+                "Engine": "${env.CANVAS_DB_TYPE}",
+                "Host": "${env.CANVAS_DB_HOST}",
+                "Port": "${env.CANVAS_DB_PORT}",
+                "Database": "${env.CANVAS_DB_NAME}",
+                "User": "${env.CANVAS_DB_USER}",
+                "Pass": "${env.CANVAS_DB_PASS}",
+                "StmtCache": 100,
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": true,
+                "TestMigration": false,
+                "Parameters": {
+                    "LOGINRETRYWINDOW": 15,
+                    "IPADDRESS": "10.10.10.10",
+                    "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
+                },
+                "Schema": "demo",
+                "Migrations": "PAYLOAD:acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            },
+            {
+                "Enabled": true,
+                "Name": "Demo_SQL",
+                "Engine": "sqlite",
+                "Database": "tests/artifacts/database/sqlite/hydrodemo.sqlite",
+                "StmtCache": 100,
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": true,
+                "TestMigration": false,
+                "Parameters": {
+                    "LOGINRETRYWINDOW": 15,
+                    "IPADDRESS": "10.10.10.10",
+                    "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
+                },
+                "Schema": "",
+                "Migrations": "PAYLOAD:acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            },
+            {
+                "Enabled": true,
+                "Name": "Demo_DB2",
+                "Engine": "${env.HYDROTST_DB_TYPE}",
+                "Host": "localhost",
+                "Port": 55555,
+                "Database": "${env.HYDROTST_DB_NAME}",
+                "User": "${env.HYDROTST_DB_USER}",
+                "Pass": "${env.HYDROTST_DB_PASS}",
+                "StmtCache": 100,
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": true,
+                "TestMigration": false,
+                "Parameters": {
+                    "LOGINRETRYWINDOW": 15,
+                    "IPADDRESS": "10.10.10.10",
+                    "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
+                },
+                "Schema": "demo",
+                "Migrations": "PAYLOAD:acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            },
+            {
+                "Enabled": true,
+                "Name": "Demo_MR",
+                "Engine": "${env.CANVAS_DB_TYPE}",
+                "Host": "${env.CANVAS_DB_HOST}",
+                "Port": "${env.CANVAS_DB_PORT}",
+                "Database": "${env.CANVAS_DB_NAME}",
+                "User": "${env.CANVAS_DB_USER}",
+                "Pass": "${env.CANVAS_DB_PASS}",
+                "StmtCache": 100,
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demomrdb.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": true,
+                "TestMigration": false,
+                "Parameters": {
+                    "LOGINRETRYWINDOW": 15,
+                    "IPADDRESS": "10.10.10.10",
+                    "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
+                },
+                "Schema": "demomrdb",
+                "Migrations": "PAYLOAD:acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            },
+            {
+                "Enabled": true,
+                "Name": "Demo_CR",
+                "Engine": "${env.ACURANZO_DB_TYPE}",
+                "Host": "${env.ACURANZO_DB_HOST}",
+                "Port": "${env.ACURANZO_DB_PORT}",
+                "Database": "${env.ACURANZO_DB_NAME}",
+                "User": "${env.ACURANZO_DB_USER}",
+                "Pass": "${env.ACURANZO_DB_PASS}",
+                "StmtCache": 100,
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM democrdb.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": true,
+                "TestMigration": false,
+                "Parameters": {
+                    "LOGINRETRYWINDOW": 15,
+                    "IPADDRESS": "10.10.10.10",
+                    "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
+                },
+                "Schema": "democrdb",
+                "Migrations": "PAYLOAD:acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            },
+            {
+                "Enabled": true,
+                "Name": "Demo_YB",
+                "Engine": "${env.ACURANZO_DB_TYPE}",
+                "Host": "${env.ACURANZO_DB_HOST}",
+                "Port": "${env.ACURANZO_DB_PORT}",
+                "Database": "${env.ACURANZO_DB_NAME}",
+                "User": "${env.ACURANZO_DB_USER}",
+                "Pass": "${env.ACURANZO_DB_PASS}",
+                "StmtCache": 100,
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demoybdb.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": true,
+                "TestMigration": false,
+                "Parameters": {
+                    "LOGINRETRYWINDOW": 15,
+                    "IPADDRESS": "10.10.10.10",
+                    "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
+                },
+                "Schema": "demoybdb",
+                "Migrations": "PAYLOAD:acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            }
+        ]
+    }
+}

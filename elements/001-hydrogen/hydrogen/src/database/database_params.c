@@ -337,6 +337,13 @@ bool build_parameter_array(
         return true; // No parameters to process
     }
 
+    // Limit parameter count to prevent excessive memory usage
+    if (match_count > 100) {
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Too many parameters in SQL template: %zu", LOG_LEVEL_ERROR, 1, match_count);
+        regfree(&regex);
+        return false;
+    }
+
     // Allocate ordered parameter array
     *ordered_params = (TypedParameter**)malloc(match_count * sizeof(TypedParameter*));
     if (!*ordered_params) {

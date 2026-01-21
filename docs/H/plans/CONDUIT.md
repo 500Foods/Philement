@@ -133,14 +133,17 @@
   - [x] **Step 4: Authenticated status testing** - Test `/api/conduit/status` GET with each JWT to verify detailed status responses with migration info, cache entries, and DQM statistics ✅
   - [x] **Step 5: Single query endpoint testing** - Test `/api/conduit/query` POST with specific query_refs across all ready databases:
     - **Public queries** ✅:
-      - #53 - Get Themes (no parameters) - **WORKING**: Returns theme data across all 7 databases
-      - #54 - Get Icons (no parameters) - **WORKING**: Returns icon data across all 7 databases
+      - #53 - Get Themes (no parameters) - **WORKING**: Returns theme data (8 rows) across all 7 databases
+      - #54 - Get Icons (no parameters) - **WORKING**: Returns icon data (12 rows) across all 7 databases
     - **Parameterized queries** ✅:
-      - Query #55 with integer parameters - **WORKING**: Successfully executes parameterized queries with proper parameter binding
-    - **Not Public queries**:
-      - #30 - Get Lookups List (no parameters)
-      - #45 - Get Lookup (:LOOKUP id is integer param, value 43 - Tours)
-    - Focus on getting public queries working first, then add authenticated versions
+      - Query #55 with integer parameters - **WORKING**: Successfully executes parameterized queries with proper parameter binding (START/FINISH range)
+    - **Auth-required queries (public endpoint)** ✅:
+      - #30 - Get Lookups List (no parameters) - **WORKING**: Correctly returns "fail" with "queryref not found or not public" message
+    - **Invalid query references** ✅:
+      - Query -100 - **WORKING**: Correctly returns "fail" with "queryref not found or not public" message
+    - **Invalid JSON validation** ✅:
+      - Malformed JSON (missing closing bracket) - **WORKING**: Correctly returns HTTP 400 Bad Request
+    - **Database delimiters** ✅: Added clear visual separators between each database test for improved readability
   - [x] **Step 6: Multiple queries endpoint testing** - Test `/api/conduit/queries` POST with batch requests across all ready databases ✅
   - [x] **Step 6.5: Comprehensive queries testing** - Added `test_conduit_queries_comprehensive()` with deduplication, error handling, and cross-database validation ✅
   - [x] **Step 7: Authenticated single query testing** - Test `/api/conduit/auth_query` POST using JWT authentication ✅
@@ -434,6 +437,110 @@ This approach enables instant response times for frequently accessed, parameter-
 3. **Incremental Testing**: Unified server approach allows testing rate limiting across all databases simultaneously
 4. **Documentation Synchronization**: Keeping CONDUIT.md updated with actual progress prevents confusion about completion status
 
+## Implementation Roadmap: From Current to Desired Flow
+
+### Overview
+
+The current implementation has complex parameter processing with 10 steps. We need to refactor it to match the desired 5-step flow shown in `CONDUIT_DIAGRAMS.md`. This roadmap provides incremental, testable steps to achieve this transformation.
+
+### Phase 9: Parameter Processing Refactor
+
+#### Step 9.1: Simplify Parameter Validation Logic ✅ **READY TO START**
+
+- **Objective**: Replace complex `analyze_parameter_validation()` with simple, clear validation functions
+- **Current State**: 200+ lines of complex analysis with multiple memory allocations
+- **Target State**: Simple functions that fail fast with clear error messages
+- **Implementation**:
+  - Create `validate_parameter_types_simple()` - checks type mismatches only
+  - Create `check_missing_parameters_simple()` - finds missing required params
+  - Create `check_unused_parameters_simple()` - identifies unused params (warning only)
+  - Replace `handle_parameter_processing()` main logic
+- **Testing**: Test with existing parameterless queries first, then add parameter validation
+- **Files**: `parameter_processing.c`, `query.c`
+- **Verification**: Run `mkt` and test with `test_50_conduit_query.sh`
+
+#### Step 9.2: Reorder Validation to Match Desired Flow
+
+- **Objective**: Change validation order from (types → missing → unused) to (types → missing → unused) with proper fail-fast behavior
+- **Current State**: Complex analysis happens before basic parsing
+- **Target State**: Early type validation, then parameter assignment analysis
+- **Implementation**:
+  - Move type validation to happen immediately after parameter parsing
+  - Ensure missing parameter check happens before unused parameter check
+  - Add clear error messages for each validation step
+- **Testing**: Verify error messages are verbose and accurate
+- **Files**: `parameter_processing.c`
+- **Verification**: Test malformed requests return appropriate 400 errors
+
+#### Step 9.3: Improve Error Message Verbosity
+
+- **Objective**: Make all error messages clear and actionable for API clients
+- **Current State**: Generic error messages with limited detail
+- **Target State**: Specific, verbose messages like "Numerator(INTEGER) is not INTEGER"
+- **Implementation**:
+  - Update error response creation functions
+  - Include parameter names and expected types in messages
+  - Ensure consistent message format across all error types
+- **Testing**: Verify error responses include helpful diagnostic information
+- **Files**: `error_handling.c`, `parameter_processing.c`
+- **Verification**: Test error responses contain actionable information
+
+#### Step 9.4: Memory Safety and Cleanup Improvements
+
+- **Objective**: Eliminate memory leaks and segfaults in parameter processing
+- **Current State**: Complex memory management with potential leaks
+- **Target State**: Clean allocation/deallocation patterns
+- **Implementation**:
+  - Add NULL checks after all malloc operations
+  - Ensure proper cleanup on all error paths
+  - Use safer string operations to prevent buffer overflows
+- **Testing**: Run with Valgrind to verify no memory leaks
+- **Files**: `parameter_processing.c`, `error_handling.c`
+- **Verification**: `valgrind --leak-check=full ./hydrogen_test_config.json`
+
+#### Step 9.5: Database Protection Verification
+
+- **Objective**: Ensure no database queries until all validation passes
+- **Current State**: Some validation may happen after queue selection
+- **Target State**: Complete validation before any database-related operations
+- **Implementation**:
+  - Move all parameter validation before queue selection
+  - Ensure query execution only happens after successful validation
+  - Add logging to verify validation completion before database access
+- **Testing**: Verify invalid requests are rejected before database operations
+- **Files**: `query.c`, `parameter_processing.c`
+- **Verification**: Test with invalid requests - ensure no database load
+
+#### Step 9.6: Integration Testing and Validation
+
+- **Objective**: Verify the complete refactored flow works end-to-end
+- **Current State**: Complex flow with multiple potential failure points
+- **Target State**: Clean 5-step flow matching the diagram
+- **Implementation**:
+  - Update unit tests for new parameter processing functions
+  - Run full test suite including `test_50_conduit_query.sh`
+  - Verify all error scenarios work correctly
+- **Testing**: Complete end-to-end testing across all database engines
+- **Files**: All conduit files, test files
+- **Verification**: All tests pass with new implementation
+
+### Implementation Guidelines
+
+1. **Incremental Changes**: Each step should be small enough to test independently
+2. **Backward Compatibility**: Maintain existing API contract during transition
+3. **Error Message Consistency**: All errors should follow the same verbose format
+4. **Memory Safety First**: Fix any memory issues before adding new functionality
+5. **Test Early, Test Often**: Run tests after each step to catch regressions
+6. **Documentation Sync**: Keep `CONDUIT_DIAGRAMS.md` updated with actual implementation
+
+### Success Criteria
+
+- ✅ Parameter validation fails fast with clear error messages
+- ✅ No database access for invalid requests
+- ✅ Memory leaks eliminated
+- ✅ All existing tests pass
+- ✅ New implementation matches the desired 5-step flow diagram
+
 ## Resuming Work Checklist
 
 - [ ] Read this CONDUIT.md document top to bottom
@@ -578,6 +685,44 @@ This approach enables reliable testing in development environments where databas
 3. **Optional authentication**: Status provides public access with enhanced authenticated features
 4. **Consistent validation**: Shared validation functions reduce maintenance overhead
 
+## Implementation Insights - Enhanced Error Response Formatting (2026-01-21)
+
+**Error Response Visualization Success**: The test framework now provides comprehensive error response details for both successful and failed API calls, enabling precise debugging and validation:
+
+- **Structured Error Display**: Non-200 responses now show detailed information in logical order: Error → Message → Results File
+- **JSON Validation Diagnostics**: Invalid JSON requests display exact parsing failure location ("Unexpected token at position 60")
+- **Consistent Response Analysis**: All API responses (success/failure) now provide file links, sizes, and structured field extraction
+- **API Contract Validation**: Error responses are now as thoroughly validated as success responses
+
+**Key Technical Achievements**:
+
+1. **Unified Response Processing**: Single validation function now handles all HTTP status codes with appropriate detail levels
+2. **Field Extraction Logic**: Intelligent parsing of `error`, `message`, and other response fields for comprehensive diagnostics
+3. **File Size Reporting**: All responses include formatted file sizes for payload analysis
+4. **Debugging Precision**: Exact error locations enable rapid issue identification and resolution
+
+**Testing Framework Maturity**: The conduit testing infrastructure now provides production-quality diagnostics for both positive and negative test cases, significantly improving development velocity and API reliability validation.
+
+## Implementation Insights - Test Restructuring Success (2026-01-21)
+
+**Test 50 Refactoring Milestone**: The restructuring of Test 50 demonstrates the value of focused, incremental test development that serves as a foundation for subsequent tests:
+
+- **Template Pattern Established**: Test 50 now provides a clean template for tests 51-55 with unified server approach, database readiness checking, and consistent validation patterns
+- **Visual Test Organization**: Database-specific delimiters dramatically improve test output readability, making it easy to track progress across 7 database engines
+- **Query Coverage Strategy**: Comprehensive testing of public queries (#53, #54, #55), auth-required queries on public endpoints (#30), and invalid references (-100) establishes complete endpoint validation
+- **Separation of Concerns**: Removing authenticated query testing from Test 50 (moving to Test 52) maintains clear test boundaries and responsibilities
+- **Performance Validation**: All queries execute successfully across all 7 database engines with consistent response formats and appropriate error handling
+
+**Key Technical Achievements**:
+
+1. **Unified Testing Architecture**: Single server with 7 databases eliminates parallel process complexity while maintaining comprehensive coverage
+2. **Error Response Validation**: Proper validation that auth-required queries return "fail" with descriptive messages when accessed via public endpoints
+3. **Invalid Query Handling**: Consistent error responses for non-existent query references across all database engines
+4. **JSON Validation Testing**: Comprehensive validation of malformed JSON requests returning HTTP 400 Bad Request responses
+5. **Test Output Clarity**: Database delimiters provide immediate visual feedback on test progression and database-specific results
+
+**Foundation for Future Tests**: Test 50's success validates the testing framework and provides a proven pattern for implementing tests 51-55 with minimal additional development effort.
+
 ## Implementation Insights - Test Development Best Practices (2026-01-19)
 
 **Methodical Testing Approach Success**: The restructured test_51_conduit.sh demonstrates the value of incremental, foundation-first testing:
@@ -711,6 +856,44 @@ This approach enables reliable testing in development environments where databas
 - **Interface Standardization**: Establish clear interfaces between components to reduce coupling
 - **Documentation Updates**: Add module-level documentation for each refactored component
 
+## Implementation Insights - Test 50 Revamp and JWT Acquisition (2026-01-21)
+
+**Test 50 Restructuring Success**: Completely revamped Test 50 to implement the sequential block testing approach described in the plan:
+
+- **Sequential Block Execution**: Tests now run in clear blocks with delimiters:
+  - Block 1: Public queries (#53, #54, #55) across all 7 database engines
+  - Block 2: Authenticated queries (#30, #26) across all 7 database engines
+  - Block 3: Invalid query references (-100) across all 7 database engines
+- **Real-time JWT Acquisition Display**: Fixed output buffering issue so JWT token acquisition shows individual progress for each database engine
+- **Comprehensive Coverage**: Tests both `/api/conduit/query` (public) and `/api/conduit/auth_query` (authenticated) endpoints
+- **Parameter Corrections**: Fixed query parameter names to match actual SQL templates (:START/:FINISH for #55, :LOOKUPID for #26)
+
+**JWT Acquisition Subshell Issue Resolution**: Critical fix for output collection in concurrent function calls:
+
+- **Problem**: `acquire_jwt_tokens()` was called with command substitution `$(...)`, executing in subshell where `print_subtest`/`print_result` calls couldn't affect main shell's output collection
+- **Solution**: Modified function to be called directly, allowing `print_subtest`/`print_result` to properly add messages to main shell's `OUTPUT_COLLECTION`
+- **Result**: Individual JWT acquisition messages now display in real-time:
+
+  ```log
+  50-XXX   XXX.XXX   ▇▇ TEST   JWT Acquisition (PostgreSQL)
+  50-XXX   XXX.XXX   ▇▇ PASS   JWT Acquisition (PostgreSQL) - Successfully obtained JWT
+  ```
+
+**Concurrent Execution Safety**: Implemented test-specific global state to prevent race conditions:
+
+- **Test-Specific Global Variables**: Use `JWT_TOKENS_RESULT_${TEST_NUMBER}` (e.g., `JWT_TOKENS_RESULT_50` for Test 50) to isolate JWT tokens between concurrent test executions
+- **Process Isolation**: Each test runs in separate process anyway, but namespaced variables provide extra safety
+- **No Shared State**: Parallel Test 50/51/52/etc. executions won't overwrite each other's JWT tokens
+
+**Key Technical Lessons**:
+
+1. **Output Collection Scope**: Functions called via command substitution `$(func)` execute in subshells with separate variable scope
+2. **Framework Integration**: `print_subtest`/`print_result` rely on main shell's `OUTPUT_COLLECTION` and `TEST_COUNTER` variables
+3. **Concurrent Safety**: Avoid global variables for test-specific data when parallel execution is possible
+4. **Real-time Feedback**: `dump_collected_output()` + `clear_collected_output()` provides immediate display of buffered messages
+
+**Test 50 Current Status**: Fully functional with comprehensive single query endpoint testing across all 7 database engines, proper error handling, and real-time progress display.
+
 ## Implementation Insights - Methodical Query Testing (2026-01-19)
 
 **Incremental Testing Strategy Success**: The restructured Test 51 demonstrates the value of methodical, query-focused testing over comprehensive endpoint coverage:
@@ -732,7 +915,7 @@ This approach enables reliable testing in development environments where databas
 - **#53 Get Themes**: acuranzo_1146.lua - Returns theme configuration data (8 rows across all databases)
 - **#54 Get Icons**: acuranzo_1148.lua - Returns icon definitions (12 rows across all databases)
 - **#30 Get Lookups List**: acuranzo_1121.lua - Returns available lookup types
-- **#45 Get Lookup**: acuranzo_1117.lua - Returns specific lookup entries (requires :LOOKUPID parameter)
+- **#26 Get Lookup**: acuranzo_1117.lua - Returns specific lookup entries (requires :LOOKUPID parameter)
 
 **Performance Insights**:
 
@@ -743,9 +926,73 @@ This approach enables reliable testing in development environments where databas
 
 **Future Testing Expansions**:
 
-- **Parameter Validation**: Test queries with required parameters (#45 Get Lookup with :LOOKUPID=43)
+- **Parameter Validation**: Test queries with required parameters (#26 Get Lookup with :LOOKUPID=43)
 - **Error Handling**: Invalid query references should return HTTP 404 (currently getting HTTP 000 - connection issue)
 - **Batch Operations**: `/api/conduit/queries` endpoint for multiple simultaneous queries
 - **Authentication**: JWT-protected endpoints for sensitive operations
 
 See [CONDUIT_DIAGRAMS.md](/docs/H/plans/CONDUIT_DIAGRAMS.md) for detailed architecture diagrams.
+
+## Test Restructuring Plan (2026-01-20)
+
+**Objective**: Split the comprehensive Test 51 into focused, endpoint-specific tests to improve maintainability, debugging, and concurrency testing across database engines.
+
+**Rationale**:
+
+1. **Test Complexity**: Test 51 has grown too complex with 124 subtests covering all conduit endpoints
+2. **Debugging Challenges**: Failures in one endpoint can obscure issues in others
+3. **Concurrency Testing**: Separate tests allow better isolation for concurrent execution validation
+4. **Maintenance**: Smaller, focused tests are easier to update and maintain
+
+**New Test Structure**:
+
+| Test Number | Test Name | Port | Configuration File | Focus Area | Status |
+| ------------- | -------------------------------- | ------ | -------------------------------- | ------------- | ------ |
+| 50 | test_50_conduit_query.sh | 5500 | hydrogen_test_50_conduit_query.json | Single query endpoint (public) | ✅ **COMPLETED** - Template established |
+| 51 | test_51_conduit_queries.sh | 5510 | hydrogen_test_51_conduit_queries.json | Multiple queries endpoint (public) | Next target |
+| 52 | test_52_conduit_auth_query.sh | 5520 | hydrogen_test_52_conduit_auth_query.json | Authenticated single query | Ready for implementation |
+| 53 | test_53_conduit_auth_queries.sh | 5530 | hydrogen_test_53_conduit_auth_queries.json | Authenticated multiple queries | Ready for implementation |
+| 54 | test_54_conduit_alt_query.sh | 5540 | hydrogen_test_54_conduit_alt_query.json | Cross-database single query | Ready for implementation |
+| 55 | test_55_conduit_alt_queries.sh | 5550 | hydrogen_test_55_conduit_alt_queries.json | Cross-database multiple queries | Ready for implementation |
+
+**Implementation Approach**:
+
+1. **Configuration Files**: Created individual JSON configuration files for each test with unique port numbers following the `5<T#>x` pattern
+2. **Test Scripts**: Each test will focus on its specific endpoint while maintaining the same testing approach (JWT acquisition, database readiness checking, comprehensive validation)
+3. **Shared Utilities**: Continue using conduit_utils.sh for common functions (JWT acquisition, database readiness, validation)
+4. **Port Allocation**: Each test gets its own 10-port range to prevent conflicts during parallel execution
+
+**Benefits**:
+
+- **Focused Testing**: Each endpoint can be tested independently with customized test cases
+- **Better Isolation**: Failures in one endpoint won't affect testing of other endpoints
+- **Concurrency Validation**: Can run tests in parallel to validate concurrent operation across engines
+- **Easier Debugging**: Smaller test output makes it easier to identify and fix issues
+- **Maintainability**: Clear separation of concerns makes tests easier to update
+
+**Next Steps**:
+
+1. ✅ **Test 50 Template Complete**: Use test_50_conduit_query.sh as template for remaining tests
+2. Create test_51_conduit_queries.sh for multiple queries endpoint (public)
+3. Create test_52_conduit_auth_query.sh for authenticated single queries
+4. Create test_53_conduit_auth_queries.sh for authenticated multiple queries
+5. Create test_54_conduit_alt_query.sh for cross-database single queries
+6. Create test_55_conduit_alt_queries.sh for cross-database multiple queries
+7. Update test documentation in docs/H/tests/ for each new test
+8. Add new tests to test_00_all.sh orchestration
+9. Update STRUCTURE.md, SITEMAP.md, and other documentation files
+10. Validate each test independently before integrating into full test suite
+
+**Documentation Updates Required**:
+
+- docs/H/tests/test_50_conduit_query.md
+- docs/H/tests/test_51_conduit_queries.md
+- docs/H/tests/test_52_conduit_auth_query.md
+- docs/H/tests/test_53_conduit_auth_queries.md
+- docs/H/tests/test_54_conduit_alt_query.md
+- docs/H/tests/test_55_conduit_alt_queries.md
+- docs/H/STRUCTURE.md
+- docs/H/SITEMAP.md
+- tests/README.md
+- INSTRUCTIONS.md
+r

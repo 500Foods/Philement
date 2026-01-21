@@ -12,6 +12,10 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.4.0 - 2026-01-21 - Enhanced validate_conduit_request() for non-200 responses
+#                    - Expected non-200 status codes now show response details and messages
+#                    - Includes file size, message field, and error field for better debugging
+#                    - Enables detailed validation of error responses (e.g., HTTP 400 for invalid JSON)
 # 1.2.0 - 2026-01-19 - Added server lifecycle and result analysis functions
 #                    - Added run_conduit_server() for unified server startup/shutdown management
 #                    - Added shutdown_conduit_server() for graceful server termination
@@ -105,55 +109,32 @@ validate_conduit_request() {
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${http_status}"
 
     if [[ "${http_status}" == "${expected_status}" ]]; then
-        # Check for success in JSON response for successful requests
-        if [[ "${expected_status}" -eq 200 ]]; then
-            # shellcheck disable=SC2154 # GREP defined in framework.sh
-        if "${GREP}" -q "\"success\"[[:space:]]*:[[:space:]]*${expected_success}" "${output_file}"; then
-                # Additional validation for successful queries
-                if command -v jq >/dev/null 2>&1 && [[ -f "${output_file}" ]]; then
-                    local success_value rows_count file_size results_count total_rows
-                    success_value=$(jq -r '.success' "${output_file}" 2>/dev/null || echo "unknown")
+        # For successful HTTP requests, show key response details
+        if command -v jq >/dev/null 2>&1 && [[ -f "${output_file}" ]]; then
+            # Show error field if present
+            local error_msg
+            error_msg=$(jq -r '.error' "${output_file}" 2>/dev/null || echo "")
+            if [[ -n "${error_msg}" ]] && [[ "${error_msg}" != "null" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Error: ${error_msg}"
+            fi
 
-                    file_size=$(stat -c %s "${output_file}" 2>/dev/null || echo "unknown")
-                    file_size_formatted=$(format_number "${file_size}")
+            # Show message field if present
+            local message
+            message=$(jq -r '.message' "${output_file}" 2>/dev/null || echo "")
+            if [[ -n "${message}" ]] && [[ "${message}" != "null" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Message: ${message}"
+            fi
 
-                    # Check if this is a queries endpoint response (has "results" array)
-                    if jq -e '.results' "${output_file}" >/dev/null 2>&1; then
-                        # Queries endpoint - count results and sum rows across all results
-                        results_count=$(jq -r '.results | length' "${output_file}" 2>/dev/null || echo "0")
-                        total_rows=$(jq -r '[.results[]?.rows | length] | add // 0 | if . == null then 0 else . end' "${output_file}" 2>/dev/null || echo "0")
-                        results_formatted=$(format_number "${results_count}")
-                        rows_formatted=$(format_number "${total_rows}")
-                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Valid JSON returned: success=${success_value}, ${results_formatted} results, ${rows_formatted} total rows, ${file_size_formatted} bytes"
-                    else
-                        # Single query endpoint - count rows directly
-                        rows_count=$(jq -r '.rows | length' "${output_file}" 2>/dev/null || echo "0")
-                        rows_formatted=$(format_number "${rows_count}")
-                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Valid JSON returned: success=${success_value}, ${rows_formatted} rows, ${file_size_formatted} bytes"
-                    fi
+            # Show results file with size
+            local file_size
+            file_size=$(stat -c %s "${output_file}" 2>/dev/null || echo "unknown")
+            file_size_formatted=$(format_number "${file_size}")
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${output_file} (${file_size_formatted} bytes)"
+        fi
 
-                    # Check for message field in response
-                    local message
-                    message=$(jq -r '.message' "${output_file}" 2>/dev/null || echo "")
-                    if [[ -n "${message}" ]] && [[ "${message}" != "null" ]]; then
-                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Message: ${message}"
-                    fi
-
-                    # Check for messages in results array for queries endpoint
-                    if jq -e '.results' "${output_file}" >/dev/null 2>&1; then
-                        local results_count
-                        results_count=$(jq -r '.results | length' "${output_file}" 2>/dev/null || echo "0")
-                        for ((i=0; i<results_count; i++)); do
-                            local result_message
-                            result_message=$(jq -r ".results[${i}].message" "${output_file}" 2>/dev/null || echo "")
-                            if [[ -n "${result_message}" ]] && [[ "${result_message}" != "null" ]]; then
-                                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Result ${i} Message: ${result_message}"
-                            fi
-                        done
-                    fi
-
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${output_file}"
-                fi
+        # Check success field if expected_success is specified
+        if [[ -n "${expected_success}" ]]; then
+            if "${GREP}" -q "\"success\"[[:space:]]*:[[:space:]]*${expected_success}" "${output_file}"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} - Request successful"
                 return 0
             else
@@ -161,7 +142,7 @@ validate_conduit_request() {
                 return 1
             fi
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} - Request returned expected status ${expected_status}"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} - Request completed"
             return 0
         fi
     else
@@ -201,18 +182,24 @@ acquire_jwt_tokens() {
     local result_file="$2"
     local jwt_tokens=()
 
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting JWT acquisition for ${#DATABASE_NAMES[@]} databases"
+
     for db_engine in "${!DATABASE_NAMES[@]}"; do
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "JWT Acquisition (${db_engine})"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking readiness for ${db_engine}..."
+
         # Check if database is ready before attempting login
         if ! "${GREP}" -q "DATABASE_READY_${db_engine}=true" "${result_file}" 2>/dev/null; then
-            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "JWT Acquisition (${db_engine})"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine} not ready, skipping JWT acquisition"
+            #print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "JWT Acquisition (${db_engine})"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "JWT Acquisition (${db_engine}) - Database not ready, skipping"
             jwt_tokens+=("")  # Add empty token to maintain array alignment
             continue
         fi
 
-        local db_name="${DATABASE_NAMES[${db_engine}]}"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine} is ready, attempting JWT acquisition"
 
-        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "JWT Acquisition (${db_engine})"
+        local db_name="${DATABASE_NAMES[${db_engine}]}"
 
         local login_data
         # shellcheck disable=SC2154 # Environment variables set externally
@@ -254,9 +241,10 @@ EOF
         fi
     done
 
-    # Return the JWT tokens as a space-separated string
-    # The caller should use: jwt_tokens_string=$(acquire_jwt_tokens ...); read -a jwt_tokens <<< "$jwt_tokens_string"
-    echo "${jwt_tokens[*]}"
+    # Store the JWT tokens in a test-specific global variable to avoid subshell issues
+    # and prevent conflicts between concurrent test executions
+    local global_var_name="JWT_TOKENS_RESULT_${TEST_NUMBER}"
+    eval "${global_var_name}=(${jwt_tokens[*]})"
 
 }
 
