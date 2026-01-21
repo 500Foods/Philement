@@ -21,7 +21,7 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Conduit Single Query {BLUE}CSQ: 0{RESET}"
+TEST_NAME="Conduit Single Query"
 TEST_ABBR="CSQ"
 TEST_NUMBER="50"
 TEST_COUNTER=0
@@ -63,9 +63,9 @@ test_conduit_single_public_query() {
     local base_url="$1"
     local result_file="$2"
 
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing public queries (#53, #54, #55) across all ready databases"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+    #print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
 
     local tests_passed=0
     local total_tests=0
@@ -79,9 +79,9 @@ test_conduit_single_public_query() {
 
         local db_name="${DATABASE_NAMES[${db_engine}]}"
 
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing ${db_engine} database"
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+        #print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
 
         # Test query #53 - Get Themes
         local payload53
@@ -193,7 +193,7 @@ EOF
 
         # Expect 400 for invalid JSON
         # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_invalid_json}" "400" "${response_file_invalid_json}" "" "${db_engine} Invalid JSON"; then
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_invalid_json}" "400" "${response_file_invalid_json}" "" "${db_engine} Invalid JSON" "none"; then
             tests_passed=$(( tests_passed + 1 ))
         fi
 
@@ -235,7 +235,7 @@ EOF
 
         # Expect 400 with parameter mismatch details
         # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_param_fail}" "400" "${response_file_param_fail}" "" "${db_engine} Param Test Fail" ""; then
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_param_fail}" "400" "${response_file_param_fail}" "" "${db_engine} Param Test Fail" "none"; then
             tests_passed=$(( tests_passed + 1 ))
         fi
 
@@ -254,10 +254,83 @@ EOF
         local response_file_query_fail="${result_file}.single_query_fail_${db_engine}.json"
         total_tests=$(( total_tests + 1 ))
 
-        # Expect 422 with database error details
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_query_fail}" "422" "${response_file_query_fail}" "" "${db_engine} Query Fail" ""; then
+        # Special handling for division by zero - some engines don't treat it as error
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine} Query Fail"
+
+        local http_status
+        http_status=$(curl -s -X POST "${base_url}/api/conduit/query" \
+            -H "Content-Type: application/json" \
+            -d "${payload_query_fail}" \
+            -w "%{http_code}" -o "${response_file_query_fail}" 2>/dev/null)
+
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${http_status}"
+
+        # Show response details
+        if command -v jq >/dev/null 2>&1 && [[ -f "${response_file_query_fail}" ]]; then
+            # Build summary line
+            local summary_parts=()
+
+            # Show success field
+            local success_val
+            success_val=$(jq -r '.success' "${response_file_query_fail}" 2>/dev/null || echo "unknown")
+            if [[ "${success_val}" != "null" ]]; then
+                summary_parts+=("Success: ${success_val}")
+            fi
+
+            # Show row_count if present
+            local row_count
+            row_count=$(jq -r '.row_count' "${response_file_query_fail}" 2>/dev/null || echo "")
+            if [[ -n "${row_count}" ]] && [[ "${row_count}" != "null" ]]; then
+                row_count_formatted=$(format_number "${row_count}")
+                summary_parts+=("Rows: ${row_count_formatted}")
+            fi
+
+            # Show error field if present
+            local error_msg
+            error_msg=$(jq -r '.error' "${response_file_query_fail}" 2>/dev/null || echo "")
+            if [[ -n "${error_msg}" ]] && [[ "${error_msg}" != "null" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Error: ${error_msg}"
+            fi
+
+            # Show message field if present
+            local message
+            message=$(jq -r '.message' "${response_file_query_fail}" 2>/dev/null || echo "")
+            if [[ -n "${message}" ]] && [[ "${message}" != "null" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Message: ${message}"
+            fi
+
+            # Show results file with size
+            local file_size
+            file_size=$(stat -c %s "${response_file_query_fail}" 2>/dev/null || echo "unknown")
+            file_size_formatted=$(format_number "${file_size}")
+            summary_parts+=("Response: ${file_size_formatted} bytes")
+
+            # Print summary line
+            if [[ ${#summary_parts[@]} -gt 0 ]]; then
+                local summary=""
+                for part in "${summary_parts[@]}"; do
+                    if [[ -n "${summary}" ]]; then
+                        summary="${summary}, ${part}"
+                    else
+                        summary="${part}"
+                    fi
+                done
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${summary}"
+            fi
+
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${response_file_query_fail}"
+        fi
+
+        # Check if response is acceptable (422 for error, or 200 for engines that don't treat division by zero as error)
+        if [[ "${http_status}" == "422" ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${db_engine} Query Fail - Request completed"
             tests_passed=$(( tests_passed + 1 ))
+        elif [[ "${http_status}" == "200" ]]; then
+            print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine} does not treat division by zero as an error"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${db_engine} Query Fail - Engine does not treat division by zero as error"
+            tests_passed=$(( tests_passed + 1 ))
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${db_engine} Query Fail - Unexpected HTTP status ${http_status}"
         fi
     done
 
@@ -355,6 +428,7 @@ else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Unified configuration file validation failed"
     EXIT_CODE=1
 fi
+TEST_NAME="Conduit Single Query  {BLUE}databases: ${#DATABASE_NAMES[@]}{RESET}"
 
 # Only proceed with conduit tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
@@ -367,14 +441,14 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     run_conduit_test_unified "${CONDUIT_CONFIG_FILE}" "${CONDUIT_LOG_SUFFIX}" "${CONDUIT_DESCRIPTION}"
 
     # Process results
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION}: Analyzing results"
 
     # Add links to log and result files for troubleshooting
     log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${CONDUIT_LOG_SUFFIX}.log"
     result_file="${LOG_PREFIX}${TIMESTAMP}_${CONDUIT_LOG_SUFFIX}.result"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Conduit Server: ${TESTS_DIR}/logs/${log_file##*/}"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unified Server: ${DIAG_TEST_DIR}/${result_file##*/}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Conduit Results: ${DIAG_TEST_DIR}/${result_file##*/}"
 else
     # Skip conduit tests if prerequisites failed
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping Conduit single query endpoint tests due to prerequisite failures"

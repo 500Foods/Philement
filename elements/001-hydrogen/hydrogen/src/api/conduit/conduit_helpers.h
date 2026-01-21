@@ -121,7 +121,8 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
                                              const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
                                              const char* database, int query_ref,
                                              ParameterList** param_list, char** converted_sql,
-                                             TypedParameter*** ordered_params, size_t* param_count);
+                                             TypedParameter*** ordered_params, size_t* param_count,
+                                             char** message);
 
 enum MHD_Result handle_queue_selection(struct MHD_Connection *connection, const char* database,
                                          int query_ref, const QueryCacheEntry* cache_entry,
