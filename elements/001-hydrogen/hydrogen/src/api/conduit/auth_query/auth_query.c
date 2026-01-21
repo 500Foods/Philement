@@ -365,9 +365,10 @@ enum MHD_Result handle_conduit_auth_query_request(
     TypedParameter **ordered_params = NULL;
     size_t param_count = 0;
 
+    char* message = NULL;
     result = handle_parameter_processing(connection, params_json, db_queue, cache_entry,
                                         database, query_ref, &param_list, &converted_sql,
-                                        &ordered_params, &param_count);
+                                        &ordered_params, &param_count, &message);
     if (params_json) {
         json_decref(params_json);
         params_json = NULL;

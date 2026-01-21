@@ -109,8 +109,26 @@ validate_conduit_request() {
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${http_status}"
 
     if [[ "${http_status}" == "${expected_status}" ]]; then
-        # For successful HTTP requests, show key response details
+        # For all HTTP requests, show key response details
         if command -v jq >/dev/null 2>&1 && [[ -f "${output_file}" ]]; then
+            # Build summary line
+            local summary_parts=()
+
+            # Show success field
+            local success_val
+            success_val=$(jq -r '.success' "${output_file}" 2>/dev/null || echo "unknown")
+            if [[ "${success_val}" != "null" ]]; then
+                summary_parts+=("Success: ${success_val}")
+            fi
+
+            # Show row_count if present
+            local row_count
+            row_count=$(jq -r '.row_count' "${output_file}" 2>/dev/null || echo "")
+            if [[ -n "${row_count}" ]] && [[ "${row_count}" != "null" ]]; then
+                row_count_formatted=$(format_number "${row_count}")
+                summary_parts+=("Rows: ${row_count_formatted}")
+            fi
+
             # Show error field if present
             local error_msg
             error_msg=$(jq -r '.error' "${output_file}" 2>/dev/null || echo "")
@@ -129,11 +147,26 @@ validate_conduit_request() {
             local file_size
             file_size=$(stat -c %s "${output_file}" 2>/dev/null || echo "unknown")
             file_size_formatted=$(format_number "${file_size}")
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${output_file} (${file_size_formatted} bytes)"
+            summary_parts+=("Response: ${file_size_formatted} bytes")
+
+            # Print summary line
+            if [[ ${#summary_parts[@]} -gt 0 ]]; then
+                local summary=""
+                for part in "${summary_parts[@]}"; do
+                    if [[ -n "${summary}" ]]; then
+                        summary="${summary}, ${part}"
+                    else
+                        summary="${part}"
+                    fi
+                done
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${summary}"
+            fi
+
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${output_file}"
         fi
 
         # Check success field if expected_success is specified
-        if [[ -n "${expected_success}" ]]; then
+        if [[ -n "${expected_success}" && "${expected_success}" != "none" ]]; then
             if "${GREP}" -q "\"success\"[[:space:]]*:[[:space:]]*${expected_success}" "${output_file}"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} - Request successful"
                 return 0
