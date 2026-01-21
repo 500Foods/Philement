@@ -58,8 +58,14 @@ char* generate_query_id(void) {
 
 // Prepare and submit database query
 bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_id,
-                               const char* sql_template, TypedParameter** ordered_params,
-                               size_t param_count, const QueryCacheEntry* cache_entry) {
+                                const char* sql_template, TypedParameter** ordered_params,
+                                size_t param_count, const QueryCacheEntry* cache_entry) {
+    // Validate parameter count to prevent excessive memory usage
+    if (param_count > 100) {
+        log_this(SR_API, "Parameter count too high: %zu", LOG_LEVEL_ERROR, 1, param_count);
+        return false;
+    }
+
     // Create query request
     DatabaseQuery db_query = {
         .query_id = (char*)query_id,
@@ -278,7 +284,7 @@ json_t* build_response_json(int query_ref, const char* database, const QueryCach
                             const DatabaseQueue* selected_queue, PendingQueryResult* pending, const char* message) {
     const QueryResult* result = wait_for_query_result(pending);
 
-    if (result && result->success) {
+    if (result && result->success && !result->error_message) {
         return build_success_response(query_ref, cache_entry, result, selected_queue, message);
     } else {
         return build_error_response(query_ref, database, cache_entry, pending, result, message);

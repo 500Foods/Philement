@@ -1,0 +1,388 @@
+#!/usr/bin/env bash
+
+# Test: Conduit Single Query Endpoint
+# Tests the /api/conduit/query endpoint for single public query execution
+# Launches unified server with 7 database engines and tests single query functionality
+
+# FUNCTIONS
+# validate_conduit_request()
+# test_conduit_single_public_query()
+# run_conduit_test_unified()
+
+# CHANGELOG
+# 1.5.0 - 2026-01-21 - Added parameter and query failure testing
+#                    - Param Test: QueryRef 56 with NUMERATOR=50, DENOMINATOR=10 (expects success)
+#                    - Param Test Fail: QueryRef 56 with TOP=50, BOTTOM=10 (expects failure with parameter mismatch message)
+#                    - Query Fail: QueryRef 56 with NUMERATOR=50, DENOMINATOR=0 (expects failure with database error message)
+# 1.4.0 - 2026-01-21 - Added invalid JSON testing for malformed request validation
+#                    - Tests missing closing bracket JSON and expects HTTP 400 response
+#                    - Validates API-level JSON validation middleware functionality
+
+set -euo pipefail
+
+# Test Configuration
+TEST_NAME="Conduit Single Query {BLUE}CSQ: 0{RESET}"
+TEST_ABBR="CSQ"
+TEST_NUMBER="50"
+TEST_COUNTER=0
+TEST_VERSION="1.5.0"
+
+# shellcheck source=tests/lib/framework.sh # Reference framework directly
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/conduit_utils.sh # Conduit testing utilities
+[[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
+setup_test_environment
+
+# Single server configuration with all 7 database engines
+CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_50_conduit_query.json"
+CONDUIT_LOG_SUFFIX="conduit_query"
+CONDUIT_DESCRIPTION="CSQ"
+
+# Demo credentials from environment variables (set in shell and used in migrations)
+# Used in heredocs for JSON payloads
+# shellcheck disable=SC2034 # Used in heredocs that may be expanded in future versions
+DEMO_USER_NAME="${HYDROGEN_DEMO_USER_NAME:-}"
+# Used in heredocs for JSON payloads
+# shellcheck disable=SC2034 # Used in heredocs that may be expanded in future versions
+DEMO_USER_PASS="${HYDROGEN_DEMO_USER_PASS:-}"
+# These variables are defined for future test expansion
+# shellcheck disable=SC2034 # Reserved for future test expansion
+DEMO_ADMIN_NAME="${HYDROGEN_DEMO_ADMIN_NAME:-}"
+# These variables are defined for future test expansion
+# shellcheck disable=SC2034 # Reserved for future test expansion
+DEMO_ADMIN_PASS="${HYDROGEN_DEMO_ADMIN_PASS:-}"
+# Used in heredocs for JSON payloads
+# shellcheck disable=SC2034 # Used in heredocs that may be expanded in future versions
+DEMO_EMAIL="${HYDROGEN_DEMO_EMAIL:-}"
+# Used in heredocs for JSON payloads
+# shellcheck disable=SC2034 # Used in heredocs that may be expanded in future versions
+DEMO_API_KEY="${HYDROGEN_DEMO_API_KEY:-}"
+
+# Function to test conduit single query endpoint with public queries across ready databases
+test_conduit_single_public_query() {
+    local base_url="$1"
+    local result_file="$2"
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing public queries (#53, #54, #55) across all ready databases"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+
+    local tests_passed=0
+    local total_tests=0
+
+    # Test each database that is ready
+    for db_engine in "${!DATABASE_NAMES[@]}"; do
+        # Check if database is ready
+        if ! "${GREP}" -q "DATABASE_READY_${db_engine}=true" "${result_file}" 2>/dev/null; then
+            continue
+        fi
+
+        local db_name="${DATABASE_NAMES[${db_engine}]}"
+
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing ${db_engine} database"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+
+        # Test query #53 - Get Themes
+        local payload53
+        payload53=$(cat <<EOF
+{
+  "query_ref": 53,
+  "database": "${db_name}",
+  "params": {}
+}
+EOF
+)
+
+        local response_file53="${result_file}.single_${db_engine}_53.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload53}" "200" "${response_file53}" "" "${db_engine} Query #53" "true"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test query #54 - Get Icons
+        local payload54
+        payload54=$(cat <<EOF
+{
+  "query_ref": 54,
+  "database": "${db_name}",
+  "params": {}
+}
+EOF
+)
+
+        local response_file54="${result_file}.single_${db_engine}_54.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload54}" "200" "${response_file54}" "" "${db_engine} Query #54" "true"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test query #55 - Get Number Range
+        local payload55
+        payload55=$(cat <<EOF
+{
+  "query_ref": 55,
+  "database": "${db_name}",
+  "params": {
+    "INTEGER": {"START": 500, "FINISH": 600}
+  }
+}
+EOF
+)
+
+        local response_file55="${result_file}.single_${db_engine}_55.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload55}" "200" "${response_file55}" "" "${db_engine} Query #55" "true"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test auth-required query #30 on public endpoint - should fail
+        local payload30_public
+        payload30_public=$(cat <<EOF
+{
+  "query_ref": 30,
+  "database": "${db_name}",
+  "params": {}
+}
+EOF
+)
+        local response_file30_public="${result_file}.single_${db_engine}_30_public.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload30_public}" "200" "${response_file30_public}" "" "${db_engine} Query #30 (public)" "\"fail\""; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test invalid query ref -100
+        local payload_invalid
+        payload_invalid=$(cat <<EOF
+{
+  "query_ref": -100,
+  "database": "${db_name}",
+  "params": {}
+}
+EOF
+)
+        local response_file_invalid="${result_file}.single_invalid_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # Expect 200 with "fail" response for invalid query ref
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_invalid}" "200" "${response_file_invalid}" "" "${db_engine} Invalid Query -100" "\"fail\""; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test invalid JSON - missing closing bracket
+        local payload_invalid_json
+        payload_invalid_json=$(cat <<EOF
+{
+  "query_ref": 53,
+  "database": "${db_name}",
+  "params": {}
+EOF
+)
+        local response_file_invalid_json="${result_file}.single_invalid_json_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # Expect 400 for invalid JSON
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_invalid_json}" "400" "${response_file_invalid_json}" "" "${db_engine} Invalid JSON"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test Param Test - QueryRef 56 with correct parameters (NUMERATOR=50, DENOMINATOR=10)
+        local payload_param_test
+        payload_param_test=$(cat <<EOF
+{
+  "query_ref": 56,
+  "database": "${db_name}",
+  "params": {
+    "INTEGER": {"NUMERATOR": 50, "DENOMINATOR": 10}
+  }
+}
+EOF
+)
+        local response_file_param_test="${result_file}.single_param_test_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # Expect 200 with success=true
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_param_test}" "200" "${response_file_param_test}" "" "${db_engine} Param Test" "true"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test Param Test Fail - QueryRef 56 with wrong parameter names (TOP=50, BOTTOM=10)
+        local payload_param_fail
+        payload_param_fail=$(cat <<EOF
+{
+  "query_ref": 56,
+  "database": "${db_name}",
+  "params": {
+    "INTEGER": {"TOP": 50, "BOTTOM": 10}
+  }
+}
+EOF
+)
+        local response_file_param_fail="${result_file}.single_param_fail_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # Expect 400 with parameter mismatch details
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_param_fail}" "400" "${response_file_param_fail}" "" "${db_engine} Param Test Fail" ""; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test Query Fail - QueryRef 56 with division by zero (NUMERATOR=50, DENOMINATOR=0)
+        local payload_query_fail
+        payload_query_fail=$(cat <<EOF
+{
+  "query_ref": 56,
+  "database": "${db_name}",
+  "params": {
+    "INTEGER": {"NUMERATOR": 50, "DENOMINATOR": 0}
+  }
+}
+EOF
+)
+        local response_file_query_fail="${result_file}.single_query_fail_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # Expect 422 with database error details
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_query_fail}" "422" "${response_file_query_fail}" "" "${db_engine} Query Fail" ""; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+    done
+
+    echo "SINGLE_PUBLIC_QUERY_TESTS_PASSED=${tests_passed}" >> "${result_file}"
+    echo "SINGLE_PUBLIC_QUERY_TESTS_TOTAL=${total_tests}" >> "${result_file}"
+}
+
+
+
+# Function to run conduit single query tests on unified server
+run_conduit_test_unified() {
+    local config_file="$1"
+    local log_suffix="$2"
+    local description="$3"
+
+    local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
+
+    # Start the unified server and get base_url and pid
+    local server_info
+    server_info=$(run_conduit_server "${config_file}" "${log_suffix}" "${description}" "${result_file}")
+
+    # Check if server startup failed
+    if [[ "${server_info}" == "FAILED:0" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server startup failed"
+        return 1
+    fi
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server started successfully: ${server_info}"
+
+    # Parse server info
+    local base_url hydrogen_pid
+    base_url=$(echo "${server_info}" | awk -F: '{print $1":"$2":"$3}')
+    hydrogen_pid=$(echo "${server_info}" | awk -F: '{print $4}')
+
+    print_message "50" "0" "Server log location: build/tests/logs/test_50_${TIMESTAMP}_conduit_query.log"
+
+    # Run conduit single query endpoint tests
+    test_conduit_single_public_query "${base_url}" "${result_file}"
+
+    echo "CONDUIT_TEST_COMPLETE" >> "${result_file}"
+
+    # Shutdown the server
+    shutdown_conduit_server "${hydrogen_pid}" "${result_file}"
+}
+
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
+
+HYDROGEN_BIN=''
+HYDROGEN_BIN_BASE=''
+# shellcheck disable=SC2310 # We want to continue even if the test fails
+if find_hydrogen_binary "${PROJECT_DIR}"; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
+    EXIT_CODE=1
+fi
+
+# Validate required environment variables for demo credentials
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Environment Variables"
+env_vars_valid=true
+if [[ -z "${HYDROGEN_DEMO_USER_NAME}" ]]; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: HYDROGEN_DEMO_USER_NAME is not set"
+    env_vars_valid=false
+fi
+if [[ -z "${HYDROGEN_DEMO_USER_PASS}" ]]; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: HYDROGEN_DEMO_USER_PASS is not set"
+    env_vars_valid=false
+fi
+if [[ -z "${HYDROGEN_DEMO_API_KEY}" ]]; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: HYDROGEN_DEMO_API_KEY is not set"
+    env_vars_valid=false
+fi
+
+if [[ "${env_vars_valid}" = true ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Required environment variables are set"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Missing required environment variables (HYDROGEN_DEMO_USER_NAME, HYDROGEN_DEMO_USER_PASS, HYDROGEN_DEMO_API_KEY)"
+    EXIT_CODE=1
+fi
+
+# Validate the unified configuration file
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
+# shellcheck disable=SC2310 # We want to continue even if the test fails
+if validate_config_file "${CONDUIT_CONFIG_FILE}"; then
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Process Configuration File"
+    port=$(get_webserver_port "${CONDUIT_CONFIG_FILE}")
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION} configuration will use port: ${port}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Unified configuration file validated successfully"
+    # PASS_COUNT=$(( PASS_COUNT + 1 ))
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Unified configuration file validation failed"
+    EXIT_CODE=1
+fi
+
+# Only proceed with conduit tests if prerequisites are met
+if [[ "${EXIT_CODE}" -eq 0 ]]; then
+    # print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Conduit single query endpoint tests on unified server"
+
+    # Run single server test
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting conduit test server (${CONDUIT_DESCRIPTION})"
+
+    # Run the conduit test on the single unified server
+    run_conduit_test_unified "${CONDUIT_CONFIG_FILE}" "${CONDUIT_LOG_SUFFIX}" "${CONDUIT_DESCRIPTION}"
+
+    # Process results
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION}: Analyzing results"
+
+    # Add links to log and result files for troubleshooting
+    log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${CONDUIT_LOG_SUFFIX}.log"
+    result_file="${LOG_PREFIX}${TIMESTAMP}_${CONDUIT_LOG_SUFFIX}.result"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Conduit Server: ${TESTS_DIR}/logs/${log_file##*/}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unified Server: ${DIAG_TEST_DIR}/${result_file##*/}"
+else
+    # Skip conduit tests if prerequisites failed
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping Conduit single query endpoint tests due to prerequisite failures"
+    EXIT_CODE=1
+fi
+
+# Print test completion summary
+print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+
+# Return status code if sourced, exit if run standalone
+${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"

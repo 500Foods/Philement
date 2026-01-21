@@ -153,17 +153,18 @@ enum MHD_Result handle_conduit_query_request(
     ParameterList* param_list;
     char* converted_sql;
     TypedParameter** ordered_params;
-    size_t param_count;
+    size_t param_count = 0;
     result = handle_parameter_processing(connection, params_json, db_queue, cache_entry,
                                         database, query_ref, &param_list, &converted_sql,
                                         &ordered_params, &param_count);
-    if (result != MHD_YES) {
+    if (result != MHD_YES || !converted_sql) {
         json_decref(request_json);
         return result;
     }
 
     // Generate parameter validation messages
-    char* message = generate_parameter_messages(cache_entry->sql_template, params_json);
+    // Temporarily disabled due to crashes - messages handled in handle_parameter_processing
+    char* message = NULL;
 
     // Step 6: Select optimal queue
     DatabaseQueue* selected_queue;

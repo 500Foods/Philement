@@ -551,7 +551,12 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_24_uploads.sh](/elements/001-hydrogen/hydrogen/tests/test_24_uploads.sh) - File upload functionality tests
 - [tests/test_25_mdns.sh](/elements/001-hydrogen/hydrogen/tests/test_25_mdns.sh) - mDNS service discovery tests
 - [tests/test_26_terminal.sh](/elements/001-hydrogen/hydrogen/tests/test_26_terminal.sh) - Terminal interface tests
-- [tests/test_51_conduit.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit.sh) - Conduit endpoints testing (all 4 endpoints with full parameter support across 7 database engines)
+- [tests/test_50_conduit_query.sh](/elements/001-hydrogen/hydrogen/tests/test_50_conduit_query.sh) - Conduit single query endpoint testing (public queries across 7 database engines)
+- [tests/test_51_conduit_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit_queries.sh) - Conduit multiple queries endpoint testing (batch queries across 7 database engines)
+- [tests/test_52_conduit_auth_query.sh](/elements/001-hydrogen/hydrogen/tests/test_52_conduit_auth_query.sh) - Conduit authenticated single query endpoint testing (JWT-protected queries across 7 database engines)
+- [tests/test_53_conduit_auth_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_53_conduit_auth_queries.sh) - Conduit authenticated multiple queries endpoint testing (batch authenticated queries across 7 database engines)
+- [tests/test_54_conduit_alt_query.sh](/elements/001-hydrogen/hydrogen/tests/test_54_conduit_alt_query.sh) - Conduit alt single query endpoint testing (cross-database single queries with JWT authentication)
+- [tests/test_55_conduit_alt_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_55_conduit_alt_queries.sh) - Conduit alt multiple queries endpoint testing (cross-database batch queries with JWT authentication)
 
 ### Database Tests
 
