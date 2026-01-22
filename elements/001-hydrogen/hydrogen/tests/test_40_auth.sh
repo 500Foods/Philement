@@ -45,7 +45,7 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Auth  {BLUE}engines: 7{RESET}"
+TEST_NAME="Auth"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
@@ -510,6 +510,8 @@ else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration file validation failed"
     EXIT_CODE=1
 fi
+
+TEST_NAME="Auth  {BLUE}engines: ${#AUTH_TEST_CONFIGS[@]}{RESET}"
 
 # Only proceed with auth tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then

@@ -30,6 +30,57 @@ extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
 extern SQLPrepare_t SQLPrepare_ptr;
 extern SQLBindParameter_t SQLBindParameter_ptr;
 
+// Helper function to trim trailing whitespace from strings (DB2-specific)
+static char* db2_trim_trailing_whitespace(char* str) {
+    if (!str) return NULL;
+
+    // Find the end of the string
+    char* end = str + strlen(str) - 1;
+
+    // Move backwards from the end, removing whitespace
+    while (end >= str && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) {
+        *end = '\0';
+        end--;
+    }
+
+    return str;
+}
+
+// Helper function to format DB2 datetime strings to standard format (DB2-specific)
+static char* db2_format_datetime_string(char* str) {
+    if (!str) return NULL;
+
+    // DB2 datetime format: "2023-12-25 14:30:00.000000"
+    // Standard format: "2023-12-25 14:30:00" (remove decimal point and microseconds)
+
+    size_t len = strlen(str);
+    // Look for the pattern YYYY-MM-DD HH:MM:SS. (19 chars + decimal)
+    if (len >= 20 && str[10] == ' ' && str[19] == '.') {
+        // Truncate at the decimal point to get "YYYY-MM-DD HH:MM:SS"
+        str[19] = '\0';
+    }
+
+    return str;
+}
+
+// Helper function to format DB2 timestamp strings to standard format (DB2-specific)
+static char* db2_format_timestamp_string(char* str) {
+    if (!str) return NULL;
+
+    // DB2 timestamp format: "2023-12-25 14:30:00.000032"
+    // Standard format: "2023-12-25 14:30:00.000" (truncate to milliseconds)
+
+    size_t len = strlen(str);
+    if (len >= 23 && str[10] == ' ' && str[19] == '.') {
+        // Truncate after 3 decimal places (milliseconds)
+        if (len > 23) {
+            str[23] = '\0';
+        }
+    }
+
+    return str;
+}
+
 // Helper function to cleanup column names (non-static for testing)
 void db2_cleanup_column_names(char** column_names, int column_count) {
     if (column_names) {
@@ -102,6 +153,7 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
         int sql_type = 0;
         bool got_type = db2_get_column_type(stmt_handle, col, &sql_type);
         bool is_numeric = got_type && db2_is_numeric_type(sql_type);
+        bool is_datetime = got_type && (sql_type == SQL_TYPE_DATE || sql_type == SQL_TYPE_TIME || sql_type == SQL_TYPE_TIMESTAMP);
 
         // Get column data - use dynamic allocation for large columns (like migration SQL)
         int data_len = 0;
@@ -165,8 +217,29 @@ bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count
                 }
                 *json_buffer_size += (size_t)written;
             } else {
-                // String types - quote and escape the value
+                // String types - apply DB2-specific formatting, trim trailing whitespace, then quote and escape the value
                 // For large strings (like migration SQL), use dynamic allocation for escaped data
+
+                // Apply datetime/timestamp formatting for DB2
+                if (is_datetime) {
+                    // Check column name to determine formatting (since DB2 uses TIMESTAMP for both DATETIME and TIMESTAMP columns)
+                    if (strstr(column_names[col], "datetime") != NULL) {
+                        db2_format_datetime_string(col_data);
+                    } else if (strstr(column_names[col], "timestamp") != NULL) {
+                        db2_format_timestamp_string(col_data);
+                    } else {
+                        // Fallback to SQL type
+                        if (sql_type == SQL_TYPE_TIMESTAMP) {
+                            db2_format_timestamp_string(col_data);
+                        } else if (sql_type == SQL_TYPE_DATE || sql_type == SQL_TYPE_TIME) {
+                            db2_format_datetime_string(col_data);
+                        }
+                    }
+                }
+
+                // Trim trailing whitespace (DB2-specific)
+                db2_trim_trailing_whitespace(col_data);
+
                 size_t escaped_size = (col_data ? strlen(col_data) * 2 : 0) + 1;
                 char* escaped_data = calloc(1, escaped_size);
                 if (!escaped_data) {
@@ -453,72 +526,31 @@ bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, Ty
             break;
         }
         case PARAM_TYPE_DATETIME: {
-            // TIMESTAMP_STRUCT: year, month, day, hour, minute, second, fraction
-            // Allocate TIMESTAMP_STRUCT
-            SQL_TIMESTAMP_STRUCT* timestamp_struct = malloc(sizeof(SQL_TIMESTAMP_STRUCT));
-            if (!timestamp_struct) return false;
-            
-            // Parse datetime string (YYYY-MM-DD HH:MM:SS format)
-            const char* datetime_value = param->value.datetime_value ? param->value.datetime_value : "1970-01-01 00:00:00";
-            int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
-            if (sscanf(datetime_value, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &minute, &second) != 6) {
-                log_this(designator, "Invalid DATETIME format (expected YYYY-MM-DD HH:MM:SS): %s", LOG_LEVEL_ERROR, 1, datetime_value);
-                free(timestamp_struct);
-                return false;
-            }
-            
-            timestamp_struct->year = (short)year;
-            timestamp_struct->month = (unsigned short)month;
-            timestamp_struct->day = (unsigned short)day;
-            timestamp_struct->hour = (unsigned short)hour;
-            timestamp_struct->minute = (unsigned short)minute;
-            timestamp_struct->second = (unsigned short)second;
-            timestamp_struct->fraction = 0; // No fractional seconds in this format
-            
-            bound_values[param_index - 1] = timestamp_struct;
-            str_len_indicators[param_index - 1] = 0;
-            log_this(designator, "Binding DATETIME parameter %u: %04d-%02d-%02d %02d:%02d:%02d", LOG_LEVEL_TRACE, 7,
-                     (unsigned int)param_index, year, month, day, hour, minute, second);
+            // Bind as string for DB2 CLI compatibility
+            size_t str_len = param->value.datetime_value ? strlen(param->value.datetime_value) : 0;
+            bound_values[param_index - 1] = param->value.datetime_value ? strdup(param->value.datetime_value) : strdup("");
+            if (!bound_values[param_index - 1]) return false;
+            str_len_indicators[param_index - 1] = (long)str_len;
+            log_this(designator, "Binding DATETIME parameter %u as string: value='%s', len=%zu", LOG_LEVEL_TRACE, 3,
+                      (unsigned int)param_index, (char*)bound_values[param_index - 1], str_len);
             bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
-                                               SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP, 0, 0,
-                                               bound_values[param_index - 1], 0,
-                                               &str_len_indicators[param_index - 1]);
+                                                SQL_C_CHAR, SQL_TYPE_TIMESTAMP, str_len > 0 ? str_len : 1, 0,
+                                                bound_values[param_index - 1], (long)(str_len + 1),
+                                                &str_len_indicators[param_index - 1]);
             break;
         }
         case PARAM_TYPE_TIMESTAMP: {
-            // TIMESTAMP_STRUCT: year, month, day, hour, minute, second, fraction (milliseconds)
-            // Allocate TIMESTAMP_STRUCT
-            SQL_TIMESTAMP_STRUCT* timestamp_struct = malloc(sizeof(SQL_TIMESTAMP_STRUCT));
-            if (!timestamp_struct) return false;
-            
-            // Parse timestamp string (YYYY-MM-DD HH:MM:SS.fff format)
-            const char* timestamp_value = param->value.timestamp_value ? param->value.timestamp_value : "1970-01-01 00:00:00.000";
-            int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, milliseconds = 0;
-            int parsed = sscanf(timestamp_value, "%d-%d-%d %d:%d:%d.%d", &year, &month, &day, &hour, &minute, &second, &milliseconds);
-            if (parsed < 6) {
-                log_this(designator, "Invalid TIMESTAMP format (expected YYYY-MM-DD HH:MM:SS.fff): %s", LOG_LEVEL_ERROR, 1, timestamp_value);
-                free(timestamp_struct);
-                return false;
-            }
-            // If only 6 fields parsed, milliseconds is 0 (fractional seconds are optional)
-            
-            timestamp_struct->year = (short)year;
-            timestamp_struct->month = (unsigned short)month;
-            timestamp_struct->day = (unsigned short)day;
-            timestamp_struct->hour = (unsigned short)hour;
-            timestamp_struct->minute = (unsigned short)minute;
-            timestamp_struct->second = (unsigned short)second;
-            // Convert milliseconds to nanoseconds (fraction field is nanoseconds)
-            timestamp_struct->fraction = (unsigned long)(milliseconds * 1000000);
-            
-            bound_values[param_index - 1] = timestamp_struct;
-            str_len_indicators[param_index - 1] = 0;
-            log_this(designator, "Binding TIMESTAMP parameter %u: %04d-%02d-%02d %02d:%02d:%02d.%03d", LOG_LEVEL_TRACE, 8,
-                     (unsigned int)param_index, year, month, day, hour, minute, second, milliseconds);
+            // Bind as string for DB2 CLI compatibility
+            size_t str_len = param->value.timestamp_value ? strlen(param->value.timestamp_value) : 0;
+            bound_values[param_index - 1] = param->value.timestamp_value ? strdup(param->value.timestamp_value) : strdup("");
+            if (!bound_values[param_index - 1]) return false;
+            str_len_indicators[param_index - 1] = (long)str_len;
+            log_this(designator, "Binding TIMESTAMP parameter %u as string: value='%s', len=%zu", LOG_LEVEL_TRACE, 3,
+                      (unsigned int)param_index, (char*)bound_values[param_index - 1], str_len);
             bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
-                                               SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP, 0, 0,
-                                               bound_values[param_index - 1], 0,
-                                               &str_len_indicators[param_index - 1]);
+                                                SQL_C_CHAR, SQL_TYPE_TIMESTAMP, str_len > 0 ? str_len : 1, 0,
+                                                bound_values[param_index - 1], (long)(str_len + 1),
+                                                &str_len_indicators[param_index - 1]);
             break;
         }
     }
