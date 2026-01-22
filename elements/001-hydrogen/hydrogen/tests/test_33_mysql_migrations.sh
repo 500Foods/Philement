@@ -149,7 +149,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 if validate_config_file "${CONFIG_FILE}"; then
     port=$(get_webserver_port "${CONFIG_FILE}")
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${ENGINE_NAME} migration configuration will use port: ${port}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Configuration file validated successfully"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration file validated successfully"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration file validation failed"

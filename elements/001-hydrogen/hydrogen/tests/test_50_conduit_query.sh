@@ -10,6 +10,15 @@
 # run_conduit_test_unified()
 
 # CHANGELOG
+# 1.7.0 - 2026-01-22 - Added QueryRef #57 parameter type testing
+#                    - Test all 9 parameter datatypes (INTEGER, STRING, BOOLEAN, FLOAT, TEXT, DATE, TIME, DATETIME, TIMESTAMP)
+#                    - Cross-engine result comparison to verify identical values across all database engines
+#                    - Comprehensive parameter validation testing
+#                    - Missing required parameter test (Query #55 with only START, missing FINISH)
+#                    - Unused parameter test (Query #55 with extra parameter)
+#                    - Invalid database name test
+#                    - Parameter type mismatch test (sending string for INTEGER)
+#                    - Enhanced response format validation
 # 1.5.0 - 2026-01-21 - Added parameter and query failure testing
 #                    - Param Test: QueryRef 56 with NUMERATOR=50, DENOMINATOR=10 (expects success)
 #                    - Param Test Fail: QueryRef 56 with TOP=50, BOTTOM=10 (expects failure with parameter mismatch message)
@@ -25,7 +34,7 @@ TEST_NAME="Conduit Single Query"
 TEST_ABBR="CSQ"
 TEST_NUMBER="50"
 TEST_COUNTER=0
-TEST_VERSION="1.5.0"
+TEST_VERSION="1.7.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -197,6 +206,88 @@ EOF
             tests_passed=$(( tests_passed + 1 ))
         fi
 
+        # Test missing required parameter - Query #55 with only START, missing FINISH
+        local payload_missing_param
+        payload_missing_param=$(cat <<EOF
+{
+  "query_ref": 55,
+  "database": "${db_name}",
+  "params": {
+    "INTEGER": {"START": 500}
+  }
+}
+EOF
+)
+        local response_file_missing_param="${result_file}.single_missing_param_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # Expect 400 for missing required parameter
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_missing_param}" "400" "${response_file_missing_param}" "" "${db_engine} Missing Required Parameter" "none"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test unused parameter - Query #55 with extra parameter
+        local payload_unused_param
+        payload_unused_param=$(cat <<EOF
+{
+  "query_ref": 55,
+  "database": "${db_name}",
+  "params": {
+    "INTEGER": {"START": 500, "FINISH": 600, "EXTRA": 123}
+  }
+}
+EOF
+)
+        local response_file_unused_param="${result_file}.single_unused_param_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # Expect 200 with warning in message for unused parameter
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_unused_param}" "200" "${response_file_unused_param}" "" "${db_engine} Unused Parameter" "true"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test invalid database name
+        local payload_invalid_db
+        payload_invalid_db=$(cat <<EOF
+{
+  "query_ref": 53,
+  "database": "nonexistent_database",
+  "params": {}
+}
+EOF
+)
+        local response_file_invalid_db="${result_file}.single_invalid_db_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # Expect 400 for invalid database name
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_invalid_db}" "400" "${response_file_invalid_db}" "" "${db_engine} Invalid Database" "none"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test parameter type mismatch - send string for INTEGER parameter
+        local payload_type_mismatch
+        payload_type_mismatch=$(cat <<EOF
+{
+  "query_ref": 55,
+  "database": "${db_name}",
+  "params": {
+    "INTEGER": {"START": "invalid_string", "FINISH": 600}
+  }
+}
+EOF
+)
+        local response_file_type_mismatch="${result_file}.single_type_mismatch_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # Expect 400 for parameter type mismatch
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload_type_mismatch}" "400" "${response_file_type_mismatch}" "" "${db_engine} Parameter Type Mismatch" "none"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
         # Test Param Test - QueryRef 56 with correct parameters (NUMERATOR=50, DENOMINATOR=10)
         local payload_param_test
         payload_param_test=$(cat <<EOF
@@ -331,6 +422,186 @@ EOF
             tests_passed=$(( tests_passed + 1 ))
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${db_engine} Query Fail - Unexpected HTTP status ${http_status}"
+        fi
+
+        # Test Query Params Test - QueryRef 57 with all parameter types
+        local payload_params_test
+        payload_params_test=$(cat <<EOF
+{
+  "query_ref": 57,
+  "database": "${db_name}",
+  "params": {
+    "INTEGER": {"INTEGER": 42},
+    "STRING": {"STRING": "test_value"},
+    "BOOLEAN": {"BOOLEAN": true},
+    "FLOAT": {"FLOAT": 3.14159},
+    "TEXT": {"TEXT": "This is a longer text value for testing"},
+    "DATE": {"DATE": "2023-12-25"},
+    "TIME": {"TIME": "14:30:00"},
+    "DATETIME": {"DATETIME": "2023-12-25 14:30:00"},
+    "TIMESTAMP": {"TIMESTAMP": "2023-12-25 14:30:00.123"}
+  }
+}
+EOF
+)
+        local response_file_params_test="${result_file}.single_params_test_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
+
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine} Query Params Test #57"
+
+        local http_status
+        http_status=$(curl -s -X POST "${base_url}/api/conduit/query" \
+            -H "Content-Type: application/json" \
+            -d "${payload_params_test}" \
+            -w "%{http_code}" -o "${response_file_params_test}" 2>/dev/null)
+
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${http_status}"
+
+        # Show response details for troubleshooting
+        if command -v jq >/dev/null 2>&1 && [[ -f "${response_file_params_test}" ]]; then
+            # Build summary line
+            local summary_parts=()
+
+            # Show success field
+            local success_val
+            success_val=$(jq -r '.success' "${response_file_params_test}" 2>/dev/null || echo "unknown")
+            if [[ "${success_val}" != "null" ]]; then
+                summary_parts+=("Success: ${success_val}")
+            fi
+
+            # Show row_count if present
+            local row_count
+            row_count=$(jq -r '.row_count' "${response_file_params_test}" 2>/dev/null || echo "")
+            if [[ -n "${row_count}" ]] && [[ "${row_count}" != "null" ]]; then
+                row_count_formatted=$(format_number "${row_count}")
+                summary_parts+=("Rows: ${row_count_formatted}")
+            fi
+
+            # Show error field if present
+            local error_msg
+            error_msg=$(jq -r '.error' "${response_file_params_test}" 2>/dev/null || echo "")
+            if [[ -n "${error_msg}" ]] && [[ "${error_msg}" != "null" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Error: ${error_msg}"
+            fi
+
+            # Show message field if present
+            local message
+            message=$(jq -r '.message' "${response_file_params_test}" 2>/dev/null || echo "")
+            if [[ -n "${message}" ]] && [[ "${message}" != "null" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Message: ${message}"
+            fi
+
+            # Show results file with size
+            local file_size
+            file_size=$(stat -c %s "${response_file_params_test}" 2>/dev/null || echo "unknown")
+            file_size_formatted=$(format_number "${file_size}")
+            summary_parts+=("Response: ${file_size_formatted} bytes")
+
+            # Print summary line
+            if [[ ${#summary_parts[@]} -gt 0 ]]; then
+                local summary=""
+                for part in "${summary_parts[@]}"; do
+                    if [[ -n "${summary}" ]]; then
+                        summary="${summary}, ${part}"
+                    else
+                        summary="${part}"
+                    fi
+                done
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${summary}"
+            fi
+
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${response_file_params_test}"
+        fi
+
+        # Check if response is successful
+        if [[ "${http_status}" == "200" ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${db_engine} Query Params Test #57 - Request completed"
+            tests_passed=$(( tests_passed + 1 ))
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${db_engine} Query Params Test #57 - Expected HTTP 200, got ${http_status}"
+        fi
+    done
+
+    # Cross-engine parameter test result comparison
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Cross-Engine Parameter Test Comparison"
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
+
+    local comparison_tests_passed=0
+    local comparison_tests_total=0
+
+    # Define the parameters to test
+    local parameters=("float_test" "boolean_test" "integer_test" "string_test" "datetime_test" "timestamp_test" "text_test" "time_test" "date_test")
+
+    # Collect results from all ready databases for Query #57
+    declare -A engine_results
+    local ready_engines=()
+
+    for db_engine in "${!DATABASE_NAMES[@]}"; do
+        # Check if database is ready
+        if ! "${GREP}" -q "DATABASE_READY_${db_engine}=true" "${result_file}" 2>/dev/null; then
+            continue
+        fi
+
+        local response_file="${result_file}.single_params_test_${db_engine}.json"
+
+        if [[ -f "${response_file}" ]]; then
+            # Extract the data row from the response
+            local data_result
+            data_result=$(jq -r '.rows[0]' "${response_file}" 2>/dev/null || echo "")
+
+            if [[ -n "${data_result}" ]] && [[ "${data_result}" != "null" ]]; then
+                engine_results["${db_engine}"]="${data_result}"
+                ready_engines+=("${db_engine}")
+            else
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine} has no valid result data"
+            fi
+        else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine} response file not found"
+        fi
+    done
+
+    # Compare each parameter individually
+    for param in "${parameters[@]}"; do
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Compare ${param} results"
+
+        local param_values=()
+        local param_engines=()
+        local all_match=true
+        local reference_value=""
+
+        # Collect values for this parameter from all engines
+        for db_engine in "${ready_engines[@]}"; do
+            local json_data="${engine_results[${db_engine}]}"
+            local param_value
+            param_value=$(echo "${json_data}" | jq -r ".${param}" 2>/dev/null || echo "")
+
+            if [[ -n "${param_value}" ]] && [[ "${param_value}" != "null" ]]; then
+                param_values+=("${param_value}")
+                param_engines+=("${db_engine}")
+
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine}: \"${param_value}\""
+
+                if [[ -z "${reference_value}" ]]; then
+                    reference_value="${param_value}"
+                elif [[ "${param_value}" != "${reference_value}" ]]; then
+                    all_match=false
+                fi
+            else
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine}: (no value)"
+                all_match=false
+            fi
+        done
+
+        comparison_tests_total=$(( comparison_tests_total + 1 ))
+
+        if [[ "${all_match}" == true ]] && [[ ${#param_values[@]} -gt 1 ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All ${param} results match"
+            comparison_tests_passed=$(( comparison_tests_passed + 1 ))
+        elif [[ ${#param_values[@]} -eq 0 ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${param} - No valid results to compare"
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${param} results differ between engines"
         fi
     done
 

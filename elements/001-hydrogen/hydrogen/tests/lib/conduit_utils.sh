@@ -167,6 +167,7 @@ validate_conduit_request() {
 
         # Check success field if expected_success is specified
         if [[ -n "${expected_success}" && "${expected_success}" != "none" ]]; then
+            # shellcheck disable=SC2154 # GREP provided via tests/lib/framework.sh
             if "${GREP}" -q "\"success\"[[:space:]]*:[[:space:]]*${expected_success}" "${output_file}"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} - Request successful"
                 return 0

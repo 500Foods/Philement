@@ -682,7 +682,7 @@ char* check_missing_parameters_simple(const char* sql_template, ParameterList* p
 
     if (param_list) {
         for (size_t i = 0; i < param_list->count; i++) {
-            TypedParameter* param = param_list->params[i];
+            const TypedParameter* param = param_list->params[i];
             if (param->name) {
                 // Check if already in list
                 bool found = false;
@@ -841,7 +841,7 @@ char* check_unused_parameters_simple(const char* sql_template, ParameterList* pa
     size_t prefix_len = strlen("Unused Parameters: ");
 
     for (size_t i = 0; i < param_list->count; i++) {
-        TypedParameter* param = param_list->params[i];
+        const TypedParameter* param = param_list->params[i];
         if (param->name) {
             bool found = false;
             for (size_t j = 0; j < required_count; j++) {
@@ -885,11 +885,11 @@ char* check_unused_parameters_simple(const char* sql_template, ParameterList* pa
 }
 
 enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, json_t* params_json,
-                                                const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
-                                                const char* database, int query_ref,
-                                                ParameterList** param_list, char** converted_sql,
-                                                TypedParameter*** ordered_params, size_t* param_count,
-                                                char** message) {
+                                                 const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
+                                                 const char* database, int query_ref,
+                                                 ParameterList** param_list, char** converted_sql,
+                                                 TypedParameter*** ordered_params, size_t* param_count,
+                                                 char** message) {
     // (B) Validate Params: Check type mismatches
     char* type_error = validate_parameter_types_simple(params_json);
     if (type_error) {
@@ -902,21 +902,36 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
         return MHD_YES;
     }
 
-    // (D) Assign Parameters: Parse, convert, check missing/unused
-    bool processing_success = process_parameters(params_json, param_list, cache_entry->sql_template,
-                                                   db_queue->engine_type, converted_sql, ordered_params, param_count);
-
-    if (!processing_success) {
-        json_t *error_response = create_processing_error_response("Parameter processing failed", database, query_ref);
-        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
-        *converted_sql = NULL;
-        return MHD_YES;
+    // (C) Check for missing required parameters BEFORE processing
+    // Parse parameters first to check what's provided
+    ParameterList* temp_param_list = NULL;
+    if (params_json && json_is_object(params_json)) {
+        char* params_str = json_dumps(params_json, JSON_COMPACT);
+        if (params_str) {
+            temp_param_list = parse_typed_parameters(params_str, NULL);
+            free(params_str);
+        }
+    }
+    if (!temp_param_list) {
+        temp_param_list = calloc(1, sizeof(ParameterList));
     }
 
-    // Check for missing required parameters
-    char* missing_error = check_missing_parameters_simple(cache_entry->sql_template, *param_list);
+    char* missing_error = check_missing_parameters_simple(cache_entry->sql_template, temp_param_list);
     if (missing_error) {
+        // Clean up temp list
+        if (temp_param_list) {
+            if (temp_param_list->params) {
+                for (size_t i = 0; i < temp_param_list->count; i++) {
+                    if (temp_param_list->params[i]) {
+                        free(temp_param_list->params[i]->name);
+                        free(temp_param_list->params[i]);
+                    }
+                }
+                free(temp_param_list->params);
+            }
+            free(temp_param_list);
+        }
+
         json_t *error_response = create_processing_error_response("Missing parameters", database, query_ref);
         json_object_set_new(error_response, "message", json_string(missing_error));
         api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
@@ -926,12 +941,52 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
         return MHD_YES;
     }
 
-    // Check for unused parameters (warning only)
+    // (D) Assign Parameters: Parse and convert now that we know parameters are complete
+    bool processing_success = process_parameters(params_json, param_list, cache_entry->sql_template,
+                                                    db_queue->engine_type, converted_sql, ordered_params, param_count);
+
+    if (!processing_success) {
+        // Clean up temp list
+        if (temp_param_list) {
+            if (temp_param_list->params) {
+                for (size_t i = 0; i < temp_param_list->count; i++) {
+                    if (temp_param_list->params[i]) {
+                        free(temp_param_list->params[i]->name);
+                        free(temp_param_list->params[i]);
+                    }
+                }
+                free(temp_param_list->params);
+            }
+            free(temp_param_list);
+        }
+
+        json_t *error_response = create_processing_error_response("Parameter processing failed", database, query_ref);
+        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+        json_decref(error_response);
+        *converted_sql = NULL;
+        return MHD_YES;
+    }
+
+    // Check for unused parameters (warning only) - now using the final param_list
     char* unused_warning = check_unused_parameters_simple(cache_entry->sql_template, *param_list);
     if (unused_warning) {
         log_this(SR_API, "%s: Query %d has unused parameters: %s", LOG_LEVEL_ALERT, 3, conduit_service_name(), query_ref, unused_warning);
         // Set message for response
         *message = unused_warning;
+    }
+
+    // Clean up temp list
+    if (temp_param_list) {
+        if (temp_param_list->params) {
+            for (size_t i = 0; i < temp_param_list->count; i++) {
+                if (temp_param_list->params[i]) {
+                    free(temp_param_list->params[i]->name);
+                    free(temp_param_list->params[i]);
+                }
+            }
+            free(temp_param_list->params);
+        }
+        free(temp_param_list);
     }
 
     return MHD_YES; // Continue processing
