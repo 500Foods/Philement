@@ -421,19 +421,40 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         // Prepare statement
         if (!mysql_stmt_prepare_ptr || mysql_stmt_prepare_ptr(stmt, positional_sql, (unsigned long)strlen(positional_sql)) != 0) {
             log_this(designator, "MySQL execute_query: Failed to prepare statement", LOG_LEVEL_ERROR, 0);
+            char* error_message = NULL;
             if (mysql_stmt_error_ptr) {
                 const char* error_msg = mysql_stmt_error_ptr(stmt);
                 if (error_msg && strlen(error_msg) > 0) {
+                    error_message = strdup(error_msg);
                     log_this(designator, "MySQL prepare error: %s", LOG_LEVEL_ERROR, 1, error_msg);
                 }
             }
+            if (!error_message) {
+                error_message = strdup("MySQL prepared statement preparation failed (no error details)");
+            }
+
+            // Create error result
+            QueryResult* error_result = calloc(1, sizeof(QueryResult));
+            if (error_result) {
+                error_result->success = false;
+                error_result->error_message = error_message;
+                error_result->row_count = 0;
+                error_result->column_count = 0;
+                error_result->data_json = strdup("[]");
+                error_result->execution_time_ms = 0;
+                error_result->affected_rows = 0;
+                *result = error_result;
+            } else {
+                free(error_message);
+            }
+
             if (mysql_stmt_close_ptr) {
                 mysql_stmt_close_ptr(stmt);
             }
             free(positional_sql);
             free(ordered_params);
             free_parameter_list(param_list);
-            return false;
+            return (error_result != NULL);
         }
         
         // Allocate MYSQL_BIND array and bound values storage

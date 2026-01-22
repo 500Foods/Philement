@@ -32,13 +32,18 @@ extern PQcmdTuples_t PQcmdTuples_ptr;
 extern PQerrorMessage_t PQerrorMessage_ptr;
 extern PQexecPrepared_t PQexecPrepared_ptr;
 
-// PostgreSQL type OIDs for common numeric types
+// PostgreSQL type OIDs for common types
 #define POSTGRES_INT2OID 21    // smallint
 #define POSTGRES_INT4OID 23    // integer
 #define POSTGRES_INT8OID 20    // bigint
 #define POSTGRES_FLOAT4OID 700  // real
 #define POSTGRES_FLOAT8OID 701  // double precision
 #define POSTGRES_NUMERICOID 1700 // numeric/decimal
+#define POSTGRES_DATEOID 1082   // date
+#define POSTGRES_TIMEOID 1083   // time without time zone
+#define POSTGRES_TIMETZOID 1266 // time with time zone
+#define POSTGRES_TIMESTAMPOID 1114  // timestamp without time zone
+#define POSTGRES_TIMESTAMPTZOID 1184 // timestamp with time zone
 
 // Helper function to check if PostgreSQL type is numeric
 static bool postgresql_is_numeric_type(int oid) {
@@ -53,6 +58,38 @@ static bool postgresql_is_numeric_type(int oid) {
         default:
             return false;
     }
+}
+
+// Helper function to check if PostgreSQL type is datetime/timestamp
+static bool postgresql_is_datetime_type(int oid) {
+    switch (oid) {
+        case POSTGRES_DATEOID:
+        case POSTGRES_TIMEOID:
+        case POSTGRES_TIMETZOID:
+        case POSTGRES_TIMESTAMPOID:
+        case POSTGRES_TIMESTAMPTZOID:
+            return true;
+        default:
+            return false;
+    }
+}
+
+// Helper function to format PostgreSQL timestamp strings to standard format (PostgreSQL-specific)
+static char* postgresql_format_timestamp_string(char* str) {
+    if (!str) return NULL;
+
+    // PostgreSQL timestamp format: "2023-12-25 14:30:00.123+00"
+    // Standard format: "2023-12-25 14:30:00.123" (remove timezone)
+
+    size_t len = strlen(str);
+    // Look for timezone suffix "+00" or "-00" at the end
+    if (len >= 3 && ((str[len-3] == '+' && str[len-2] == '0' && str[len-1] == '0') ||
+                     (str[len-3] == '-' && str[len-2] == '0' && str[len-1] == '0'))) {
+        // Remove the timezone suffix
+        str[len-3] = '\0';
+    }
+
+    return str;
 }
 
 // External declarations for constants (defined in connection.c)
@@ -326,9 +363,17 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
                 // Get column type to determine if we should quote the value
                 int col_type_oid = PQftype_ptr ? PQftype_ptr(pg_result, (int)col) : 0;
                 bool is_numeric = postgresql_is_numeric_type(col_type_oid);
-                
-                const char* value = PQgetvalue_ptr(pg_result, (int)row, (int)col);
+                bool is_datetime = postgresql_is_datetime_type(col_type_oid);
+
+                const char* raw_value = PQgetvalue_ptr(pg_result, (int)row, (int)col);
                 const char* col_name = db_result->column_names[col];
+
+                // Apply PostgreSQL-specific formatting for datetime/timestamp values
+                char* formatted_value = NULL;
+                const char* value = raw_value;
+                if (is_datetime && raw_value) {
+                    formatted_value = postgresql_format_timestamp_string(strdup(raw_value));
+                }
                 
                 // Calculate needed size for this column (name + value + escaping overhead)
                 size_t value_len = value ? strlen(value) : 0;
@@ -348,12 +393,12 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
                 
                 if (is_numeric && value && strlen(value) > 0) {
                     // Numeric type - no quotes around value
-                    sprintf(append_pos, "\"%s\":%s", col_name, value);
+                    sprintf(append_pos, "\"%s\":%s", col_name, formatted_value ? formatted_value : value);
                 } else if (value) {
                     // String type - escape and quote
                     sprintf(append_pos, "\"%s\":\"", col_name);
                     char* dst = append_pos + strlen(append_pos);
-                    const char* src = value;
+                    const char* src = formatted_value ? formatted_value : value;
                     while (*src) {
                         if (*src == '"' || *src == '\\') {
                             *dst++ = '\\';
@@ -379,6 +424,11 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
                 } else {
                     // NULL value
                     sprintf(append_pos, "\"%s\":null", col_name);
+                }
+
+                // Clean up formatted value if it was allocated
+                if (formatted_value) {
+                    free(formatted_value);
                 }
 
                 // Log the actual data values for debugging
@@ -637,9 +687,17 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
                 // Get column type to determine if we should quote the value
                 int col_type_oid = PQftype_ptr ? PQftype_ptr(pg_result, (int)col) : 0;
                 bool is_numeric = postgresql_is_numeric_type(col_type_oid);
+                bool is_datetime = postgresql_is_datetime_type(col_type_oid);
 
-                const char* value = PQgetvalue_ptr(pg_result, (int)row, (int)col);
+                const char* raw_value = PQgetvalue_ptr(pg_result, (int)row, (int)col);
                 const char* col_name = db_result->column_names[col];
+
+                // Apply PostgreSQL-specific formatting for datetime/timestamp values
+                char* formatted_value = NULL;
+                const char* value = raw_value;
+                if (is_datetime && raw_value) {
+                    formatted_value = postgresql_format_timestamp_string(strdup(raw_value));
+                }
 
                 // Calculate needed size for this column (name + value + escaping overhead)
                 size_t value_len = value ? strlen(value) : 0;
@@ -659,12 +717,12 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
 
                 if (is_numeric && value && strlen(value) > 0) {
                     // Numeric type - no quotes around value
-                    sprintf(append_pos, "\"%s\":%s", col_name, value);
+                    sprintf(append_pos, "\"%s\":%s", col_name, formatted_value ? formatted_value : value);
                 } else if (value) {
                     // String type - escape and quote
                     sprintf(append_pos, "\"%s\":\"", col_name);
                     char* dst = append_pos + strlen(append_pos);
-                    const char* src = value;
+                    const char* src = formatted_value ? formatted_value : value;
                     while (*src) {
                         if (*src == '"' || *src == '\\') {
                             *dst++ = '\\';
