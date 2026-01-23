@@ -1,6 +1,5 @@
 /*
  * Conduit Service Parameter Processing Helper Functions
- * 
  * Functions for parameter parsing and processing.
  */
 
@@ -38,10 +37,8 @@ bool analyze_parameter_validation(const char* sql_template, json_t* params_json,
 
 // Simple parameter type validation - checks type mismatches only
 char* validate_parameter_types_simple(json_t* params_json);
-
 // Check for missing required parameters after parsing
 char* check_missing_parameters_simple(const char* sql_template, ParameterList* param_list);
-
 // Check for unused provided parameters (warning only)
 char* check_unused_parameters_simple(const char* sql_template, ParameterList* param_list);
 
@@ -626,7 +623,6 @@ char* check_missing_parameters_simple(const char* sql_template, ParameterList* p
     if (!sql_template) {
         return NULL; // No template, no missing parameters
     }
-
     // Collect required parameters from SQL template
     const char* sql = sql_template;
     char** required_params = NULL;
@@ -951,8 +947,7 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
     }
 
     // (D) Assign Parameters: Parse and convert now that we know parameters are complete
-    bool processing_success = process_parameters(params_json, param_list, cache_entry->sql_template,
-                                                    db_queue->engine_type, converted_sql, ordered_params, param_count);
+    bool processing_success = process_parameters(params_json, param_list, cache_entry->sql_template, db_queue->engine_type, converted_sql, ordered_params, param_count);
 
     if (!processing_success) {
         // Clean up temp list
