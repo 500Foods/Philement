@@ -133,11 +133,12 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
                    database_queue_record_query_failure(db_queue, 4);
                }
 
-               // Signal pending result with NULL result on failure
+               // Signal pending result with error result on failure
                if (query->query_id) {
                    PendingResultManager* pending_mgr = get_pending_result_manager();
                    if (pending_mgr) {
-                       pending_result_signal_ready(pending_mgr, query->query_id, NULL, dqm_label_exec);
+                       pending_result_signal_ready(pending_mgr, query->query_id, result, dqm_label_exec);
+                       result = NULL; // Ownership transferred to pending result
                    }
                }
 
