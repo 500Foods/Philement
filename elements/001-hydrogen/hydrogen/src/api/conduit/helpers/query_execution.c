@@ -40,6 +40,13 @@ extern char* mock_generate_query_id(void);
 extern DatabaseQueue* mock_select_query_queue(const char* database, const char* queue_type);
 #endif
 
+// Enable mock for prepare_and_submit_query
+#ifdef USE_MOCK_PREPARE_AND_SUBMIT_QUERY
+extern bool mock_prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_id,
+                                         const char* sql_template, TypedParameter** ordered_params,
+                                         size_t param_count, const QueryCacheEntry* cache_entry);
+#endif
+
 // Generate unique query ID
 char* generate_query_id(void) {
 #ifdef USE_MOCK_GENERATE_QUERY_ID
@@ -58,8 +65,17 @@ char* generate_query_id(void) {
 
 // Prepare and submit database query
 bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_id,
-                                const char* sql_template, TypedParameter** ordered_params,
-                                size_t param_count, const QueryCacheEntry* cache_entry) {
+                                 const char* sql_template, TypedParameter** ordered_params,
+                                 size_t param_count, const QueryCacheEntry* cache_entry) {
+#ifdef USE_MOCK_PREPARE_AND_SUBMIT_QUERY
+    return mock_prepare_and_submit_query(selected_queue, query_id, sql_template, ordered_params,
+                                         param_count, cache_entry);
+#else
+    // Validate required parameters
+    if (!selected_queue || !query_id || !sql_template || !cache_entry) {
+        return false;
+    }
+
     // Validate parameter count to prevent excessive memory usage
     if (param_count > 100) {
         log_this(SR_API, "Parameter count too high: %zu", LOG_LEVEL_ERROR, 1, param_count);
@@ -180,6 +196,7 @@ bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_i
     // Submit query to selected queue
     bool submit_result = database_queue_submit_query(selected_queue, &db_query);
     return submit_result;
+#endif
 }
 
 // Wait for query result
@@ -255,14 +272,14 @@ json_t* build_error_response(int query_ref, const char* database, const QueryCac
             char* combined_message = malloc(combined_len);
             if (combined_message) {
                 snprintf(combined_message, combined_len, "%s | %s", result->error_message, message);
-                json_object_set_new(response, "message", json_string(combined_message));
+                json_object_set_new(response, "database_error", json_string(combined_message));
                 free(combined_message);
             } else {
                 // Fallback to just database error
-                json_object_set_new(response, "message", json_string(result->error_message));
+                json_object_set_new(response, "database_error", json_string(result->error_message));
             }
         } else {
-            json_object_set_new(response, "message", json_string(result->error_message));
+            json_object_set_new(response, "database_error", json_string(result->error_message));
         }
     } else {
         json_object_set_new(response, "error", json_string("Query execution failed"));
@@ -311,15 +328,15 @@ unsigned int determine_http_status(const PendingQueryResult* pending, const Quer
     if (pending_result_is_timed_out(pending)) {
         return MHD_HTTP_REQUEST_TIMEOUT;
     } else if (result && result->error_message) {
-        return MHD_HTTP_UNPROCESSABLE_ENTITY;
+        return MHD_HTTP_INTERNAL_SERVER_ERROR;
     } else {
         return MHD_HTTP_BAD_REQUEST;
     }
 }
 
 enum MHD_Result handle_query_id_generation(struct MHD_Connection *connection, const char* database,
-                                            int query_ref, ParameterList* param_list, char* converted_sql,
-                                            TypedParameter** ordered_params, char** query_id) {
+                                             int query_ref, ParameterList* param_list, char* converted_sql,
+                                             TypedParameter** ordered_params, char** query_id) {
     *query_id = generate_query_id();
     if (!*query_id) {
         free(converted_sql);
@@ -329,7 +346,7 @@ enum MHD_Result handle_query_id_generation(struct MHD_Connection *connection, co
 
         api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
         json_decref(error_response);
-        return MHD_YES; // Response sent - processing complete
+        return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
@@ -349,7 +366,7 @@ enum MHD_Result handle_pending_registration(struct MHD_Connection *connection, c
 
         api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
         json_decref(error_response);
-        return MHD_YES; // Response sent - processing complete
+        return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
@@ -369,9 +386,9 @@ enum MHD_Result handle_query_submission(struct MHD_Connection *connection, const
 
         json_t *error_response = create_processing_error_response("Failed to submit query", database, query_ref);
 
-        enum MHD_Result result = api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
         json_decref(error_response);
-        return result;
+        return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }

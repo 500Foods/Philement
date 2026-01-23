@@ -18,8 +18,8 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Conduit Auth Single Query {BLUE}CASQ: 0{RESET}"
-TEST_ABBR="CAS"
+TEST_NAME="Secure Single Query"
+TEST_ABBR="SSQ"
 TEST_NUMBER="52"
 TEST_COUNTER=0
 TEST_VERSION="1.0.0"

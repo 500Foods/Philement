@@ -885,11 +885,20 @@ char* check_unused_parameters_simple(const char* sql_template, ParameterList* pa
 }
 
 enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, json_t* params_json,
-                                                 const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
-                                                 const char* database, int query_ref,
-                                                 ParameterList** param_list, char** converted_sql,
-                                                 TypedParameter*** ordered_params, size_t* param_count,
-                                                 char** message) {
+                                             const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
+                                             const char* database, int query_ref,
+                                             ParameterList** param_list, char** converted_sql,
+                                             TypedParameter*** ordered_params, size_t* param_count,
+                                             char** message) {
+    // Check for NULL db_queue
+    if (!db_queue) {
+        json_t *error_response = create_processing_error_response("Database queue not available", database, query_ref);
+        api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        json_decref(error_response);
+        *converted_sql = NULL;
+        return MHD_NO;
+    }
+
     // (B) Validate Params: Check type mismatches
     char* type_error = validate_parameter_types_simple(params_json);
     if (type_error) {

@@ -526,9 +526,17 @@ bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, Ty
             break;
         }
         case PARAM_TYPE_DATETIME: {
+            // Validate DATETIME format (YYYY-MM-DD HH:MM:SS)
+            const char* datetime_value = param->value.datetime_value ? param->value.datetime_value : "";
+            int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
+            if (sscanf(datetime_value, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &minute, &second) != 6) {
+                log_this(designator, "Invalid DATETIME format (expected YYYY-MM-DD HH:MM:SS): %s", LOG_LEVEL_ERROR, 1, datetime_value);
+                return false;
+            }
+
             // Bind as string for DB2 CLI compatibility
-            size_t str_len = param->value.datetime_value ? strlen(param->value.datetime_value) : 0;
-            bound_values[param_index - 1] = param->value.datetime_value ? strdup(param->value.datetime_value) : strdup("");
+            size_t str_len = strlen(datetime_value);
+            bound_values[param_index - 1] = strdup(datetime_value);
             if (!bound_values[param_index - 1]) return false;
             str_len_indicators[param_index - 1] = (long)str_len;
             log_this(designator, "Binding DATETIME parameter %u as string: value='%s', len=%zu", LOG_LEVEL_TRACE, 3,
@@ -540,9 +548,18 @@ bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, Ty
             break;
         }
         case PARAM_TYPE_TIMESTAMP: {
+            // Validate TIMESTAMP format (YYYY-MM-DD HH:MM:SS.FFF)
+            const char* timestamp_value = param->value.timestamp_value ? param->value.timestamp_value : "";
+            int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
+            float fraction = 0.0f;
+            if (sscanf(timestamp_value, "%d-%d-%d %d:%d:%d.%f", &year, &month, &day, &hour, &minute, &second, &fraction) != 7) {
+                log_this(designator, "Invalid TIMESTAMP format (expected YYYY-MM-DD HH:MM:SS.FFF): %s", LOG_LEVEL_ERROR, 1, timestamp_value);
+                return false;
+            }
+
             // Bind as string for DB2 CLI compatibility
-            size_t str_len = param->value.timestamp_value ? strlen(param->value.timestamp_value) : 0;
-            bound_values[param_index - 1] = param->value.timestamp_value ? strdup(param->value.timestamp_value) : strdup("");
+            size_t str_len = strlen(timestamp_value);
+            bound_values[param_index - 1] = strdup(timestamp_value);
             if (!bound_values[param_index - 1]) return false;
             str_len_indicators[param_index - 1] = (long)str_len;
             log_this(designator, "Binding TIMESTAMP parameter %u as string: value='%s', len=%zu", LOG_LEVEL_TRACE, 3,
@@ -746,7 +763,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
         }
 
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-        return (error_result != NULL);
+        return false;
     }
 
     // Process query results using helper function
@@ -824,7 +841,6 @@ bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* s
         int diag_result = SQLGetDiagRec_ptr ? SQLGetDiagRec_ptr(SQL_HANDLE_STMT, stmt_handle, 1,
             sql_state, &native_error, error_msg, (short)sizeof(error_msg), &msg_len) : -1;
 
-        char* error_message = NULL;
         if (diag_result == SQL_SUCCESS || diag_result == SQL_SUCCESS_WITH_INFO) {
             char *msg = (char*)error_msg;
             while (*msg) {
@@ -833,30 +849,13 @@ bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* s
                 }
             msg++;
         }
-            error_message = strdup((char*)error_msg);
             log_this(designator, "DB2 prepared statement execution failed - MESSAGE: %s", LOG_LEVEL_ERROR, 1, (char*)error_msg);
             log_this(designator, "DB2 prepared statement execution failed - SQLSTATE: %s, Native Error: %ld", LOG_LEVEL_ERROR, 2, (char*)sql_state, (long int)native_error);
         } else {
-            error_message = strdup("DB2 prepared statement execution failed (could not get error details)");
             log_this(designator, "DB2 prepared statement execution failed - result: %d (could not get error details)", LOG_LEVEL_ERROR, 1, exec_result);
         }
 
-        // Create error result
-        QueryResult* error_result = calloc(1, sizeof(QueryResult));
-        if (error_result) {
-            error_result->success = false;
-            error_result->error_message = error_message;
-            error_result->row_count = 0;
-            error_result->column_count = 0;
-            error_result->data_json = strdup("[]");
-            error_result->execution_time_ms = 0;
-            error_result->affected_rows = 0;
-            *result = error_result;
-        } else {
-            free(error_message);
-        }
-
-        return (error_result != NULL);
+        return false;
     }
 
     // Process query results using helper function
