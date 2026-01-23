@@ -41,6 +41,37 @@ extern DatabaseQueue* mock_select_query_queue(const char* database, const char* 
 #endif
 
 /**
+ * Handle the result of api_buffer_post_data.
+ * Returns MHD_YES to continue processing, or an error result to return immediately.
+ */
+enum MHD_Result handle_buffer_result(struct MHD_Connection *connection, ApiBufferResult buf_result, void **con_cls) {
+    switch (buf_result) {
+        case API_BUFFER_CONTINUE:
+            // More data expected for POST, continue receiving
+            return MHD_YES;
+
+        case API_BUFFER_ERROR:
+            // Error occurred during buffering
+            return api_send_error_and_cleanup(connection, con_cls,
+                "Request processing error", MHD_HTTP_INTERNAL_SERVER_ERROR);
+
+        case API_BUFFER_METHOD_ERROR:
+            // Unsupported HTTP method
+            return api_send_error_and_cleanup(connection, con_cls,
+                "Method not allowed - use GET or POST", MHD_HTTP_METHOD_NOT_ALLOWED);
+
+        case API_BUFFER_COMPLETE:
+            // All data received (or GET request), continue with processing
+            return MHD_YES;
+
+        default:
+            // Should not happen, but handle gracefully
+            return api_send_error_and_cleanup(connection, con_cls,
+                "Unknown buffer result", MHD_HTTP_INTERNAL_SERVER_ERROR);
+    }
+}
+
+/**
  * Handle the /api/conduit/query endpoint.
  * Executes pre-defined database queries by reference with typed parameters.
  *
@@ -69,25 +100,10 @@ enum MHD_Result handle_conduit_query_request(
     // Use common POST body buffering (handles both GET and POST)
     ApiPostBuffer *buffer = NULL;
     ApiBufferResult buf_result = api_buffer_post_data(method, upload_data, upload_data_size, con_cls, &buffer);
-    
-    switch (buf_result) {
-        case API_BUFFER_CONTINUE:
-            // More data expected for POST, continue receiving
-            return MHD_YES;
-            
-        case API_BUFFER_ERROR:
-            // Error occurred during buffering
-            return api_send_error_and_cleanup(connection, con_cls,
-                "Request processing error", MHD_HTTP_INTERNAL_SERVER_ERROR);
-            
-        case API_BUFFER_METHOD_ERROR:
-            // Unsupported HTTP method
-            return api_send_error_and_cleanup(connection, con_cls,
-                "Method not allowed - use GET or POST", MHD_HTTP_METHOD_NOT_ALLOWED);
-            
-        case API_BUFFER_COMPLETE:
-            // All data received (or GET request), continue with processing
-            break;
+
+    enum MHD_Result buffer_result = handle_buffer_result(connection, buf_result, con_cls);
+    if (buffer_result != MHD_YES) {
+        return buffer_result;
     }
 
     log_this(SR_API, "%s: Processing conduit query request", LOG_LEVEL_TRACE, 1, conduit_service_name());

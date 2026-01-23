@@ -34,6 +34,10 @@ void test_extract_request_fields_missing_query_ref(void);
 void test_extract_request_fields_missing_database(void);
 void test_extract_request_fields_invalid_query_ref_type(void);
 
+// Buffer result handling tests
+void test_handle_buffer_result_continue(void);
+void test_handle_buffer_result_complete(void);
+
 void setUp(void) {
     // No setup needed for these pure functions
 }
@@ -42,9 +46,9 @@ void tearDown(void) {
     // No teardown needed for these pure functions
 }
 
-// Test validate_http_method with GET
+// Test validate_http_method with GET (should fail - POST only)
 void test_validate_http_method_get(void) {
-    TEST_ASSERT_TRUE(validate_http_method("GET"));
+    TEST_ASSERT_FALSE(validate_http_method("GET"));
 }
 
 // Test validate_http_method with POST
@@ -199,6 +203,26 @@ void test_extract_request_fields_invalid_query_ref_type(void) {
     json_decref(request_json);
 }
 
+// Test handle_buffer_result with API_BUFFER_CONTINUE
+void test_handle_buffer_result_continue(void) {
+    struct MHD_Connection *mock_connection = (void*)0x123;
+    void *con_cls = NULL;
+
+    enum MHD_Result result = handle_buffer_result(mock_connection, API_BUFFER_CONTINUE, &con_cls);
+
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+}
+
+// Test handle_buffer_result with API_BUFFER_COMPLETE
+void test_handle_buffer_result_complete(void) {
+    struct MHD_Connection *mock_connection = (void*)0x123;
+    void *con_cls = NULL;
+
+    enum MHD_Result result = handle_buffer_result(mock_connection, API_BUFFER_COMPLETE, &con_cls);
+
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -218,6 +242,10 @@ int main(void) {
     RUN_TEST(test_extract_request_fields_missing_query_ref);
     RUN_TEST(test_extract_request_fields_missing_database);
     RUN_TEST(test_extract_request_fields_invalid_query_ref_type);
+
+    // Buffer result handling tests
+    RUN_TEST(test_handle_buffer_result_continue);
+    RUN_TEST(test_handle_buffer_result_complete);
 
     return UNITY_END();
 }

@@ -149,7 +149,7 @@ enum MHD_Result handle_queue_selection(struct MHD_Connection *connection, const 
 
         api_send_json_response(connection, error_response, MHD_HTTP_SERVICE_UNAVAILABLE);
         json_decref(error_response);
-        return MHD_YES; // Response sent - processing complete
+        return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }

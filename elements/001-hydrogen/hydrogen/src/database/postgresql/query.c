@@ -291,7 +291,7 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
         }
 
         PQclear_ptr(pg_result);
-        return (error_result != NULL);
+        return false;  // Database operation failed
     }
 
     // Create result structure
@@ -615,7 +615,7 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
         }
 
         PQclear_ptr(pg_result);
-        return (error_result != NULL);
+        return false;  // Database operation failed
     }
 
     // Create result structure

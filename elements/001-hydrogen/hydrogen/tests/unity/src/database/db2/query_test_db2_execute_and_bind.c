@@ -229,9 +229,14 @@ void test_db2_execute_query_sqlexecute_failure(void) {
 
     bool query_result = db2_execute_query(&connection, &request, &result);
     TEST_ASSERT_FALSE(query_result); // Should return false (lines 664-691)
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result); // Should create error result
+    TEST_ASSERT_FALSE(result->success); // Should be error result
+    TEST_ASSERT_NOT_NULL(result->error_message); // Should have error message
 
     // Cleanup
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
     free(db2_conn);
 }
 
@@ -688,17 +693,10 @@ void test_db2_bind_single_parameter_datetime_type(void) {
     bool result = db2_bind_single_parameter(stmt, 1, &param, bound_values, str_len_indicators, "test");
     TEST_ASSERT_TRUE(result); // Should succeed
 
-    // Verify bound value
+    // Verify bound value (now bound as string)
     TEST_ASSERT_NOT_NULL(bound_values[0]);
-    SQL_TIMESTAMP_STRUCT* datetime = (SQL_TIMESTAMP_STRUCT*)bound_values[0];
-    TEST_ASSERT_EQUAL(2023, datetime->year);
-    TEST_ASSERT_EQUAL(12, datetime->month);
-    TEST_ASSERT_EQUAL(25, datetime->day);
-    TEST_ASSERT_EQUAL(14, datetime->hour);
-    TEST_ASSERT_EQUAL(30, datetime->minute);
-    TEST_ASSERT_EQUAL(45, datetime->second);
-    TEST_ASSERT_EQUAL(0, datetime->fraction);
-    TEST_ASSERT_EQUAL(0, str_len_indicators[0]);
+    TEST_ASSERT_EQUAL_STRING("2023-12-25 14:30:45", (char*)bound_values[0]);
+    TEST_ASSERT_EQUAL(19, str_len_indicators[0]); // Length of datetime string
 
     free(bound_values[0]);
     free(bound_values);
@@ -764,17 +762,10 @@ void test_db2_bind_single_parameter_timestamp_type(void) {
     bool result = db2_bind_single_parameter(stmt, 1, &param, bound_values, str_len_indicators, "test");
     TEST_ASSERT_TRUE(result); // Should succeed
 
-    // Verify bound value
+    // Verify bound value (now bound as string)
     TEST_ASSERT_NOT_NULL(bound_values[0]);
-    SQL_TIMESTAMP_STRUCT* timestamp = (SQL_TIMESTAMP_STRUCT*)bound_values[0];
-    TEST_ASSERT_EQUAL(2023, timestamp->year);
-    TEST_ASSERT_EQUAL(12, timestamp->month);
-    TEST_ASSERT_EQUAL(25, timestamp->day);
-    TEST_ASSERT_EQUAL(14, timestamp->hour);
-    TEST_ASSERT_EQUAL(30, timestamp->minute);
-    TEST_ASSERT_EQUAL(45, timestamp->second);
-    TEST_ASSERT_EQUAL(123000000, timestamp->fraction); // 123 milliseconds = 123000000 nanoseconds
-    TEST_ASSERT_EQUAL(0, str_len_indicators[0]);
+    TEST_ASSERT_EQUAL_STRING("2023-12-25 14:30:45.123", (char*)bound_values[0]);
+    TEST_ASSERT_EQUAL(23, str_len_indicators[0]); // Length of timestamp string
 
     free(bound_values[0]);
     free(bound_values);

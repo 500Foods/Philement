@@ -273,6 +273,11 @@ enum MHD_Result handle_conduit_auth_query_request(
 {
     (void)url;
 
+    // Validate required parameters
+    if (!connection || !method || !upload_data_size) {
+        return MHD_NO;
+    }
+
     // Use common POST body buffering
     ApiPostBuffer *buffer = NULL;
     ApiBufferResult buf_result = api_buffer_post_data(method, upload_data, (size_t *)upload_data_size, con_cls, &buffer);

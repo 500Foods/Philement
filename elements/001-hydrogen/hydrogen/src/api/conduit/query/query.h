@@ -102,6 +102,7 @@ json_t* create_lookup_error_response(const char* error_msg, const char* database
 json_t* create_processing_error_response(const char* error_msg, const char* database, int query_ref);
 
 // Request handling helper functions
+enum MHD_Result handle_buffer_result(struct MHD_Connection *connection, ApiBufferResult buf_result, void **con_cls);
 enum MHD_Result handle_method_validation(struct MHD_Connection *connection, const char* method);
 enum MHD_Result handle_request_parsing_with_buffer(struct MHD_Connection *connection, ApiPostBuffer* buffer, json_t** request_json);
 enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const char* method,

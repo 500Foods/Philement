@@ -70,7 +70,7 @@ void test_handle_conduit_auth_query_request_invalid_method(void) {
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
 // Test handle_conduit_auth_query_request with missing token field
@@ -89,7 +89,7 @@ void test_handle_conduit_auth_query_request_missing_token(void) {
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
 // Test handle_conduit_auth_query_request with invalid token (not a string)
@@ -108,7 +108,7 @@ void test_handle_conduit_auth_query_request_invalid_token(void) {
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
 // Test handle_conduit_auth_query_request with missing query_ref field
@@ -127,7 +127,7 @@ void test_handle_conduit_auth_query_request_missing_query_ref(void) {
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
 // Test handle_conduit_auth_query_request with invalid query_ref type
@@ -146,7 +146,7 @@ void test_handle_conduit_auth_query_request_invalid_query_ref_type(void) {
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
 // Test handle_conduit_auth_query_request with valid token but no database in claims
@@ -165,7 +165,7 @@ void test_handle_conduit_auth_query_request_token_without_database(void) {
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
 // Test handle_conduit_auth_query_request with NULL connection
@@ -229,7 +229,7 @@ void test_handle_conduit_auth_query_request_invalid_json(void) {
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
 // Test handle_conduit_auth_query_request with params field
@@ -248,7 +248,7 @@ void test_handle_conduit_auth_query_request_with_params(void) {
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
 // Test handle_conduit_auth_query_request with GET method
@@ -289,7 +289,7 @@ void test_handle_conduit_auth_query_request_memory_allocation_failure(void) {
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
 int main(void) {

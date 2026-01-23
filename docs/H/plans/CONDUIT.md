@@ -287,54 +287,18 @@ Check completion flag before timeout flag. Use proper condition variable wait lo
 
 Check `DatabaseEngine` type before parameter conversion. PostgreSQL uses `$1`, others use `?`.
 
-## Implementation Insights
+## Implementation Insights - Consolidated Lessons (2026-01-18 to 2026-01-22)
 
-### Recent Implementation Lessons (2026-01-18)
+**Key Technical Achievements**:
 
-**Endpoint Registration Pattern**: Simple endpoint registration requires 4 modifications to `api_service.c`:
-
-1. Add include for endpoint header
-2. Add routing case in `handle_api_request()`
-3. Add to protected endpoints list (if JWT required)
-4. Add to endpoint logging in `register_api_endpoints()`
-
-**JWT Authentication Patterns**:
-
-- `auth_*` endpoints: Extract database from JWT claims (user's assigned database)
-- `alt_*` endpoints: Accept database override in request body (admin cross-database access)
-- Both require valid JWT token for authentication
-
-**Code Reuse**: The existing helper functions in `query.h` (`handle_*` functions) provide excellent abstraction for:
-
-- Method validation
-- Request parsing
-- Database/queue lookups
-- Parameter processing
-- Query submission and response building
-
-**Build Verification**: Always run `mkt` after C code changes - provides fast feedback with minimal output, greatly reducing token usage for AI-assisted development.
-
-**Test Framework Integration**: When adding new endpoints, update test scripts comprehensively:
-
-- Add test functions for new endpoints
-- Call test functions in parallel execution
-- Add result analysis for new test types
-- Update expected test counts in reporting
-
-**Code Reuse Patterns**: The existing `query.h` helper functions provide excellent abstraction:
-
-- `execute_single_query()` pattern works for both single and multiple query endpoints
-- Parameter processing, queue selection, and response building are fully reusable
-- Only request parsing and result aggregation differ between single/multiple variants
-
-**Endpoint Registration Consistency**: New endpoint registration follows a precise 4-step pattern:
-
-1. Add header include to `api_service.c`
-2. Add routing case in `handle_api_request()`
-3. Add to protected endpoints list (if JWT required)
-4. Add logging in `register_api_endpoints()`
-
-**Incremental Development**: Breaking complex features into small, testable steps (register endpoint → implement alt_query → implement alt_queries) allows for steady progress and early detection of integration issues.
+- **Endpoint Registration Pattern**: Consistent 4-step process for adding new API endpoints with proper routing, protection, and logging
+- **JWT Authentication**: Clean separation between user database access (`auth_*`) and admin cross-database access (`alt_*`)
+- **DQM Statistics**: Thread-safe counters providing operational visibility into query distribution and performance
+- **Rate Limiting**: Configuration-driven limits with deduplication and graceful degradation
+- **JSON Validation**: API-level middleware preventing malformed requests from reaching business logic
+- **Error Response Formatting**: Comprehensive diagnostics for both success and failure cases
+- **Database Engine Compatibility**: Handling behavioral differences (division by zero, error propagation) across all 7 engines
+- **Test Framework Evolution**: Unified single-server testing with database readiness checking and cross-engine validation
 
 ## Implementation Insights - DQM Statistics (2026-01-18)
 
@@ -463,138 +427,6 @@ This approach enables instant response times for frequently accessed, parameter-
 2. **Graceful Error Handling**: Skipping rate limiting on configuration errors maintains service availability
 3. **Incremental Testing**: Unified server approach allows testing rate limiting across all databases simultaneously
 4. **Documentation Synchronization**: Keeping CONDUIT.md updated with actual progress prevents confusion about completion status
-
-## Implementation Roadmap: From Current to Desired Flow
-
-### Overview
-
-The current implementation has complex parameter processing with 10 steps. We need to refactor it to match the desired 5-step flow shown in `CONDUIT_DIAGRAMS.md`. This roadmap provides incremental, testable steps to achieve this transformation.
-
-### Phase 9: Parameter Processing Refactor
-
-#### Step 9.1: Simplify Parameter Validation Logic ✅ **COMPLETED**
-
-- **Objective**: Replace complex `analyze_parameter_validation()` with simple, clear validation functions
-- **Current State**: 200+ lines of complex analysis with multiple memory allocations
-- **Target State**: Simple functions that fail fast with clear error messages
-- **Implementation** ✅:
-  - Create `validate_parameter_types_simple()` - checks type mismatches only
-  - Create `check_missing_parameters_simple()` - finds missing required params
-  - Create `check_unused_parameters_simple()` - identifies unused params (warning only)
-  - Replace `handle_parameter_processing()` main logic with 5-step flow
-- **Testing**: Verified with parameterless queries, parameterized queries, and error cases
-- **Files**: `parameter_processing.c`, `query.c`, `query_execution.c`, headers, and tests
-- **Verification**: `mkt` passes, `test_50_conduit_query.sh` validates functionality
-- **Key Insights**:
-  - **Message Flow**: Parameter processing now sets `message` for unused parameters in successful responses
-  - **Error Combination**: Database errors are combined with parameter messages using " | " separator
-  - **Memory Management**: Proper cleanup in all error paths prevents leaks
-  - **Type Safety**: All function signatures updated consistently across endpoints
-
-#### Step 9.2: Reorder Validation to Match Desired Flow
-
-- **Objective**: Change validation order from (types → missing → unused) to (types → missing → unused) with proper fail-fast behavior
-- **Current State**: Complex analysis happens before basic parsing
-- **Target State**: Early type validation, then parameter assignment analysis
-- **Implementation**:
-  - Move type validation to happen immediately after parameter parsing
-  - Ensure missing parameter check happens before unused parameter check
-  - Add clear error messages for each validation step
-- **Testing**: Verify error messages are verbose and accurate
-- **Files**: `parameter_processing.c`
-- **Verification**: Test malformed requests return appropriate 400 errors
-
-#### Step 9.3: Improve Error Message Verbosity
-
-- **Objective**: Make all error messages clear and actionable for API clients
-- **Current State**: Generic error messages with limited detail
-- **Target State**: Specific, verbose messages like "Numerator(INTEGER) is not INTEGER"
-- **Implementation**:
-  - Update error response creation functions
-  - Include parameter names and expected types in messages
-  - Ensure consistent message format across all error types
-- **Testing**: Verify error responses include helpful diagnostic information
-- **Files**: `error_handling.c`, `parameter_processing.c`
-- **Verification**: Test error responses contain actionable information
-
-#### Step 9.4: Memory Safety and Cleanup Improvements
-
-- **Objective**: Eliminate memory leaks and segfaults in parameter processing
-- **Current State**: Complex memory management with potential leaks
-- **Target State**: Clean allocation/deallocation patterns
-- **Implementation**:
-  - Add NULL checks after all malloc operations
-  - Ensure proper cleanup on all error paths
-  - Use safer string operations to prevent buffer overflows
-- **Testing**: Run with Valgrind to verify no memory leaks
-- **Files**: `parameter_processing.c`, `error_handling.c`
-- **Verification**: `valgrind --leak-check=full ./hydrogen_test_config.json`
-
-#### Step 9.5: Database Protection Verification
-
-- **Objective**: Ensure no database queries until all validation passes
-- **Current State**: Some validation may happen after queue selection
-- **Target State**: Complete validation before any database-related operations
-- **Implementation**:
-  - Move all parameter validation before queue selection
-  - Ensure query execution only happens after successful validation
-  - Add logging to verify validation completion before database access
-- **Testing**: Verify invalid requests are rejected before database operations
-- **Files**: `query.c`, `parameter_processing.c`
-- **Verification**: Test with invalid requests - ensure no database load
-
-#### Step 9.6: Integration Testing and Validation
-
-- **Objective**: Verify the complete refactored flow works end-to-end
-- **Current State**: Complex flow with multiple potential failure points
-- **Target State**: Clean 5-step flow matching the diagram
-- **Implementation**:
-  - Update unit tests for new parameter processing functions
-  - Run full test suite including `test_50_conduit_query.sh`
-  - Verify all error scenarios work correctly
-- **Testing**: Complete end-to-end testing across all database engines
-- **Files**: All conduit files, test files
-- **Verification**: All tests pass with new implementation
-
-### Implementation Guidelines
-
-1. **Incremental Changes**: Each step should be small enough to test independently
-2. **Backward Compatibility**: Maintain existing API contract during transition
-3. **Error Message Consistency**: All errors should follow the same verbose format
-4. **Memory Safety First**: Fix any memory issues before adding new functionality
-5. **Test Early, Test Often**: Run tests after each step to catch regressions
-6. **Documentation Sync**: Keep `CONDUIT_DIAGRAMS.md` updated with actual implementation
-
-### Success Criteria
-
-- ✅ Parameter validation fails fast with clear error messages
-- ✅ No database access for invalid requests
-- ✅ Memory leaks eliminated
-- ✅ All existing tests pass
-- ✅ New implementation matches the desired 5-step flow diagram
-
-## Resuming Work Checklist
-
-- [ ] Read this CONDUIT.md document top to bottom
-- [ ] Review current database implementation status
-- [ ] Check existing `src/api/conduit/` code
-- [ ] Identify current phase progress
-- [ ] Run existing tests: `./tests/test_30_database.sh`
-- [ ] Verify bootstrap query configuration
-- [ ] Check for blocking dependencies
-
-## Implementation Dependencies
-
-**Critical Path**: QTC → Queue Selection → Parameters → Pending Results → API Endpoints
-
-**Parallel Work**: Unit tests, documentation, and Swagger annotations can be developed alongside implementation.
-
-**Integration Points**:
-
-- Phase 1: Bootstrap execution
-- Phase 2: Query submission
-- Phase 4: DQM worker thread
-- Phase 5: API subsystem
 
 ## Service Overview
 
@@ -1152,4 +984,3 @@ See [CONDUIT_DIAGRAMS.md](/docs/H/plans/CONDUIT_DIAGRAMS.md) for detailed archit
 - docs/H/SITEMAP.md
 - tests/README.md
 - INSTRUCTIONS.md
-r

@@ -18,8 +18,8 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Conduit Alt Multiple Queries {BLUE}CAMQ: 0{RESET}"
-TEST_ABBR="CMM"
+TEST_NAME="Federated Multiple Queries"
+TEST_ABBR="FMQ"
 TEST_NUMBER="55"
 TEST_COUNTER=0
 TEST_VERSION="1.0.0"

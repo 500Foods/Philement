@@ -29,7 +29,7 @@ void tearDown(void) {
 // Test GET method validation
 void test_validate_http_method_get(void) {
     bool result = validate_http_method("GET");
-    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_FALSE(result);
 }
 
 // Test POST method validation

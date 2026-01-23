@@ -21,6 +21,7 @@ void test_prepare_and_submit_query_null_query_id(void);
 void test_prepare_and_submit_query_null_sql(void);
 void test_prepare_and_submit_query_no_parameters(void);
 void test_prepare_and_submit_query_with_parameters(void);
+void test_prepare_and_submit_query_too_many_parameters(void);
 
 void setUp(void) {
     mock_system_reset_all();
@@ -68,11 +69,12 @@ void test_prepare_and_submit_query_no_parameters(void) {
         .queue_type = (char*)"read"
     };
 
-    bool result = prepare_and_submit_query(NULL, "test_id", "SELECT 1", NULL, 0, &cache_entry);
-    // The result depends on whether the queue submission succeeds
-    // Since we can't mock the queue submission easily, we just test that it doesn't crash
-    (void)result; // Suppress unused variable warning
-    TEST_PASS(); // Function executed without crashing
+    // Use a dummy pointer since we can't create a real DatabaseQueue
+    DatabaseQueue* dummy_queue = (DatabaseQueue*)0x1; // Non-NULL dummy pointer
+
+    bool result = prepare_and_submit_query(dummy_queue, "test_id", "SELECT 1", NULL, 0, &cache_entry);
+    // With valid parameters, mock should return true
+    TEST_ASSERT_TRUE(result);
 }
 
 // Test with parameters
@@ -108,11 +110,39 @@ void test_prepare_and_submit_query_with_parameters(void) {
 
     TypedParameter* ordered_params[] = {&param1, &param2, &param3, &param4};
 
-    bool result = prepare_and_submit_query(NULL, "test_id", "SELECT * FROM users WHERE id = :userId AND name = :userName AND active = :isActive AND score = :userScore",
+    // Use a dummy pointer since we can't create a real DatabaseQueue
+    DatabaseQueue* dummy_queue = (DatabaseQueue*)0x1; // Non-NULL dummy pointer
+
+    bool result = prepare_and_submit_query(dummy_queue, "test_id", "SELECT * FROM users WHERE id = :userId AND name = :userName AND active = :isActive AND score = :userScore",
                                            ordered_params, 4, &cache_entry);
-    // The result depends on queue submission, but we test that it doesn't crash
-    (void)result; // Suppress unused variable warning
-    TEST_PASS(); // Function executed without crashing
+    // With valid parameters, mock should return true
+    TEST_ASSERT_TRUE(result);
+}
+
+// Test with too many parameters
+void test_prepare_and_submit_query_too_many_parameters(void) {
+    QueryCacheEntry cache_entry = {
+        .queue_type = (char*)"read"
+    };
+
+    // Create 101 parameters (exceeds limit of 100)
+    TypedParameter* ordered_params[101];
+    for (size_t i = 0; i < 101; i++) {
+        ordered_params[i] = calloc(1, sizeof(TypedParameter));
+        if (ordered_params[i]) {
+            ordered_params[i]->name = (char*)"param";
+            ordered_params[i]->type = PARAM_TYPE_INTEGER;
+            ordered_params[i]->value.int_value = (int)i;
+        }
+    }
+
+    bool result = prepare_and_submit_query(NULL, "test_id", "SELECT 1", ordered_params, 101, &cache_entry);
+    TEST_ASSERT_FALSE(result); // Should fail with too many parameters
+
+    // Cleanup
+    for (size_t i = 0; i < 101; i++) {
+        free(ordered_params[i]);
+    }
 }
 
 int main(void) {
@@ -123,6 +153,7 @@ int main(void) {
     RUN_TEST(test_prepare_and_submit_query_null_sql);
     RUN_TEST(test_prepare_and_submit_query_no_parameters);
     RUN_TEST(test_prepare_and_submit_query_with_parameters);
+    RUN_TEST(test_prepare_and_submit_query_too_many_parameters);
 
     return UNITY_END();
 }
