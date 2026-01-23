@@ -1,7 +1,7 @@
 /*
  * Unity Test File: determine_http_status
  * This file contains unit tests for determine_http_status function
- * in src/api/conduit/query/query.c
+ * in src/api/conduit/helpers/query_execution.c
  */
 
 // Project includes
@@ -12,7 +12,9 @@
 #include <src/api/conduit/query/query.h>
 
 // Function prototypes
-void test_determine_http_status_timeout(void);
+void test_determine_http_status_database_error(void);
+void test_determine_http_status_bad_request(void);
+void test_determine_http_status_null_result(void);
 
 void setUp(void) {
     // No setup needed
@@ -22,38 +24,40 @@ void tearDown(void) {
     // No cleanup needed
 }
 
-// Test timeout case
-void test_determine_http_status_timeout(void) {
-    // Mock pending result that is timed out
-    PendingQueryResult pending = {0}; // Assume it's timed out
-
-    // Mock result with no error
+// Test database error case - returns 422 Unprocessable Entity
+void test_determine_http_status_database_error(void) {
+    PendingQueryResult pending = {0};
     QueryResult result = {0};
 
-    // Since we can't easily mock pending_result_is_timed_out, test the logic
-    // The function checks if pending_result_is_timed_out(pending)
-    // For this test, assume it returns true
-    // But since we can't mock, we'll test the other branches
-
-    // Test database error case
-    result.error_message = (char*)"Some error";
+    result.error_message = (char*)"Some database error";
     unsigned int status = determine_http_status(&pending, &result);
-    TEST_ASSERT_EQUAL(MHD_HTTP_INTERNAL_SERVER_ERROR, status);
+    TEST_ASSERT_EQUAL(422, status);  // Unprocessable Entity for database errors
+}
 
-    // Test other error case
-    result.error_message = NULL;
-    status = determine_http_status(&pending, &result);
+// Test bad request case - returns 400 Bad Request
+void test_determine_http_status_bad_request(void) {
+    PendingQueryResult pending = {0};
+    QueryResult result = {0};
+
+    // No error message, not timed out
+    unsigned int status = determine_http_status(&pending, &result);
     TEST_ASSERT_EQUAL(MHD_HTTP_BAD_REQUEST, status);
+}
 
-    // Test with NULL result
-    status = determine_http_status(&pending, NULL);
+// Test with NULL result - returns 400 Bad Request
+void test_determine_http_status_null_result(void) {
+    PendingQueryResult pending = {0};
+
+    unsigned int status = determine_http_status(&pending, NULL);
     TEST_ASSERT_EQUAL(MHD_HTTP_BAD_REQUEST, status);
 }
 
 int main(void) {
     UNITY_BEGIN();
 
-    RUN_TEST(test_determine_http_status_timeout);
+    RUN_TEST(test_determine_http_status_database_error);
+    RUN_TEST(test_determine_http_status_bad_request);
+    RUN_TEST(test_determine_http_status_null_result);
 
     return UNITY_END();
 }

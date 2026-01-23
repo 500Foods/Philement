@@ -116,7 +116,7 @@ static void test_build_error_response_database_error(void) {
 
     json_t* success = json_object_get(response, "success");
     json_t* error = json_object_get(response, "error");
-    json_t* db_error = json_object_get(response, "database_error");
+    json_t* message = json_object_get(response, "message");
     json_t* query_ref_json = json_object_get(response, "query_ref");
     json_t* db_json = json_object_get(response, "database");
 
@@ -124,8 +124,8 @@ static void test_build_error_response_database_error(void) {
     TEST_ASSERT_FALSE(json_is_true(success));
     TEST_ASSERT_NOT_NULL(error);
     TEST_ASSERT_EQUAL_STRING("Database error", json_string_value(error));
-    TEST_ASSERT_NOT_NULL(db_error);
-    TEST_ASSERT_EQUAL_STRING("Database connection failed", json_string_value(db_error));
+    TEST_ASSERT_NOT_NULL(message);
+    TEST_ASSERT_EQUAL_STRING("Database connection failed", json_string_value(message));
     TEST_ASSERT_EQUAL_INT(1, json_integer_value(query_ref_json));
     TEST_ASSERT_EQUAL_STRING("testdb", json_string_value(db_json));
 
