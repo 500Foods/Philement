@@ -232,27 +232,34 @@ void test_postgresql_execute_query_error_status(void) {
     // Setup connection
     PostgresConnection pg_conn = {0};
     pg_conn.connection = (void*)0x1000;
-    
+
     DatabaseHandle connection = {0};
     connection.engine_type = DB_ENGINE_POSTGRESQL;
     connection.designator = (char*)"test";
     connection.connection_handle = &pg_conn;
-    
+
     QueryRequest request = {0};
     request.sql_template = (char*)"SELECT * FROM nonexistent_table";
     request.timeout_seconds = 30;
-    
+
     QueryResult* result = NULL;
-    
+
     // Configure mocks for error status
     mock_libpq_set_PQexec_result((void*)0x12345678);
     mock_libpq_set_PQresultStatus_result(PGRES_FATAL_ERROR);
     mock_libpq_set_PQerrorMessage_result("relation \"nonexistent_table\" does not exist");
-    
+
     bool query_result = postgresql_execute_query(&connection, &request, &result);
-    
+
     TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result); // Should create error result
+    TEST_ASSERT_FALSE(result->success); // Should be error result
+    TEST_ASSERT_NOT_NULL(result->error_message); // Should have error message
+
+    // Cleanup
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
 }
 
 void test_postgresql_execute_query_zero_timeout(void) {
@@ -569,29 +576,36 @@ void test_postgresql_execute_prepared_error_status(void) {
     // Setup connection
     PostgresConnection pg_conn = {0};
     pg_conn.connection = (void*)0x1000;
-    
+
     DatabaseHandle connection = {0};
     connection.engine_type = DB_ENGINE_POSTGRESQL;
     connection.designator = (char*)"test";
     connection.connection_handle = &pg_conn;
-    
+
     PreparedStatement stmt = {0};
     stmt.name = (char*)"bad_statement";
-    
+
     QueryRequest request = {0};
     request.timeout_seconds = 30;
-    
+
     QueryResult* result = NULL;
-    
+
     // Configure mocks for error
     mock_libpq_set_PQexec_result((void*)0x12345678);
     mock_libpq_set_PQresultStatus_result(PGRES_FATAL_ERROR);
     mock_libpq_set_PQerrorMessage_result("prepared statement \"bad_statement\" does not exist");
-    
+
     bool query_result = postgresql_execute_prepared(&connection, &stmt, &request, &result);
-    
+
     TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result); // Should create error result
+    TEST_ASSERT_FALSE(result->success); // Should be error result
+    TEST_ASSERT_NOT_NULL(result->error_message); // Should have error message
+
+    // Cleanup
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
 }
 
 int main(void) {

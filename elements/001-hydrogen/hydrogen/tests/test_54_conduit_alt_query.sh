@@ -18,8 +18,8 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Conduit Alt Single Query {BLUE}CASQ: 0{RESET}"
-TEST_ABBR="CMS"
+TEST_NAME="Federated Single Query"
+TEST_ABBR="FSQ"
 TEST_NUMBER="54"
 TEST_COUNTER=0
 TEST_VERSION="1.0.0"

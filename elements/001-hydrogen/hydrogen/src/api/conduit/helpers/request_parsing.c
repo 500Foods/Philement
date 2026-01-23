@@ -107,7 +107,7 @@ enum MHD_Result handle_method_validation(struct MHD_Connection *connection, cons
 
         api_send_json_response(connection, error_response, MHD_HTTP_METHOD_NOT_ALLOWED);
         json_decref(error_response);
-        return MHD_YES; // Response sent - processing complete
+        return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
@@ -130,7 +130,7 @@ enum MHD_Result handle_request_parsing_with_buffer(struct MHD_Connection *connec
 
         api_send_json_response(connection, error_response, http_status);
         json_decref(error_response);
-        return MHD_YES; // Response sent - processing complete
+        return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
@@ -154,7 +154,7 @@ enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const 
 
         api_send_json_response(connection, error_response, http_status);
         json_decref(error_response);
-        return MHD_YES; // Response sent - processing complete
+        return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }
@@ -171,7 +171,7 @@ enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_
 
         api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
         json_decref(error_response);
-        return MHD_YES; // Response sent - processing complete
+        return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
 }

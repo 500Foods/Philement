@@ -51,14 +51,12 @@ void test_handle_conduit_queries_request_invalid_method(void) {
     size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for invalid method (method validation fails)
-    mock_mhd_set_queue_response_result(MHD_YES);
-
+    // Method validation should fail and return MHD_NO
     enum MHD_Result result = handle_conduit_queries_request(
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
-    TEST_ASSERT_EQUAL(MHD_YES, result);
+    TEST_ASSERT_EQUAL(MHD_NO, result);
 }
 
 // Test handle_conduit_queries_request with missing database field

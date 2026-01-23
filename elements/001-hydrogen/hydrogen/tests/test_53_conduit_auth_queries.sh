@@ -18,8 +18,8 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Conduit Auth Multiple Queries {BLUE}CAMQ: 0{RESET}"
-TEST_ABBR="CAM"
+TEST_NAME="Secure Multiple Queries"
+TEST_ABBR="SMQ"
 TEST_NUMBER="53"
 TEST_COUNTER=0
 TEST_VERSION="1.0.0"

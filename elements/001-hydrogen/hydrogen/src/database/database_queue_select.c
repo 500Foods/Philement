@@ -18,7 +18,7 @@
  * 3. Find minimum depth
  * 4. Among queues with min depth, select earliest last_request_time
  * 5. If all depths are 0, naturally round-robins via timestamps
- * 6. If no queues match the preferred type, fall back to any available queue
+ * 6. If no queues match the preferred type, fall back to Lead DQM for this database
  */
 DatabaseQueue* select_optimal_queue(
     const char* database_name,
@@ -30,11 +30,11 @@ DatabaseQueue* select_optimal_queue(
     }
 
     DatabaseQueue* selected_queue = NULL;
-    int min_depth = INT_MAX;
     time_t earliest_timestamp = (time_t)LONG_MAX;
 
     // First pass: try to find queues matching the preferred queue type
     if (queue_type_hint) {
+        int min_depth = INT_MAX;
         for (size_t i = 0; i < manager->database_count; i++) {
             DatabaseQueue* db_queue = manager->databases[i];
             if (!db_queue) continue;
@@ -70,38 +70,6 @@ DatabaseQueue* select_optimal_queue(
         // If we found a queue with the preferred type, return it
         if (selected_queue) {
             return selected_queue;
-        }
-    }
-
-    // Second pass: fall back to any available queue for this database
-    min_depth = INT_MAX;
-    earliest_timestamp = (time_t)LONG_MAX;
-    selected_queue = NULL;
-
-    for (size_t i = 0; i < manager->database_count; i++) {
-        DatabaseQueue* db_queue = manager->databases[i];
-        if (!db_queue) continue;
-
-        // Filter by database name
-        if (strcmp(db_queue->database_name, database_name) != 0) {
-            continue;
-        }
-
-        // Get current queue depth
-        int current_depth = db_queue->current_queue_depth;
-
-        // Check if this queue has better (lower) depth
-        if (current_depth < min_depth) {
-            min_depth = current_depth;
-            earliest_timestamp = db_queue->last_request_time;
-            selected_queue = db_queue;
-        }
-        // If same depth, check timestamp (earlier timestamp wins)
-        else if (current_depth == min_depth) {
-            if (db_queue->last_request_time < earliest_timestamp) {
-                earliest_timestamp = db_queue->last_request_time;
-                selected_queue = db_queue;
-            }
         }
     }
 
