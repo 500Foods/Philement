@@ -18,6 +18,7 @@
 // Local includes
 #include "../conduit_helpers.h"
 #include "../conduit_service.h"
+#include "param_proc_helpers.h"
 
 // Enable mock database queue functions for unit testing
 #ifdef USE_MOCK_DBQUEUE
@@ -29,11 +30,12 @@
 #include <unity/mocks/mock_system.h>
 #endif
 
+
 // Analyze parameter validation and return structured information
 bool analyze_parameter_validation(const char* sql_template, json_t* params_json,
-                                    char*** missing_params, size_t* missing_count,
-                                    char*** unused_params, size_t* unused_count,
-                                    char* invalid_buffer, size_t invalid_buffer_size, size_t* invalid_pos);
+                                   char*** missing_params, size_t* missing_count,
+                                   char*** unused_params, size_t* unused_count,
+                                   char* invalid_buffer, size_t invalid_buffer_size, size_t* invalid_pos);
 
 // Simple parameter type validation - checks type mismatches only
 char* validate_parameter_types_simple(json_t* params_json);
@@ -94,233 +96,58 @@ bool analyze_parameter_validation(const char* sql_template, json_t* params_json,
     }
 
     // Collect required parameters from SQL template
-    // Find all :paramName patterns
-    const char* sql = sql_template;
-    char** required_params = NULL;
     size_t required_count = 0;
-
-    while ((sql = strchr(sql, ':')) != NULL) {
-        sql++; // Skip the :
-        const char* end = sql;
-        while (*end && (isalnum(*end) || *end == '_')) {
-            end++;
-        }
-        if (end > sql) {
-            // Found a parameter name
-            size_t len = (size_t)(end - sql);
-            char* param_name = malloc(len + 1);
-            if (param_name) {
-                memcpy(param_name, sql, len);
-                param_name[len] = '\0';
-
-                // Check if already in list
-                bool found = false;
-                for (size_t i = 0; i < required_count; i++) {
-                    if (strcmp(required_params[i], param_name) == 0) {
-                        found = true;
-                        free(param_name);
-                        break;
-                    }
-                }
-                if (!found) {
-                    char** new_required_params = realloc(required_params, (required_count + 1) * sizeof(char*));
-                    if (new_required_params) {
-                        required_params = new_required_params;
-                        required_params[required_count] = param_name;
-                        required_count++;
-                    } else {
-                        free(param_name);
-                        // Cleanup already allocated memory on failure
-                        for (size_t i = 0; i < required_count; i++) {
-                            free(required_params[i]);
-                        }
-                        free(required_params);
-                        return false;
-                    }
-                }
-            }
-        }
-        sql = end;
+    char** required_params = extract_required_parameters(sql_template, &required_count);
+    if (!required_params && required_count > 0) {
+        return false; // Memory allocation failed
     }
 
     // Collect provided parameters
-    char** provided_params = NULL;
     size_t provided_count = 0;
-
-    if (params_json && json_is_object(params_json)) {
-        const char* type_keys[] = {"INTEGER", "STRING", "BOOLEAN", "FLOAT", "TEXT", "DATE", "TIME", "DATETIME", "TIMESTAMP"};
-        size_t type_count = sizeof(type_keys) / sizeof(type_keys[0]);
-
-        for (size_t i = 0; i < type_count; i++) {
-            json_t* type_obj = json_object_get(params_json, type_keys[i]);
-            if (type_obj && json_is_object(type_obj)) {
-                const char* key;
-                json_t* value;
-                json_object_foreach(type_obj, key, value) {
-                    // Check if already in list
-                    bool found = false;
-                    for (size_t j = 0; j < provided_count; j++) {
-                        if (strcmp(provided_params[j], key) == 0) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        char** new_provided_params = realloc(provided_params, (provided_count + 1) * sizeof(char*));
-                        if (new_provided_params) {
-                            provided_params = new_provided_params;
-                            provided_params[provided_count] = strdup(key);
-                            if (provided_params[provided_count]) {
-                                provided_count++;
-                            } else {
-                                // Cleanup on realloc failure
-                                for (size_t prov_idx = 0; prov_idx < provided_count; prov_idx++) {
-                                    free(provided_params[prov_idx]);
-                                }
-                                free(provided_params);
-                                // Cleanup required params
-                                for (size_t req_cleanup_idx2 = 0; req_cleanup_idx2 < required_count; req_cleanup_idx2++) {
-                                    free(required_params[req_cleanup_idx2]);
-                                }
-                                free(required_params);
-                                return false;
-                            }
-                        } else {
-                            // Cleanup on realloc failure
-                            for (size_t prov_idx = 0; prov_idx < provided_count; prov_idx++) {
-                                free(provided_params[prov_idx]);
-                            }
-                            free(provided_params);
-                            // Cleanup required params
-                            for (size_t req_cleanup_idx = 0; req_cleanup_idx < required_count; req_cleanup_idx++) {
-                                free(required_params[req_cleanup_idx]);
-                            }
-                            free(required_params);
-                            return false;
-                        }
-                    }
-                }
-            }
+    char** provided_params = collect_provided_parameters(params_json, &provided_count);
+    if (!provided_params && provided_count > 0) {
+        // Cleanup required params
+        for (size_t i = 0; i < required_count; i++) {
+            free(required_params[i]);
         }
+        free(required_params);
+        return false; // Memory allocation failed
     }
 
     // Find missing parameters
-    for (size_t req_idx = 0; req_idx < required_count; req_idx++) {
-        bool found = false;
-        for (size_t prov_idx2 = 0; prov_idx2 < provided_count; prov_idx2++) {
-            if (strcmp(required_params[req_idx], provided_params[prov_idx2]) == 0) {
-                found = true;
-                break;
-            }
+    *missing_params = find_missing_parameters(required_params, required_count, provided_params, provided_count, missing_count);
+    if (*missing_count > 0 && !*missing_params) {
+        // Memory allocation failed
+        for (size_t i = 0; i < required_count; i++) {
+            free(required_params[i]);
         }
-        if (!found) {
-            char** new_missing = realloc(*missing_params, (*missing_count + 1) * sizeof(char*));
-            if (!new_missing) {
-                // Cleanup
-                for (size_t i = 0; i < *missing_count; i++) {
-                    free((*missing_params)[i]);
-                }
-                free(*missing_params);
-                *missing_params = NULL;
-                *missing_count = 0;
-                // Continue cleanup
-                for (size_t i = 0; i < required_count; i++) {
-                    free(required_params[i]);
-                }
-                free(required_params);
-                for (size_t i = 0; i < provided_count; i++) {
-                    free(provided_params[i]);
-                }
-                free(provided_params);
-                return false;
-            }
-            *missing_params = new_missing;
-            (*missing_params)[*missing_count] = strdup(required_params[req_idx]);
-            if (!(*missing_params)[*missing_count]) {
-                // Cleanup
-                for (size_t i = 0; i < *missing_count; i++) {
-                    free((*missing_params)[i]);
-                }
-                free(*missing_params);
-                *missing_params = NULL;
-                *missing_count = 0;
-                for (size_t i = 0; i < required_count; i++) {
-                    free(required_params[i]);
-                }
-                free(required_params);
-                for (size_t i = 0; i < provided_count; i++) {
-                    free(provided_params[i]);
-                }
-                free(provided_params);
-                return false;
-            }
-            (*missing_count)++;
+        free(required_params);
+        for (size_t i = 0; i < provided_count; i++) {
+            free(provided_params[i]);
         }
+        free(provided_params);
+        return false;
     }
 
     // Find unused parameters
-    for (size_t prov_idx = 0; prov_idx < provided_count; prov_idx++) {
-        bool found = false;
-        for (size_t req_idx2 = 0; req_idx2 < required_count; req_idx2++) {
-            if (strcmp(provided_params[prov_idx], required_params[req_idx2]) == 0) {
-                found = true;
-                break;
-            }
+    *unused_params = find_unused_parameters(required_params, required_count, provided_params, provided_count, unused_count);
+    if (*unused_count > 0 && !*unused_params) {
+        // Memory allocation failed
+        for (size_t i = 0; i < *missing_count; i++) {
+            free((*missing_params)[i]);
         }
-        if (!found) {
-            char** new_unused = realloc(*unused_params, (*unused_count + 1) * sizeof(char*));
-            if (!new_unused) {
-                // Cleanup
-                for (size_t i = 0; i < *missing_count; i++) {
-                    free((*missing_params)[i]);
-                }
-                free(*missing_params);
-                *missing_params = NULL;
-                *missing_count = 0;
-                for (size_t i = 0; i < *unused_count; i++) {
-                    free((*unused_params)[i]);
-                }
-                free(*unused_params);
-                *unused_params = NULL;
-                *unused_count = 0;
-                for (size_t i = 0; i < required_count; i++) {
-                    free(required_params[i]);
-                }
-                free(required_params);
-                for (size_t i = 0; i < provided_count; i++) {
-                    free(provided_params[i]);
-                }
-                free(provided_params);
-                return false;
-            }
-            *unused_params = new_unused;
-            (*unused_params)[*unused_count] = strdup(provided_params[prov_idx]);
-            if (!(*unused_params)[*unused_count]) {
-                // Cleanup
-                for (size_t i = 0; i < *missing_count; i++) {
-                    free((*missing_params)[i]);
-                }
-                free(*missing_params);
-                *missing_params = NULL;
-                *missing_count = 0;
-                for (size_t i = 0; i < *unused_count; i++) {
-                    free((*unused_params)[i]);
-                }
-                free(*unused_params);
-                *unused_params = NULL;
-                *unused_count = 0;
-                for (size_t i = 0; i < required_count; i++) {
-                    free(required_params[i]);
-                }
-                free(required_params);
-                for (size_t i = 0; i < provided_count; i++) {
-                    free(provided_params[i]);
-                }
-                free(provided_params);
-                return false;
-            }
-            (*unused_count)++;
+        free(*missing_params);
+        *missing_params = NULL;
+        *missing_count = 0;
+        for (size_t i = 0; i < required_count; i++) {
+            free(required_params[i]);
         }
+        free(required_params);
+        for (size_t i = 0; i < provided_count; i++) {
+            free(provided_params[i]);
+        }
+        free(provided_params);
+        return false;
     }
 
     // Check for invalid parameters (type mismatches in JSON)
@@ -337,34 +164,12 @@ bool analyze_parameter_validation(const char* sql_template, json_t* params_json,
             }
 
             // Check each parameter in this type section
-            const char* param_name;
-            json_t* param_value;
-            json_object_foreach(type_obj, param_name, param_value) {
-                bool is_valid_type = false;
+            json_t* iter = json_object_iter(type_obj);
+            while (iter) {
+                const char* param_name = json_object_iter_key(iter);
+                json_t* param_value = json_object_iter_value(iter);
 
-                switch (type_idx) {
-                    case 0: // INTEGER
-                        is_valid_type = json_is_integer(param_value);
-                        break;
-                    case 1: // STRING
-                        is_valid_type = json_is_string(param_value);
-                        break;
-                    case 2: // BOOLEAN
-                        is_valid_type = json_is_boolean(param_value);
-                        break;
-                    case 3: // FLOAT
-                        is_valid_type = json_is_real(param_value) || json_is_integer(param_value);
-                        break;
-                    case 4: // TEXT
-                    case 5: // DATE
-                    case 6: // TIME
-                    case 7: // DATETIME
-                    case 8: // TIMESTAMP
-                        is_valid_type = json_is_string(param_value);
-                        break;
-                }
-
-                if (!is_valid_type) {
+                if (!validate_single_parameter_type(param_value, (int)type_idx)) {
                     // This parameter has wrong type for its section
                     const char* actual_type = "unknown";
 
@@ -374,25 +179,31 @@ bool analyze_parameter_validation(const char* sql_template, json_t* params_json,
                     else if (json_is_boolean(param_value)) actual_type = "boolean";
                     else if (json_is_null(param_value)) actual_type = "null";
 
-                    // Format: "PARAM_NAME(actual_type) should be PARAM_NAME(expected_type)"
-                    char invalid_msg[256];
-                    snprintf(invalid_msg, sizeof(invalid_msg), "%s(%s) should be %s(%s)",
-                            param_name, actual_type, param_name, type_key);
-
-                    if (*invalid_pos < invalid_buffer_size - 1) {
-                        size_t len = strlen(invalid_msg);
-                        if (*invalid_pos + len + (*invalid_pos > 0 ? 2 : 0) < invalid_buffer_size) {
-                            if (*invalid_pos > 0) {
-                                strcpy(invalid_buffer + *invalid_pos, ", ");
-                                *invalid_pos += 2;
+                    char* invalid_msg = format_type_error_message(param_name, actual_type, type_key, "should be");
+                    if (invalid_msg) {
+                        if (*invalid_pos < invalid_buffer_size - 1) {
+                            size_t len = strlen(invalid_msg);
+                            if (*invalid_pos + len + (*invalid_pos > 0 ? 2 : 0) < invalid_buffer_size) {
+                                if (*invalid_pos > 0) {
+                                    strcpy(invalid_buffer + *invalid_pos, ", ");
+                                    *invalid_pos += 2;
+                                }
+                                strcpy(invalid_buffer + *invalid_pos, invalid_msg);
+                                *invalid_pos += len;
                             }
-                            strcpy(invalid_buffer + *invalid_pos, invalid_msg);
-                            *invalid_pos += len;
                         }
+                        free(invalid_msg);
                     }
                 }
+
+                iter = json_object_iter_next(type_obj, iter);
             }
         }
+    }
+
+    // Null-terminate the invalid buffer
+    if (*invalid_pos < invalid_buffer_size) {
+        invalid_buffer[*invalid_pos] = '\0';
     }
 
     // Clean up
@@ -434,6 +245,12 @@ char* generate_parameter_messages(const char* sql_template, json_t* params_json)
             }
             if (i > 0) total_size += 2; // ", "
         }
+    }
+
+    if (invalid_pos > 0) {
+        total_size += strlen("Invalid parameters: ");
+        if (missing_count > 0) total_size += 2; // ". "
+        total_size += invalid_pos; // Length of invalid buffer content
     }
 
     if (unused_count > 0) {
@@ -555,34 +372,12 @@ char* validate_parameter_types_simple(json_t* params_json) {
         }
 
         // Check each parameter in this type section
-        const char* param_name;
-        json_t* param_value;
-        json_object_foreach(type_obj, param_name, param_value) {
-            bool is_valid_type = false;
+        json_t* iter = json_object_iter(type_obj);
+        while (iter) {
+            const char* param_name = json_object_iter_key(iter);
+            json_t* param_value = json_object_iter_value(iter);
 
-            switch (type_idx) {
-                case 0: // INTEGER
-                    is_valid_type = json_is_integer(param_value);
-                    break;
-                case 1: // STRING
-                    is_valid_type = json_is_string(param_value);
-                    break;
-                case 2: // BOOLEAN
-                    is_valid_type = json_is_boolean(param_value);
-                    break;
-                case 3: // FLOAT
-                    is_valid_type = json_is_real(param_value) || json_is_integer(param_value);
-                    break;
-                case 4: // TEXT
-                case 5: // DATE
-                case 6: // TIME
-                case 7: // DATETIME
-                case 8: // TIMESTAMP
-                    is_valid_type = json_is_string(param_value);
-                    break;
-            }
-
-            if (!is_valid_type) {
+            if (!validate_single_parameter_type(param_value, (int)type_idx)) {
                 // This parameter has wrong type for its section
                 const char* actual_type = "unknown";
 
@@ -592,21 +387,22 @@ char* validate_parameter_types_simple(json_t* params_json) {
                 else if (json_is_boolean(param_value)) actual_type = "boolean";
                 else if (json_is_null(param_value)) actual_type = "null";
 
-                // Format: "PARAM_NAME(actual_type) is not PARAM_NAME(expected_type)"
-                char invalid_msg[256];
-                snprintf(invalid_msg, sizeof(invalid_msg), "%s(%s) is not %s(%s)",
-                        param_name, actual_type, param_name, type_key);
-
-                size_t msg_len = strlen(invalid_msg);
-                if (error_pos + msg_len + (error_pos > 0 ? 2 : 0) + 1 < buffer_size) {
-                    if (error_pos > 0) {
-                        strcpy(error_message + error_pos, ", ");
-                        error_pos += 2;
+                char* invalid_msg = format_type_error_message(param_name, actual_type, type_key, "is not");
+                if (invalid_msg) {
+                    size_t msg_len = strlen(invalid_msg);
+                    if (error_pos + msg_len + (error_pos > 0 ? 2 : 0) + 1 < buffer_size) {
+                        if (error_pos > 0) {
+                            strcpy(error_message + error_pos, ", ");
+                            error_pos += 2;
+                        }
+                        strcpy(error_message + error_pos, invalid_msg);
+                        error_pos += msg_len;
                     }
-                    strcpy(error_message + error_pos, invalid_msg);
-                    error_pos += msg_len;
+                    free(invalid_msg);
                 }
             }
+
+            iter = json_object_iter_next(type_obj, iter);
         }
     }
 
@@ -623,146 +419,55 @@ char* check_missing_parameters_simple(const char* sql_template, ParameterList* p
     if (!sql_template) {
         return NULL; // No template, no missing parameters
     }
+
     // Collect required parameters from SQL template
-    const char* sql = sql_template;
-    char** required_params = NULL;
     size_t required_count = 0;
-
-    while ((sql = strchr(sql, ':')) != NULL) {
-        sql++; // Skip the :
-        const char* end = sql;
-        while (*end && (isalnum(*end) || *end == '_')) {
-            end++;
-        }
-        if (end > sql) {
-            // Found a parameter name
-            size_t len = (size_t)(end - sql);
-            char* param_name = malloc(len + 1);
-            if (param_name) {
-                memcpy(param_name, sql, len);
-                param_name[len] = '\0';
-
-                // Check if already in list
-                bool found = false;
-                for (size_t i = 0; i < required_count; i++) {
-                    if (strcmp(required_params[i], param_name) == 0) {
-                        found = true;
-                        free(param_name);
-                        break;
-                    }
-                }
-                if (!found) {
-                    char** new_required_params = realloc(required_params, (required_count + 1) * sizeof(char*));
-                    if (new_required_params) {
-                        required_params = new_required_params;
-                        required_params[required_count] = param_name;
-                        required_count++;
-                    } else {
-                        free(param_name);
-                        // Cleanup already allocated memory
-                        for (size_t i = 0; i < required_count; i++) {
-                            free(required_params[i]);
-                        }
-                        free(required_params);
-                        return NULL;
-                    }
-                }
-            }
-        }
-        sql = end;
+    char** required_params = extract_required_parameters(sql_template, &required_count);
+    if (!required_params && required_count > 0) {
+        return NULL; // Memory allocation failed
     }
 
-    // Check provided parameters
-    char** provided_params = NULL;
+    // Collect provided parameters from ParameterList
     size_t provided_count = 0;
-
-    if (param_list) {
-        for (size_t i = 0; i < param_list->count; i++) {
-            const TypedParameter* param = param_list->params[i];
-            if (param->name) {
-                // Check if already in list
-                bool found = false;
-                for (size_t j = 0; j < provided_count; j++) {
-                    if (strcmp(provided_params[j], param->name) == 0) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    char** new_provided_params = realloc(provided_params, (provided_count + 1) * sizeof(char*));
-                    if (new_provided_params) {
-                        provided_params = new_provided_params;
-                        provided_params[provided_count] = strdup(param->name);
-                        if (provided_params[provided_count]) {
-                            provided_count++;
-                        } else {
-                            // Cleanup on failure
-                            for (size_t k = 0; k < provided_count; k++) {
-                                free(provided_params[k]);
-                            }
-                            free(provided_params);
-                            // Cleanup required params
-                            for (size_t k = 0; k < required_count; k++) {
-                                free(required_params[k]);
-                            }
-                            free(required_params);
-                            return NULL;
-                        }
-                    } else {
-                        // Cleanup on failure
-                        for (size_t k = 0; k < provided_count; k++) {
-                            free(provided_params[k]);
-                        }
-                        free(provided_params);
-                        // Cleanup required params
-                        for (size_t k = 0; k < required_count; k++) {
-                            free(required_params[k]);
-                        }
-                        free(required_params);
-                        return NULL;
-                    }
-                }
-            }
-        }
+    char** provided_params = collect_provided_from_param_list(param_list, &provided_count);
+    if (!provided_params && provided_count > 0) {
+        // Cleanup required params
+        for (size_t i = 0; i < required_count; i++) free(required_params[i]);
+        free(required_params);
+        return NULL; // Memory allocation failed
     }
 
     // Find missing parameters
+    size_t missing_count = 0;
+    char** missing_params = find_missing_parameters(required_params, required_count, provided_params, provided_count, &missing_count);
+    if (missing_count > 0 && !missing_params) {
+        // Cleanup
+        for (size_t i = 0; i < required_count; i++) free(required_params[i]);
+        free(required_params);
+        for (size_t i = 0; i < provided_count; i++) free(provided_params[i]);
+        free(provided_params);
+        return NULL;
+    }
+
+    // Format message
     char* missing_message = NULL;
-    size_t missing_pos = 0;
-    size_t buffer_size = 512;
-
-    for (size_t req_idx = 0; req_idx < required_count; req_idx++) {
-        bool found = false;
-        for (size_t prov_idx = 0; prov_idx < provided_count; prov_idx++) {
-            if (strcmp(required_params[req_idx], provided_params[prov_idx]) == 0) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            // Add to missing message
-            if (!missing_message) {
-                missing_message = malloc(buffer_size);
-                if (!missing_message) {
-                    // Cleanup
-                    for (size_t i = 0; i < required_count; i++) free(required_params[i]);
-                    free(required_params);
-                    for (size_t i = 0; i < provided_count; i++) free(provided_params[i]);
-                    free(provided_params);
-                    return NULL;
+    if (missing_count > 0) {
+        size_t buffer_size = 512;
+        missing_message = malloc(buffer_size);
+        if (missing_message) {
+            size_t pos = 0;
+            for (size_t i = 0; i < missing_count; i++) {
+                size_t param_len = strlen(missing_params[i]);
+                if (pos + param_len + (pos > 0 ? 2 : 0) + 1 < buffer_size) {
+                    if (pos > 0) {
+                        strcpy(missing_message + pos, ", ");
+                        pos += 2;
+                    }
+                    strcpy(missing_message + pos, missing_params[i]);
+                    pos += param_len;
                 }
-                missing_message[0] = '\0';
             }
-
-            size_t param_len = strlen(required_params[req_idx]);
-            if (missing_pos + param_len + (missing_pos > 0 ? 2 : 0) + 1 < buffer_size) {
-                if (missing_pos > 0) {
-                    strcpy(missing_message + missing_pos, ", ");
-                    missing_pos += 2;
-                }
-                strcpy(missing_message + missing_pos, required_params[req_idx]);
-                missing_pos += param_len;
-            }
+            missing_message[pos] = '\0';
         }
     }
 
@@ -771,6 +476,8 @@ char* check_missing_parameters_simple(const char* sql_template, ParameterList* p
     free(required_params);
     for (size_t i = 0; i < provided_count; i++) free(provided_params[i]);
     free(provided_params);
+    for (size_t i = 0; i < missing_count; i++) free(missing_params[i]);
+    free(missing_params);
 
     return missing_message;
 }
@@ -782,100 +489,64 @@ char* check_unused_parameters_simple(const char* sql_template, ParameterList* pa
     }
 
     // Collect required parameters from SQL template
-    const char* sql = sql_template;
-    char** required_params = NULL;
     size_t required_count = 0;
+    char** required_params = extract_required_parameters(sql_template, &required_count);
+    if (!required_params && required_count > 0) {
+        return NULL; // Memory allocation failed
+    }
 
-    while ((sql = strchr(sql, ':')) != NULL) {
-        sql++; // Skip the :
-        const char* end = sql;
-        while (*end && (isalnum(*end) || *end == '_')) {
-            end++;
-        }
-        if (end > sql) {
-            // Found a parameter name
-            size_t len = (size_t)(end - sql);
-            char* param_name = malloc(len + 1);
-            if (param_name) {
-                memcpy(param_name, sql, len);
-                param_name[len] = '\0';
-
-                // Check if already in list
-                bool found = false;
-                for (size_t i = 0; i < required_count; i++) {
-                    if (strcmp(required_params[i], param_name) == 0) {
-                        found = true;
-                        free(param_name);
-                        break;
-                    }
-                }
-                if (!found) {
-                    char** new_required_params = realloc(required_params, (required_count + 1) * sizeof(char*));
-                    if (new_required_params) {
-                        required_params = new_required_params;
-                        required_params[required_count] = param_name;
-                        required_count++;
-                    } else {
-                        free(param_name);
-                        // Cleanup already allocated memory
-                        for (size_t i = 0; i < required_count; i++) {
-                            free(required_params[i]);
-                        }
-                        free(required_params);
-                        return NULL;
-                    }
-                }
-            }
-        }
-        sql = end;
+    // Collect provided parameters from ParameterList
+    size_t provided_count = 0;
+    char** provided_params = collect_provided_from_param_list(param_list, &provided_count);
+    if (!provided_params && provided_count > 0) {
+        // Cleanup required params
+        for (size_t i = 0; i < required_count; i++) free(required_params[i]);
+        free(required_params);
+        return NULL; // Memory allocation failed
     }
 
     // Find unused parameters
+    size_t unused_count = 0;
+    char** unused_params = find_unused_parameters(required_params, required_count, provided_params, provided_count, &unused_count);
+    if (unused_count > 0 && !unused_params) {
+        // Cleanup
+        for (size_t i = 0; i < required_count; i++) free(required_params[i]);
+        free(required_params);
+        for (size_t i = 0; i < provided_count; i++) free(provided_params[i]);
+        free(provided_params);
+        return NULL;
+    }
+
+    // Format message
     char* unused_message = NULL;
-    size_t unused_pos = 0;
-    size_t buffer_size = 512;
-    size_t prefix_len = strlen("Unused Parameters: ");
-
-    for (size_t i = 0; i < param_list->count; i++) {
-        const TypedParameter* param = param_list->params[i];
-        if (param->name) {
-            bool found = false;
-            for (size_t j = 0; j < required_count; j++) {
-                if (strcmp(param->name, required_params[j]) == 0) {
-                    found = true;
-                    break;
+    if (unused_count > 0) {
+        size_t buffer_size = 512;
+        unused_message = malloc(buffer_size);
+        if (unused_message) {
+            strcpy(unused_message, "Unused Parameters: ");
+            size_t pos = strlen("Unused Parameters: ");
+            for (size_t i = 0; i < unused_count; i++) {
+                size_t param_len = strlen(unused_params[i]);
+                if (pos + param_len + (pos > strlen("Unused Parameters: ") ? 2 : 0) + 1 < buffer_size) {
+                    if (pos > strlen("Unused Parameters: ")) {
+                        strcpy(unused_message + pos, ", ");
+                        pos += 2;
+                    }
+                    strcpy(unused_message + pos, unused_params[i]);
+                    pos += param_len;
                 }
             }
-            if (!found) {
-                // Add to unused message
-                if (!unused_message) {
-                    unused_message = malloc(buffer_size);
-                    if (!unused_message) {
-                        // Cleanup
-                        for (size_t k = 0; k < required_count; k++) free(required_params[k]);
-                        free(required_params);
-                        return NULL;
-                    }
-                    strcpy(unused_message, "Unused Parameters: ");
-                    unused_pos = prefix_len;
-                }
-
-                size_t param_len = strlen(param->name);
-                if (unused_pos + param_len + (unused_pos > prefix_len ? 2 : 0) + 1 < buffer_size) {
-                    if (unused_pos > prefix_len) {
-                        strcpy(unused_message + unused_pos, ", ");
-                        unused_pos += 2;
-                    }
-                    strcpy(unused_message + unused_pos, param->name);
-                    unused_pos += param_len;
-                }
-            }
+            unused_message[pos] = '\0';
         }
     }
 
     // Cleanup
     for (size_t i = 0; i < required_count; i++) free(required_params[i]);
     free(required_params);
+    for (size_t i = 0; i < provided_count; i++) free(provided_params[i]);
+    free(provided_params);
+    for (size_t i = 0; i < unused_count; i++) free(unused_params[i]);
+    free(unused_params);
 
     return unused_message;
 }

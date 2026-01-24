@@ -17,10 +17,13 @@
 # print_result()
 # print_warning()
 # print_error()
-# print_message()
+# print_message()        
+# print_marker()
+# print_box()
 # print_test_completion()
 
 # CHANGELOG
+# 4.2.0 - 2026-01-23 - Added print_marker() to be a little more stylish
 # 4.1.0 - 2026-01-01 - Added HELIUM_ROOT path filtering to process_message() function
 # 4.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 3.9.0 - 2025-08-18 - Inlining some functions for performance
@@ -101,6 +104,9 @@ INFO_ICON="${INFO_COLOR}\U2587\U2587${NC}"
 DATA_ICON="${DATA_COLOR}\U2587\U2587${NC}"
 EXEC_ICON="${EXEC_COLOR}\U2587\U2587${NC}"
 TEST_ICON="${TEST_COLOR}\U2587\U2587${NC}"
+
+MARKER="──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────"
+MARKERLENGTH=50 # how much do we want to display - the rest might be used in boxes
 
 # Function to process a message and replace full paths with relative paths
 process_message() {
@@ -496,6 +502,70 @@ print_message() {
         local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}     ${processed_message}"
     else
         local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${processed_message}"
+    fi
+
+    if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
+        OUTPUT_COLLECTION+="${formatted_output}\n"
+    else
+        echo -e "${formatted_output}"
+    fi
+}
+# Function to print marker in output
+print_box() {
+    local subtest_number="$1"
+    local subtest_counter="$2"
+    local message="$3"
+    
+    local test_ref
+    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+
+    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
+    if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
+        processed_message="${message/${PROJECT_DIR}/}"
+    else
+        processed_message="${message}"
+    fi
+    pmlen=${#processed_message}
+
+    local elapsed
+    elapsed=$(get_elapsed_time)
+
+    if [[ "${TEST_COUNTER}" -ne $((TEST_PASSED_COUNT + TEST_FAILED_COUNT)) ]]; then
+        local formatted_output_a=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO \001    ╭─${MARKER::${pmlen}}─╮${NC}"
+        local formatted_output_b=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO \002    │${NC} ${processed_message} ${INFO_COLOR}│${NC}"
+        local formatted_output_c=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO \003    ╰─${MARKER::${pmlen}}─╯${NC}"
+    else
+        local formatted_output_a=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO \001  ╭─${MARKER::${pmlen}}─╮${NC}"
+        local formatted_output_b=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO \002  │${NC} ${processed_message} ${INFO_COLOR}│${NC}"
+        local formatted_output_c=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO \003  ╰─${MARKER::${pmlen}}─╯${NC}"
+    fi
+
+    if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
+        OUTPUT_COLLECTION+="${formatted_output_a}\n"
+        OUTPUT_COLLECTION+="${formatted_output_b}\n"
+        OUTPUT_COLLECTION+="${formatted_output_c}\n"
+    else
+        echo -e "${formatted_output_a}"
+        echo -e "${formatted_output_b}"
+        echo -e "${formatted_output_c}"
+    fi
+}
+
+# Function to print marker in output
+print_marker() {
+    local subtest_number="$1"
+    local subtest_counter="$2"
+    
+    local test_ref
+    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+
+    local elapsed
+    elapsed=$(get_elapsed_time)
+                               
+    if [[ "${TEST_COUNTER}" -ne $((TEST_PASSED_COUNT + TEST_FAILED_COUNT)) ]]; then
+        local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO     ${MARKER::${MARKERLENGTH}}${NC}"
+    else
+        local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO   ${MARKER::${MARKERLENGTH}}${NC}"
     fi
 
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
