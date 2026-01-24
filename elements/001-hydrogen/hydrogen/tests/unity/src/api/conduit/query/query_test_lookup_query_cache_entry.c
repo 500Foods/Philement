@@ -13,12 +13,19 @@
 // Include source header
 #include <src/api/conduit/query/query.h>
 
+// Enable mock database queue functions
+#define USE_MOCK_DBQUEUE
+#include <unity/mocks/mock_dbqueue.h>
+
 // Global test fixtures
 static QueryTableCache* g_cache = NULL;
 static DatabaseQueue* g_db_queue = NULL;
 static QueryCacheEntry* g_entry = NULL;
 
 void setUp(void) {
+    // Reset mocks
+    mock_dbqueue_reset_all();
+
     // Create test fixtures
     g_cache = query_cache_create(NULL);
     TEST_ASSERT_NOT_NULL(g_cache);
@@ -33,6 +40,9 @@ void setUp(void) {
     TEST_ASSERT_NOT_NULL(g_db_queue);
     memset(g_db_queue, 0, sizeof(DatabaseQueue));
     g_db_queue->query_cache = g_cache;
+
+    // Set up mock to return the expected result
+    mock_dbqueue_set_query_cache_lookup_result(g_entry);
 }
 
 void tearDown(void) {
@@ -45,6 +55,9 @@ void tearDown(void) {
         g_db_queue = NULL;
     }
     g_entry = NULL;
+
+    // Reset mocks
+    mock_dbqueue_reset_all();
 }
 
 // Test with NULL db_queue
@@ -82,6 +95,9 @@ static void test_lookup_query_cache_entry_valid(void) {
 
 // Test with valid db_queue and query_cache, query_ref 0
 static void test_lookup_query_cache_entry_query_ref_zero(void) {
+    // Set mock to return NULL for this test
+    mock_dbqueue_set_query_cache_lookup_result(NULL);
+
     int query_ref = 0;
 
     QueryCacheEntry* result = lookup_query_cache_entry(g_db_queue, query_ref);
@@ -91,6 +107,9 @@ static void test_lookup_query_cache_entry_query_ref_zero(void) {
 
 // Test with valid db_queue and query_cache, negative query_ref
 static void test_lookup_query_cache_entry_negative_query_ref(void) {
+    // Set mock to return NULL for this test
+    mock_dbqueue_set_query_cache_lookup_result(NULL);
+
     int query_ref = -1;
 
     QueryCacheEntry* result = lookup_query_cache_entry(g_db_queue, query_ref);

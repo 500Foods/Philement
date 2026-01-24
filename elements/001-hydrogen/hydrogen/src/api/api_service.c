@@ -31,7 +31,6 @@
  #include "auth/logout/logout.h"
  #include "auth/register/register.h"
 
-
 // Simple hardcoded endpoint validator and handler for /api/version
 bool is_exact_api_version_endpoint(const char *url) {
     if (!url) return false;
@@ -336,7 +335,6 @@ static bool endpoint_expects_json(const char *path) {
         "auth/register",
         "system/test",
         "system/config",
-        "system/upload",
         "conduit/query",
         "conduit/queries",
         "conduit/auth_query",
