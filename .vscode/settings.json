@@ -119,5 +119,6 @@
     "<!--",
     "<!---"
   ],
-  "editor.formatOnSave": false
+  "editor.formatOnSave": false,
+  "workbench.editor.wrapTabs": true
 }

@@ -10,6 +10,7 @@
 # run_conduit_test_unified()
 
 # CHANGELOG
+# 1.7.1 - 2026-01-23 - Bit of tyding up by adding print_box, remove unnecessary headings
 # 1.7.0 - 2026-01-22 - Added QueryRef #57 parameter type testing
 #                    - Test all 9 parameter datatypes (INTEGER, STRING, BOOLEAN, FLOAT, TEXT, DATE, TIME, DATETIME, TIMESTAMP)
 #                    - Cross-engine result comparison to verify identical values across all database engines
@@ -72,10 +73,6 @@ test_conduit_single_public_query() {
     local base_url="$1"
     local result_file="$2"
 
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing public queries (#53, #54, #55) across all ready databases"
-    #print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
-
     local tests_passed=0
     local total_tests=0
 
@@ -88,10 +85,8 @@ test_conduit_single_public_query() {
 
         local db_name="${DATABASE_NAMES[${db_engine}]}"
 
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing ${db_engine} database"
-        #print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
-
+        print_box "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing against ${db_engine}"
+        
         # Test query #53 - Get Themes
         local payload53
         payload53=$(cat <<EOF
@@ -523,10 +518,8 @@ EOF
     done
 
     # Cross-engine parameter test result comparison
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Cross-Engine Parameter Test Comparison"
-    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
-
+    print_box "${TEST_NUMBER}" "${TEST_COUNTER}" "Cross-Engine Parameter Test Comparison"
+    
     local comparison_tests_passed=0
     local comparison_tests_total=0
 
@@ -712,8 +705,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     run_conduit_test_unified "${CONDUIT_CONFIG_FILE}" "${CONDUIT_LOG_SUFFIX}" "${CONDUIT_DESCRIPTION}"
 
     # Process results
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "──────────────────────────────────────────────────"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION}: Analyzing results"
+    print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
 
     # Add links to log and result files for troubleshooting
     log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${CONDUIT_LOG_SUFFIX}.log"
