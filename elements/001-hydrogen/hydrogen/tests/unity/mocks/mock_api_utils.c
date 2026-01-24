@@ -44,6 +44,7 @@ enum MHD_Result mock_api_send_error_and_cleanup(
     return mock_send_error_result;
 }
 
+
 // Mock control functions
 void mock_api_utils_reset_all(void) {
     mock_buffer_result = API_BUFFER_COMPLETE;

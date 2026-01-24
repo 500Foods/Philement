@@ -12,6 +12,8 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.5.0 - 2026-01-24 - Modified validate_conduit_request() to conditionally send request body only for non-GET methods
+#                    - GET requests no longer send Content-Type header or empty data body
 # 1.4.0 - 2026-01-21 - Enhanced validate_conduit_request() for non-200 responses
 #                    - Expected non-200 status codes now show response details and messages
 #                    - Includes file size, message field, and error field for better debugging
@@ -92,7 +94,12 @@ validate_conduit_request() {
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}"
 
     # Build curl command with optional Authorization header
-    local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json")
+    local curl_cmd=(curl -s -X "${method}")
+
+    # Add Content-Type and data only for methods that typically send a body
+    if [[ "${method}" != "GET" && "${method}" != "HEAD" ]]; then
+        curl_cmd+=(-H "Content-Type: application/json" -d "${data}")
+    fi
 
     # Add Authorization header if JWT token is provided
     if [[ -n "${jwt_token}" ]]; then
@@ -100,7 +107,7 @@ validate_conduit_request() {
     fi
 
     # Complete curl command
-    curl_cmd+=(-d "${data}" -w "%{http_code}" -o "${output_file}" --compressed --max-time 60 "${endpoint}")
+    curl_cmd+=(-w "%{http_code}" -o "${output_file}" --compressed --max-time 60 "${endpoint}")
 
     # Run curl and capture HTTP status
     local http_status
