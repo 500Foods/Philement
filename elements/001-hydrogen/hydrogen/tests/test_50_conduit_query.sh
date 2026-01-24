@@ -10,6 +10,9 @@
 # run_conduit_test_unified()
 
 # CHANGELOG
+# 1.8.0 - 2026-01-24 - Added Conduit status endpoint testing after database startup confirmation
+#                    - Verifies /api/conduit/status reports same databases as ready that were confirmed via log monitoring
+#                    - Status test inserted before individual database tests as additional test block
 # 1.7.1 - 2026-01-23 - Bit of tyding up by adding print_box, remove unnecessary headings
 # 1.7.0 - 2026-01-22 - Added QueryRef #57 parameter type testing
 #                    - Test all 9 parameter datatypes (INTEGER, STRING, BOOLEAN, FLOAT, TEXT, DATE, TIME, DATETIME, TIMESTAMP)
@@ -35,7 +38,7 @@ TEST_NAME="Conduit Single Query"
 TEST_ABBR="CSQ"
 TEST_NUMBER="50"
 TEST_COUNTER=0
-TEST_VERSION="1.7.0"
+TEST_VERSION="1.8.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -67,6 +70,197 @@ DEMO_EMAIL="${HYDROGEN_DEMO_EMAIL:-}"
 # Used in heredocs for JSON payloads
 # shellcheck disable=SC2034 # Used in heredocs that may be expanded in future versions
 DEMO_API_KEY="${HYDROGEN_DEMO_API_KEY:-}"
+
+# Function to test conduit status endpoint public access
+test_conduit_status_public() {
+    local base_url="$1"
+    local result_file="$2"
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Status Endpoint (Public)"
+
+    # Test status endpoint without JWT (public access)
+    local response_file="${result_file}.status_public.json"
+
+    local http_status
+    http_status=$(curl -s -X GET "${base_url}/api/conduit/status" -w "%{http_code}" -o "${response_file}" 2>/dev/null)
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${http_status}"
+    if [[ "${http_status}" == "200" ]]; then
+        if command -v jq >/dev/null 2>&1 && [[ -f "${response_file}" ]]; then
+            local success_val
+            success_val=$(jq -r '.success' "${response_file}" 2>/dev/null || echo "unknown")
+            if [[ "${success_val}" == "true" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${response_file}"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Status endpoint public test passed"
+                echo "STATUS_PUBLIC_TESTS_PASSED=1" >> "${result_file}"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status endpoint public test failed - success=${success_val}"
+                echo "STATUS_PUBLIC_TESTS_PASSED=0" >> "${result_file}"
+            fi
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status endpoint public test failed - jq not available"
+            echo "STATUS_PUBLIC_TESTS_PASSED=0" >> "${result_file}"
+        fi
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status endpoint public test failed - HTTP ${http_status}"
+        echo "STATUS_PUBLIC_TESTS_PASSED=0" >> "${result_file}"
+    fi
+    echo "STATUS_PUBLIC_TESTS_TOTAL=1" >> "${result_file}"
+}
+
+# Function to test conduit status endpoint authenticated access
+test_conduit_status_authenticated() {
+    local base_url="$1"
+    local result_file="$2"
+
+    # print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Status Endpoint (Authenticated)"
+
+    # Test status endpoint with JWT (authenticated access)
+    local response_file="${result_file}.status_auth.json"
+
+    # Get JWT for first database (PostgreSQL)
+    local jwt_token=""
+    if [[ -n "${JWT_TOKENS_RESULT_50[0]:-}" ]]; then
+        jwt_token="${JWT_TOKENS_RESULT_50[0]}"
+    fi
+
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    if validate_conduit_request "${base_url}/api/conduit/status" "GET" "" "200" "${response_file}" "${jwt_token}" "Authenticated status request" "true"; then
+        # Show summary of authenticated response per database
+        if command -v jq >/dev/null 2>&1 && [[ -f "${response_file}" ]]; then
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Authenticated status response summary"
+            for db_engine in "${!DATABASE_NAMES[@]}"; do
+                local db_name="${DATABASE_NAMES[${db_engine}]}"
+                local db_name_pad="${DATABASE_NAMES[${db_engine}]}     "
+                local db_status
+                db_status=$(jq -r ".databases.\"${db_name}\"" "${response_file}" 2>/dev/null || echo "not_found")
+                if [[ "${db_status}" != "null" && "${db_status}" != "not_found" ]]; then
+                    local query_cache_entries
+                    query_cache_entries=$(jq -r ".query_cache_entries" <<< "${db_status}" 2>/dev/null || echo "0")
+                    local queue_stats=()
+                    local expected_queues=("slow" "medium" "fast" "cache" "lead")
+                    for queue_type in "${expected_queues[@]}"; do
+                        local completed
+                        completed=$(jq -r ".dqm_statistics.per_queue_stats[] | select(.queue_type == \"${queue_type}\") | .completed" <<< "${db_status}" 2>/dev/null || echo "Missing")
+                        queue_stats+=(" ${queue_type}(${completed})")
+                    done
+                    local queue_stats_str
+                    queue_stats_str=$(IFS=',' ; echo "${queue_stats[*]}")
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_name_pad::9}: QTC(${query_cache_entries}),${queue_stats_str}"
+                else
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${db_name}: not in response"
+                fi
+            done
+        fi
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Status endpoint authenticated test passed"
+        echo "STATUS_AUTH_TESTS_PASSED=1" >> "${result_file}"
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status endpoint authenticated test failed"
+        echo "STATUS_AUTH_TESTS_PASSED=0" >> "${result_file}"
+    fi
+    echo "STATUS_AUTH_TESTS_TOTAL=1" >> "${result_file}"
+}
+
+# Function to validate conduit status endpoint database readiness matches log monitoring
+test_conduit_status_validation() {
+    local base_url="$1"
+    local result_file="$2"
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Conduit Status Endpoint Validation"
+
+    local response_file="${result_file}.status_public.json"
+
+    # Verify status response content
+    if ! command -v jq >/dev/null 2>&1 || [[ ! -f "${response_file}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status validation failed - jq not available or response file missing"
+        echo "STATUS_VALIDATION_TESTS_PASSED=0" >> "${result_file}"
+        echo "STATUS_VALIDATION_TESTS_TOTAL=1" >> "${result_file}"
+        return 1
+    fi
+
+    # Extract databases from public status response that are ready=true
+    local status_databases=()
+    while IFS= read -r db; do
+        if [[ -n "${db}" ]]; then
+            status_databases+=("${db}")
+        fi
+    done < <(jq -r '.databases | to_entries | map(select(.value.ready == true)) | map(.key) | .[]' "${response_file}" 2>/dev/null | sort || true)
+
+    # Get databases confirmed ready by log monitoring
+    local log_ready_databases=()
+    for db_engine in "${!DATABASE_NAMES[@]}"; do
+        if "${GREP}" -q "DATABASE_READY_${db_engine}=true" "${result_file}" 2>/dev/null; then
+            log_ready_databases+=("${DATABASE_NAMES[${db_engine}]}")
+        fi
+    done
+
+
+    # Sort for comparison
+    # shellcheck disable=SC2207 # Command substitution with array expansion requires subshell
+    log_ready_databases=($(printf '%s\n' "${log_ready_databases[@]}" | sort))
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Log-confirmed ready databases: ${log_ready_databases[*]}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Status-reported ready databases: ${status_databases[*]}"
+
+    # Check if status-reported databases match log-confirmed databases
+    local status_test_passed=true
+    local status_db_count=${#status_databases[@]}
+    local log_db_count=${#log_ready_databases[@]}
+
+    # Check each status-reported database
+    for db in "${status_databases[@]}"; do
+        # Check if this database was confirmed by log
+        local found=false
+        for log_db in "${log_ready_databases[@]}"; do
+            if [[ "${db}" == "${log_db}" ]]; then
+                found=true
+                break
+            fi
+        done
+        if [[ "${found}" != true ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: Status endpoint reports database ${db} not confirmed by log monitoring"
+            status_test_passed=false
+        fi
+    done
+
+    # Check if all log-confirmed databases are reported by status
+    for log_db in "${log_ready_databases[@]}"; do
+        local found=false
+        for db in "${status_databases[@]}"; do
+            if [[ "${log_db}" == "${db}" ]]; then
+                found=true
+                break
+            fi
+        done
+        if [[ "${found}" != true ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: Log-confirmed database ${log_db} not reported by status endpoint"
+            status_test_passed=false
+        fi
+    done
+
+    if [[ ${status_db_count} -ne ${log_db_count} ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: Status endpoint reports ${status_db_count} databases, log confirmed ${log_db_count} databases"
+        status_test_passed=false
+    fi
+
+    # Also verify that each reported database shows ready: true
+    for db in "${status_databases[@]}"; do
+        local ready_status
+        ready_status=$(jq -r ".databases.\"${db}\".ready" "${response_file}" 2>/dev/null)
+        if [[ "${ready_status}" != "true" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Database ${db} shows ready: ${ready_status} (expected: true)"
+            status_test_passed=false
+        fi
+    done
+
+    if [[ "${status_test_passed}" == true ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Status endpoint validation passed - databases ready and matching"
+        echo "STATUS_VALIDATION_TESTS_PASSED=1" >> "${result_file}"
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status endpoint validation failed - database readiness issues detected"
+        echo "STATUS_VALIDATION_TESTS_PASSED=0" >> "${result_file}"
+    fi
+    echo "STATUS_VALIDATION_TESTS_TOTAL=1" >> "${result_file}"
+}
 
 # Function to test conduit single query endpoint with public queries across ready databases
 test_conduit_single_public_query() {
@@ -630,6 +824,14 @@ run_conduit_test_unified() {
     hydrogen_pid=$(echo "${server_info}" | awk -F: '{print $4}')
 
     print_message "50" "0" "Server log location: build/tests/logs/test_50_${TIMESTAMP}_conduit_query.log"
+
+    # Acquire JWT tokens for authenticated status testing
+    acquire_jwt_tokens "${base_url}" "${result_file}"
+
+    # Run conduit status endpoint tests
+    test_conduit_status_public "${base_url}" "${result_file}"
+    test_conduit_status_validation "${base_url}" "${result_file}"
+    test_conduit_status_authenticated "${base_url}" "${result_file}"
 
     # Run conduit single query endpoint tests
     test_conduit_single_public_query "${base_url}" "${result_file}"

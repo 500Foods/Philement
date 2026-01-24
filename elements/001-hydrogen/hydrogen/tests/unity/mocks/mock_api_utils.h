@@ -12,8 +12,13 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <microhttpd.h>
+#include <jansson.h>
 
-// Define types locally to avoid problematic includes
+// Include api_utils.h for type definitions only when mocking is enabled
+#ifdef USE_MOCK_API_UTILS
+#include <src/api/api_utils.h>
+#else
+// Define types locally when not mocking
 typedef struct {
     uint32_t magic;
     char *data;
@@ -28,6 +33,7 @@ typedef enum {
     API_BUFFER_ERROR,
     API_BUFFER_METHOD_ERROR
 } ApiBufferResult;
+#endif
 
 // Mock function declarations
 #ifdef USE_MOCK_API_UTILS
@@ -53,6 +59,7 @@ enum MHD_Result mock_api_send_error_and_cleanup(
     const char *error_message,
     unsigned int http_status
 );
+
 
 // Mock control functions
 void mock_api_utils_reset_all(void);
