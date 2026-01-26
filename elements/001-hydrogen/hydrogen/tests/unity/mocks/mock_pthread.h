@@ -8,7 +8,16 @@
 #ifndef MOCK_PTHREAD_H
 #define MOCK_PTHREAD_H
 
+#ifdef USE_MOCK_PTHREAD
+// When mocking pthreads, include the headers to get the types
 #include <pthread.h>
+#include <time.h>
+
+#define ETIMEDOUT 110
+#define EDEADLK 35
+#else
+#include <pthread.h>
+#endif
 
 // Mock function declarations - these will override the real ones when USE_MOCK_PTHREAD is defined
 #ifdef USE_MOCK_PTHREAD
@@ -24,6 +33,8 @@
 #define pthread_mutex_unlock mock_pthread_mutex_unlock
 #define pthread_mutex_init mock_pthread_mutex_init
 #define pthread_cond_init mock_pthread_cond_init
+
+#endif // USE_MOCK_PTHREAD
 
 // Always declare mock function prototypes for the .c file
 int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
@@ -62,7 +73,5 @@ extern int mock_pthread_mutex_init_should_fail;
 extern int mock_pthread_mutex_init_call_count;
 extern int mock_pthread_cond_init_should_fail;
 extern int mock_pthread_cond_init_call_count;
-
-#endif // USE_MOCK_PTHREAD
 
 #endif // MOCK_PTHREAD_H

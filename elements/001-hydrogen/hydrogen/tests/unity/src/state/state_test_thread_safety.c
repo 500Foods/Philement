@@ -20,6 +20,10 @@
 // Note: thread_errors and error_mutex removed since we no longer detect race conditions
 // within individual threads. Tests now verify final results instead.
 
+// Local synchronization primitives for testing
+static pthread_mutex_t test_terminate_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t test_terminate_cond = PTHREAD_COND_INITIALIZER;
+
 // Thread function prototypes
 void* test_signal_handler_thread(void* arg);
 void* test_state_flag_thread(void* arg);
@@ -67,9 +71,8 @@ void setUp(void) {
     server_running = 0;
     server_stopping = 0;
 
-    // Initialize thread synchronization primitives
-    pthread_cond_init(&terminate_cond, NULL);
-    pthread_mutex_init(&terminate_mutex, NULL);
+    // Note: terminate_mutex and terminate_cond are initialized with PTHREAD_MUTEX_INITIALIZER
+    // and PTHREAD_COND_INITIALIZER in state.c, so they don't need explicit init here
 }
 
 void tearDown(void) {
@@ -288,17 +291,17 @@ void test_thread_synchronization_primitives_thread_safety(void) {
 
     // Test mutex operations
     for (int i = 0; i < 100; i++) {
-        int result = pthread_mutex_lock(&terminate_mutex);
+        int result = pthread_mutex_lock(&test_terminate_mutex);
         TEST_ASSERT_EQUAL(0, result);
         lock_count++;
 
-        result = pthread_mutex_unlock(&terminate_mutex);
+        result = pthread_mutex_unlock(&test_terminate_mutex);
         TEST_ASSERT_EQUAL(0, result);
     }
 
     // Test condition variable operations
     for (int i = 0; i < 100; i++) {
-        int result = pthread_cond_signal(&terminate_cond);
+        int result = pthread_cond_signal(&test_terminate_cond);
         TEST_ASSERT_EQUAL(0, result);
         cond_signal_count++;
     }

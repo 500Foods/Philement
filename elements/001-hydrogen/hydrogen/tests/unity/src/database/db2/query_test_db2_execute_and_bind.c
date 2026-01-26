@@ -100,6 +100,7 @@ void test_db2_execute_query_convert_named_to_positional_failure(void) {
 
     // Mock convert_named_to_positional to fail (simulate memory allocation failure)
     mock_system_set_malloc_failure(1);
+    mock_system_set_calloc_failure(1);
 
     bool query_result = db2_execute_query(&connection, &request, &result);
     TEST_ASSERT_FALSE(query_result); // Should return false (lines 595-598)
@@ -129,6 +130,7 @@ void test_db2_execute_query_allocate_binding_arrays_failure(void) {
     mock_libdb2_set_SQLPrepare_result(SQL_SUCCESS);
 
     // Mock calloc to fail for binding arrays
+    mock_system_set_calloc_failure(1);
     mock_system_set_malloc_failure(1);
 
     bool query_result = db2_execute_query(&connection, &request, &result);

@@ -81,12 +81,7 @@ void init_registry(void) {
 
     log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
     log_this(SR_REGISTRY, "REGISTRY INITIALIZATION", LOG_LEVEL_DEBUG, 0);
-    log_this(SR_REGISTRY, "― Reinitializing Registry Mutex", LOG_LEVEL_DEBUG, 0);
-
-    // For robust test isolation, destroy and reinitialize the mutex
-    // This ensures clean state between test runs
-    pthread_mutex_destroy(&subsystem_registry.mutex);
-    pthread_mutex_init(&subsystem_registry.mutex, NULL);
+    log_this(SR_REGISTRY, "― Resetting Registry Data", LOG_LEVEL_DEBUG, 0);
 
     // Lock the mutex to ensure thread safety during cleanup
     MutexResult lock_result = MUTEX_LOCK(&subsystem_registry.mutex, SR_REGISTRY);
