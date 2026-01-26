@@ -284,6 +284,7 @@ bool build_parameter_array(
 
     // Find all named parameters in SQL template
     // Use regex to find :paramName patterns, but exclude ${...} macro variables
+    // and PostgreSQL interval syntax like 'minutes'::interval
     regex_t regex;
     int reti = regcomp(&regex, ":[a-zA-Z_][a-zA-Z0-9_]*", REG_EXTENDED);
     if (reti) {
@@ -324,7 +325,18 @@ bool build_parameter_array(
         }
         
         if (!is_inside_macro) {
-            match_count++;
+            // Extract parameter name to check if it's "interval" (PostgreSQL type)
+            size_t name_len = (size_t)(match.rm_eo - match.rm_so - 1);
+            char param_name[MAX_PARAM_NAME_LEN];
+            if (name_len < sizeof(param_name)) {
+                memcpy(param_name, search_ptr + match.rm_so + 1, name_len);
+                param_name[name_len] = '\0';
+                
+                // Skip the :interval parameter (it's a PostgreSQL type, not a parameter)
+                if (strcmp(param_name, "interval") != 0) {
+                    match_count++;
+                }
+            }
         }
         
         search_ptr += match.rm_eo;
@@ -396,6 +408,12 @@ bool build_parameter_array(
 
             memcpy(param_name, search_ptr + match.rm_so + 1, name_len);
             param_name[name_len] = '\0';
+            
+            // Skip the :interval parameter (it's a PostgreSQL type, not a parameter)
+            if (strcmp(param_name, "interval") == 0) {
+                search_ptr += match.rm_eo;
+                continue;
+            }
 
             // Find matching parameter in our list
             TypedParameter* found_param = NULL;

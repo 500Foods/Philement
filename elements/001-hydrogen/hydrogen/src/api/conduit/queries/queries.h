@@ -36,11 +36,21 @@ PendingQueryResult* submit_single_query(const char *database, json_t *query_obj,
 json_t* wait_and_build_single_response(const char *database, int query_ref,
                                       const QueryCacheEntry *cache_entry, const DatabaseQueue *selected_queue,
                                       PendingQueryResult *pending, json_t *params);
+typedef enum {
+    DEDUP_OK = 0,
+    DEDUP_RATE_LIMIT = 1,
+    DEDUP_DATABASE_NOT_FOUND = 2,
+    DEDUP_ERROR = 3
+} DeduplicationResult;
+
 enum MHD_Result deduplicate_and_validate_queries(
+    struct MHD_Connection *connection,
     json_t *queries_array,
     const char *database,
     json_t **deduplicated_queries,
-    size_t **mapping_array);
+    size_t **mapping_array,
+    bool **is_duplicate,
+    DeduplicationResult *result_code);
 
 /**
  * @brief Handle GET/POST /api/conduit/queries requests

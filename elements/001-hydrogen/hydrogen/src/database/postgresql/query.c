@@ -191,7 +191,7 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
     if (request->parameters_json && strlen(request->parameters_json) > 0) {
         // Parse typed parameters from JSON
         params = parse_typed_parameters(request->parameters_json, designator);
-        if (params) {
+        if (params && params->count > 0) {
             // Convert named parameters to PostgreSQL positional format ($1, $2, ...)
             positional_sql = convert_named_to_positional(
                 request->sql_template,
@@ -218,8 +218,8 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
     time_t query_start_time = time(NULL);
     void* pg_result = NULL;
     
-    if (positional_sql && param_values && ordered_param_count > 0 && PQexecParams_ptr) {
-        // Use parameterized execution
+    if (positional_sql && PQexecParams_ptr) {
+        // Use parameterized execution (even with 0 parameters)
         log_this(designator, "PostgreSQL execute_query: Executing with %zu parameters", LOG_LEVEL_TRACE, 1, ordered_param_count);
         pg_result = PQexecParams_ptr(pg_conn->connection, positional_sql, (int)ordered_param_count,
                                       NULL, (const char* const*)param_values, NULL, NULL, 0);
