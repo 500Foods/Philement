@@ -708,8 +708,15 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
             free(ordered_params);
             free_parameter_list(param_list);
         } else {
-            // No actual parameters or parsing failed, fall back to direct execution
-            if (param_list) free_parameter_list(param_list);
+            // No actual parameters or parsing failed
+            if (param_list) {
+                free_parameter_list(param_list);
+            } else {  // has_params is always true
+                // Parameter parsing failed when parameters were expected - this is an error
+                log_this(designator, "DB2 execute_query: Failed to parse required parameters", LOG_LEVEL_ERROR, 0);
+                SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                return false;
+            }
             exec_result = SQLExecDirect_ptr(stmt_handle, (char*)request->sql_template, SQL_NTS);
         }
     } else {

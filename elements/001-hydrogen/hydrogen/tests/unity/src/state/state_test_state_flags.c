@@ -12,6 +12,10 @@
 // Standard system headers
 #include <pthread.h>
 
+// Local synchronization primitives for testing
+static pthread_mutex_t test_terminate_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t test_terminate_cond = PTHREAD_COND_INITIALIZER;
+
 // Function prototypes for test functions
 void test_initial_state_flags_values(void);
 void test_server_state_transitions(void);
@@ -49,9 +53,8 @@ void setUp(void) {
     mdns_server = NULL;
     net_info = NULL;
 
-    // Initialize thread synchronization primitives
-    pthread_cond_init(&terminate_cond, NULL);
-    pthread_mutex_init(&terminate_mutex, NULL);
+    // Note: terminate_mutex and terminate_cond are initialized with PTHREAD_MUTEX_INITIALIZER
+    // and PTHREAD_COND_INITIALIZER in state.c, so they don't need explicit init here
 }
 
 void tearDown(void) {
@@ -126,18 +129,18 @@ void test_component_shutdown_flags(void) {
 
 void test_thread_synchronization_primitives_state_flags(void) {
     // Test that thread synchronization primitives are properly initialized
-    TEST_ASSERT_NOT_NULL(&terminate_cond);
-    TEST_ASSERT_NOT_NULL(&terminate_mutex);
+    TEST_ASSERT_NOT_NULL(&test_terminate_cond);
+    TEST_ASSERT_NOT_NULL(&test_terminate_mutex);
 
     // Test mutex can be locked and unlocked
-    int result = pthread_mutex_lock(&terminate_mutex);
+    int result = pthread_mutex_lock(&test_terminate_mutex);
     TEST_ASSERT_EQUAL(0, result);
 
-    result = pthread_mutex_unlock(&terminate_mutex);
+    result = pthread_mutex_unlock(&test_terminate_mutex);
     TEST_ASSERT_EQUAL(0, result);
 
     // Test condition variable can be signaled
-    result = pthread_cond_signal(&terminate_cond);
+    result = pthread_cond_signal(&test_terminate_cond);
     TEST_ASSERT_EQUAL(0, result);
 }
 

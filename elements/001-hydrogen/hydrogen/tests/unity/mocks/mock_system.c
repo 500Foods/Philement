@@ -159,6 +159,7 @@ int mock_waitpid_status = 0;
 int mock_kill_should_fail = 0;
 int mock_close_should_fail = 0;
 int mock_sem_init_should_fail = 0;
+int mock_select_result = 0;
 int mock_asprintf_should_fail = 0;
 
 // Mock implementation of malloc
@@ -468,6 +469,7 @@ void mock_system_reset_all(void) {
     mock_waitpid_status = 0;
     mock_kill_should_fail = 0;
     mock_close_should_fail = 0;
+    mock_select_result = 0;
     mock_sem_init_should_fail = 0;
     mock_asprintf_should_fail = 0;
 }
@@ -640,6 +642,17 @@ int mock_sem_init(sem_t *sem, int pshared, unsigned int value) {
     }
 
     return 0;
+}
+
+// Mock implementation of select
+int mock_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) {
+    (void)nfds;     // Suppress unused parameter
+    (void)readfds;  // Suppress unused parameter
+    (void)writefds; // Suppress unused parameter
+    (void)exceptfds; // Suppress unused parameter
+    (void)timeout;   // Suppress unused parameter
+
+    return mock_select_result;
 }
 
 // Mock implementation of asprintf
