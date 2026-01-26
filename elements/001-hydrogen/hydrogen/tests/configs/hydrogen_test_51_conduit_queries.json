@@ -54,7 +54,8 @@
                     "Slow": {
                         "start": 2
                     }
-                }
+                },
+                "MaxQueriesPerRequest": 15
             },
             {
                 "Enabled": true,
@@ -80,7 +81,8 @@
                     "Slow": {
                         "start": 2
                     }
-                }
+                },
+                "MaxQueriesPerRequest": 12
             },
             {
                 "Enabled": true,
@@ -102,7 +104,8 @@
                     "Slow": {
                         "start": 2
                     }
-                }
+                },
+                "MaxQueriesPerRequest": 8
             },
             {
                 "Enabled": true,
@@ -154,7 +157,8 @@
                     "Slow": {
                         "start": 2
                     }
-                }
+                },
+                "MaxQueriesPerRequest": 18
             },
             {
                 "Enabled": true,
@@ -180,7 +184,8 @@
                     "Slow": {
                         "start": 2
                     }
-                }
+                },
+                "MaxQueriesPerRequest": 12
             },
             {
                 "Enabled": true,

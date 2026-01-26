@@ -264,7 +264,7 @@ void init_startup_log_level(void);
 
 // DATABASES //////////////////////////////////////////////////////////////////////////////////////
 #define MAX_DATABASES 10           
-#define MAX_QUERIES_PER_REQUEST 10                                                                
+#define MAX_QUERIES_PER_REQUEST 20                                                                
 
 // WEBSOCKET SERVER ///////////////////////////////////////////////////////////////////////////////
 

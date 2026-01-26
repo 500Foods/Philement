@@ -61,6 +61,11 @@ bool process_parameters(json_t* params_json, ParameterList** param_list,
                         const char* sql_template, DatabaseEngineType engine_type,
                         char** converted_sql, TypedParameter*** ordered_params, size_t* param_count);
 
+// Parameter validation functions
+char* validate_parameter_types_simple(json_t* params_json);
+char* check_missing_parameters_simple(const char* sql_template, ParameterList* param_list);
+char* check_unused_parameters_simple(const char* sql_template, ParameterList* param_list);
+
 // Generate parameter validation messages
 char* generate_parameter_messages(const char* sql_template, json_t* params_json);
 
