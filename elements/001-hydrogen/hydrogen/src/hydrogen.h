@@ -98,7 +98,12 @@
 #include <jansson.h>        // For jansson - JSON handling
 #include <libwebsockets.h>  // For websockets - WebSocket server/client
 #include <microhttpd.h>     // For microhttpd - Web server
+#ifndef USE_MOCK_PTHREAD
 #include <pthread.h>        // For pthreads - Threading and synchronization
+#endif
+#ifdef USE_MOCK_SYSTEM
+#include <unity/mocks/mock_system.h>
+#endif
 #include <brotli/decode.h>  // For Brotli - Decompressing payloads
 #include <brotli/encode.h>  // For Brotli - Compressing content
 

@@ -3,6 +3,10 @@
  * This file contains unit tests for synchronous query execution
  */
 
+// Enable mocks BEFORE any other includes to override system functions
+#define USE_MOCK_SYSTEM
+#include <unity/mocks/mock_system.h>
+
 // Project includes
 #include <src/hydrogen.h>
 #include <unity.h>
@@ -22,6 +26,19 @@ void test_get_pending_result_manager(void);
 void test_pending_result_manager_expansion(void);
 void test_pending_result_null_parameters(void);
 void test_pending_result_state_checks(void);
+void test_pending_result_manager_create_malloc_failure(void);
+void test_pending_result_manager_create_calloc_failure(void);
+void test_pending_result_manager_create_null_parameter(void);
+void test_pending_result_register_malloc_failure(void);
+void test_pending_result_register_strdup_failure(void);
+void test_pending_result_register_null_manager(void);
+void test_pending_result_register_null_query_id(void);
+void test_pending_result_register_realloc_failure(void);
+void test_pending_result_wait_timeout(void);
+void test_pending_result_wait_multiple(void);
+void test_pending_result_wait_multiple_null_parameters(void);
+void test_pending_result_wait_multiple_timeout(void);
+void test_pending_result_cleanup_expired_with_result(void);
 
 // Test setup and teardown
 void setUp(void) {
@@ -288,6 +305,181 @@ void test_pending_result_state_checks(void) {
     pending_result_manager_destroy(manager, NULL);
 }
 
+// Test manager creation with malloc failure
+void test_pending_result_manager_create_malloc_failure(void) {
+    mock_system_set_malloc_failure(1);
+    
+    PendingResultManager* manager = pending_result_manager_create(NULL);
+    TEST_ASSERT_NULL(manager);
+    
+    mock_system_reset_all();
+}
+
+// Test manager creation with calloc failure
+void test_pending_result_manager_create_calloc_failure(void) {
+    mock_system_set_calloc_failure(1);
+    
+    PendingResultManager* manager = pending_result_manager_create(NULL);
+    TEST_ASSERT_NULL(manager);
+    
+    mock_system_reset_all();
+}
+
+// Test manager creation with NULL parameter (can't easily mock pthread functions)
+void test_pending_result_manager_create_null_parameter(void) {
+    // Test that the function handles NULL parameters gracefully
+    // Since we can't easily mock pthread functions, we test parameter validation
+    PendingResultManager* manager = pending_result_manager_create(NULL);
+    TEST_ASSERT_NOT_NULL(manager); // Should succeed with NULL dqm_label
+
+    pending_result_manager_destroy(manager, NULL);
+}
+
+// Test pending result registration with malloc failure
+void test_pending_result_register_malloc_failure(void) {
+    PendingResultManager* manager = pending_result_manager_create(NULL);
+    TEST_ASSERT_NOT_NULL(manager);
+    
+    mock_system_set_malloc_failure(1);
+    PendingQueryResult* pending = pending_result_register(manager, "test_query", 30, NULL);
+    TEST_ASSERT_NULL(pending);
+    
+    pending_result_manager_destroy(manager, NULL);
+    mock_system_reset_all();
+}
+
+// Test pending result registration with strdup failure
+void test_pending_result_register_strdup_failure(void) {
+    PendingResultManager* manager = pending_result_manager_create(NULL);
+    TEST_ASSERT_NOT_NULL(manager);
+    
+    mock_system_set_malloc_failure(2); // Fail on second malloc (strdup)
+    PendingQueryResult* pending = pending_result_register(manager, "test_query", 30, NULL);
+    TEST_ASSERT_NULL(pending);
+    
+    pending_result_manager_destroy(manager, NULL);
+    mock_system_reset_all();
+}
+
+// Test pending result registration with NULL manager
+void test_pending_result_register_null_manager(void) {
+    // Test that registration fails gracefully with NULL manager
+    PendingQueryResult* pending = pending_result_register(NULL, "test_query", 30, NULL);
+    TEST_ASSERT_NULL(pending);
+}
+
+// Test pending result registration with NULL query_id
+void test_pending_result_register_null_query_id(void) {
+    PendingResultManager* manager = pending_result_manager_create(NULL);
+    TEST_ASSERT_NOT_NULL(manager);
+
+    // Test that registration fails gracefully with NULL query_id
+    PendingQueryResult* pending = pending_result_register(manager, NULL, 30, NULL);
+    TEST_ASSERT_NULL(pending);
+
+    pending_result_manager_destroy(manager, NULL);
+}
+
+// Test pending result registration with realloc failure
+void test_pending_result_register_realloc_failure(void) {
+    PendingResultManager* manager = pending_result_manager_create(NULL);
+    TEST_ASSERT_NOT_NULL(manager);
+    
+    // Fill manager to capacity
+    size_t initial_capacity = manager->capacity;
+    for (size_t i = 0; i < initial_capacity; i++) {
+        char query_id[32];
+        snprintf(query_id, sizeof(query_id), "query_%zu", i);
+        PendingQueryResult* pending = pending_result_register(manager, query_id, 30, NULL);
+        TEST_ASSERT_NOT_NULL(pending);
+    }
+    
+    // Now cause realloc to fail
+    mock_system_set_realloc_failure(1);
+    PendingQueryResult* pending = pending_result_register(manager, "extra_query", 30, NULL);
+    TEST_ASSERT_NULL(pending);
+    
+    pending_result_manager_destroy(manager, NULL);
+    mock_system_reset_all();
+}
+
+// Test pending result wait with timeout
+void test_pending_result_wait_timeout(void) {
+    PendingResultManager* manager = pending_result_manager_create(NULL);
+    TEST_ASSERT_NOT_NULL(manager);
+
+    PendingQueryResult* pending = pending_result_register(manager, "test_query", 0, NULL); // 0 timeout for instant timeout
+    TEST_ASSERT_NOT_NULL(pending);
+
+    int rc = pending_result_wait(pending, NULL);
+    TEST_ASSERT_EQUAL(-1, rc); // Should timeout immediately
+
+    pending_result_manager_destroy(manager, NULL);
+}
+
+// Test pending result wait multiple
+void test_pending_result_wait_multiple(void) {
+    PendingResultManager* manager = pending_result_manager_create(NULL);
+    TEST_ASSERT_NOT_NULL(manager);
+    
+    PendingQueryResult* pending1 = pending_result_register(manager, "query1", 0, NULL);
+    PendingQueryResult* pending2 = pending_result_register(manager, "query2", 0, NULL);
+    PendingQueryResult* pending3 = pending_result_register(manager, "query3", 0, NULL);
+    TEST_ASSERT_NOT_NULL(pending1);
+    TEST_ASSERT_NOT_NULL(pending2);
+    TEST_ASSERT_NOT_NULL(pending3);
+    
+    PendingQueryResult* pendings[] = {pending1, pending2, pending3};
+    int rc = pending_result_wait_multiple(pendings, 3, 0, NULL); // 0 timeout
+    TEST_ASSERT_EQUAL(-1, rc);
+    
+    pending_result_manager_destroy(manager, NULL);
+}
+
+// Test pending result wait multiple with null parameters
+void test_pending_result_wait_multiple_null_parameters(void) {
+    int rc = pending_result_wait_multiple(NULL, 0, 0, NULL); // 0 timeout
+    TEST_ASSERT_EQUAL(-1, rc);
+}
+
+// Test pending result wait multiple with timeout
+void test_pending_result_wait_multiple_timeout(void) {
+    PendingResultManager* manager = pending_result_manager_create(NULL);
+    TEST_ASSERT_NOT_NULL(manager);
+    
+    PendingQueryResult* pending = pending_result_register(manager, "query1", 0, NULL); // 0 timeout
+    TEST_ASSERT_NOT_NULL(pending);
+    
+    PendingQueryResult* pendings[] = {pending};
+    int rc = pending_result_wait_multiple(pendings, 1, 0, NULL); // 0 timeout
+    TEST_ASSERT_EQUAL(-1, rc);
+    
+    pending_result_manager_destroy(manager, NULL);
+}
+
+// Test pending result cleanup expired with result
+void test_pending_result_cleanup_expired_with_result(void) {
+    PendingResultManager* manager = pending_result_manager_create(NULL);
+    TEST_ASSERT_NOT_NULL(manager);
+    
+    PendingQueryResult* pending = pending_result_register(manager, "expired_test", 1, NULL);
+    TEST_ASSERT_NOT_NULL(pending);
+    
+    QueryResult* mock_result = calloc(1, sizeof(QueryResult));
+    TEST_ASSERT_NOT_NULL(mock_result);
+    mock_result->success = true;
+    mock_result->data_json = strdup("{\"test\": \"data\"}");
+    pending->result = mock_result;
+    
+    pending->submitted_at = time(NULL) - 5;
+    
+    size_t cleaned = pending_result_cleanup_expired(manager, NULL);
+    TEST_ASSERT_EQUAL(1, cleaned);
+    TEST_ASSERT_EQUAL(0, manager->count);
+    
+    pending_result_manager_destroy(manager, NULL);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -302,6 +494,19 @@ int main(void) {
     RUN_TEST(test_pending_result_manager_expansion);
     RUN_TEST(test_pending_result_null_parameters);
     RUN_TEST(test_pending_result_state_checks);
+    RUN_TEST(test_pending_result_manager_create_malloc_failure);
+    RUN_TEST(test_pending_result_manager_create_calloc_failure);
+    RUN_TEST(test_pending_result_manager_create_null_parameter);
+    RUN_TEST(test_pending_result_register_malloc_failure);
+    RUN_TEST(test_pending_result_register_strdup_failure);
+    RUN_TEST(test_pending_result_register_null_manager);
+    RUN_TEST(test_pending_result_register_null_query_id);
+    RUN_TEST(test_pending_result_register_realloc_failure);
+    RUN_TEST(test_pending_result_wait_timeout);
+    RUN_TEST(test_pending_result_wait_multiple);
+    RUN_TEST(test_pending_result_wait_multiple_null_parameters);
+    RUN_TEST(test_pending_result_wait_multiple_timeout);
+    RUN_TEST(test_pending_result_cleanup_expired_with_result);
 
     return UNITY_END();
 }

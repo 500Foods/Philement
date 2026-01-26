@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <errno.h>
 #include <pthread.h>
 
@@ -18,6 +19,8 @@
 #undef pthread_detach
 #undef pthread_setcancelstate
 #undef pthread_setcanceltype
+#undef pthread_mutex_init
+#undef pthread_cond_init
 
 // Function prototypes - these are defined in the header when USE_MOCK_PTHREAD is set
 int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
@@ -155,31 +158,29 @@ int mock_pthread_mutex_unlock(pthread_mutex_t *mutex) {
 
 // Mock implementation of pthread_mutex_init
 int mock_pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr) {
-    (void)mutex;  // Suppress unused parameter
-    (void)attr;   // Suppress unused parameter
-
     mock_pthread_mutex_init_call_count++;
 
     if (mock_pthread_mutex_init_should_fail && mock_pthread_mutex_init_call_count == mock_pthread_mutex_init_should_fail) {
         return -1;  // Return failure on specific call
     }
 
-    return 0;
+    // Call the real function to actually initialize the mutex
+    return pthread_mutex_init(mutex, attr);
 }
 
 // Mock implementation of pthread_cond_init
 int mock_pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr) {
-    (void)cond;  // Suppress unused parameter
-    (void)attr;  // Suppress unused parameter
-
     mock_pthread_cond_init_call_count++;
 
     if (mock_pthread_cond_init_should_fail && mock_pthread_cond_init_call_count == mock_pthread_cond_init_should_fail) {
         return -1;  // Return failure on specific call
     }
 
-    return 0;
+    // Call the real function to actually initialize the condition variable
+    return pthread_cond_init(cond, attr);
 }
+
+// Weak implementations removed to avoid infinite recursion
 
 // Mock control functions
 void mock_pthread_set_create_failure(int should_fail) {
