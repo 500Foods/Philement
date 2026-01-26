@@ -29,7 +29,8 @@
 #include <src/api/api_service.h>
 #include <src/api/api_utils.h>  // For api_send_json_response
 #include <src/api/conduit/queries/queries.h>
-#include <src/api/conduit/query/query.h>  // Use existing helpers
+#include <src/api/conduit/conduit_helpers.h>
+#include <src/api/conduit/conduit_service.h>
 #include <src/config/config.h>
 #include <src/config/config_databases.h>
 #include <src/logging/logging.h>
@@ -47,13 +48,21 @@
  * @return MHD_YES on success, MHD_NO on rate limit exceeded
  */
 enum MHD_Result deduplicate_and_validate_queries(
+    struct MHD_Connection *connection,
     json_t *queries_array,
     const char *database,
     json_t **deduplicated_queries,
-    size_t **mapping_array)
+    size_t **mapping_array,
+    bool **is_duplicate,
+    DeduplicationResult *result_code)
 {
-    if (!queries_array || !database || !deduplicated_queries || !mapping_array) {
+    (void)connection;  // Unused parameter
+    
+    if (!queries_array || !database || !deduplicated_queries || !mapping_array || !is_duplicate) {
         log_this(SR_API, "deduplicate_and_validate_queries: NULL parameters", LOG_LEVEL_ERROR, 0);
+        if (result_code) {
+            *result_code = DEDUP_ERROR;
+        }
         return MHD_NO;
     }
 
@@ -61,10 +70,14 @@ enum MHD_Result deduplicate_and_validate_queries(
     if (original_count == 0) {
         *deduplicated_queries = json_array();
         *mapping_array = NULL;
+        *is_duplicate = NULL;
+        if (result_code) {
+            *result_code = DEDUP_OK;
+        }
         return MHD_YES;
     }
 
-    // Get database connection to check rate limits
+    // Validate database connection first
     const DatabaseConnection *db_conn = find_database_connection(&app_config->databases, database);
     if (!db_conn) {
         // If connection not found by database name, try to find it by checking if database name matches any connection name
@@ -77,64 +90,73 @@ enum MHD_Result deduplicate_and_validate_queries(
             }
         }
         if (!db_conn) {
-            log_this(SR_API, "deduplicate_and_validate_queries: Database connection not found: %s, skipping rate limiting", LOG_LEVEL_ALERT, 1, database);
-            // Skip rate limiting if connection not found
-            *deduplicated_queries = json_array();
-            *mapping_array = calloc(original_count, sizeof(size_t));
-            if (!*deduplicated_queries || !*mapping_array) {
-                json_decref(*deduplicated_queries);
-                free(*mapping_array);
-                return MHD_NO;
+            log_this(SR_API, "deduplicate_and_validate_queries: Database connection not found: %s", LOG_LEVEL_ALERT, 1, database);
+            if (result_code) {
+                *result_code = DEDUP_DATABASE_NOT_FOUND;
             }
-            // Copy all queries without deduplication
-            for (size_t i = 0; i < original_count; i++) {
-                json_t *query_obj = json_array_get(queries_array, i);
-                json_array_append(*deduplicated_queries, query_obj);
-                (*mapping_array)[i] = i;
-            }
-            log_this(SR_API, "deduplicate_and_validate_queries: Skipped rate limiting for database %s", LOG_LEVEL_DEBUG, 1, database);
-            return MHD_YES;
+            return MHD_NO;  // Let the caller handle the error
         }
     }
 
-    // Create a hash map to track unique query_refs and their first occurrence index
-    // Using a simple array-based approach since we expect small numbers of queries
-    int *query_refs = calloc(original_count, sizeof(int));
-    size_t *first_occurrence = calloc(original_count, sizeof(size_t));
-    size_t unique_count = 0;
-
-    if (!query_refs || !first_occurrence) {
-        log_this(SR_API, "deduplicate_and_validate_queries: Failed to allocate memory", LOG_LEVEL_ERROR, 0);
-        free(query_refs);
-        free(first_occurrence);
+    // Allocate memory for duplicate tracking
+    *is_duplicate = calloc(original_count, sizeof(bool));
+    if (!*is_duplicate) {
+        log_this(SR_API, "deduplicate_and_validate_queries: Failed to allocate memory for duplicate tracking", LOG_LEVEL_ERROR, 0);
         return MHD_NO;
     }
 
-    // First pass: collect unique query_refs and track first occurrences
+    // Create arrays to track unique queries (query_ref + params) and their mapping
+    int *query_refs = calloc(original_count, sizeof(int));
+    json_t **query_params = calloc(original_count, sizeof(json_t*));
+    size_t *first_occurrence = calloc(original_count, sizeof(size_t));
+    size_t unique_count = 0;
+
+    if (!query_refs || !query_params || !first_occurrence) {
+        log_this(SR_API, "deduplicate_and_validate_queries: Failed to allocate memory", LOG_LEVEL_ERROR, 0);
+        free(query_refs);
+        free(query_params);
+        free(first_occurrence);
+        free(*is_duplicate);
+        return MHD_NO;
+    }
+
+    // First pass: collect unique queries (query_ref + params) and track duplicates
     for (size_t i = 0; i < original_count; i++) {
         json_t *query_obj = json_array_get(queries_array, i);
         if (!query_obj || !json_is_object(query_obj)) {
+            (*is_duplicate)[i] = true;
             continue;
         }
 
         json_t *query_ref_json = json_object_get(query_obj, "query_ref");
         if (!query_ref_json || !json_is_integer(query_ref_json)) {
+            (*is_duplicate)[i] = true;
             continue;
         }
 
         int query_ref = (int)json_integer_value(query_ref_json);
+        json_t *params = json_object_get(query_obj, "params");
+        if (!params) {
+            params = json_object();  // Treat missing params as empty object
+        }
 
-        // Check if we've seen this query_ref before
+        // Check if we've seen this query_ref + params combination before
         bool found = false;
         for (size_t j = 0; j < unique_count; j++) {
             if (query_refs[j] == query_ref) {
-                found = true;
-                break;
+                // Compare params
+                int cmp = json_equal(query_params[j], params);
+                if (cmp == 1) {
+                    found = true;
+                    (*is_duplicate)[i] = true;
+                    break;
+                }
             }
         }
 
         if (!found) {
             query_refs[unique_count] = query_ref;
+            query_params[unique_count] = params;  // We don't need to decref since it's a reference to the original
             first_occurrence[unique_count] = i;
             unique_count++;
         }
@@ -145,7 +167,16 @@ enum MHD_Result deduplicate_and_validate_queries(
         log_this(SR_API, "deduplicate_and_validate_queries: Rate limit exceeded: %zu unique queries > %d max for database %s",
                  LOG_LEVEL_ERROR, 3, unique_count, db_conn->max_queries_per_request, database);
         free(query_refs);
+        free(query_params);
         free(first_occurrence);
+        free(*is_duplicate);
+        if (result_code) {
+            *result_code = DEDUP_RATE_LIMIT;
+        }
+        // Reset output parameters to NULL
+        *deduplicated_queries = NULL;
+        *mapping_array = NULL;
+        *is_duplicate = NULL;
         return MHD_NO;
     }
 
@@ -158,7 +189,9 @@ enum MHD_Result deduplicate_and_validate_queries(
         json_decref(*deduplicated_queries);
         free(*mapping_array);
         free(query_refs);
+        free(query_params);
         free(first_occurrence);
+        free(*is_duplicate);
         return MHD_NO;
     }
 
@@ -175,10 +208,14 @@ enum MHD_Result deduplicate_and_validate_queries(
         }
 
         int query_ref = (int)json_integer_value(query_ref_json);
+        json_t *params = json_object_get(query_obj, "params");
+        if (!params) {
+            params = json_object();
+        }
 
-        // Find the deduplicated index for this query_ref
+        // Find the deduplicated index for this query_ref + params
         for (size_t j = 0; j < unique_count; j++) {
-            if (query_refs[j] == query_ref) {
+            if (query_refs[j] == query_ref && json_equal(query_params[j], params)) {
                 (*mapping_array)[i] = j;
 
                 // Add to deduplicated array if this is the first occurrence
@@ -194,6 +231,7 @@ enum MHD_Result deduplicate_and_validate_queries(
              LOG_LEVEL_DEBUG, 2, original_count, unique_count);
 
     free(query_refs);
+    free(query_params);
     free(first_occurrence);
 
     return MHD_YES;
@@ -232,10 +270,10 @@ json_t* execute_single_query(const char *database, json_t *query_obj)
     int query_ref = (int)json_integer_value(query_ref_json);
     json_t *params = json_object_get(query_obj, "params");
 
-    // Look up database queue and cache entry using helpers from query.h
+    // Look up database queue and cache entry using new helper function
     DatabaseQueue *db_queue = NULL;
     QueryCacheEntry *cache_entry = NULL;
-
+    
     if (!lookup_database_and_public_query(&db_queue, &cache_entry, database, query_ref)) {
         const char *error_msg = !db_queue ? "Database not available" : "Public query not found";
         const char *message = !db_queue ? "Database is not available" : NULL;
@@ -243,39 +281,137 @@ json_t* execute_single_query(const char *database, json_t *query_obj)
         return error_result;
     }
 
-    // Process parameters using helper from query.h
+    // Process parameters with validation
     ParameterList *param_list = NULL;
     char *converted_sql = NULL;
     TypedParameter **ordered_params = NULL;
     size_t param_count = 0;
+    char* message = NULL;
 
+    // (1) Validate parameter types
+    char* type_error = validate_parameter_types_simple(params);
+    if (type_error) {
+        json_t *error_response = create_processing_error_response("Parameter type mismatch", database, query_ref);
+        json_object_set_new(error_response, "message", json_string(type_error));
+        free(type_error);
+        return error_response;
+    }
+
+    // (2) Check for missing parameters
+    ParameterList* temp_param_list = NULL;
+    if (params && json_is_object(params)) {
+        char* params_str = json_dumps(params, JSON_COMPACT);
+        if (params_str) {
+            temp_param_list = parse_typed_parameters(params_str, NULL);
+            free(params_str);
+        }
+    }
+    if (!temp_param_list) {
+        temp_param_list = calloc(1, sizeof(ParameterList));
+    }
+
+    char* missing_error = check_missing_parameters_simple(cache_entry->sql_template, temp_param_list);
+    if (missing_error) {
+        // Clean up temp list
+        if (temp_param_list) {
+            if (temp_param_list->params) {
+                for (size_t i = 0; i < temp_param_list->count; i++) {
+                    if (temp_param_list->params[i]) {
+                        free(temp_param_list->params[i]->name);
+                        free(temp_param_list->params[i]);
+                    }
+                }
+                free(temp_param_list->params);
+            }
+            free(temp_param_list);
+        }
+        
+        json_t *error_response = create_processing_error_response("Missing parameters", database, query_ref);
+        json_object_set_new(error_response, "message", json_string(missing_error));
+        free(missing_error);
+        return error_response;
+    }
+
+    // (3) Process parameters
     if (!process_parameters(params, &param_list, cache_entry->sql_template,
                             db_queue->engine_type, &converted_sql, &ordered_params, &param_count)) {
+        // Clean up temp list
+        if (temp_param_list) {
+            if (temp_param_list->params) {
+                for (size_t i = 0; i < temp_param_list->count; i++) {
+                    if (temp_param_list->params[i]) {
+                        free(temp_param_list->params[i]->name);
+                        free(temp_param_list->params[i]);
+                    }
+                }
+                free(temp_param_list->params);
+            }
+            free(temp_param_list);
+        }
+        
         return create_processing_error_response("Parameter processing failed", database, query_ref);
     }
 
-    // Generate parameter validation messages
-    char* message = generate_parameter_messages(cache_entry->sql_template, params);
+    // (4) Check for unused parameters (warning only)
+    char* unused_warning = check_unused_parameters_simple(cache_entry->sql_template, param_list);
+    if (unused_warning) {
+        log_this(SR_API, "%s: Query %d has unused parameters: %s", LOG_LEVEL_ALERT, 3, conduit_service_name(), query_ref, unused_warning);
+        message = unused_warning;
+    }
 
-    // Select queue using helper from query.h
+    // Clean up temp list
+    if (temp_param_list) {
+        if (temp_param_list->params) {
+            for (size_t i = 0; i < temp_param_list->count; i++) {
+                if (temp_param_list->params[i]) {
+                    free(temp_param_list->params[i]->name);
+                    free(temp_param_list->params[i]);
+                }
+            }
+            free(temp_param_list->params);
+        }
+        free(temp_param_list);
+    }
+
+    // Generate parameter validation messages
+    char* validation_message = generate_parameter_messages(cache_entry->sql_template, params);
+    if (validation_message) {
+        if (message) {
+            // Combine the messages
+            size_t combined_length = strlen(message) + strlen(validation_message) + 3; // +3 for " | " and null terminator
+            char* combined_message = malloc(combined_length);
+            if (combined_message) {
+                snprintf(combined_message, combined_length, "%s | %s", message, validation_message);
+                free(message);
+                free(validation_message);
+                message = combined_message;
+            }
+        } else {
+            message = validation_message;
+        }
+    }
+
+    // Select queue using new helper function
     DatabaseQueue *selected_queue = select_query_queue(database, cache_entry->queue_type);
     if (!selected_queue) {
         free(converted_sql);
         free_parameter_list(param_list);
         if (ordered_params) free(ordered_params);
+        if (message) free(message);
         return create_processing_error_response("No suitable queue available", database, query_ref);
     }
 
-    // Generate query ID using helper from query.h
+    // Generate query ID using new helper function
     char *query_id = generate_query_id();
     if (!query_id) {
         free(converted_sql);
         free_parameter_list(param_list);
         if (ordered_params) free(ordered_params);
+        if (message) free(message);
         return create_processing_error_response("Failed to generate query ID", database, query_ref);
     }
 
-    // Register pending result using helper from query.h
+    // Register pending result
     PendingResultManager *pending_mgr = get_pending_result_manager();
     PendingQueryResult *pending = pending_result_register(pending_mgr, query_id, cache_entry->timeout_seconds, NULL);
     if (!pending) {
@@ -283,20 +419,22 @@ json_t* execute_single_query(const char *database, json_t *query_obj)
         free(converted_sql);
         free_parameter_list(param_list);
         if (ordered_params) free(ordered_params);
+        if (message) free(message);
         return create_processing_error_response("Failed to register pending result", database, query_ref);
     }
 
-    // Submit query using helper from query.h
+    // Submit query using new helper function
     if (!prepare_and_submit_query(selected_queue, query_id, cache_entry->sql_template, ordered_params,
                                   param_count, cache_entry)) {
         free(query_id);
         free(converted_sql);
         free_parameter_list(param_list);
         if (ordered_params) free(ordered_params);
+        if (message) free(message);
         return create_processing_error_response("Failed to submit query", database, query_ref);
     }
 
-    // Build response using helper from query.h
+    // Build response using new helper function
     json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
 
     // Clean up
@@ -312,145 +450,7 @@ json_t* execute_single_query(const char *database, json_t *query_obj)
     return result;
 }
 
-/**
- * @brief Submit a single query without waiting for completion
- *
- * Submits a single query from the queries array and returns the pending result
- * for later waiting. This enables parallel execution of multiple queries.
- *
- * @param database Database name from request
- * @param query_obj Query object containing query_ref and optional params
- * @param query_ref_out Output parameter for the query_ref (for error reporting)
- * @return PendingQueryResult on success, NULL on failure
- */
-PendingQueryResult* submit_single_query(const char *database, json_t *query_obj, int *query_ref_out)
-{
-    if (!database || !query_obj || !query_ref_out) {
-        log_this(SR_API, "submit_single_query: NULL parameters", LOG_LEVEL_ERROR, 0);
-        return NULL;
-    }
 
-    // Extract query_ref
-    json_t *query_ref_json = json_object_get(query_obj, "query_ref");
-    if (!query_ref_json || !json_is_integer(query_ref_json)) {
-        log_this(SR_API, "submit_single_query: Missing or invalid query_ref", LOG_LEVEL_ERROR, 0);
-        return NULL;
-    }
-
-    int query_ref = (int)json_integer_value(query_ref_json);
-    *query_ref_out = query_ref;
-    json_t *params = json_object_get(query_obj, "params");
-
-    // Look up database queue and cache entry using helpers from query.h
-    DatabaseQueue *db_queue = NULL;
-    QueryCacheEntry *cache_entry = NULL;
-
-    if (!lookup_database_and_public_query(&db_queue, &cache_entry, database, query_ref)) {
-        log_this(SR_API, "submit_single_query: Database or public query lookup failed, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Process parameters using helper from query.h
-    ParameterList *param_list = NULL;
-    char *converted_sql = NULL;
-    TypedParameter **ordered_params = NULL;
-    size_t param_count = 0;
-
-    if (!process_parameters(params, &param_list, cache_entry->sql_template,
-                           db_queue->engine_type, &converted_sql, &ordered_params, &param_count)) {
-        log_this(SR_API, "submit_single_query: Parameter processing failed, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Select queue using helper from query.h
-    DatabaseQueue *selected_queue = select_query_queue(database, cache_entry->queue_type);
-    if (!selected_queue) {
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        log_this(SR_API, "submit_single_query: No suitable queue available, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Generate query ID using helper from query.h
-    char *query_id = generate_query_id();
-    if (!query_id) {
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        log_this(SR_API, "submit_single_query: Failed to generate query ID, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Register pending result using helper from query.h
-    PendingResultManager *pending_mgr = get_pending_result_manager();
-    PendingQueryResult *pending = pending_result_register(pending_mgr, query_id, cache_entry->timeout_seconds, NULL);
-    if (!pending) {
-        free(query_id);
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        log_this(SR_API, "submit_single_query: Failed to register pending result, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Submit query using helper from query.h
-    if (!prepare_and_submit_query(selected_queue, query_id, cache_entry->sql_template, ordered_params,
-                                  param_count, cache_entry)) {
-        free(query_id);
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        log_this(SR_API, "submit_single_query: Failed to submit query, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Clean up resources that are no longer needed
-    free(converted_sql);
-    free_parameter_list(param_list);
-    if (ordered_params) free(ordered_params);
-
-    log_this(SR_API, "submit_single_query: Query submitted, query_ref=%d", LOG_LEVEL_DEBUG, 1, query_ref);
-
-    return pending;
-}
-
-/**
- * @brief Wait for a single query to complete and build response
- *
- * Waits for the pending result to complete and builds the JSON response.
- *
- * @param database Database name
- * @param query_ref Query reference ID
- * @param cache_entry Query cache entry
- * @param selected_queue Queue that was used
- * @param pending Pending result to wait for
- * @param params Query parameters for message generation
- * @return JSON response object
- */
-json_t* wait_and_build_single_response(const char *database, int query_ref,
-                                      const QueryCacheEntry *cache_entry, const DatabaseQueue *selected_queue,
-                                      PendingQueryResult *pending, json_t *params)
-{
-    log_this(SR_API, "wait_and_build_single_response: Waiting for query_ref=%d", LOG_LEVEL_DEBUG, 1, query_ref);
-
-    // Generate parameter validation messages
-    char* message = generate_parameter_messages(cache_entry->sql_template, params);
-
-    // Build response using helper from query.h (this waits internally)
-    json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
-
-    // Clean up message
-    if (message) free(message);
-
-    if (!result) {
-        log_this(SR_API, "wait_and_build_single_response: ERROR - build_response_json returned NULL for query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-    } else {
-        log_this(SR_API, "wait_and_build_single_response: Query completed, query_ref=%d", LOG_LEVEL_DEBUG, 1, query_ref);
-    }
-
-    return result;
-}
 
 /**
  * @brief Handle public conduit queries request
@@ -523,24 +523,24 @@ enum MHD_Result handle_conduit_queries_request(
             break;
     }
 
-    log_this(SR_API, "handle_conduit_queries_request: Processing public queries request", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_API, "%s: Processing public queries request", LOG_LEVEL_DEBUG, 1, conduit_service_name());
 
     struct timespec start_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-    log_this(SR_API, "handle_conduit_queries_request: Step 1 - Validate HTTP method", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_API, "%s: Step 1 - Validate HTTP method", LOG_LEVEL_DEBUG, 1, conduit_service_name());
 
-    // Step 1: Validate HTTP method using helper from query.h
+    // Step 1: Validate HTTP method using new helper function
     enum MHD_Result result = handle_method_validation(connection, method);
     if (result != MHD_YES) {
         api_free_post_buffer(con_cls);
-        log_this(SR_API, "handle_conduit_queries_request: Method validation failed", LOG_LEVEL_ERROR, 0);
+        log_this(SR_API, "%s: Method validation failed", LOG_LEVEL_ERROR, 1, conduit_service_name());
         return result;
     }
 
-    log_this(SR_API, "handle_conduit_queries_request: Step 2 - Parse request", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_API, "%s: Step 2 - Parse request", LOG_LEVEL_DEBUG, 1, conduit_service_name());
 
-    // Step 2: Parse request using helper from query.h
+    // Step 2: Parse request using new helper function
     json_t *request_json = NULL;
     result = handle_request_parsing_with_buffer(connection, buffer, &request_json);
 
@@ -548,7 +548,7 @@ enum MHD_Result handle_conduit_queries_request(
     api_free_post_buffer(con_cls);
 
     if (result != MHD_YES) {
-        log_this(SR_API, "handle_conduit_queries_request: Request parsing failed", LOG_LEVEL_ERROR, 0);
+        log_this(SR_API, "%s: Request parsing failed", LOG_LEVEL_ERROR, 1, conduit_service_name());
         return result;
     }
 
@@ -599,199 +599,263 @@ enum MHD_Result handle_conduit_queries_request(
         return api_send_json_response(connection, error_response, MHD_HTTP_OK);
     }
 
-    log_this(SR_API, "handle_conduit_queries_request: Step 5 - Deduplicate queries and validate rate limits", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_API, "%s: Step 5 - Deduplicate queries and validate rate limits", LOG_LEVEL_DEBUG, 1, conduit_service_name());
 
     // Step 5: Deduplicate queries and validate rate limits
     json_t *deduplicated_queries = NULL;
     size_t *mapping_array = NULL;
-    enum MHD_Result dedup_result = deduplicate_and_validate_queries(queries_array, database, &deduplicated_queries, &mapping_array);
+    bool *is_duplicate = NULL;
+    DeduplicationResult dedup_code;
+    enum MHD_Result dedup_result = deduplicate_and_validate_queries(connection, queries_array, database, &deduplicated_queries, &mapping_array, &is_duplicate, &dedup_code);
+    
+    bool rate_limit_exceeded = false;
+    int max_queries_per_request = 0;
+    size_t unique_query_count = 0;
+    
     if (dedup_result != MHD_YES) {
-        log_this(SR_API, "handle_conduit_queries_request: Rate limit validation failed", LOG_LEVEL_ERROR, 0);
-        json_decref(request_json);
+        log_this(SR_API, "%s: Validation failed with code %d", LOG_LEVEL_ERROR, 2, conduit_service_name(), dedup_code);
+        
+        if (dedup_code == DEDUP_RATE_LIMIT) {
+            // Get the max queries limit for the database
+            const DatabaseConnection *db_conn = find_database_connection(&app_config->databases, database);
+            if (db_conn) {
+                max_queries_per_request = db_conn->max_queries_per_request;
+            }
+            rate_limit_exceeded = true;
+            
+            // When rate limit is exceeded, we still want to execute queries up to the limit
+            // So we need to manually create the deduplicated queries array with only the first max_queries_per_request queries
+            unique_query_count = (size_t)max_queries_per_request;
+            
+            // Create deduplicated_queries array with only the queries up to the limit
+            deduplicated_queries = json_array();
+            for (size_t i = 0; i < unique_query_count; i++) {
+                json_t *query = json_array_get(queries_array, i);
+                json_array_append_new(deduplicated_queries, json_deep_copy(query));
+            }
+            
+            // Create mapping array and is_duplicate array
+            mapping_array = malloc(original_query_count * sizeof(size_t));
+            is_duplicate = malloc(original_query_count * sizeof(bool));
+            
+            for (size_t i = 0; i < original_query_count; i++) {
+                if (i < unique_query_count) {
+                    mapping_array[i] = i;  // Map to itself
+                    is_duplicate[i] = false;
+                } else {
+                    mapping_array[i] = 0;  // Map to first query (will be handled as exceeded)
+                    is_duplicate[i] = true;
+                }
+            }
+        } else {
+            // For other validation errors, return immediately
+            json_decref(request_json);
 
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Rate limit exceeded: too many unique queries in request"));
-        return api_send_json_response(connection, error_response, MHD_HTTP_TOO_MANY_REQUESTS);
+            json_t *error_response = json_object();
+            json_object_set_new(error_response, "success", json_false());
+            
+            const char *error_msg = "Validation failed";
+            unsigned int http_status = MHD_HTTP_BAD_REQUEST;
+            
+            switch (dedup_code) {
+                case DEDUP_DATABASE_NOT_FOUND:
+                    error_msg = "Invalid database";
+                    http_status = MHD_HTTP_BAD_REQUEST;
+                    break;
+                case DEDUP_RATE_LIMIT:
+                    error_msg = "Rate limit exceeded: too many unique queries in request";
+                    http_status = MHD_HTTP_TOO_MANY_REQUESTS;
+                    break;
+                case DEDUP_OK:
+                    // Shouldn't get here since dedup_result == MHD_NO
+                    error_msg = "Validation failed";
+                    http_status = MHD_HTTP_BAD_REQUEST;
+                    break;
+                case DEDUP_ERROR:
+                    error_msg = "Validation failed";
+                    http_status = MHD_HTTP_BAD_REQUEST;
+                    break;
+            }
+            
+            json_object_set_new(error_response, "error", json_string(error_msg));
+            return api_send_json_response(connection, error_response, http_status);
+        }
+    } else {
+        // Normal case - deduplication succeeded
+        unique_query_count = json_array_size(deduplicated_queries);
     }
 
-    size_t unique_query_count = json_array_size(deduplicated_queries);
-    log_this(SR_API, "handle_conduit_queries_request: Deduplicated %zu queries to %zu unique queries",
-             LOG_LEVEL_DEBUG, 2, original_query_count, unique_query_count);
+    log_this(SR_API, "%s: Deduplicated %zu queries to %zu unique queries",
+             LOG_LEVEL_DEBUG, 3, conduit_service_name(), original_query_count, unique_query_count);
 
-    // Step 6: Submit all unique queries for parallel execution
-    PendingQueryResult **pending_results = calloc(unique_query_count, sizeof(PendingQueryResult*));
-    int *unique_query_refs = calloc(unique_query_count, sizeof(int));
-    QueryCacheEntry **cache_entries = calloc(unique_query_count, sizeof(QueryCacheEntry*));
-    DatabaseQueue **selected_queues = calloc(unique_query_count, sizeof(DatabaseQueue*));
+    log_this(SR_API, "%s: Step 6 - Execute queries", LOG_LEVEL_DEBUG, 1, conduit_service_name());
 
-    if (!pending_results || !unique_query_refs || !cache_entries || !selected_queues) {
-        log_this(SR_API, "handle_conduit_queries_request: Failed to allocate memory for parallel execution", LOG_LEVEL_ERROR, 0);
+    // Step 6: Execute all unique queries using execute_single_query which now uses new helpers
+    json_t *results_array = json_array();
+    bool all_success = true;
+
+    // Execute unique queries and store results
+    json_t **unique_results = calloc(unique_query_count, sizeof(json_t*));
+    
+    if (!unique_results) {
+        log_this(SR_API, "%s: Failed to allocate memory for query results", LOG_LEVEL_ERROR, 1, conduit_service_name());
         json_decref(deduplicated_queries);
         free(mapping_array);
+        free(is_duplicate);
         json_decref(request_json);
-
+        
         json_t *error_response = json_object();
         json_object_set_new(error_response, "success", json_false());
         json_object_set_new(error_response, "error", json_string("Internal server error"));
         return api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
-
-    log_this(SR_API, "handle_conduit_queries_request: Submitting %zu unique queries for parallel execution", LOG_LEVEL_DEBUG, 1, unique_query_count);
-
-    // Submit all unique queries first
+    
     for (size_t i = 0; i < unique_query_count; i++) {
+        log_this(SR_API, "%s: Executing unique query %zu", LOG_LEVEL_DEBUG, 2, conduit_service_name(), i);
+        
         json_t *query_obj = json_array_get(deduplicated_queries, i);
-        int query_ref;
-
-        PendingQueryResult *pending = submit_single_query(database, query_obj, &query_ref);
-        if (!pending) {
-            log_this(SR_API, "handle_conduit_queries_request: Failed to submit unique query %zu (query_ref=%d), will return error result", LOG_LEVEL_ERROR, 2, i, query_ref);
-            // Create a failed pending result for error handling
-            pending_results[i] = NULL;  // Mark as failed
-            unique_query_refs[i] = query_ref;
-
-            // Try to look up cache entry for error response building
-            DatabaseQueue *db_queue = NULL;
-            QueryCacheEntry *cache_entry = NULL;
-            if (lookup_database_and_public_query(&db_queue, &cache_entry, database, query_ref)) {
-                cache_entries[i] = cache_entry;
-                DatabaseQueue *selected_queue = select_query_queue(database, cache_entry->queue_type);
-                selected_queues[i] = selected_queue;
-            } else {
-                // Query not found - create minimal error response
-                cache_entries[i] = NULL;
-                selected_queues[i] = NULL;
-            }
-            continue;
-        }
-
-        // Store metadata for response building
-        pending_results[i] = pending;
-        unique_query_refs[i] = query_ref;
-
-        // Look up cache entry and queue for response building
-        DatabaseQueue *db_queue = NULL;
-        QueryCacheEntry *cache_entry = NULL;
-        if (!lookup_database_and_public_query(&db_queue, &cache_entry, database, query_ref)) {
-            log_this(SR_API, "handle_conduit_queries_request: Failed to lookup metadata for unique public query %d", LOG_LEVEL_ERROR, 1, query_ref);
-            // Mark as failed but continue with other queries
-            pending_results[i] = NULL;
-            cache_entries[i] = NULL;
-            selected_queues[i] = NULL;
-            continue;
-        }
-
-        DatabaseQueue *selected_queue = select_query_queue(database, cache_entry->queue_type);
-        cache_entries[i] = cache_entry;
-        selected_queues[i] = selected_queue;
-    }
-
-    // Step 6: Suspend webserver connection for long-running queries
-    extern pthread_mutex_t webserver_suspend_lock;
-    extern volatile bool webserver_thread_suspended;
-
-    pthread_mutex_lock(&webserver_suspend_lock);
-    webserver_thread_suspended = true;
-    MHD_suspend_connection(connection);
-
-    // Step 7: Wait for all unique queries to complete
-    int collective_timeout = 30;  // Use a reasonable collective timeout
-    int wait_result = pending_result_wait_multiple(pending_results, unique_query_count, collective_timeout, SR_API);
-    if (wait_result != 0) {
-        log_this(SR_API, "handle_conduit_queries_request: Some queries failed or timed out", LOG_LEVEL_ERROR, 0);
-    }
-
-    // Step 8: Resume connection processing
-    MHD_resume_connection(connection);
-    webserver_thread_suspended = false;
-    pthread_mutex_unlock(&webserver_suspend_lock);
-
-    // Step 9: Build responses for all unique queries (deduplicated results)
-    log_this(SR_API, "handle_conduit_queries_request: Building responses for %zu unique queries", LOG_LEVEL_DEBUG, 1, unique_query_count);
-    json_t *results_array = json_array();
-    bool all_success = true;
-
-    for (size_t i = 0; i < unique_query_count; i++) {
-        log_this(SR_API, "handle_conduit_queries_request: Building response for unique query %zu", LOG_LEVEL_DEBUG, 1, i);
-
-        json_t *query_result = NULL;
-
-        if (!pending_results[i]) {
-            // Query submission failed - create error response
-            log_this(SR_API, "handle_conduit_queries_request: Query submission failed for unique query %zu, creating error response", LOG_LEVEL_ERROR, 1, i);
+        json_t *query_result = execute_single_query(database, query_obj);
+        
+        if (!query_result) {
+            log_this(SR_API, "%s: Failed to execute unique query %zu", LOG_LEVEL_ERROR, 2, conduit_service_name(), i);
             query_result = json_object();
             json_object_set_new(query_result, "success", json_false());
-            json_object_set_new(query_result, "query_ref", json_integer(unique_query_refs[i]));
-            json_object_set_new(query_result, "database", json_string(database));
-            json_object_set_new(query_result, "error", json_string("Query submission failed"));
-            all_success = false;
-        } else if (!cache_entries[i]) {
-            // Query lookup failed - create error response
-            log_this(SR_API, "handle_conduit_queries_request: Query lookup failed for unique query %zu, creating error response", LOG_LEVEL_ERROR, 1, i);
-            query_result = json_object();
-            json_object_set_new(query_result, "success", json_false());
-            json_object_set_new(query_result, "query_ref", json_integer(unique_query_refs[i]));
-            json_object_set_new(query_result, "database", json_string(database));
-            json_object_set_new(query_result, "error", json_string("Query not found"));
+            json_object_set_new(query_result, "error", json_string("Query execution failed"));
             all_success = false;
         } else {
-            // Normal case - wait for result
-            json_t *query_obj = json_array_get(deduplicated_queries, i);
-            json_t *params = query_obj ? json_object_get(query_obj, "params") : NULL;
-            query_result = wait_and_build_single_response(database, unique_query_refs[i],
-                                                         cache_entries[i], selected_queues[i],
-                                                         pending_results[i], params);
-
-            if (!query_result) {
-                log_this(SR_API, "handle_conduit_queries_request: ERROR - wait_and_build_single_response returned NULL for unique query %zu", LOG_LEVEL_ERROR, 1, i);
-                // Create fallback error response
-                query_result = json_object();
-                json_object_set_new(query_result, "success", json_false());
-                json_object_set_new(query_result, "query_ref", json_integer(unique_query_refs[i]));
-                json_object_set_new(query_result, "database", json_string(database));
-                json_object_set_new(query_result, "error", json_string("Response building failed"));
+            // Check if query succeeded
+            json_t *success_field = json_object_get(query_result, "success");
+            if (!success_field || !json_is_true(success_field)) {
                 all_success = false;
-            } else {
-                // Check if query succeeded
-                json_t *success_field = json_object_get(query_result, "success");
-                if (!success_field || !json_is_true(success_field)) {
-                    all_success = false;
-                    log_this(SR_API, "handle_conduit_queries_request: Unique query %zu failed", LOG_LEVEL_DEBUG, 1, i);
-                }
+                log_this(SR_API, "%s: Unique query %zu failed", LOG_LEVEL_DEBUG, 2, conduit_service_name(), i);
             }
         }
-
-        // Remove DQM statistics from individual query results to avoid duplication and reduce response size
-        json_object_del(query_result, "dqm_statistics");
-
-        json_array_append_new(results_array, query_result);
-        log_this(SR_API, "handle_conduit_queries_request: Response built for unique query %zu", LOG_LEVEL_DEBUG, 1, i);
+        
+        unique_results[i] = query_result;
+        log_this(SR_API, "%s: Unique query %zu completed", LOG_LEVEL_DEBUG, 2, conduit_service_name(), i);
     }
+    
+    // Map results back to original query order
+    for (size_t i = 0; i < original_query_count; i++) {
+        if (rate_limit_exceeded && (int)i >= max_queries_per_request) {
+            // For queries beyond the rate limit, return an error with limit information
+            json_t *rate_limit_error = json_object();
+            json_object_set_new(rate_limit_error, "success", json_false());
+            json_object_set_new(rate_limit_error, "error", json_string("Rate limit exceeded"));
+            
+            // Add informative message with the limit
+            char limit_msg[100];
+            snprintf(limit_msg, sizeof(limit_msg), "Query limit of %d unique queries per request exceeded", max_queries_per_request);
+            json_object_set_new(rate_limit_error, "message", json_string(limit_msg));
+            
+            json_array_append_new(results_array, rate_limit_error);
+            all_success = false;
+        } else if (is_duplicate[i]) {
+            // For duplicates, return an error instead of executing the query
+            json_t *duplicate_error = json_object();
+            json_object_set_new(duplicate_error, "success", json_false());
+            json_object_set_new(duplicate_error, "error", json_string("Duplicate query"));
+            json_array_append_new(results_array, duplicate_error);
+            all_success = false;
+        } else {
+            // Ensure we don't access beyond the unique_results array bounds
+            if (mapping_array[i] < unique_query_count) {
+                json_array_append_new(results_array, unique_results[mapping_array[i]]);
+            } else {
+                // This shouldn't happen, but handle it gracefully
+                json_t *error_response = json_object();
+                json_object_set_new(error_response, "success", json_false());
+                json_object_set_new(error_response, "error", json_string("Internal error: invalid query mapping"));
+                json_array_append_new(results_array, error_response);
+                all_success = false;
+            }
+        }
+    }
+    
+    // Clean up
+    free(unique_results);
+    json_decref(deduplicated_queries);
+    free(mapping_array);
+    free(is_duplicate);
 
     json_decref(request_json);
 
-    // Step 10: Calculate total execution time
-    log_this(SR_API, "handle_conduit_queries_request: Calculating total execution time", LOG_LEVEL_DEBUG, 0);
+    // Step 6: Calculate total execution time
+    log_this(SR_API, "%s: Calculating total execution time", LOG_LEVEL_DEBUG, 1, conduit_service_name());
     struct timespec end_time;
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     long total_time_ms = ((end_time.tv_sec - start_time.tv_sec) * 1000) +
                         ((end_time.tv_nsec - start_time.tv_nsec) / 1000000);
 
-    // Step 11: Build response
-    log_this(SR_API, "handle_conduit_queries_request: Building final response object", LOG_LEVEL_DEBUG, 0);
+    // Step 7: Determine appropriate HTTP status code
+    log_this(SR_API, "%s: Determining HTTP status code", LOG_LEVEL_DEBUG, 1, conduit_service_name());
+    unsigned int http_status = MHD_HTTP_OK;
+    
+    if (!all_success) {
+        // Check if we encountered a rate limit error
+        bool rate_limit = false;
+        bool has_parameter_errors = false;
+        bool has_database_errors = false;
+        bool has_duplicate_errors = false;
+        
+        for (size_t i = 0; i < original_query_count; i++) {
+            json_t *single_result = json_array_get(results_array, i);
+            if (!single_result) continue;
+            
+            json_t *error = json_object_get(single_result, "error");
+            if (error && json_is_string(error)) {
+                const char *error_str = json_string_value(error);
+                
+                if (strstr(error_str, "Rate limit")) {
+                    rate_limit = true;
+                    http_status = MHD_HTTP_TOO_MANY_REQUESTS;
+                } else if (strstr(error_str, "Duplicate")) {
+                    has_duplicate_errors = true;
+                    // Don't set http_status here, duplicates alone shouldn't cause non-200 status
+                } else if (strstr(error_str, "Parameter") ||
+                           strstr(error_str, "Missing") ||
+                           strstr(error_str, "Invalid")) {
+                    has_parameter_errors = true;
+                    http_status = MHD_HTTP_BAD_REQUEST;
+                } else if (strstr(error_str, "Auth") ||
+                           strstr(error_str, "Permission") ||
+                           strstr(error_str, "Unauthorized")) {
+                    http_status = MHD_HTTP_UNAUTHORIZED;
+                } else if (strstr(error_str, "Not found")) {
+                    http_status = MHD_HTTP_NOT_FOUND;
+                } else {
+                    // Database execution errors and other issues
+                    has_database_errors = true;
+                    http_status = MHD_HTTP_UNPROCESSABLE_ENTITY;
+                }
+            }
+        }
+        
+        // Apply highest return code strategy
+        // If we have rate limiting, that takes precedence (429)
+        if (rate_limit) {
+            http_status = MHD_HTTP_TOO_MANY_REQUESTS;
+        }
+        // Parameter errors take precedence over database errors (400 > 422)
+        else if (has_parameter_errors) {
+            http_status = MHD_HTTP_BAD_REQUEST;
+        }
+        // Database execution errors (422)
+        else if (has_database_errors) {
+            http_status = MHD_HTTP_UNPROCESSABLE_ENTITY;
+        }
+        // If only duplicates exist, keep HTTP 200 (duplicates are not errors)
+        else if (has_duplicate_errors) {
+            http_status = MHD_HTTP_OK;
+        }
+    }
+
+    // Step 8: Build response
+    log_this(SR_API, "%s: Building final response object", LOG_LEVEL_DEBUG, 1, conduit_service_name());
     json_t *response_obj = json_object();
     if (!response_obj) {
-        log_this(SR_API, "handle_conduit_queries_request: ERROR - Failed to create response object", LOG_LEVEL_ERROR, 0);
+        log_this(SR_API, "%s: ERROR - Failed to create response object", LOG_LEVEL_ERROR, 1, conduit_service_name());
         json_decref(results_array);
-        // Clean up pending results, etc.
-        free(pending_results);
-        free(unique_query_refs);
-        free(cache_entries);
-        free(selected_queues);
-        json_decref(deduplicated_queries);
-        free(mapping_array);
-        json_decref(request_json);
         return MHD_NO;
     }
 
@@ -800,22 +864,12 @@ enum MHD_Result handle_conduit_queries_request(
     json_object_set_new(response_obj, "database", json_string(database));
     json_object_set_new(response_obj, "total_execution_time_ms", json_integer(total_time_ms));
 
-    // DQM statistics are only included in status endpoints, not query endpoints
+    log_this(SR_API, "%s: Request completed, queries=%zu, time=%ldms, status=%d",
+             LOG_LEVEL_DEBUG, 4, conduit_service_name(), original_query_count, total_time_ms, http_status);
 
-    log_this(SR_API, "handle_conduit_queries_request: Request completed, queries=%zu, time=%ldms",
-             LOG_LEVEL_DEBUG, 2, original_query_count, total_time_ms);
-
-    log_this(SR_API, "handle_conduit_queries_request: Calling api_send_json_response", LOG_LEVEL_DEBUG, 0);
-    enum MHD_Result send_result = api_send_json_response(connection, response_obj, MHD_HTTP_OK);
-    log_this(SR_API, "handle_conduit_queries_request: api_send_json_response returned %d", LOG_LEVEL_DEBUG, 1, send_result);
-
-    // Clean up resources
-    free(pending_results);
-    free(unique_query_refs);
-    free(cache_entries);
-    free(selected_queues);
-    json_decref(deduplicated_queries);
-    free(mapping_array);
+    log_this(SR_API, "%s: Calling api_send_json_response", LOG_LEVEL_DEBUG, 1, conduit_service_name());
+    enum MHD_Result send_result = api_send_json_response(connection, response_obj, http_status);
+    log_this(SR_API, "%s: api_send_json_response returned %d", LOG_LEVEL_DEBUG, 1, conduit_service_name(), send_result);
 
     return send_result;
 }

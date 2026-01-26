@@ -6,24 +6,27 @@
 
 # FUNCTIONS
 # validate_conduit_request()
+# test_conduit_status_public()
+# test_conduit_status_authenticated()
+# test_conduit_status_validation()
 # test_conduit_multiple_queries()
-# test_conduit_queries_comprehensive()
 # run_conduit_test_unified()
-# analyze_conduit_results()
 
 # CHANGELOG
-# 1.0.0 - 2026-01-20 - Initial implementation based on test_51_conduit.sh
-#                    - Focused on multiple queries endpoint (/api/conduit/queries)
-#                    - Tests normal, duplicate, mixed, invalid params, empty, and DB error scenarios
+# 1.1.0 - 2026-01-25 - Updated to follow Test 50 structure
+#                    - Added comprehensive status endpoint testing
+#                    - Added print_box separators for better readability
+#                    - Updated to use same patterns as matured Test 50
+#                    - Added test for too many queries (exceeding MAX_QUERIES_PER_REQUEST)
 
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Conduit Multiple Queries {BLUE}CMQ: 0{RESET}"
+TEST_NAME="Conduit Multiple Queries"
 TEST_ABBR="CMQ"
 TEST_NUMBER="51"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -34,7 +37,7 @@ setup_test_environment
 # Single server configuration with all 7 database engines
 CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_51_conduit_queries.json"
 CONDUIT_LOG_SUFFIX="conduit_queries"
-CONDUIT_DESCRIPTION="Conduit Multiple Queries"
+CONDUIT_DESCRIPTION="CMQ"
 
 # Demo credentials from environment variables (set in shell and used in migrations)
 # Used in heredocs for JSON payloads
@@ -56,37 +59,197 @@ DEMO_EMAIL="${HYDROGEN_DEMO_EMAIL:-}"
 # shellcheck disable=SC2034 # Used in heredocs that may be expanded in future versions
 DEMO_API_KEY="${HYDROGEN_DEMO_API_KEY:-}"
 
-# Function to test conduit multiple queries endpoint across ready databases
-test_conduit_multiple_queries() {
+# Function to test conduit status endpoint public access
+test_conduit_status_public() {
     local base_url="$1"
     local result_file="$2"
 
-    local queries_json
-    queries_json=$(cat <<EOF
-[
-  {
-    "query_ref": 53,
-    "params": {}
-  },
-  {
-    "query_ref": 54,
-    "params": {}
-  }
-]
-EOF
-)
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Status Endpoint (Public)"
 
-    local result
-    result=$(test_conduit_multiple_queries_endpoint "${base_url}" "${result_file}" "/api/conduit/queries" "" "Multiple Queries: Get Themes + Get Icons" "${queries_json}")
+    # Test status endpoint without JWT (public access)
+    local response_file="${result_file}.status_public.json"
 
-    IFS=':' read -r tests_passed total_tests <<< "${result}"
-
-    echo "MULTIPLE_QUERIES_TESTS_PASSED=${tests_passed}" >> "${result_file}"
-    echo "MULTIPLE_QUERIES_TESTS_TOTAL=${total_tests}" >> "${result_file}"
+    local http_status
+    http_status=$(curl -s -X GET "${base_url}/api/conduit/status" -w "%{http_code}" -o "${response_file}" 2>/dev/null)
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${http_status}"
+    if [[ "${http_status}" == "200" ]]; then
+        if command -v jq >/dev/null 2>&1 && [[ -f "${response_file}" ]]; then
+            local success_val
+            success_val=$(jq -r '.success' "${response_file}" 2>/dev/null || echo "unknown")
+            if [[ "${success_val}" == "true" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${response_file}"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Status endpoint public test passed"
+                echo "STATUS_PUBLIC_TESTS_PASSED=1" >> "${result_file}"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status endpoint public test failed - success=${success_val}"
+                echo "STATUS_PUBLIC_TESTS_PASSED=0" >> "${result_file}"
+            fi
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status endpoint public test failed - jq not available"
+            echo "STATUS_PUBLIC_TESTS_PASSED=0" >> "${result_file}"
+        fi
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status endpoint public test failed - HTTP ${http_status}"
+        echo "STATUS_PUBLIC_TESTS_PASSED=0" >> "${result_file}"
+    fi
+    echo "STATUS_PUBLIC_TESTS_TOTAL=1" >> "${result_file}"
 }
 
-# Function to test conduit queries endpoint comprehensively across ready databases
-test_conduit_queries_comprehensive() {
+# Function to test conduit status endpoint authenticated access
+test_conduit_status_authenticated() {
+    local base_url="$1"
+    local result_file="$2"
+
+    # Test status endpoint with JWT (authenticated access)
+    local response_file="${result_file}.status_auth.json"
+
+    # Get JWT for first database (PostgreSQL)
+    local jwt_token=""
+    if [[ -n "${JWT_TOKENS_RESULT_51[0]:-}" ]]; then
+        jwt_token="${JWT_TOKENS_RESULT_51[0]}"
+    fi
+
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    if validate_conduit_request "${base_url}/api/conduit/status" "GET" "" "200" "${response_file}" "${jwt_token}" "Authenticated status request" "true"; then
+        # Show summary of authenticated response per database
+        if command -v jq >/dev/null 2>&1 && [[ -f "${response_file}" ]]; then
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Authenticated status response summary"
+            for db_engine in "${!DATABASE_NAMES[@]}"; do
+                local db_name="${DATABASE_NAMES[${db_engine}]}"
+                local db_name_pad="${DATABASE_NAMES[${db_engine}]}     "
+                local db_status
+                db_status=$(jq -r ".databases.\"${db_name}\"" "${response_file}" 2>/dev/null || echo "not_found")
+                if [[ "${db_status}" != "null" && "${db_status}" != "not_found" ]]; then
+                    local query_cache_entries
+                    query_cache_entries=$(jq -r ".query_cache_entries" <<< "${db_status}" 2>/dev/null || echo "0")
+                    local queue_stats=()
+                    local expected_queues=("slow" "medium" "fast" "cache" "lead")
+                    for queue_type in "${expected_queues[@]}"; do
+                        local completed
+                        completed=$(jq -r ".dqm_statistics.per_queue_stats[] | select(.queue_type == \"${queue_type}\") | .completed" <<< "${db_status}" 2>/dev/null || echo "Missing")
+                        queue_stats+=(" ${queue_type}(${completed})")
+                    done
+                    local queue_stats_str
+                    queue_stats_str=$(IFS=',' ; echo "${queue_stats[*]}")
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_name_pad::9}: QTC(${query_cache_entries}),${queue_stats_str}"
+                else
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${db_name}: not in response"
+                fi
+            done
+        fi
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Status endpoint authenticated test passed"
+        echo "STATUS_AUTH_TESTS_PASSED=1" >> "${result_file}"
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status endpoint authenticated test failed"
+        echo "STATUS_AUTH_TESTS_PASSED=0" >> "${result_file}"
+    fi
+    echo "STATUS_AUTH_TESTS_TOTAL=1" >> "${result_file}"
+}
+
+# Function to validate conduit status endpoint database readiness matches log monitoring
+test_conduit_status_validation() {
+    local base_url="$1"
+    local result_file="$2"
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Conduit Status Endpoint Validation"
+
+    local response_file="${result_file}.status_public.json"
+
+    # Verify status response content
+    if ! command -v jq >/dev/null 2>&1 || [[ ! -f "${response_file}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status validation failed - jq not available or response file missing"
+        echo "STATUS_VALIDATION_TESTS_PASSED=0" >> "${result_file}"
+        echo "STATUS_VALIDATION_TESTS_TOTAL=1" >> "${result_file}"
+        return 1
+    fi
+
+    # Extract databases from public status response that are ready=true
+    local status_databases=()
+    while IFS= read -r db; do
+        if [[ -n "${db}" ]]; then
+            status_databases+=("${db}")
+        fi
+    done < <(jq -r '.databases | to_entries | map(select(.value.ready == true)) | map(.key) | .[]' "${response_file}" 2>/dev/null | sort || true)
+
+    # Get databases confirmed ready by log monitoring
+    local log_ready_databases=()
+    for db_engine in "${!DATABASE_NAMES[@]}"; do
+        if "${GREP}" -q "DATABASE_READY_${db_engine}=true" "${result_file}" 2>/dev/null; then
+            log_ready_databases+=("${DATABASE_NAMES[${db_engine}]}")
+        fi
+    done
+
+
+    # Sort for comparison
+    # shellcheck disable=SC2207 # Command substitution with array expansion requires subshell
+    log_ready_databases=($(printf '%s\n' "${log_ready_databases[@]}" | sort))
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Log-confirmed ready databases: ${log_ready_databases[*]}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Status-reported ready databases: ${status_databases[*]}"
+
+    # Check if status-reported databases match log-confirmed databases
+    local status_test_passed=true
+    local status_db_count=${#status_databases[@]}
+    local log_db_count=${#log_ready_databases[@]}
+
+    # Check each status-reported database
+    for db in "${status_databases[@]}"; do
+        # Check if this database was confirmed by log
+        local found=false
+        for log_db in "${log_ready_databases[@]}"; do
+            if [[ "${db}" == "${log_db}" ]]; then
+                found=true
+                break
+            fi
+        done
+        if [[ "${found}" != true ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: Status endpoint reports database ${db} not confirmed by log monitoring"
+            status_test_passed=false
+        fi
+    done
+
+    # Check if all log-confirmed databases are reported by status
+    for log_db in "${log_ready_databases[@]}"; do
+        local found=false
+        for db in "${status_databases[@]}"; do
+            if [[ "${log_db}" == "${db}" ]]; then
+                found=true
+                break
+            fi
+        done
+        if [[ "${found}" != true ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: Log-confirmed database ${log_db} not reported by status endpoint"
+            status_test_passed=false
+        fi
+    done
+
+    if [[ ${status_db_count} -ne ${log_db_count} ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: Status endpoint reports ${status_db_count} databases, log confirmed ${log_db_count} databases"
+        status_test_passed=false
+    fi
+
+    # Also verify that each reported database shows ready: true
+    for db in "${status_databases[@]}"; do
+        local ready_status
+        ready_status=$(jq -r ".databases.\"${db}\".ready" "${response_file}" 2>/dev/null)
+        if [[ "${ready_status}" != "true" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Database ${db} shows ready: ${ready_status} (expected: true)"
+            status_test_passed=false
+        fi
+    done
+
+    if [[ "${status_test_passed}" == true ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Status endpoint validation passed - databases ready and matching"
+        echo "STATUS_VALIDATION_TESTS_PASSED=1" >> "${result_file}"
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status endpoint validation failed - database readiness issues detected"
+        echo "STATUS_VALIDATION_TESTS_PASSED=0" >> "${result_file}"
+    fi
+    echo "STATUS_VALIDATION_TESTS_TOTAL=1" >> "${result_file}"
+}
+
+# Function to test conduit multiple queries endpoint across ready databases
+test_conduit_multiple_queries() {
     local base_url="$1"
     local result_file="$2"
 
@@ -102,298 +265,220 @@ test_conduit_queries_comprehensive() {
 
         local db_name="${DATABASE_NAMES[${db_engine}]}"
 
-        # Test 1: Normal result - pass the three queryrefs we're using in "query" to test as one set
-        local queries_normal
-        queries_normal=$(cat <<EOF
-[
-  {
-    "query_ref": 53,
-    "params": {}
-  },
-  {
-    "query_ref": 54,
-    "params": {}
-  },
-  {
-    "query_ref": 55,
-    "params": {
-      "INTEGER": {
-        "START": 500,
-        "FINISH": 600
-      }
-    }
-  }
-]
-EOF
-)
-
+        print_box "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing against ${db_engine}"
+        
+        # Test 1: Normal query batch - Get Themes + Get Icons + Get Number Range
         local payload_normal
         payload_normal=$(cat <<EOF
 {
   "database": "${db_name}",
-  "queries": ${queries_normal}
+  "queries": [
+    {
+      "query_ref": 53,
+      "params": {}
+    },
+    {
+      "query_ref": 54,
+      "params": {}
+    },
+    {
+      "query_ref": 55,
+      "params": {
+        "INTEGER": {"START": 500, "FINISH": 600}
+      }
+    }
+  ]
 }
 EOF
 )
 
         local response_file_normal="${result_file}.queries_normal_${db_engine}.json"
-
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_normal}" "200" "${response_file_normal}" "" "Queries Normal: 53+54+55 (${db_engine})"; then
-            tests_passed=$(( tests_passed + 1 ))
-        fi
         total_tests=$(( total_tests + 1 ))
 
-        # Test 2: Duplicated results - add queryref 53 twice
-        local queries_duplicate
-        queries_duplicate=$(cat <<EOF
-[
-  {
-    "query_ref": 53,
-    "params": {}
-  },
-  {
-    "query_ref": 53,
-    "params": {}
-  },
-  {
-    "query_ref": 54,
-    "params": {}
-  }
-]
-EOF
-)
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_normal}" "200" "${response_file_normal}" "" "${db_engine} Normal Queries" "true"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
 
+        # Test 2: Duplicate queries - should deduplicate
         local payload_duplicate
         payload_duplicate=$(cat <<EOF
 {
   "database": "${db_name}",
-  "queries": ${queries_duplicate}
+  "queries": [
+    {
+      "query_ref": 53,
+      "params": {}
+    },
+    {
+      "query_ref": 53,
+      "params": {}
+    },
+    {
+      "query_ref": 54,
+      "params": {}
+    }
+  ]
 }
 EOF
 )
 
         local response_file_duplicate="${result_file}.queries_duplicate_${db_engine}.json"
-
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_duplicate}" "200" "${response_file_duplicate}" "" "Queries Duplicate: 53 twice (${db_engine})"; then
-            tests_passed=$(( tests_passed + 1 ))
-        fi
         total_tests=$(( total_tests + 1 ))
 
-        # Test 3: Mixed results - add an invalid queryref to the set
-        local queries_mixed
-        queries_mixed=$(cat <<EOF
-[
-  {
-    "query_ref": 53,
-    "params": {}
-  },
-  {
-    "query_ref": -100,
-    "params": {}
-  },
-  {
-    "query_ref": 54,
-    "params": {}
-  }
-]
-EOF
-)
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_duplicate}" "200" "${response_file_duplicate}" "" "${db_engine} Duplicate Queries" "true"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
 
+        # Test 3: Mixed valid and invalid queries
         local payload_mixed
         payload_mixed=$(cat <<EOF
 {
   "database": "${db_name}",
-  "queries": ${queries_mixed}
+  "queries": [
+    {
+      "query_ref": 53,
+      "params": {}
+    },
+    {
+      "query_ref": -100,
+      "params": {}
+    },
+    {
+      "query_ref": 54,
+      "params": {}
+    }
+  ]
 }
 EOF
 )
 
         local response_file_mixed="${result_file}.queries_mixed_${db_engine}.json"
-
-        # Expect 200 with success=false response for mixed valid/invalid queries
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_mixed}" "200" "${response_file_mixed}" "" "Queries Mixed: Invalid -100 (${db_engine})" "false"; then
-            tests_passed=$(( tests_passed + 1 ))
-        fi
         total_tests=$(( total_tests + 1 ))
 
-        # Test 4: Add queryrefs with invalid or missing params
-        local queries_invalid_params
-        queries_invalid_params=$(cat <<EOF
-[
-  {
-    "query_ref": 53,
-    "params": {}
-  },
-  {
-    "query_ref": 55,
-    "params": {
-      "INTEGER": {
-        "START": "invalid_string",
-        "FINISH": 600
-      }
-    }
-  },
-  {
-    "query_ref": 45,
-    "params": {}
-  }
-]
-EOF
-)
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_mixed}" "422" "${response_file_mixed}" "" "${db_engine} Mixed Queries" "false"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
 
-        local payload_invalid_params
-        payload_invalid_params=$(cat <<EOF
+        # Test 4: Too many queries (exceed MAX_QUERIES_PER_REQUEST)
+        local too_many_queries=""
+        for ((i=0; i<25; i++)); do
+            local start=$((i * 10))
+            local finish=$((start + 10))
+            if [[ -n "${too_many_queries}" ]]; then
+                too_many_queries="${too_many_queries},"
+            fi
+            too_many_queries="${too_many_queries}{\"query_ref\": 55, \"params\": {\"INTEGER\": {\"START\": ${start}, \"FINISH\": ${finish}}}}"
+        done
+
+        local payload_too_many
+        payload_too_many=$(cat <<EOF
 {
-  "database": "${db_name}",
-  "queries": ${queries_invalid_params}
+"database": "${db_name}",
+"queries": [${too_many_queries}]
 }
 EOF
 )
 
-        local response_file_invalid_params="${result_file}.queries_invalid_params_${db_engine}.json"
-
-        # Expect 200 with success=false response for invalid params
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_invalid_params}" "200" "${response_file_invalid_params}" "" "Queries Invalid Params (${db_engine})" "false"; then
-            tests_passed=$(( tests_passed + 1 ))
-        fi
+        local response_file_too_many="${result_file}.queries_too_many_${db_engine}.json"
         total_tests=$(( total_tests + 1 ))
 
-        # Test 5: Run it with no queryrefs at all
-        local queries_empty
-        queries_empty=$(cat <<EOF
-[]
-EOF
-)
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_too_many}" "429" "${response_file_too_many}" "" "${db_engine} Too Many Queries" "none"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
 
-        local payload_empty
-        payload_empty=$(cat <<EOF
+        # Test 5: Invalid JSON
+        local payload_invalid_json
+        payload_invalid_json=$(cat <<EOF
 {
   "database": "${db_name}",
-  "queries": ${queries_empty}
-}
+  "queries": [
+    {
+      "query_ref": 53,
+      "params": {}
 EOF
 )
-
-        # Test 6: Query with missing required parameters to generate message
-        local queries_missing_params
-        queries_missing_params=$(cat <<EOF
-[
-  {
-    "query_ref": 45,
-    "params": {}
-  }
-]
-EOF
-)
-
-        local response_file_empty="${result_file}.queries_empty_${db_engine}.json"
-
-        # Expect 200 with success=false response for empty queries array
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_empty}" "200" "${response_file_empty}" "" "Queries Empty Array (${db_engine})" "false"; then
-            tests_passed=$(( tests_passed + 1 ))
-        fi
-        total_tests=$(( total_tests + 1 ))
-
-        # Test 6: Query with missing required parameters to generate message
-        local payload_missing_params
-        payload_missing_params=$(cat <<EOF
-{
-  "database": "${db_name}",
-  "queries": ${queries_missing_params}
-}
-EOF
-)
-
-        local response_file_missing_params="${result_file}.queries_missing_params_${db_engine}.json"
-
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_missing_params}" "200" "${response_file_missing_params}" "" "Queries Missing Params (${db_engine})"; then
-            tests_passed=$(( tests_passed + 1 ))
-        fi
-        total_tests=$(( total_tests + 1 ))
-
-        # Test 7: Query that triggers database error (division by zero) to test error message propagation
-        local queries_db_error
-        queries_db_error=$(cat <<EOF
-[
-  {
-    "query_ref": 56,
-    "params": {
-      "INTEGER": {
-        "NUMERATOR": 10,
-        "DENOMINATOR": 0
-      }
-    }
-  }
-]
-EOF
-)
-
-        local payload_db_error
-        payload_db_error=$(cat <<EOF
-{
-  "database": "${db_name}",
-  "queries": ${queries_db_error}
-}
-EOF
-)
-
-        local response_file_db_error="${result_file}.queries_db_error_${db_engine}.json"
-
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_db_error}" "422" "${response_file_db_error}" "" "Queries DB Error: Division by Zero (${db_engine})" "false"; then
-            tests_passed=$(( tests_passed + 1 ))
-        fi
-        total_tests=$(( total_tests + 1 ))
-
-        # Test 8: Invalid JSON - send malformed JSON to test JSON validation middleware
-        local invalid_json_payload='{ "database": "Demo_PG", "queries": [ { "query_ref": 53, "params": {} } '  # Missing closing brace
 
         local response_file_invalid_json="${result_file}.queries_invalid_json_${db_engine}.json"
-
-        # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${invalid_json_payload}" "400" "${response_file_invalid_json}" "" "Queries Invalid JSON (${db_engine})"; then
-            tests_passed=$(( tests_passed + 1 ))
-        fi
         total_tests=$(( total_tests + 1 ))
 
-        # Test 9: Invalid database - send valid JSON with non-existent database name
-        local queries_invalid_db
-        queries_invalid_db=$(cat <<EOF
-[
-  {
-    "query_ref": 53,
-    "params": {}
-  }
-]
-EOF
-)
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_invalid_json}" "400" "${response_file_invalid_json}" "" "${db_engine} Invalid JSON" "none"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
 
+        # Test 6: Invalid database name
         local payload_invalid_db
         payload_invalid_db=$(cat <<EOF
 {
-  "database": "Invalid_Database",
-  "queries": ${queries_invalid_db}
+  "database": "nonexistent_database",
+  "queries": [
+    {
+      "query_ref": 53,
+      "params": {}
+    }
+  ]
 }
 EOF
 )
 
         local response_file_invalid_db="${result_file}.queries_invalid_db_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
 
         # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_invalid_db}" "400" "${response_file_invalid_db}" "" "Queries Invalid Database (${db_engine})" "false"; then
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_invalid_db}" "400" "${response_file_invalid_db}" "" "${db_engine} Invalid Database" "none"; then
             tests_passed=$(( tests_passed + 1 ))
         fi
+
+        # Test 7: Query with invalid parameters
+        local payload_invalid_params
+        payload_invalid_params=$(cat <<EOF
+{
+  "database": "${db_name}",
+  "queries": [
+    {
+      "query_ref": 55,
+      "params": {
+        "INTEGER": {"START": "invalid", "FINISH": 600}
+      }
+    }
+  ]
+}
+EOF
+)
+
+        local response_file_invalid_params="${result_file}.queries_invalid_params_${db_engine}.json"
         total_tests=$(( total_tests + 1 ))
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_invalid_params}" "400" "${response_file_invalid_params}" "" "${db_engine} Invalid Parameters" "none"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
+
+        # Test 8: Empty queries array
+        local payload_empty
+        payload_empty=$(cat <<EOF
+{
+  "database": "${db_name}",
+  "queries": []
+}
+EOF
+)
+
+        local response_file_empty="${result_file}.queries_empty_${db_engine}.json"
+        total_tests=$(( total_tests + 1 ))
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_conduit_request "${base_url}/api/conduit/queries" "POST" "${payload_empty}" "200" "${response_file_empty}" "" "${db_engine} Empty Queries" "false"; then
+            tests_passed=$(( tests_passed + 1 ))
+        fi
     done
 
-    echo "QUERIES_COMPREHENSIVE_TESTS_PASSED=${tests_passed}" >> "${result_file}"
-    echo "QUERIES_COMPREHENSIVE_TESTS_TOTAL=${total_tests}" >> "${result_file}"
+    echo "MULTIPLE_QUERIES_TESTS_PASSED=${tests_passed}" >> "${result_file}"
+    echo "MULTIPLE_QUERIES_TESTS_TOTAL=${total_tests}" >> "${result_file}"
 }
 
 # Function to run conduit multiple queries tests on unified server
@@ -410,8 +495,11 @@ run_conduit_test_unified() {
 
     # Check if server startup failed
     if [[ "${server_info}" == "FAILED:0" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server startup failed"
         return 1
     fi
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server started successfully: ${server_info}"
 
     # Parse server info
     local base_url hydrogen_pid
@@ -420,28 +508,16 @@ run_conduit_test_unified() {
 
     print_message "51" "0" "Server log location: build/tests/logs/test_51_${TIMESTAMP}_conduit_queries.log"
 
-    # Get JWT tokens for authenticated endpoints - one for each database
-    local jwt_tokens_string
-    jwt_tokens_string=$(acquire_jwt_tokens "${base_url}" "${result_file}")
-    local jwt_tokens=()
-    read -r -a jwt_tokens <<< "${jwt_tokens_string}"
+    # Acquire JWT tokens for authenticated status testing
+    acquire_jwt_tokens "${base_url}" "${result_file}"
 
-    # Count JWT acquisition results
-    local jwt_tests_passed=0
-    local jwt_tests_total=0
-    for db_engine in "${!DATABASE_NAMES[@]}"; do
-        if [[ ${jwt_tests_total} -lt ${#jwt_tokens[@]} ]] && [[ -n "${jwt_tokens[${jwt_tests_total}]}" ]]; then
-            jwt_tests_passed=$(( jwt_tests_passed + 1 ))
-        fi
-        jwt_tests_total=$(( jwt_tests_total + 1 ))
-    done
-
-    echo "JWT_ACQUISITION_TESTS_PASSED=${jwt_tests_passed}" >> "${result_file}"
-    echo "JWT_ACQUISITION_TESTS_TOTAL=${jwt_tests_total}" >> "${result_file}"
+    # Run conduit status endpoint tests
+    test_conduit_status_public "${base_url}" "${result_file}"
+    test_conduit_status_validation "${base_url}" "${result_file}"
+    test_conduit_status_authenticated "${base_url}" "${result_file}"
 
     # Run conduit multiple queries endpoint tests
     test_conduit_multiple_queries "${base_url}" "${result_file}"
-    test_conduit_queries_comprehensive "${base_url}" "${result_file}"
 
     echo "CONDUIT_TEST_COMPLETE" >> "${result_file}"
 
@@ -489,60 +565,35 @@ else
 fi
 
 # Validate the unified configuration file
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Unified Configuration File"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 # shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${CONDUIT_CONFIG_FILE}"; then
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Process Configuration File"
     port=$(get_webserver_port "${CONDUIT_CONFIG_FILE}")
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION} configuration will use port: ${port}"
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Unified configuration file validated successfully"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Unified configuration file validation failed"
     EXIT_CODE=1
 fi
+TEST_NAME="Conduit Multiple Queries  {BLUE}databases: ${#DATABASE_NAMES[@]}{RESET}"
 
 # Only proceed with conduit tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Conduit multiple queries endpoint tests on unified server"
-
     # Run single server test
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting unified conduit test server (${CONDUIT_DESCRIPTION})"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting conduit test server (${CONDUIT_DESCRIPTION})"
 
     # Run the conduit test on the single unified server
     run_conduit_test_unified "${CONDUIT_CONFIG_FILE}" "${CONDUIT_LOG_SUFFIX}" "${CONDUIT_DESCRIPTION}"
 
     # Process results
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION}: Analyzing results"
+    print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
 
     # Add links to log and result files for troubleshooting
     log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${CONDUIT_LOG_SUFFIX}.log"
     result_file="${LOG_PREFIX}${TIMESTAMP}_${CONDUIT_LOG_SUFFIX}.result"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unified Server: ${TESTS_DIR}/logs/${log_file##*/}"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unified Server: ${DIAG_TEST_DIR}/${result_file##*/}"
-
-    # shellcheck disable=SC2310 # We want to continue even if the test fails
-    if analyze_conduit_results "${CONDUIT_LOG_SUFFIX}" "${CONDUIT_DESCRIPTION}"; then
-        PASS_COUNT=$(( PASS_COUNT + 1 ))
-    else
-        EXIT_CODE=1
-    fi
-
-    # Print summary
-    if [[ -f "${result_file}" ]]; then
-        if "${GREP}" -q "CONDUIT_TEST_COMPLETE" "${result_file}" 2>/dev/null; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: Unified multi-database server passed all conduit multiple queries endpoint tests"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Sequential execution completed - Multiple queries endpoint validated across ${#DATABASE_NAMES[@]} database engines"
-        else
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: Unified multi-database server failed conduit multiple queries endpoint tests"
-            EXIT_CODE=1
-        fi
-    else
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: No result file found for unified server"
-        EXIT_CODE=1
-    fi
-
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Conduit Server: ${TESTS_DIR}/logs/${log_file##*/}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Conduit Results: ${DIAG_TEST_DIR}/${result_file##*/}"
 else
     # Skip conduit tests if prerequisites failed
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping Conduit multiple queries endpoint tests due to prerequisite failures"

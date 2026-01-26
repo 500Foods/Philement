@@ -70,13 +70,16 @@ void test_deduplicate_and_validate_queries_empty_array(void) {
     json_t *queries_array = json_array();
     json_t *deduplicated_queries = NULL;
     size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
 
-    enum MHD_Result result = deduplicate_and_validate_queries(queries_array, "testdb", &deduplicated_queries, &mapping_array);
+    DeduplicationResult dedup_code;
+    enum MHD_Result result = deduplicate_and_validate_queries(NULL, queries_array, "testdb", &deduplicated_queries, &mapping_array, &is_duplicate, &dedup_code);
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
     TEST_ASSERT_NOT_NULL(deduplicated_queries);
     TEST_ASSERT_EQUAL(0, json_array_size(deduplicated_queries));
     TEST_ASSERT_NULL(mapping_array);
+    TEST_ASSERT_NULL(is_duplicate);
 
     json_decref(deduplicated_queries);
     json_decref(queries_array);
@@ -101,13 +104,21 @@ void test_deduplicate_and_validate_queries_unique_under_limit(void) {
 
     json_t *deduplicated_queries = NULL;
     size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
 
-    enum MHD_Result result = deduplicate_and_validate_queries(queries_array, "testdb", &deduplicated_queries, &mapping_array);
+    DeduplicationResult dedup_code;
+    enum MHD_Result result = deduplicate_and_validate_queries(NULL, queries_array, "testdb", &deduplicated_queries, &mapping_array, &is_duplicate, &dedup_code);
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
     TEST_ASSERT_NOT_NULL(deduplicated_queries);
     TEST_ASSERT_EQUAL(3, json_array_size(deduplicated_queries));
     TEST_ASSERT_NOT_NULL(mapping_array);
+    TEST_ASSERT_NOT_NULL(is_duplicate);
+
+    // Check that none are duplicates
+    for (size_t i = 0; i < 3; i++) {
+        TEST_ASSERT_FALSE(is_duplicate[i]);
+    }
 
     // Check mapping
     TEST_ASSERT_EQUAL(0, mapping_array[0]);
@@ -115,6 +126,7 @@ void test_deduplicate_and_validate_queries_unique_under_limit(void) {
     TEST_ASSERT_EQUAL(2, mapping_array[2]);
 
     free(mapping_array);
+    free(is_duplicate);
     json_decref(deduplicated_queries);
     json_decref(queries_array);
 }
@@ -146,13 +158,23 @@ void test_deduplicate_and_validate_queries_with_duplicates(void) {
 
     json_t *deduplicated_queries = NULL;
     size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
 
-    enum MHD_Result result = deduplicate_and_validate_queries(queries_array, "testdb", &deduplicated_queries, &mapping_array);
+    DeduplicationResult dedup_code;
+    enum MHD_Result result = deduplicate_and_validate_queries(NULL, queries_array, "testdb", &deduplicated_queries, &mapping_array, &is_duplicate, &dedup_code);
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
     TEST_ASSERT_NOT_NULL(deduplicated_queries);
     TEST_ASSERT_EQUAL(3, json_array_size(deduplicated_queries));  // Should be deduplicated to 3 unique
     TEST_ASSERT_NOT_NULL(mapping_array);
+    TEST_ASSERT_NOT_NULL(is_duplicate);
+
+    // Check duplicates
+    TEST_ASSERT_FALSE(is_duplicate[0]);  // First occurrence
+    TEST_ASSERT_FALSE(is_duplicate[1]);  // First occurrence
+    TEST_ASSERT_TRUE(is_duplicate[2]);   // Duplicate
+    TEST_ASSERT_FALSE(is_duplicate[3]);  // First occurrence
+    TEST_ASSERT_TRUE(is_duplicate[4]);   // Duplicate
 
     // Check mapping - duplicates should map to first occurrence
     TEST_ASSERT_EQUAL(0, mapping_array[0]);  // query_ref 1 -> index 0
@@ -162,6 +184,7 @@ void test_deduplicate_and_validate_queries_with_duplicates(void) {
     TEST_ASSERT_EQUAL(1, mapping_array[4]);  // duplicate query_ref 2 -> index 1
 
     free(mapping_array);
+    free(is_duplicate);
     json_decref(deduplicated_queries);
     json_decref(queries_array);
 }
@@ -179,12 +202,15 @@ void test_deduplicate_and_validate_queries_rate_limit_exceeded(void) {
 
     json_t *deduplicated_queries = NULL;
     size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
 
-    enum MHD_Result result = deduplicate_and_validate_queries(queries_array, "testdb", &deduplicated_queries, &mapping_array);
+    DeduplicationResult dedup_code;
+    enum MHD_Result result = deduplicate_and_validate_queries(NULL, queries_array, "testdb", &deduplicated_queries, &mapping_array, &is_duplicate, &dedup_code);
 
     TEST_ASSERT_EQUAL(MHD_NO, result);  // Should fail due to rate limit
     TEST_ASSERT_NULL(deduplicated_queries);
     TEST_ASSERT_NULL(mapping_array);
+    TEST_ASSERT_NULL(is_duplicate);
 
     json_decref(queries_array);
 }
@@ -203,12 +229,15 @@ void test_deduplicate_and_validate_queries_duplicates_over_limit(void) {
 
     json_t *deduplicated_queries = NULL;
     size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
 
-    enum MHD_Result result = deduplicate_and_validate_queries(queries_array, "testdb", &deduplicated_queries, &mapping_array);
+    DeduplicationResult dedup_code;
+    enum MHD_Result result = deduplicate_and_validate_queries(NULL, queries_array, "testdb", &deduplicated_queries, &mapping_array, &is_duplicate, &dedup_code);
 
     TEST_ASSERT_EQUAL(MHD_NO, result);  // Should fail due to rate limit (6 unique > 5 limit)
     TEST_ASSERT_NULL(deduplicated_queries);
     TEST_ASSERT_NULL(mapping_array);
+    TEST_ASSERT_NULL(is_duplicate);
 
     json_decref(queries_array);
 }
@@ -223,15 +252,17 @@ void test_deduplicate_and_validate_queries_unknown_database(void) {
 
     json_t *deduplicated_queries = NULL;
     size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
 
-    enum MHD_Result result = deduplicate_and_validate_queries(queries_array, "nonexistent", &deduplicated_queries, &mapping_array);
+    DeduplicationResult dedup_code;
+    enum MHD_Result result = deduplicate_and_validate_queries(NULL, queries_array, "nonexistent", &deduplicated_queries, &mapping_array, &is_duplicate, &dedup_code);
 
-    TEST_ASSERT_EQUAL(MHD_YES, result);  // Should succeed but skip rate limiting
-    TEST_ASSERT_NOT_NULL(deduplicated_queries);
-    TEST_ASSERT_NOT_NULL(mapping_array);
+    TEST_ASSERT_EQUAL(MHD_NO, result);  // Should fail
+    TEST_ASSERT_EQUAL(DEDUP_DATABASE_NOT_FOUND, dedup_code);  // Should have correct error code
+    TEST_ASSERT_NULL(deduplicated_queries);
+    TEST_ASSERT_NULL(mapping_array);
+    TEST_ASSERT_NULL(is_duplicate);
 
-    free(mapping_array);
-    json_decref(deduplicated_queries);
     json_decref(queries_array);
 }
 
