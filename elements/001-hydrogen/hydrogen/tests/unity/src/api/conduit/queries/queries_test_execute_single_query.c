@@ -29,6 +29,14 @@ void test_execute_single_query_missing_query_ref(void);
 void test_execute_single_query_invalid_query_ref_type(void);
 void test_execute_single_query_database_not_found(void);
 void test_execute_single_query_query_not_found(void);
+void test_execute_single_query_parameter_type_validation_failure(void);
+void test_execute_single_query_missing_parameters(void);
+void test_execute_single_query_parameter_processing_failure(void);
+void test_execute_single_query_unused_parameters(void);
+void test_execute_single_query_queue_selection_failure(void);
+void test_execute_single_query_query_id_generation_failure(void);
+void test_execute_single_query_pending_registration_failure(void);
+void test_execute_single_query_query_submission_failure(void);
 
 // Test fixtures
 void setUp(void) {
@@ -135,6 +143,56 @@ void test_execute_single_query_query_not_found(void) {
     json_decref(result);
 }
 
+// Test execute_single_query with parameter type validation failure
+void test_execute_single_query_parameter_type_validation_failure(void) {
+    // This test would require mocking the parameter validation functions
+    // For now, we'll skip it as it requires extensive mocking setup
+    TEST_IGNORE_MESSAGE("Parameter type validation testing requires mocking of validation functions");
+}
+
+// Test execute_single_query with missing parameters
+void test_execute_single_query_missing_parameters(void) {
+    // This test would require setting up a mock database and query cache
+    // with specific parameter requirements
+    TEST_IGNORE_MESSAGE("Missing parameters testing requires mock database setup");
+}
+
+// Test execute_single_query with parameter processing failure
+void test_execute_single_query_parameter_processing_failure(void) {
+    // This test would require mocking parameter processing functions
+    TEST_IGNORE_MESSAGE("Parameter processing failure testing requires mocking");
+}
+
+// Test execute_single_query with unused parameters
+void test_execute_single_query_unused_parameters(void) {
+    // This test would require setting up a query with unused parameters
+    TEST_IGNORE_MESSAGE("Unused parameters testing requires mock database setup");
+}
+
+// Test execute_single_query with queue selection failure
+void test_execute_single_query_queue_selection_failure(void) {
+    // This test would require mocking the queue selection to fail
+    TEST_IGNORE_MESSAGE("Queue selection failure testing requires mocking");
+}
+
+// Test execute_single_query with query ID generation failure
+void test_execute_single_query_query_id_generation_failure(void) {
+    // This test would require mocking generate_query_id to return NULL
+    TEST_IGNORE_MESSAGE("Query ID generation failure testing requires mocking");
+}
+
+// Test execute_single_query with pending registration failure
+void test_execute_single_query_pending_registration_failure(void) {
+    // This test would require mocking pending_result_register to return NULL
+    TEST_IGNORE_MESSAGE("Pending registration failure testing requires mocking");
+}
+
+// Test execute_single_query with query submission failure
+void test_execute_single_query_query_submission_failure(void) {
+    // This test would require mocking prepare_and_submit_query to return false
+    TEST_IGNORE_MESSAGE("Query submission failure testing requires mocking");
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -144,6 +202,14 @@ int main(void) {
     RUN_TEST(test_execute_single_query_invalid_query_ref_type);
     RUN_TEST(test_execute_single_query_database_not_found);
     RUN_TEST(test_execute_single_query_query_not_found);
+    RUN_TEST(test_execute_single_query_parameter_type_validation_failure);
+    RUN_TEST(test_execute_single_query_missing_parameters);
+    RUN_TEST(test_execute_single_query_parameter_processing_failure);
+    RUN_TEST(test_execute_single_query_unused_parameters);
+    RUN_TEST(test_execute_single_query_queue_selection_failure);
+    RUN_TEST(test_execute_single_query_query_id_generation_failure);
+    RUN_TEST(test_execute_single_query_pending_registration_failure);
+    RUN_TEST(test_execute_single_query_query_submission_failure);
 
     return UNITY_END();
 }
