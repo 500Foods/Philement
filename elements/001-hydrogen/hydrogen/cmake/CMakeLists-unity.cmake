@@ -59,6 +59,8 @@ set(UNITY_PRINT_MOCK_SOURCES
 # Create Unity test object files in build/unity/src directory structure (same as original)
 # Include hydrogen.c for coverage instrumentation consistency, but don't link it into test executables
 set(UNITY_HYDROGEN_SOURCES ${HYDROGEN_SOURCES})
+# Add query execution helpers
+list(APPEND UNITY_HYDROGEN_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../src/api/conduit/helpers/query_exec_helpers.c")
 set(UNITY_HYDROGEN_SOURCES_FOR_LINKING ${UNITY_HYDROGEN_SOURCES})
 list(REMOVE_ITEM UNITY_HYDROGEN_SOURCES_FOR_LINKING "${CMAKE_CURRENT_SOURCE_DIR}/../src/hydrogen.c")
 

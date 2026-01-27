@@ -26,12 +26,17 @@
 extern AppConfig *app_config;
 
 // Function prototypes for test functions
+void test_deduplicate_and_validate_queries_null_parameters(void);
 void test_deduplicate_and_validate_queries_empty_array(void);
 void test_deduplicate_and_validate_queries_unique_under_limit(void);
 void test_deduplicate_and_validate_queries_with_duplicates(void);
 void test_deduplicate_and_validate_queries_rate_limit_exceeded(void);
 void test_deduplicate_and_validate_queries_duplicates_over_limit(void);
 void test_deduplicate_and_validate_queries_unknown_database(void);
+void test_deduplicate_and_validate_queries_memory_allocation_failure_duplicate_tracking(void);
+void test_deduplicate_and_validate_queries_memory_allocation_failure_query_arrays(void);
+void test_deduplicate_and_validate_queries_memory_allocation_failure_output_arrays(void);
+void test_deduplicate_and_validate_queries_invalid_query_objects(void);
 
 // Test fixtures
 void setUp(void) {
@@ -266,15 +271,125 @@ void test_deduplicate_and_validate_queries_unknown_database(void) {
     json_decref(queries_array);
 }
 
+// Test deduplicate_and_validate_queries with NULL parameters
+void test_deduplicate_and_validate_queries_null_parameters(void) {
+    json_t *queries_array = json_array();
+    json_t *query = json_object();
+    json_object_set_new(query, "query_ref", json_integer(1));
+    json_array_append_new(queries_array, query);
+
+    DeduplicationResult dedup_code;
+
+    // Test NULL queries_array
+    enum MHD_Result result = deduplicate_and_validate_queries(NULL, NULL, "testdb", NULL, NULL, NULL, &dedup_code);
+    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(DEDUP_ERROR, dedup_code);
+
+    // Test NULL database
+    result = deduplicate_and_validate_queries(NULL, queries_array, NULL, NULL, NULL, NULL, &dedup_code);
+    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(DEDUP_ERROR, dedup_code);
+
+    // Test NULL deduplicated_queries
+    result = deduplicate_and_validate_queries(NULL, queries_array, "testdb", NULL, NULL, NULL, &dedup_code);
+    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(DEDUP_ERROR, dedup_code);
+
+    // Test NULL mapping_array
+    size_t *dummy_mapping = NULL;
+    result = deduplicate_and_validate_queries(NULL, queries_array, "testdb", &queries_array, NULL, NULL, &dedup_code);
+    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(DEDUP_ERROR, dedup_code);
+
+    // Test NULL is_duplicate
+    result = deduplicate_and_validate_queries(NULL, queries_array, "testdb", &queries_array, &dummy_mapping, NULL, &dedup_code);
+    TEST_ASSERT_EQUAL(MHD_NO, result);
+    TEST_ASSERT_EQUAL(DEDUP_ERROR, dedup_code);
+
+    json_decref(queries_array);
+}
+
+// Test deduplicate_and_validate_queries with memory allocation failure for duplicate tracking
+void test_deduplicate_and_validate_queries_memory_allocation_failure_duplicate_tracking(void) {
+    // This test would require mocking malloc to fail, but since we can't easily do that
+    // in this test framework, we'll skip it for now. In a real implementation with
+    // dependency injection or malloc mocking, we'd test this path.
+    TEST_IGNORE_MESSAGE("Memory allocation failure testing requires malloc mocking");
+}
+
+// Test deduplicate_and_validate_queries with memory allocation failure for query arrays
+void test_deduplicate_and_validate_queries_memory_allocation_failure_query_arrays(void) {
+    // Similar to above, requires malloc mocking
+    TEST_IGNORE_MESSAGE("Memory allocation failure testing requires malloc mocking");
+}
+
+// Test deduplicate_and_validate_queries with memory allocation failure for output arrays
+void test_deduplicate_and_validate_queries_memory_allocation_failure_output_arrays(void) {
+    // Similar to above, requires malloc mocking
+    TEST_IGNORE_MESSAGE("Memory allocation failure testing requires malloc mocking");
+}
+
+// Test deduplicate_and_validate_queries with invalid query objects
+void test_deduplicate_and_validate_queries_invalid_query_objects(void) {
+    json_t *queries_array = json_array();
+
+    // Add a valid query
+    json_t *valid_query = json_object();
+    json_object_set_new(valid_query, "query_ref", json_integer(1));
+    json_array_append_new(queries_array, valid_query);
+
+    // Add an invalid query (not an object)
+    json_array_append_new(queries_array, json_string("invalid"));
+
+    // Add another invalid query (object but no query_ref)
+    json_t *invalid_query = json_object();
+    json_object_set_new(invalid_query, "some_field", json_integer(123));
+    json_array_append_new(queries_array, invalid_query);
+
+    // Add another invalid query (query_ref not integer)
+    json_t *invalid_query2 = json_object();
+    json_object_set_new(invalid_query2, "query_ref", json_string("not_a_number"));
+    json_array_append_new(queries_array, invalid_query2);
+
+    json_t *deduplicated_queries = NULL;
+    size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
+
+    DeduplicationResult dedup_code;
+    enum MHD_Result result = deduplicate_and_validate_queries(NULL, queries_array, "testdb", &deduplicated_queries, &mapping_array, &is_duplicate, &dedup_code);
+
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+    TEST_ASSERT_NOT_NULL(deduplicated_queries);
+    TEST_ASSERT_EQUAL(1, json_array_size(deduplicated_queries));  // Only the valid query should be deduplicated
+    TEST_ASSERT_NOT_NULL(mapping_array);
+    TEST_ASSERT_NOT_NULL(is_duplicate);
+
+    // Check that invalid queries are marked as duplicates
+    TEST_ASSERT_FALSE(is_duplicate[0]);  // First query is valid
+    TEST_ASSERT_TRUE(is_duplicate[1]);   // Second query is invalid
+    TEST_ASSERT_TRUE(is_duplicate[2]);   // Third query has no query_ref
+    TEST_ASSERT_TRUE(is_duplicate[3]);   // Fourth query has invalid query_ref type
+
+    free(mapping_array);
+    free(is_duplicate);
+    json_decref(deduplicated_queries);
+    json_decref(queries_array);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
+    RUN_TEST(test_deduplicate_and_validate_queries_null_parameters);
     RUN_TEST(test_deduplicate_and_validate_queries_empty_array);
     RUN_TEST(test_deduplicate_and_validate_queries_unique_under_limit);
     RUN_TEST(test_deduplicate_and_validate_queries_with_duplicates);
     RUN_TEST(test_deduplicate_and_validate_queries_rate_limit_exceeded);
     RUN_TEST(test_deduplicate_and_validate_queries_duplicates_over_limit);
     RUN_TEST(test_deduplicate_and_validate_queries_unknown_database);
+    RUN_TEST(test_deduplicate_and_validate_queries_memory_allocation_failure_duplicate_tracking);
+    RUN_TEST(test_deduplicate_and_validate_queries_memory_allocation_failure_query_arrays);
+    RUN_TEST(test_deduplicate_and_validate_queries_memory_allocation_failure_output_arrays);
+    RUN_TEST(test_deduplicate_and_validate_queries_invalid_query_objects);
 
     return UNITY_END();
 }
