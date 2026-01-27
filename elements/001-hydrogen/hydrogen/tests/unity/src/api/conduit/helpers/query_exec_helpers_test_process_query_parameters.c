@@ -260,9 +260,7 @@ int main(void) {
     UNITY_BEGIN();
 
     // Process query parameters tests
-    // RUN_TEST(test_process_query_parameters_null_params_error); // TODO: Debug why NULL params doesn't trigger missing parameter error
     RUN_TEST(test_process_query_parameters_valid_params_success);
-    // RUN_TEST(test_process_query_parameters_missing_required_params); // TODO: Debug why this doesn't detect missing params
     RUN_TEST(test_process_query_parameters_unused_params_with_warning);
     RUN_TEST(test_process_query_parameters_invalid_param_types);
     RUN_TEST(test_process_query_parameters_combined_messages);
