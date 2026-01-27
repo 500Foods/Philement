@@ -4,12 +4,14 @@
 # Collects and analyzes coverage data from Unity and blackbox tests
 
 # CHANGELOG
-# 5.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
+# 5.0.0 - 2025-12-05 - Added HYDROGEN_ROOT environment variable check
 # 4.1.0 - 2025-10-10 - Sorted list of uncovered files
 # 4.0.0 - 2025-00-14 - Overhaul #2 - all about the test count stuff at the end
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 2.0.0 - Initial version with comprehensive coverage analysis
+
+set -euo pipefail
 
 # Check for required HYDROGEN_ROOT environment variable
 if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
@@ -17,15 +19,6 @@ if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
     echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
     exit 1
 fi                         
-
-# Check for required HELIUM_ROOT environment variable
-if [[ -z "${HELIUM_ROOT:-}" ]]; then
-    echo "❌ Error: HELIUM_ROOT environment variable is not set"
-    echo "Please set HELIUM_ROOT to the Helium project's root directory"
-    exit 1
-fi
-
-set -euo pipefail
 
 # Test configuration
 TEST_NAME="Test Suite Coverage  {BLUE}coverage_table{RESET}"
@@ -272,8 +265,16 @@ VALIDATION_START_TIME=$(date +%s.%3N)
 # Phase 1: Individual count reviews with timing
 test10_start=$(date +%s.%3N)
 test10_total_executed=0
-if [[ -f "${RESULTS_DIR}/unity_test_count.txt" ]]; then
-    test10_total_executed=$(cat "${RESULTS_DIR}/unity_test_count.txt" 2>/dev/null || echo "0")
+# Read from diagnostic files directly for accurate count instead of relying on cached file
+if [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
+    latest_test10_dir=$("${FIND}" "${BUILD_DIR}/tests/diagnostics" -name "test_10_*" -type d 2>/dev/null | sort -r | head -1 || true)
+    if [[ -n "${latest_test10_dir}" ]]; then
+        test10_total_executed=$("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -exec "${AWK}" "
+        /Tests/ && /Failures/ && /Ignored/ {sum += \$1}
+        ENDFILE {if (!/Tests/ || !/Failures/ || !/Ignored/) sum += 0}
+        END {print sum}
+        " {} + 2>/dev/null || echo "0")
+    fi
 fi
 test10_end=$(date +%s.%3N)
 test10_duration=$(echo "${test10_end} - ${test10_start}" | bc 2>/dev/null || echo "0")
@@ -674,6 +675,7 @@ else
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "G) Test files with duplicate Unity summary lines (${g_duration_display}):"
             print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  None found - all diagnostic files have single summary lines"
         fi
+
         fi
     fi
 fi
@@ -689,6 +691,27 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
     declare -A cached_test_files
     declare -A cached_runtest_counts
     declare -A cached_ignore_counts
+
+    # Populate cached_runtest_counts and cached_ignore_counts
+    temp_results_file=$(mktemp)
+    export GREP
+    "${FIND}" "tests/unity/src" -name "*.c" -type f -print0 2>/dev/null | xargs -0 -n 8 -P 4 bash -c "
+        for file in \"\$@\"; do
+            basename_file=\$(basename \"\$file\" .c)
+            test_count=\$(\"\$GREP\" -c \"RUN_TEST(\" \"\$file\" 2>/dev/null || echo \"0\")
+            ignore_count=\$(\"\$GREP\" -c \"if (0) RUN_TEST(\" \"\$file\" 2>/dev/null || echo \"0\")
+            echo \"\${basename_file}:\${test_count}:\${ignore_count}\"
+        done
+    " _ > "${temp_results_file}" 2>/dev/null
+
+    # Populate cache arrays
+    while IFS=: read -r basename_file test_count ignore_count; do
+        if [[ "${test_count}" =~ ^[0-9]+$ ]] && [[ "${ignore_count}" =~ ^[0-9]+$ ]]; then
+            cached_runtest_counts["${basename_file}"]=${test_count}
+            cached_ignore_counts["${basename_file}"]=${ignore_count}
+        fi
+    done < "${temp_results_file}"
+    rm -f "${temp_results_file}"
 
     # Look for Test 10's diagnostic files to parse individual test results (parallel optimized)
     if [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
@@ -741,13 +764,107 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
         fi
     fi
 
+    # H) Identify tests in RUN_TEST source but not Test 10 diagnostics
+    h_start=$(date +%s.%3N)
+
+    # Collect Raw set: individual test function names from RUN_TEST calls
+    raw_set=""
+    for test_file in "${!cached_runtest_counts[@]}"; do
+        runtest_count=${cached_runtest_counts[${test_file}]-0}
+        ignore_count=${cached_ignore_counts[${test_file}]-0}
+        net_runtest_count=$((runtest_count - ignore_count))
+        if [[ ${net_runtest_count} -gt 0 ]]; then
+            # Extract individual test function names from this test file
+            test_file_path="tests/unity/src/${test_file}.c"
+            if [[ -f "${test_file_path}" ]]; then
+                # Get RUN_TEST function names, excluding if(0) ones
+                test_functions=$("${GREP}" "RUN_TEST(" "${test_file_path}" 2>/dev/null | "${GREP}" -v "if (0)" | "${SED}" 's/.*RUN_TEST(\([^)]*\).*/\1/' | "${SED}" 's/^[[:space:]]*//' | "${SED}" 's/[[:space:]]*$//' || true)
+                while IFS= read -r func_name; do
+                    [[ -z "${func_name}" ]] && continue
+                    raw_set="${raw_set}${func_name}"$'\n'
+                done <<< "${test_functions}"
+            fi
+        fi
+    done
+    raw_set=$(echo -n "${raw_set}" | sort | uniq || true)
+
+    # Collect Executed set: individual test function names that were executed from diagnostic files
+    executed_set=""
+    if [[ -n "${latest_test10_dir:-}" ]]; then
+        for diag_file in "${latest_test10_dir}"/*.txt; do
+            [[ -f "${diag_file}" ]] || continue
+            # Extract test function names that passed or failed (were executed)
+            # The format is: /path/to/file:line:test_name:PASS
+            test_functions=$("${GREP}" ":PASS\|:FAIL" "${diag_file}" 2>/dev/null | "${SED}" 's/.*:\([^:]*\):PASS/\1/;s/.*:\([^:]*\):FAIL/\1/' || true)
+            while IFS= read -r func_name; do
+                [[ -z "${func_name}" ]] && continue
+                # Skip any lines that don't look like valid test function names (like "PASS" itself)
+                if [[ "${func_name}" != "PASS" && "${func_name}" != "FAIL" && "${func_name}" =~ ^test_ ]]; then
+                    executed_set="${executed_set}${func_name}"$'\n'
+                fi
+            done <<< "${test_functions}"
+        done
+    fi
+    executed_set=$(echo -n "${executed_set}" | sort | uniq || true)
+
+    # Find differences
+    missing_from_executed=""
+    total_missing_from_executed=0
+    extra_in_executed=""
+    total_extra_in_executed=0
+
+    # Tests in Raw but not in Executed
+    while IFS= read -r test_name; do
+        [[ -z "${test_name}" ]] && continue
+        if ! echo "${executed_set}" | "${GREP}" -q "^${test_name}$"; then
+            missing_from_executed="${missing_from_executed}${test_name}"$'\n'
+            total_missing_from_executed=$((total_missing_from_executed + 1))
+        fi
+    done <<< "${raw_set}"
+
+    # Tests in Executed but not in Raw
+    while IFS= read -r test_name; do
+        [[ -z "${test_name}" ]] && continue
+        if ! echo "${raw_set}" | "${GREP}" -q "^${test_name}$"; then
+            extra_in_executed="${extra_in_executed}${test_name}"$'\n'
+            total_extra_in_executed=$((total_extra_in_executed + 1))
+        fi
+    done <<< "${executed_set}"
+
+    h_end=$(date +%s.%3N)
+    h_duration=$(echo "${h_end} - ${h_start}" | bc 2>/dev/null || echo "0")
+    h_duration_display=$(format_duration "${h_duration}")
+
+    if [[ ${total_missing_from_executed} -gt 0 ]] || [[ ${total_extra_in_executed} -gt 0 ]]; then
+        total_missing_display=$(format_number "${total_missing_from_executed}")
+        total_extra_display=$(format_number "${total_extra_in_executed}")
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "H) Tests in RUN_TEST source but not Test 10 diagnostics (${h_duration_display}): ${total_missing_display} missing from executed, ${total_extra_display} extra in executed"
+
+        if [[ -n "${missing_from_executed}" ]]; then
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  Tests with RUN_TEST calls but not executed by Test 10:"
+            while IFS= read -r missing_test; do
+                [[ -z "${missing_test}" ]] && continue
+                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "    ${missing_test}"
+            done <<< "${missing_from_executed}"
+        fi
+
+        if [[ -n "${extra_in_executed}" ]]; then
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  Tests executed by Test 10 but without RUN_TEST calls:"
+            while IFS= read -r extra_test; do
+                [[ -z "${extra_test}" ]] && continue
+                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "    ${extra_test}"
+            done <<< "${extra_in_executed}"
+        fi
+    else
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "H) Tests in RUN_TEST source but not Test 10 diagnostics (${h_duration_display}):"
+        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  All RUN_TEST calls match Test 10 execution"
+    fi
 
     # Update raw count with the more accurate cached version
     raw_runtest_count=0
     for test_basename in "${!cached_runtest_counts[@]}"; do
         test_count="${cached_runtest_counts["${test_basename}"]}"
         ignore_count="${cached_ignore_counts["${test_basename}"]:-0}"
-
         # Ensure numeric values to avoid syntax errors
         if ! [[ "${test_count}" =~ ^[0-9]+$ ]]; then
             test_count=0
@@ -755,7 +872,6 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
         if ! [[ "${ignore_count}" =~ ^[0-9]+$ ]]; then
             ignore_count=0
         fi
-
         raw_runtest_count=$((raw_runtest_count + test_count - ignore_count))
     done
 
@@ -771,7 +887,6 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
     for test_file in "${!grep_test_counts[@]}"; do
         grep_count=${grep_test_counts[${test_file}]}
         executed_count=${test10_executed_counts[${test_file}]:-0}
-
         if [[ ${grep_count} -ne ${executed_count} ]]; then
             diff=$((executed_count - grep_count))
             per_file_discrepancies+=("${test_file}: executed ${executed_count}, grep ${grep_count} (diff: ${diff})")
@@ -783,7 +898,6 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
     discrepancy_details=""
 
     if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]]; then
-        
         test10_diff=$((test10_total_executed - coverage_table_count))
         if [[ "${test10_diff}" -gt 0 ]]; then
             test10_diff_display=$(format_number "${test10_diff}")
@@ -796,7 +910,6 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
     fi
 
     if [[ "${coverage_table_count}" -ne "${raw_runtest_count}" ]]; then
-        
         raw_diff=$((raw_runtest_count - coverage_table_count))
         if [[ "${raw_diff}" -gt 0 ]]; then
             raw_diff_display=$(format_number "${raw_diff}")
@@ -817,7 +930,6 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
     if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${coverage_table_count}" -ne "${raw_runtest_count}" ]]; then
         # Total counts don't match - this is a real failure
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Test count discrepancies found: ${discrepancy_details}"
-
         # Show per-file discrepancies for debugging
         if [[ ${total_discrepancies} -gt 0 ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Per-file discrepancies (showing first 10):"
@@ -844,7 +956,6 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
                     print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${rel_path} (missing '_test' in filename)"
                 fi
             done
-
             # Check for RUN_TEST calls in non-test files using cached data
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "RUN_TEST calls in non-test files:"
             for test_basename in "${!cached_test_files[@]}"; do
@@ -858,7 +969,6 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
                 fi
             done
         fi
-
         # Check for test files with no mapped source files
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Test files with potential mapping issues:"
         for test_file in "${!unity_test_counts[@]}"; do
@@ -866,7 +976,6 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
                 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${test_file}: 0 tests mapped (check naming convention)"
             fi
         done
-
     else
         # Total counts match - this is a PASS, regardless of per-file discrepancies
         test10_final_display=$(format_number "${formatted_test10}")
@@ -879,15 +988,11 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
         fi
     fi
 
-VALIDATION_END_TIME=$(date +%s.%3N)
-VALIDATION_DURATION=$(echo "${VALIDATION_END_TIME} - ${VALIDATION_START_TIME}" | bc 2>/dev/null || echo "0")
-detailed_duration_display=$(format_duration "${VALIDATION_DURATION}")
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Total validation section took: ${detailed_duration_display} (detailed path)"
+    VALIDATION_END_TIME=$(date +%s.%3N)
+    VALIDATION_DURATION=$(echo "${VALIDATION_END_TIME} - ${VALIDATION_START_TIME}" | bc 2>/dev/null || echo "0")
+    detailed_duration_display=$(format_duration "${VALIDATION_DURATION}")
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Total validation section took: ${detailed_duration_display} (detailed path)"
 fi
-
-
-# Print test completion summary
+  
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
-
-# Return status code if sourced, exit if run standalone
 ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
