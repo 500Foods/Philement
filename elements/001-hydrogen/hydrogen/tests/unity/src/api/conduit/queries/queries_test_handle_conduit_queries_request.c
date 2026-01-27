@@ -30,6 +30,15 @@ void test_handle_conduit_queries_request_invalid_database_type(void);
 void test_handle_conduit_queries_request_missing_queries(void);
 void test_handle_conduit_queries_request_invalid_queries_type(void);
 void test_handle_conduit_queries_request_empty_queries_array(void);
+void test_handle_conduit_queries_request_api_buffer_error(void);
+void test_handle_conduit_queries_request_api_buffer_method_error(void);
+void test_handle_conduit_queries_request_request_parsing_failure(void);
+void test_handle_conduit_queries_request_rate_limit_error_handling(void);
+void test_handle_conduit_queries_request_memory_allocation_failure(void);
+void test_handle_conduit_queries_request_query_execution_failure(void);
+void test_handle_conduit_queries_request_invalid_query_mapping(void);
+void test_handle_conduit_queries_request_http_status_determination(void);
+void test_handle_conduit_queries_request_response_creation_failure(void);
 
 // Test fixtures
 void setUp(void) {
@@ -154,6 +163,60 @@ void test_handle_conduit_queries_request_empty_queries_array(void) {
     TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
+// Test handle_conduit_queries_request with API buffer error
+void test_handle_conduit_queries_request_api_buffer_error(void) {
+    // This test would require mocking api_buffer_post_data to return API_BUFFER_ERROR
+    TEST_IGNORE_MESSAGE("API buffer error testing requires mocking api_buffer_post_data");
+}
+
+// Test handle_conduit_queries_request with API buffer method error
+void test_handle_conduit_queries_request_api_buffer_method_error(void) {
+    // This test would require mocking api_buffer_post_data to return API_BUFFER_METHOD_ERROR
+    TEST_IGNORE_MESSAGE("API buffer method error testing requires mocking api_buffer_post_data");
+}
+
+// Test handle_conduit_queries_request with request parsing failure
+void test_handle_conduit_queries_request_request_parsing_failure(void) {
+    // This test would require mocking handle_request_parsing_with_buffer to return MHD_NO
+    TEST_IGNORE_MESSAGE("Request parsing failure testing requires mocking");
+}
+
+// Test handle_conduit_queries_request with rate limit error handling
+void test_handle_conduit_queries_request_rate_limit_error_handling(void) {
+    // This test would require setting up a scenario where deduplication returns rate limit exceeded
+    TEST_IGNORE_MESSAGE("Rate limit error handling testing requires complex setup");
+}
+
+// Test handle_conduit_queries_request with memory allocation failure
+void test_handle_conduit_queries_request_memory_allocation_failure(void) {
+    // This test would require mocking calloc to fail
+    TEST_IGNORE_MESSAGE("Memory allocation failure testing requires malloc mocking");
+}
+
+// Test handle_conduit_queries_request with query execution failure
+void test_handle_conduit_queries_request_query_execution_failure(void) {
+    // This test would require mocking execute_single_query to return NULL
+    TEST_IGNORE_MESSAGE("Query execution failure testing requires mocking");
+}
+
+// Test handle_conduit_queries_request with invalid query mapping
+void test_handle_conduit_queries_request_invalid_query_mapping(void) {
+    // This test would require setting up a scenario with invalid mapping array bounds
+    TEST_IGNORE_MESSAGE("Invalid query mapping testing requires complex setup");
+}
+
+// Test handle_conduit_queries_request with HTTP status determination
+void test_handle_conduit_queries_request_http_status_determination(void) {
+    // This test would require setting up various error scenarios to test status code logic
+    TEST_IGNORE_MESSAGE("HTTP status determination testing requires complex setup");
+}
+
+// Test handle_conduit_queries_request with response creation failure
+void test_handle_conduit_queries_request_response_creation_failure(void) {
+    // This test would require mocking json_object to return NULL
+    TEST_IGNORE_MESSAGE("Response creation failure testing requires mocking");
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -163,6 +226,15 @@ int main(void) {
     RUN_TEST(test_handle_conduit_queries_request_missing_queries);
     RUN_TEST(test_handle_conduit_queries_request_invalid_queries_type);
     RUN_TEST(test_handle_conduit_queries_request_empty_queries_array);
+    RUN_TEST(test_handle_conduit_queries_request_api_buffer_error);
+    RUN_TEST(test_handle_conduit_queries_request_api_buffer_method_error);
+    RUN_TEST(test_handle_conduit_queries_request_request_parsing_failure);
+    RUN_TEST(test_handle_conduit_queries_request_rate_limit_error_handling);
+    RUN_TEST(test_handle_conduit_queries_request_memory_allocation_failure);
+    RUN_TEST(test_handle_conduit_queries_request_query_execution_failure);
+    RUN_TEST(test_handle_conduit_queries_request_invalid_query_mapping);
+    RUN_TEST(test_handle_conduit_queries_request_http_status_determination);
+    RUN_TEST(test_handle_conduit_queries_request_response_creation_failure);
 
     return UNITY_END();
 }

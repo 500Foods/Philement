@@ -281,156 +281,48 @@ json_t* execute_single_query(const char *database, json_t *query_obj)
         return error_result;
     }
 
-    // Process parameters with validation
+    // Process parameters with validation using helper function
     ParameterList *param_list = NULL;
     char *converted_sql = NULL;
     TypedParameter **ordered_params = NULL;
     size_t param_count = 0;
-    char* message = NULL;
 
-    // (1) Validate parameter types
-    char* type_error = validate_parameter_types_simple(params);
-    if (type_error) {
-        json_t *error_response = create_processing_error_response("Parameter type mismatch", database, query_ref);
-        json_object_set_new(error_response, "message", json_string(type_error));
-        free(type_error);
+    char* message = process_query_parameters(params, cache_entry, db_queue, &param_list,
+                                           &converted_sql, &ordered_params, &param_count);
+    if (message) {
+        // Parameter processing failed - message contains error details
+        json_t *error_response = create_processing_error_response("Parameter processing failed", database, query_ref);
+        json_object_set_new(error_response, "message", json_string(message));
+        free(message);
         return error_response;
     }
 
-    // (2) Check for missing parameters
-    ParameterList* temp_param_list = NULL;
-    if (params && json_is_object(params)) {
-        char* params_str = json_dumps(params, JSON_COMPACT);
-        if (params_str) {
-            temp_param_list = parse_typed_parameters(params_str, NULL);
-            free(params_str);
-        }
-    }
-    if (!temp_param_list) {
-        temp_param_list = calloc(1, sizeof(ParameterList));
-    }
-
-    char* missing_error = check_missing_parameters_simple(cache_entry->sql_template, temp_param_list);
-    if (missing_error) {
-        // Clean up temp list
-        if (temp_param_list) {
-            if (temp_param_list->params) {
-                for (size_t i = 0; i < temp_param_list->count; i++) {
-                    if (temp_param_list->params[i]) {
-                        free(temp_param_list->params[i]->name);
-                        free(temp_param_list->params[i]);
-                    }
-                }
-                free(temp_param_list->params);
-            }
-            free(temp_param_list);
-        }
-        
-        json_t *error_response = create_processing_error_response("Missing parameters", database, query_ref);
-        json_object_set_new(error_response, "message", json_string(missing_error));
-        free(missing_error);
-        return error_response;
-    }
-
-    // (3) Process parameters
-    if (!process_parameters(params, &param_list, cache_entry->sql_template,
-                            db_queue->engine_type, &converted_sql, &ordered_params, &param_count)) {
-        // Clean up temp list
-        if (temp_param_list) {
-            if (temp_param_list->params) {
-                for (size_t i = 0; i < temp_param_list->count; i++) {
-                    if (temp_param_list->params[i]) {
-                        free(temp_param_list->params[i]->name);
-                        free(temp_param_list->params[i]);
-                    }
-                }
-                free(temp_param_list->params);
-            }
-            free(temp_param_list);
-        }
-        
-        return create_processing_error_response("Parameter processing failed", database, query_ref);
-    }
-
-    // (4) Check for unused parameters (warning only)
-    char* unused_warning = check_unused_parameters_simple(cache_entry->sql_template, param_list);
-    if (unused_warning) {
-        log_this(SR_API, "%s: Query %d has unused parameters: %s", LOG_LEVEL_ALERT, 3, conduit_service_name(), query_ref, unused_warning);
-        message = unused_warning;
-    }
-
-    // Clean up temp list
-    if (temp_param_list) {
-        if (temp_param_list->params) {
-            for (size_t i = 0; i < temp_param_list->count; i++) {
-                if (temp_param_list->params[i]) {
-                    free(temp_param_list->params[i]->name);
-                    free(temp_param_list->params[i]);
-                }
-            }
-            free(temp_param_list->params);
-        }
-        free(temp_param_list);
-    }
-
-    // Generate parameter validation messages
-    char* validation_message = generate_parameter_messages(cache_entry->sql_template, params);
-    if (validation_message) {
-        if (message) {
-            // Combine the messages
-            size_t combined_length = strlen(message) + strlen(validation_message) + 3; // +3 for " | " and null terminator
-            char* combined_message = malloc(combined_length);
-            if (combined_message) {
-                snprintf(combined_message, combined_length, "%s | %s", message, validation_message);
-                free(message);
-                free(validation_message);
-                message = combined_message;
-            }
-        } else {
-            message = validation_message;
-        }
-    }
-
-    // Select queue using new helper function
-    DatabaseQueue *selected_queue = select_query_queue(database, cache_entry->queue_type);
+    // Select queue with error handling
+    DatabaseQueue *selected_queue = select_query_queue_with_error_handling(database, cache_entry,
+                                                                           converted_sql, param_list,
+                                                                           ordered_params, message);
     if (!selected_queue) {
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        if (message) free(message);
         return create_processing_error_response("No suitable queue available", database, query_ref);
     }
 
-    // Generate query ID using new helper function
-    char *query_id = generate_query_id();
+    // Generate query ID with error handling
+    char *query_id = generate_query_id_with_error_handling(converted_sql, param_list,
+                                                          ordered_params, message);
     if (!query_id) {
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        if (message) free(message);
         return create_processing_error_response("Failed to generate query ID", database, query_ref);
     }
 
-    // Register pending result
-    PendingResultManager *pending_mgr = get_pending_result_manager();
-    PendingQueryResult *pending = pending_result_register(pending_mgr, query_id, cache_entry->timeout_seconds, NULL);
+    // Register pending result with error handling
+    PendingQueryResult *pending = register_pending_result_with_error_handling(query_id, cache_entry,
+                                                                              converted_sql, param_list,
+                                                                              ordered_params, message);
     if (!pending) {
-        free(query_id);
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        if (message) free(message);
         return create_processing_error_response("Failed to register pending result", database, query_ref);
     }
 
-    // Submit query using new helper function
-    if (!prepare_and_submit_query(selected_queue, query_id, cache_entry->sql_template, ordered_params,
-                                  param_count, cache_entry)) {
-        free(query_id);
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        if (message) free(message);
+    // Submit query with error handling
+    if (!submit_query_with_error_handling(selected_queue, query_id, cache_entry, ordered_params,
+                                         param_count, converted_sql, param_list, message)) {
         return create_processing_error_response("Failed to submit query", database, query_ref);
     }
 

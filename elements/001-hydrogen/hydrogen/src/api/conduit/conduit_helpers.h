@@ -27,6 +27,9 @@
 #include <src/database/database_queue_select.h>
 #include <src/database/dbqueue/dbqueue.h>
 
+// Query execution helpers
+#include <src/api/conduit/helpers/query_exec_helpers.h>
+
 // Function declarations for common helper functions
 
 // Generate unique query ID
