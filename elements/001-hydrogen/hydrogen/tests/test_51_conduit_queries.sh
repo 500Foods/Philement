@@ -22,8 +22,8 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Conduit Multiple Queries"
-TEST_ABBR="CMQ"
+TEST_NAME="Conduit Queries"
+TEST_ABBR="CQM"
 TEST_NUMBER="51"
 TEST_COUNTER=0
 TEST_VERSION="1.1.0"
@@ -576,7 +576,7 @@ else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Unified configuration file validation failed"
     EXIT_CODE=1
 fi
-TEST_NAME="Conduit Multiple Queries  {BLUE}databases: ${#DATABASE_NAMES[@]}{RESET}"
+TEST_NAME="Conduit Queries  {BLUE}databases: ${#DATABASE_NAMES[@]}{RESET}"
 
 # Only proceed with conduit tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then

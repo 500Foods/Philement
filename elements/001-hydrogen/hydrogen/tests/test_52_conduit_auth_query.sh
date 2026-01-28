@@ -25,8 +25,8 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Secure Single Query"
-TEST_ABBR="SSQ"
+TEST_NAME="Conduit Auth Query"
+TEST_ABBR="CA1"
 TEST_NUMBER="52"
 TEST_COUNTER=0
 TEST_VERSION="1.1.0"
@@ -545,7 +545,7 @@ if validate_config_file "${CONDUIT_CONFIG_FILE}"; then
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 fi               
 
-TEST_NAME="Secure Single Query  {BLUE}databases: ${#DATABASE_NAMES[@]}{RESET}"
+TEST_NAME="Conduit Auth Query  {BLUE}databases: ${#DATABASE_NAMES[@]}{RESET}"
 
 # Only proceed with conduit tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
