@@ -396,6 +396,13 @@ bool build_parameter_array(
         }
         
         if (!is_inside_macro) {
+            // Check if this is a PostgreSQL type cast (::pattern)
+            // The regex matches ":text" in "::text", but this is a type cast, not a parameter
+            if (match.rm_so > 0 && *(search_ptr + match.rm_so - 1) == ':') {
+                search_ptr += match.rm_eo;
+                continue;
+            }
+
             // Extract parameter name (skip the ':')
             size_t name_len = (size_t)(match.rm_eo - match.rm_so - 1);
             char param_name[MAX_PARAM_NAME_LEN];

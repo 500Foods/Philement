@@ -107,9 +107,9 @@ enum MHD_Result handle_method_validation(struct MHD_Connection *connection, cons
 
         api_send_json_response(connection, error_response, MHD_HTTP_METHOD_NOT_ALLOWED);
         json_decref(error_response);
-        return MHD_NO; // Response sent - processing complete
+        return MHD_NO; // Method invalid - response sent
     }
-    return MHD_YES; // Continue processing
+    return MHD_YES; // Method valid - continue processing
 }
 
 enum MHD_Result handle_request_parsing_with_buffer(struct MHD_Connection *connection, ApiPostBuffer* buffer, json_t** request_json) {

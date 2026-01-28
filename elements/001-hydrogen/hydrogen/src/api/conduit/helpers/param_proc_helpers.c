@@ -33,6 +33,13 @@ char** extract_required_parameters(const char* sql_template, size_t* count) {
 
     while ((sql = strchr(sql, ':')) != NULL) {
         sql++; // Skip the :
+        
+        // Check for PostgreSQL type casting (::) - if next char is also :, skip it
+        if (*sql == ':') {
+            sql++; // Skip the second colon
+            continue; // This is a type cast, not a parameter
+        }
+        
         const char* end = sql;
         while (*end && (isalnum(*end) || *end == '_')) {
             end++;
