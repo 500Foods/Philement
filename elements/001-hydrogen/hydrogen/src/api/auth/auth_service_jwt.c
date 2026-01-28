@@ -255,6 +255,7 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
     size_t payload_len;
     unsigned char* payload_decoded = utils_base64url_decode(payload_b64, &payload_len);
     if (!payload_decoded) {
+        log_this(SR_AUTH, "Failed to decode JWT payload: Invalid base64url encoding", LOG_LEVEL_ERROR, 0);
         free(token_copy);
         result.error = JWT_ERROR_INVALID_FORMAT;
         return result;
@@ -270,6 +271,9 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
         result.error = JWT_ERROR_INVALID_FORMAT;
         return result;
     }
+
+    // Ensure payload_str is null-terminated (strndup should handle this, but just in case)
+    payload_str[payload_len] = '\0';
 
     json_error_t json_err;
     json_t* payload_json = json_loads(payload_str, 0, &json_err);
@@ -333,7 +337,6 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
     // Verify signature
     jwt_config_t* config = get_jwt_config();
     if (!config) {
-        free(payload_decoded);
         free(token_copy);
         result.error = JWT_ERROR_INVALID_SIGNATURE;
         return result;
@@ -343,7 +346,6 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
     int ret = asprintf(&signing_input, "%s.%s", header_b64, payload_b64);
     if (ret == -1) {
         free_jwt_config(config);
-        free(payload_decoded);
         free(token_copy);
         result.error = JWT_ERROR_INVALID_SIGNATURE;
         return result;
@@ -357,7 +359,6 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
              expected_signature, &expected_len) == NULL) {
         free(signing_input);
         free_jwt_config(config);
-        free(payload_decoded);
         free(token_copy);
         result.error = JWT_ERROR_INVALID_SIGNATURE;
         return result;
@@ -370,7 +371,6 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
         free(signature_decoded);
         free(signing_input);
         free_jwt_config(config);
-        free(payload_decoded);
         free(token_copy);
         result.error = JWT_ERROR_INVALID_SIGNATURE;
         return result;

@@ -18,6 +18,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Project includes
+#include <src/api/api_utils.h>
+
 // Third-party libraries
 #include <microhttpd.h>
 #include <jansson.h>
@@ -74,8 +77,11 @@ enum MHD_Result handle_conduit_auth_query_request(
     const char *url,
     const char *method,
     const char *upload_data,
-    const size_t *upload_data_size,
+    // cppcheck-suppress[constParameterPointer] - upload_data_size parameter must match libmicrohttpd callback signature
+    size_t *upload_data_size,
     void **con_cls
 );
+
+enum MHD_Result handle_auth_query_buffer_result(struct MHD_Connection *connection, ApiBufferResult buf_result, void **con_cls);
 
 #endif /* HYDROGEN_CONDUIT_AUTH_QUERY_H */
