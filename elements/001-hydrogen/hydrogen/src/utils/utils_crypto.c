@@ -115,19 +115,46 @@ unsigned char* utils_base64url_decode(const char* input, size_t* output_length) 
     size_t i, j;
     for (i = 0, j = 0; i < input_length; i += 4, j += 3) {
         // Convert base64url chars to 6-bit values
-        uint32_t sextet_a = input[i] == '=' ? 0 : (uint32_t)(strchr(base64url_table, input[i]) - base64url_table);
-        uint32_t sextet_b = (i + 1 < input_length && input[i + 1] != '=') ?
-                            (uint32_t)(strchr(base64url_table, input[i + 1]) - base64url_table) : 0;
-        uint32_t sextet_c = (i + 2 < input_length && input[i + 2] != '=') ?
-                            (uint32_t)(strchr(base64url_table, input[i + 2]) - base64url_table) : 0;
-        uint32_t sextet_d = (i + 3 < input_length && input[i + 3] != '=') ?
-                            (uint32_t)(strchr(base64url_table, input[i + 3]) - base64url_table) : 0;
+        char* ptr_a = strchr(base64url_table, input[i]);
+        if (input[i] != '=' && !ptr_a) {
+            free(decoded);
+            return NULL; // Invalid character
+        }
+        uint32_t sextet_a = input[i] == '=' ? 0 : (uint32_t)(ptr_a - base64url_table);
+
+        char* ptr_b = (i + 1 < input_length && input[i + 1] != '=') ? strchr(base64url_table, input[i + 1]) : NULL;
+        if (i + 1 < input_length && input[i + 1] != '=' && !ptr_b) {
+            free(decoded);
+            return NULL; // Invalid character
+        }
+        uint32_t sextet_b = (i + 1 < input_length && input[i + 1] != '=') ? (uint32_t)(ptr_b - base64url_table) : 0;
+
+        char* ptr_c = (i + 2 < input_length && input[i + 2] != '=') ? strchr(base64url_table, input[i + 2]) : NULL;
+        if (i + 2 < input_length && input[i + 2] != '=' && !ptr_c) {
+            free(decoded);
+            return NULL; // Invalid character
+        }
+        uint32_t sextet_c = (i + 2 < input_length && input[i + 2] != '=') ? (uint32_t)(ptr_c - base64url_table) : 0;
+
+        char* ptr_d = (i + 3 < input_length && input[i + 3] != '=') ? strchr(base64url_table, input[i + 3]) : NULL;
+        if (i + 3 < input_length && input[i + 3] != '=' && !ptr_d) {
+            free(decoded);
+            return NULL; // Invalid character
+        }
+        uint32_t sextet_d = (i + 3 < input_length && input[i + 3] != '=') ? (uint32_t)(ptr_d - base64url_table) : 0;
 
         uint32_t triple = (sextet_a << 18) | (sextet_b << 12) | (sextet_c << 6) | sextet_d;
 
         if (j < decoded_length) decoded[j] = (triple >> 16) & 0xFF;
         if (j + 1 < decoded_length) decoded[j + 1] = (triple >> 8) & 0xFF;
         if (j + 2 < decoded_length) decoded[j + 2] = triple & 0xFF;
+    }
+
+    // Adjust decoded length if there were padding characters
+    if (input_length >= 2 && input[input_length - 1] == '=' && input[input_length - 2] == '=') {
+        decoded_length -= 2;
+    } else if (input_length >= 1 && input[input_length - 1] == '=') {
+        decoded_length -= 1;
     }
 
     *output_length = decoded_length;

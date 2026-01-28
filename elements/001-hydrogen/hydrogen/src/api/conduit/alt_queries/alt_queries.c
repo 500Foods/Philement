@@ -82,8 +82,8 @@ static enum MHD_Result validate_jwt_for_auth(
  *
  * @param connection The HTTP connection for error responses
  * @param method The HTTP method (GET or POST)
- * @param upload_data Request body data
- * @param upload_data_size Size of request body
+ * @param buffer The buffered request data
+ * @param con_cls Connection-specific data
  * @param token Output parameter for JWT token
  * @param database Output parameter for database name
  * @param queries_array Output parameter for queries array
@@ -92,26 +92,25 @@ static enum MHD_Result validate_jwt_for_auth(
 static enum MHD_Result parse_alt_queries_request(
     struct MHD_Connection *connection,
     const char *method,
-    const char *upload_data,
-    const size_t *upload_data_size,
+    ApiPostBuffer *buffer,
+    void **con_cls,
     char **token,
     char **database,
     json_t **queries_array)
 {
+    (void)con_cls; // Unused parameter
+    
     if (!method || !token || !database || !queries_array) {
         log_this(SR_AUTH, "parse_alt_queries_request: NULL parameters", LOG_LEVEL_ERROR, 0);
         return MHD_NO;
     }
 
-    // Parse request data (handles both GET and POST)
-    json_t *request_json = parse_request_data(connection, method, upload_data, upload_data_size);
-    if (!request_json) {
+    // Parse request data with proper POST buffering
+    json_t *request_json = NULL;
+    enum MHD_Result result = handle_request_parsing_with_buffer(connection, buffer, &request_json);
+    if (result != MHD_YES) {
         log_this(SR_AUTH, "parse_alt_queries_request: Failed to parse request data", LOG_LEVEL_ERROR, 0);
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Invalid request format"));
-        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        return MHD_NO;
+        return result;
     }
 
     // Extract token field
@@ -201,141 +200,6 @@ static enum MHD_Result parse_alt_queries_request(
 }
 
 /**
- * @brief Submit a single query without waiting for completion
- *
- * Submits a single query from the queries array and returns the pending result
- * for later waiting. This enables parallel execution of multiple queries.
- *
- * @param database Database name from request (overridden)
- * @param query_obj Query object containing query_ref and optional params
- * @param query_ref_out Output parameter for the query_ref (for error reporting)
- * @return PendingQueryResult on success, NULL on failure
- */
-static PendingQueryResult* submit_single_query(const char *database, json_t *query_obj, int *query_ref_out)
-{
-    if (!database || !query_obj || !query_ref_out) {
-        log_this(SR_AUTH, "submit_single_query: NULL parameters", LOG_LEVEL_ERROR, 0);
-        return NULL;
-    }
-
-    // Extract query_ref
-    json_t *query_ref_json = json_object_get(query_obj, "query_ref");
-    if (!query_ref_json || !json_is_integer(query_ref_json)) {
-        log_this(SR_AUTH, "submit_single_query: Missing or invalid query_ref", LOG_LEVEL_ERROR, 0);
-        return NULL;
-    }
-
-    int query_ref = (int)json_integer_value(query_ref_json);
-    *query_ref_out = query_ref;
-    json_t *params = json_object_get(query_obj, "params");
-
-    // Look up database queue and cache entry using helpers from query.h
-    DatabaseQueue *db_queue = NULL;
-    QueryCacheEntry *cache_entry = NULL;
-
-    if (!lookup_database_and_query(&db_queue, &cache_entry, database, query_ref)) {
-        log_this(SR_AUTH, "submit_single_query: Database or query lookup failed, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Process parameters using helper from query.h
-    ParameterList *param_list = NULL;
-    char *converted_sql = NULL;
-    TypedParameter **ordered_params = NULL;
-    size_t param_count = 0;
-
-    if (!process_parameters(params, &param_list, cache_entry->sql_template,
-                           db_queue->engine_type, &converted_sql, &ordered_params, &param_count)) {
-        log_this(SR_AUTH, "submit_single_query: Parameter processing failed, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Select queue using helper from query.h
-    DatabaseQueue *selected_queue = select_query_queue(database, cache_entry->queue_type);
-    if (!selected_queue) {
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        log_this(SR_AUTH, "submit_single_query: No suitable queue available, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Generate query ID using helper from query.h
-    char *query_id = generate_query_id();
-    if (!query_id) {
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        log_this(SR_AUTH, "submit_single_query: Failed to generate query ID, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Register pending result using helper from query.h
-    PendingResultManager *pending_mgr = get_pending_result_manager();
-    PendingQueryResult *pending = pending_result_register(pending_mgr, query_id, cache_entry->timeout_seconds, NULL);
-    if (!pending) {
-        free(query_id);
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        log_this(SR_AUTH, "submit_single_query: Failed to register pending result, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Submit query using helper from query.h
-    if (!prepare_and_submit_query(selected_queue, query_id, cache_entry->sql_template, ordered_params,
-                                  param_count, cache_entry)) {
-        free(query_id);
-        free(converted_sql);
-        free_parameter_list(param_list);
-        if (ordered_params) free(ordered_params);
-        log_this(SR_AUTH, "submit_single_query: Failed to submit query, query_ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
-        return NULL;
-    }
-
-    // Clean up resources that are no longer needed
-    free(converted_sql);
-    free_parameter_list(param_list);
-    if (ordered_params) free(ordered_params);
-
-    log_this(SR_AUTH, "submit_single_query: Query submitted, query_ref=%d", LOG_LEVEL_DEBUG, 1, query_ref);
-
-    return pending;
-}
-
-/**
- * @brief Wait for a single query to complete and build response
- *
- * Waits for the pending result to complete and builds the JSON response.
- *
- * @param database Database name
- * @param query_ref Query reference ID
- * @param cache_entry Query cache entry
- * @param selected_queue Queue that was used
- * @param pending Pending result to wait for
- * @param params Query parameters for message generation
- * @return JSON response object
- */
-static json_t* wait_and_build_single_response(const char *database, int query_ref,
-                                             const QueryCacheEntry *cache_entry, const DatabaseQueue *selected_queue,
-                                             PendingQueryResult *pending, json_t *params)
-{
-    // Generate parameter validation messages
-    char* message = generate_parameter_messages(cache_entry->sql_template, params);
-
-    // Build response using helper from query.h (this waits internally)
-    json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
-
-    // Clean up message
-    if (message) free(message);
-
-    log_this(SR_AUTH, "wait_and_build_single_response: Query completed, query_ref=%d",
-             LOG_LEVEL_DEBUG, 1, query_ref);
-
-    return result;
-}
-
-/**
  * @brief Handle alternative authenticated conduit queries request
  *
  * Main handler for the /api/conduit/alt_queries endpoint. Validates JWT token,
@@ -359,31 +223,51 @@ enum MHD_Result handle_conduit_alt_queries_request(
     void **con_cls)
 {
     (void)url;
-    (void)con_cls;  // Unused parameter
 
     log_this(SR_AUTH, "handle_conduit_alt_queries_request: Processing alternative authenticated queries request", LOG_LEVEL_DEBUG, 0);
+
+    // Step 1: Use common POST body buffering (handles both GET and POST)
+    ApiPostBuffer *buffer = NULL;
+    ApiBufferResult buf_result = api_buffer_post_data(method, upload_data, (size_t *)upload_data_size, con_cls, &buffer);
+    
+    switch (buf_result) {
+        case API_BUFFER_CONTINUE:
+            return MHD_YES;
+        case API_BUFFER_ERROR:
+            return api_send_error_and_cleanup(connection, con_cls, "Request processing error", MHD_HTTP_INTERNAL_SERVER_ERROR);
+        case API_BUFFER_METHOD_ERROR:
+            return api_send_error_and_cleanup(connection, con_cls, "Method not allowed - use GET or POST", MHD_HTTP_METHOD_NOT_ALLOWED);
+        case API_BUFFER_COMPLETE:
+            break;
+        default:
+            return api_send_error_and_cleanup(connection, con_cls, "Unknown buffer result", MHD_HTTP_INTERNAL_SERVER_ERROR);
+    }
 
     struct timespec start_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-    // Step 1: Validate HTTP method using helper from query.h
+    // Step 2: Validate HTTP method using helper from query.h
     enum MHD_Result result = handle_method_validation(connection, method);
     if (result != MHD_YES) {
+        api_free_post_buffer(con_cls);
         return result;
     }
 
-    // Step 2: Parse request and extract token, database, queries
+    // Step 3: Parse request and extract token, database, queries
     char *token = NULL;
     char *database = NULL;
     json_t *queries_array = NULL;
 
-    result = parse_alt_queries_request(connection, method, upload_data, upload_data_size,
+    result = parse_alt_queries_request(connection, method, buffer, con_cls,
                                       &token, &database, &queries_array);
+                                      
+    api_free_post_buffer(con_cls);
+
     if (result != MHD_YES) {
         return result;
     }
 
-    // Step 3: Validate JWT token for authentication
+    // Step 4: Validate JWT token for authentication
     result = validate_jwt_for_auth(connection, token);
     free(token);  // Token no longer needed after validation
     token = NULL;
@@ -394,7 +278,12 @@ enum MHD_Result handle_conduit_alt_queries_request(
         return result;
     }
 
-    // Step 4: Submit all queries for parallel execution
+    // Step 5: Wait, we skipped the actual query execution! Oh no, wait, let's see...
+
+    // Oh, right, we need to implement the query submission and waiting here
+    // Let's add that back
+
+    // Step 5: Submit all queries for parallel execution
     size_t query_count = json_array_size(queries_array);
     PendingQueryResult **pending_results = calloc(query_count, sizeof(PendingQueryResult*));
     int *query_refs = calloc(query_count, sizeof(int));
@@ -420,36 +309,155 @@ enum MHD_Result handle_conduit_alt_queries_request(
         json_t *query_obj = json_array_get(queries_array, i);
         int query_ref;
 
-        PendingQueryResult *pending = submit_single_query(database, query_obj, &query_ref);
-        if (!pending) {
-            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Failed to submit query %zu", LOG_LEVEL_ERROR, 1, i);
-            submission_failed = true;
-            break;
-        }
-
-        // Store metadata for response building
-        pending_results[i] = pending;
-        query_refs[i] = query_ref;
-
-        // Look up cache entry and queue for response building
+        // Let's use handle_database_lookup, handle_parameter_processing, etc.
         DatabaseQueue *db_queue = NULL;
         QueryCacheEntry *cache_entry = NULL;
-        if (!lookup_database_and_query(&db_queue, &cache_entry, database, query_ref)) {
-            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Failed to lookup metadata for query %d", LOG_LEVEL_ERROR, 1, query_ref);
+        bool query_not_found = false;
+        
+        // Extract query_ref from query object
+        json_t* query_ref_json = json_object_get(query_obj, "query_ref");
+        if (!query_ref_json || !json_is_integer(query_ref_json)) {
+            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Missing or invalid query_ref in query %zu", LOG_LEVEL_ERROR, 1, i);
+            submission_failed = true;
+            break;
+        }
+        query_ref = (int)json_integer_value(query_ref_json);
+
+        // Lookup database and query
+        enum MHD_Result lookup_result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found, false);
+        if (lookup_result != MHD_YES) {
+            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Database lookup failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
             submission_failed = true;
             break;
         }
 
-        DatabaseQueue *selected_queue = select_query_queue(database, cache_entry->queue_type);
+        if (query_not_found) {
+            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Query not found for query_ref %d", LOG_LEVEL_ERROR, 1, query_ref);
+            submission_failed = true;
+            break;
+        }
+
+        // Process parameters
+        ParameterList *param_list = NULL;
+        char *converted_sql = NULL;
+        TypedParameter **ordered_params = NULL;
+        size_t param_count = 0;
+        char* message = NULL;
+        
+        json_t* params_json = json_object_get(query_obj, "params");
+        
+        enum MHD_Result param_result = handle_parameter_processing(connection, params_json, db_queue, cache_entry,
+                                    database, query_ref, &param_list, &converted_sql,
+                                    &ordered_params, &param_count, &message);
+        if (param_result != MHD_YES) {
+            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Parameter processing failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
+            submission_failed = true;
+            break;
+        }
+
+        // Select queue
+        DatabaseQueue *selected_queue = NULL;
+        enum MHD_Result queue_result = handle_queue_selection(connection, database, query_ref, cache_entry,
+                                   param_list, converted_sql, ordered_params, &selected_queue);
+        if (queue_result != MHD_YES) {
+            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Queue selection failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
+            free_parameter_list(param_list);
+            free(converted_sql);
+            if (ordered_params) {
+                for (size_t j = 0; j < param_count; j++) {
+                    free_typed_parameter(ordered_params[j]);
+                }
+                free(ordered_params);
+            }
+            if (message) free(message);
+            submission_failed = true;
+            break;
+        }
+
+        // Generate query ID
+        char *query_id = NULL;
+        enum MHD_Result id_result = handle_query_id_generation(connection, database, query_ref, param_list,
+                                       converted_sql, ordered_params, &query_id);
+        if (id_result != MHD_YES) {
+            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Query ID generation failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
+            free_parameter_list(param_list);
+            free(converted_sql);
+            if (ordered_params) {
+                for (size_t j = 0; j < param_count; j++) {
+                    free_typed_parameter(ordered_params[j]);
+                }
+                free(ordered_params);
+            }
+            if (message) free(message);
+            submission_failed = true;
+            break;
+        }
+
+        // Register pending query
+        PendingQueryResult *pending = NULL;
+        enum MHD_Result pending_result = handle_pending_registration(connection, database, query_ref, query_id,
+                                       param_list, converted_sql, ordered_params,
+                                       cache_entry, &pending);
+        if (pending_result != MHD_YES) {
+            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Pending registration failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
+            free_parameter_list(param_list);
+            free(converted_sql);
+            free(query_id);
+            if (ordered_params) {
+                for (size_t j = 0; j < param_count; j++) {
+                    free_typed_parameter(ordered_params[j]);
+                }
+                free(ordered_params);
+            }
+            if (message) free(message);
+            submission_failed = true;
+            break;
+        }
+
+        // Submit query
+        enum MHD_Result submit_result = handle_query_submission(connection, database, query_ref, selected_queue,
+                                   query_id, converted_sql, param_list, ordered_params,
+                                   param_count, cache_entry);
+        if (submit_result != MHD_YES) {
+            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Query submission failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
+            free_parameter_list(param_list);
+            free(converted_sql);
+            free(query_id);
+            if (ordered_params) {
+                for (size_t j = 0; j < param_count; j++) {
+                    free_typed_parameter(ordered_params[j]);
+                }
+                free(ordered_params);
+            }
+            if (message) free(message);
+            // Need to free pending?
+            submission_failed = true;
+            break;
+        }
+
+        // Cleanup per-query resources
+        free_parameter_list(param_list);
+        free(converted_sql);
+        free(query_id);
+        if (ordered_params) {
+            for (size_t j = 0; j < param_count; j++) {
+                free_typed_parameter(ordered_params[j]);
+            }
+            free(ordered_params);
+        }
+        if (message) free(message);
+
+        // Store for later
+        pending_results[i] = pending;
+        query_refs[i] = query_ref;
         cache_entries[i] = cache_entry;
         selected_queues[i] = selected_queue;
     }
 
     if (submission_failed) {
-        // Clean up allocated resources
         for (size_t i = 0; i < query_count; i++) {
             if (pending_results[i]) {
-                // Note: pending results will be cleaned up by the manager
+                // Note: pending results are managed by the pending result manager
             }
         }
         free(pending_results);
@@ -465,7 +473,7 @@ enum MHD_Result handle_conduit_alt_queries_request(
         return api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
 
-    // Step 5: Suspend webserver connection for long-running queries
+    // Step 6: Suspend webserver connection for long-running queries
     extern pthread_mutex_t webserver_suspend_lock;
     extern volatile bool webserver_thread_suspended;
 
@@ -473,28 +481,24 @@ enum MHD_Result handle_conduit_alt_queries_request(
     webserver_thread_suspended = true;
     MHD_suspend_connection(connection);
 
-    // Step 6: Wait for all queries to complete
+    // Step 7: Wait for all queries to complete
     int collective_timeout = 30;  // Use a reasonable collective timeout
     int wait_result = pending_result_wait_multiple(pending_results, query_count, collective_timeout, SR_AUTH);
     if (wait_result != 0) {
         log_this(SR_AUTH, "handle_conduit_alt_queries_request: Some queries failed or timed out", LOG_LEVEL_ERROR, 0);
     }
 
-    // Step 7: Resume connection processing
+    // Step 8: Resume connection processing
     MHD_resume_connection(connection);
     webserver_thread_suspended = false;
     pthread_mutex_unlock(&webserver_suspend_lock);
 
-    // Step 8: Build responses for all queries
+    // Step 9: Build responses for all queries
     json_t *results_array = json_array();
     bool all_success = true;
 
     for (size_t i = 0; i < query_count; i++) {
-        json_t *query_obj = json_array_get(queries_array, i);
-        json_t *params = query_obj ? json_object_get(query_obj, "params") : NULL;
-        json_t *query_result = wait_and_build_single_response(database, query_refs[i],
-                                                            cache_entries[i], selected_queues[i],
-                                                            pending_results[i], params);
+        json_t *query_result = build_response_json(query_refs[i], database, cache_entries[i], selected_queues[i], pending_results[i], NULL);
 
         // Check if query succeeded
         json_t *success_field = json_object_get(query_result, "success");
@@ -513,13 +517,13 @@ enum MHD_Result handle_conduit_alt_queries_request(
 
     json_decref(queries_array);
 
-    // Step 5: Calculate total execution time
+    // Step 10: Calculate total execution time
     struct timespec end_time;
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     long total_time_ms = ((end_time.tv_sec - start_time.tv_sec) * 1000) +
                         ((end_time.tv_nsec - start_time.tv_nsec) / 1000000);
 
-    // Step 6: Build response
+    // Step 11: Build response
     json_t *response_obj = json_object();
     json_object_set_new(response_obj, "success", json_boolean(all_success));
     json_object_set_new(response_obj, "results", results_array);

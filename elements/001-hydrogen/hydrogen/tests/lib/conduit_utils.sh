@@ -171,6 +171,22 @@ validate_conduit_request() {
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${output_file}"
     fi
 
+    # Handle HTTP 000 (server didn't return valid response) as a special case
+    if [[ "${http_status}" == "000" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server did not return a valid HTTP response"
+        if [[ -f "${output_file}" ]]; then
+            local file_size
+            file_size=$(stat -c %s "${output_file}" 2>/dev/null || echo "unknown")
+            if [[ "${file_size}" -gt 0 ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response file contains ${file_size} bytes of data"
+            else
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response file is empty"
+            fi
+        fi
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} - Server did not return valid HTTP response (HTTP 000)"
+        return 1
+    fi
+
     if [[ "${http_status}" == "${expected_status}" ]]; then
         # Check success field if expected_success is specified
         if [[ -n "${expected_success}" && "${expected_success}" != "none" ]]; then

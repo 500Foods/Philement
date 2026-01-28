@@ -97,8 +97,8 @@ static enum MHD_Result validate_jwt_for_auth(
  *
  * @param connection The HTTP connection for error responses
  * @param method The HTTP method (GET or POST)
- * @param upload_data Request body data
- * @param upload_data_size Size of request body
+ * @param buffer The buffered request data
+ * @param con_cls Connection-specific data
  * @param token Output parameter for JWT token
  * @param database Output parameter for database name
  * @param query_ref Output parameter for query reference ID
@@ -108,34 +108,26 @@ static enum MHD_Result validate_jwt_for_auth(
 static enum MHD_Result parse_alt_request(
     struct MHD_Connection *connection,
     const char *method,
-    const char *upload_data,
-    const size_t *upload_data_size,
+    ApiPostBuffer *buffer,
+    void **con_cls,
     char **token,
     char **database,
     int *query_ref,
     json_t **params_json)
 {
+    (void)con_cls; // Unused parameter
+    
     if (!method || !token || !database || !query_ref || !params_json) {
         log_this(SR_AUTH, "parse_alt_request: NULL parameters", LOG_LEVEL_ERROR, 0);
         return MHD_NO;
     }
 
-    // Parse request data (handles both GET and POST)
-    json_t *request_json = parse_request_data(connection, method, upload_data, upload_data_size);
-    if (!request_json) {
+    // Parse request data with proper POST buffering
+    json_t *request_json = NULL;
+    enum MHD_Result result = handle_request_parsing_with_buffer(connection, buffer, &request_json);
+    if (result != MHD_YES) {
         log_this(SR_AUTH, "parse_alt_request: Failed to parse request data", LOG_LEVEL_ERROR, 0);
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Invalid request format"));
-        char *response_str = json_dumps(error_response, JSON_COMPACT);
-        json_decref(error_response);
-
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
-        MHD_add_response_header(response, "Content-Type", "application/json");
-        MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
-        MHD_destroy_response(response);
-        return MHD_NO;
+        return result;
     }
 
     // Extract token field
@@ -255,29 +247,49 @@ enum MHD_Result handle_conduit_alt_query_request(
     void **con_cls)
 {
     (void)url;
-    (void)con_cls;
 
     log_this(SR_AUTH, "handle_conduit_alt_query_request: Processing alternative authenticated query request", LOG_LEVEL_DEBUG, 0);
 
-    // Step 1: Validate HTTP method
+    // Step 1: Use common POST body buffering (handles both GET and POST)
+    ApiPostBuffer *buffer = NULL;
+    ApiBufferResult buf_result = api_buffer_post_data(method, upload_data, (size_t *)upload_data_size, con_cls, &buffer);
+    
+    switch (buf_result) {
+        case API_BUFFER_CONTINUE:
+            return MHD_YES;
+        case API_BUFFER_ERROR:
+            return api_send_error_and_cleanup(connection, con_cls, "Request processing error", MHD_HTTP_INTERNAL_SERVER_ERROR);
+        case API_BUFFER_METHOD_ERROR:
+            return api_send_error_and_cleanup(connection, con_cls, "Method not allowed - use GET or POST", MHD_HTTP_METHOD_NOT_ALLOWED);
+        case API_BUFFER_COMPLETE:
+            break;
+        default:
+            return api_send_error_and_cleanup(connection, con_cls, "Unknown buffer result", MHD_HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    // Step 2: Validate HTTP method
     enum MHD_Result result = handle_method_validation(connection, method);
     if (result != MHD_YES) {
+        api_free_post_buffer(con_cls);
         return result;
     }
 
-    // Step 2: Parse request and extract token, database, query_ref, params
+    // Step 3: Parse request and extract token, database, query_ref, params
     char *token = NULL;
     char *database = NULL;
     int query_ref = 0;
     json_t *params_json = NULL;
 
-    result = parse_alt_request(connection, method, upload_data, upload_data_size,
+    result = parse_alt_request(connection, method, buffer, con_cls,
                                &token, &database, &query_ref, &params_json);
+                               
+    api_free_post_buffer(con_cls);
+
     if (result != MHD_YES) {
         return result;
     }
 
-    // Step 3: Validate JWT token for authentication
+    // Step 4: Validate JWT token for authentication
     result = validate_jwt_for_auth(connection, token);
     free(token);  // Token no longer needed after validation
     token = NULL;
@@ -290,7 +302,7 @@ enum MHD_Result handle_conduit_alt_query_request(
         return result;
     }
 
-    // Step 4: Look up database queue and query cache entry
+    // Step 5: Look up database queue and query cache entry
     DatabaseQueue *db_queue = NULL;
     QueryCacheEntry *cache_entry = NULL;
     bool query_not_found = false;
@@ -315,7 +327,7 @@ enum MHD_Result handle_conduit_alt_query_request(
         return http_result;
     }
 
-    // Step 5: Process parameters
+    // Step 6: Process parameters
     ParameterList *param_list = NULL;
     char *converted_sql = NULL;
     TypedParameter **ordered_params = NULL;
@@ -335,7 +347,7 @@ enum MHD_Result handle_conduit_alt_query_request(
         return result;
     }
 
-    // Step 6: Select appropriate queue
+    // Step 7: Select appropriate queue
     DatabaseQueue *selected_queue = NULL;
     result = handle_queue_selection(connection, database, query_ref, cache_entry,
                                    param_list, converted_sql, ordered_params, &selected_queue);
@@ -354,7 +366,7 @@ enum MHD_Result handle_conduit_alt_query_request(
         return result;
     }
 
-    // Step 7: Generate query ID
+    // Step 8: Generate query ID
     char *query_id = NULL;
     result = handle_query_id_generation(connection, database, query_ref, param_list,
                                        converted_sql, ordered_params, &query_id);
@@ -373,7 +385,7 @@ enum MHD_Result handle_conduit_alt_query_request(
         return result;
     }
 
-    // Step 8: Register pending query
+    // Step 9: Register pending query
     PendingQueryResult *pending = NULL;
     result = handle_pending_registration(connection, database, query_ref, query_id,
                                        param_list, converted_sql, ordered_params,
@@ -394,7 +406,7 @@ enum MHD_Result handle_conduit_alt_query_request(
         return result;
     }
 
-    // Step 9: Submit query to database queue
+    // Step 10: Submit query to database queue
     result = handle_query_submission(connection, database, query_ref, selected_queue,
                                    query_id, converted_sql, param_list, ordered_params,
                                    param_count, cache_entry);
@@ -414,7 +426,7 @@ enum MHD_Result handle_conduit_alt_query_request(
         return result;
     }
 
-    // Step 10: Suspend webserver connection for long-running queries
+    // Step 11: Suspend webserver connection for long-running queries
     extern pthread_mutex_t webserver_suspend_lock;
     extern volatile bool webserver_thread_suspended;
 
@@ -422,18 +434,18 @@ enum MHD_Result handle_conduit_alt_query_request(
     webserver_thread_suspended = true;
     MHD_suspend_connection(connection);
 
-    // Step 11: Wait for result
+    // Step 12: Wait for result
     int wait_result = pending_result_wait(pending, NULL);
     if (wait_result != 0) {
         log_this(SR_AUTH, "handle_conduit_alt_query_request: Query failed or timed out", LOG_LEVEL_ERROR, 0);
     }
 
-    // Step 12: Resume connection processing
+    // Step 13: Resume connection processing
     MHD_resume_connection(connection);
     webserver_thread_suspended = false;
     pthread_mutex_unlock(&webserver_suspend_lock);
 
-    // Step 13: Build response
+    // Step 14: Build response
     json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, NULL);
     unsigned int http_status = json_is_true(json_object_get(response, "success")) ?
                               MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
