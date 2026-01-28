@@ -53,12 +53,12 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-01-28 21:28:33 UTC
+Last updated at 2026-01-28 21:41:38 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 JSON                           193            123              0         507312
-C                             1015          42973          40591         151722
+C                             1017          43090          40677         152120
 SVG                            115            222           2835         109196
 Markdown                       547          16562            130          47199
 Text                           122            122              0          43666
@@ -78,7 +78,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          2596          74294         131851         932830
+SUM:                          2598          74411         131937         933228
 -------------------------------------------------------------------------------
 648 Files were skipped (duplicate, binary, or without source code):
   svg: 499
