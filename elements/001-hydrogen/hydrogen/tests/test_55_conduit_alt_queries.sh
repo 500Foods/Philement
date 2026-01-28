@@ -17,9 +17,9 @@
 
 set -euo pipefail
 
-# Test Configuration
-TEST_NAME="Federated Multiple Queries"
-TEST_ABBR="FMQ"
+# Test Configuration - F = Federated queries
+TEST_NAME="Conduit Alt Queries"
+TEST_ABBR="CFM"
 TEST_NUMBER="55"
 TEST_COUNTER=0
 TEST_VERSION="1.0.0"
