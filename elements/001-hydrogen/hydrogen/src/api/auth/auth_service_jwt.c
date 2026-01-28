@@ -332,6 +332,12 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
             return result;
         }
         free(token_hash);
+    } else {
+        // If database not provided and not in JWT claims, return error
+        json_decref(payload_json);
+        free(token_copy);
+        result.error = JWT_ERROR_INVALID_FORMAT;
+        return result;
     }
 
     // Verify signature

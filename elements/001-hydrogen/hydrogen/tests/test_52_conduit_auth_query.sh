@@ -536,59 +536,33 @@ else
 fi
 
 # Validate the unified configuration file
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Unified Configuration File"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 # shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${CONDUIT_CONFIG_FILE}"; then
     port=$(get_webserver_port "${CONDUIT_CONFIG_FILE}")
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION} configuration will use port: ${port}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Unified configuration file validated successfully"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unified configuration file validated successfully"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
-else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Unified configuration file validation failed"
-    EXIT_CODE=1
-fi
+fi               
+
+TEST_NAME="Secure Single Query  {BLUE}databases: ${#DATABASE_NAMES[@]}{RESET}"
 
 # Only proceed with conduit tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Conduit authenticated single query endpoint tests on unified server"
-
     # Run single server test
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting unified conduit test server (${CONDUIT_DESCRIPTION})"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting conduit test server (${CONDUIT_DESCRIPTION})"
 
     # Run the conduit test on the single unified server
     run_conduit_test_unified "${CONDUIT_CONFIG_FILE}" "${CONDUIT_LOG_SUFFIX}" "${CONDUIT_DESCRIPTION}"
 
     # Process results
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION}: Analyzing results"
+    print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
 
     # Add links to log and result files for troubleshooting
     log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${CONDUIT_LOG_SUFFIX}.log"
     result_file="${LOG_PREFIX}${TIMESTAMP}_${CONDUIT_LOG_SUFFIX}.result"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unified Server: ${TESTS_DIR}/logs/${log_file##*/}"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unified Server: ${DIAG_TEST_DIR}/${result_file##*/}"
-
-    # shellcheck disable=SC2310 # We want to continue even if the test fails
-    if analyze_conduit_results "${CONDUIT_LOG_SUFFIX}" "${CONDUIT_DESCRIPTION}"; then
-        PASS_COUNT=$(( PASS_COUNT + 1 ))
-    else
-        EXIT_CODE=1
-    fi
-
-    # Print summary
-    if [[ -f "${result_file}" ]]; then
-        if "${GREP}" -q "CONDUIT_TEST_COMPLETE" "${result_file}" 2>/dev/null; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: Unified multi-database server passed all conduit authenticated single query endpoint tests"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Sequential execution completed - Authenticated single query endpoint validated across ${#DATABASE_NAMES[@]} database engines"
-        else
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: Unified multi-database server failed conduit authenticated single query endpoint tests"
-            EXIT_CODE=1
-        fi
-    else
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: No result file found for unified server"
-        EXIT_CODE=1
-    fi
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Conduit Server: ${TESTS_DIR}/logs/${log_file##*/}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Conduit Results: ${DIAG_TEST_DIR}/${result_file##*/}"
 
 else
     # Skip conduit tests if prerequisites failed

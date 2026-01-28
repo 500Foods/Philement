@@ -636,6 +636,7 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
         }
 
         json_t *error_response = create_processing_error_response("Parameter processing failed", database, query_ref);
+        json_object_set_new(error_response, "message", json_string("Failed to convert named parameters to positional format - check that all required parameters are provided and SQL template syntax is correct"));
         api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
         json_decref(error_response);
         *converted_sql = NULL;

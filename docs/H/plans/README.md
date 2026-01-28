@@ -10,6 +10,10 @@ The Development Roadmap serves as a central location to track incomplete items a
 
 This describes implementation of a RESTful query execution endpoint for Hydrogen that allows clients to execute pre-defined database queries by ID reference. It details the Query Table Cache (QTC) design with in-memory caching of SQL templates, typed parameter format supporting INTEGER/STRING/BOOLEAN/FLOAT types, and automatic conversion of named parameters to database-specific formats. The document covers intelligent queue selection algorithms, synchronous execution with blocking wait mechanisms, and comprehensive API specifications with detailed request/response formats and error handling strategies.
 
+## [CONDUIT](/docs/H/plans/CONDUIT_FIX.md)
+
+It has been a struggle to get through all the conduit implementation details, stalling at one point with auth_query. So a new plan was hatched to delve more into its details to try to get it moving forward again. Switching models (Kimi K2.5) also seemed to help break the log jam.  Seems grok-code-fast-1 is becoming stupider by the day for some reason.
+
 ## [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
 Mirage describes a new subystem that implements a distributed proxy network architecture where public Mirage servers act as multi-tenant proxy hubs for remote Hydrogen instances. It outlines the dual-server architecture with transparent proxying of both HTTP and WebSocket traffic, preserving remote server customizations and feature parity. The document covers security considerations including mutual authentication and end-to-end encryption, protocol extensions for tunnel establishment, and scalability features supporting thousands of remote devices with load balancing and automatic failover capabilities.
