@@ -25,6 +25,9 @@
 #include <microhttpd.h>
 #include <jansson.h>
 
+// Auth subsystem includes
+#include <src/api/auth/auth_service.h>
+
 // Database subsystem includes
 #include <src/database/database.h>
 #include <src/database/database_cache.h>
@@ -83,5 +86,21 @@ enum MHD_Result handle_conduit_auth_query_request(
 );
 
 enum MHD_Result handle_auth_query_buffer_result(struct MHD_Connection *connection, ApiBufferResult buf_result, void **con_cls);
+
+/**
+ * @brief Validate JWT token from Authorization header and extract database name and claims
+ *
+ * Extracts the JWT token from the Authorization header, validates it,
+ * and extracts the database name from the token claims. This ensures
+ * secure database routing based on authenticated user sessions.
+ *
+ * @param connection The HTTP connection for error responses
+ * @param jwt_result Output parameter for JWT validation result (contains claims)
+ * @return MHD_YES on success, MHD_NO on validation failure
+ */
+enum MHD_Result validate_jwt_from_header(
+    struct MHD_Connection *connection,
+    jwt_validation_result_t **jwt_result
+);
 
 #endif /* HYDROGEN_CONDUIT_AUTH_QUERY_H */

@@ -77,6 +77,12 @@ enum MHD_Result handle_auth_query_buffer_result(struct MHD_Connection *connectio
     }
 }
 
+// Forward declaration - prototype is in auth_query.h
+enum MHD_Result validate_jwt_from_header(
+    struct MHD_Connection *connection,
+    jwt_validation_result_t **jwt_result
+);
+
 /**
  * @brief Validate JWT token from Authorization header and extract database name and claims
  *
@@ -88,7 +94,7 @@ enum MHD_Result handle_auth_query_buffer_result(struct MHD_Connection *connectio
  * @param jwt_result Output parameter for JWT validation result (contains claims)
  * @return MHD_YES on success, MHD_NO on validation failure
  */
-static enum MHD_Result validate_jwt_from_header(
+enum MHD_Result validate_jwt_from_header(
     struct MHD_Connection *connection,
     jwt_validation_result_t **jwt_result)
 {
