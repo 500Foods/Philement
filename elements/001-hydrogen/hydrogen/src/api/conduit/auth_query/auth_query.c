@@ -45,6 +45,7 @@
 // Local includes
 #include "../conduit_service.h"
 #include "../conduit_helpers.h"
+#include "../helpers/auth_jwt_helper.h"
 
 /**
  * Handle the result of api_buffer_post_data.
@@ -101,7 +102,7 @@ enum MHD_Result validate_jwt_from_header(
     log_this(SR_AUTH, "validate_jwt_from_header: Starting JWT validation", LOG_LEVEL_TRACE, 0);
     
     if (!connection || !jwt_result) {
-        log_this(SR_AUTH, "validate_jwt_from_header: NULL parameters (connection=%p, jwt_result=%p)", 
+        log_this(SR_AUTH, "validate_jwt_from_header: NULL parameters (connection=%p, jwt_result=%p)",
                  LOG_LEVEL_ERROR, 2, (void*)connection, (void*)jwt_result);
         return MHD_NO;
     }
@@ -182,37 +183,16 @@ enum MHD_Result validate_jwt_from_header(
     const char *token = auth_header + 7;
     log_this(SR_AUTH, "validate_jwt_from_header: Extracted token (length=%zu)", LOG_LEVEL_TRACE, 1, strlen(token));
 
-    // Validate JWT token - database comes from token claims
-    log_this(SR_AUTH, "validate_jwt_from_header: Calling validate_jwt()", LOG_LEVEL_TRACE, 0);
-    jwt_validation_result_t result = validate_jwt(token, NULL);
+    // Use helper function to validate JWT
+    log_this(SR_AUTH, "validate_jwt_from_header: Calling extract_and_validate_jwt()", LOG_LEVEL_TRACE, 0);
+    jwt_validation_result_t result = {0};
+    bool valid = extract_and_validate_jwt(auth_header, &result);
     
-    if (!result.valid) {
-        const char *error_msg = "Invalid or expired JWT token";
+    if (!valid) {
+        const char *error_msg = get_jwt_error_message(result.error);
         unsigned int http_status = MHD_HTTP_UNAUTHORIZED;
         
-        // Provide more specific error messages based on validation result
-        switch (result.error) {
-            case JWT_ERROR_EXPIRED:
-                error_msg = "JWT token has expired";
-                break;
-            case JWT_ERROR_REVOKED:
-                error_msg = "JWT token has been revoked";
-                break;
-            case JWT_ERROR_INVALID_SIGNATURE:
-                error_msg = "Invalid JWT signature";
-                break;
-            case JWT_ERROR_INVALID_FORMAT:
-                error_msg = "Invalid JWT format";
-                break;
-            case JWT_ERROR_NONE:
-            case JWT_ERROR_NOT_YET_VALID:
-            case JWT_ERROR_UNSUPPORTED_ALGORITHM:
-            default:
-                error_msg = "Invalid or expired JWT token";
-                break;
-        }
-        
-        log_this(SR_AUTH, "validate_jwt_from_header: JWT validation failed - error_code=%d, msg=%s", 
+        log_this(SR_AUTH, "validate_jwt_from_header: JWT validation failed - error_code=%d, msg=%s",
                  LOG_LEVEL_ALERT, 2, result.error, error_msg);
 
         json_t *error_response = json_object();
@@ -232,61 +212,10 @@ enum MHD_Result validate_jwt_from_header(
 
     log_this(SR_AUTH, "validate_jwt_from_header: JWT is valid, checking claims", LOG_LEVEL_TRACE, 0);
 
-    // Extract database from JWT claims
-    if (!result.claims) {
-        log_this(SR_AUTH, "validate_jwt_from_header: JWT valid but claims is NULL", LOG_LEVEL_ERROR, 0);
+    // Validate claims using helper
+    if (!validate_jwt_claims(&result, connection)) {
+        // Error response already sent by helper
         free_jwt_validation_result(&result);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("JWT token missing claims"));
-        char *response_str = json_dumps(error_response, JSON_COMPACT);
-        json_decref(error_response);
-
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
-        MHD_add_response_header(response, "Content-Type", "application/json");
-        log_this(SR_AUTH, "validate_jwt_from_header: Sending 401 - Missing claims", LOG_LEVEL_TRACE, 0);
-        MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
-        MHD_destroy_response(response);
-        return MHD_NO;
-    }
-    
-    if (!result.claims->database) {
-        log_this(SR_AUTH, "validate_jwt_from_header: JWT valid but database claim is NULL", LOG_LEVEL_ERROR, 0);
-        free_jwt_validation_result(&result);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("JWT token missing database claim"));
-        char *response_str = json_dumps(error_response, JSON_COMPACT);
-        json_decref(error_response);
-
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
-        MHD_add_response_header(response, "Content-Type", "application/json");
-        log_this(SR_AUTH, "validate_jwt_from_header: Sending 401 - Missing database claim", LOG_LEVEL_TRACE, 0);
-        MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
-        MHD_destroy_response(response);
-        return MHD_NO;
-    }
-    
-    if (strlen(result.claims->database) == 0) {
-        log_this(SR_AUTH, "validate_jwt_from_header: JWT valid but database claim is empty string", LOG_LEVEL_ERROR, 0);
-        free_jwt_validation_result(&result);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("JWT token has empty database"));
-        char *response_str = json_dumps(error_response, JSON_COMPACT);
-        json_decref(error_response);
-
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
-        MHD_add_response_header(response, "Content-Type", "application/json");
-        log_this(SR_AUTH, "validate_jwt_from_header: Sending 401 - Empty database claim", LOG_LEVEL_TRACE, 0);
-        MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
-        MHD_destroy_response(response);
         return MHD_NO;
     }
 

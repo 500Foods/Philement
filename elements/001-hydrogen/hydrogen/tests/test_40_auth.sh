@@ -546,7 +546,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # Parse test configuration
         IFS=':' read -r config_file log_suffix engine_name description <<< "${AUTH_TEST_CONFIGS[${test_config}]}"
         
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+        print_marker "${TEST_NUMBER}" "${TEST_COUNTER}" 
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Analyzing results"
         
         # Add links to log and result files for troubleshooting
@@ -578,7 +578,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         fi
     done
     
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+    print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ${successful_configs}/${#AUTH_TEST_CONFIGS[@]} database engine configurations passed all checks"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Parallel execution completed - Auth endpoints validated across ${#AUTH_TEST_CONFIGS[@]} database engines"
     

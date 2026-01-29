@@ -512,7 +512,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # Parse test configuration
         IFS=':' read -r config_file log_suffix engine_name description <<< "${DATABASE_TEST_CONFIGS[${test_config}]}"
 
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+        print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Analyzing results"
         log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
         result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
@@ -537,7 +537,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         fi
     done
 
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+    print_marker "${TEST_NUMBER}" "${TEST_COUNTER}" 
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ${successful_configs}/${#DATABASE_TEST_CONFIGS[@]} database engine configurations passed all checks"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Parallel execution completed - DQM architecture validated across all database engines"
 

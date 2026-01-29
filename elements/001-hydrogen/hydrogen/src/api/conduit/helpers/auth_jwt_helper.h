@@ -33,4 +33,28 @@ bool extract_and_validate_jwt(const char* auth_header, jwt_validation_result_t* 
  */
 const char* get_jwt_error_message(jwt_error_t error);
 
+/**
+ * @brief Validate JWT claims and send appropriate error responses
+ *
+ * Validates that the JWT claims are present and contain a valid database.
+ * Sends HTTP error responses if validation fails.
+ *
+ * @param jwt_result The JWT validation result containing claims
+ * @param connection The MHD connection for sending error responses
+ * @return true if claims are valid, false if error response was sent
+ */
+bool validate_jwt_claims(jwt_validation_result_t* jwt_result, struct MHD_Connection *connection);
+
+/**
+ * @brief Send JWT error response
+ *
+ * Helper function to send a standardized JWT error response.
+ *
+ * @param connection The MHD connection
+ * @param error_msg The error message to send
+ * @param http_status The HTTP status code
+ * @return MHD_NO on completion
+ */
+enum MHD_Result send_jwt_error_response(struct MHD_Connection *connection, const char* error_msg, unsigned int http_status);
+
 #endif /* CONDUIT_AUTH_JWT_HELPER_H */
