@@ -4,6 +4,8 @@
 
 #include <src/hydrogen.h>
 #include <string.h>
+#include <jansson.h>
+#include <microhttpd.h>
 #include "auth_jwt_helper.h"
 
 const char* get_jwt_error_message(jwt_error_t error) {
@@ -59,7 +61,6 @@ bool extract_and_validate_jwt(const char* auth_header, jwt_validation_result_t* 
         jwt_result->error = result.error;
         if (result.claims) {
             free_jwt_claims(result.claims);
-            free(result.claims);
         }
         return false;
     }
@@ -74,14 +75,56 @@ bool extract_and_validate_jwt(const char* auth_header, jwt_validation_result_t* 
     if (!result.claims->database || strlen(result.claims->database) == 0) {
         jwt_result->valid = false;
         jwt_result->error = JWT_ERROR_INVALID_FORMAT;
-        if (result.claims) {
-            free_jwt_claims(result.claims);
-            free(result.claims);
-        }
+        free_jwt_claims(result.claims);
         return false;
     }
 
     // Success - copy the result
     *jwt_result = result;
+    return true;
+}
+
+enum MHD_Result send_jwt_error_response(struct MHD_Connection *connection, const char* error_msg, unsigned int http_status) {
+    json_t *error_response = json_object();
+    json_object_set_new(error_response, "success", json_false());
+    json_object_set_new(error_response, "error", json_string(error_msg));
+    char *response_str = json_dumps(error_response, JSON_COMPACT);
+    json_decref(error_response);
+
+    struct MHD_Response *response = MHD_create_response_from_buffer(
+        strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
+    MHD_add_response_header(response, "Content-Type", "application/json");
+    MHD_queue_response(connection, http_status, response);
+    MHD_destroy_response(response);
+    return MHD_NO;
+}
+
+bool validate_jwt_claims(jwt_validation_result_t* jwt_result, struct MHD_Connection *connection) {
+    if (!jwt_result || !jwt_result->valid) {
+        return false;
+    }
+    
+    // Check for claims
+    if (!jwt_result->claims) {
+        send_jwt_error_response(connection, "JWT token missing claims", MHD_HTTP_UNAUTHORIZED);
+        return false;
+    }
+    
+    // Check for database claim
+    if (!jwt_result->claims->database) {
+        free_jwt_claims(jwt_result->claims);
+        jwt_result->claims = NULL;
+        send_jwt_error_response(connection, "JWT token missing database claim", MHD_HTTP_UNAUTHORIZED);
+        return false;
+    }
+    
+    // Check for empty database
+    if (strlen(jwt_result->claims->database) == 0) {
+        free_jwt_claims(jwt_result->claims);
+        jwt_result->claims = NULL;
+        send_jwt_error_response(connection, "JWT token has empty database", MHD_HTTP_UNAUTHORIZED);
+        return false;
+    }
+    
     return true;
 }

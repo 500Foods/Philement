@@ -13,47 +13,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-// Include auth_service.h for type definitions only when mocking is enabled
-#ifdef USE_MOCK_AUTH_SERVICE_JWT
+// Include auth_service.h to get type definitions
+// Use header guard to prevent multiple inclusions
 #include <src/api/auth/auth_service.h>
-#else
-// Define types locally when not mocking
-typedef enum {
-    JWT_ERROR_NONE = 0,
-    JWT_ERROR_EXPIRED,
-    JWT_ERROR_NOT_YET_VALID,
-    JWT_ERROR_INVALID_SIGNATURE,
-    JWT_ERROR_UNSUPPORTED_ALGORITHM,
-    JWT_ERROR_INVALID_FORMAT,
-    JWT_ERROR_REVOKED
-} jwt_error_t;
-
-typedef struct {
-    char* iss;
-    char* sub;
-    char* aud;
-    time_t exp;
-    time_t iat;
-    time_t nbf;
-    char* jti;
-    int user_id;
-    int system_id;
-    int app_id;
-    char* username;
-    char* email;
-    char* roles;
-    char* ip;
-    char* tz;
-    int tzoffset;
-    char* database;
-} jwt_claims_t;
-
-typedef struct {
-    bool valid;
-    jwt_claims_t* claims;
-    jwt_error_t error;
-} jwt_validation_result_t;
-#endif
 
 // Mock function declarations
 #ifdef USE_MOCK_AUTH_SERVICE_JWT
