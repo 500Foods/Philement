@@ -224,7 +224,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     run_conduit_test_unified "${CONDUIT_CONFIG_FILE}" "${CONDUIT_LOG_SUFFIX}" "${CONDUIT_DESCRIPTION}"
 
     # Process results
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+    print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION}: Analyzing results"
 
     # Add links to log and result files for troubleshooting
@@ -243,7 +243,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Print summary
     if [[ -f "${result_file}" ]]; then
         if "${GREP}" -q "CONDUIT_TEST_COMPLETE" "${result_file}" 2>/dev/null; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "---------------------------------"
+            print_marker "${TEST_NUMBER}" "${TEST_COUNTER}" 
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: Unified multi-database server passed all conduit alt single query endpoint tests"
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Sequential execution completed - Alt single query endpoint validated across ${#DATABASE_NAMES[@]} database engines"
         else

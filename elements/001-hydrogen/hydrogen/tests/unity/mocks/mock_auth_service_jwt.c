@@ -2,6 +2,7 @@
  * Mock Auth Service JWT functions implementation
  */
 
+#include <src/globals.h>
 #include "mock_auth_service_jwt.h"
 #include <string.h>
 #include <stdlib.h>
