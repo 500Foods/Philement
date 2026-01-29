@@ -108,6 +108,8 @@ unsigned int determine_http_status(const PendingQueryResult* pending, const Quer
 json_t* create_validation_error_response(const char* error_msg, const char* error_detail);
 json_t* create_lookup_error_response(const char* error_msg, const char* database, int query_ref, bool include_query_ref, const char* message);
 json_t* create_processing_error_response(const char* error_msg, const char* database, int query_ref);
+json_t* create_database_not_found_response(const char* database);
+enum MHD_Result send_database_not_found_response(struct MHD_Connection *connection, const char* database);
 
 // Request handling helper functions
 enum MHD_Result handle_method_validation(struct MHD_Connection *connection, const char* method);
@@ -120,6 +122,10 @@ enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const 
 
 enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_t* request_json,
                                          int* query_ref, const char** database, json_t** params_json);
+
+enum MHD_Result handle_auth_query_field_extraction(struct MHD_Connection *connection, json_t* request_json,
+                                                    int* query_ref, json_t** params_json);
+enum MHD_Result handle_buffer_null_case(struct MHD_Connection *connection);
 
 enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const char* database,
                                         int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,

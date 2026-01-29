@@ -57,4 +57,34 @@ bool validate_jwt_claims(jwt_validation_result_t* jwt_result, struct MHD_Connect
  */
 enum MHD_Result send_jwt_error_response(struct MHD_Connection *connection, const char* error_msg, unsigned int http_status);
 
+/**
+ * @brief Send missing Authorization header error response
+ *
+ * Helper function to send an error response when Authorization header is missing.
+ *
+ * @param connection The MHD connection
+ * @return MHD_NO on completion
+ */
+enum MHD_Result send_missing_authorization_response(struct MHD_Connection *connection);
+
+/**
+ * @brief Send invalid Authorization header format error response
+ *
+ * Helper function to send an error response when Authorization header has invalid format.
+ *
+ * @param connection The MHD connection
+ * @return MHD_NO on completion
+ */
+enum MHD_Result send_invalid_authorization_format_response(struct MHD_Connection *connection);
+
+/**
+ * @brief Send internal server error response
+ *
+ * Helper function to send an internal server error response.
+ *
+ * @param connection The MHD connection
+ * @return MHD_NO on completion
+ */
+enum MHD_Result send_internal_server_error_response(struct MHD_Connection *connection);
+
 #endif /* CONDUIT_AUTH_JWT_HELPER_H */

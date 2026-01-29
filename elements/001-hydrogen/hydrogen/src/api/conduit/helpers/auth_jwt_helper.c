@@ -86,17 +86,40 @@ bool extract_and_validate_jwt(const char* auth_header, jwt_validation_result_t* 
 
 enum MHD_Result send_jwt_error_response(struct MHD_Connection *connection, const char* error_msg, unsigned int http_status) {
     json_t *error_response = json_object();
+    if (!error_response) {
+        return MHD_NO;
+    }
     json_object_set_new(error_response, "success", json_false());
     json_object_set_new(error_response, "error", json_string(error_msg));
     char *response_str = json_dumps(error_response, JSON_COMPACT);
     json_decref(error_response);
 
+    if (!response_str) {
+        return MHD_NO;
+    }
+
     struct MHD_Response *response = MHD_create_response_from_buffer(
         strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
+    if (!response) {
+        free(response_str);
+        return MHD_NO;
+    }
     MHD_add_response_header(response, "Content-Type", "application/json");
     MHD_queue_response(connection, http_status, response);
     MHD_destroy_response(response);
     return MHD_NO;
+}
+
+enum MHD_Result send_missing_authorization_response(struct MHD_Connection *connection) {
+    return send_jwt_error_response(connection, "Authentication required - include Authorization: Bearer <token> header", MHD_HTTP_UNAUTHORIZED);
+}
+
+enum MHD_Result send_invalid_authorization_format_response(struct MHD_Connection *connection) {
+    return send_jwt_error_response(connection, "Invalid Authorization header - expected 'Bearer <token>' format", MHD_HTTP_UNAUTHORIZED);
+}
+
+enum MHD_Result send_internal_server_error_response(struct MHD_Connection *connection) {
+    return send_jwt_error_response(connection, "Internal server error", MHD_HTTP_INTERNAL_SERVER_ERROR);
 }
 
 bool validate_jwt_claims(jwt_validation_result_t* jwt_result, struct MHD_Connection *connection) {

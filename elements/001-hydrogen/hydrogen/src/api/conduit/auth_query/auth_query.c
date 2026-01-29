@@ -112,71 +112,15 @@ enum MHD_Result validate_jwt_from_header(
     
     if (!auth_header) {
         log_this(SR_AUTH, "validate_jwt_from_header: Missing Authorization header", LOG_LEVEL_ERROR, 0);
-        
-        json_t *error_response = json_object();
-        if (!error_response) {
-            return MHD_NO;
-        }
-        
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Authentication required - include Authorization: Bearer <token> header"));
-        
-        char *response_str = json_dumps(error_response, JSON_COMPACT);
-        json_decref(error_response);
-        
-        if (!response_str) {
-            return MHD_NO;
-        }
-        
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
-        
-        if (!response) {
-            free(response_str);
-            return MHD_NO;
-        }
-        
-        MHD_add_response_header(response, "Content-Type", "application/json");
         log_this(SR_AUTH, "validate_jwt_from_header: Sending 401 - Missing Authorization header", LOG_LEVEL_TRACE, 0);
-        MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
-        MHD_destroy_response(response);
-        
-        return MHD_NO;
+        return send_missing_authorization_response(connection);
     }
     
     // Check for "Bearer " prefix
     if (strncmp(auth_header, "Bearer ", 7) != 0) {
         log_this(SR_AUTH, "validate_jwt_from_header: Invalid Authorization header format (does not start with 'Bearer ')", LOG_LEVEL_ERROR, 0);
-        
-        json_t *error_response = json_object();
-        if (!error_response) {
-            return MHD_NO;
-        }
-        
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Invalid Authorization header - expected 'Bearer <token>' format"));
-        
-        char *response_str = json_dumps(error_response, JSON_COMPACT);
-        json_decref(error_response);
-        
-        if (!response_str) {
-            return MHD_NO;
-        }
-        
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
-        
-        if (!response) {
-            free(response_str);
-            return MHD_NO;
-        }
-        
-        MHD_add_response_header(response, "Content-Type", "application/json");
         log_this(SR_AUTH, "validate_jwt_from_header: Sending 401 - Invalid Authorization format", LOG_LEVEL_TRACE, 0);
-        MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
-        MHD_destroy_response(response);
-        
-        return MHD_NO;
+        return send_invalid_authorization_format_response(connection);
     }
     
     // Extract token (skip "Bearer " prefix)
@@ -195,19 +139,8 @@ enum MHD_Result validate_jwt_from_header(
         log_this(SR_AUTH, "validate_jwt_from_header: JWT validation failed - error_code=%d, msg=%s",
                  LOG_LEVEL_ALERT, 2, result.error, error_msg);
 
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string(error_msg));
-        char *response_str = json_dumps(error_response, JSON_COMPACT);
-        json_decref(error_response);
-
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
-        MHD_add_response_header(response, "Content-Type", "application/json");
         log_this(SR_AUTH, "validate_jwt_from_header: Sending %d - %s", LOG_LEVEL_TRACE, 2, http_status, error_msg);
-        MHD_queue_response(connection, http_status, response);
-        MHD_destroy_response(response);
-        return MHD_NO;
+        return send_jwt_error_response(connection, error_msg, http_status);
     }
 
     log_this(SR_AUTH, "validate_jwt_from_header: JWT is valid, checking claims", LOG_LEVEL_TRACE, 0);
@@ -226,25 +159,42 @@ enum MHD_Result validate_jwt_from_header(
     if (!*jwt_result) {
         log_this(SR_AUTH, "validate_jwt_from_header: Failed to allocate JWT result", LOG_LEVEL_ERROR, 0);
         free_jwt_validation_result(&result);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Internal server error"));
-        char *response_str = json_dumps(error_response, JSON_COMPACT);
-        json_decref(error_response);
-
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
-        MHD_add_response_header(response, "Content-Type", "application/json");
         log_this(SR_AUTH, "validate_jwt_from_header: Sending 500 - Allocation failed", LOG_LEVEL_TRACE, 0);
-        MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
-        MHD_destroy_response(response);
-        return MHD_NO;
+        return send_internal_server_error_response(connection);
     }
     **jwt_result = result; // Copy the struct
 
     log_this(SR_AUTH, "validate_jwt_from_header: JWT validated successfully, database='%s'", LOG_LEVEL_DEBUG, 1, result.claims->database);
     return MHD_YES;
+}
+
+static void cleanup_auth_query_resources(
+    json_t *request_json,
+    jwt_validation_result_t *jwt_result,
+    char *query_id,
+    ParameterList *param_list,
+    char *converted_sql,
+    TypedParameter **ordered_params,
+    size_t param_count,
+    char *message)
+{
+    if (request_json) json_decref(request_json);
+    if (jwt_result) {
+        free_jwt_validation_result(jwt_result);
+        free(jwt_result);
+    }
+    if (query_id) free(query_id);
+    if (param_list) free_parameter_list(param_list);
+    if (converted_sql) free(converted_sql);
+    if (ordered_params) {
+        for (size_t i = 0; i < param_count; i++) {
+            if (ordered_params[i]) {
+                free_typed_parameter(ordered_params[i]);
+            }
+        }
+        free(ordered_params);
+    }
+    if (message) free(message);
 }
 
 /**
@@ -310,14 +260,8 @@ enum MHD_Result handle_conduit_auth_query_request(
     // Check if buffer is NULL (can happen in some test scenarios)
     if (!buffer) {
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Buffer is NULL, cannot parse request", LOG_LEVEL_ERROR, 0);
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Request parsing failed"));
-        json_object_set_new(error_response, "message", json_string("Missing or invalid request data"));
-        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
         api_free_post_buffer(con_cls);
-        return MHD_YES;
+        return handle_buffer_null_case(connection);
     }
     
     result = handle_request_parsing_with_buffer(connection, buffer, &request_json);
@@ -339,32 +283,13 @@ enum MHD_Result handle_conduit_auth_query_request(
     int query_ref = 0;
     json_t* params_json = NULL;
     
-    json_t* query_ref_json = json_object_get(request_json, "query_ref");
-    params_json = json_object_get(request_json, "params");
-
-    if (!query_ref_json || !json_is_integer(query_ref_json)) {
+    enum MHD_Result extraction_result = handle_auth_query_field_extraction(connection, request_json, &query_ref, &params_json);
+    if (extraction_result != MHD_YES) {
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Missing or invalid query_ref", LOG_LEVEL_TRACE, 0);
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Missing or invalid query_ref"));
-        json_object_set_new(error_response, "error_detail", json_string("query_ref must be an integer"));
-
-        char *response_str = json_dumps(error_response, JSON_COMPACT);
-        json_decref(error_response);
-
-        if (response_str) {
-            struct MHD_Response *response = MHD_create_response_from_buffer(
-                strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
-            MHD_add_response_header(response, "Content-Type", "application/json");
-            log_this(SR_AUTH, "handle_conduit_auth_query_request: Sending 400 - Missing query_ref", LOG_LEVEL_TRACE, 0);
-            MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
-            MHD_destroy_response(response);
-        }
         json_decref(request_json);
-        return MHD_YES;
+        return MHD_YES; // Response sent by helper
     }
 
-    query_ref = (int)json_integer_value(query_ref_json);
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Fields extracted: query_ref=%d", LOG_LEVEL_TRACE, 1, query_ref);
 
     // Step 4: Validate JWT token from Authorization header
@@ -396,9 +321,7 @@ enum MHD_Result handle_conduit_auth_query_request(
     if (result != MHD_YES) {
         // Error response already sent by helper
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Database lookup returned error", LOG_LEVEL_TRACE, 0);
-        json_decref(request_json);
-        free_jwt_validation_result(jwt_result);
-        free(jwt_result);
+        cleanup_auth_query_resources(request_json, jwt_result, NULL, NULL, NULL, NULL, 0, NULL);
         return result;
     }
 
@@ -419,33 +342,9 @@ enum MHD_Result handle_conduit_auth_query_request(
     // Check if database lookup failed
     if (!db_queue) {
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Database lookup succeeded but db_queue is NULL", LOG_LEVEL_ERROR, 0);
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Database not found"));
-        json_object_set_new(error_response, "database", json_string(jwt_database));
-        json_object_set_new(error_response, "error_code", json_integer(1002));
-        
-        char *response_str = json_dumps(error_response, JSON_COMPACT);
-        json_decref(error_response);
-        
-        if (!response_str) {
-            json_decref(request_json);
-            free_jwt_validation_result(jwt_result);
-            free(jwt_result);
-            return MHD_NO;
-        }
-        
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
-        MHD_add_response_header(response, "Content-Type", "application/json");
-        log_this(SR_AUTH, "handle_conduit_auth_query_request: Sending 404 - Database not found: %s", LOG_LEVEL_TRACE, 1, jwt_database);
-        MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
-        MHD_destroy_response(response);
-        
-        json_decref(request_json);
-        free_jwt_validation_result(jwt_result);
-        free(jwt_result);
-        return MHD_YES;
+        enum MHD_Result response_result = send_database_not_found_response(connection, jwt_database);
+        cleanup_auth_query_resources(request_json, jwt_result, NULL, NULL, NULL, NULL, 0, NULL);
+        return response_result;
     }
 
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Database and query lookup successful (db_queue=%p, cache_entry=%p)", 
@@ -467,23 +366,7 @@ enum MHD_Result handle_conduit_auth_query_request(
         // Error response already sent by helper, or parameter error - cleanup and return
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Parameter processing failed (result=%d, converted_sql=%p)", 
                  LOG_LEVEL_TRACE, 2, result, (void*)converted_sql);
-        json_decref(request_json);
-        free_jwt_validation_result(jwt_result);
-        free(jwt_result);
-        
-        // Cleanup any allocated resources
-        if (param_list) free_parameter_list(param_list);
-        if (converted_sql) free(converted_sql);
-        if (ordered_params) {
-            for (size_t i = 0; i < param_count; i++) {
-                if (ordered_params[i]) {
-                    free_typed_parameter(ordered_params[i]);
-                }
-            }
-            free(ordered_params);
-        }
-        if (message) free(message);
-        
+        cleanup_auth_query_resources(request_json, jwt_result, NULL, param_list, converted_sql, ordered_params, param_count, message);
         return result;
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Parameter processing succeeded", LOG_LEVEL_TRACE, 0);
@@ -496,22 +379,7 @@ enum MHD_Result handle_conduit_auth_query_request(
     if (result != MHD_YES) {
         // Error response already sent by helper
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Queue selection failed", LOG_LEVEL_TRACE, 0);
-        json_decref(request_json);
-        free_jwt_validation_result(jwt_result);
-        free(jwt_result);
-        
-        if (param_list) free_parameter_list(param_list);
-        if (converted_sql) free(converted_sql);
-        if (ordered_params) {
-            for (size_t i = 0; i < param_count; i++) {
-                if (ordered_params[i]) {
-                    free_typed_parameter(ordered_params[i]);
-                }
-            }
-            free(ordered_params);
-        }
-        if (message) free(message);
-        
+        cleanup_auth_query_resources(request_json, jwt_result, NULL, param_list, converted_sql, ordered_params, param_count, message);
         return result;
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Queue selection succeeded (selected_queue=%p)", LOG_LEVEL_TRACE, 1, (void*)selected_queue);
@@ -524,22 +392,7 @@ enum MHD_Result handle_conduit_auth_query_request(
     if (result != MHD_YES) {
         // Error response already sent by helper
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Query ID generation failed", LOG_LEVEL_TRACE, 0);
-        json_decref(request_json);
-        free_jwt_validation_result(jwt_result);
-        free(jwt_result);
-        
-        if (param_list) free_parameter_list(param_list);
-        if (converted_sql) free(converted_sql);
-        if (ordered_params) {
-            for (size_t i = 0; i < param_count; i++) {
-                if (ordered_params[i]) {
-                    free_typed_parameter(ordered_params[i]);
-                }
-            }
-            free(ordered_params);
-        }
-        if (message) free(message);
-        
+        cleanup_auth_query_resources(request_json, jwt_result, NULL, param_list, converted_sql, ordered_params, param_count, message);
         return result;
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Query ID generated: %s", LOG_LEVEL_TRACE, 1, query_id ? query_id : "(null)");
@@ -553,23 +406,7 @@ enum MHD_Result handle_conduit_auth_query_request(
     if (result != MHD_YES) {
         // Error response already sent by helper
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Pending registration failed", LOG_LEVEL_TRACE, 0);
-        json_decref(request_json);
-        free_jwt_validation_result(jwt_result);
-        free(jwt_result);
-        
-        if (query_id) free(query_id);
-        if (param_list) free_parameter_list(param_list);
-        if (converted_sql) free(converted_sql);
-        if (ordered_params) {
-            for (size_t i = 0; i < param_count; i++) {
-                if (ordered_params[i]) {
-                    free_typed_parameter(ordered_params[i]);
-                }
-            }
-            free(ordered_params);
-        }
-        if (message) free(message);
-        
+        cleanup_auth_query_resources(request_json, jwt_result, query_id, param_list, converted_sql, ordered_params, param_count, message);
         return result;
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Pending registration succeeded", LOG_LEVEL_TRACE, 0);
@@ -581,23 +418,7 @@ enum MHD_Result handle_conduit_auth_query_request(
     if (result != MHD_YES) {
         // Error response already sent by helper
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Query submission failed", LOG_LEVEL_TRACE, 0);
-        json_decref(request_json);
-        free_jwt_validation_result(jwt_result);
-        free(jwt_result);
-        
-        if (query_id) free(query_id);
-        if (param_list) free_parameter_list(param_list);
-        if (converted_sql) free(converted_sql);
-        if (ordered_params) {
-            for (size_t i = 0; i < param_count; i++) {
-                if (ordered_params[i]) {
-                    free_typed_parameter(ordered_params[i]);
-                }
-            }
-            free(ordered_params);
-        }
-        if (message) free(message);
-        
+        cleanup_auth_query_resources(request_json, jwt_result, query_id, param_list, converted_sql, ordered_params, param_count, message);
         return result;
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Query submission succeeded", LOG_LEVEL_TRACE, 0);
@@ -612,21 +433,7 @@ enum MHD_Result handle_conduit_auth_query_request(
 
     // Clean up
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Cleaning up resources", LOG_LEVEL_TRACE, 0);
-    json_decref(request_json);
-    free_jwt_validation_result(jwt_result);
-    free(jwt_result);
-    free(query_id);
-    free_parameter_list(param_list);
-    free(converted_sql);
-    if (ordered_params) {
-        for (size_t i = 0; i < param_count; i++) {
-            if (ordered_params[i]) {
-                free_typed_parameter(ordered_params[i]);
-            }
-        }
-        free(ordered_params);
-    }
-    if (message) free(message);
+    cleanup_auth_query_resources(request_json, jwt_result, query_id, param_list, converted_sql, ordered_params, param_count, message);
 
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Request completed with result=%d", LOG_LEVEL_DEBUG, 1, result);
     return result;

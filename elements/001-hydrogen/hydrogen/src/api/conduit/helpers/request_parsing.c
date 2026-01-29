@@ -175,3 +175,32 @@ enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_
     }
     return MHD_YES; // Continue processing
 }
+
+enum MHD_Result handle_auth_query_field_extraction(struct MHD_Connection *connection, json_t* request_json,
+                                                    int* query_ref, json_t** params_json) {
+    json_t* query_ref_json = json_object_get(request_json, "query_ref");
+    *params_json = json_object_get(request_json, "params");
+
+    if (!query_ref_json || !json_is_integer(query_ref_json)) {
+        const char* error_msg = "Missing or invalid query_ref";
+        const char* error_detail = "query_ref must be an integer";
+
+        json_t *error_response = create_validation_error_response(error_msg, error_detail);
+        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+        json_decref(error_response);
+        return MHD_NO; // Response sent - processing complete
+    }
+
+    *query_ref = (int)json_integer_value(query_ref_json);
+    return MHD_YES; // Continue processing
+}
+
+enum MHD_Result handle_buffer_null_case(struct MHD_Connection *connection) {
+    const char* error_msg = "Request parsing failed";
+    const char* error_detail = "Missing or invalid request data";
+
+    json_t *error_response = create_validation_error_response(error_msg, error_detail);
+    api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+    json_decref(error_response);
+    return MHD_YES; // Response sent - processing complete
+}

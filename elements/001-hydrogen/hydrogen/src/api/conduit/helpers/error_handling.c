@@ -87,3 +87,39 @@ json_t* create_processing_error_response(const char* error_msg, const char* data
     json_object_set_new(response, "database", json_string(database ? database : ""));
     return response;
 }
+
+// Helper function to create database not found error response
+json_t* create_database_not_found_response(const char* database) {
+    json_t* response = json_object();
+    if (!response) return NULL;
+    
+    json_object_set_new(response, "success", json_false());
+    json_object_set_new(response, "error", json_string("Database not found"));
+    json_object_set_new(response, "database", json_string(database));
+    json_object_set_new(response, "error_code", json_integer(1002));
+    
+    return response;
+}
+
+enum MHD_Result send_database_not_found_response(struct MHD_Connection *connection, const char* database) {
+    json_t* error_response = create_database_not_found_response(database);
+    
+    if (!error_response) {
+        return MHD_NO;
+    }
+    
+    char *response_str = json_dumps(error_response, JSON_COMPACT);
+    json_decref(error_response);
+    
+    if (!response_str) {
+        return MHD_NO;
+    }
+    
+    struct MHD_Response *response = MHD_create_response_from_buffer(
+        strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
+    MHD_add_response_header(response, "Content-Type", "application/json");
+    MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
+    MHD_destroy_response(response);
+    
+    return MHD_YES;
+}
