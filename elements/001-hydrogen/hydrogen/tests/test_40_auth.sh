@@ -511,7 +511,7 @@ else
     EXIT_CODE=1
 fi
 
-TEST_NAME="Auth  {BLUE}engines: ${#AUTH_TEST_CONFIGS[@]}{RESET}"
+TEST_NAME="Auth  {BLUE}databases: ${#AUTH_TEST_CONFIGS[@]}{RESET}"
 
 # Only proceed with auth tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
