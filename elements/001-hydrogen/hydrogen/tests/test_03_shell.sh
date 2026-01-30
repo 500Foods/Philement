@@ -142,6 +142,8 @@ declare -a ENV_WHITELIST=(
     "MIGRATION_TIMEOUT"
     # First found in tests/test_51_conduit.sh
     "CONDUIT_CONFIG_FILE" "CONDUIT_DESCRIPTION" "CONDUIT_ENGINE_NAME" "CONDUIT_LOG_SUFFIX"
+    # First found in tests/test_60_performance.sh
+    "PERF_CONFIG_FILE" "PERF_DESCRIPTION" "PERF_ITERATIONS" "PERF_LOG_SUFFIX"
     # First found in tests/test_91_cppcheck.sh
     "CACHE_HITS_FMT" "FILES_TO_RUN_FMT" "OTHER_ISSUES_FMT"
     # First found in tests/test_93_jsonlint.sh

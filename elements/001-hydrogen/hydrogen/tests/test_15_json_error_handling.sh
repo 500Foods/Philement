@@ -17,7 +17,7 @@ set -euo pipefail
 
 # Test configuration
 TEST_NAME="JSON Error Handling"
-TEST_ABBR="JSN"
+TEST_ABBR="JEH"
 TEST_NUMBER="15"
 TEST_COUNTER=0
 TEST_VERSION="4.1.0"
