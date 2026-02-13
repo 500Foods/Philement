@@ -295,6 +295,10 @@ int startup_hydrogen(const char* config_path) {
     // Initialize startup log level from environment
     init_startup_log_level();
 
+    // Initialize VictoriaLogs (environment-variable only, no config dependencies)
+    // This must happen early so VictoriaLogs can capture all startup messages
+    init_victoria_logs();
+
     // Log startup information
     log_early_info();
     

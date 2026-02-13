@@ -363,4 +363,10 @@ void init_startup_log_level(void);
 // UUID generation for unique filenames
 #define UUID_STR_LEN 37
 
+// VICTORIALOGS INTEGRATION //////////////////////////////////////////////////////////////////////////
+// Include VictoriaLogs header for global config access
+// This is outside the LOGGING section because VictoriaLogs is intentionally
+// independent of the config system and initializes early in startup.
+#include <src/logging/victoria_logs.h>
+
 #endif /* GLOBALS_H */
