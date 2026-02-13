@@ -634,9 +634,11 @@ void free_swagger_files(void) {
 
 /**
  * Get the server's base URL from the connection
- * 
- * Constructs the base URL (scheme://host[:port]) from the connection information
- * 
+ *
+ * Constructs the base URL (scheme://host[:port]) from the connection information.
+ * Detects HTTPS through X-Forwarded-Proto header for proxy/load balancer scenarios.
+ * Respects X-Forwarded-Port for load balancer port configuration.
+ *
  * @param connection The MHD connection
  * @param config The web server configuration
  * @return Dynamically allocated string with the base URL, or NULL on error
@@ -648,12 +650,22 @@ char* get_server_url(struct MHD_Connection *connection,
         return NULL;
     }
 
+    // Determine protocol - check X-Forwarded-Proto for load balancer/proxy support
+    const char *protocol = "http";
+    bool is_behind_proxy = false;
+    const char *x_forwarded_proto = MHD_lookup_connection_value(
+        connection, MHD_HEADER_KIND, "X-Forwarded-Proto");
+    if (x_forwarded_proto && strcmp(x_forwarded_proto, "https") == 0) {
+        protocol = "https";
+        is_behind_proxy = true;
+    }
+
     // Get host from header or use localhost
     const char *host = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Host");
     if (!host) {
         // If no Host header, construct from config
         char *url = NULL;
-        if (asprintf(&url, "http://localhost:%d", app_config->webserver.port) == -1) {
+        if (asprintf(&url, "%s://localhost:%d", protocol, app_config->webserver.port) == -1) {
             return NULL;
         }
         return url;
@@ -663,15 +675,49 @@ char* get_server_url(struct MHD_Connection *connection,
     if (strchr(host, ':')) {
         // Host includes port, use as-is
         char *url = NULL;
-        if (asprintf(&url, "http://%s", host) == -1) {
+        if (asprintf(&url, "%s://%s", protocol, host) == -1) {
             return NULL;
         }
         return url;
     }
 
-    // Add port from config
+    // Check for X-Forwarded-Port header (load balancer/proxy support)
+    const char *x_forwarded_port = MHD_lookup_connection_value(
+        connection, MHD_HEADER_KIND, "X-Forwarded-Port");
+    if (x_forwarded_port && x_forwarded_port[0] != '\0') {
+        // Use the forwarded port
+        int forwarded_port = atoi(x_forwarded_port);
+        // Only include port if it's not the default for the protocol
+        if (forwarded_port > 0 && 
+            !((strcmp(protocol, "http") == 0 && forwarded_port == 80) ||
+              (strcmp(protocol, "https") == 0 && forwarded_port == 443))) {
+            char *url = NULL;
+            if (asprintf(&url, "%s://%s:%s", protocol, host, x_forwarded_port) == -1) {
+                return NULL;
+            }
+            return url;
+        }
+        // Default port - don't include in URL
+        char *url = NULL;
+        if (asprintf(&url, "%s://%s", protocol, host) == -1) {
+            return NULL;
+        }
+        return url;
+    }
+
+    // If behind a proxy but no X-Forwarded-Port, assume default port for protocol
+    // Don't expose internal port when behind a load balancer
+    if (is_behind_proxy) {
+        char *url = NULL;
+        if (asprintf(&url, "%s://%s", protocol, host) == -1) {
+            return NULL;
+        }
+        return url;
+    }
+
+    // Direct access - add port from config
     char *url = NULL;
-    if (asprintf(&url, "http://%s:%d", host, app_config->webserver.port) == -1) {
+    if (asprintf(&url, "%s://%s:%d", protocol, host, app_config->webserver.port) == -1) {
         return NULL;
     }
     return url;
