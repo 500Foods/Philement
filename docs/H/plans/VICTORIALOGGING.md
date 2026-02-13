@@ -72,7 +72,8 @@ Each log entry is sent as a JSON object with the following fields:
 The full URL (including path and query parameters) is specified via the `VICTORIALOGS_URL` environment variable.
 
 Example URL:
-```
+
+```url
 http://10.118.0.5:9428/insert/jsonline?_stream_fields=app,kubernetes_namespace,kubernetes_pod_name,kubernetes_container_name
 ```
 
@@ -80,7 +81,7 @@ The stream fields configuration groups logs from the same container instance for
 
 ### Request Headers
 
-```
+```headers
 POST <path from VICTORIALOGS_URL> HTTP/1.1
 Host: <host from VICTORIALOGS_URL>
 Content-Type: application/stream+json
@@ -99,7 +100,7 @@ The [Kubernetes Downward API](https://kubernetes.io/docs/concepts/workloads/pods
 
 ### Required Additions to Deployment
 
-Update the `env` section of your deployment YAML (e.g., [`t-500nodes-deployment.yaml`](/mnt/extra/Projects/Festival/tenants/t-500nodes/t-500nodes-deployment.yaml)):
+Update the `env` section of your deployment YAML.
 
 ```yaml
 env:
@@ -181,7 +182,7 @@ export HYDROGEN_LOG_LEVEL="DEBUG"
 
 In VictoriaLogs, you can distinguish environments using queries:
 
-```
+```examples
 # Production logs only
 {kubernetes_namespace!="local",kubernetes_namespace!="dev"}
 
@@ -206,339 +207,260 @@ export K8S_POD_NAME="hydrogen-$(hostname -s)"  # e.g., "hydrogen-laptop"
 
 ## Implementation Architecture
 
-### Key Design Principle: Immediate Startup, Zero Dependencies
+### Key Design Principle: Independent Thread with Dual-Timer Batching
 
-Unlike other logging destinations (database, file, notify), VictoriaLogs logging is intentionally **environment-variable only** with **no JSON configuration section**. This design choice ensures:
-
-1. **No dependencies**: VictoriaLogs operates independently of the config system, database, queue system, or any other subsystem
-2. **Immediate startup**: Logs can be sent from the very first line of code - no waiting for subsystem initialization
-3. **Fail-safe operation**: If VictoriaLogs is unavailable, the application continues without error
-4. **Zero configuration files**: No credentials or URLs stored in JSON configs - everything is environment-driven
-
-This is in contrast to other logging types that may wait for:
-- Database subsystem to be ready (database logging)
-- Config system to be parsed (all JSON-configured logging)
-- Queue system to be initialized (batched destinations)
-- File system to be ready (file logging)
+VictoriaLogs uses a **dedicated worker thread** with an **internal queue** for high-performance, non-blocking logging:
 
 ```mermaid
 flowchart TD
-    A[log_this] --> B{VictoriaLogs Enabled?<br/>VICTORIALOGS_URL set?}
-    B -->|Yes| C[Check Log Level<br/>via cached startup value]
-    B -->|No| D[Skip VictoriaLogs]
-    C -->|Level >= Threshold| E[Build JSON Payload<br/>using cached metadata]
-    C -->|Level < Threshold| D
-    E --> F[Send HTTP POST<br/>immediately / batched]
-    F --> G[VictoriaLogs Server]
+    A[log_this] --> B{VictoriaLogs Enabled?}
+    B -->|No| C[Skip]
+    B -->|Yes| D{Priority >= Threshold?}
+    D -->|No| C
+    D -->|Yes| E[Format JSON]
+    E --> F[Enqueue Message]
+    F --> G[Return Immediately]
+    
+    H[Worker Thread] --> I{Check Queue}
+    I -->|Message Available| J[Add to Batch]
+    I -->|Empty| K{Timer Expired?}
+    J --> L{First Log?}
+    L -->|Yes| M[Send Immediately]
+    L -->|No| N{Batch Full?}
+    N -->|Yes| O[Flush Batch]
+    N -->|No| P[Reset Short Timer]
+    K -->|Short Timer| O
+    K -->|Long Timer| O
+    O --> Q[HTTP POST to VL]
+    M --> Q
 ```
 
-**Important**: VictoriaLogs initialization happens in `init_startup_log_level()` (or early in `main()`) and caches all needed metadata (URL, K8S values, log level) so that logging works immediately without any subsystem dependencies.
+### Dual-Timer Batching Strategy
 
-## Code Integration Points
+The worker thread implements an intelligent dual-timer system:
+
+1. **First Log**: Sent immediately to verify connectivity
+2. **Short Timer (1s)**: Resets on each new log. When it expires (no logs for 1s), the batch is sent. This ensures quick delivery during idle periods.
+3. **Long Timer (10s)**: Periodic flush that catches cases where the short timer never expires due to continuous heavy load.
+4. **Batch Size Limit**: Maximum 50 messages or 1MB buffer
+
+```mermaid
+timeline
+    title Dual-Timer Batching Example
+    section Startup
+        Log1 : First log sent immediately
+        Log2 : Added to batch
+        Log3 : Added to batch
+    section Active Logging
+        Log4 : Short timer resets
+        Log5 : Short timer resets
+        LogN : Continuous stream
+    section Idle Detected
+        No Logs : Short timer expires after 1s
+        Flush : Batch sent
+    section Heavy Load
+        Continuous : Short timer keeps resetting
+        10s Mark : Long timer expires
+        Flush : Batch sent regardless
+```
+
+### Why a Dedicated Thread?
+
+| Aspect | Old Approach | New Threaded Approach |
+|--------|-------------|----------------------|
+| Blocking | Batch flush blocked caller | Enqueue returns immediately |
+| Dependencies | Wait for queue system | Independent, starts immediately |
+| Startup | Could miss early logs | Captures all logs from first line |
+| Performance | HTTP in logging thread | HTTP in background thread |
+| Concurrency | Mutex contention | Lock-free enqueue for caller |
+
+### Key Constants
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `VICTORIA_LOGS_MAX_MESSAGE_SIZE` | 4096 bytes | Maximum single message size |
+| `VICTORIA_LOGS_MAX_BATCH_BUFFER` | 1 MB | Maximum batch buffer size |
+| `VICTORIA_LOGS_BATCH_SIZE` | 50 messages | Flush when batch reaches this size |
+| `VICTORIA_LOGS_SHORT_TIMER_SEC` | 1 second | Idle timeout (resets on each log) |
+| `VICTORIA_LOGS_LONG_TIMER_SEC` | 10 seconds | Maximum time between flushes |
+| `VICTORIA_LOGS_MAX_QUEUE_SIZE` | 10000 messages | Queue size before dropping |
+| `VICTORIA_LOGS_TIMEOUT_SEC` | 5 seconds | HTTP request timeout |
 
 ### Important: No JSON Configuration
 
 VictoriaLogs is **intentionally excluded** from the JSON configuration system. There is no `LoggingConfig.victorialogs` field, no config schema entries, and no `load_logging_config()` processing for VictoriaLogs. This is by design to ensure:
+
 - No waiting for config file parsing
 - No dependency on the config subsystem
 - Credentials/URLs stay in environment variables only
 - Logging works from the very first line of code
 
-### 1. VictoriaLogs Configuration Structure
+### Code Integration Points
 
-Add to [`src/config/config_logging.h`](elements/001-hydrogen/hydrogen/src/config/config_logging.h):
+#### 1. VictoriaLogs Configuration Structure
+
+See [`src/logging/victoria_logs.h`](elements/001-hydrogen/hydrogen/src/logging/victoria_logs.h):
 
 ```c
-// VictoriaLogs destination configuration
+// VictoriaLogs configuration from environment variables
 typedef struct VictoriaLogsConfig {
-    bool enabled;           // VICTORIALOGS_URL is set
-    char* url;              // VICTORIALOGS_URL value (full endpoint URL)
-    int min_level;          // VICTORIALOGS_LVL mapped to numeric
-    
-    // Cached environment metadata
+    bool enabled;
+    char* url;
+    int min_level;
     char* k8s_namespace;
     char* k8s_pod_name;
     char* k8s_container_name;
     char* k8s_node_name;
     char* host;
 } VictoriaLogsConfig;
+
+// Thread-safe message queue
+typedef struct VLMessageQueue {
+    VLQueueNode* head;
+    VLQueueNode* tail;
+    size_t size;
+    size_t max_size;
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+} VLMessageQueue;
+
+// Worker thread state with dual-timer batching
+typedef struct VLThreadState {
+    pthread_t thread;
+    bool running;
+    bool shutdown;
+    char* batch_buffer;
+    size_t batch_buffer_size;
+    size_t batch_count;
+    struct timespec short_timer;
+    struct timespec long_timer;
+    bool short_timer_active;
+    bool first_log_sent;
+    VLMessageQueue queue;
+} VLThreadState;
 ```
 
-### 2. Initialization (Early Startup)
+#### 2. Initialization (Early Startup)
 
-VictoriaLogs initialization must happen **early in startup**, before any logging occurs. This is similar to how [`init_startup_log_level()`](elements/001-hydrogen/hydrogen/src/globals.c:44) works in [`globals.c`](elements/001-hydrogen/hydrogen/src/globals.c). The initialization should read environment variables and cache all metadata so logging works immediately.
-
-Recommended location: Call `init_victoria_logs()` immediately after `init_startup_log_level()` in `main()`.
+VictoriaLogs initialization happens immediately after `init_startup_log_level()` in `main()`:
 
 ```c
-// src/logging/victoria_logs.h
-bool init_victoria_logs(VictoriaLogsConfig* config);
-void cleanup_victoria_logs(VictoriaLogsConfig* config);
-
-// Global instance (similar to startup_log_level)
-extern VictoriaLogsConfig victoria_logs_config;
-
 // src/logging/victoria_logs.c
-// Global config - accessible immediately after init
-VictoriaLogsConfig victoria_logs_config = {0};
-
-bool init_victoria_logs(VictoriaLogsConfig* config) {
-    // Check if VICTORIALOGS_URL is set - if not, silently disable
+bool init_victoria_logs(void) {
+    // Check if VICTORIALOGS_URL is set
     const char* url = getenv("VICTORIALOGS_URL");
     if (!url || !url[0]) {
-        config->enabled = false;
-        return true;  // Not an error, just disabled
-    }
-
-    config->enabled = true;
-    config->url = strdup(url);  // Full URL including path and query params
-    
-    // Parse log level
-    const char* lvl = getenv("VICTORIALOGS_LVL");
-    config->min_level = parse_log_level(lvl, LOG_LEVEL_DEBUG);  // Default DEBUG
-    
-    // Cache Kubernetes metadata with fallbacks
-    const char* ns = getenv("K8S_NAMESPACE");
-    config->k8s_namespace = strdup((ns && ns[0]) ? ns : "local");
-    
-    const char* pod = getenv("K8S_POD_NAME");
-    if (pod && pod[0]) {
-        config->k8s_pod_name = strdup(pod);
-    } else {
-        char hostname[256];
-        if (gethostname(hostname, sizeof(hostname)) == 0) {
-            config->k8s_pod_name = strdup(hostname);
-        } else {
-            config->k8s_pod_name = strdup("localhost");
-        }
+        victoria_logs_config.enabled = false;
+        return true;
     }
     
-    const char* container = getenv("K8S_CONTAINER_NAME");
-    config->k8s_container_name = strdup((container && container[0]) ? container : "hydrogen");
+    // Parse configuration from environment
+    // ... cache K8S metadata, parse log level ...
     
-    const char* node = getenv("K8S_NODE_NAME");
-    if (node && node[0]) {
-        config->k8s_node_name = strdup(node);
-    } else {
-        char hostname[256];
-        if (gethostname(hostname, sizeof(hostname)) == 0) {
-            config->k8s_node_name = strdup(hostname);
-        } else {
-            config->k8s_node_name = strdup("localhost");
-        }
+    // Initialize queue
+    if (!vl_queue_init()) {
+        return false;
     }
     
-    // Host is same as node name for consistency
-    config->host = strdup(config->k8s_node_name);
+    // Allocate batch buffer
+    victoria_logs_thread.batch_buffer = malloc(VICTORIA_LOGS_MAX_BATCH_BUFFER);
+    
+    // Start worker thread
+    pthread_create(&victoria_logs_thread.thread, NULL, victoria_logs_worker, NULL);
     
     return true;
 }
 ```
 
-### 3. Log Message Integration
+#### 3. Log Message Integration
 
-Modify [`log_this()`](elements/001-hydrogen/hydrogen/src/logging/logging.c:451) in [`src/logging/logging.c`](elements/001-hydrogen/hydrogen/src/logging/logging.c) to send to VictoriaLogs **independently of the config system**:
+The [`log_this()`](elements/001-hydrogen/hydrogen/src/logging/logging.c) function sends to VictoriaLogs **independently** of other logging systems:
 
 ```c
 void log_this(const char* subsystem, const char* format, int priority, int num_args, ...) {
-    // ... existing validation and setup ...
-
-    // Create JSON message for queue destinations (existing code)
-    char json_message[DEFAULT_MAX_LOG_MESSAGE_SIZE];
-    snprintf(json_message, sizeof(json_message),
-             "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,...}",
-             subsystem, details, priority, ...);
-
-    // VictoriaLogs: Check global config directly (NOT app_config->logging)
-    // This works immediately on startup, before app_config is even loaded
-    if (victoria_logs_config.enabled && priority >= victoria_logs_config.min_level) {
-        // Build VictoriaLogs-specific JSON with _time and _msg
-        char vl_message[DEFAULT_MAX_LOG_MESSAGE_SIZE * 2];
-        build_victoria_logs_message(&victoria_logs_config,
-                                    subsystem, details, priority,
-                                    vl_message, sizeof(vl_message));
-
-        // Send immediately or add to simple queue (no dependencies on queue system)
-        victoria_logs_send(vl_message);
+    // ... existing validation ...
+    
+    // Format the message
+    char details[DEFAULT_LOG_ENTRY_SIZE];
+    va_list args;
+    va_start(args, num_args);
+    vsnprintf(details, sizeof(details), format, args);
+    va_end(args);
+    
+    // Send to VictoriaLogs immediately (non-blocking enqueue)
+    if (victoria_logs_is_enabled()) {
+        victoria_logs_send(subsystem, details, priority);  // Returns immediately
     }
-
-    // ... rest of existing logging logic (uses app_config, queue system, etc.) ...
+    
+    // ... rest of existing logging logic ...
 }
 ```
 
-### 4. VictoriaLogs Message Builder
+#### 4. Worker Thread Implementation
+
+The worker thread ([`victoria_logs_worker()`](elements/001-hydrogen/hydrogen/src/logging/victoria_logs.c)) implements the dual-timer batching:
 
 ```c
-void build_victoria_logs_message(const VictoriaLogsConfig* config,
-                                 const char* subsystem,
-                                 const char* message,
-                                 int priority,
-                                 char* output,
-                                 size_t output_size) {
-    // Get current timestamp with nanoseconds
-    struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-    struct tm* tm_info = gmtime(&ts.tv_sec);
+static void* victoria_logs_worker(void* arg) {
+    // Initialize timers
+    clock_gettime(CLOCK_REALTIME, &victoria_logs_thread.long_timer);
+    victoria_logs_thread.long_timer.tv_sec += VICTORIA_LOGS_LONG_TIMER_SEC;
     
-    char timestamp[64];
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%S", tm_info);
-    snprintf(timestamp + 19, sizeof(timestamp) - 19, ".%09ldZ", ts.tv_nsec);
-    
-    const char* level_label = get_priority_label(priority);
-    
-    // Build JSON with proper escaping
-    snprintf(output, output_size,
-        "{"
-        "\"_time\":\"%s\","
-        "\"_msg\":\"%s\","
-        "\"level\":\"%s\","
-        "\"subsystem\":\"%s\","
-        "\"app\":\"hydrogen\","
-        "\"kubernetes_namespace\":\"%s\","
-        "\"kubernetes_pod_name\":\"%s\","
-        "\"kubernetes_container_name\":\"%s\","
-        "\"kubernetes_node_name\":\"%s\","
-        "\"host\":\"%s\""
-        "}",
-        timestamp,
-        escape_json_string(message),  // Need proper JSON escaping
-        level_label,
-        subsystem,
-        config->k8s_namespace,
-        config->k8s_pod_name,
-        config->k8s_container_name,
-        config->k8s_node_name,
-        config->host
-    );
-}
-```
-
-### 5. VictoriaLogs Queue Manager
-
-Create [`src/logging/victoria_logs_manager.c`](elements/001-hydrogen/hydrogen/src/logging/victoria_logs_manager.c):
-
-```c
-void* victoria_logs_manager(void* arg) {
-    Queue* vl_queue = (Queue*)arg;
-    
-    add_service_thread(&logging_threads, pthread_self());
-    pthread_cleanup_push(cleanup_victoria_logs_manager, NULL);
-    
-    log_this(SR_LOGGING, "VictoriaLogs manager started", LOG_LEVEL_STATE, 0);
-    
-    char batch_buffer[MAX_BATCH_SIZE];
-    size_t batch_count = 0;
-    time_t last_flush = time(NULL);
-    
-    while (!vl_queue_shutdown) {
-        // Wait for messages or timeout
-        pthread_mutex_lock(&vl_terminate_mutex);
-        while (queue_size(vl_queue) == 0 && !vl_queue_shutdown) {
-            struct timespec timeout;
-            clock_gettime(CLOCK_REALTIME, &timeout);
-            timeout.tv_sec += BATCH_TIMEOUT_SEC;
-            pthread_cond_timedwait(&vl_terminate_cond, &vl_terminate_mutex, &timeout);
-        }
-        pthread_mutex_unlock(&vl_terminate_mutex);
+    while (!victoria_logs_thread.shutdown) {
+        // Calculate next timeout (earlier of short or long timer)
+        struct timespec timeout = calculate_next_timeout();
         
-        // Collect messages into batch
-        while (queue_size(vl_queue) > 0 && batch_count < MAX_BATCH_SIZE) {
-            size_t message_size;
-            int priority;
-            char* message = queue_dequeue(vl_queue, &message_size, &priority);
-            if (message) {
-                // Append to batch buffer with newline separator
-                if (batch_count > 0) {
-                    strncat(batch_buffer, "\n", sizeof(batch_buffer) - strlen(batch_buffer) - 1);
+        // Wait for message or timeout
+        char* message = vl_queue_dequeue_timed(&timeout);
+        
+        if (message) {
+            if (!victoria_logs_thread.first_log_sent) {
+                // First log: send immediately
+                add_to_batch(message);
+                flush_batch_internal();
+                victoria_logs_thread.first_log_sent = true;
+            } else {
+                // Add to batch
+                add_to_batch(message);
+                
+                // Check if batch is full
+                if (victoria_logs_thread.batch_count >= VICTORIA_LOGS_BATCH_SIZE) {
+                    flush_batch_internal();
+                    reset_long_timer();
                 }
-                strncat(batch_buffer, message, sizeof(batch_buffer) - strlen(batch_buffer) - 1);
-                batch_count++;
-                free(message);
             }
+            
+            // Reset short timer on each log
+            reset_short_timer();
         }
         
-        // Flush batch if full or timeout
-        time_t now = time(NULL);
-        if (batch_count >= BATCH_MAX_MESSAGES || 
-            (batch_count > 0 && (now - last_flush) >= BATCH_TIMEOUT_SEC) ||
-            (vl_queue_shutdown && batch_count > 0)) {
-            
-            send_victoria_logs_batch(&app_config->logging.victorialogs, batch_buffer);
-            batch_buffer[0] = '\0';
-            batch_count = 0;
-            last_flush = now;
-        }
+        // Check for timer expiration and flush if needed
+        check_and_flush_timers();
     }
     
-    log_this(SR_LOGGING, "VictoriaLogs manager exiting", LOG_LEVEL_STATE, 0);
-    pthread_cleanup_pop(1);
+    // Final flush before exit
+    flush_batch_internal();
     return NULL;
 }
 ```
 
-### 6. HTTP Sender
+#### 5. Non-Blocking Enqueue
+
+The [`victoria_logs_send()`](elements/001-hydrogen/hydrogen/src/logging/victoria_logs.c) function formats and enqueues without blocking:
 
 ```c
-bool send_victoria_logs_batch(const VictoriaLogsConfig* config, const char* batch) {
-    if (!config || !config->enabled || !batch || !batch[0]) {
-        return false;
-    }
-
-    // Parse the full URL from config
-    char host[256];
-    int port;
-    char path[1024];  // Includes /insert/jsonline and query params
-    bool use_ssl;
-
-    if (!parse_url(config->url, host, &port, path, &use_ssl)) {
-        log_this(SR_LOGGING, "Invalid VictoriaLogs URL", LOG_LEVEL_ERROR, 0);
-        return false;
-    }
-
-    // Build HTTP request using parsed components
-    char request[4096];
-    size_t body_len = strlen(batch);
-
-    snprintf(request, sizeof(request),
-        "POST %s HTTP/1.1\r\n"
-        "Host: %s:%d\r\n"
-        "Content-Type: application/stream+json\r\n"
-        "Content-Length: %zu\r\n"
-        "Connection: keep-alive\r\n"
-        "\r\n"
-        "%s",
-        path, host, port, body_len, batch);
-    
-    // Send via socket (reuse existing network code)
-    int sock = connect_to_server(host, port, use_ssl);
-    if (sock < 0) {
-        log_this(SR_LOGGING, "Failed to connect to VictoriaLogs", LOG_LEVEL_ERROR, 0);
-        return false;
+bool victoria_logs_send(const char* subsystem, const char* message, int priority) {
+    // Check enabled and log level
+    if (!victoria_logs_is_enabled() || priority < min_level) {
+        return true;
     }
     
-    ssize_t sent = send(sock, request, strlen(request), 0);
-    if (sent < 0) {
-        close(sock);
-        log_this(SR_LOGGING, "Failed to send to VictoriaLogs", LOG_LEVEL_ERROR, 0);
-        return false;
-    }
+    // Format JSON message with timestamp, K8S metadata, etc.
+    char json[VICTORIA_LOGS_MAX_MESSAGE_SIZE];
+    build_json_message(subsystem, message, priority, json, sizeof(json));
     
-    // Read response (non-blocking or with timeout)
-    char response[1024];
-    ssize_t received = recv(sock, response, sizeof(response) - 1, 0);
-    close(sock);
-    
-    if (received > 0) {
-        response[received] = '\0';
-        // Check for 204 No Content (success)
-        if (strstr(response, "204 No Content") != NULL) {
-            return true;
-        }
-        // Log unexpected responses
-        log_this(SR_LOGGING, "VictoriaLogs returned non-204 response", LOG_LEVEL_ALERT, 0);
-    }
-    
-    return false;
+    // Enqueue for worker thread (non-blocking)
+    return vl_queue_enqueue(json);
 }
 ```
 
@@ -546,20 +468,23 @@ bool send_victoria_logs_batch(const VictoriaLogsConfig* config, const char* batc
 
 ### Unit Tests
 
-Create [`tests/unity/test_victoria_logs.c`](elements/001-hydrogen/hydrogen/tests/unity/test_victoria_logs.c):
+Create tests/unity/test_victoria_logs.c:
 
 1. **Configuration parsing**: Test environment variable reading
 2. **Log level mapping**: Test string-to-level conversion
 3. **JSON formatting**: Test message builder output
-4. **Batching**: Test batch collection and flushing logic
-5. **URL parsing**: Test destination URL parsing
+4. **JSON escaping**: Test special character handling
+5. **Queue operations**: Test enqueue/dequeue behavior
+6. **Batching logic**: Test timer-based flushing
 
 ### Integration Tests
 
-1. **Local VictoriaLogs**: Start local VictoriaLogs instance, send logs, query via API
+1. **Local VictoriaLogs**: Start local instance, send logs, query via API
 2. **Log level filtering**: Verify only appropriate levels are sent
 3. **Kubernetes metadata**: Verify fallback values in dev environment
-4. **Batch behavior**: Verify batching and timeout flushing
+4. **Batch behavior**: Verify dual-timer flushing
+5. **Queue overflow**: Verify graceful message dropping when queue full
+6. **Thread lifecycle**: Verify startup and shutdown behavior
 
 ## Error Handling
 
@@ -567,17 +492,20 @@ Create [`tests/unity/test_victoria_logs.c`](elements/001-hydrogen/hydrogen/tests
 |----------|----------|
 | VICTORIALOGS_URL not set | VictoriaLogs disabled, no error |
 | VICTORIALOGS_URL invalid URL | Log error, disable VictoriaLogs |
-| Connection failure | Log error, retry with backoff |
+| Connection failure | Log error, batch cleared (no infinite retry) |
 | HTTP error response | Log error, continue operation |
-| Memory allocation failure | Log error, skip VictoriaLogs for this message |
+| Queue full | Drop message, continue operation |
+| Memory allocation failure | Disable VictoriaLogs, log error |
+| Thread creation failure | Disable VictoriaLogs, log error |
 
 ## Performance Considerations
 
-1. **Batched sends**: Collect multiple log entries before sending (default: 50 messages or 5 seconds)
-2. **Non-blocking**: Queue operations don't block log_this() caller
-3. **Keep-alive**: Use HTTP keep-alive connections where possible
-4. **JSON escaping**: Minimal overhead for message escaping
-5. **Zero-copy**: Avoid unnecessary string copying where possible
+1. **Non-blocking enqueue**: `victoria_logs_send()` returns immediately after enqueuing
+2. **Dedicated thread**: HTTP operations don't block the logging thread
+3. **Dual-timer batching**: Balances latency and throughput
+4. **Batch size limit**: Prevents excessive memory usage
+5. **Queue size limit**: Prevents unbounded memory growth under heavy load
+6. **Zero-copy where possible**: Messages are queued by pointer
 
 ## Security Considerations
 
@@ -585,6 +513,7 @@ Create [`tests/unity/test_victoria_logs.c`](elements/001-hydrogen/hydrogen/tests
 2. **TLS support**: Support `https://` URLs for encrypted transmission
 3. **URL validation**: Validate destination URL format
 4. **Buffer limits**: Prevent buffer overflows in message building
+5. **Environment-only config**: No credentials in JSON config files
 
 ## Future Enhancements
 
@@ -593,10 +522,12 @@ Create [`tests/unity/test_victoria_logs.c`](elements/001-hydrogen/hydrogen/tests
 3. **Metrics**: Track bytes sent, errors, queue depth
 4. **Dynamic config**: Support runtime configuration changes via SIGHUP
 5. **Structured fields**: Allow custom fields from log_this() calls
+6. **Persistent queue**: Save queue to disk for crash recovery
 
 ## References
 
 - [VictoriaLogs Documentation](https://docs.victoriametrics.com/victorialogs/)
 - [VictoriaLogs JSON Ingestion API](https://docs.victoriametrics.com/victorialogs/data-ingestion/#json-stream-api)
-- Existing Hydrogen logging: [`src/logging/logging.c`](elements/001-hydrogen/hydrogen/src/logging/logging.c)
-- Configuration system: [`src/config/config_logging.h`](elements/001-hydrogen/hydrogen/src/config/config_logging.h)
+- Implementation: [`src/logging/victoria_logs.c`](elements/001-hydrogen/hydrogen/src/logging/victoria_logs.c)
+- Header: [`src/logging/victoria_logs.h`](elements/001-hydrogen/hydrogen/src/logging/victoria_logs.h)
+- Integration: [`src/logging/logging.c`](elements/001-hydrogen/hydrogen/src/logging/logging.c)

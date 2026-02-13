@@ -2,6 +2,10 @@
 
 These started life typically as AI conversations that morphed into a wishlist, then into an implementation plan, and finally into a completed to-do list for the project. The remains tend to be a smoking husk compared to what started as an egalitarian vision, but the journey may offer some insight into how we've gone from lightbulb to implementation.
 
+## [VICTORIALOGGING](/docs/H/plans/VICTORIALOGGING.md)
+
+Implmenentation plan for adding support for VictoriaLogs to Hydrogen.
+
 ## [TO-DO](/docs/H/plans/TODO.md)
   
 The Development Roadmap serves as a central location to track incomplete items across the Hydrogen project. It organizes tasks by subsystem (API, Database, Launch, Logging, OIDC, Print) with difficulty-based categorization from Easy to Hard. The document provides detailed status tracking for each task, including specific file locations and descriptions of what needs to be implemented. It also includes a comprehensive section on test management, outlining procedures for fixing failing tests, removing invaluable tests, and maintaining test quality across the codebase.

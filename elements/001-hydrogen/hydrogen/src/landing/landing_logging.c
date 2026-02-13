@@ -109,7 +109,10 @@ int land_logging_subsystem(void) {
     // Clean up the log buffer to prevent memory leaks
     log_this(SR_LOGGING, "Cleaning up " SR_LOGGING " buffer", LOG_LEVEL_DEBUG, 0);
     cleanup_log_buffer();
-    
+
+    // Clean up VictoriaLogs (flush any pending batches)
+    cleanup_victoria_logs();
+
     log_this(SR_LOGGING, "LANDING: " SR_LOGGING " COMPLETE", LOG_LEVEL_DEBUG, 0);
     
     return success ? 1 : 0;  // Return 1 for success, 0 for failure
