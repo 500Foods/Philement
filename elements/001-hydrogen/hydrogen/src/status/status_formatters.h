@@ -21,9 +21,10 @@ json_t* format_system_status_json(const SystemMetrics *metrics);
 // Exposed for testing - was previously static
 char* format_system_status_prometheus(const SystemMetrics *metrics);
 
-// Helper function to format percentage values consistently
+// Helper function to format percentage metric values consistently for Prometheus
+// Note: HELP and TYPE lines must be output separately before calling this function
 void format_prometheus_percentage(char *buffer, size_t buffer_size,
-                               const char *metric_name, const char *labels,
-                               const char *value);
+                               const char *metric_name, const char *label_key,
+                               int label_value, const char *value);
 
 #endif /* STATUS_FORMATTERS_H */
