@@ -515,6 +515,12 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
     unsigned long counter_high = (current_count / 1000) % 1000;
     unsigned long counter_low = current_count % 1000;
 
+    // Send to VictoriaLogs immediately (no dependencies, works from startup)
+    // This is intentionally independent of the queue system and config
+    if (victoria_logs_is_enabled()) {
+        victoria_logs_send(subsystem, details, priority);
+    }
+
     char json_message[DEFAULT_MAX_LOG_MESSAGE_SIZE];
     // Create JSON message with all destinations enabled and counter values
     snprintf(json_message, sizeof(json_message),
