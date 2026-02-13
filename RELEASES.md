@@ -143,6 +143,7 @@ QUALITY CHECKLIST (before completing)
 -->
 ## Contents
 
+- [February 2026](#february-2026)
 - [January 2026](#january-2026)
 - [December 2025](#december-2025)
 - [November 2025](#november-2025)
@@ -156,6 +157,10 @@ QUALITY CHECKLIST (before completing)
 - [March 2025](#march-2025)
 - [February 2025](#february-2025)
 - [July 2024](#july-2024)
+
+## February 2026
+
+- [2026-Feb-13 (Fri)](/releases/2026-02/2026-02-13.md): (H) Prometheus metrics format fixes, Swagger proxy support
 
 ## January 2026
 

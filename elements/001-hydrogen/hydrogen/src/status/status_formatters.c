@@ -217,18 +217,22 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
     return root;
 }
 
-// Helper function to format percentage values consistently for Prometheus
-void format_prometheus_percentage(char *buffer, size_t buffer_size, 
-                               const char *metric_name, const char *labels, 
-                               const char *value) {
+// Helper function to format percentage metric values consistently for Prometheus
+// Note: HELP and TYPE lines must be output separately before calling this function
+void format_prometheus_percentage(char *buffer, size_t buffer_size,
+                               const char *metric_name, const char *label_key,
+                               int label_value, const char *value) {
     double val;
     sscanf(value, "%lf", &val);  // Convert string percentage to double
-    snprintf(buffer, buffer_size,
-             "# HELP %s Percentage value\n"
-             "# TYPE %s gauge\n"
-             "%s{%s} %f\n",
-             metric_name, metric_name, metric_name, 
-             labels ? labels : "", val / 100.0);  // Convert percentage to ratio
+    if (label_key && label_key[0] != '\0') {
+        snprintf(buffer, buffer_size,
+                 "%s{%s=\"%d\"} %f\n",
+                 metric_name, label_key, label_value, val / 100.0);  // Convert percentage to ratio
+    } else {
+        snprintf(buffer, buffer_size,
+                 "%s %f\n",
+                 metric_name, val / 100.0);  // Convert percentage to ratio
+    }
 }
 
 // Convert system metrics to Prometheus format
@@ -261,102 +265,119 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
     } while(0)
 
     // System Info
-    APPEND("# HELP system_info System information\n"
-           "# TYPE system_info gauge\n"
-           "system_info{version=\"%s\",release=\"%s\",build=\"%s\"} 1\n\n",
+    APPEND("# HELP hydrogen_system_info System information\n"
+           "# TYPE hydrogen_system_info gauge\n"
+           "hydrogen_system_info{version=\"%s\",release=\"%s\",build=\"%s\"} 1\n\n",
            metrics->server_version, metrics->release, metrics->build_type);
 
     // CPU Metrics
     char cpu_buffer[256];
+
+    // Total CPU usage
+    APPEND("# HELP hydrogen_cpu_usage_total Total CPU usage percentage\n"
+           "# TYPE hydrogen_cpu_usage_total gauge\n");
     format_prometheus_percentage(cpu_buffer, sizeof(cpu_buffer),
-                               "cpu_usage_total", "", metrics->cpu.total_usage);
+                               "hydrogen_cpu_usage_total", NULL, 0, metrics->cpu.total_usage);
     APPEND("%s\n", cpu_buffer);
 
+    // Per-core CPU usage
+    APPEND("# HELP hydrogen_cpu_usage_core CPU usage percentage per core\n"
+           "# TYPE hydrogen_cpu_usage_core gauge\n");
     for (int i = 0; i < metrics->cpu.core_count; i++) {
         format_prometheus_percentage(cpu_buffer, sizeof(cpu_buffer),
-                                  "cpu_usage_core",
-                                  "core", metrics->cpu.per_core_usage[i]);
-        APPEND("%s\n", cpu_buffer);
+                                  "hydrogen_cpu_usage_core",
+                                  "core", i, metrics->cpu.per_core_usage[i]);
+        APPEND("%s", cpu_buffer);
     }
 
     // Memory Metrics
-    APPEND("# HELP memory_total_bytes Total system memory in bytes\n"
-           "# TYPE memory_total_bytes gauge\n"
-           "memory_total_bytes %llu\n"
-           "# HELP memory_used_bytes Used system memory in bytes\n"
-           "# TYPE memory_used_bytes gauge\n"
-           "memory_used_bytes %llu\n"
-           "# HELP memory_free_bytes Free system memory in bytes\n"
-           "# TYPE memory_free_bytes gauge\n"
-           "memory_free_bytes %llu\n",
+    APPEND("# HELP hydrogen_memory_total_bytes Total system memory in bytes\n"
+           "# TYPE hydrogen_memory_total_bytes gauge\n"
+           "hydrogen_memory_total_bytes %llu\n"
+           "# HELP hydrogen_memory_used_bytes Used system memory in bytes\n"
+           "# TYPE hydrogen_memory_used_bytes gauge\n"
+           "hydrogen_memory_used_bytes %llu\n"
+           "# HELP hydrogen_memory_free_bytes Free system memory in bytes\n"
+           "# TYPE hydrogen_memory_free_bytes gauge\n"
+           "hydrogen_memory_free_bytes %llu\n",
            metrics->memory.total_ram,
            metrics->memory.used_ram,
            metrics->memory.free_ram);
 
+    APPEND("# HELP hydrogen_memory_used_ratio Ratio of memory used (0.0-1.0)\n"
+           "# TYPE hydrogen_memory_used_ratio gauge\n");
     format_prometheus_percentage(cpu_buffer, sizeof(cpu_buffer),
-                              "memory_used_ratio", "", 
-                              metrics->memory.ram_used_percent);
+                               "hydrogen_memory_used_ratio", NULL, 0,
+                               metrics->memory.ram_used_percent);
     APPEND("%s\n", cpu_buffer);
 
     if (metrics->memory.total_swap > 0) {
-        APPEND("# HELP swap_total_bytes Total swap space in bytes\n"
-               "# TYPE swap_total_bytes gauge\n"
-               "swap_total_bytes %llu\n"
-               "# HELP swap_used_bytes Used swap space in bytes\n"
-               "# TYPE swap_used_bytes gauge\n"
-               "swap_used_bytes %llu\n"
-               "# HELP swap_free_bytes Free swap space in bytes\n"
-               "# TYPE swap_free_bytes gauge\n"
-               "swap_free_bytes %llu\n",
+        APPEND("# HELP hydrogen_swap_total_bytes Total swap space in bytes\n"
+               "# TYPE hydrogen_swap_total_bytes gauge\n"
+               "hydrogen_swap_total_bytes %llu\n"
+               "# HELP hydrogen_swap_used_bytes Used swap space in bytes\n"
+               "# TYPE hydrogen_swap_used_bytes gauge\n"
+               "hydrogen_swap_used_bytes %llu\n"
+               "# HELP hydrogen_swap_free_bytes Free swap space in bytes\n"
+               "# TYPE hydrogen_swap_free_bytes gauge\n"
+               "hydrogen_swap_free_bytes %llu\n",
                metrics->memory.total_swap,
                metrics->memory.used_swap,
                metrics->memory.free_swap);
 
+        APPEND("# HELP hydrogen_swap_used_ratio Ratio of swap used (0.0-1.0)\n"
+               "# TYPE hydrogen_swap_used_ratio gauge\n");
         format_prometheus_percentage(cpu_buffer, sizeof(cpu_buffer),
-                                  "swap_used_ratio", "",
+                                  "hydrogen_swap_used_ratio", NULL, 0,
                                   metrics->memory.swap_used_percent);
         APPEND("%s\n", cpu_buffer);
     }
 
-    // Network Metrics
-    for (int i = 0; i < metrics->network.interface_count; i++) {
-        const NetworkInterfaceMetrics *iface = &metrics->network.interfaces[i];
-        APPEND("# HELP network_receive_bytes_total Total bytes received per interface\n"
-               "# TYPE network_receive_bytes_total counter\n"
-               "network_receive_bytes_total{interface=\"%s\"} %llu\n"
-               "# HELP network_transmit_bytes_total Total bytes transmitted per interface\n"
-               "# TYPE network_transmit_bytes_total counter\n"
-               "network_transmit_bytes_total{interface=\"%s\"} %llu\n",
-               iface->name, iface->rx_bytes,
-               iface->name, iface->tx_bytes);
+    // Network Metrics - Output HELP/TYPE once, then all data
+    if (metrics->network.interface_count > 0) {
+        APPEND("# HELP hydrogen_network_receive_bytes_total Total bytes received per interface\n"
+               "# TYPE hydrogen_network_receive_bytes_total counter\n");
+        for (int i = 0; i < metrics->network.interface_count; i++) {
+            const NetworkInterfaceMetrics *iface = &metrics->network.interfaces[i];
+            APPEND("hydrogen_network_receive_bytes_total{interface=\"%s\"} %llu\n",
+                   iface->name, iface->rx_bytes);
+        }
+
+        APPEND("# HELP hydrogen_network_transmit_bytes_total Total bytes transmitted per interface\n"
+               "# TYPE hydrogen_network_transmit_bytes_total counter\n");
+        for (int i = 0; i < metrics->network.interface_count; i++) {
+            const NetworkInterfaceMetrics *iface = &metrics->network.interfaces[i];
+            APPEND("hydrogen_network_transmit_bytes_total{interface=\"%s\"} %llu\n",
+                   iface->name, iface->tx_bytes);
+        }
     }
 
     // Service Metrics
     if (metrics->logging.enabled) {
-        APPEND("# HELP service_threads Number of threads per service\n"
-               "# TYPE service_threads gauge\n"
-               "service_threads{service=\"logging\"} %d\n"
-               "# HELP service_virtual_memory_bytes Virtual memory usage per service\n"
-               "# TYPE service_virtual_memory_bytes gauge\n"
-               "service_virtual_memory_bytes{service=\"logging\"} %zu\n"
-               "# HELP service_resident_memory_bytes Resident memory usage per service\n"
-               "# TYPE service_resident_memory_bytes gauge\n"
-               "service_resident_memory_bytes{service=\"logging\"} %zu\n",
+        APPEND("# HELP hydrogen_service_threads Number of threads per service\n"
+               "# TYPE hydrogen_service_threads gauge\n"
+               "hydrogen_service_threads{service=\"logging\"} %d\n"
+               "# HELP hydrogen_service_virtual_memory_bytes Virtual memory usage per service\n"
+               "# TYPE hydrogen_service_virtual_memory_bytes gauge\n"
+               "hydrogen_service_virtual_memory_bytes{service=\"logging\"} %zu\n"
+               "# HELP hydrogen_service_resident_memory_bytes Resident memory usage per service\n"
+               "# TYPE hydrogen_service_resident_memory_bytes gauge\n"
+               "hydrogen_service_resident_memory_bytes{service=\"logging\"} %zu\n",
                metrics->logging.threads.thread_count,
                metrics->logging.threads.virtual_memory,
                metrics->logging.threads.resident_memory);
     }
 
     if (metrics->webserver.enabled) {
-        APPEND("service_threads{service=\"webserver\"} %d\n"
-               "service_virtual_memory_bytes{service=\"webserver\"} %zu\n"
-               "service_resident_memory_bytes{service=\"webserver\"} %zu\n"
-               "# HELP webserver_active_requests Current number of active webserver requests\n"
-               "# TYPE webserver_active_requests gauge\n"
-               "webserver_active_requests %d\n"
-               "# HELP webserver_requests_total Total number of webserver requests\n"
-               "# TYPE webserver_requests_total counter\n"
-               "webserver_requests_total %d\n",
+        APPEND("hydrogen_service_threads{service=\"webserver\"} %d\n"
+               "hydrogen_service_virtual_memory_bytes{service=\"webserver\"} %zu\n"
+               "hydrogen_service_resident_memory_bytes{service=\"webserver\"} %zu\n"
+               "# HELP hydrogen_webserver_active_requests Current number of active webserver requests\n"
+               "# TYPE hydrogen_webserver_active_requests gauge\n"
+               "hydrogen_webserver_active_requests %d\n"
+               "# HELP hydrogen_webserver_requests_total Total number of webserver requests\n"
+               "# TYPE hydrogen_webserver_requests_total counter\n"
+               "hydrogen_webserver_requests_total %d\n",
                metrics->webserver.threads.thread_count,
                metrics->webserver.threads.virtual_memory,
                metrics->webserver.threads.resident_memory,
@@ -365,21 +386,21 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
     }
 
     if (metrics->websocket.enabled) {
-        APPEND("service_threads{service=\"websocket\"} %d\n"
-               "service_virtual_memory_bytes{service=\"websocket\"} %zu\n"
-               "service_resident_memory_bytes{service=\"websocket\"} %zu\n"
-               "# HELP websocket_uptime_seconds WebSocket server uptime\n"
-               "# TYPE websocket_uptime_seconds counter\n"
-               "websocket_uptime_seconds %ld\n"
-               "# HELP websocket_active_connections Current number of active WebSocket connections\n"
-               "# TYPE websocket_active_connections gauge\n"
-               "websocket_active_connections %d\n"
-               "# HELP websocket_connections_total Total number of WebSocket connections\n"
-               "# TYPE websocket_connections_total counter\n"
-               "websocket_connections_total %d\n"
-               "# HELP websocket_requests_total Total number of WebSocket requests\n"
-               "# TYPE websocket_requests_total counter\n"
-               "websocket_requests_total %d\n",
+        APPEND("hydrogen_service_threads{service=\"websocket\"} %d\n"
+               "hydrogen_service_virtual_memory_bytes{service=\"websocket\"} %zu\n"
+               "hydrogen_service_resident_memory_bytes{service=\"websocket\"} %zu\n"
+               "# HELP hydrogen_websocket_uptime_seconds WebSocket server uptime\n"
+               "# TYPE hydrogen_websocket_uptime_seconds counter\n"
+               "hydrogen_websocket_uptime_seconds %ld\n"
+               "# HELP hydrogen_websocket_active_connections Current number of active WebSocket connections\n"
+               "# TYPE hydrogen_websocket_active_connections gauge\n"
+               "hydrogen_websocket_active_connections %d\n"
+               "# HELP hydrogen_websocket_connections_total Total number of WebSocket connections\n"
+               "# TYPE hydrogen_websocket_connections_total counter\n"
+               "hydrogen_websocket_connections_total %d\n"
+               "# HELP hydrogen_websocket_requests_total Total number of WebSocket requests\n"
+               "# TYPE hydrogen_websocket_requests_total counter\n"
+               "hydrogen_websocket_requests_total %d\n",
                metrics->websocket.threads.thread_count,
                metrics->websocket.threads.virtual_memory,
                metrics->websocket.threads.resident_memory,
@@ -390,20 +411,20 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
     }
 
     // Queue Metrics
-    APPEND("# HELP queue_entries Current number of entries in queue\n"
-           "# TYPE queue_entries gauge\n"
-           "queue_entries{queue=\"log\"} %d\n"
-           "queue_entries{queue=\"print\"} %d\n"
-           "# HELP queue_blocks Current number of memory blocks in queue\n"
-           "# TYPE queue_blocks gauge\n"
-           "queue_blocks{queue=\"log\"} %d\n"
-           "queue_blocks{queue=\"print\"} %d\n"
-           "# HELP queue_memory_bytes Memory usage per queue\n"
-           "# TYPE queue_memory_bytes gauge\n"
-           "queue_memory_bytes{queue=\"log\",type=\"virtual\"} %zu\n"
-           "queue_memory_bytes{queue=\"log\",type=\"resident\"} %zu\n"
-           "queue_memory_bytes{queue=\"print\",type=\"virtual\"} %zu\n"
-           "queue_memory_bytes{queue=\"print\",type=\"resident\"} %zu\n",
+    APPEND("# HELP hydrogen_queue_entries Current number of entries in queue\n"
+           "# TYPE hydrogen_queue_entries gauge\n"
+           "hydrogen_queue_entries{queue=\"log\"} %d\n"
+           "hydrogen_queue_entries{queue=\"print\"} %d\n"
+           "# HELP hydrogen_queue_blocks Current number of memory blocks in queue\n"
+           "# TYPE hydrogen_queue_blocks gauge\n"
+           "hydrogen_queue_blocks{queue=\"log\"} %d\n"
+           "hydrogen_queue_blocks{queue=\"print\"} %d\n"
+           "# HELP hydrogen_queue_memory_bytes Memory usage per queue\n"
+           "# TYPE hydrogen_queue_memory_bytes gauge\n"
+           "hydrogen_queue_memory_bytes{queue=\"log\",type=\"virtual\"} %zu\n"
+           "hydrogen_queue_memory_bytes{queue=\"log\",type=\"resident\"} %zu\n"
+           "hydrogen_queue_memory_bytes{queue=\"print\",type=\"virtual\"} %zu\n"
+           "hydrogen_queue_memory_bytes{queue=\"print\",type=\"resident\"} %zu\n",
            metrics->log_queue.entry_count,
            metrics->print_queue.entry_count,
            metrics->log_queue.block_count,
