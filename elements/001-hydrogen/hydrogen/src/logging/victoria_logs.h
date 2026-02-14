@@ -97,6 +97,14 @@ extern VLThreadState victoria_logs_thread;
 // Maximum queue size before dropping messages
 #define VICTORIA_LOGS_MAX_QUEUE_SIZE 10000
 
+// Maximum seconds to retry a failed batch before dropping it
+// Keeps messages buffered during brief VL outages (e.g., restarts)
+#define VICTORIA_LOGS_MAX_RETRY_SEC 60
+
+// Retry interval after a failed flush (seconds)
+// Short enough to reconnect quickly after a brief VL restart
+#define VICTORIA_LOGS_RETRY_INTERVAL_SEC 2
+
 /**
  * Initialize VictoriaLogs configuration from environment variables
  *
