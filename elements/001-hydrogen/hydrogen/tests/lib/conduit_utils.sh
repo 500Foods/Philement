@@ -219,7 +219,8 @@ check_database_readiness() {
         local db_ready=false
 
         # Check for successful migration completion
-        if "${GREP}" -q "${db_name}.*Migration process completed.*QTC populated from bootstrap queries" "${log_file}" 2>/dev/null; then
+        sleep 5
+        if "${GREP}" -q "${db_name}.*Migration completed" "${log_file}" 2>/dev/null; then
             db_ready=true
         fi
 

@@ -286,7 +286,7 @@ run_auth_test_parallel() {
     local base_url="http://localhost:${server_port}"
     
     # Start hydrogen server
-    "${HYDROGEN_BIN}" "${config_file}" > "${log_file}" 2>&1 &
+    HYDROGEN_LOG_LEVEL=STATE "${HYDROGEN_BIN}" "${config_file}" > "${log_file}" 2>&1 &
     local hydrogen_pid=$!
     
     # Store PID for later reference
@@ -302,7 +302,7 @@ run_auth_test_parallel() {
             break
         fi
         
-        if "${GREP}" -q "STARTUP COMPLETE" "${log_file}" 2>/dev/null; then
+        if "${GREP}" -q "Startup elapsed time:" "${log_file}" 2>/dev/null; then
             startup_success=true
             break
         fi
