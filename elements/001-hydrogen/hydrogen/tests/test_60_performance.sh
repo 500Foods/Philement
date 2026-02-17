@@ -452,23 +452,23 @@ print_performance_summary() {
         timing_output=""
         timing_output+="$(printf "%-12s" "${db_name}:")"
 
-        # Print all timings with leading zeros
+        # Print all timings with proper seconds formatting
         for timing_ms in "${timings[@]}"; do
             local timing_sec
-            timing_sec=$(printf "0.%03d" "${timing_ms}")
+            timing_sec=$(printf "%d.%03d" $((timing_ms / 1000)) $((timing_ms % 1000)))
             timing_output+="$(printf " %9ss" "${timing_sec}")"
         done
 
-        # Print best time with leading zero
+        # Print best time with proper seconds formatting
         local min_sec
-        min_sec=$(printf "0.%03d" "${min_time}")
+        min_sec=$(printf "%d.%03d" $((min_time / 1000)) $((min_time % 1000)))
         timing_output+="$(printf " %9ss" "${min_sec}")"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${timing_output}"
     done
 
     # Announce the winner
     local best_overall_sec
-    best_overall_sec=$(printf "0.%03d" "${best_overall_time}")
+    best_overall_sec=$(printf "%d.%03d" $((best_overall_time / 1000)) $((best_overall_time % 1000)))
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Winner: ${best_overall_db} with ${best_overall_sec}s"
     TEST_NAME=$(echo "Performance Test  {BLUE}winner:  ${best_overall_db} with ${best_overall_sec}s{RESET}" || true)
 

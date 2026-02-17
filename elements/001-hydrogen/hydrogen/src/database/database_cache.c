@@ -195,9 +195,9 @@ bool query_cache_add_entry(QueryTableCache* cache, QueryCacheEntry* entry, const
     // Release write lock
     pthread_rwlock_unlock(&cache->cache_lock);
 
-    if (result) {
-        log_this(dqm_label ? dqm_label : SR_DATABASE, "Added query entry to cache", LOG_LEVEL_DEBUG, 0);
-    }
+    // if (result) {
+    //     log_this(dqm_label ? dqm_label : SR_DATABASE, "Added query entry to cache", LOG_LEVEL_DEBUG, 0);
+    // }
 
     return result;
 }

@@ -826,6 +826,7 @@ run_conduit_test_unified() {
     print_message "50" "0" "Server log location: build/tests/logs/test_50_${TIMESTAMP}_conduit_query.log"
 
     # Acquire JWT tokens for authenticated status testing
+    
     acquire_jwt_tokens "${base_url}" "${result_file}"
 
     # Run conduit status endpoint tests

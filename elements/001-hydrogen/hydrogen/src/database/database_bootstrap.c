@@ -208,8 +208,8 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 
                                      if (entry && db_queue->query_cache) {
                                          if (query_cache_add_entry(db_queue->query_cache, entry, dqm_label)) {
-                                             log_this(dqm_label, "Added QTC entry: ref=%d, type=%d, queue=%s",
-                                                     LOG_LEVEL_DEBUG, 3, query_ref, query_type, queue_type_str);
+                                            //  log_this(dqm_label, "Added QTC entry: ref=%d, type=%d, queue=%s",
+                                            //          LOG_LEVEL_DEBUG, 3, query_ref, query_type, queue_type_str);
                                          } else {
                                              log_this(dqm_label, "Failed to add QTC entry: ref=%d", LOG_LEVEL_ERROR, 1, query_ref);
                                              query_cache_entry_destroy(entry);
