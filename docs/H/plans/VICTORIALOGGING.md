@@ -299,7 +299,7 @@ VictoriaLogs is **intentionally excluded** from the JSON configuration system. T
 
 #### 1. VictoriaLogs Configuration Structure
 
-See [`src/logging/victoria_logs.h`](elements/001-hydrogen/hydrogen/src/logging/victoria_logs.h):
+See [`src/logging/victoria_logs.h`](/elements/001-hydrogen/hydrogen/src/logging/victoria_logs.h):
 
 ```c
 // VictoriaLogs configuration from environment variables
@@ -374,7 +374,7 @@ bool init_victoria_logs(void) {
 
 #### 3. Log Message Integration
 
-The [`log_this()`](elements/001-hydrogen/hydrogen/src/logging/logging.c) function sends to VictoriaLogs **independently** of other logging systems:
+The [`log_this()`](/elements/001-hydrogen/hydrogen/src/logging/logging.c) function sends to VictoriaLogs **independently** of other logging systems:
 
 ```c
 void log_this(const char* subsystem, const char* format, int priority, int num_args, ...) {
@@ -398,7 +398,7 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
 
 #### 4. Worker Thread Implementation
 
-The worker thread ([`victoria_logs_worker()`](elements/001-hydrogen/hydrogen/src/logging/victoria_logs.c)) implements the dual-timer batching:
+The worker thread ([`victoria_logs_worker()`](/elements/001-hydrogen/hydrogen/src/logging/victoria_logs.c)) implements the dual-timer batching:
 
 ```c
 static void* victoria_logs_worker(void* arg) {
@@ -446,7 +446,7 @@ static void* victoria_logs_worker(void* arg) {
 
 #### 5. Non-Blocking Enqueue
 
-The [`victoria_logs_send()`](elements/001-hydrogen/hydrogen/src/logging/victoria_logs.c) function formats and enqueues without blocking:
+The [`victoria_logs_send()`](/elements/001-hydrogen/hydrogen/src/logging/victoria_logs.c) function formats and enqueues without blocking:
 
 ```c
 bool victoria_logs_send(const char* subsystem, const char* message, int priority) {
@@ -528,6 +528,6 @@ Create tests/unity/test_victoria_logs.c:
 
 - [VictoriaLogs Documentation](https://docs.victoriametrics.com/victorialogs/)
 - [VictoriaLogs JSON Ingestion API](https://docs.victoriametrics.com/victorialogs/data-ingestion/#json-stream-api)
-- Implementation: [`src/logging/victoria_logs.c`](elements/001-hydrogen/hydrogen/src/logging/victoria_logs.c)
-- Header: [`src/logging/victoria_logs.h`](elements/001-hydrogen/hydrogen/src/logging/victoria_logs.h)
-- Integration: [`src/logging/logging.c`](elements/001-hydrogen/hydrogen/src/logging/logging.c)
+- Implementation: [`src/logging/victoria_logs.c`](/elements/001-hydrogen/hydrogen/src/logging/victoria_logs.c)
+- Header: [`src/logging/victoria_logs.h`](/elements/001-hydrogen/hydrogen/src/logging/victoria_logs.h)
+- Integration: [`src/logging/logging.c`](/elements/001-hydrogen/hydrogen/src/logging/logging.c)

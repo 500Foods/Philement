@@ -35,6 +35,22 @@ extern sqlite3_bind_double_t sqlite3_bind_double_ptr;
 extern sqlite3_bind_null_t sqlite3_bind_null_ptr;
 extern sqlite3_errmsg_t sqlite3_errmsg_ptr;
 
+// Helper function to trim trailing whitespace from strings (SQLite-specific, for consistency across engines)
+static char* sqlite_trim_trailing_whitespace(char* str) {
+    if (!str) return NULL;
+
+    // Find the end of the string
+    char* end = str + strlen(str) - 1;
+
+    // Move backwards from the end, removing whitespace
+    while (end >= str && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) {
+        *end = '\0';
+        end--;
+    }
+
+    return str;
+}
+
 /*
  * SQLite Parameter Binding
  */
@@ -221,10 +237,16 @@ int sqlite_exec_callback(void* data, int argc, char** argv, char** col_names) {
                     // Numeric value - no quotes around value
                     sprintf(append_pos, "\"%s\":%s", col_name, value);
                 } else {
-                    // String type - escape and quote
+                    // String type - trim trailing whitespace, escape and quote
+                    // Duplicate and trim the value since we can't modify the original
+                    char* trimmed_value = strdup(value);
+                    if (trimmed_value) {
+                        sqlite_trim_trailing_whitespace(trimmed_value);
+                    }
+                    
                     sprintf(append_pos, "\"%s\":\"", col_name);
                     char* dst = append_pos + strlen(append_pos);
-                    const char* src = value;
+                    const char* src = trimmed_value ? trimmed_value : value;
                     while (*src) {
                         if (*src == '"' || *src == '\\') {
                             *dst++ = '\\';
@@ -247,6 +269,7 @@ int sqlite_exec_callback(void* data, int argc, char** argv, char** col_names) {
                     }
                     *dst++ = '"';
                     *dst = '\0';
+                    free(trimmed_value);
                 }
             }
         }

@@ -92,6 +92,22 @@ static char* postgresql_format_timestamp_string(char* str) {
     return str;
 }
 
+// Helper function to trim trailing whitespace from strings (PostgreSQL-specific, for YugabyteDB compatibility)
+static char* postgresql_trim_trailing_whitespace(char* str) {
+    if (!str) return NULL;
+
+    // Find the end of the string
+    char* end = str + strlen(str) - 1;
+
+    // Move backwards from the end, removing whitespace
+    while (end >= str && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) {
+        *end = '\0';
+        end--;
+    }
+
+    return str;
+}
+
 // External declarations for constants (defined in connection.c)
 extern bool check_timeout_expired(time_t start_time, int timeout_seconds);
 
@@ -391,14 +407,29 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
                 // Append column to JSON
                 char* append_pos = db_result->data_json + current_len;
                 
+                // Apply trailing whitespace trimming for string types (PostgreSQL-specific, for YugabyteDB compatibility)
+                if (!is_numeric && value) {
+                    if (formatted_value) {
+                        // Trim the already-allocated formatted datetime value
+                        postgresql_trim_trailing_whitespace(formatted_value);
+                    } else {
+                        // Need to duplicate and trim the raw string value
+                        formatted_value = strdup(value);
+                        if (formatted_value) {
+                            postgresql_trim_trailing_whitespace(formatted_value);
+                            value = formatted_value;
+                        }
+                    }
+                }
+
                 if (is_numeric && value && strlen(value) > 0) {
                     // Numeric type - no quotes around value
-                    sprintf(append_pos, "\"%s\":%s", col_name, formatted_value ? formatted_value : value);
+                    sprintf(append_pos, "\"%s\":%s", col_name, value);
                 } else if (value) {
                     // String type - escape and quote
                     sprintf(append_pos, "\"%s\":\"", col_name);
                     char* dst = append_pos + strlen(append_pos);
-                    const char* src = formatted_value ? formatted_value : value;
+                    const char* src = value;
                     while (*src) {
                         if (*src == '"' || *src == '\\') {
                             *dst++ = '\\';
@@ -715,14 +746,29 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
                 // Append column to JSON
                 char* append_pos = db_result->data_json + current_len;
 
+                // Apply trailing whitespace trimming for string types (PostgreSQL-specific, for YugabyteDB compatibility)
+                if (!is_numeric && value) {
+                    if (formatted_value) {
+                        // Trim the already-allocated formatted datetime value
+                        postgresql_trim_trailing_whitespace(formatted_value);
+                    } else {
+                        // Need to duplicate and trim the raw string value
+                        formatted_value = strdup(value);
+                        if (formatted_value) {
+                            postgresql_trim_trailing_whitespace(formatted_value);
+                            value = formatted_value;
+                        }
+                    }
+                }
+
                 if (is_numeric && value && strlen(value) > 0) {
                     // Numeric type - no quotes around value
-                    sprintf(append_pos, "\"%s\":%s", col_name, formatted_value ? formatted_value : value);
+                    sprintf(append_pos, "\"%s\":%s", col_name, value);
                 } else if (value) {
                     // String type - escape and quote
                     sprintf(append_pos, "\"%s\":\"", col_name);
                     char* dst = append_pos + strlen(append_pos);
-                    const char* src = formatted_value ? formatted_value : value;
+                    const char* src = value;
                     while (*src) {
                         if (*src == '"' || *src == '\\') {
                             *dst++ = '\\';

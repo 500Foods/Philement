@@ -46,6 +46,15 @@ PURPOSE:
 This is a TECHNICAL RECORD of repository changes, not marketing material.
 Every statement must be backed by git commit evidence or CHANGELOG entries.
 
+QUICK WORKFLOW (repeat for each day since last release):
+  1. Run git log command (see below) for the target date
+  2. Filter out auto-generated files (SVG, metrics, installers)
+  3. If no commits or only auto-generated changes → SKIP this day
+  4. Group remaining files by subsystem/component
+  5. If total significant changes meet THRESHOLD → Create release notes
+  6. Create /releases/YYYY-MM/YYYY-MM-DD.md file
+  7. Add entry to RELEASES.md index (top of month section)
+
 STEP 1: GATHER CHANGES
 
   Run this command (replace DATE with target date, e.g., 2026-01-01):
@@ -64,13 +73,27 @@ STEP 1: GATHER CHANGES
     
   SEARCH for CHANGELOG entries:
   ```
-  grep -r 'YYYY-MM-DD' --include='CHANGELOG*'
+  grep -r 'YYYY-MM-DD' --include='CHANGELOG*' elements/001-hydrogen/hydrogen/src/
   ```
 
-  THRESHOLD: Files with >10 lines changed warrant an entry. Smaller changes
-  may qualify on slow days or if particularly significant.
+  NOTE: If git commands are unavailable, check environment_details for modified files
+  and use git status to see pending changes for the current work.
+
+  THRESHOLD GUIDELINES:
+    - Files with >10 lines (added + deleted) warrant an entry
+    - Multiple files with related changes totaling >20 lines across 3+ files
+    - Cumulative small changes (>5 files with any changes) related to a single feature
+    - Always document new database migrations (regardless of line count)
+    - Skip days with no commits or only auto-generated file changes
 
   CHECK that the release notes for the prior day do not already cover these changes.
+
+  EXAMPLES:
+    ✓ 1 file with 50 lines changed → Document it
+    ✓ 5 files with 5 lines each (same feature) → Document the feature
+    ✓ 10 files with 2-3 lines each (YugabyteDB configs) → Document the feature
+    ✗ 1 file with 3 lines changed (not a migration) → Skip
+    ✗ Only SVG/metrics/installer changes → Skip entirely
 
 STEP 2: ANALYZE CHANGES
 
@@ -134,11 +157,14 @@ EXAMPLES OF BAD ENTRIES (avoid these patterns):
 QUALITY CHECKLIST (before completing)
 --------------------------------------------------------------------------------
   [ ] All files with >10 lines changed are documented
+  [ ] Related changes across multiple small files are grouped and documented
+  [ ] Days with no significant changes are skipped (no empty release notes)
   [ ] File links use absolute paths and point to real files
   [ ] No marketing language in entries or summaries
   [ ] Sections grouped logically by subsystem
   [ ] RELEASES.md index entry uses (X) subproject prefix format
   [ ] Entry placed in correct chronological position (newest first)
+  [ ] Both daily release notes file AND index entry are created
 ================================================================================
 -->
 ## Contents
@@ -160,6 +186,8 @@ QUALITY CHECKLIST (before completing)
 
 ## February 2026
 
+- [2026-Feb-18 (Wed)](/releases/2026-02/2026-02-18.md): (H) Database string trimming for PostgreSQL, MySQL, SQLite
+- [2026-Feb-17 (Tue)](/releases/2026-02/2026-02-17.md): (H) YugabyteDB test configurations and compatibility
 - [2026-Feb-13 (Fri)](/releases/2026-02/2026-02-13.md): (H) Prometheus metrics format fixes, Swagger proxy support
 
 ## January 2026
