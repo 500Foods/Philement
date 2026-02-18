@@ -98,6 +98,7 @@ struct DatabaseQueue {
     volatile long long latest_loaded_migration;     // LOAD: Highest query_ref for type = 1000
     volatile long long latest_applied_migration;    // APPLY: Highest query_ref for type = 1003
     volatile bool empty_database;                   // True if no queries found in bootstrap results
+    volatile bool orphaned_table_dropped;           // True if orphaned table was dropped during bootstrap cleanup
 
     // Query Table Cache (QTC) - shared across all queues for this database
     QueryTableCache* query_cache;                  // In-memory cache of query templates

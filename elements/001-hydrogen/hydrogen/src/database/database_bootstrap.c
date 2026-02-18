@@ -100,12 +100,92 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
         long long latest_applied_migration = 0;
         bool empty_database = true;
 
+        bool should_process_results = false;
         bool query_success = database_engine_execute(db_queue->persistent_connection, request, &result);
 
         if (query_success && result && result->success) {
             log_this(dqm_label, "Bootstrap query succeeded: %zu rows, %zu columns", LOG_LEVEL_DEBUG, 2, result->row_count, result->column_count);
 
+            // Check if bootstrap returned 0 rows - indicates orphaned table that needs cleanup
+            if (result->row_count == 0) {
+                log_this(dqm_label, "Bootstrap query returned 0 rows - orphaned table detected, attempting cleanup", LOG_LEVEL_ALERT, 0);
+
+                // Extract table name from bootstrap query (pattern: FROM [schema.]table [WHERE|;])
+                // Look for "FROM " followed by the table name, then either " WHERE" or ";" or end of string
+                const char* from_keyword = "FROM ";
+                char* from_pos = strcasestr(bootstrap_query, from_keyword);
+                if (from_pos) {
+                    from_pos += strlen(from_keyword);
+                    // Skip any whitespace
+                    while (*from_pos == ' ' || *from_pos == '\t') from_pos++;
+
+                    // Find end of table name (space before WHERE, semicolon, or end of string)
+                    char* end_pos = from_pos;
+                    while (*end_pos && *end_pos != ' ' && *end_pos != ';' && *end_pos != '\t') {
+                        end_pos++;
+                    }
+
+                    size_t table_name_len = (size_t)(end_pos - from_pos);
+                    if (table_name_len > 0 && table_name_len < 128) {
+                        char table_name[128];
+                        strncpy(table_name, from_pos, table_name_len);
+                        table_name[table_name_len] = '\0';
+
+                        // Trim trailing whitespace
+                        while (table_name_len > 0 && (table_name[table_name_len - 1] == ' ' || table_name[table_name_len - 1] == '\t')) {
+                            table_name[--table_name_len] = '\0';
+                        }
+
+                        // Build and execute DROP TABLE IF EXISTS
+                        char drop_sql[256];
+                        snprintf(drop_sql, sizeof(drop_sql), "DROP TABLE IF EXISTS %s", table_name);
+                        log_this(dqm_label, "Dropping orphaned table: %s", LOG_LEVEL_STATE, 1, table_name);
+
+                        QueryRequest* drop_request = calloc(1, sizeof(QueryRequest));
+                        if (drop_request) {
+                            drop_request->query_id = strdup("drop_orphaned_table");
+                            drop_request->sql_template = strdup(drop_sql);
+                            drop_request->parameters_json = strdup("{}");
+                            drop_request->timeout_seconds = 30;
+                            drop_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
+                            drop_request->use_prepared_statement = false;
+
+                            QueryResult* drop_result = NULL;
+                            bool drop_success = database_engine_execute(db_queue->persistent_connection, drop_request, &drop_result);
+
+                            if (drop_success && drop_result && drop_result->success) {
+                                log_this(dqm_label, "Successfully dropped orphaned table: %s", LOG_LEVEL_STATE, 1, table_name);
+                                db_queue->orphaned_table_dropped = true;
+                            } else {
+                                log_this(dqm_label, "Failed to drop orphaned table: %s", LOG_LEVEL_ERROR, 1,
+                                         drop_result && drop_result->error_message ? drop_result->error_message : "Unknown error");
+                            }
+
+                            // Cleanup drop request and result
+                            if (drop_request->query_id) free(drop_request->query_id);
+                            if (drop_request->sql_template) free(drop_request->sql_template);
+                            if (drop_request->parameters_json) free(drop_request->parameters_json);
+                            free(drop_request);
+                            if (drop_result) database_engine_cleanup_result(drop_result);
+                        }
+                    }
+                }
+
+                // Treat as empty database to trigger migrations
+                empty_database = true;
+                latest_available_migration = 0;
+                latest_loaded_migration = 0;
+                latest_applied_migration = 0;
+
+                // Skip processing results since we have no data
+                should_process_results = false;
+            } else {
+                // We have rows to process
+                should_process_results = true;
+            }
+
             // Initialize QTC if not already done, or clear it if it exists
+            if (should_process_results) {
             if (!db_queue->query_cache) {
                 db_queue->query_cache = query_cache_create(dqm_label);
                 if (!db_queue->query_cache) {
@@ -261,14 +341,15 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                      }
                      json_decref(root);
 
-                     // Log QTC population completion
-                     if (db_queue->query_cache) {
-                         size_t qtc_count = query_cache_get_entry_count(db_queue->query_cache);
-                         log_this(dqm_label, "QTC population completed: %zu queries loaded", LOG_LEVEL_TRACE, 1, qtc_count);
-                     }
-                }
-            }
-        } else {
+                      // Log QTC population completion
+                      if (db_queue->query_cache) {
+                          size_t qtc_count = query_cache_get_entry_count(db_queue->query_cache);
+                          log_this(dqm_label, "QTC population completed: %zu queries loaded", LOG_LEVEL_TRACE, 1, qtc_count);
+                      }
+                 }
+             }
+             } // End of should_process_results block
+         } else {
             // Bootstrap failed - expected for empty databases
             log_this(dqm_label, "Bootstrap query failed (expected for empty DB): %s", LOG_LEVEL_DEBUG, 1,
                      result && result->error_message ? result->error_message : "Unknown error");

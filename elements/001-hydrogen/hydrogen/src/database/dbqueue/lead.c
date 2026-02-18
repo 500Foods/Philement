@@ -410,6 +410,13 @@ bool database_queue_lead_run_migration_test(DatabaseQueue* lead_queue) {
         migration_timer_running = false;
     }
 
+    // Report migration completion status including orphaned table cleanup info
+    if (lead_queue->orphaned_table_dropped) {
+        log_this(dqm_label, "Migration test finished - orphaned queries table was dropped and recreated", LOG_LEVEL_STATE, 0);
+    } else {
+        log_this(dqm_label, "Migration test finished - normal execution", LOG_LEVEL_STATE, 0);
+    }
+
     free(dqm_label);
     return true;
 }
