@@ -820,7 +820,7 @@
               "Engine": {
                 "type": "string",
                 "description": "Database engine type",
-                "enum": ["sqlite", "postgres", "postgresql", "mariadb", "mysql", "db2", "${env.ACURANZO_DB_TYPE}", "${env.CANVAS_DB_TYPE}", "${env.HYDROTST_DB_TYPE}"]
+                "enum": ["sqlite", "postgres", "postgresql", "mariadb", "mysql", "db2", "${env.ACURANZO_DB_TYPE}", "${env.CANVAS_DB_TYPE}", "${env.HYDROTST_DB_TYPE}", "${env.YUGABYTE_DB_TYPE}"]
               },
               "Host": {
                 "type": "string",

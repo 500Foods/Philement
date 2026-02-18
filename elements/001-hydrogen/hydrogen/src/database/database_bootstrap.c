@@ -100,11 +100,12 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
         long long latest_applied_migration = 0;
         bool empty_database = true;
 
-        bool should_process_results = false;
         bool query_success = database_engine_execute(db_queue->persistent_connection, request, &result);
 
         if (query_success && result && result->success) {
             log_this(dqm_label, "Bootstrap query succeeded: %zu rows, %zu columns", LOG_LEVEL_DEBUG, 2, result->row_count, result->column_count);
+
+            bool should_process_results;
 
             // Check if bootstrap returned 0 rows - indicates orphaned table that needs cleanup
             if (result->row_count == 0) {
