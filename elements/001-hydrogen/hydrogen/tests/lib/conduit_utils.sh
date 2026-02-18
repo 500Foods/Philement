@@ -217,9 +217,13 @@ check_database_readiness() {
     for db_engine in "${!DATABASE_NAMES[@]}"; do
         local db_name="${DATABASE_NAMES[${db_engine}]}"
         local db_ready=false
+        
+        # YugabyteDB is quite a bit slower, so let's give it a moment
+        if [[ "${db_name}" == "Demo_YB" ]]; then
+            sleep 5
+        fi
 
         # Check for successful migration completion
-        sleep 5
         if "${GREP}" -q "${db_name}.*Migration completed" "${log_file}" 2>/dev/null; then
             db_ready=true
         fi
