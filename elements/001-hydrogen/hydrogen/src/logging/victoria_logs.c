@@ -88,7 +88,7 @@ int victoria_logs_parse_level(const char* level_str, int default_level) {
 /**
  * Get priority label for a log level (internal to victoria_logs)
  */
-static const char* victoria_logs_get_priority_label(int priority) {
+const char* victoria_logs_get_priority_label(int priority) {
     if (priority >= 0 && priority <= LOG_LEVEL_QUIET) {
         return priority_labels[priority];
     }
@@ -99,6 +99,9 @@ static const char* victoria_logs_get_priority_label(int priority) {
  * Escape a string for JSON output
  */
 int victoria_logs_escape_json(const char* input, char* output, size_t output_size) {
+    if (!input || !output || output_size == 0) {
+        return -1;
+    }
     size_t j = 0;
     for (size_t i = 0; input[i] != '\0'; i++) {
         if (j >= output_size - 1) {
@@ -478,6 +481,13 @@ static void clear_batch(void) {
     victoria_logs_thread.batch_buffer_size = 0;
     victoria_logs_thread.batch_count = 0;
     victoria_logs_thread.first_message_time = 0;
+}
+
+/**
+ * Public wrapper for clear_batch (exposed for testing)
+ */
+void victoria_logs_clear_batch(void) {
+    clear_batch();
 }
 
 /**

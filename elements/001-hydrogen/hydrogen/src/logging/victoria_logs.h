@@ -180,4 +180,17 @@ int victoria_logs_escape_json(const char* input, char* output, size_t output_siz
  */
 void victoria_logs_flush(void);
 
+/**
+ * Get priority label for a log level (internal - exposed for testing)
+ *
+ * @param priority The numeric log priority level
+ * @return The string label for the priority (e.g., "DEBUG")
+ */
+const char* victoria_logs_get_priority_label(int priority);
+
+/**
+ * Clear the batch buffer (internal - exposed for testing)
+ */
+void victoria_logs_clear_batch(void);
+
 #endif // VICTORIA_LOGS_H
