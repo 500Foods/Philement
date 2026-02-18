@@ -43,6 +43,12 @@ enum MHD_Result auth_queries_deduplicate_and_validate(
     bool **is_duplicate,
     DeduplicationResult *result_code);
 
+enum MHD_Result validate_jwt_and_extract_database(
+    struct MHD_Connection *connection,
+    char **database);
+
+json_t* execute_single_auth_query(const char *database, json_t *query_obj);
+
 /**
  * @brief Handle POST /api/conduit/auth_queries requests
  *

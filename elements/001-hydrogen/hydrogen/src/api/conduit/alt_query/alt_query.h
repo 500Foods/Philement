@@ -30,6 +30,24 @@
 #include <src/database/database_queue_select.h>
 #include <src/database/dbqueue/dbqueue.h>
 
+// Include query.h for ApiPostBuffer
+#include <src/api/conduit/query/query.h>
+
+// Forward declarations for internal functions (used for testing)
+enum MHD_Result validate_jwt_for_auth(
+    struct MHD_Connection *connection,
+    const char *token);
+
+enum MHD_Result parse_alt_request(
+    struct MHD_Connection *connection,
+    const char *method,
+    ApiPostBuffer *buffer,
+    void **con_cls,
+    char **token,
+    char **database,
+    int *query_ref,
+    json_t **params_json);
+
 /**
  * @brief Handle GET/POST /api/conduit/alt_query requests
  *

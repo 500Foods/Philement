@@ -47,7 +47,7 @@ extern DatabaseQueueManager* global_queue_manager;
  * @param token The JWT token string to validate
  * @return MHD_YES on success, MHD_NO on validation failure
  */
-static enum MHD_Result validate_jwt_for_auth(
+enum MHD_Result validate_jwt_for_auth(
     struct MHD_Connection *connection,
     const char *token)
 {
@@ -108,7 +108,7 @@ static enum MHD_Result validate_jwt_for_auth(
  * @param params_json Output parameter for query parameters
  * @return MHD_YES on success, MHD_NO on parsing failure
  */
-static enum MHD_Result parse_alt_request(
+enum MHD_Result parse_alt_request(
     struct MHD_Connection *connection,
     const char *method,
     ApiPostBuffer *buffer,

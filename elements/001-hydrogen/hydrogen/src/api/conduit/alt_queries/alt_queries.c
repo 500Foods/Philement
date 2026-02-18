@@ -40,13 +40,7 @@
 // External global queue manager for DQM statistics
 extern DatabaseQueueManager* global_queue_manager;
 
-// Deduplication result enum
-typedef enum {
-    DEDUP_OK = 0,
-    DEDUP_RATE_LIMIT = 1,
-    DEDUP_DATABASE_NOT_FOUND = 2,
-    DEDUP_ERROR = 3
-} DeduplicationResult;
+// DeduplicationResult enum is defined in queries.h
 
 /**
  * @brief Deduplicate queries and validate rate limits
@@ -63,7 +57,7 @@ typedef enum {
  * @param result_code Output parameter for deduplication result code
  * @return MHD_YES on success, MHD_NO on rate limit exceeded or error
  */
-static enum MHD_Result alt_queries_deduplicate_and_validate(
+enum MHD_Result alt_queries_deduplicate_and_validate(
     struct MHD_Connection *connection,
     json_t *queries_array,
     const char *database,
@@ -266,7 +260,7 @@ static enum MHD_Result alt_queries_deduplicate_and_validate(
  * @param token The JWT token string to validate
  * @return MHD_YES on success, MHD_NO on validation failure
  */
-static enum MHD_Result validate_jwt_for_auth(
+enum MHD_Result validate_jwt_for_auth_alt(
     struct MHD_Connection *connection,
     const char *token)
 {
@@ -309,7 +303,7 @@ static enum MHD_Result validate_jwt_for_auth(
  * @param queries_array Output parameter for queries array
  * @return MHD_YES on success, MHD_NO on parsing failure
  */
-static enum MHD_Result parse_alt_queries_request(
+enum MHD_Result parse_alt_queries_request(
     struct MHD_Connection *connection,
     const char *method,
     ApiPostBuffer *buffer,
@@ -420,6 +414,159 @@ static enum MHD_Result parse_alt_queries_request(
 }
 
 /**
+ * @brief Execute a single alternative authenticated query
+ *
+ * Helper function that executes a single query from the deduplicated queries array.
+ * Encapsulates the query execution logic to reduce complexity in the main handler.
+ *
+ * @param connection The HTTP connection for error responses
+ * @param query_obj The query object containing query_ref and optional params
+ * @param database The database name to execute against
+ * @param query_ref Output parameter for the extracted query_ref
+ * @param pending Output parameter for the pending query result
+ * @param cache_entry Output parameter for the query cache entry
+ * @param selected_queue Output parameter for the selected database queue
+ * @return MHD_YES on success, MHD_NO on failure
+ */
+enum MHD_Result execute_single_alt_query(
+    struct MHD_Connection *connection,
+    json_t *query_obj,
+    const char *database,
+    int *query_ref,
+    PendingQueryResult **pending,
+    QueryCacheEntry **cache_entry,
+    DatabaseQueue **selected_queue)
+{
+    // Extract query_ref from query object
+    json_t* query_ref_json = json_object_get(query_obj, "query_ref");
+    if (!query_ref_json || !json_is_integer(query_ref_json)) {
+        log_this(SR_AUTH, "execute_single_alt_query: Missing or invalid query_ref", LOG_LEVEL_ERROR, 0);
+        return MHD_NO;
+    }
+    *query_ref = (int)json_integer_value(query_ref_json);
+
+    // Lookup database and query
+    DatabaseQueue *db_queue = NULL;
+    *cache_entry = NULL;
+    bool query_not_found = false;
+    
+    enum MHD_Result lookup_result = handle_database_lookup(connection, database, *query_ref, &db_queue, cache_entry, &query_not_found, false);
+    if (lookup_result != MHD_YES) {
+        log_this(SR_AUTH, "execute_single_alt_query: Database lookup failed for query %d", LOG_LEVEL_ERROR, 1, *query_ref);
+        return MHD_NO;
+    }
+
+    if (query_not_found) {
+        log_this(SR_AUTH, "execute_single_alt_query: Query not found for query_ref %d", LOG_LEVEL_ERROR, 1, *query_ref);
+        return MHD_NO;
+    }
+
+    // Process parameters
+    ParameterList *param_list = NULL;
+    char *converted_sql = NULL;
+    TypedParameter **ordered_params = NULL;
+    size_t param_count = 0;
+    char* message = NULL;
+    
+    json_t* params_json = json_object_get(query_obj, "params");
+    
+    enum MHD_Result param_result = handle_parameter_processing(connection, params_json, db_queue, *cache_entry,
+                                database, *query_ref, &param_list, &converted_sql,
+                                &ordered_params, &param_count, &message);
+    if (param_result != MHD_YES) {
+        log_this(SR_AUTH, "execute_single_alt_query: Parameter processing failed for query %d", LOG_LEVEL_ERROR, 1, *query_ref);
+        return MHD_NO;
+    }
+
+    // Select queue
+    enum MHD_Result queue_result = handle_queue_selection(connection, database, *query_ref, *cache_entry,
+                                   param_list, converted_sql, ordered_params, selected_queue);
+    if (queue_result != MHD_YES) {
+        log_this(SR_AUTH, "execute_single_alt_query: Queue selection failed for query %d", LOG_LEVEL_ERROR, 1, *query_ref);
+        free_parameter_list(param_list);
+        free(converted_sql);
+        if (ordered_params) {
+            for (size_t j = 0; j < param_count; j++) {
+                free_typed_parameter(ordered_params[j]);
+            }
+            free(ordered_params);
+        }
+        if (message) free(message);
+        return MHD_NO;
+    }
+
+    // Generate query ID
+    char *query_id = NULL;
+    enum MHD_Result id_result = handle_query_id_generation(connection, database, *query_ref, param_list,
+                                   converted_sql, ordered_params, &query_id);
+    if (id_result != MHD_YES) {
+        log_this(SR_AUTH, "execute_single_alt_query: Query ID generation failed for query %d", LOG_LEVEL_ERROR, 1, *query_ref);
+        free_parameter_list(param_list);
+        free(converted_sql);
+        if (ordered_params) {
+            for (size_t j = 0; j < param_count; j++) {
+                free_typed_parameter(ordered_params[j]);
+            }
+            free(ordered_params);
+        }
+        if (message) free(message);
+        return MHD_NO;
+    }
+
+    // Register pending query
+    enum MHD_Result pending_result = handle_pending_registration(connection, database, *query_ref, query_id,
+                                   param_list, converted_sql, ordered_params,
+                                   *cache_entry, pending);
+    if (pending_result != MHD_YES) {
+        log_this(SR_AUTH, "execute_single_alt_query: Pending registration failed for query %d", LOG_LEVEL_ERROR, 1, *query_ref);
+        free_parameter_list(param_list);
+        free(converted_sql);
+        free(query_id);
+        if (ordered_params) {
+            for (size_t j = 0; j < param_count; j++) {
+                free_typed_parameter(ordered_params[j]);
+            }
+            free(ordered_params);
+        }
+        if (message) free(message);
+        return MHD_NO;
+    }
+
+    // Submit query
+    enum MHD_Result submit_result = handle_query_submission(connection, database, *query_ref, *selected_queue,
+                                   query_id, converted_sql, param_list, ordered_params,
+                                   param_count, *cache_entry);
+    if (submit_result != MHD_YES) {
+        log_this(SR_AUTH, "execute_single_alt_query: Query submission failed for query %d", LOG_LEVEL_ERROR, 1, *query_ref);
+        free_parameter_list(param_list);
+        free(converted_sql);
+        free(query_id);
+        if (ordered_params) {
+            for (size_t j = 0; j < param_count; j++) {
+                free_typed_parameter(ordered_params[j]);
+            }
+            free(ordered_params);
+        }
+        if (message) free(message);
+        return MHD_NO;
+    }
+
+    // Cleanup per-query resources
+    free_parameter_list(param_list);
+    free(converted_sql);
+    free(query_id);
+    if (ordered_params) {
+        for (size_t j = 0; j < param_count; j++) {
+            free_typed_parameter(ordered_params[j]);
+        }
+        free(ordered_params);
+    }
+    if (message) free(message);
+
+    return MHD_YES;
+}
+
+/**
  * @brief Handle alternative authenticated conduit queries request
  *
  * Main handler for the /api/conduit/alt_queries endpoint. Validates JWT token,
@@ -488,7 +635,7 @@ enum MHD_Result handle_conduit_alt_queries_request(
     }
 
     // Step 4: Validate JWT token for authentication
-    result = validate_jwt_for_auth(connection, token);
+    result = validate_jwt_for_auth_alt(connection, token);
     free(token);  // Token no longer needed after validation
     token = NULL;
 
@@ -559,149 +706,21 @@ enum MHD_Result handle_conduit_alt_queries_request(
 
     log_this(SR_AUTH, "handle_conduit_alt_queries_request: Submitting %zu unique queries for parallel execution", LOG_LEVEL_DEBUG, 1, query_count);
 
-    // Submit all unique queries first
+    // Submit all unique queries first using the helper function
     bool submission_failed = false;
     for (size_t i = 0; i < query_count; i++) {
         json_t *query_obj = json_array_get(deduplicated_queries, i);
         int query_ref;
-
-        // Let's use handle_database_lookup, handle_parameter_processing, etc.
-        DatabaseQueue *db_queue = NULL;
-        QueryCacheEntry *cache_entry = NULL;
-        bool query_not_found = false;
-        
-        // Extract query_ref from query object
-        json_t* query_ref_json = json_object_get(query_obj, "query_ref");
-        if (!query_ref_json || !json_is_integer(query_ref_json)) {
-            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Missing or invalid query_ref in query %zu", LOG_LEVEL_ERROR, 1, i);
-            submission_failed = true;
-            break;
-        }
-        query_ref = (int)json_integer_value(query_ref_json);
-
-        // Lookup database and query
-        enum MHD_Result lookup_result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found, false);
-        if (lookup_result != MHD_YES) {
-            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Database lookup failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
-            submission_failed = true;
-            break;
-        }
-
-        if (query_not_found) {
-            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Query not found for query_ref %d", LOG_LEVEL_ERROR, 1, query_ref);
-            submission_failed = true;
-            break;
-        }
-
-        // Process parameters
-        ParameterList *param_list = NULL;
-        char *converted_sql = NULL;
-        TypedParameter **ordered_params = NULL;
-        size_t param_count = 0;
-        char* message = NULL;
-        
-        json_t* params_json = json_object_get(query_obj, "params");
-        
-        enum MHD_Result param_result = handle_parameter_processing(connection, params_json, db_queue, cache_entry,
-                                    database, query_ref, &param_list, &converted_sql,
-                                    &ordered_params, &param_count, &message);
-        if (param_result != MHD_YES) {
-            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Parameter processing failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
-            submission_failed = true;
-            break;
-        }
-
-        // Select queue
-        DatabaseQueue *selected_queue = NULL;
-        enum MHD_Result queue_result = handle_queue_selection(connection, database, query_ref, cache_entry,
-                                   param_list, converted_sql, ordered_params, &selected_queue);
-        if (queue_result != MHD_YES) {
-            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Queue selection failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
-            free_parameter_list(param_list);
-            free(converted_sql);
-            if (ordered_params) {
-                for (size_t j = 0; j < param_count; j++) {
-                    free_typed_parameter(ordered_params[j]);
-                }
-                free(ordered_params);
-            }
-            if (message) free(message);
-            submission_failed = true;
-            break;
-        }
-
-        // Generate query ID
-        char *query_id = NULL;
-        enum MHD_Result id_result = handle_query_id_generation(connection, database, query_ref, param_list,
-                                       converted_sql, ordered_params, &query_id);
-        if (id_result != MHD_YES) {
-            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Query ID generation failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
-            free_parameter_list(param_list);
-            free(converted_sql);
-            if (ordered_params) {
-                for (size_t j = 0; j < param_count; j++) {
-                    free_typed_parameter(ordered_params[j]);
-                }
-                free(ordered_params);
-            }
-            if (message) free(message);
-            submission_failed = true;
-            break;
-        }
-
-        // Register pending query
         PendingQueryResult *pending = NULL;
-        enum MHD_Result pending_result = handle_pending_registration(connection, database, query_ref, query_id,
-                                       param_list, converted_sql, ordered_params,
-                                       cache_entry, &pending);
-        if (pending_result != MHD_YES) {
-            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Pending registration failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
-            free_parameter_list(param_list);
-            free(converted_sql);
-            free(query_id);
-            if (ordered_params) {
-                for (size_t j = 0; j < param_count; j++) {
-                    free_typed_parameter(ordered_params[j]);
-                }
-                free(ordered_params);
-            }
-            if (message) free(message);
+        QueryCacheEntry *cache_entry = NULL;
+        DatabaseQueue *selected_queue = NULL;
+
+        enum MHD_Result exec_result = execute_single_alt_query(connection, query_obj, database,
+                                                              &query_ref, &pending, &cache_entry, &selected_queue);
+        if (exec_result != MHD_YES) {
             submission_failed = true;
             break;
         }
-
-        // Submit query
-        enum MHD_Result submit_result = handle_query_submission(connection, database, query_ref, selected_queue,
-                                   query_id, converted_sql, param_list, ordered_params,
-                                   param_count, cache_entry);
-        if (submit_result != MHD_YES) {
-            log_this(SR_AUTH, "handle_conduit_alt_queries_request: Query submission failed for query %d", LOG_LEVEL_ERROR, 1, query_ref);
-            free_parameter_list(param_list);
-            free(converted_sql);
-            free(query_id);
-            if (ordered_params) {
-                for (size_t j = 0; j < param_count; j++) {
-                    free_typed_parameter(ordered_params[j]);
-                }
-                free(ordered_params);
-            }
-            if (message) free(message);
-            // Need to free pending?
-            submission_failed = true;
-            break;
-        }
-
-        // Cleanup per-query resources
-        free_parameter_list(param_list);
-        free(converted_sql);
-        free(query_id);
-        if (ordered_params) {
-            for (size_t j = 0; j < param_count; j++) {
-                free_typed_parameter(ordered_params[j]);
-            }
-            free(ordered_params);
-        }
-        if (message) free(message);
 
         // Store for later
         pending_results[i] = pending;

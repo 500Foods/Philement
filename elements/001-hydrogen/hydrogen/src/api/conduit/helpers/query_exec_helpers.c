@@ -251,3 +251,60 @@ bool submit_query_with_error_handling(DatabaseQueue* selected_queue, char* query
     }
     return true;
 }
+
+/**
+ * @brief Cleanup query execution resources
+ *
+ * Frees all resources associated with query execution. Safe to call with NULL values.
+ *
+ * @param param_list Parameter list to free
+ * @param converted_sql Converted SQL to free
+ * @param ordered_params Ordered parameters array to free
+ * @param param_count Number of ordered parameters
+ * @param query_id Query ID to free
+ * @param message Message to free
+ */
+void cleanup_query_execution_resources(ParameterList* param_list, char* converted_sql,
+                                      TypedParameter** ordered_params, size_t param_count,
+                                      char* query_id, char* message) {
+    if (param_list) {
+        free_parameter_list(param_list);
+    }
+    if (converted_sql) {
+        free(converted_sql);
+    }
+    if (ordered_params) {
+        for (size_t i = 0; i < param_count; i++) {
+            if (ordered_params[i]) {
+                free_typed_parameter(ordered_params[i]);
+            }
+        }
+        free(ordered_params);
+    }
+    if (query_id) {
+        free(query_id);
+    }
+    if (message) {
+        free(message);
+    }
+}
+
+/**
+ * @brief Cleanup ordered parameters array
+ *
+ * Frees an array of typed parameters and the array itself.
+ *
+ * @param ordered_params Array of typed parameters
+ * @param param_count Number of parameters in array
+ */
+void cleanup_ordered_params(TypedParameter** ordered_params, size_t param_count) {
+    if (!ordered_params) {
+        return;
+    }
+    for (size_t i = 0; i < param_count; i++) {
+        if (ordered_params[i]) {
+            free_typed_parameter(ordered_params[i]);
+        }
+    }
+    free(ordered_params);
+}
