@@ -29,6 +29,22 @@
 // External declarations for libmysqlclient function pointers
 extern mysql_fetch_fields_t mysql_fetch_fields_ptr;
 
+// Helper function to trim trailing whitespace from strings (MySQL-specific, for consistency across engines)
+static char* mysql_trim_trailing_whitespace(char* str) {
+    if (!str) return NULL;
+
+    // Find the end of the string
+    char* end = str + strlen(str) - 1;
+
+    // Move backwards from the end, removing whitespace
+    while (end >= str && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) {
+        *end = '\0';
+        end--;
+    }
+
+    return str;
+}
+
 // Helper function to check if MySQL type is numeric
 bool mysql_is_numeric_type(unsigned int type) {
     switch (type) {
@@ -197,12 +213,20 @@ bool mysql_build_json_from_result(void* mysql_result, size_t row_count, size_t c
                         char* pos = *json_buffer + strlen(*json_buffer);
                         snprintf(pos, json_size - strlen(*json_buffer), "\"%s\":%s", col_name, row_data[col]);
                     } else {
-                        // String types - escape and quote the value
+                        // String types - trim trailing whitespace, escape and quote the value
                         // For large strings (like migration SQL), use dynamic allocation for escaped data
                         // row_data[col] is guaranteed non-NULL here (in else block of NULL check)
-                        size_t escaped_size = strlen(row_data[col]) * 2 + 1;
+                        
+                        // Duplicate and trim the value
+                        char* trimmed_value = strdup(row_data[col]);
+                        if (trimmed_value) {
+                            mysql_trim_trailing_whitespace(trimmed_value);
+                        }
+                        
+                        size_t escaped_size = (trimmed_value ? strlen(trimmed_value) : strlen(row_data[col])) * 2 + 1;
                         char* escaped_data = calloc(1, escaped_size);
                         if (!escaped_data) {
+                            free(trimmed_value);
                             size_t needed = strlen(col_name) + 10;
                             if (strlen(*json_buffer) + needed >= json_size) {
                                 json_size = json_size * 2 + needed;
@@ -213,13 +237,14 @@ bool mysql_build_json_from_result(void* mysql_result, size_t row_count, size_t c
                             char* pos = *json_buffer + strlen(*json_buffer);
                             snprintf(pos, json_size - strlen(*json_buffer), "\"%s\":null", col_name);
                         } else {
-                            mysql_json_escape_string(row_data[col], escaped_data, escaped_size);
+                            mysql_json_escape_string(trimmed_value ? trimmed_value : row_data[col], escaped_data, escaped_size);
                             size_t needed = strlen(col_name) + strlen(escaped_data) + 10;
                             if (strlen(*json_buffer) + needed >= json_size) {
                                 json_size = json_size * 2 + needed;
                                 char* new_json = realloc(*json_buffer, json_size);
                                 if (!new_json) {
                                     free(escaped_data);
+                                    free(trimmed_value);
                                     break;
                                 }
                                 *json_buffer = new_json;
@@ -227,6 +252,7 @@ bool mysql_build_json_from_result(void* mysql_result, size_t row_count, size_t c
                             char* pos = *json_buffer + strlen(*json_buffer);
                             snprintf(pos, json_size - strlen(*json_buffer), "\"%s\":\"%s\"", col_name, escaped_data);
                             free(escaped_data);
+                            free(trimmed_value);
                         }
                     }
                 }
@@ -395,12 +421,20 @@ bool mysql_process_query_result(void* mysql_result, QueryResult* db_result, cons
                                     char* pos = db_result->data_json + strlen(db_result->data_json);
                                     snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":%s", col_name, row_data[col]);
                                 } else {
-                                    // String types - escape and quote the value
+                                    // String types - trim trailing whitespace, escape and quote the value
                                     // For large strings (like migration SQL), use dynamic allocation for escaped data
                                     // row_data[col] is guaranteed non-NULL here (in else block of NULL check)
-                                    size_t escaped_size = strlen(row_data[col]) * 2 + 1;
+                                    
+                                    // Duplicate and trim the value
+                                    char* trimmed_value = strdup(row_data[col]);
+                                    if (trimmed_value) {
+                                        mysql_trim_trailing_whitespace(trimmed_value);
+                                    }
+                                    
+                                    size_t escaped_size = (trimmed_value ? strlen(trimmed_value) : strlen(row_data[col])) * 2 + 1;
                                     char* escaped_data = calloc(1, escaped_size);
                                     if (!escaped_data) {
+                                        free(trimmed_value);
                                         size_t needed = strlen(col_name) + 10;
                                         if (strlen(db_result->data_json) + needed >= json_size) {
                                             json_size = json_size * 2 + needed;
@@ -411,13 +445,14 @@ bool mysql_process_query_result(void* mysql_result, QueryResult* db_result, cons
                                         char* pos = db_result->data_json + strlen(db_result->data_json);
                                         snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":null", col_name);
                                     } else {
-                                        mysql_json_escape_string(row_data[col], escaped_data, escaped_size);
+                                        mysql_json_escape_string(trimmed_value ? trimmed_value : row_data[col], escaped_data, escaped_size);
                                         size_t needed = strlen(col_name) + strlen(escaped_data) + 10;
                                         if (strlen(db_result->data_json) + needed >= json_size) {
                                             json_size = json_size * 2 + needed;
                                             char* new_json = realloc(db_result->data_json, json_size);
                                             if (!new_json) {
                                                 free(escaped_data);
+                                                free(trimmed_value);
                                                 break;
                                             }
                                             db_result->data_json = new_json;
@@ -425,6 +460,7 @@ bool mysql_process_query_result(void* mysql_result, QueryResult* db_result, cons
                                         char* pos = db_result->data_json + strlen(db_result->data_json);
                                         snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":\"%s\"", col_name, escaped_data);
                                         free(escaped_data);
+                                        free(trimmed_value);
                                     }
                                 }
                             }
@@ -653,7 +689,9 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
                             // Numeric types - no quotes around value (JSON number)
                             snprintf(col_json, sizeof(col_json), "\"%s\":%s", col_name, col_buffers[col]);
                         } else {
-                            // String types - escape and quote the value
+                            // String types - trim trailing whitespace, escape and quote the value
+                            // col_buffers[col] is a modifiable buffer, so we can trim in place
+                            mysql_trim_trailing_whitespace(col_buffers[col]);
                             char escaped_data[MAX_COL_SIZE];
                             mysql_json_escape_string(col_buffers[col], escaped_data, sizeof(escaped_data));
                             snprintf(col_json, sizeof(col_json), "\"%s\":\"%s\"", col_name, escaped_data);

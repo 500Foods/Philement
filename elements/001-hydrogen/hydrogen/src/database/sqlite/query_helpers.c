@@ -24,6 +24,22 @@ extern sqlite3_column_text_t sqlite3_column_text_ptr;
 extern sqlite3_column_type_t sqlite3_column_type_ptr;
 extern sqlite3_step_t sqlite3_step_ptr;
 
+// Helper function to trim trailing whitespace from strings (SQLite-specific, for consistency across engines)
+static char* sqlite_trim_trailing_whitespace(char* str) {
+    if (!str) return NULL;
+
+    // Find the end of the string
+    char* end = str + strlen(str) - 1;
+
+    // Move backwards from the end, removing whitespace
+    while (end >= str && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) {
+        *end = '\0';
+        end--;
+    }
+
+    return str;
+}
+
 // Helper function to check if SQLite type is numeric
 bool sqlite_is_numeric_type(int type) {
     return (type == SQLITE_INTEGER || type == SQLITE_FLOAT);
@@ -212,10 +228,16 @@ bool sqlite_fetch_row_data(void* stmt_handle, char** column_names, int column_co
                 // Numeric type or numeric value - no quotes around value
                 sprintf(append_pos, "\"%s\":%s", col_name, value);
             } else {
-                // String type - escape and quote
+                // String type - trim trailing whitespace, escape and quote
+                // Duplicate and trim the value since we can't modify the original
+                char* trimmed_value = strdup(value);
+                if (trimmed_value) {
+                    sqlite_trim_trailing_whitespace(trimmed_value);
+                }
+                
                 sprintf(append_pos, "\"%s\":\"", col_name);
                 char* dst = append_pos + strlen(append_pos);
-                const char* src = value;
+                const char* src = trimmed_value ? trimmed_value : value;
                 while (*src) {
                     if (*src == '"' || *src == '\\') {
                         *dst++ = '\\';
@@ -238,6 +260,7 @@ bool sqlite_fetch_row_data(void* stmt_handle, char** column_names, int column_co
                 }
                 *dst++ = '"';
                 *dst = '\0';
+                free(trimmed_value);
             }
             
             *json_buffer_size = strlen(*json_buffer);

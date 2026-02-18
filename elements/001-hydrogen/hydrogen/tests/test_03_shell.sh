@@ -238,6 +238,14 @@ declare -a ENV_VARS=(
     "ACURANZO_DB_PORT|30-35|Acuranzo database port|Port number for the Acuranzo database server."
     "ACURANZO_DB_TYPE|30-35|Acuranzo database type|Type of the Acuranzo database (e.g., postgres)."
 
+    # YugabyteDB demo
+    "YUGABYTE_DB_HOST|30-35|Acuranzo database host|Hostname or IP address of the Acuranzo database server."
+    "YUGABYTE_DB_NAME|30-35|Acuranzo database name|Name of the Acuranzo database."
+    "YUGABYTE_DB_USER|30-35|Acuranzo database user|Username for connecting to the Acuranzo database."
+    "YUGABYTE_DB_PASS|30-35|Acuranzo database password|Password for connecting to the Acuranzo database."
+    "YUGABYTE_DB_PORT|30-35|Acuranzo database port|Port number for the Acuranzo database server."
+    "YUGABYTE_DB_TYPE|30-35|Acuranzo database type|Type of the Acuranzo database (e.g., postgres)."
+
     # DB2 demo
     "HYDROTST_DB_NAME|30-35|Acuranzo database name|Name of the Acuranzo database."
     "HYDROTST_DB_USER|30-35|Acuranzo database user|Username for connecting to the Acuranzo database."
