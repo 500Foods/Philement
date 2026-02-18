@@ -34,6 +34,9 @@
 #include <src/config/config.h>
 #include <src/logging/logging.h>
 
+// External global queue manager for DQM statistics
+extern DatabaseQueueManager* global_queue_manager;
+
 /**
  * @brief Validate JWT token for authentication (without extracting database)
  *
@@ -449,6 +452,14 @@ enum MHD_Result handle_conduit_alt_query_request(
     json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, NULL);
     unsigned int http_status = json_is_true(json_object_get(response, "success")) ?
                               MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
+
+    // Add DQM statistics to response
+    if (global_queue_manager) {
+        json_t* dqm_stats = database_queue_manager_get_stats_json(global_queue_manager);
+        if (dqm_stats) {
+            json_object_set_new(response, "dqm_statistics", dqm_stats);
+        }
+    }
 
     enum MHD_Result http_result = api_send_json_response(connection, response, http_status);
     json_decref(response);

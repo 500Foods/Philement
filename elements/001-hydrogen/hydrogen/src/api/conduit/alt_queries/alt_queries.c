@@ -34,7 +34,227 @@
 #include <src/api/auth/auth_service.h>
 #include <src/api/auth/auth_service_jwt.h>
 #include <src/config/config.h>
+#include <src/config/config_databases.h>
 #include <src/logging/logging.h>
+
+// External global queue manager for DQM statistics
+extern DatabaseQueueManager* global_queue_manager;
+
+// Deduplication result enum
+typedef enum {
+    DEDUP_OK = 0,
+    DEDUP_RATE_LIMIT = 1,
+    DEDUP_DATABASE_NOT_FOUND = 2,
+    DEDUP_ERROR = 3
+} DeduplicationResult;
+
+/**
+ * @brief Deduplicate queries and validate rate limits
+ *
+ * Processes the queries array to remove duplicates by query_ref and validates
+ * against the MaxQueriesPerRequest limit for the specified database.
+ *
+ * @param connection The HTTP connection for error responses
+ * @param queries_array The input queries array from the request
+ * @param database The database name to check rate limits against
+ * @param deduplicated_queries Output array of unique query objects (caller must decref)
+ * @param mapping_array Output array mapping original indices to deduplicated indices
+ * @param is_duplicate Output array tracking which original queries are duplicates
+ * @param result_code Output parameter for deduplication result code
+ * @return MHD_YES on success, MHD_NO on rate limit exceeded or error
+ */
+static enum MHD_Result alt_queries_deduplicate_and_validate(
+    struct MHD_Connection *connection,
+    json_t *queries_array,
+    const char *database,
+    json_t **deduplicated_queries,
+    size_t **mapping_array,
+    bool **is_duplicate,
+    DeduplicationResult *result_code)
+{
+    (void)connection;  // Unused parameter
+    
+    if (!queries_array || !database || !deduplicated_queries || !mapping_array || !is_duplicate) {
+        log_this(SR_AUTH, "alt_queries_deduplicate_and_validate: NULL parameters", LOG_LEVEL_ERROR, 0);
+        if (result_code) {
+            *result_code = DEDUP_ERROR;
+        }
+        return MHD_NO;
+    }
+
+    size_t original_count = json_array_size(queries_array);
+    if (original_count == 0) {
+        *deduplicated_queries = json_array();
+        *mapping_array = NULL;
+        *is_duplicate = NULL;
+        if (result_code) {
+            *result_code = DEDUP_OK;
+        }
+        return MHD_YES;
+    }
+
+    // Validate database connection first
+    const DatabaseConnection *db_conn = find_database_connection(&app_config->databases, database);
+    if (!db_conn) {
+        // If connection not found by database name, try to find it by checking if database name matches any connection name
+        for (int i = 0; i < app_config->databases.connection_count; i++) {
+            const DatabaseConnection *conn = &app_config->databases.connections[i];
+            if (conn->enabled && conn->connection_name && strcmp(conn->connection_name, database) == 0) {
+                db_conn = conn;
+                break;
+            }
+        }
+        if (!db_conn) {
+            log_this(SR_AUTH, "alt_queries_deduplicate_and_validate: Database connection not found: %s", LOG_LEVEL_ALERT, 1, database);
+            if (result_code) {
+                *result_code = DEDUP_DATABASE_NOT_FOUND;
+            }
+            return MHD_NO;
+        }
+    }
+
+    // Allocate memory for duplicate tracking
+    *is_duplicate = calloc(original_count, sizeof(bool));
+    if (!*is_duplicate) {
+        log_this(SR_AUTH, "alt_queries_deduplicate_and_validate: Failed to allocate memory for duplicate tracking", LOG_LEVEL_ERROR, 0);
+        return MHD_NO;
+    }
+
+    // Create arrays to track unique queries (query_ref + params) and their mapping
+    int *query_refs = calloc(original_count, sizeof(int));
+    json_t **query_params = calloc(original_count, sizeof(json_t*));
+    size_t *first_occurrence = calloc(original_count, sizeof(size_t));
+    size_t unique_count = 0;
+
+    if (!query_refs || !query_params || !first_occurrence) {
+        log_this(SR_AUTH, "alt_queries_deduplicate_and_validate: Failed to allocate memory", LOG_LEVEL_ERROR, 0);
+        free(query_refs);
+        free(query_params);
+        free(first_occurrence);
+        free(*is_duplicate);
+        return MHD_NO;
+    }
+
+    // First pass: collect unique queries (query_ref + params) and track duplicates
+    for (size_t i = 0; i < original_count; i++) {
+        json_t *query_obj = json_array_get(queries_array, i);
+        if (!query_obj || !json_is_object(query_obj)) {
+            (*is_duplicate)[i] = true;
+            continue;
+        }
+
+        json_t *query_ref_json = json_object_get(query_obj, "query_ref");
+        if (!query_ref_json || !json_is_integer(query_ref_json)) {
+            (*is_duplicate)[i] = true;
+            continue;
+        }
+
+        int query_ref = (int)json_integer_value(query_ref_json);
+        json_t *params = json_object_get(query_obj, "params");
+        if (!params) {
+            params = json_object();  // Treat missing params as empty object
+        }
+
+        // Check if we've seen this query_ref + params combination before
+        bool found = false;
+        for (size_t j = 0; j < unique_count; j++) {
+            if (query_refs[j] == query_ref) {
+                // Compare params
+                int cmp = json_equal(query_params[j], params);
+                if (cmp == 1) {
+                    found = true;
+                    (*is_duplicate)[i] = true;
+                    break;
+                }
+            }
+        }
+
+        if (!found) {
+            query_refs[unique_count] = query_ref;
+            query_params[unique_count] = params;  // Reference to original, no decref needed
+            first_occurrence[unique_count] = i;
+            unique_count++;
+        }
+    }
+
+    // Check rate limit
+    if ((int)unique_count > db_conn->max_queries_per_request) {
+        log_this(SR_AUTH, "alt_queries_deduplicate_and_validate: Rate limit exceeded: %zu unique queries > %d max for database %s",
+                 LOG_LEVEL_ERROR, 3, unique_count, db_conn->max_queries_per_request, database);
+        free(query_refs);
+        free(query_params);
+        free(first_occurrence);
+        free(*is_duplicate);
+        if (result_code) {
+            *result_code = DEDUP_RATE_LIMIT;
+        }
+        // Reset output parameters to NULL
+        *deduplicated_queries = NULL;
+        *mapping_array = NULL;
+        *is_duplicate = NULL;
+        return MHD_NO;
+    }
+
+    // Create deduplicated queries array
+    *deduplicated_queries = json_array();
+    *mapping_array = calloc(original_count, sizeof(size_t));
+
+    if (!*deduplicated_queries || !*mapping_array) {
+        log_this(SR_AUTH, "alt_queries_deduplicate_and_validate: Failed to allocate output arrays", LOG_LEVEL_ERROR, 0);
+        json_decref(*deduplicated_queries);
+        free(*mapping_array);
+        free(query_refs);
+        free(query_params);
+        free(first_occurrence);
+        free(*is_duplicate);
+        return MHD_NO;
+    }
+
+    // Second pass: build deduplicated array and mapping
+    for (size_t i = 0; i < original_count; i++) {
+        json_t *query_obj = json_array_get(queries_array, i);
+        if (!query_obj || !json_is_object(query_obj)) {
+            continue;
+        }
+
+        json_t *query_ref_json = json_object_get(query_obj, "query_ref");
+        if (!query_ref_json || !json_is_integer(query_ref_json)) {
+            continue;
+        }
+
+        int query_ref = (int)json_integer_value(query_ref_json);
+        json_t *params = json_object_get(query_obj, "params");
+        if (!params) {
+            params = json_object();
+        }
+
+        // Find the deduplicated index for this query_ref + params
+        for (size_t j = 0; j < unique_count; j++) {
+            if (query_refs[j] == query_ref && json_equal(query_params[j], params)) {
+                (*mapping_array)[i] = j;
+
+                // Add to deduplicated array if this is the first occurrence
+                if (first_occurrence[j] == i) {
+                    json_array_append(*deduplicated_queries, query_obj);
+                }
+                break;
+            }
+        }
+    }
+
+    log_this(SR_AUTH, "alt_queries_deduplicate_and_validate: Deduplicated %zu queries to %zu unique queries",
+             LOG_LEVEL_DEBUG, 2, original_count, unique_count);
+
+    free(query_refs);
+    free(query_params);
+    free(first_occurrence);
+
+    if (result_code) {
+        *result_code = DEDUP_OK;
+    }
+    
+    return MHD_YES;
+}
 
 /**
  * @brief Validate JWT token for authentication (without extracting database)
@@ -278,13 +498,49 @@ enum MHD_Result handle_conduit_alt_queries_request(
         return result;
     }
 
-    // Step 5: Wait, we skipped the actual query execution! Oh no, wait, let's see...
+    // Step 5: Deduplicate queries and validate rate limits
+    json_t *deduplicated_queries = NULL;
+    size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
+    DeduplicationResult dedup_code = DEDUP_OK;
+    enum MHD_Result dedup_result = alt_queries_deduplicate_and_validate(connection, queries_array, database,
+                                                                    &deduplicated_queries, &mapping_array,
+                                                                    &is_duplicate, &dedup_code);
+    
+    if (dedup_result != MHD_YES) {
+        log_this(SR_AUTH, "alt_queries: Validation failed with code %d", LOG_LEVEL_ERROR, 1, dedup_code);
+        
+        json_t *error_response = json_object();
+        json_object_set_new(error_response, "success", json_false());
+        
+        if (dedup_code == DEDUP_RATE_LIMIT) {
+            const DatabaseConnection *db_conn = find_database_connection(&app_config->databases, database);
+            int max_queries = db_conn ? db_conn->max_queries_per_request : 10;
+            char limit_msg[100];
+            snprintf(limit_msg, sizeof(limit_msg), "Query limit of %d unique queries per request exceeded", max_queries);
+            json_object_set_new(error_response, "error", json_string("Rate limit exceeded"));
+            json_object_set_new(error_response, "message", json_string(limit_msg));
+        } else if (dedup_code == DEDUP_DATABASE_NOT_FOUND) {
+            json_object_set_new(error_response, "error", json_string("Invalid database"));
+        } else {
+            json_object_set_new(error_response, "error", json_string("Validation failed"));
+        }
+        
+        json_decref(queries_array);
+        free(database);
+        
+        unsigned int http_status = (dedup_code == DEDUP_RATE_LIMIT) ? MHD_HTTP_TOO_MANY_REQUESTS : MHD_HTTP_BAD_REQUEST;
+        return api_send_json_response(connection, error_response, http_status);
+    }
 
-    // Oh, right, we need to implement the query submission and waiting here
-    // Let's add that back
+    size_t original_query_count = json_array_size(queries_array);
+    size_t unique_query_count = json_array_size(deduplicated_queries);
+    
+    log_this(SR_AUTH, "alt_queries: Deduplicated %zu queries to %zu unique queries",
+             LOG_LEVEL_DEBUG, 2, original_query_count, unique_query_count);
 
-    // Step 5: Submit all queries for parallel execution
-    size_t query_count = json_array_size(queries_array);
+    // Step 6: Submit all unique queries for parallel execution
+    size_t query_count = unique_query_count;
     PendingQueryResult **pending_results = calloc(query_count, sizeof(PendingQueryResult*));
     int *query_refs = calloc(query_count, sizeof(int));
     QueryCacheEntry **cache_entries = calloc(query_count, sizeof(QueryCacheEntry*));
@@ -301,12 +557,12 @@ enum MHD_Result handle_conduit_alt_queries_request(
         return api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
 
-    log_this(SR_AUTH, "handle_conduit_alt_queries_request: Submitting %zu queries for parallel execution", LOG_LEVEL_DEBUG, 1, query_count);
+    log_this(SR_AUTH, "handle_conduit_alt_queries_request: Submitting %zu unique queries for parallel execution", LOG_LEVEL_DEBUG, 1, query_count);
 
-    // Submit all queries first
+    // Submit all unique queries first
     bool submission_failed = false;
     for (size_t i = 0; i < query_count; i++) {
-        json_t *query_obj = json_array_get(queries_array, i);
+        json_t *query_obj = json_array_get(deduplicated_queries, i);
         int query_ref;
 
         // Let's use handle_database_lookup, handle_parameter_processing, etc.
@@ -464,7 +720,10 @@ enum MHD_Result handle_conduit_alt_queries_request(
         free(query_refs);
         free(cache_entries);
         free(selected_queues);
+        free(mapping_array);
+        free(is_duplicate);
         free(database);
+        json_decref(deduplicated_queries);
         json_decref(queries_array);
 
         json_t *error_response = json_object();
@@ -493,28 +752,78 @@ enum MHD_Result handle_conduit_alt_queries_request(
     webserver_thread_suspended = false;
     pthread_mutex_unlock(&webserver_suspend_lock);
 
-    // Step 9: Build responses for all queries
+    // Step 9: Build responses for all queries (map back to original order)
     json_t *results_array = json_array();
     bool all_success = true;
 
-    for (size_t i = 0; i < query_count; i++) {
-        json_t *query_result = build_response_json(query_refs[i], database, cache_entries[i], selected_queues[i], pending_results[i], NULL);
+    // Build results for unique queries first
+    json_t **unique_results = calloc(unique_query_count, sizeof(json_t*));
+    if (!unique_results) {
+        log_this(SR_AUTH, "handle_conduit_alt_queries_request: Failed to allocate unique_results array", LOG_LEVEL_ERROR, 0);
+        free(pending_results);
+        free(query_refs);
+        free(cache_entries);
+        free(selected_queues);
+        free(mapping_array);
+        free(is_duplicate);
+        json_decref(deduplicated_queries);
+        json_decref(queries_array);
+        free(database);
 
-        // Check if query succeeded
-        json_t *success_field = json_object_get(query_result, "success");
-        if (!success_field || !json_is_true(success_field)) {
+        json_t *error_response = json_object();
+        json_object_set_new(error_response, "success", json_false());
+        json_object_set_new(error_response, "error", json_string("Internal server error"));
+        return api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+    }
+    
+    for (size_t i = 0; i < unique_query_count; i++) {
+        unique_results[i] = build_response_json(query_refs[i], database, cache_entries[i], selected_queues[i], pending_results[i], NULL);
+    }
+
+    // Map results back to original query order
+    for (size_t i = 0; i < original_query_count; i++) {
+        json_t *query_result;
+        if (is_duplicate[i]) {
+            // For duplicates, return an error
+            query_result = json_object();
+            json_object_set_new(query_result, "success", json_false());
+            json_object_set_new(query_result, "error", json_string("Duplicate query"));
             all_success = false;
+        } else {
+            // Get result from unique results array
+            size_t unique_idx = mapping_array[i];
+            if (unique_idx < unique_query_count) {
+                query_result = json_deep_copy(unique_results[unique_idx]);
+                // Check if query succeeded
+                json_t *success_field = json_object_get(query_result, "success");
+                if (!success_field || !json_is_true(success_field)) {
+                    all_success = false;
+                }
+            } else {
+                query_result = json_object();
+                json_object_set_new(query_result, "success", json_false());
+                json_object_set_new(query_result, "error", json_string("Internal error: invalid query mapping"));
+                all_success = false;
+            }
         }
-
         json_array_append_new(results_array, query_result);
     }
+
+    // Clean up unique results
+    for (size_t i = 0; i < unique_query_count; i++) {
+        json_decref(unique_results[i]);
+    }
+    free(unique_results);
 
     // Clean up
     free(pending_results);
     free(query_refs);
     free(cache_entries);
     free(selected_queues);
+    free(mapping_array);
+    free(is_duplicate);
 
+    json_decref(deduplicated_queries);
     json_decref(queries_array);
 
     // Step 10: Calculate total execution time
@@ -540,8 +849,8 @@ enum MHD_Result handle_conduit_alt_queries_request(
 
     free(database);
 
-    log_this(SR_AUTH, "handle_conduit_alt_queries_request: Request completed, queries=%zu, time=%ldms",
-             LOG_LEVEL_DEBUG, 2, query_count, total_time_ms);
+    log_this(SR_AUTH, "handle_conduit_alt_queries_request: Request completed, original=%zu unique=%zu time=%ldms",
+             LOG_LEVEL_DEBUG, 3, original_query_count, unique_query_count, total_time_ms);
 
     return api_send_json_response(connection, response_obj, MHD_HTTP_OK);
 }
