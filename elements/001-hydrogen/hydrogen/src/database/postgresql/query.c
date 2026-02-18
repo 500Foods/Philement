@@ -389,6 +389,7 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
                 const char* value = raw_value;
                 if (is_datetime && raw_value) {
                     formatted_value = postgresql_format_timestamp_string(strdup(raw_value));
+                    value = formatted_value;
                 }
                 
                 // Calculate needed size for this column (name + value + escaping overhead)
@@ -728,6 +729,7 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
                 const char* value = raw_value;
                 if (is_datetime && raw_value) {
                     formatted_value = postgresql_format_timestamp_string(strdup(raw_value));
+                    value = formatted_value;
                 }
 
                 // Calculate needed size for this column (name + value + escaping overhead)

@@ -204,6 +204,30 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         fi
     fi
 
+    # Verify migrations actually executed (not just completed instantly)
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify Migration Execution"
+
+    if [[ -f "${log_file}" ]]; then
+        # Check for evidence that migrations actually ran
+        if "${GREP}" -q "Migration test finished" "${log_file}" 2>/dev/null; then
+            # Check if orphaned table cleanup occurred
+            if "${GREP}" -q "orphaned queries table was dropped" "${log_file}" 2>/dev/null; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Migration executed with orphaned table cleanup"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Note: Empty queries table was detected and recreated"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Migration executed normally"
+            fi
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Migration test completed but no execution evidence found - possible false positive"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: 'Migration test finished' log entry not found"
+            EXIT_CODE=1
+        fi
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Cannot verify migration execution - log file not found"
+        EXIT_CODE=1
+    fi
+
 else
     # Skip migration test if prerequisites failed
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping ${ENGINE_NAME} migration test due to prerequisite failures"
