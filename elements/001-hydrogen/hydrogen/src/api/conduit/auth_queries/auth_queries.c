@@ -259,7 +259,7 @@ enum MHD_Result auth_queries_deduplicate_and_validate(
  * @param database Output parameter for extracted database name (caller must free)
  * @return MHD_YES on success, MHD_NO on validation failure
  */
-static enum MHD_Result validate_jwt_and_extract_database(
+enum MHD_Result validate_jwt_and_extract_database(
     struct MHD_Connection *connection,
     char **database)
 {
@@ -334,7 +334,7 @@ static enum MHD_Result validate_jwt_and_extract_database(
  * @param query_obj Query object containing query_ref and optional params
  * @return JSON object with query result or error
  */
-static json_t* execute_single_auth_query(const char *database, json_t *query_obj)
+json_t* execute_single_auth_query(const char *database, json_t *query_obj)
 {
     if (!database || !query_obj) {
         log_this(SR_AUTH, "execute_single_auth_query: NULL parameters", LOG_LEVEL_ERROR, 0);

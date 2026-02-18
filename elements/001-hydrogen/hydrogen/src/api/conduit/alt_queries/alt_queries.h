@@ -31,6 +31,42 @@
 #include <src/database/database_queue_select.h>
 #include <src/database/dbqueue/dbqueue.h>
 
+// Include queries.h for DeduplicationResult enum and ApiPostBuffer
+#include <src/api/conduit/queries/queries.h>
+#include <src/api/conduit/query/query.h>
+
+// Forward declarations for internal functions (used for testing)
+enum MHD_Result alt_queries_deduplicate_and_validate(
+    struct MHD_Connection *connection,
+    json_t *queries_array,
+    const char *database,
+    json_t **deduplicated_queries,
+    size_t **mapping_array,
+    bool **is_duplicate,
+    DeduplicationResult *result_code);
+
+enum MHD_Result validate_jwt_for_auth_alt(
+    struct MHD_Connection *connection,
+    const char *token);
+
+enum MHD_Result parse_alt_queries_request(
+    struct MHD_Connection *connection,
+    const char *method,
+    ApiPostBuffer *buffer,
+    void **con_cls,
+    char **token,
+    char **database,
+    json_t **queries_array);
+
+enum MHD_Result execute_single_alt_query(
+    struct MHD_Connection *connection,
+    json_t *query_obj,
+    const char *database,
+    int *query_ref,
+    PendingQueryResult **pending,
+    QueryCacheEntry **cache_entry,
+    DatabaseQueue **selected_queue);
+
 /**
  * @brief Handle GET/POST /api/conduit/alt_queries requests
  *

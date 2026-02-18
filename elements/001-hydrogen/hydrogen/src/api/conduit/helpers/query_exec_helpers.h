@@ -107,8 +107,34 @@ PendingQueryResult* register_pending_result_with_error_handling(char* query_id, 
  * @return true on success, false on error (caller handles cleanup)
  */
 bool submit_query_with_error_handling(DatabaseQueue* selected_queue, char* query_id,
-                                     const QueryCacheEntry* cache_entry, TypedParameter** ordered_params,
-                                     size_t param_count, char* converted_sql, ParameterList* param_list,
-                                     char* message);
+                                      const QueryCacheEntry* cache_entry, TypedParameter** ordered_params,
+                                      size_t param_count, char* converted_sql, ParameterList* param_list,
+                                      char* message);
+
+/**
+ * @brief Cleanup query execution resources
+ *
+ * Frees all resources associated with query execution. Safe to call with NULL values.
+ *
+ * @param param_list Parameter list to free
+ * @param converted_sql Converted SQL to free
+ * @param ordered_params Ordered parameters array to free
+ * @param param_count Number of ordered parameters
+ * @param query_id Query ID to free
+ * @param message Message to free
+ */
+void cleanup_query_execution_resources(ParameterList* param_list, char* converted_sql,
+                                      TypedParameter** ordered_params, size_t param_count,
+                                      char* query_id, char* message);
+
+/**
+ * @brief Cleanup ordered parameters array
+ *
+ * Frees an array of typed parameters and the array itself.
+ *
+ * @param ordered_params Array of typed parameters
+ * @param param_count Number of parameters in array
+ */
+void cleanup_ordered_params(TypedParameter** ordered_params, size_t param_count);
 
 #endif /* QUERY_EXECUTION_HELPERS_H */
