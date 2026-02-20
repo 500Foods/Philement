@@ -49,6 +49,22 @@ enum MHD_Result parse_alt_request(
     json_t **params_json);
 
 /**
+ * @brief Handle the result of api_buffer_post_data for alt_query
+ *
+ * Returns MHD_YES to continue processing, or an error result to return immediately.
+ *
+ * @param connection The HTTP connection
+ * @param buf_result The buffer result to handle
+ * @param con_cls Connection-specific data
+ * @return MHD_YES to continue processing, or MHD_NO to stop
+ */
+enum MHD_Result handle_alt_query_buffer_result(
+    struct MHD_Connection *connection,
+    ApiBufferResult buf_result,
+    void **con_cls
+);
+
+/**
  * @brief Handle GET/POST /api/conduit/alt_query requests
  *
  * Executes a single authenticated database query with database override.
@@ -92,6 +108,30 @@ enum MHD_Result handle_conduit_alt_query_request(
     const char *upload_data,
     const size_t *upload_data_size,
     void **con_cls
+);
+
+/**
+ * @brief Cleanup alt query resources
+ *
+ * Frees all resources associated with an alt query request.
+ * Safe to call with NULL values.
+ *
+ * @param database Database name to free
+ * @param query_id Query ID string to free
+ * @param param_list Parameter list to free
+ * @param converted_sql Converted SQL string to free
+ * @param ordered_params Ordered parameters array to free
+ * @param param_count Number of ordered parameters
+ * @param message Message string to free
+ */
+void cleanup_alt_query_resources(
+    char *database,
+    char *query_id,
+    ParameterList *param_list,
+    char *converted_sql,
+    TypedParameter **ordered_params,
+    size_t param_count,
+    char *message
 );
 
 #endif /* HYDROGEN_CONDUIT_ALT_QUERY_H */

@@ -181,6 +181,9 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         # Don't use mock for generate_query_id when compiling its own test file
         # Don't use prepare_and_submit_query mock when compiling its own test file
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SYSTEM")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.h")
         if(${SOURCE_FILE} MATCHES "query_execution.c")
             if(${TEST_SOURCE} MATCHES "query_execution_test_prepare_and_submit_query.c")
                 list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_DBQUEUE")

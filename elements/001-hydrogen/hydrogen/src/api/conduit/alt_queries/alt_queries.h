@@ -68,6 +68,38 @@ enum MHD_Result execute_single_alt_query(
     DatabaseQueue **selected_queue);
 
 /**
+ * @brief Cleanup alt queries resources
+ *
+ * Frees all resources associated with an alt queries request.
+ * Safe to call with NULL values.
+ *
+ * @param database Database name to free
+ * @param queries_array Queries array to free
+ * @param deduplicated_queries Deduplicated queries array to free
+ * @param mapping_array Mapping array to free
+ * @param is_duplicate Is duplicate array to free
+ * @param pending_results Pending results array to free
+ * @param query_refs Query refs array to free
+ * @param cache_entries Cache entries array to free
+ * @param selected_queues Selected queues array to free
+ * @param unique_results Unique results array to free
+ * @param query_count Number of queries
+ */
+void cleanup_alt_queries_resources(
+    char *database,
+    json_t *queries_array,
+    json_t *deduplicated_queries,
+    size_t *mapping_array,
+    bool *is_duplicate,
+    PendingQueryResult **pending_results,
+    int *query_refs,
+    QueryCacheEntry **cache_entries,
+    DatabaseQueue **selected_queues,
+    json_t **unique_results,
+    size_t query_count
+);
+
+/**
  * @brief Handle GET/POST /api/conduit/alt_queries requests
  *
  * Executes multiple authenticated database queries in parallel with database override.

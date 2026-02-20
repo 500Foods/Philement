@@ -50,6 +50,32 @@ enum MHD_Result validate_jwt_and_extract_database(
 json_t* execute_single_auth_query(const char *database, json_t *query_obj);
 
 /**
+ * @brief Cleanup auth queries resources
+ *
+ * Frees all resources associated with an auth queries request.
+ * Safe to call with NULL values.
+ *
+ * @param request_json Request JSON object to free
+ * @param database Database name to free
+ * @param queries_array Queries array to free
+ * @param deduplicated_queries Deduplicated queries array to free
+ * @param mapping_array Mapping array to free
+ * @param is_duplicate Is duplicate array to free
+ * @param unique_results Unique results array to free
+ * @param unique_query_count Number of unique queries
+ */
+void cleanup_auth_queries_resources(
+    json_t *request_json,
+    char *database,
+    json_t *queries_array,
+    json_t *deduplicated_queries,
+    size_t *mapping_array,
+    bool *is_duplicate,
+    json_t **unique_results,
+    size_t unique_query_count
+);
+
+/**
  * @brief Handle POST /api/conduit/auth_queries requests
  *
  * Executes multiple authenticated database queries in parallel. Requires valid

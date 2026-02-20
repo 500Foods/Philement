@@ -1,21 +1,29 @@
 #!/bin/bash
 # add_coverage.sh - Identify lines with missing coverage in both gcov files.
 #
-# Usage: ./cover_this.sh <unit_tests.gcov> <black_box_tests.gcov
+# Usage: ./add_coverage.sh <relative_source_path>
 #
-# This script parses two .gcov files (assumed to be for the same source file),
-# finds lines that are uncovered (##### or -----) in *both* files, and prints
-# those line numbers along with the corresponding source code snippet.
+# Example: ./add_coverage.sh api/conduit/alt_queries/alt_queries.c
+#
+# This script parses two .gcov files (unit tests and coverage tests) for the
+# same source file, finds lines that are uncovered (##### or -----) in *both*
+# files, and prints those line numbers along with the corresponding source
+# code snippet.
 
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-    echo "Usage: $0 <a.gcov> <b.gcov>" >&2
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <relative_source_path>" >&2
+    echo "  Example: $0 api/conduit/alt_queries/alt_queries.c" >&2
     exit 1
 fi
 
-a="$1"
-b="$2"
+# Remove any .c extension if present
+src_path="${1%.c}"
+
+# Construct the two gcov paths
+a="build/unity/src/${src_path}.c.gcov"
+b="build/coverage/src/${src_path}.c.gcov"
 
 [[ -f "${a}" ]] || { echo "Error: File '${a}' not found." >&2; exit 1; }
 [[ -f "${b}" ]] || { echo "Error: File '${b}' not found." >&2; exit 1; }

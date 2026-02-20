@@ -39,6 +39,7 @@
 #include "../conduit_service.h"
 #include "../conduit_helpers.h"
 #include "../helpers/auth_jwt_helper.h"
+#include "../helpers/queries_response_helpers.h"
 #include "auth_queries.h"
 
 /**
@@ -304,11 +305,7 @@ enum MHD_Result validate_jwt_and_extract_database(
     if (!result.claims || !result.claims->database || strlen(result.claims->database) == 0) {
         log_this(SR_AUTH, "validate_jwt_and_extract_database: No database in JWT claims", LOG_LEVEL_ERROR, 0);
         free_jwt_validation_result(&result);
-        
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("JWT token missing database information"));
-        return api_send_json_response(connection, error_response, MHD_HTTP_UNAUTHORIZED);
+        return send_conduit_error_response(connection, "JWT token missing database information", MHD_HTTP_UNAUTHORIZED);
     }
 
     // Allocate and copy database name
@@ -334,6 +331,47 @@ enum MHD_Result validate_jwt_and_extract_database(
  * @param query_obj Query object containing query_ref and optional params
  * @return JSON object with query result or error
  */
+/**
+ * @brief Cleanup auth queries resources
+ *
+ * Frees all resources associated with an auth queries request.
+ * Safe to call with NULL values.
+ *
+ * @param request_json Request JSON object to free
+ * @param database Database name to free
+ * @param queries_array Queries array to free
+ * @param deduplicated_queries Deduplicated queries array to free
+ * @param mapping_array Mapping array to free
+ * @param is_duplicate Is duplicate array to free
+ * @param unique_results Unique results array to free
+ * @param unique_query_count Number of unique queries
+ */
+void cleanup_auth_queries_resources(
+    json_t *request_json,
+    char *database,
+    json_t *queries_array,
+    json_t *deduplicated_queries,
+    size_t *mapping_array,
+    bool *is_duplicate,
+    json_t **unique_results,
+    size_t unique_query_count)
+{
+    if (request_json) json_decref(request_json);
+    if (database) free(database);
+    if (queries_array) json_decref(queries_array);
+    if (deduplicated_queries) json_decref(deduplicated_queries);
+    if (mapping_array) free(mapping_array);
+    if (is_duplicate) free(is_duplicate);
+    if (unique_results) {
+        for (size_t i = 0; i < unique_query_count; i++) {
+            if (unique_results[i]) {
+                json_decref(unique_results[i]);
+            }
+        }
+        free(unique_results);
+    }
+}
+
 json_t* execute_single_auth_query(const char *database, json_t *query_obj)
 {
     if (!database || !query_obj) {
@@ -566,11 +604,7 @@ enum MHD_Result handle_conduit_auth_queries_request(
         log_this(SR_AUTH, "handle_conduit_auth_queries_request: Missing or invalid queries field", LOG_LEVEL_ERROR, 0);
         free(database);
         json_decref(request_json);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Missing required parameter: queries (must be array)"));
-        return api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+        return send_conduit_error_response(connection, "Missing required parameter: queries (must be array)", MHD_HTTP_BAD_REQUEST);
     }
 
     size_t original_query_count = json_array_size(queries_array);
@@ -640,36 +674,11 @@ enum MHD_Result handle_conduit_auth_queries_request(
                 }
             }
         } else {
-            // For other validation errors, return immediately
+            // For other validation errors, use helper to build error response
+            json_t *error_response = build_dedup_error_json(dedup_code, database, 0);
+            unsigned int http_status = get_dedup_http_status(dedup_code);
             free(database);
             json_decref(request_json);
-
-            json_t *error_response = json_object();
-            json_object_set_new(error_response, "success", json_false());
-            
-            const char *error_msg = "Validation failed";
-            unsigned int http_status = MHD_HTTP_BAD_REQUEST;
-            
-            switch (dedup_code) {
-                case DEDUP_DATABASE_NOT_FOUND:
-                    error_msg = "Invalid database";
-                    http_status = MHD_HTTP_BAD_REQUEST;
-                    break;
-                case DEDUP_RATE_LIMIT:
-                    error_msg = "Rate limit exceeded: too many unique queries in request";
-                    http_status = MHD_HTTP_TOO_MANY_REQUESTS;
-                    break;
-                case DEDUP_OK:
-                    error_msg = "Validation failed";
-                    http_status = MHD_HTTP_BAD_REQUEST;
-                    break;
-                case DEDUP_ERROR:
-                    error_msg = "Validation failed";
-                    http_status = MHD_HTTP_BAD_REQUEST;
-                    break;
-            }
-            
-            json_object_set_new(error_response, "error", json_string(error_msg));
             return api_send_json_response(connection, error_response, http_status);
         }
     } else {
@@ -696,11 +705,7 @@ enum MHD_Result handle_conduit_auth_queries_request(
         free(is_duplicate);
         free(database);
         json_decref(request_json);
-        
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Internal server error"));
-        return api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        return send_conduit_error_response(connection, "Internal server error", MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
     
     for (size_t i = 0; i < unique_query_count; i++) {
@@ -728,38 +733,19 @@ enum MHD_Result handle_conduit_auth_queries_request(
         log_this(SR_AUTH, "%s: Unique query %zu completed", LOG_LEVEL_DEBUG, 2, conduit_service_name(), i);
     }
     
-    // Map results back to original query order
+    // Map results back to original query order using helper functions
     for (size_t i = 0; i < original_query_count; i++) {
         if (rate_limit_exceeded && (int)i >= max_queries_per_request) {
-            // For queries beyond the rate limit, return an error with limit information
-            json_t *rate_limit_error = json_object();
-            json_object_set_new(rate_limit_error, "success", json_false());
-            json_object_set_new(rate_limit_error, "error", json_string("Rate limit exceeded"));
-            
-            // Add informative message with the limit
-            char limit_msg[100];
-            snprintf(limit_msg, sizeof(limit_msg), "Query limit of %d unique queries per request exceeded", max_queries_per_request);
-            json_object_set_new(rate_limit_error, "message", json_string(limit_msg));
-            
-            json_array_append_new(results_array, rate_limit_error);
+            json_array_append_new(results_array, build_rate_limit_result_entry(max_queries_per_request));
             all_success = false;
         } else if (is_duplicate[i]) {
-            // For duplicates, return an error instead of executing the query
-            json_t *duplicate_error = json_object();
-            json_object_set_new(duplicate_error, "success", json_false());
-            json_object_set_new(duplicate_error, "error", json_string("Duplicate query"));
-            json_array_append_new(results_array, duplicate_error);
+            json_array_append_new(results_array, build_duplicate_result_entry());
             all_success = false;
         } else {
-            // Ensure we don't access beyond the unique_results array bounds
             if (mapping_array[i] < unique_query_count) {
                 json_array_append_new(results_array, unique_results[mapping_array[i]]);
             } else {
-                // This shouldn't happen, but handle it gracefully
-                json_t *error_response = json_object();
-                json_object_set_new(error_response, "success", json_false());
-                json_object_set_new(error_response, "error", json_string("Internal error: invalid query mapping"));
-                json_array_append_new(results_array, error_response);
+                json_array_append_new(results_array, build_invalid_mapping_result_entry());
                 all_success = false;
             }
         }
@@ -779,66 +765,12 @@ enum MHD_Result handle_conduit_auth_queries_request(
     long total_time_ms = ((end_time.tv_sec - start_time.tv_sec) * 1000) +
                         ((end_time.tv_nsec - start_time.tv_nsec) / 1000000);
 
-    // Step 8: Determine appropriate HTTP status code
+    // Step 8: Determine appropriate HTTP status code using helper
     log_this(SR_AUTH, "%s: Determining HTTP status code", LOG_LEVEL_DEBUG, 1, conduit_service_name());
     unsigned int http_status = MHD_HTTP_OK;
     
     if (!all_success) {
-        // Check if we encountered a rate limit error
-        bool rate_limit = false;
-        bool has_parameter_errors = false;
-        bool has_database_errors = false;
-        bool has_duplicate_errors = false;
-        
-        for (size_t i = 0; i < original_query_count; i++) {
-            json_t *single_result = json_array_get(results_array, i);
-            if (!single_result) continue;
-            
-            json_t *error = json_object_get(single_result, "error");
-            if (error && json_is_string(error)) {
-                const char *error_str = json_string_value(error);
-                
-                if (strstr(error_str, "Rate limit")) {
-                    rate_limit = true;
-                    http_status = MHD_HTTP_TOO_MANY_REQUESTS;
-                } else if (strstr(error_str, "Duplicate")) {
-                    has_duplicate_errors = true;
-                } else if (strstr(error_str, "Parameter") ||
-                           strstr(error_str, "Missing") ||
-                           strstr(error_str, "Invalid")) {
-                    has_parameter_errors = true;
-                    http_status = MHD_HTTP_BAD_REQUEST;
-                } else if (strstr(error_str, "Auth") ||
-                           strstr(error_str, "Permission") ||
-                           strstr(error_str, "Unauthorized")) {
-                    http_status = MHD_HTTP_UNAUTHORIZED;
-                } else if (strstr(error_str, "Not found")) {
-                    http_status = MHD_HTTP_NOT_FOUND;
-                } else {
-                    // Database execution errors and other issues
-                    has_database_errors = true;
-                    http_status = MHD_HTTP_UNPROCESSABLE_ENTITY;
-                }
-            }
-        }
-        
-        // Apply highest return code strategy
-        // If we have rate limiting, that takes precedence (429)
-        if (rate_limit) {
-            http_status = MHD_HTTP_TOO_MANY_REQUESTS;
-        }
-        // Parameter errors take precedence over database errors (400 > 422)
-        else if (has_parameter_errors) {
-            http_status = MHD_HTTP_BAD_REQUEST;
-        }
-        // Database execution errors (422)
-        else if (has_database_errors) {
-            http_status = MHD_HTTP_UNPROCESSABLE_ENTITY;
-        }
-        // If only duplicates exist, keep HTTP 200 (duplicates are not errors)
-        else if (has_duplicate_errors) {
-            http_status = MHD_HTTP_OK;
-        }
+        http_status = determine_queries_http_status(results_array, original_query_count);
     }
 
     // Step 9: Build response
