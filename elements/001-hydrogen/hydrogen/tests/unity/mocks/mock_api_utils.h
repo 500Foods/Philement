@@ -65,5 +65,6 @@ enum MHD_Result mock_api_send_error_and_cleanup(
 void mock_api_utils_reset_all(void);
 void mock_api_utils_set_buffer_result(ApiBufferResult result);
 void mock_api_utils_set_send_error_result(enum MHD_Result result);
+void mock_api_utils_set_buffer_data(const char *data);
 
 #endif /* MOCK_API_UTILS_H */

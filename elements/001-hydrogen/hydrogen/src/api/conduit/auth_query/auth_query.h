@@ -103,4 +103,30 @@ enum MHD_Result validate_jwt_from_header(
     jwt_validation_result_t **jwt_result
 );
 
+/**
+ * @brief Cleanup auth query resources
+ *
+ * Frees all resources associated with an auth query request.
+ * Safe to call with NULL values.
+ *
+ * @param request_json Request JSON object to free
+ * @param jwt_result JWT validation result to free
+ * @param query_id Query ID string to free
+ * @param param_list Parameter list to free
+ * @param converted_sql Converted SQL string to free
+ * @param ordered_params Ordered parameters array to free
+ * @param param_count Number of ordered parameters
+ * @param message Message string to free
+ */
+void cleanup_auth_query_resources(
+    json_t *request_json,
+    jwt_validation_result_t *jwt_result,
+    char *query_id,
+    ParameterList *param_list,
+    char *converted_sql,
+    TypedParameter **ordered_params,
+    size_t param_count,
+    char *message
+);
+
 #endif /* HYDROGEN_CONDUIT_AUTH_QUERY_H */

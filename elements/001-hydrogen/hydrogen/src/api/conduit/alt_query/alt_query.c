@@ -38,6 +38,25 @@
 extern DatabaseQueueManager* global_queue_manager;
 
 /**
+ * Handle the result of api_buffer_post_data for alt_query.
+ * Returns MHD_YES to continue processing, or an error result to return immediately.
+ */
+enum MHD_Result handle_alt_query_buffer_result(struct MHD_Connection *connection, ApiBufferResult buf_result, void **con_cls) {
+    switch (buf_result) {
+        case API_BUFFER_CONTINUE:
+            return MHD_YES;
+        case API_BUFFER_ERROR:
+            return api_send_error_and_cleanup(connection, con_cls, "Request processing error", MHD_HTTP_INTERNAL_SERVER_ERROR);
+        case API_BUFFER_METHOD_ERROR:
+            return api_send_error_and_cleanup(connection, con_cls, "Method not allowed - use GET or POST", MHD_HTTP_METHOD_NOT_ALLOWED);
+        case API_BUFFER_COMPLETE:
+            return MHD_YES;
+        default:
+            return api_send_error_and_cleanup(connection, con_cls, "Unknown buffer result", MHD_HTTP_INTERNAL_SERVER_ERROR);
+    }
+}
+
+/**
  * @brief Validate JWT token for authentication (without extracting database)
  *
  * Validates the provided JWT token for authentication purposes only.
@@ -227,6 +246,44 @@ enum MHD_Result parse_alt_request(
 }
 
 /**
+ * @brief Cleanup alt query resources
+ *
+ * Frees all resources associated with an alt query request.
+ * Safe to call with NULL values.
+ *
+ * @param database Database name to free
+ * @param query_id Query ID string to free
+ * @param param_list Parameter list to free
+ * @param converted_sql Converted SQL string to free
+ * @param ordered_params Ordered parameters array to free
+ * @param param_count Number of ordered parameters
+ * @param message Message string to free
+ */
+void cleanup_alt_query_resources(
+    char *database,
+    char *query_id,
+    ParameterList *param_list,
+    char *converted_sql,
+    TypedParameter **ordered_params,
+    size_t param_count,
+    char *message)
+{
+    if (database) free(database);
+    if (query_id) free(query_id);
+    if (param_list) free_parameter_list(param_list);
+    if (converted_sql) free(converted_sql);
+    if (ordered_params) {
+        for (size_t i = 0; i < param_count; i++) {
+            if (ordered_params[i]) {
+                free_typed_parameter(ordered_params[i]);
+            }
+        }
+        free(ordered_params);
+    }
+    if (message) free(message);
+}
+
+/**
  * @brief Handle alternative authenticated conduit query request
  *
  * Main handler for the /api/conduit/alt_query endpoint. Validates JWT token,
@@ -257,17 +314,9 @@ enum MHD_Result handle_conduit_alt_query_request(
     ApiPostBuffer *buffer = NULL;
     ApiBufferResult buf_result = api_buffer_post_data(method, upload_data, (size_t *)upload_data_size, con_cls, &buffer);
     
-    switch (buf_result) {
-        case API_BUFFER_CONTINUE:
-            return MHD_YES;
-        case API_BUFFER_ERROR:
-            return api_send_error_and_cleanup(connection, con_cls, "Request processing error", MHD_HTTP_INTERNAL_SERVER_ERROR);
-        case API_BUFFER_METHOD_ERROR:
-            return api_send_error_and_cleanup(connection, con_cls, "Method not allowed - use GET or POST", MHD_HTTP_METHOD_NOT_ALLOWED);
-        case API_BUFFER_COMPLETE:
-            break;
-        default:
-            return api_send_error_and_cleanup(connection, con_cls, "Unknown buffer result", MHD_HTTP_INTERNAL_SERVER_ERROR);
+    enum MHD_Result buffer_result = handle_alt_query_buffer_result(connection, buf_result, con_cls);
+    if (buf_result != API_BUFFER_COMPLETE) {
+        return buffer_result;
     }
 
     // Step 2: Validate HTTP method
@@ -346,7 +395,7 @@ enum MHD_Result handle_conduit_alt_query_request(
     }
 
     if (result != MHD_YES) {
-        free(database);
+        cleanup_alt_query_resources(database, NULL, param_list, converted_sql, ordered_params, param_count, message);
         return result;
     }
 
@@ -355,17 +404,7 @@ enum MHD_Result handle_conduit_alt_query_request(
     result = handle_queue_selection(connection, database, query_ref, cache_entry,
                                    param_list, converted_sql, ordered_params, &selected_queue);
     if (result != MHD_YES) {
-        free(database);
-        free_parameter_list(param_list);
-        free(converted_sql);
-        if (ordered_params) {
-            for (size_t i = 0; i < param_count; i++) {
-                if (ordered_params[i]) {
-                    free_typed_parameter(ordered_params[i]);
-                }
-            }
-            free(ordered_params);
-        }
+        cleanup_alt_query_resources(database, NULL, param_list, converted_sql, ordered_params, param_count, message);
         return result;
     }
 
@@ -374,17 +413,7 @@ enum MHD_Result handle_conduit_alt_query_request(
     result = handle_query_id_generation(connection, database, query_ref, param_list,
                                        converted_sql, ordered_params, &query_id);
     if (result != MHD_YES) {
-        free(database);
-        free_parameter_list(param_list);
-        free(converted_sql);
-        if (ordered_params) {
-            for (size_t i = 0; i < param_count; i++) {
-                if (ordered_params[i]) {
-                    free_typed_parameter(ordered_params[i]);
-                }
-            }
-            free(ordered_params);
-        }
+        cleanup_alt_query_resources(database, NULL, param_list, converted_sql, ordered_params, param_count, message);
         return result;
     }
 
@@ -394,18 +423,7 @@ enum MHD_Result handle_conduit_alt_query_request(
                                        param_list, converted_sql, ordered_params,
                                        cache_entry, &pending);
     if (result != MHD_YES) {
-        free(database);
-        free(query_id);
-        free_parameter_list(param_list);
-        free(converted_sql);
-        if (ordered_params) {
-            for (size_t i = 0; i < param_count; i++) {
-                if (ordered_params[i]) {
-                    free_typed_parameter(ordered_params[i]);
-                }
-            }
-            free(ordered_params);
-        }
+        cleanup_alt_query_resources(database, query_id, param_list, converted_sql, ordered_params, param_count, message);
         return result;
     }
 
@@ -414,18 +432,7 @@ enum MHD_Result handle_conduit_alt_query_request(
                                    query_id, converted_sql, param_list, ordered_params,
                                    param_count, cache_entry);
     if (result != MHD_YES) {
-        free(database);
-        free(query_id);
-        free_parameter_list(param_list);
-        free(converted_sql);
-        if (ordered_params) {
-            for (size_t i = 0; i < param_count; i++) {
-                if (ordered_params[i]) {
-                    free_typed_parameter(ordered_params[i]);
-                }
-            }
-            free(ordered_params);
-        }
+        cleanup_alt_query_resources(database, query_id, param_list, converted_sql, ordered_params, param_count, message);
         return result;
     }
 
@@ -465,18 +472,7 @@ enum MHD_Result handle_conduit_alt_query_request(
     json_decref(response);
 
     // Clean up
-    free(database);
-    free(query_id);
-    free_parameter_list(param_list);
-    free(converted_sql);
-    if (ordered_params) {
-        for (size_t i = 0; i < param_count; i++) {
-            if (ordered_params[i]) {
-                free_typed_parameter(ordered_params[i]);
-            }
-        }
-        free(ordered_params);
-    }
+    cleanup_alt_query_resources(database, query_id, param_list, converted_sql, ordered_params, param_count, message);
 
     log_this(SR_AUTH, "handle_conduit_alt_query_request: Request completed", LOG_LEVEL_DEBUG, 0);
     return http_result;

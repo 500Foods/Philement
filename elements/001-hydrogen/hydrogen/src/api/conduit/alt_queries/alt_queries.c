@@ -30,6 +30,8 @@
 #include <src/api/api_service.h>
 #include <src/api/api_utils.h>  // For api_send_json_response
 #include <src/api/conduit/alt_queries/alt_queries.h>
+#include <src/api/conduit/helpers/queries_response_helpers.h>
+#include <src/api/conduit/helpers/query_exec_helpers.h>
 #include <src/api/conduit/query/query.h>  // Use existing helpers
 #include <src/api/auth/auth_service.h>
 #include <src/api/auth/auth_service_jwt.h>
@@ -266,10 +268,7 @@ enum MHD_Result validate_jwt_for_auth_alt(
 {
     if (!token) {
         log_this(SR_AUTH, "validate_jwt_for_auth: NULL token", LOG_LEVEL_ERROR, 0);
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Missing authentication token"));
-        return api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+        return send_conduit_error_response(connection, "Missing authentication token", MHD_HTTP_BAD_REQUEST);
     }
 
     // Validate JWT token - pass NULL since database comes from request
@@ -277,11 +276,7 @@ enum MHD_Result validate_jwt_for_auth_alt(
     if (!result.valid || !result.claims) {
         log_this(SR_AUTH, "validate_jwt_for_auth: JWT validation failed", LOG_LEVEL_ALERT, 0);
         free_jwt_validation_result(&result);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Invalid or expired JWT token"));
-        return api_send_json_response(connection, error_response, MHD_HTTP_UNAUTHORIZED);
+        return send_conduit_error_response(connection, "Invalid or expired JWT token", MHD_HTTP_UNAUTHORIZED);
     }
 
     log_this(SR_AUTH, "validate_jwt_for_auth: JWT validated successfully", LOG_LEVEL_DEBUG, 0);
@@ -332,11 +327,7 @@ enum MHD_Result parse_alt_queries_request(
     if (!token_json || !json_is_string(token_json)) {
         log_this(SR_AUTH, "parse_alt_queries_request: Missing or invalid token field", LOG_LEVEL_ERROR, 0);
         json_decref(request_json);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Missing required parameter: token"));
-        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+        send_conduit_error_response(connection, "Missing required parameter: token", MHD_HTTP_BAD_REQUEST);
         return MHD_NO;
     }
 
@@ -353,11 +344,7 @@ enum MHD_Result parse_alt_queries_request(
         log_this(SR_AUTH, "parse_alt_queries_request: Missing or invalid database field", LOG_LEVEL_ERROR, 0);
         free(*token);
         json_decref(request_json);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Missing required parameter: database"));
-        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+        send_conduit_error_response(connection, "Missing required parameter: database", MHD_HTTP_BAD_REQUEST);
         return MHD_NO;
     }
 
@@ -376,11 +363,7 @@ enum MHD_Result parse_alt_queries_request(
         free(*token);
         free(*database);
         json_decref(request_json);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Missing required parameter: queries (must be array)"));
-        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+        send_conduit_error_response(connection, "Missing required parameter: queries (must be array)", MHD_HTTP_BAD_REQUEST);
         return MHD_NO;
     }
 
@@ -390,11 +373,7 @@ enum MHD_Result parse_alt_queries_request(
         free(*token);
         free(*database);
         json_decref(request_json);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Queries array cannot be empty"));
-        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
+        send_conduit_error_response(connection, "Queries array cannot be empty", MHD_HTTP_BAD_REQUEST);
         return MHD_NO;
     }
 
@@ -483,15 +462,7 @@ enum MHD_Result execute_single_alt_query(
                                    param_list, converted_sql, ordered_params, selected_queue);
     if (queue_result != MHD_YES) {
         log_this(SR_AUTH, "execute_single_alt_query: Queue selection failed for query %d", LOG_LEVEL_ERROR, 1, *query_ref);
-        free_parameter_list(param_list);
-        free(converted_sql);
-        if (ordered_params) {
-            for (size_t j = 0; j < param_count; j++) {
-                free_typed_parameter(ordered_params[j]);
-            }
-            free(ordered_params);
-        }
-        if (message) free(message);
+        cleanup_query_execution_resources(param_list, converted_sql, ordered_params, param_count, NULL, message);
         return MHD_NO;
     }
 
@@ -501,15 +472,7 @@ enum MHD_Result execute_single_alt_query(
                                    converted_sql, ordered_params, &query_id);
     if (id_result != MHD_YES) {
         log_this(SR_AUTH, "execute_single_alt_query: Query ID generation failed for query %d", LOG_LEVEL_ERROR, 1, *query_ref);
-        free_parameter_list(param_list);
-        free(converted_sql);
-        if (ordered_params) {
-            for (size_t j = 0; j < param_count; j++) {
-                free_typed_parameter(ordered_params[j]);
-            }
-            free(ordered_params);
-        }
-        if (message) free(message);
+        cleanup_query_execution_resources(param_list, converted_sql, ordered_params, param_count, NULL, message);
         return MHD_NO;
     }
 
@@ -519,16 +482,7 @@ enum MHD_Result execute_single_alt_query(
                                    *cache_entry, pending);
     if (pending_result != MHD_YES) {
         log_this(SR_AUTH, "execute_single_alt_query: Pending registration failed for query %d", LOG_LEVEL_ERROR, 1, *query_ref);
-        free_parameter_list(param_list);
-        free(converted_sql);
-        free(query_id);
-        if (ordered_params) {
-            for (size_t j = 0; j < param_count; j++) {
-                free_typed_parameter(ordered_params[j]);
-            }
-            free(ordered_params);
-        }
-        if (message) free(message);
+        cleanup_query_execution_resources(param_list, converted_sql, ordered_params, param_count, query_id, message);
         return MHD_NO;
     }
 
@@ -538,32 +492,66 @@ enum MHD_Result execute_single_alt_query(
                                    param_count, *cache_entry);
     if (submit_result != MHD_YES) {
         log_this(SR_AUTH, "execute_single_alt_query: Query submission failed for query %d", LOG_LEVEL_ERROR, 1, *query_ref);
-        free_parameter_list(param_list);
-        free(converted_sql);
-        free(query_id);
-        if (ordered_params) {
-            for (size_t j = 0; j < param_count; j++) {
-                free_typed_parameter(ordered_params[j]);
-            }
-            free(ordered_params);
-        }
-        if (message) free(message);
+        cleanup_query_execution_resources(param_list, converted_sql, ordered_params, param_count, query_id, message);
         return MHD_NO;
     }
 
     // Cleanup per-query resources
-    free_parameter_list(param_list);
-    free(converted_sql);
-    free(query_id);
-    if (ordered_params) {
-        for (size_t j = 0; j < param_count; j++) {
-            free_typed_parameter(ordered_params[j]);
-        }
-        free(ordered_params);
-    }
-    if (message) free(message);
+    cleanup_query_execution_resources(param_list, converted_sql, ordered_params, param_count, query_id, message);
 
     return MHD_YES;
+}
+
+/**
+ * @brief Cleanup alt queries resources
+ *
+ * Frees all resources associated with an alt queries request.
+ * Safe to call with NULL values.
+ *
+ * @param database Database name to free
+ * @param queries_array Queries array to free
+ * @param deduplicated_queries Deduplicated queries array to free
+ * @param mapping_array Mapping array to free
+ * @param is_duplicate Is duplicate array to free
+ * @param pending_results Pending results array to free
+ * @param query_refs Query refs array to free
+ * @param cache_entries Cache entries array to free
+ * @param selected_queues Selected queues array to free
+ * @param unique_results Unique results array to free
+ */
+void cleanup_alt_queries_resources(
+    char *database,
+    json_t *queries_array,
+    json_t *deduplicated_queries,
+    size_t *mapping_array,
+    bool *is_duplicate,
+    PendingQueryResult **pending_results,
+    int *query_refs,
+    QueryCacheEntry **cache_entries,
+    DatabaseQueue **selected_queues,
+    json_t **unique_results,
+    size_t query_count)
+{
+    if (database) free(database);
+    if (queries_array) json_decref(queries_array);
+    if (deduplicated_queries) json_decref(deduplicated_queries);
+    if (mapping_array) free(mapping_array);
+    if (is_duplicate) free(is_duplicate);
+    if (pending_results) {
+        // Note: pending results are managed by the pending result manager
+        free(pending_results);
+    }
+    if (query_refs) free(query_refs);
+    if (cache_entries) free(cache_entries);
+    if (selected_queues) free(selected_queues);
+    if (unique_results) {
+        for (size_t i = 0; i < query_count; i++) {
+            if (unique_results[i]) {
+                json_decref(unique_results[i]);
+            }
+        }
+        free(unique_results);
+    }
 }
 
 /**
@@ -657,26 +645,14 @@ enum MHD_Result handle_conduit_alt_queries_request(
     if (dedup_result != MHD_YES) {
         log_this(SR_AUTH, "alt_queries: Validation failed with code %d", LOG_LEVEL_ERROR, 1, dedup_code);
         
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        
-        if (dedup_code == DEDUP_RATE_LIMIT) {
-            const DatabaseConnection *db_conn = find_database_connection(&app_config->databases, database);
-            int max_queries = db_conn ? db_conn->max_queries_per_request : 10;
-            char limit_msg[100];
-            snprintf(limit_msg, sizeof(limit_msg), "Query limit of %d unique queries per request exceeded", max_queries);
-            json_object_set_new(error_response, "error", json_string("Rate limit exceeded"));
-            json_object_set_new(error_response, "message", json_string(limit_msg));
-        } else if (dedup_code == DEDUP_DATABASE_NOT_FOUND) {
-            json_object_set_new(error_response, "error", json_string("Invalid database"));
-        } else {
-            json_object_set_new(error_response, "error", json_string("Validation failed"));
-        }
+        const DatabaseConnection *db_conn = find_database_connection(&app_config->databases, database);
+        int max_queries = db_conn ? db_conn->max_queries_per_request : 10;
+        json_t *error_response = build_dedup_error_json(dedup_code, database, max_queries);
         
         json_decref(queries_array);
         free(database);
         
-        unsigned int http_status = (dedup_code == DEDUP_RATE_LIMIT) ? MHD_HTTP_TOO_MANY_REQUESTS : MHD_HTTP_BAD_REQUEST;
+        unsigned int http_status = get_dedup_http_status(dedup_code);
         return api_send_json_response(connection, error_response, http_status);
     }
 
@@ -695,13 +671,10 @@ enum MHD_Result handle_conduit_alt_queries_request(
 
     if (!pending_results || !query_refs || !cache_entries || !selected_queues) {
         log_this(SR_AUTH, "handle_conduit_alt_queries_request: Failed to allocate memory for parallel execution", LOG_LEVEL_ERROR, 0);
-        free(database);
-        json_decref(queries_array);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Internal server error"));
-        return api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        cleanup_alt_queries_resources(database, queries_array, deduplicated_queries,
+                                     mapping_array, is_duplicate, pending_results,
+                                     query_refs, cache_entries, selected_queues, NULL, 0);
+        return send_conduit_error_response(connection, "Internal server error", MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
 
     log_this(SR_AUTH, "handle_conduit_alt_queries_request: Submitting %zu unique queries for parallel execution", LOG_LEVEL_DEBUG, 1, query_count);
@@ -730,25 +703,10 @@ enum MHD_Result handle_conduit_alt_queries_request(
     }
 
     if (submission_failed) {
-        for (size_t i = 0; i < query_count; i++) {
-            if (pending_results[i]) {
-                // Note: pending results are managed by the pending result manager
-            }
-        }
-        free(pending_results);
-        free(query_refs);
-        free(cache_entries);
-        free(selected_queues);
-        free(mapping_array);
-        free(is_duplicate);
-        free(database);
-        json_decref(deduplicated_queries);
-        json_decref(queries_array);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Failed to submit queries"));
-        return api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        cleanup_alt_queries_resources(database, queries_array, deduplicated_queries,
+                                     mapping_array, is_duplicate, pending_results,
+                                     query_refs, cache_entries, selected_queues, NULL, 0);
+        return send_conduit_error_response(connection, "Failed to submit queries", MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
 
     // Step 6: Suspend webserver connection for long-running queries
@@ -779,71 +737,43 @@ enum MHD_Result handle_conduit_alt_queries_request(
     json_t **unique_results = calloc(unique_query_count, sizeof(json_t*));
     if (!unique_results) {
         log_this(SR_AUTH, "handle_conduit_alt_queries_request: Failed to allocate unique_results array", LOG_LEVEL_ERROR, 0);
-        free(pending_results);
-        free(query_refs);
-        free(cache_entries);
-        free(selected_queues);
-        free(mapping_array);
-        free(is_duplicate);
-        json_decref(deduplicated_queries);
-        json_decref(queries_array);
-        free(database);
-
-        json_t *error_response = json_object();
-        json_object_set_new(error_response, "success", json_false());
-        json_object_set_new(error_response, "error", json_string("Internal server error"));
-        return api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        cleanup_alt_queries_resources(database, queries_array, deduplicated_queries,
+                                     mapping_array, is_duplicate, pending_results,
+                                     query_refs, cache_entries, selected_queues, NULL, 0);
+        return send_conduit_error_response(connection, "Internal server error", MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
     
     for (size_t i = 0; i < unique_query_count; i++) {
         unique_results[i] = build_response_json(query_refs[i], database, cache_entries[i], selected_queues[i], pending_results[i], NULL);
     }
 
-    // Map results back to original query order
+    // Map results back to original query order using helper functions
     for (size_t i = 0; i < original_query_count; i++) {
         json_t *query_result;
         if (is_duplicate[i]) {
-            // For duplicates, return an error
-            query_result = json_object();
-            json_object_set_new(query_result, "success", json_false());
-            json_object_set_new(query_result, "error", json_string("Duplicate query"));
+            query_result = build_duplicate_result_entry();
             all_success = false;
         } else {
-            // Get result from unique results array
             size_t unique_idx = mapping_array[i];
             if (unique_idx < unique_query_count) {
                 query_result = json_deep_copy(unique_results[unique_idx]);
-                // Check if query succeeded
                 json_t *success_field = json_object_get(query_result, "success");
                 if (!success_field || !json_is_true(success_field)) {
                     all_success = false;
                 }
             } else {
-                query_result = json_object();
-                json_object_set_new(query_result, "success", json_false());
-                json_object_set_new(query_result, "error", json_string("Internal error: invalid query mapping"));
+                query_result = build_invalid_mapping_result_entry();
                 all_success = false;
             }
         }
         json_array_append_new(results_array, query_result);
     }
 
-    // Clean up unique results
-    for (size_t i = 0; i < unique_query_count; i++) {
-        json_decref(unique_results[i]);
-    }
-    free(unique_results);
-
-    // Clean up
-    free(pending_results);
-    free(query_refs);
-    free(cache_entries);
-    free(selected_queues);
-    free(mapping_array);
-    free(is_duplicate);
-
-    json_decref(deduplicated_queries);
-    json_decref(queries_array);
+    // Clean up all resources using helper
+    cleanup_alt_queries_resources(NULL, queries_array, deduplicated_queries,
+                                 mapping_array, is_duplicate, pending_results,
+                                 query_refs, cache_entries, selected_queues,
+                                 unique_results, unique_query_count);
 
     // Step 10: Calculate total execution time
     struct timespec end_time;

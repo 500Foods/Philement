@@ -168,7 +168,7 @@ enum MHD_Result validate_jwt_from_header(
     return MHD_YES;
 }
 
-static void cleanup_auth_query_resources(
+void cleanup_auth_query_resources(
     json_t *request_json,
     jwt_validation_result_t *jwt_result,
     char *query_id,

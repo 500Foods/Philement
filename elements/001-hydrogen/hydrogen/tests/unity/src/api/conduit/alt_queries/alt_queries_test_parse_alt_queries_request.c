@@ -15,7 +15,9 @@
 
 // Enable mocks for external dependencies
 #define USE_MOCK_LIBMICROHTTPD
+#define USE_MOCK_SYSTEM
 #include <unity/mocks/mock_libmicrohttpd.h>
+#include <unity/mocks/mock_system.h>
 
 // Include source headers
 #include <src/api/conduit/queries/queries.h>
@@ -30,6 +32,7 @@ void test_parse_alt_queries_request_missing_token_field(void);
 void test_parse_alt_queries_request_missing_database_field(void);
 void test_parse_alt_queries_request_missing_queries_field(void);
 void test_parse_alt_queries_request_empty_queries(void);
+void test_parse_alt_queries_request_failed_to_copy_queries(void);
 
 // Test fixtures
 void setUp(void) {
@@ -202,6 +205,30 @@ void test_parse_alt_queries_request_empty_queries(void) {
     TEST_ASSERT_EQUAL(MHD_NO, result);
 }
 
+void test_parse_alt_queries_request_failed_to_copy_queries(void) {
+    struct MHD_Connection *mock_connection = (void*)0x123;
+    const char *method = "POST";
+    char *token = NULL;
+    char *database = NULL;
+    json_t *queries_array = NULL;
+    ApiPostBuffer buffer = {0};
+    void *con_cls = NULL;
+    buffer.data = strdup("{\"token\": \"jwt\", \"database\": \"test\", \"queries\": [{\"query_ref\": 1}]}");
+    buffer.size = strlen(buffer.data);
+
+    // Mock memory allocation to fail when json_deep_copy tries to allocate
+    mock_system_set_malloc_failure(10); // Fail on 10th allocation (adjust as needed)
+
+    enum MHD_Result result = parse_alt_queries_request(
+        mock_connection, method, &buffer, &con_cls, &token, &database, &queries_array
+    );
+
+    free(buffer.data);
+    free(token);
+    free(database);
+    TEST_ASSERT_EQUAL(MHD_NO, result);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -213,6 +240,7 @@ int main(void) {
     RUN_TEST(test_parse_alt_queries_request_missing_database_field);
     RUN_TEST(test_parse_alt_queries_request_missing_queries_field);
     RUN_TEST(test_parse_alt_queries_request_empty_queries);
+    RUN_TEST(test_parse_alt_queries_request_failed_to_copy_queries);
 
     return UNITY_END();
 }

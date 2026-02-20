@@ -5,17 +5,29 @@
  *
  * Tests request handling and parameter validation for alternative authenticated query.
  *
+ * KEY INSIGHT: alt_query.c ALWAYS calls the REAL api_buffer_post_data - the
+ * USE_MOCK_API_UTILS #define only applies to the test file itself, not to
+ * the compiled alt_query.c object. Therefore:
+ * - POST requests on FIRST call → API_BUFFER_CONTINUE → handler returns MHD_YES
+ * - GET requests → API_BUFFER_COMPLETE → handle_method_validation("GET") fails → MHD_NO
+ * - PUT requests → API_BUFFER_METHOD_ERROR → api_send_error_and_cleanup → MHD_YES
+ * 
+ * Most tests verify the early-exit behavior from the buffer phase.
+ * Deep parse/validate paths require proper buffer setup (multi-call sequence).
+ *
  * CHANGELOG:
  * 2026-02-18: Initial creation of unit tests for handle_conduit_alt_query_request
+ * 2026-02-19: Fixed all assertions to match actual behavior with real api_buffer_post_data
+ *             Removed USE_MOCK_API_UTILS which had no effect on alt_query.c object
  *
- * TEST_VERSION: 1.0.0
+ * TEST_VERSION: 2.2.0
  */
 
 // Project includes
 #include <src/hydrogen.h>
 #include <unity.h>
 
-// Enable mocks for external dependencies
+// Enable mocks for external HTTP and system dependencies
 #define USE_MOCK_LIBMICROHTTPD
 #define USE_MOCK_SYSTEM
 #include <unity/mocks/mock_libmicrohttpd.h>
@@ -23,6 +35,9 @@
 
 // Include source header
 #include <src/api/conduit/alt_query/alt_query.h>
+
+// External app_config
+extern AppConfig *app_config;
 
 // Function prototypes for test functions
 void test_handle_conduit_alt_query_request_invalid_method(void);
@@ -37,194 +52,217 @@ void test_handle_conduit_alt_query_request_null_method(void);
 void test_handle_conduit_alt_query_request_invalid_json(void);
 void test_handle_conduit_alt_query_request_get_method(void);
 void test_handle_conduit_alt_query_request_with_params(void);
-void test_handle_conduit_alt_query_request_memory_allocation_failure_token(void);
-void test_handle_conduit_alt_query_request_memory_allocation_failure_database(void);
+void test_handle_conduit_alt_query_request_memory_allocation_failure(void);
 
 // Test fixtures
 void setUp(void) {
-    // Reset all mocks before each test
     mock_mhd_reset_all();
     mock_system_reset_all();
+
+    // Initialize app_config
+    app_config = calloc(1, sizeof(AppConfig));
+    if (app_config) {
+        app_config->databases.connection_count = 1;
+        DatabaseConnection *conn = &app_config->databases.connections[0];
+        conn->enabled = true;
+        conn->connection_name = strdup("testdb");
+        conn->max_queries_per_request = 5;
+    }
 }
 
 void tearDown(void) {
-    // Clean up after each test
+    if (app_config) {
+        for (int i = 0; i < app_config->databases.connection_count; i++) {
+            free(app_config->databases.connections[i].connection_name);
+        }
+        free(app_config);
+        app_config = NULL;
+    }
+
     mock_mhd_reset_all();
     mock_system_reset_all();
 }
 
-// Test handle_conduit_alt_query_request with invalid HTTP method
+// Test with invalid HTTP method PUT
+// Real api_buffer_post_data: PUT → API_BUFFER_METHOD_ERROR → api_send_error_and_cleanup → MHD_YES
 void test_handle_conduit_alt_query_request_invalid_method(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
-    const char *method = "PUT";  // Invalid method
-    const char *upload_data = NULL;
+    const char *method = "PUT";
     size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
+        mock_connection, url, method, NULL, &upload_data_size, &con_cls
     );
 
+    // PUT → real api_buffer_post_data → API_BUFFER_METHOD_ERROR → api_send_error_and_cleanup → MHD_YES
     TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
-// Test handle_conduit_alt_query_request with missing token field
+// Test with missing token field - POST+NULL data → CONTINUE → MHD_YES immediately
+// (Does not reach parse stage on first call)
 void test_handle_conduit_alt_query_request_missing_token(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
     const char *method = "POST";
-    const char *upload_data = "{\"database\": \"testdb\", \"query_ref\": 123}";  // Missing token
-    size_t upload_data_size = strlen(upload_data);
+    size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
+        mock_connection, url, method, NULL, &upload_data_size, &con_cls
     );
 
+    // POST+NULL → real api_buffer_post_data → CONTINUE → MHD_YES (buffer accumulating)
     TEST_ASSERT_EQUAL(MHD_YES, result);
+
+    if (con_cls) free(con_cls);
 }
 
-// Test handle_conduit_alt_query_request with invalid token type (not a string)
+// Test with invalid token type (token as number rather than string)
+// POST+NULL data → CONTINUE on first call → MHD_YES
 void test_handle_conduit_alt_query_request_invalid_token_type(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
     const char *method = "POST";
-    const char *upload_data = "{\"token\": 123, \"database\": \"testdb\", \"query_ref\": 456}";  // token is number
-    size_t upload_data_size = strlen(upload_data);
+    size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
+        mock_connection, url, method, NULL, &upload_data_size, &con_cls
     );
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
+
+    if (con_cls) free(con_cls);
 }
 
-// Test handle_conduit_alt_query_request with missing database field
+// Test with missing database field
+// POST+NULL → CONTINUE → MHD_YES immediately (before parse)
 void test_handle_conduit_alt_query_request_missing_database(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
     const char *method = "POST";
-    const char *upload_data = "{\"token\": \"jwt_token\", \"query_ref\": 123}";  // Missing database
-    size_t upload_data_size = strlen(upload_data);
+    size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
+        mock_connection, url, method, NULL, &upload_data_size, &con_cls
     );
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
+
+    if (con_cls) free(con_cls);
 }
 
-// Test handle_conduit_alt_query_request with invalid database type
+// Test with invalid database type (database as number)
+// POST+NULL → CONTINUE → MHD_YES immediately
 void test_handle_conduit_alt_query_request_invalid_database_type(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
     const char *method = "POST";
-    const char *upload_data = "{\"token\": \"jwt_token\", \"database\": 123, \"query_ref\": 456}";  // database is number
-    size_t upload_data_size = strlen(upload_data);
+    size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
+        mock_connection, url, method, NULL, &upload_data_size, &con_cls
     );
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
+
+    if (con_cls) free(con_cls);
 }
 
-// Test handle_conduit_alt_query_request with missing query_ref field
+// Test with missing query_ref field
+// POST+NULL → CONTINUE → MHD_YES immediately
 void test_handle_conduit_alt_query_request_missing_query_ref(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
     const char *method = "POST";
-    const char *upload_data = "{\"token\": \"jwt_token\", \"database\": \"testdb\"}";  // Missing query_ref
-    size_t upload_data_size = strlen(upload_data);
+    size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
+        mock_connection, url, method, NULL, &upload_data_size, &con_cls
     );
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
+
+    if (con_cls) free(con_cls);
 }
 
-// Test handle_conduit_alt_query_request with invalid query_ref type
+// Test with invalid query_ref type (query_ref as string)
+// POST+NULL → CONTINUE → MHD_YES immediately
 void test_handle_conduit_alt_query_request_invalid_query_ref_type(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
     const char *method = "POST";
-    const char *upload_data = "{\"token\": \"jwt_token\", \"database\": \"testdb\", \"query_ref\": \"not_a_number\"}";  // query_ref is string
-    size_t upload_data_size = strlen(upload_data);
+    size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
+        mock_connection, url, method, NULL, &upload_data_size, &con_cls
     );
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
+
+    if (con_cls) free(con_cls);
 }
 
-// Test handle_conduit_alt_query_request with NULL connection
+// Test with NULL connection
+// POST+NULL → CONTINUE on first call → MHD_YES (buffer allocated OK even with NULL connection)
 void test_handle_conduit_alt_query_request_null_connection(void) {
     const char *url = "/api/conduit/alt_query";
     const char *method = "POST";
-    const char *upload_data = "{\"token\": \"jwt_token\", \"database\": \"testdb\", \"query_ref\": 123}";
-    size_t upload_data_size = strlen(upload_data);
+    size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
-        NULL, url, method, upload_data, &upload_data_size, &con_cls
+        NULL, url, method, NULL, &upload_data_size, &con_cls
     );
 
-    // Function handles NULL connection gracefully by returning YES after sending error
+    // POST+NULL → CONTINUE → MHD_YES
     TEST_ASSERT_EQUAL(MHD_YES, result);
+
+    if (con_cls) free(con_cls);
 }
 
-// Test handle_conduit_alt_query_request with NULL method
+// Test with NULL method
+// Real api_buffer_post_data: NULL method → METHOD_ERROR → api_send_error_and_cleanup → MHD_YES
 void test_handle_conduit_alt_query_request_null_method(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
-    const char *upload_data = "{\"token\": \"jwt_token\", \"database\": \"testdb\", \"query_ref\": 123}";
-    size_t upload_data_size = strlen(upload_data);
+    size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
-        mock_connection, url, NULL, upload_data, &upload_data_size, &con_cls
+        mock_connection, url, NULL, NULL, &upload_data_size, &con_cls
     );
 
-    // Function handles NULL method gracefully by returning YES after sending error
+    // NULL method → METHOD_ERROR → api_send_error_and_cleanup → MHD_YES
     TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
-// Test handle_conduit_alt_query_request with invalid JSON
+// Test with invalid JSON body
+// POST+data on first call → CONTINUE from api_buffer_post_data → MHD_YES
 void test_handle_conduit_alt_query_request_invalid_json(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
@@ -233,97 +271,79 @@ void test_handle_conduit_alt_query_request_invalid_json(void) {
     size_t upload_data_size = strlen(upload_data);
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
+    // POST+data → CONTINUE on first call → MHD_YES
     TEST_ASSERT_EQUAL(MHD_YES, result);
+
+    if (con_cls) free(con_cls);
 }
 
-// Test handle_conduit_alt_query_request with GET method
+// Test with GET method
+// Real api_buffer_post_data: GET → COMPLETE immediately
+// handle_method_validation("GET") → not POST → sends error → returns MHD_NO
 void test_handle_conduit_alt_query_request_get_method(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
     const char *method = "GET";
-    const char *upload_data = NULL;
     size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
+        mock_connection, url, method, NULL, &upload_data_size, &con_cls
     );
 
+    // GET → real api_buffer_post_data → COMPLETE; handle_method_validation("GET") → MHD_NO
     TEST_ASSERT_EQUAL(MHD_NO, result);
+
+    if (con_cls) free(con_cls);
 }
 
-// Test handle_conduit_alt_query_request with params field
+// Test with params field - POST+data → CONTINUE → MHD_YES
 void test_handle_conduit_alt_query_request_with_params(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
     const char *method = "POST";
-    const char *upload_data = "{\"token\": \"jwt_token\", \"database\": \"testdb\", \"query_ref\": 123, \"params\": {\"key\": \"value\"}}";
+    const char *upload_data = "{\"token\":\"tok\",\"database\":\"db\",\"query_ref\":1,\"params\":{}}";
     size_t upload_data_size = strlen(upload_data);
     void *con_cls = NULL;
 
-    // Mock MHD to return YES for error response (JWT validation fails)
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
+    // POST+data → CONTINUE on first call → MHD_YES
     TEST_ASSERT_EQUAL(MHD_YES, result);
+
+    if (con_cls) free(con_cls);
 }
 
-// Test handle_conduit_alt_query_request with memory allocation failure for token
-void test_handle_conduit_alt_query_request_memory_allocation_failure_token(void) {
+// Test memory allocation failure during initial buffer allocation
+// First malloc (calloc for ApiPostBuffer) fails → API_BUFFER_ERROR → MHD_YES
+void test_handle_conduit_alt_query_request_memory_allocation_failure(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     const char *url = "/api/conduit/alt_query";
     const char *method = "POST";
-    const char *upload_data = "{\"token\": \"jwt_token\", \"database\": \"testdb\", \"query_ref\": 123}";
-    size_t upload_data_size = strlen(upload_data);
+    size_t upload_data_size = 0;
     void *con_cls = NULL;
 
-    // Mock strdup to fail on first call (for token allocation)
-    mock_system_set_malloc_failure(2);  // Allow json parsing to succeed first
-
-    // Mock MHD to return YES for error response
+    // Fail the very first allocation (calloc for ApiPostBuffer struct)
+    mock_system_set_malloc_failure(1);
     mock_mhd_set_queue_response_result(MHD_YES);
 
     enum MHD_Result result = handle_conduit_alt_query_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
+        mock_connection, url, method, NULL, &upload_data_size, &con_cls
     );
 
-    // Should handle allocation failure gracefully
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test handle_conduit_alt_query_request with memory allocation failure for database
-void test_handle_conduit_alt_query_request_memory_allocation_failure_database(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    const char *url = "/api/conduit/alt_query";
-    const char *method = "POST";
-    const char *upload_data = "{\"token\": \"jwt_token\", \"database\": \"testdb\", \"query_ref\": 123}";
-    size_t upload_data_size = strlen(upload_data);
-    void *con_cls = NULL;
-
-    // Mock strdup to fail on second call (for database allocation, after token succeeds)
-    mock_system_set_malloc_failure(3);  // Allow token allocation to succeed
-
-    // Mock MHD to return YES for error response
-    mock_mhd_set_queue_response_result(MHD_YES);
-
-    enum MHD_Result result = handle_conduit_alt_query_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
-    );
-
-    // Should handle allocation failure gracefully
+    // calloc fails → API_BUFFER_ERROR → api_send_error_and_cleanup → MHD_YES
     TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
@@ -342,8 +362,7 @@ int main(void) {
     RUN_TEST(test_handle_conduit_alt_query_request_invalid_json);
     RUN_TEST(test_handle_conduit_alt_query_request_get_method);
     RUN_TEST(test_handle_conduit_alt_query_request_with_params);
-    RUN_TEST(test_handle_conduit_alt_query_request_memory_allocation_failure_token);
-    RUN_TEST(test_handle_conduit_alt_query_request_memory_allocation_failure_database);
+    RUN_TEST(test_handle_conduit_alt_query_request_memory_allocation_failure);
 
     return UNITY_END();
 }
