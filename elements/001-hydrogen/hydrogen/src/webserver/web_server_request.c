@@ -99,9 +99,36 @@ enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_p
     // Set Content-Type based on the original file (not the .br version)
     const char *ext = strrchr(file_path, '.');
     if (ext) {
+        // Text formats
         if (strcmp(ext, ".html") == 0) MHD_add_response_header(response, "Content-Type", "text/html");
         else if (strcmp(ext, ".css") == 0) MHD_add_response_header(response, "Content-Type", "text/css");
         else if (strcmp(ext, ".js") == 0) MHD_add_response_header(response, "Content-Type", "application/javascript");
+        else if (strcmp(ext, ".txt") == 0) MHD_add_response_header(response, "Content-Type", "text/plain");
+        else if (strcmp(ext, ".json") == 0) MHD_add_response_header(response, "Content-Type", "application/json");
+        else if (strcmp(ext, ".xml") == 0) MHD_add_response_header(response, "Content-Type", "application/xml");
+        else if (strcmp(ext, ".csv") == 0) MHD_add_response_header(response, "Content-Type", "text/csv");
+        
+        // Image formats
+        else if (strcmp(ext, ".svg") == 0) MHD_add_response_header(response, "Content-Type", "image/svg+xml");
+        else if (strcmp(ext, ".png") == 0) MHD_add_response_header(response, "Content-Type", "image/png");
+        else if (strcmp(ext, ".jpg") == 0 || strcmp(ext, ".jpeg") == 0) MHD_add_response_header(response, "Content-Type", "image/jpeg");
+        else if (strcmp(ext, ".gif") == 0) MHD_add_response_header(response, "Content-Type", "image/gif");
+        else if (strcmp(ext, ".ico") == 0) MHD_add_response_header(response, "Content-Type", "image/x-icon");
+        else if (strcmp(ext, ".webp") == 0) MHD_add_response_header(response, "Content-Type", "image/webp");
+        else if (strcmp(ext, ".bmp") == 0) MHD_add_response_header(response, "Content-Type", "image/bmp");
+        else if (strcmp(ext, ".tif") == 0 || strcmp(ext, ".tiff") == 0) MHD_add_response_header(response, "Content-Type", "image/tiff");
+        else if (strcmp(ext, ".avif") == 0) MHD_add_response_header(response, "Content-Type", "image/avif");
+        
+        // Font formats
+        else if (strcmp(ext, ".woff") == 0) MHD_add_response_header(response, "Content-Type", "font/woff");
+        else if (strcmp(ext, ".woff2") == 0) MHD_add_response_header(response, "Content-Type", "font/woff2");
+        else if (strcmp(ext, ".ttf") == 0) MHD_add_response_header(response, "Content-Type", "font/ttf");
+        else if (strcmp(ext, ".otf") == 0) MHD_add_response_header(response, "Content-Type", "font/otf");
+        
+        // Other common formats
+        else if (strcmp(ext, ".pdf") == 0) MHD_add_response_header(response, "Content-Type", "application/pdf");
+        else if (strcmp(ext, ".zip") == 0) MHD_add_response_header(response, "Content-Type", "application/zip");
+        else if (strcmp(ext, ".wasm") == 0) MHD_add_response_header(response, "Content-Type", "application/wasm");
         // Add more content types as needed
     }
     

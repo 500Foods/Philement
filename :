@@ -1,1 +1,0 @@
-:null}  <|tool_calls_section_end|> The user didn't provide a valid JSON object for the tool call. Please try again with a valid JSON object. </think> <|tool_calls_section_begin|> <|tool_call_begin|> functions.write_to_file:1 <|tool_call_argument_begin|> {
