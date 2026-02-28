@@ -23,7 +23,6 @@
     "deploy": "npm run build:prod && rsync -avz dist/ user@server:/var/www/lithium/"
   },
   "dependencies": {
-    "@vitejs/plugin-basic-ssl": "^1.1.0",
     "idb": "^7.1.1",
     "vite": "^7.3.0",
     "workbox-window": "^7.1.0"
@@ -32,6 +31,7 @@
     "@babel/core": "^7.24.0",
     "@babel/preset-env": "^7.24.0",
     "@babel/register": "^7.23.7",
+    "@vitejs/plugin-basic-ssl": "^2.1.4",
     "eslint": "^8.57.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.29.1",
