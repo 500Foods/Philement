@@ -6,8 +6,9 @@
  *
  * CHANGELOG:
  * 2026-02-18: Initial creation of unit tests for cleanup functions
+ * 2026-03-03: Fixed nullPointerOutOfMemory - Added TEST_ASSERT_NOT_NULL checks after allocations
  *
- * TEST_VERSION: 1.0.0
+ * TEST_VERSION: 1.0.1
  */
 
 // Project includes
@@ -179,7 +180,9 @@ void test_cleanup_query_execution_resources_all_resources(void) {
     char* message = strdup("Test message");
     
     TypedParameter** ordered_params = calloc(2, sizeof(TypedParameter*));
+    TEST_ASSERT_NOT_NULL(ordered_params);
     ordered_params[0] = calloc(1, sizeof(TypedParameter));
+    TEST_ASSERT_NOT_NULL(ordered_params[0]);
     ordered_params[0]->name = strdup("op1");
     ordered_params[0]->type = PARAM_TYPE_STRING;
     ordered_params[0]->value.string_value = strdup("val1");

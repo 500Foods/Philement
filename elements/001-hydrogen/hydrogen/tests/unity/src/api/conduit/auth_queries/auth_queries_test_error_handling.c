@@ -14,8 +14,9 @@
  *
  * CHANGELOG:
  * 2026-02-19: Initial creation of error handling tests
+ * 2026-03-03: Fixed nullPointerOutOfMemory - Added TEST_ASSERT_NOT_NULL checks after allocations
  *
- * TEST_VERSION: 1.0.0
+ * TEST_VERSION: 1.0.1
  */
 
 // Project includes
@@ -348,9 +349,12 @@ void test_auth_queries_cleanup_valid_params(void) {
     json_t *queries_array = json_array();
     json_t *deduplicated_queries = json_array();
     size_t *mapping_array = calloc(1, sizeof(size_t));
+    TEST_ASSERT_NOT_NULL(mapping_array);
     bool *is_duplicate = calloc(1, sizeof(bool));
+    TEST_ASSERT_NOT_NULL(is_duplicate);
 
     json_t **unique_results = calloc(2, sizeof(json_t*));
+    TEST_ASSERT_NOT_NULL(unique_results);
     unique_results[0] = json_object();
     json_object_set_new(unique_results[0], "success", json_true());
     unique_results[1] = json_object();

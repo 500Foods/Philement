@@ -11,6 +11,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.1.1 - 2026-03-03 - Fixed SC2129: Use grouped redirects instead of individual redirects
 # 1.1.0 - 2026-02-18 - Implemented 7x2 cross-database testing matrix with different combinations
 #                    - Each of 7 databases' JWT tokens used to query 2 different databases
 #                    - Uses offset patterns 3,4 (vs 1,2 in test_54) for different cross-db combinations
@@ -26,7 +27,7 @@ TEST_NAME="Conduit Alt Queries"
 TEST_ABBR="CFM"
 TEST_NUMBER="55"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.1.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -102,9 +103,11 @@ test_conduit_alt_multiple_queries() {
     
     local num_ready=${#ready_databases[@]}
     if [[ ${num_ready} -eq 0 ]]; then
-        echo "ALT_MULTIPLE_QUERIES_SKIPPED_NO_TOKEN" >> "${result_file}"
-        echo "ALT_MULTIPLE_QUERY_TESTS_PASSED=0" >> "${result_file}"
-        echo "ALT_MULTIPLE_QUERY_TESTS_TOTAL=0" >> "${result_file}"
+        {
+            echo "ALT_MULTIPLE_QUERIES_SKIPPED_NO_TOKEN"
+            echo "ALT_MULTIPLE_QUERY_TESTS_PASSED=0"
+            echo "ALT_MULTIPLE_QUERY_TESTS_TOTAL=0"
+        } >> "${result_file}"
         return
     fi
     
