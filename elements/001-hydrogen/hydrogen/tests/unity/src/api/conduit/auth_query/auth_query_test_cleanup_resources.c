@@ -7,8 +7,9 @@
  *
  * CHANGELOG:
  * 2026-02-18: Initial creation of unit tests for cleanup_auth_query_resources
+ * 2026-03-03: Fixed nullPointerOutOfMemory - Added TEST_ASSERT_NOT_NULL checks after allocations
  *
- * TEST_VERSION: 1.0.0
+ * TEST_VERSION: 1.0.1
  */
 
 // Project includes
@@ -70,6 +71,7 @@ void test_cleanup_auth_query_resources_with_jwt_result(void) {
     TEST_ASSERT_NOT_NULL(jwt_result);
     jwt_result->valid = true;
     jwt_result->claims = calloc(1, sizeof(jwt_claims_t));
+    TEST_ASSERT_NOT_NULL(jwt_result->claims);
     jwt_result->claims->database = strdup("testdb");
     jwt_result->claims->username = strdup("testuser");
     jwt_result->claims->user_id = 123;
@@ -94,16 +96,19 @@ void test_cleanup_auth_query_resources_with_param_list(void) {
     ParameterList *param_list = calloc(1, sizeof(ParameterList));
     TEST_ASSERT_NOT_NULL(param_list);
     param_list->params = calloc(2, sizeof(TypedParameter*));
+    TEST_ASSERT_NOT_NULL(param_list->params);
     param_list->params[0] = calloc(1, sizeof(TypedParameter));
+    TEST_ASSERT_NOT_NULL(param_list->params[0]);
     param_list->params[0]->name = strdup("param1");
     param_list->params[0]->type = PARAM_TYPE_INTEGER;
     param_list->params[0]->value.int_value = 42;
     param_list->params[1] = calloc(1, sizeof(TypedParameter));
+    TEST_ASSERT_NOT_NULL(param_list->params[1]);
     param_list->params[1]->name = strdup("param2");
     param_list->params[1]->type = PARAM_TYPE_STRING;
     param_list->params[1]->value.string_value = strdup("test_value");
     param_list->count = 2;
-    
+
     // Should clean up without crashing
     cleanup_auth_query_resources(NULL, NULL, NULL, param_list, NULL, NULL, 0, NULL);
     TEST_PASS();
@@ -123,15 +128,17 @@ void test_cleanup_auth_query_resources_with_converted_sql(void) {
 void test_cleanup_auth_query_resources_with_ordered_params(void) {
     TypedParameter **ordered_params = calloc(3, sizeof(TypedParameter*));
     TEST_ASSERT_NOT_NULL(ordered_params);
-    
+
     ordered_params[0] = calloc(1, sizeof(TypedParameter));
+    TEST_ASSERT_NOT_NULL(ordered_params[0]);
     ordered_params[0]->name = strdup("param1");
     ordered_params[0]->type = PARAM_TYPE_INTEGER;
     ordered_params[0]->value.int_value = 100;
-    
+
     ordered_params[1] = NULL;  // Test NULL in middle
-    
+
     ordered_params[2] = calloc(1, sizeof(TypedParameter));
+    TEST_ASSERT_NOT_NULL(ordered_params[2]);
     ordered_params[2]->name = strdup("param3");
     ordered_params[2]->type = PARAM_TYPE_STRING;
     ordered_params[2]->value.string_value = strdup("value3");
@@ -159,27 +166,34 @@ void test_cleanup_auth_query_resources_with_all_resources(void) {
     
     // Create jwt_result
     jwt_validation_result_t *jwt_result = calloc(1, sizeof(jwt_validation_result_t));
+    TEST_ASSERT_NOT_NULL(jwt_result);
     jwt_result->valid = true;
     jwt_result->claims = calloc(1, sizeof(jwt_claims_t));
+    TEST_ASSERT_NOT_NULL(jwt_result->claims);
     jwt_result->claims->database = strdup("testdb");
     jwt_result->claims->username = strdup("testuser");
-    
+
     // Create other resources
     char *query_id = strdup("query_123");
     char *converted_sql = strdup("SELECT * FROM test");
     char *message = strdup("Test message");
-    
+
     // Create param_list
     ParameterList *param_list = calloc(1, sizeof(ParameterList));
+    TEST_ASSERT_NOT_NULL(param_list);
     param_list->params = calloc(1, sizeof(TypedParameter*));
+    TEST_ASSERT_NOT_NULL(param_list->params);
     param_list->params[0] = calloc(1, sizeof(TypedParameter));
+    TEST_ASSERT_NOT_NULL(param_list->params[0]);
     param_list->params[0]->name = strdup("p1");
     param_list->params[0]->type = PARAM_TYPE_INTEGER;
     param_list->count = 1;
-    
+
     // Create ordered_params
     TypedParameter **ordered_params = calloc(2, sizeof(TypedParameter*));
+    TEST_ASSERT_NOT_NULL(ordered_params);
     ordered_params[0] = calloc(1, sizeof(TypedParameter));
+    TEST_ASSERT_NOT_NULL(ordered_params[0]);
     ordered_params[0]->name = strdup("op1");
     ordered_params[0]->type = PARAM_TYPE_STRING;
     ordered_params[0]->value.string_value = strdup("val1");

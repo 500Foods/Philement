@@ -7,8 +7,9 @@
  *
  * CHANGELOG:
  * 2026-02-19: Initial creation of unit tests for cleanup_alt_queries_resources
+ * 2026-03-03: Fixed nullPointerOutOfMemory - Added TEST_ASSERT_NOT_NULL checks after allocations
  *
- * TEST_VERSION: 1.0.0
+ * TEST_VERSION: 1.0.1
  */
 
 // Project includes
@@ -60,7 +61,8 @@ void test_cleanup_alt_queries_resources_valid_params(void) {
     QueryCacheEntry **cache_entries = calloc(1, sizeof(QueryCacheEntry*));
     DatabaseQueue **selected_queues = calloc(1, sizeof(DatabaseQueue*));
     json_t **unique_results = calloc(1, sizeof(json_t*));
-    
+    TEST_ASSERT_NOT_NULL(unique_results);
+
     unique_results[0] = json_object();
     json_object_set_new(unique_results[0], "success", json_true());
     
