@@ -53,15 +53,15 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-03-03 00:35:41 UTC
+Last updated at 2026-03-05 06:22:12 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           227            156              0         658981
+JSON                           229            158              0         668217
 C                             1060          45119          42674         159476
-SVG                            115            222           2835         109287
-Text                           155            155              0          57121
-Markdown                       551          16715            153          47675
+SVG                            117            243           2872         109438
+Text                           157            157              0          57941
+Markdown                       552          16983            153          48806
 Bourne Shell                   120           6047          77222          28569
 Lua                            164           3873           3208          26471
 C/C++ Header                   212           2358           6520           6978
@@ -78,9 +78,9 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          2717          76910         135200        1107271
+SUM:                          2724          77203         135237        1118609
 -------------------------------------------------------------------------------
-648 Files were skipped (duplicate, binary, or without source code):
+650 Files were skipped (duplicate, binary, or without source code):
   svg: 499
   woff2: 30
   ttf: 22
@@ -112,6 +112,7 @@ SUM:                          2717          76910         135200        1107271
   detailed: 1
   disabled: 1
   dproj: 1
+  drawio: 1
   gcode: 1
   ggignore: 1
   gitattributes: 1
@@ -121,6 +122,7 @@ SUM:                          2717          76910         135200        1107271
   stylelintcache: 1
   stylelintrc: 1
   supp: 1
+  swp: 1
   trial-ignore: 1
 ```
 <!--CLOC-END-->
