@@ -29,10 +29,15 @@ elements/003-lithium/
 ├── eslint.config.js             # ESLint flat config
 ├── config/
 │   └── lithium.json            # Runtime configuration
-├── public/                      # Static assets
+├── public/                      # Static assets (copied as-is to dist/)
 │   ├── manifest.json           # PWA manifest
 │   ├── service-worker.js       # PWA service worker
-│   └── assets/                # Fonts, images
+│   ├── assets/                # Fonts, images
+│   ├── coverage/              # Test coverage report (deployed to /coverage/)
+│   └── src/managers/          # HTML templates for runtime fetch
+│       ├── login/login.html
+│       ├── main/main.html
+│       └── style-manager/style-manager.html
 ├── src/
 │   ├── app.js                 # Bootstrap + manager loader
 │   ├── core/                  # Core modules
@@ -95,10 +100,11 @@ This starts Vite dev server on <http://localhost:5173>
 - `npm run serve`: Serve production build on port 3000
 - `npm test`: Run test suite (127 tests)
 - `npm run test:coverage`: Run tests with coverage report
+- `npm run coverage:copy`: Copy coverage report to public/ for deployment
 - `npm run lint`: Run ESLint
 - `npm run format`: Format code with Prettier
 - `npm run clean`: Clean build artifacts
-- `npm run deploy`: Build and deploy to $LITHIUM_DEPLOY
+- `npm run deploy`: Build and deploy to $LITHIUM_DEPLOY (includes coverage if generated)
 
 ## Manager System
 
@@ -179,6 +185,14 @@ this.managerRegistry = {
 3. Create `new-manager.html` template
 4. Create `new-manager.css` styles
 5. Register in `app.js` managerRegistry
+6. **Copy HTML template to public folder:**
+
+   ```bash
+   mkdir -p public/src/managers/new-manager
+   cp src/managers/new-manager/new-manager.html public/src/managers/new-manager/
+   ```
+
+> **Important:** HTML templates are fetched at runtime, not bundled by Vite. They must exist in `public/src/managers/{name}/` to be available in production. The `coverage:copy` script handles this automatically for existing managers during deployment.
 
 ## Event Bus
 
@@ -366,11 +380,33 @@ const url = getConfigValue('server.url', 'http://localhost:8080');
 
 ```bash
 npm test              # Run all tests
-npm run test:coverage # Run with coverage
+npm run test:coverage # Run with coverage report
 npm run test:watch   # Watch mode
+npm run coverage:copy # Copy coverage to public/ for deployment
 ```
 
-### Test Coverage
+### Test Coverage Dashboard
+
+The test coverage report is automatically deployed alongside the application:
+
+**Live Dashboard:** <https://lithium.philement.com/coverage/>
+
+The coverage report includes:
+
+- Interactive file tree with coverage percentages
+- Line-by-line highlighting (green = covered, red = uncovered)
+- Summary statistics (statements, branches, functions, lines)
+- Sortable tables and file search
+- Drill-down into individual source files
+
+**To deploy with coverage:**
+
+```bash
+npm run test:coverage  # Generate coverage report
+npm run deploy         # Coverage automatically included
+```
+
+### Current Coverage
 
 | Module | Coverage |
 |--------|----------|
@@ -514,6 +550,42 @@ const clean = DOMPurify.sanitize(dirtyHtml, {
 });
 ```
 
+## Production Deployment
+
+### Deployment Checklist
+
+Before deploying to production:
+
+1. **Run tests with coverage:**
+
+   ```bash
+   npm run test:coverage
+   ```
+
+2. **Verify HTML templates are in public/:**
+   - `public/src/managers/login/login.html`
+   - `public/src/managers/main/main.html`
+   - `public/src/managers/style-manager/style-manager.html`
+
+   > **Note:** Managers fetch HTML templates at runtime. Vite only bundles JS/CSS, so templates must be copied to `public/` to be available in production.
+
+3. **Deploy:**
+
+   ```bash
+   npm run deploy
+   ```
+
+### Coverage Dashboard Deployment
+
+The test coverage dashboard is automatically deployed when you run:
+
+```bash
+npm run test:coverage  # Generate coverage report
+npm run deploy         # Coverage copied to public/ and deployed
+```
+
+Access the dashboard at: `https://lithium.philement.com/coverage/`
+
 ## Troubleshooting
 
 ### Module Loading Failures
@@ -521,6 +593,22 @@ const clean = DOMPurify.sanitize(dirtyHtml, {
 - Check module path in `app.js` managerRegistry
 - Verify module exports default class
 - Check browser console for import errors
+
+### HTML Template 404 Errors (Production)
+
+If managers fail to load with 404 errors for `.html` files:
+
+1. Verify templates exist in `public/src/managers/{name}/`
+2. Ensure `coverage:copy` ran before deploy (it copies manager templates too)
+3. Check that `public/` is copied to deployment directory
+
+### Font Awesome Icons Not Loading
+
+If icons appear as squares or don't load:
+
+- The Font Awesome Kit URL may have changed
+- Update in `index.html`: `<script src="https://kit.fontawesome.com/YOUR_KIT_CODE.js" crossorigin="anonymous"></script>`
+- Kit-based loading is more reliable than CDN with SRI hashes
 
 ### Authentication Problems
 
