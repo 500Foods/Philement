@@ -1,58 +1,137 @@
-# Lithium
+# Lithium - A Philement Project
 
-The main TOC for the Lithium project can be found in
-[**/docs/Li/README.md**](/docs/Li/README.md). But since you're here, these might
-be of interest to you.
+**Lithium** is a lightweight, performant, modular Single Page Application (SPA) built with vanilla JavaScript ES modules. It features JWT authentication, a manager-based architecture, and comprehensive testing infrastructure.
 
-## Project Structure
+**Live Site:** <https://lithium.philement.com>  
+**Test Coverage:** <https://lithium.philement.com/coverage/>
 
-- [**src/**](/elements/003-lithium/src/README.md) - Main JavaScript source code
-  with ES6 modules
-  - [app.js](/elements/003-lithium/src/app.js) - Main application entry point
-  - [router/](/elements/003-lithium/src/router/) - SPA routing module
-  - [storage/](/elements/003-lithium/src/storage/) - Data storage with IndexedDB
-  - [network/](/elements/003-lithium/src/network/) - Network and API module
-  - [utils/](/elements/003-lithium/src/utils/) - Utility modules
+---
 
-- [**tests/**](/elements/003-lithium/tests/README.md) - Comprehensive test suite
-  with Mocha + nyc
-  - [test-runner.js](/elements/003-lithium/tests/test-runner.js) - Test
-    orchestration script
-  - [tests/](/elements/003-lithium/tests/tests/) - Individual test files
+## Quick Links
 
-- [**dist/**](/elements/003-lithium/dist/README.md) - Production build output
-  - [index.html](/elements/003-lithium/dist/index.html) - Minified HTML
-  - Production-ready assets
+### 📚 Documentation (in `/docs/Li/`)
 
-- [**assets/**](/elements/003-lithium/assets/) - Static assets
-  - [fonts/](/elements/003-lithium/assets/fonts/) - Web fonts (Vanadium, Roboto)
-  - [images/](/elements/003-lithium/assets/images/) - App images and logos
-  - [icons/](/elements/003-lithium/assets/icons/) - PWA icons for all platforms
+| Document | Description |
+|----------|-------------|
+| [📋 BLUEPRINT.md](/docs/Li/BLUEPRINT.md) | **Architecture blueprint** - Start here for technical details |
+| [📖 INSTRUCTIONS.md](/docs/Li/INSTRUCTIONS.md) | **Developer guide** - How to work with the codebase |
+| [🔧 BUILD.md](/docs/Li/BUILD.md) | Build process and deployment |
+| [🧪 TESTING.md](/docs/Li/TESTING.md) | Testing framework and coverage |
+| [📄 README.md](/docs/Li/README.md) | Full documentation index |
 
-## Key Files
+### 🚀 Quick Start
 
-- [**package.json**](/elements/003-lithium/package.json) - Project dependencies
-  and scripts
-- [**index.html**](/elements/003-lithium/index.html) - Development HTML entry point
-- [**lithium.css**](/elements/003-lithium/lithium.css) - Main stylesheet with
-  Vanadium fonts
-- [**manifest.json**](/elements/003-lithium/manifest.json) - PWA manifest
-- [**service-worker.js**](/elements/003-lithium/service-worker.js) - Service
-  worker for offline support
+```bash
+# Install dependencies
+npm install
 
-## Testing Framework
+# Start development server
+npm run dev
 
-- [**Mocha**](https://mochajs.org/) - JavaScript test framework
-- [**Chai**](https://www.chaijs.com/) - BDD/TDD assertion library
-- [**NYC**](https://github.com/istanbuljs/nyc) - Code coverage tool
-- [**Sinon**](https://sinonjs.org/) - Test spies, stubs and mocks
+# Run tests
+npm test
 
-## Documentation
+# Run tests with coverage
+npm run test:coverage
 
-- [**Full Documentation**](/docs/Li/README.md) - Complete project documentation
-- [**Testing Guide**](/docs/Li/TESTING.md) - Testing framework and procedures
-- [**API Reference**](/docs/Li/API.md) - API documentation (coming soon)
+# Deploy to production
+npm run deploy
+```
+
+### 📁 Project Structure
+
+```structure
+elements/003-lithium/
+├── src/
+│   ├── app.js              # Main application bootstrap
+│   ├── core/               # Core modules (event-bus, jwt, config, etc.)
+│   ├── managers/           # Feature modules (login, main, style-manager)
+│   ├── shared/             # Shared utilities
+│   └── styles/             # CSS architecture
+├── public/                 # Static assets
+│   ├── assets/             # Fonts, images
+│   ├── coverage/           # Test coverage report
+│   └── src/managers/       # HTML templates for production
+├── tests/unit/             # Vitest unit tests
+├── config/                 # Runtime configuration
+└── docs/Li/                # 📚 Full documentation
+```
+
+---
+
+## Current Status
+
+✅ **Phase 0-3 Complete:** Foundation, Login, Main Layout  
+✅ **Phase 4 Complete:** Style Manager (Tabulator, CodeMirror, DOMPurify)  
+⬜ **Phase 5:** Profile Manager  
+⬜ **Phase 6:** Integration tests and polish
+
+**Test Coverage:** 127 tests, 0 failures  
+
+| Module | Coverage |
+|--------|----------|
+| event-bus.js | 100% |
+| config.js | 100% |
+| permissions.js | 96% |
+| utils.js | 88% |
+| jwt.js | 75% |
+
+---
+
+## Tech Stack
+
+- **Language:** Vanilla JavaScript (ES modules)
+- **Build Tool:** Vite
+- **Testing:** Vitest + happy-dom
+- **UI:** Custom CSS with CSS variables (dark-mode-first)
+- **Tables:** Tabulator
+- **Code Editor:** CodeMirror 6
+- **Icons:** Font Awesome Kit
+- **Fonts:** Vanadium Sans + Vanadium Mono
+
+---
+
+## Deployment
+
+Environment variables required:
+
+- `LITHIUM_ROOT` - Project source directory
+- `LITHIUM_DEPLOY` - Web server document root
+
+```bash
+# Deploy with coverage dashboard
+npm run test:coverage
+npm run deploy
+```
+
+---
+
+## Documentation Overview
+
+### For Developers
+
+1. Start with [**INSTRUCTIONS.md**](/docs/Li/INSTRUCTIONS.md) for:
+   - Project structure
+   - Manager system architecture
+   - Event bus usage
+   - CSS architecture
+   - Testing guide
+   - Troubleshooting
+
+2. Reference [**BLUEPRINT.md**](/docs/Li/BLUEPRINT.md) for:
+   - Technical architecture
+   - Bootstrap flow
+   - JWT handling
+   - Permissions (Punchcard)
+   - Implementation phases
+
+### For DevOps
+
+1. [**BUILD.md**](/docs/Li/BUILD.md) - Build configuration and scripts
+2. [**TESTING.md**](/docs/Li/TESTING.md) - Testing infrastructure and coverage
+
+---
 
 ## License
 
-- [**LICENSE**](/elements/003-lithium/LICENSE.md) - This project is covered by the MIT License
+MIT License - see [LICENSE.md](/docs/Li/LICENSE.md)
