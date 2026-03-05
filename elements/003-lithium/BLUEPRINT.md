@@ -107,7 +107,7 @@ elements/003-lithium/
 ├── index.html                    🔄 Strip Bootstrap, simplify CDN list
 ├── package.json                  🔄 Add CodeMirror 6, Tabulator, DOMPurify, Vitest; remove Mocha deps
 ├── vite.config.js                🔄 Update for new structure
-├── vitest.config.js              ⬜ Vitest setup (jsdom or happy-dom)
+├── vitest.config.js              ✅ Vitest setup with happy-dom
 ├── BLUEPRINT.md                  ✅ This document
 ├── INSTRUCTIONS.md               🔄 Rewrite to match new architecture
 ├── README.md                     🔄 Update to match new architecture
@@ -129,9 +129,10 @@ elements/003-lithium/
 │   ├── app.js                    🔄 Complete rewrite — bootstrap + manager loader
 │   │
 │   ├── core/                     Core infrastructure modules
-│   │   ├── event-bus.js          ⬜ Singleton EventTarget
-│   │   ├── json-request.js       ⬜ Centralized fetch wrapper (auth, errors, logging)
-│   │   ├── permissions.js        ⬜ Punchcard parsing + canAccessManager/hasFeature
+│   │   ├── event-bus.js          ✅ Singleton EventTarget with standard events
+│   │   ├── json-request.js       ✅ Centralized fetch wrapper (auth, errors)
+│   │   ├── permissions.js        ✅ Punchcard parsing + canAccessManager/hasFeature
+│   │   ├── config.js             ✅ Configuration loader with defaults
 │   │   ├── utils.js              ⬜ Formatters, prefs helpers, date/number formatting
 │   │   ├── logger.js             🔄 Adapt existing — add structured events, batch upload
 │   │   ├── network.js            🔄 Adapt existing — integrate with json-request
@@ -139,10 +140,10 @@ elements/003-lithium/
 │   │   └── router.js             🔄 Simplify — manager-based, not page-based
 │   │
 │   ├── styles/                   Custom CSS (no Bootstrap)
-│   │   ├── base.css              ⬜ CSS reset, variables, font-face, dark theme defaults
-│   │   ├── layout.css            ⬜ Login, menu sidebar, workspace, header bar
-│   │   ├── components.css        ⬜ Buttons, inputs, cards, tables, modals, scrollbars
-│   │   └── transitions.css       ⬜ Fade, crossfade, slide animations
+│   │   ├── base.css              ✅ CSS reset, variables, font-face, dark theme defaults
+│   │   ├── layout.css            ✅ Login, menu sidebar, workspace, header bar
+│   │   ├── components.css        ✅ Buttons, inputs, cards, tables, modals, scrollbars
+│   │   └── transitions.css       ✅ Fade, crossfade, slide animations with reduced-motion
 │   │
 │   ├── managers/                 All manager implementations
 │   │   ├── login/
@@ -189,8 +190,8 @@ elements/003-lithium/
 │   └── shared/                   Shared data modules
 │       └── lookups.js            ⬜ Promise-based lookup getters
 │
-├── config/                       ⬜ Runtime configuration
-│   └── lithium.json              ⬜ Server URL, API key, default database, etc.
+├── config/                       ✅ Runtime configuration
+│   └── lithium.json              ✅ Server URL, API key, default database, etc.
 │
 └── tests/                        🔄 Migrate from Mocha to Vitest
     ├── unit/                     ⬜ Unit tests
@@ -260,8 +261,8 @@ server. This file is loaded at startup before any authentication attempts.
 
 ### Checklist: Configuration
 
-- [ ] Create `config/lithium.json` with structure above
-- [ ] Create `src/core/config.js` module to load and parse the config
+- [x] Create `config/lithium.json` with structure above
+- [x] Create `src/core/config.js` module to load and parse the config
 - [ ] Config loaded in `app.js` before anything else
 - [ ] Fallback defaults if config file is missing or partial
 - [ ] Config values accessible to all managers via `app.config`
@@ -398,8 +399,8 @@ Client-side JWT operations (no server-side JWT libraries needed):
 
 ### Checklist: Authentication
 
-- [ ] Create `src/core/jwt.js` — decode, validate, isExpired, getClaimshelpers
-- [ ] Create `src/core/json-request.js` — fetch wrapper that attaches JWT,
+- [x] Create `src/core/jwt.js` — decode, validate, isExpired, getClaimshelpers
+- [x] Create `src/core/json-request.js` — fetch wrapper that attaches JWT,
       handles 401 (redirect to login), parses JSON responses, logs errors
 - [ ] Login Manager sends `login_id`, `password`, `api_key` (from config), `tz`
       (from `Intl.DateTimeFormat().resolvedOptions().timeZone`), `database`
@@ -453,7 +454,7 @@ getFeaturesForManager(managerId) → array of feature IDs
 
 ### Checklist: Permissions
 
-- [ ] Create `src/core/permissions.js` with the helpers above
+- [x] Create `src/core/permissions.js` with the helpers above
 - [ ] Fallback: if no `punchcard` claim in JWT, grant access to all managers
 - [ ] Menu builder filters managers by `canAccessManager()`
 - [ ] Individual manager UIs check `hasFeature()` before showing advanced controls
@@ -497,8 +498,8 @@ export const eventBus = new EventBus();
 
 ### Checklist: Event Bus
 
-- [ ] Create `src/core/event-bus.js` as singleton
-- [ ] `emit()`, `on()`, `off()` methods
+- [x] Create `src/core/event-bus.js` as singleton
+- [x] `emit()`, `on()`, `off()` methods
 - [ ] All cross-module communication uses event bus (no direct imports between
       managers)
 - [ ] Standard events defined and documented
@@ -604,11 +605,11 @@ id="dynamic-theme">` block with `:root` overrides. This means:
 
 ### Checklist: CSS Architecture
 
-- [ ] Create `src/styles/base.css` with full variable set, CSS reset, and
+- [x] Create `src/styles/base.css` with full variable set, CSS reset, and
       `@font-face` declarations using `local()` first, self-hosted WOFF2 fallback
-- [ ] Create `src/styles/layout.css` with login, sidebar, workspace, header layouts
-- [ ] Create `src/styles/components.css` with all UI components
-- [ ] Create `src/styles/transitions.css` with animations and reduced-motion
+- [x] Create `src/styles/layout.css` with login, sidebar, workspace, header layouts
+- [x] Create `src/styles/components.css` with all UI components
+- [x] Create `src/styles/transitions.css` with animations and reduced-motion
 - [ ] All colors, fonts, spacing, borders, shadows use CSS variables
 - [ ] No hardcoded color values anywhere in the codebase
 - [ ] Dark theme is the default (no media query required for dark)
@@ -1128,8 +1129,8 @@ Replace Mocha/Chai/NYC with Vitest (same test runner as Vite ecosystem).
 
 ### Checklist: Testing
 
-- [ ] Add `vitest` and `jsdom` or `happy-dom` to devDependencies
-- [ ] Create `vitest.config.js`
+- [x] Add `vitest` and `happy-dom` to devDependencies
+- [x] Create `vitest.config.js`
 - [ ] Migrate or remove old Mocha test infrastructure
 - [ ] Unit tests for `event-bus.js`
 - [ ] Unit tests for `jwt.js` (decode, validate, expiry)
@@ -1187,20 +1188,21 @@ Ordered milestones for implementation. Each phase builds on the previous.
 
 Strip out Bootstrap and existing module system, build the new core.
 
-- [ ] Strip Bootstrap from `index.html`
-- [ ] Install npm packages: `tabulator-tables`, `@codemirror/*`, `dompurify`
-- [ ] Remove CDN `<script>` tags for Tabulator and CodeMirror from `index.html`
-- [ ] Create `src/styles/base.css` with dark theme CSS variables + local-first
+- [x] Install npm packages: `tabulator-tables`, `@codemirror/*`, `dompurify`, `vitest`, `happy-dom`
+- [x] Create `src/styles/base.css` with dark theme CSS variables + local-first
       `@font-face` for Vanadium fonts
-- [ ] Create `src/styles/layout.css` with login layout
-- [ ] Create `src/styles/components.css` with basic components
-- [ ] Create `src/styles/transitions.css`
-- [ ] Create `src/core/event-bus.js`
-- [ ] Create `src/core/jwt.js`
-- [ ] Create `src/core/json-request.js`
-- [ ] Create `src/core/permissions.js` (with fallback)
-- [ ] Create `config/lithium.json`
-- [ ] Create `src/core/config.js`
+- [x] Create `src/styles/layout.css` with login layout
+- [x] Create `src/styles/components.css` with basic components
+- [x] Create `src/styles/transitions.css`
+- [x] Create `src/core/event-bus.js`
+- [x] Create `src/core/jwt.js`
+- [x] Create `src/core/json-request.js`
+- [x] Create `src/core/permissions.js` (with fallback)
+- [x] Create `config/lithium.json`
+- [x] Create `src/core/config.js`
+- [x] Create `vitest.config.js`
+- [ ] Strip Bootstrap from `index.html`
+- [ ] Remove CDN `<script>` tags for Tabulator and CodeMirror from `index.html`
 - [ ] Rewrite `src/app.js` for new bootstrap flow
 - [ ] Remove `src/lithium.css` and `src/acuranzo.css`
 
@@ -1397,3 +1399,113 @@ blocking for Phase 1–3.
 | Lookups API | Medium | `GET /api/lookups` returning manager names, feature labels, status values, filtered by `lang` |
 | Theme CRUD API | Medium | `GET/POST/PUT/DELETE /api/themes` for Style Manager |
 | User preferences API | Medium | `GET/PUT /api/user/preferences` for Profile Manager |
+
+---
+
+## Appendix E: Implementation Notes and Learnings
+
+This section captures insights gained during implementation that may be helpful for future development.
+
+### CSS Architecture Decisions
+
+**Variable Naming Convention**
+
+- Used semantic naming (e.g., `--bg-primary`, `--text-secondary`) rather than color-based names (e.g., `--color-blue`)
+- This allows the Style Manager to override variables meaningfully without breaking the design system
+- Added expanded variable set beyond the initial blueprint: `--bg-hover`, `--bg-active`, `--text-disabled`, etc.
+
+**Font Loading Strategy**
+
+- Implemented `local()` first with WOFF2 fallback in `@font-face` declarations
+- This allows users with Vanadium fonts installed locally to avoid downloads
+- Font files are in `public/assets/fonts/` for static serving
+
+**CSS Organization**
+
+- Separated concerns into four files: base (variables/reset), layout (structural), components (UI elements), transitions (animations)
+- Each file is independently importable if managers need specific subsets
+- All files use CSS variables exclusively — no hardcoded colors anywhere
+
+### Core Module Design Patterns
+
+**Event Bus Implementation**
+
+- Extended native `EventTarget` rather than creating a custom pub/sub
+- This ensures compatibility with standard DOM event patterns
+- Added `once()` method for one-time listeners (useful for initialization)
+- Exported `Events` object provides event name constants to prevent typos
+
+**JWT Utilities**
+
+- Client-side JWT handling is intentionally minimal: decode only, no signature verification
+- Server must always validate tokens; client validation is for UX only
+- `getRenewalTime()` calculates 80% of token lifetime for proactive renewal
+- Clock skew tolerance (60 seconds) prevents edge-case expiry issues
+
+**JSON Request Wrapper**
+
+- Returns parsed JSON directly rather than Response objects
+- Automatically attaches JWT from localStorage via `Authorization: Bearer` header
+- Emits `auth:expired` event on 401 for global handling
+- Error objects include `status`, `data`, and `retryAfter` (for 429 responses)
+
+**Permissions System**
+
+- Implemented with fallback strategy: if no punchcard in JWT, grant all access
+- This allows development without waiting for Hydrogen punchcard implementation
+- Functions accept optional `punchcard` parameter for testing flexibility
+
+**Config Loader**
+
+- Uses deep merge with defaults to handle partial config files gracefully
+- Caches config after first load to avoid repeated fetches
+- Provides `getConfigValue()` for dot-notation access (e.g., `getConfigValue('server.url')`)
+- Config file is in `config/` directory which should be served as static files
+
+### Testing Strategy Notes
+
+**Vitest + Happy-DOM Choice**
+
+- Selected `happy-dom` over `jsdom` for better ESM support and faster execution
+- Vitest aligns with Vite ecosystem for consistent build/test experience
+- Coverage provider set to `v8` for accurate native ES module coverage
+
+### Known Limitations / Future Improvements
+
+1. **Config Loading**: Currently fetches `/config/lithium.json` relative to root. May need adjustment for deployments with path prefixes.
+
+2. **Permissions Fallback**: The allow-all fallback is convenient for development but should be removed or made configurable before production.
+
+3. **Error Handling**: json-request.js emits events but doesn't provide a way to suppress them for specific requests. May need `silent: true` option.
+
+4. **CSS Variables**: The variable set is comprehensive but may need expansion for specific manager requirements (e.g., data visualization colors).
+
+### Validation Checklist for Current State
+
+To verify the foundation is working correctly:
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Run linting on new files
+npx eslint src/core/*.js src/styles/*.css
+
+# 3. Verify config file is valid JSON
+node -e "console.log(JSON.parse(require('fs').readFileSync('./config/lithium.json')))"
+
+# 4. Check that all imports resolve
+npx vite build --mode development 2>&1 | head -50
+
+# 5. Run unit tests (when written)
+npx vitest run
+```
+
+### Next Steps Priority
+
+Based on implementation progress, the next session should focus on:
+
+1. **Update index.html**: Remove Bootstrap CDN, add FOUC prevention, load new CSS files
+2. **Rewrite app.js**: Integrate config loading, event bus initialization, and manager loader
+3. **Create login manager**: Build working login with Hydrogen API integration
+4. **Test end-to-end**: Verify login → main menu flow with real or mocked Hydrogen server
