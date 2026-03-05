@@ -46,7 +46,7 @@
     "eslint-plugin-import": "^2.29.1",
     "html-minifier-terser": "^7.2.0",
     "prettier": "^3.2.5",
-    "happy-dom": "^13.3.0",
+    "happy-dom": "^20.8.3",
     "terser": "^5.44.1",
     "vite-plugin-html": "^3.2.2",
     "vitest": "^1.2.0"
