@@ -414,7 +414,7 @@ Client-side JWT operations (no server-side JWT libraries needed):
 - [x] All API requests via `json-request.js` — never raw `fetch()` from managers
 - [x] Handle network errors gracefully (offline indicator, queued requests)
 - [ ] Document JWT flow in INSTRUCTIONS.md
-- [ ] Unit tests for jwt.js (decode, validate, expiry check)
+- [x] Unit tests for jwt.js (decode, validate, expiry check) — 25 tests
 - [ ] Unit tests for json-request.js (mock fetch, auth header, error handling)
 
 ---
@@ -460,7 +460,7 @@ getFeaturesForManager(managerId) → array of feature IDs
 - [x] Individual manager UIs check `hasFeature()` before showing advanced controls
 - [ ] Backend enforces permissions server-side (Lithium is client-side guard only)
 - [x] Permissions module fires `permissions:updated` event when JWT is refreshed
-- [ ] Unit tests for all permission helpers (with and without punchcard)
+- [x] Unit tests for all permission helpers (with and without punchcard) — 23 tests
 - [ ] Document punchcard structure in INSTRUCTIONS.md
 
 ---
@@ -503,7 +503,7 @@ export const eventBus = new EventBus();
 - [x] All cross-module communication uses event bus (no direct imports between
        managers)
 - [x] Standard events defined and documented
-- [ ] Unit tests for emit/on/off
+- [x] Unit tests for emit/on/off — 6 tests, 100% coverage
 - [ ] Document event bus API in INSTRUCTIONS.md
 
 ---
@@ -1131,17 +1131,20 @@ Replace Mocha/Chai/NYC with Vitest (same test runner as Vite ecosystem).
 
 - [x] Add `vitest` and `happy-dom` to devDependencies
 - [x] Create `vitest.config.js`
-- [ ] Migrate or remove old Mocha test infrastructure
-- [ ] Unit tests for `event-bus.js`
-- [ ] Unit tests for `jwt.js` (decode, validate, expiry)
+- [x] Add `@vitest/coverage-v8` for coverage reporting
+- [x] Update `package.json` test scripts to use `vitest run` directly
+- [ ] Migrate or remove old Mocha test infrastructure from `tests/package.json`
+- [x] Unit tests for `event-bus.js` — 6 tests, 100% coverage
+- [x] Unit tests for `jwt.js` — 25 tests, 94% stmts / 90% branches / 100% funcs
+- [ ] Unit tests for `config.js` (fetch mock, deep merge, dot-notation access)
 - [ ] Unit tests for `json-request.js` (mock fetch, auth headers, errors)
-- [ ] Unit tests for `permissions.js` (with/without punchcard)
+- [x] Unit tests for `permissions.js` — 23 tests, 96% stmts / 94% branches
 - [ ] Unit tests for `utils.js` (date/number formatters)
 - [ ] Unit tests for `lookups.js` (cache, getters)
 - [ ] Integration test: login flow with mocked Hydrogen responses
 - [ ] Integration test: manager loading into workspace
 - [ ] Integration test: menu generation from permissions
-- [ ] Keep existing bash test scripts for CI/CD (linting, shellcheck, etc.)
+- [x] Keep existing bash test scripts for CI/CD (linting, shellcheck, etc.)
 - [ ] Document test setup in INSTRUCTIONS.md
 
 ---
@@ -1528,3 +1531,119 @@ Based on implementation progress, the next session should focus on:
 - Responsive layout with mobile support
 
 **Ready for testing with a Hydrogen server.**
+
+---
+
+## Appendix F: Test and Coverage Assessment (2026-03-05)
+
+### Test Execution Status
+
+**54 tests, 0 failures** across 3 test files:
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `tests/unit/event-bus.test.js` | 6 | ✅ All passing |
+| `tests/unit/jwt.test.js` | 25 | ✅ All passing |
+| `tests/unit/permissions.test.js` | 23 | ✅ All passing |
+
+### Coverage Report (new architecture files only)
+
+| File | Stmts | Branch | Funcs | Lines | Notes |
+|------|-------|--------|-------|-------|-------|
+| **event-bus.js** | 100% | 100% | 100% | 100% | Fully covered |
+| **jwt.js** | 94% | 90% | 100% | 94% | Uncovered: `atob` error catch, `Buffer` fallback, no-decoder-available throw (defensive paths) |
+| **permissions.js** | 96% | 94% | 83% | 96% | Uncovered: internal `getPunchcard()` stub (returns null, unused) |
+| **config.js** | 0% | 0% | 0% | 0% | No tests written yet |
+| **json-request.js** | 0% | 0% | 0% | 0% | No tests written yet |
+| **utils.js** | 0% | 0% | 0% | 0% | No tests written yet |
+| **All managers** | 0% | 0% | 0% | 0% | No tests — managers require DOM/integration tests |
+| **shared/lookups.js** | 0% | 0% | 0% | 0% | No tests written yet |
+| **Overall** | 19% | 80% | 61% | 19% | Across all new architecture files |
+
+### Infrastructure Fixes Applied
+
+1. **Fixed no-op test:** `isExpired` clock skew test had no assertions — replaced
+   with proper test that validates clock skew window behavior using `vi.useFakeTimers()`
+2. **Cleaned coverage config:** Updated `vitest.config.js` to exclude legacy files
+   (`src/modules/`, `src/init/`, `src/core/logger/`, `src/core/network/`,
+   `src/core/router/`, `src/core/storage/`) from coverage report so numbers
+   reflect the actual new architecture
+3. **Fixed test scripts:** Updated `package.json` test scripts from
+   `cd tests && npm test` (Mocha) to `vitest run` (Vitest)
+4. **Installed coverage provider:** Added `@vitest/coverage-v8@^1.6.1` as devDependency
+
+### Honest Assessment: What's Real vs. What's Claimed
+
+**What's genuinely solid:**
+- The 3 tested core modules (event-bus, jwt, permissions) are well-tested with
+  meaningful assertions. Tests cover happy paths, edge cases, error handling,
+  type coercion (string IDs), and fallback behavior.
+- The architecture is clean: EventTarget-based event bus, proper JWT decode-only
+  approach, punchcard permissions with graceful fallback.
+- CSS architecture is complete with variables, responsive layout, dark theme defaults.
+
+**What exists but is untested:**
+- `config.js` — config loading, deep merge, dot-notation access. All pure functions,
+  easily unit-testable. The `fetch` call needs mocking.
+- `json-request.js` — fetch wrapper with auth headers, error handling, event bus
+  integration. Needs `fetch` mocking and event bus spy assertions.
+- `utils.js` — date/number/currency formatting with `Intl.*` APIs, debounce,
+  throttle, deep clone, HTML escaping. Mostly pure functions.
+- `shared/lookups.js` — lookup caching and getters. Pure functions + one fetch call.
+
+**What exists as structure only (placeholder managers):**
+- `managers/dashboard/index.js` — placeholder stub
+- `managers/lookups/index.js` — placeholder stub
+- `managers/queries/index.js` — placeholder stub
+- `managers/style-manager/index.js` — placeholder stub
+- `managers/profile-manager/index.js` — placeholder stub
+- `managers/login/login.js` — full implementation, untested (DOM-heavy)
+- `managers/main/main.js` — full implementation, untested (DOM-heavy)
+
+**What still exists from the old architecture and should eventually be removed:**
+- `src/modules/` — entire directory is the old module system, now replaced by
+  `src/managers/`. Contains old login, main, dashboard, lookups, queries,
+  source-editor modules. Should be deleted once new managers are verified working.
+- `src/core/logger/`, `src/core/network/`, `src/core/router/`, `src/core/storage/`
+  — old core infrastructure marked 🔄 in the folder structure (Section 4). Need
+  rework to align with new architecture.
+- `tests/package.json` — still references Mocha/Chai/NYC. The shell scripts for
+  CI/CD linting are fine but the JS test infrastructure is now handled by vitest
+  at the root level.
+
+### Recommended Next Steps (Priority Order)
+
+1. **Write unit tests for `config.js`** — Mock `fetch`, test `loadConfig()` with
+   successful response, failed response, partial config, `getConfigValue()` with
+   dot-notation, `clearConfig()`. This is the easiest win: pure functions + one
+   fetch mock. Target: 90%+ coverage.
+
+2. **Write unit tests for `json-request.js`** — Mock `fetch` and `localStorage`,
+   test `get/post/put/del/patch` methods, verify auth header attachment, test
+   401 → `auth:expired` event emission, test 429 with `retry-after`, test network
+   errors. Target: 80%+ coverage.
+
+3. **Write unit tests for `utils.js`** — Test `formatDate`, `formatTime`,
+   `formatNumber`, `formatCurrency`, `formatPercent`, `formatRelativeTime` with
+   mocked preferences. Test `debounce`, `throttle` with fake timers. Test
+   `deepClone`, `escapeHtml`, `generateId`. Target: 90%+ coverage.
+
+4. **Write unit tests for `shared/lookups.js`** — Test `fetchLookups` with mock
+   fetch, test cache behavior, test `getLookup` and `getManagerName` getters.
+
+5. **Delete `src/modules/` directory** — The old module system is fully replaced
+   by `src/managers/`. Keeping it around creates confusion and inflates the
+   codebase. The README files in those directories have useful documentation
+   that should be extracted to the new `managers/*/README.md` files first.
+
+6. **Integration tests for login flow** — Mock Hydrogen API responses, test the
+   full login → JWT storage → main menu transition. Requires DOM environment
+   (happy-dom) and fetch mocking.
+
+7. **Rework legacy core modules** — `logger.js`, `network.js`, `router.js`,
+   `storage.js` are listed as 🔄 in the blueprint. Decide: rework to fit new
+   architecture or remove and rebuild when needed.
+
+8. **Style Manager implementation** — Phase 4 is "in progress" but only has a
+   placeholder `index.js`. This is the first real functional manager and the
+   main unfinished piece of the application.

@@ -8,13 +8,13 @@
 const STORAGE_KEY = 'lithium_jwt';
 
 /**
- * Base64Url decode a string
+ * Base64Url decode a string - works in browser and Node.js/test environments
  * @param {string} base64Url - Base64Url encoded string
  * @returns {string} Decoded string
  */
 function base64UrlDecode(base64Url) {
   // Replace Base64Url characters with Base64 characters
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
   
   // Add padding if necessary
   const padding = base64.length % 4;
@@ -22,12 +22,26 @@ function base64UrlDecode(base64Url) {
     base64 += '='.repeat(4 - padding);
   }
   
-  // Decode
-  try {
-    return atob(base64);
-  } catch (e) {
-    throw new Error('Invalid Base64Url encoding');
+  // Use atob if available (browser), otherwise use a fallback
+  if (typeof atob !== 'undefined') {
+    try {
+      // Decode and handle UTF-8 properly
+      const decoded = atob(base64);
+      // Convert from binary string to UTF-8
+      return decodeURIComponent(decoded.split('').map(c => 
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      ).join(''));
+    } catch (e) {
+      throw new Error('Invalid Base64Url encoding');
+    }
   }
+  
+  // Fallback: use Buffer in Node.js or throw error
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(base64, 'base64').toString('utf-8');
+  }
+  
+  throw new Error('No Base64 decoder available');
 }
 
 /**
