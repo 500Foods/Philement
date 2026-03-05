@@ -2,6 +2,41 @@
  * JWT Unit Tests
  */
 
+// Pure JavaScript atob/btoa polyfills for happy-dom environment
+// (doesn't depend on Node.js Buffer or browser APIs)
+function base64ToBytes(str) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+  let output = '';
+  
+  str = str.replace(/=+$/, '');
+  
+  for (let bc = 0, bs = 0, buffer, i = 0; (buffer = str.charAt(i++)); ~buffer && (bs = bc % 4 ? bs * 64 + buffer : buffer, bc++ % 4) ? output += String.fromCharCode(255 & bs >> (-2 * bc & 6)) : 0) {
+    buffer = chars.indexOf(buffer);
+  }
+  
+  return output;
+}
+
+function bytesToBase64(bytes) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+  let output = '';
+  
+  for (let block = 0, charCode, i = 0, map = chars; bytes.charAt(i | 0) || (map = '=', i % 1); output += map.charAt(63 & block >> 8 - i % 1 * 8)) {
+    charCode = bytes.charCodeAt(i += 3 / 4);
+    if (charCode > 0xFF) throw new Error("'btoa' failed: The string contains characters outside of the Latin1 range.");
+    block = block << 8 | charCode;
+  }
+  
+  return output;
+}
+
+if (typeof globalThis.atob === 'undefined') {
+  globalThis.atob = base64ToBytes;
+}
+if (typeof globalThis.btoa === 'undefined') {
+  globalThis.btoa = bytesToBase64;
+}
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   decodeJWT,
@@ -20,11 +55,10 @@ const STORAGE_KEY = 'lithium_jwt';
 describe('JWT', () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    // No cleanup needed
   });
 
   describe('decodeJWT', () => {
@@ -66,15 +100,33 @@ describe('JWT', () => {
       expect(isExpired(token)).toBe(true);
     });
 
-    it('should handle clock skew', () => {
-      // Token expiring 30 seconds from now (we'll mock current time to be just before expiry)
-      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTE5MjAwMzB9.signature';
+    it('should treat token as expired when within clock skew window', () => {
+      // isExpired returns true when now >= (exp - clockSkew)
+      // With default clockSkew=60, a token expiring in 30s is "expired"
+      vi.useFakeTimers();
+      const fakeNow = 1900000000; // arbitrary fixed timestamp
+      vi.setSystemTime(new Date(fakeNow * 1000));
       
-      // Should be expired with 60s clock skew
-      expect(isExpired(token, 60)).toBe(true);
+      // Token expiring in 30 seconds (within the 60s skew window)
+      const soonPayload = btoa(JSON.stringify({ exp: fakeNow + 30 }))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      const soonToken = `header.${soonPayload}.signature`;
       
-      // Should not be expired with 0s clock skew
-      expect(isExpired(token, 0)).toBe(false);
+      // With default 60s skew: now (1900000000) >= exp - 60 (1900000030 - 60 = 1899999970) → true
+      expect(isExpired(soonToken)).toBe(true);
+      
+      // Token expiring in 120 seconds (well outside the 60s skew window)
+      const laterPayload = btoa(JSON.stringify({ exp: fakeNow + 120 }))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      const laterToken = `header.${laterPayload}.signature`;
+      
+      // With default 60s skew: now (1900000000) >= exp - 60 (1900000120 - 60 = 1900000060) → false
+      expect(isExpired(laterToken)).toBe(false);
+      
+      // With explicit 0s skew, the 30s-out token should NOT be expired
+      expect(isExpired(soonToken, 0)).toBe(false);
+      
+      vi.useRealTimers();
     });
 
     it('should return false for token without exp claim', () => {
