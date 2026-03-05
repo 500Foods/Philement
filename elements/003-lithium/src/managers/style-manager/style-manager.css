@@ -1,0 +1,449 @@
+/**
+ * Style Manager Styles
+ * 
+ * Theme management UI: tabs, Tabulator table, CodeMirror editor,
+ * modals for create/edit/delete.
+ */
+
+/* Main page container */
+#style-manager-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-4);
+  gap: var(--space-4);
+}
+
+/* Tab navigation */
+.style-manager-tabs {
+  display: flex;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-standard);
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.tab-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* View containers */
+.style-manager-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.style-manager-view.hidden {
+  display: none;
+}
+
+/* View header */
+.view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+}
+
+.view-header h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.view-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Theme table container */
+.theme-table-container {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+#theme-table {
+  width: 100%;
+  height: 100%;
+}
+
+/* Tabulator custom styling */
+#theme-table .tabulator {
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+}
+
+#theme-table .tabulator-header {
+  background: var(--bg-tertiary);
+  border-bottom: var(--border-standard);
+}
+
+#theme-table .tabulator-header .tabulator-col {
+  background: var(--bg-tertiary);
+  border-right: var(--border-standard);
+}
+
+#theme-table .tabulator-header .tabulator-col:hover {
+  background: var(--bg-tertiary);
+}
+
+#theme-table .tabulator-row {
+  background: var(--bg-secondary);
+  border-bottom: var(--border-light);
+  color: var(--text-primary);
+}
+
+#theme-table .tabulator-row:hover {
+  background: var(--bg-tertiary);
+}
+
+#theme-table .tabulator-row.tabulator-row-even {
+  background: var(--bg-secondary);
+}
+
+#theme-table .tabulator-row.tabulator-row-even:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Table action buttons */
+.theme-actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.theme-action-btn {
+  padding: var(--space-1) var(--space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.theme-action-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.theme-action-btn.btn-apply:hover {
+  color: var(--accent-success);
+}
+
+.theme-action-btn.btn-edit:hover {
+  color: var(--accent-primary);
+}
+
+.theme-action-btn.btn-delete:hover {
+  color: var(--accent-danger);
+}
+
+/* CSS Editor container */
+.css-editor-container {
+  flex: 1;
+  min-height: 300px;
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+#css-editor {
+  height: 100%;
+}
+
+/* CodeMirror custom theme overrides */
+#css-editor .cm-editor {
+  height: 100%;
+  background: var(--bg-secondary);
+}
+
+#css-editor .cm-gutters {
+  background: var(--bg-tertiary);
+  border-right: var(--border-standard);
+}
+
+#css-editor .cm-activeLineGutter {
+  background: var(--bg-tertiary);
+}
+
+#css-editor .cm-activeLine {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+#css-editor .cm-selectionBackground {
+  background: rgba(88, 166, 255, 0.2) !important;
+}
+
+#css-editor .cm-cursor {
+  border-left-color: var(--accent-primary);
+}
+
+/* Theme select dropdown */
+.theme-select {
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  min-width: 180px;
+}
+
+.theme-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: var(--border-standard);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-secondary);
+}
+
+.btn-danger {
+  background: var(--accent-danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc3545;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal.visible {
+  display: flex;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.modal-content {
+  position: relative;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-content.modal-small {
+  max-width: 400px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border-bottom: var(--border-standard);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+}
+
+.modal-close {
+  padding: var(--space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.modal-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  flex: 1;
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-top: var(--border-standard);
+}
+
+/* Form elements */
+.form-group {
+  margin-bottom: var(--space-4);
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  font-family: var(--font-mono);
+  transition: border-color var(--transition-fast);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* Utility classes */
+.text-muted {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .tab-btn,
+  .btn,
+  .theme-action-btn,
+  .modal-close {
+    transition: none;
+  }
+
+  .btn:hover {
+    transform: none;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #style-manager-page {
+    padding: var(--space-2);
+  }
+
+  .view-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .view-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn span {
+    display: none;
+  }
+
+  .theme-select {
+    min-width: 120px;
+  }
+}
