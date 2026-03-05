@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     style="background: transparent; background-color: transparent; color-scheme: light dark;"
+     version="1.1"
+     width="111px" height="111px"
+     viewBox="-5 -5 111 111">
+
+  <!-- 
+    Large outer circle – represents the orbital path boundary.
+    Drawn first so everything else layers on top of it.
+  -->
+  <g transform="translate(0.5, 0.5)">
+    <ellipse cx="50" cy="50" rx="50" ry="50"
+             fill="#ffffff"
+             stroke="#000000"
+             pointer-events="all"
+             style="fill: rgb(255, 255, 255); stroke: rgb(0, 0, 0);"/>
+  </g>
+
+  <!-- 
+    Central nucleus – smaller circle representing the proton.
+    Static, centered at (50,50).
+  -->
+  <g transform="translate(0.5, 0.5)">
+    <ellipse cx="50" cy="50" rx="15" ry="15"
+             fill="#ffffff"
+             stroke="#000000"
+             pointer-events="all"
+             style="fill: light-dark(#ffffff, var(--ge-dark-color, #121212)); 
+                    stroke: light-dark(rgb(0,0,0), rgb(255,255,255));"/>
+  </g>
+
+  <!-- 
+    "H" symbol for hydrogen – placed in the center.
+    Uses <switch> + <foreignObject> for rich text fallback + plain <text>.
+  -->
+  <g>
+    <switch>
+      <foreignObject style="overflow: visible; text-align: left;" 
+                     pointer-events="none" 
+                     width="100%" height="100%" 
+                     requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+        <div xmlns="http://www.w3.org/1999/xhtml" 
+             style="display: flex; align-items: unsafe center; justify-content: unsafe center; 
+                    width: 28px; height: 1px; padding-top: 50px; margin-left: 36px;">
+          <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000;">
+            <div style="display: inline-block; font-size: 16px; font-family: 'Vanadium Sans Semi-Extended'; 
+                        color: light-dark(#000000, #ffffff); line-height: 1.2; 
+                        pointer-events: all; white-space: normal; word-wrap: normal;">
+              H
+            </div>
+          </div>
+        </div>
+      </foreignObject>
+      <!-- Plain text fallback for compatibility -->
+      <text x="50" y="55" 
+            fill="light-dark(#000000, #ffffff)"
+            font-family="'Vanadium Sans Semi-Extended'" 
+            font-size="16px" 
+            text-anchor="middle">H</text>
+    </switch>
+  </g>
+
+  <!-- 
+    Orbiting electron group – this entire group rotates around the center.
+    transform-origin set to (50,50) in CSS below.
+  -->
+  <g class="orbit">
+
+    <!-- Inner wrapper with original 0.5,0.5 offset (likely from editor) -->
+    <g transform="translate(0.5, 0.5)">
+
+      <!-- 
+        Electron circle – pushed outward to radius ~42 units.
+        Original was at (15,15) → distance ~49.5? But visually adjusted.
+        Change the translate value (e.g. 40, 42, 45) to fine-tune how close it sits to the large circle.
+      -->
+      <g transform="translate(70, 0)">
+        <ellipse cx="15" cy="15" rx="5" ry="5"
+                 fill="#ffffff"
+                 stroke="#000000"
+                 pointer-events="all"
+                 style="fill: rgb(255, 255, 255); stroke: rgb(0, 0, 0);"/>
+      </g>
+
+    </g>
+  </g>
+
+  <!-- 
+    CSS animation – pure CSS rotation of the .orbit group.
+    Adjust duration (5s) for speed, add 'reverse' for clockwise if desired.
+  -->
+  <style>
+    .orbit {
+      transform-origin: 50px 50px;               /* Rotation center = nucleus */
+      animation: orbit 3s linear infinite;       /* 5 seconds per full orbit */
+    }
+
+    @keyframes orbit {
+      from { transform: rotate(0deg);   }
+      to   { transform: rotate(360deg); }
+    }
+  </style>
+
+</svg>
