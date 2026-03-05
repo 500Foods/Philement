@@ -1,0 +1,419 @@
+/**
+ * Transitions CSS - Animations and transitions
+ * 
+ * Fade, crossfade, slide animations with reduced-motion support.
+ */
+
+/* ========================================
+   Fade Transitions
+   ======================================== */
+
+.fade-in {
+  animation: fadeIn var(--transition-std) forwards;
+}
+
+.fade-out {
+  animation: fadeOut var(--transition-std) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   Crossfade for Module Switching
+   ======================================== */
+
+.module-crossfade-in {
+  animation: crossfadeIn 300ms ease forwards;
+}
+
+.module-crossfade-out {
+  animation: crossfadeOut 300ms ease forwards;
+}
+
+@keyframes crossfadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes crossfadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* ========================================
+   Login Page Fade
+   ======================================== */
+
+.login-fade-in {
+  animation: loginFadeIn 800ms ease forwards;
+}
+
+.login-fade-out {
+  animation: loginFadeOut 800ms ease forwards;
+}
+
+@keyframes loginFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes loginFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   Slide Transitions
+   ======================================== */
+
+.slide-in-left {
+  animation: slideInLeft var(--transition-std) forwards;
+}
+
+.slide-in-right {
+  animation: slideInRight var(--transition-std) forwards;
+}
+
+.slide-out-left {
+  animation: slideOutLeft var(--transition-std) forwards;
+}
+
+.slide-out-right {
+  animation: slideOutRight var(--transition-std) forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+/* ========================================
+   Scale Transitions
+   ======================================== */
+
+.scale-in {
+  animation: scaleIn var(--transition-std) forwards;
+}
+
+.scale-out {
+  animation: scaleOut var(--transition-std) forwards;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/* ========================================
+   Modal Transitions
+   ======================================== */
+
+.modal-enter {
+  animation: modalEnter var(--transition-std) forwards;
+}
+
+.modal-exit {
+  animation: modalExit var(--transition-std) forwards;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modalExit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+}
+
+.modal-overlay-enter {
+  animation: modalOverlayEnter var(--transition-std) forwards;
+}
+
+.modal-overlay-exit {
+  animation: modalOverlayExit var(--transition-std) forwards;
+}
+
+@keyframes modalOverlayEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalOverlayExit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   Toast/Notification Transitions
+   ======================================== */
+
+.toast-enter {
+  animation: toastEnter 400ms ease forwards;
+}
+
+.toast-exit {
+  animation: toastExit 300ms ease forwards;
+}
+
+@keyframes toastEnter {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toastExit {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* ========================================
+   Button Loading State
+   ======================================== */
+
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-top: -8px;
+  margin-left: -8px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ========================================
+   Pulse Animation (for attention)
+   ======================================== */
+
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ========================================
+   Shimmer Effect (for loading states)
+   ======================================== */
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 25%,
+    var(--bg-hover) 50%,
+    var(--bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ========================================
+   Reduced Motion Support
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in,
+  .fade-out,
+  .module-crossfade-in,
+  .module-crossfade-out,
+  .login-fade-in,
+  .login-fade-out,
+  .slide-in-left,
+  .slide-in-right,
+  .slide-out-left,
+  .slide-out-right,
+  .scale-in,
+  .scale-out,
+  .modal-enter,
+  .modal-exit,
+  .modal-overlay-enter,
+  .modal-overlay-exit,
+  .toast-enter,
+  .toast-exit {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .btn-loading::after {
+    animation: none;
+  }
+
+  .pulse {
+    animation: none;
+  }
+
+  .shimmer {
+    animation: none;
+    background: var(--bg-tertiary);
+  }
+}
+
+/* ========================================
+   Transition Utilities
+   ======================================== */
+
+.transition-colors {
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.transition-transform {
+  transition: transform var(--transition-fast);
+}
+
+.transition-opacity {
+  transition: opacity var(--transition-fast);
+}
+
+.transition-all {
+  transition: all var(--transition-fast);
+}

@@ -23,7 +23,9 @@
     "deploy": "npm run build:prod && rsync -avz dist/ user@server:/var/www/lithium/"
   },
   "dependencies": {
+    "dompurify": "^3.0.8",
     "idb": "^7.1.1",
+    "tabulator-tables": "^6.2.3",
     "vite": "^7.3.0",
     "workbox-window": "^7.1.0"
   },
@@ -31,14 +33,23 @@
     "@babel/core": "^7.24.0",
     "@babel/preset-env": "^7.24.0",
     "@babel/register": "^7.23.7",
+    "@codemirror/lang-css": "^6.2.1",
+    "@codemirror/lang-html": "^6.4.8",
+    "@codemirror/lang-javascript": "^6.2.1",
+    "@codemirror/lang-json": "^6.0.1",
+    "@codemirror/lang-sql": "^6.5.5",
+    "@codemirror/state": "^6.4.0",
+    "@codemirror/view": "^6.23.0",
     "@vitejs/plugin-basic-ssl": "^2.1.4",
     "eslint": "^8.57.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.29.1",
     "html-minifier-terser": "^7.2.0",
     "prettier": "^3.2.5",
+    "happy-dom": "^13.3.0",
     "terser": "^5.44.1",
-    "vite-plugin-html": "^3.2.2"
+    "vite-plugin-html": "^3.2.2",
+    "vitest": "^1.2.0"
   },
   "engines": {
     "node": ">=18.0.0",

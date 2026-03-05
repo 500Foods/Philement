@@ -1,0 +1,25 @@
+{
+  "server": {
+    "url": "https://hydrogen.example.com",
+    "api_prefix": "/api",
+    "websocket_url": "wss://hydrogen.example.com/ws"
+  },
+  "auth": {
+    "api_key": "your-api-key-here",
+    "default_database": "Demo_PG",
+    "session_timeout_minutes": 30
+  },
+  "app": {
+    "name": "Lithium",
+    "tagline": "A Philement Project",
+    "version": "1.0.0",
+    "logo": "/assets/images/logo-li.svg",
+    "default_theme": "dark",
+    "default_language": "en-US"
+  },
+  "features": {
+    "offline_mode": true,
+    "install_prompt": true,
+    "debug_logging": false
+  }
+}
