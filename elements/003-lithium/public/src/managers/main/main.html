@@ -1,0 +1,74 @@
+<!--
+  Main Menu Manager Template
+  Layout: Sidebar + Header Bar + Workspace
+-->
+<div id="main-layout">
+  <!-- Mobile overlay for sidebar -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="main-sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="/assets/images/logo-li.svg" alt="" class="sidebar-logo" width="32" height="32">
+      <span class="sidebar-title">Lithium</span>
+    </div>
+
+    <!-- Collapse toggle (desktop only) -->
+    <button class="sidebar-toggle" id="sidebar-toggle" title="Collapse sidebar">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+
+    <!-- Menu items -->
+    <nav class="sidebar-menu" id="sidebar-menu">
+      <!-- Manager buttons will be inserted here dynamically -->
+    </nav>
+
+    <!-- Footer with logout -->
+    <div class="sidebar-footer">
+      <button class="logout-btn" id="logout-btn">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content area -->
+  <div class="main-content">
+    <!-- Header bar -->
+    <header class="main-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h2 class="header-title" id="header-title">Dashboard</h2>
+      </div>
+
+      <div class="header-right">
+        <!-- Offline indicator -->
+        <div class="offline-indicator" id="offline-indicator">
+          <i class="fas fa-wifi-slash"></i>
+          <span>Offline</span>
+        </div>
+
+        <!-- Theme toggle (stub for now) -->
+        <button class="header-btn" id="theme-btn" title="Toggle theme">
+          <i class="fas fa-moon"></i>
+        </button>
+
+        <!-- User profile -->
+        <button class="profile-btn" id="profile-btn">
+          <div class="profile-avatar" id="profile-avatar">U</div>
+          <div class="profile-info">
+            <span class="profile-name" id="profile-name">User</span>
+            <span class="profile-role" id="profile-role">Role</span>
+          </div>
+        </button>
+      </div>
+    </header>
+
+    <!-- Workspace for active manager -->
+    <main class="workspace" id="workspace">
+      <!-- Manager content will be loaded here -->
+    </main>
+  </div>
+</div>
