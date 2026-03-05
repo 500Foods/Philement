@@ -133,11 +133,9 @@ elements/003-lithium/
 │   │   ├── json-request.js       ✅ Centralized fetch wrapper (auth, errors)
 │   │   ├── permissions.js        ✅ Punchcard parsing + canAccessManager/hasFeature
 │   │   ├── config.js             ✅ Configuration loader with defaults
-│   │   ├── utils.js              ⬜ Formatters, prefs helpers, date/number formatting
-│   │   ├── logger.js             🔄 Adapt existing — add structured events, batch upload
-│   │   ├── network.js            🔄 Adapt existing — integrate with json-request
-│   │   ├── storage.js            🔄 Adapt existing — keep IndexedDB/localStorage
-│   │   └── router.js             🔄 Simplify — manager-based, not page-based
+│   │   ├── utils.js              ✅ Formatters, prefs helpers, date/number formatting
+│   │   ├── logger.js             ⬜ Structured events, batch upload (rebuild when needed)
+│   │   └── storage.js            ⬜ IndexedDB/localStorage wrapper (rebuild when needed)
 │   │
 │   ├── styles/                   Custom CSS (no Bootstrap)
 │   │   ├── base.css              ✅ CSS reset, variables, font-face, dark theme defaults
@@ -1133,7 +1131,8 @@ Replace Mocha/Chai/NYC with Vitest (same test runner as Vite ecosystem).
 - [x] Create `vitest.config.js`
 - [x] Add `@vitest/coverage-v8` for coverage reporting
 - [x] Update `package.json` test scripts to use `vitest run` directly
-- [ ] Migrate or remove old Mocha test infrastructure from `tests/package.json`
+- [x] Upgrade vitest 1.x → 4.x, happy-dom 13.x → 20.x, @vitest/coverage-v8 → 4.x
+- [x] Migrate `tests/package.json` from Mocha/Chai/NYC to shell-only CI scripts
 - [x] Unit tests for `event-bus.js` — 6 tests, 100% coverage
 - [x] Unit tests for `jwt.js` — 25 tests, 94% stmts / 90% branches / 100% funcs
 - [ ] Unit tests for `config.js` (fetch mock, deep merge, dot-notation access)
@@ -1208,6 +1207,14 @@ Strip out Bootstrap and existing module system, build the new core.
 - [x] Remove CDN `<script>` tags for Tabulator and CodeMirror from `index.html`
 - [x] Rewrite `src/app.js` for new bootstrap flow
 - [x] Remove `src/lithium.css` and `src/acuranzo.css`
+- [x] Remove `src/modules/` (replaced by `src/managers/`)
+- [x] Remove legacy `src/core/logger/`, `src/core/network/`, `src/core/router/`,
+      `src/core/storage/` (will rebuild when needed)
+- [x] Remove unused npm deps: `idb`, `workbox-window`, `@babel/*`
+- [x] Upgrade all npm deps to latest: vitest 4.x, happy-dom 20.x, eslint 10.x,
+      dompurify 3.3.2
+- [x] Create `eslint.config.js` (flat config for ESLint 10)
+- [x] Clean up `tests/package.json` (removed Mocha/Chai/NYC)
 
 ### Phase 2: Login ✅ COMPLETED
 
@@ -1517,12 +1524,14 @@ Based on implementation progress, the next session should focus on:
 ### Progress Summary (2025-03-05)
 
 **Completed:**
+
 - ✅ Phase 1: Foundation (index.html, app.js, core modules, CSS architecture)
 - ✅ Phase 2: Login Manager (CCC-style, Hydrogen API, error handling)
 - ✅ Phase 3: Main Menu Manager (sidebar, header, workspace, responsive)
 - ✅ Phase 4/5: Placeholder managers for all registered managers
 
 **Architecture in place:**
+
 - Event-driven architecture with EventBus
 - JWT handling with auto-renewal at 80% lifetime
 - Permission system with punchcard fallback
@@ -1575,6 +1584,7 @@ Based on implementation progress, the next session should focus on:
 ### Honest Assessment: What's Real vs. What's Claimed
 
 **What's genuinely solid:**
+
 - The 3 tested core modules (event-bus, jwt, permissions) are well-tested with
   meaningful assertions. Tests cover happy paths, edge cases, error handling,
   type coercion (string IDs), and fallback behavior.
@@ -1583,6 +1593,7 @@ Based on implementation progress, the next session should focus on:
 - CSS architecture is complete with variables, responsive layout, dark theme defaults.
 
 **What exists but is untested:**
+
 - `config.js` — config loading, deep merge, dot-notation access. All pure functions,
   easily unit-testable. The `fetch` call needs mocking.
 - `json-request.js` — fetch wrapper with auth headers, error handling, event bus
@@ -1592,6 +1603,7 @@ Based on implementation progress, the next session should focus on:
 - `shared/lookups.js` — lookup caching and getters. Pure functions + one fetch call.
 
 **What exists as structure only (placeholder managers):**
+
 - `managers/dashboard/index.js` — placeholder stub
 - `managers/lookups/index.js` — placeholder stub
 - `managers/queries/index.js` — placeholder stub
@@ -1601,6 +1613,7 @@ Based on implementation progress, the next session should focus on:
 - `managers/main/main.js` — full implementation, untested (DOM-heavy)
 
 **What still exists from the old architecture and should eventually be removed:**
+
 - `src/modules/` — entire directory is the old module system, now replaced by
   `src/managers/`. Contains old login, main, dashboard, lookups, queries,
   source-editor modules. Should be deleted once new managers are verified working.
