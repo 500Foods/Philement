@@ -1,175 +1,177 @@
 // Lithium PWA Service Worker
-const CACHE_NAME = 'lithium-pwa-v1';
-const ASSETS_TO_CACHE = [
+// Cache strategy: cache-first for statics, stale-while-revalidate for API data
+
+const CACHE_VERSION = 2;
+const STATIC_CACHE = `lithium-static-v${CACHE_VERSION}`;
+const API_CACHE = `lithium-api-v${CACHE_VERSION}`;
+
+// Core static assets — cache-first strategy
+const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/app.js',
-  '/lithium.css',
   '/manifest.json',
   '/favicon.ico',
+  '/assets/images/logo-li.svg',
   '/assets/images/logo-192x192.png',
   '/assets/images/logo-512x512.png',
-  '/assets/icons/icon-72x72.png',
-  '/assets/icons/icon-96x96.png',
-  '/assets/icons/icon-128x128.png',
-  '/assets/icons/icon-144x144.png',
-  '/assets/icons/icon-152x152.png',
-  '/assets/icons/icon-192x192.png',
-  '/assets/icons/icon-384x384.png',
-  '/assets/icons/icon-512x512.png',
   '/assets/fonts/VanadiumSans-SemiExtended.woff2',
-  '/assets/fonts/VanadiumMono-SemiExtended.woff2',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js',
-  'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css'
+  '/assets/fonts/VanadiumMono-SemiExtended.woff2'
 ];
 
-// Development mode: also cache test assets if in development environment
-if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
-  ASSETS_TO_CACHE.push(
-    '/tests/test-runner.js',
-    '/tests/tests/app.test.js',
-    '/tests/tests/router.test.js',
-    '/src/app.js',
-    '/src/router/router.js',
-    '/src/storage/storage.js',
-    '/src/network/network.js',
-    '/src/utils/logger.js'
-  );
-}
-
-// Install event - cache all assets
+// Install event — pre-cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('Caching assets');
-        return cache.addAll(ASSETS_TO_CACHE);
+        console.log('[SW] Pre-caching static assets');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .then(() => self.skipWaiting())
+      .catch((error) => {
+        console.error('[SW] Failed to pre-cache:', error);
+      })
+  );
+});
+
+// Activate event — clean up old cache versions
+self.addEventListener('activate', (event) => {
+  const currentCaches = [STATIC_CACHE, API_CACHE];
+
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((name) => !currentCaches.includes(name))
+            .map((name) => {
+              console.log('[SW] Deleting old cache:', name);
+              return caches.delete(name);
+            })
+        );
       })
       .then(() => {
-        console.log('All assets cached');
-        return self.skipWaiting(); // Force the waiting service worker to become active
-      })
-      .catch((error) => {
-        console.error('Failed to cache assets:', error);
+        console.log('[SW] Activated, controlling all clients');
+        return self.clients.claim();
       })
   );
 });
 
-// Activate event - clean up old caches
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-    .then(() => {
-      console.log('Service worker activated');
-      return self.clients.claim(); // Take control of all clients
-    })
-  );
-});
-
-// Fetch event - serve cached content or fetch from network
+// Fetch event — route requests to appropriate strategy
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((cachedResponse) => {
-        // Return cached response if available
-        if (cachedResponse) {
-          console.log('Serving from cache:', event.request.url);
-          return cachedResponse;
-        }
+  const url = new URL(event.request.url);
 
-        // Otherwise fetch from network
-        console.log('Fetching from network:', event.request.url);
-        return fetch(event.request)
-          .then((response) => {
-            // Cache successful responses
-            if (response && response.status === 200 && response.type === 'basic') {
-              const responseToCache = response.clone();
-              caches.open(CACHE_NAME)
-                .then((cache) => {
-                  cache.put(event.request, responseToCache);
-                });
-            }
-            return response;
-          });
-      })
-      .catch(() => {
-        // Fallback for offline when request fails
-        if (event.request.destination === 'document') {
-          return caches.match('/index.html');
-        }
-      })
-  );
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // API requests — stale-while-revalidate
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(staleWhileRevalidate(event.request, API_CACHE));
+    return;
+  }
+
+  // Config file — stale-while-revalidate (allows runtime updates)
+  if (url.pathname.endsWith('/lithium.json')) {
+    event.respondWith(staleWhileRevalidate(event.request, API_CACHE));
+    return;
+  }
+
+  // Static assets and app code — cache-first
+  event.respondWith(cacheFirst(event.request, STATIC_CACHE));
 });
+
+/**
+ * Cache-first strategy: serve from cache, fall back to network.
+ * Caches new network responses for future use.
+ */
+async function cacheFirst(request, cacheName) {
+  const cached = await caches.match(request);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const response = await fetch(request);
+
+    // Cache successful same-origin responses
+    if (response && response.status === 200 && response.type === 'basic') {
+      const cache = await caches.open(cacheName);
+      cache.put(request, response.clone());
+    }
+
+    return response;
+  } catch (error) {
+    // Offline fallback for navigation requests
+    if (request.destination === 'document') {
+      return caches.match('/index.html');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Stale-while-revalidate: serve cached version immediately,
+ * update cache in the background from network.
+ */
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+
+  // Fetch fresh copy in the background
+  const fetchPromise = fetch(request)
+    .then((response) => {
+      if (response && response.status === 200) {
+        cache.put(request, response.clone());
+      }
+      return response;
+    })
+    .catch(() => cached);
+
+  // Return cached immediately if available, otherwise wait for network
+  return cached || fetchPromise;
+}
 
 // Push notification support
 self.addEventListener('push', (event) => {
-  const data = event.data.json();
-  const options = {
-    body: data.body,
-    icon: '/assets/icons/icon-192x192.png',
-    badge: '/assets/icons/icon-72x72.png',
-    data: {
-      url: data.url || '/'
-    }
-  };
+  if (!event.data) return;
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+  try {
+    const data = event.data.json();
+    const options = {
+      body: data.body,
+      icon: '/assets/images/logo-192x192.png',
+      badge: '/assets/images/logo-192x192.png',
+      data: { url: data.url || '/' }
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'Lithium', options)
+    );
+  } catch (error) {
+    console.error('[SW] Push notification error:', error);
+  }
 });
 
 // Notification click handler
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
-  if (event.notification.data && event.notification.data.url) {
-    event.waitUntil(
-      clients.matchAll({
-        type: 'window',
-        includeUncontrolled: true
-      }).then((clientList) => {
-        // Check if there's already a window open with this URL
+
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Focus existing window if found
         for (const client of clientList) {
-          if (client.url === event.notification.data.url && 'focus' in client) {
+          if (client.url === targetUrl && 'focus' in client) {
             return client.focus();
           }
         }
-        
-        // If not, open a new window
+        // Open new window
         if (clients.openWindow) {
-          return clients.openWindow(event.notification.data.url);
+          return clients.openWindow(targetUrl);
         }
       })
-    );
-  }
-});
-
-// Background sync support
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-data') {
-    event.waitUntil(
-      // Add your background sync logic here
-      console.log('Background sync triggered')
-    );
-  }
-});
-
-// Periodic background sync (if supported)
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'update-content') {
-    event.waitUntil(
-      // Add your periodic sync logic here
-      console.log('Periodic sync triggered')
-    );
-  }
+  );
 });
