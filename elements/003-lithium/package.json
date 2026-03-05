@@ -8,9 +8,9 @@
     "start": "npm run dev",
     "dev": "vite dev",
     "build": "vite build",
-    "build:prod": "vite build --mode production && npm run minify-html",
+    "build:prod": "vite build --mode production && npm run postbuild",
     "preview": "vite preview",
-    "minify-html": "html-minifier-terser --input-dir dist --output-dir dist --file-ext html --collapse-whitespace --remove-comments --minify-js --minify-css && terser dist/service-worker.js -o dist/service-worker.js --compress --mangle",
+    "postbuild": "html-minifier-terser --input-dir \"$LITHIUM_ROOT/dist\" --output-dir \"$LITHIUM_ROOT/dist\" --file-ext html --collapse-whitespace --remove-comments --minify-js --minify-css && terser \"$LITHIUM_ROOT/dist/service-worker.js\" -o \"$LITHIUM_ROOT/dist/service-worker.js\" --compress --mangle",
     "serve": "vite preview --port 3000",
     "test": "vitest run",
     "test:watch": "vitest watch",
@@ -20,7 +20,10 @@
     "lint:fix": "eslint src/**/*.js tests/**/*.js --fix",
     "format": "prettier --write src/**/*.js tests/**/*.js",
     "clean": "rm -rf dist coverage reports",
-    "deploy": "npm run build:prod && rsync -avz dist/ user@server:/var/www/lithium/"
+    "predeploy": "test -n \"$LITHIUM_DEPLOY\" || { echo 'Error: $LITHIUM_DEPLOY is not set'; exit 1; }",
+    "deploy": "vite build --mode deploy && npm run deploy:config && npm run deploy:postbuild",
+    "deploy:config": "test -f \"$LITHIUM_DEPLOY/config/lithium.json\" || cp -r \"$LITHIUM_ROOT/config\" \"$LITHIUM_DEPLOY/config\"",
+    "deploy:postbuild": "html-minifier-terser --input-dir \"$LITHIUM_DEPLOY\" --output-dir \"$LITHIUM_DEPLOY\" --file-ext html --collapse-whitespace --remove-comments --minify-js --minify-css && terser \"$LITHIUM_DEPLOY/service-worker.js\" -o \"$LITHIUM_DEPLOY/service-worker.js\" --compress --mangle"
   },
   "dependencies": {
     "dompurify": "^3.3.2",
