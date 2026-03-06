@@ -27,6 +27,35 @@ export default class LoginManager {
     await this.render();
     this.setupEventListeners();
     this.show();
+    
+    // Check for URL query parameters for auto-login
+    this.checkForAutoLogin();
+  }
+
+  /**
+   * Check for USER and PASS URL query parameters and auto-login if present
+   */
+  checkForAutoLogin() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get('USER');
+    const password = urlParams.get('PASS');
+
+    if (username && password) {
+      console.log('[LoginManager] Auto-login credentials detected in URL');
+      
+      // Pre-fill the form fields
+      if (this.elements.username) {
+        this.elements.username.value = username;
+      }
+      if (this.elements.password) {
+        this.elements.password.value = password;
+      }
+
+      // Trigger login after a short delay to ensure UI is ready
+      setTimeout(() => {
+        this.handleSubmit();
+      }, 100);
+    }
   }
 
   /**

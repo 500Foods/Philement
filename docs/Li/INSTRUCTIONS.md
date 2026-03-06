@@ -586,6 +586,28 @@ npm run deploy         # Coverage copied to public/ and deployed
 
 Access the dashboard at: `https://lithium.philement.com/coverage/`
 
+## Development Auto-Login
+
+For faster development workflow, you can auto-login by passing credentials as URL query parameters:
+
+```url
+http://localhost:3000/?USER=testuser&PASS=usertest
+```
+
+This feature automatically fills in the login form and submits it, allowing you to bypass the manual login step during development. The credentials are read from the URL parameters:
+
+- `USER` - The username/login_id
+- `PASS` - The password
+
+**Example with environment variables:**
+
+```bash
+# If you have HYDROGEN_DEMO_USER_NAME and HYDROGEN_DEMO_USER_PASS set
+open "http://localhost:3000/?USER=$HYDROGEN_DEMO_USER_NAME&PASS=$HYDROGEN_DEMO_USER_PASS"
+```
+
+**Note:** This feature is intended for development use only. In production, always use the manual login form.
+
 ## Troubleshooting
 
 ### Module Loading Failures
