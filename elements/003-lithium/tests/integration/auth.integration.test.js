@@ -45,11 +45,6 @@ function hasCredentials() {
   return !!(LOGIN_ID && PASSWORD && API_KEY);
 }
 
-// Helper to add delay between requests to avoid rate limiting
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 // Helper to make login request
 async function login(loginId, password, apiKey = API_KEY) {
   const response = await fetch(`${SERVER_URL}${API_PREFIX}/auth/login`, {
@@ -145,11 +140,9 @@ describe('Auth Integration', () => {
     }
   });
 
-  beforeEach(async () => {
+  beforeEach(() => {
     // Clear any stored JWT before each test
     clearJWT();
-    // Add delay to avoid rate limiting
-    await delay(500);
   });
 
   afterEach(() => {
