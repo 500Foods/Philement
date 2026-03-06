@@ -89,7 +89,7 @@ cd elements/003-lithium
 npm run dev
 ```
 
-This starts Vite dev server on <http://localhost:5173>
+This starts Vite dev server on <http://localhost:3000>
 
 ### Available Scripts
 
