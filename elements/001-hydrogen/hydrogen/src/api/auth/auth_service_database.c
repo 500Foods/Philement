@@ -464,7 +464,7 @@ int create_account_record(const char* username, const char* email,
 /**
  * Store JWT in database
  */
-void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database) {
+void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip) {
     if (!jwt_hash || account_id <= 0 || !database) return;
 
     // Create parameters for QueryRef #013: Store JWT
@@ -473,17 +473,17 @@ void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int syst
     json_t* params = json_object();
     json_t* string_params = json_object();
     json_t* integer_params = json_object();
-    
+
     json_object_set_new(string_params, "TOKENHASH", json_string(jwt_hash));
     json_object_set_new(string_params, "APPVERSION", json_string(VERSION)); // Required by QueryRef #013
-    // IPADDRESS will be provided by merge_database_parameters from connection config
+    json_object_set_new(string_params, "IPADDRESS", json_string(client_ip ? client_ip : ""));
     json_object_set_new(integer_params, "ACCOUNTID", json_integer(account_id));
     json_object_set_new(integer_params, "SYSTEMID", json_integer(system_id));
     json_object_set_new(integer_params, "APPID", json_integer(app_id));
     // Calculate JWT duration from expires_at (expires_at - now)
     time_t jwt_duration = expires_at - time(NULL);
     json_object_set_new(integer_params, "JWTDURATION", json_integer(jwt_duration));
-    
+
     json_object_set_new(params, "STRING", string_params);
     json_object_set_new(params, "INTEGER", integer_params);
 
@@ -504,16 +504,16 @@ void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int syst
  * Update JWT storage (for renewal)
  */
 void update_jwt_storage(int account_id, const char* old_jwt_hash,
-                        const char* new_jwt_hash, time_t new_expires, int system_id, int app_id, const char* database) {
+                        const char* new_jwt_hash, time_t new_expires, int system_id, int app_id, const char* database, const char* client_ip) {
     if (!old_jwt_hash || !new_jwt_hash || account_id <= 0 || !database) return;
 
     // JWT renewal is implemented as: store new token + delete old token
     // Store first to ensure old token remains valid until new token is safely stored
     // This prevents a window where no valid token exists
-    
+
     // Step 1: Store new JWT (atomic operation)
-    store_jwt(account_id, new_jwt_hash, new_expires, system_id, app_id, database);
-    
+    store_jwt(account_id, new_jwt_hash, new_expires, system_id, app_id, database, client_ip);
+
     // Step 2: Delete old JWT (old token remains valid until this point)
     delete_jwt_from_storage(old_jwt_hash, database);
 }

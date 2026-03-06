@@ -153,10 +153,17 @@ enum MHD_Result handle_post_auth_renew(
     // Calculate new expiration timestamp
     time_t now = time(NULL);
     time_t new_expires_at = now + JWT_LIFETIME;
-    
+
+    // Get client IP address for JWT storage
+    char* client_ip = api_get_client_ip(connection);
+
     // Update JWT storage in database
     update_jwt_storage(validation.claims->user_id, old_jwt_hash, new_jwt_hash, new_expires_at,
-                       validation.claims->system_id, validation.claims->app_id, database);
+                       validation.claims->system_id, validation.claims->app_id, database,
+                       client_ip ? client_ip : "");
+
+    // Clean up client IP
+    free(client_ip);
     
     // Clean up hashes after database update
     free(old_jwt_hash);

@@ -357,7 +357,7 @@ enum MHD_Result handle_auth_login_request(
     time_t expires_at = issued_at + JWT_LIFETIME;
     
     // Store JWT hash in database
-    store_jwt(account->id, jwt_hash, expires_at, sys_info.system_id, sys_info.app_id, database);
+    store_jwt(account->id, jwt_hash, expires_at, sys_info.system_id, sys_info.app_id, database, client_ip);
     free(jwt_hash); // Clean up hash after storage
     
     log_this(SR_AUTH, "JWT token stored for account_id=%d, expires_at=%ld", LOG_LEVEL_DEBUG, 2,

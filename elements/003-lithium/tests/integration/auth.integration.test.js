@@ -1,4 +1,6 @@
 /**
+ * @vitest-environment node
+ *
  * Auth Integration Tests
  *
  * These tests run against a real Hydrogen server. They require:
@@ -14,7 +16,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { retrieveJWT, storeJWT, clearJWT, getClaims } from '../../src/core/jwt.js';
 
 // Test configuration from environment
-const SERVER_URL = process.env.HYDROGEN_SERVER_URL || 'http://localhost:8080';
+const SERVER_URL = process.env.HYDROGEN_SERVER_URL || 'https://lithium.philement.com';
 const API_PREFIX = '/api';
 const LOGIN_ID = process.env.HYDROGEN_DEMO_USER_NAME;
 const PASSWORD = process.env.HYDROGEN_DEMO_USER_PASS;
@@ -41,6 +43,11 @@ async function isServerAvailable() {
 // Helper to check if credentials are configured
 function hasCredentials() {
   return !!(LOGIN_ID && PASSWORD && API_KEY);
+}
+
+// Helper to add delay between requests to avoid rate limiting
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // Helper to make login request
@@ -96,6 +103,22 @@ async function logout(token) {
   return { response, data };
 }
 
+// Mock localStorage for node environment
+const localStorageMock = (() => {
+  let store = {};
+  return {
+    getItem: (key) => store[key] || null,
+    setItem: (key, value) => { store[key] = value.toString(); },
+    removeItem: (key) => { delete store[key]; },
+    clear: () => { store = {}; },
+  };
+})();
+
+Object.defineProperty(global, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
+
 describe('Auth Integration', () => {
   // Check availability at describe level
   const credentialsAvailable = hasCredentials();
@@ -122,9 +145,11 @@ describe('Auth Integration', () => {
     }
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Clear any stored JWT before each test
     clearJWT();
+    // Add delay to avoid rate limiting
+    await delay(500);
   });
 
   afterEach(() => {
