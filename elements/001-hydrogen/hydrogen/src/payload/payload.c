@@ -101,7 +101,7 @@ bool check_payload_exists(const char *marker, size_t *size) {
  * @return true if key is valid, false otherwise
  */
 bool validate_payload_key(const char *key) {
-    if (!key || strcmp(key, "Missing Key") == 0 || strlen(key) == 0) {
+    if (!key || strcmp(key, "Missing Key") == 0 || strcmp(key, "(not set)") == 0 || strlen(key) == 0) {
         return false;
     }
     
