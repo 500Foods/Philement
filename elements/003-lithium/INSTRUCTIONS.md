@@ -20,49 +20,51 @@ Lithium is a modular single-page application (SPA) built with modern web technol
 ├── index.html              # Main HTML entry point
 ├── package.json            # Project dependencies and scripts
 ├── vite.config.js          # Vite build configuration
+├── config/                 # Runtime configuration
+│   └── lithium.json        # Server URL, API key, database
 ├── public/                 # Static assets
 │   ├── manifest.json       # PWA manifest
 │   ├── service-worker.js   # PWA service worker
 │   └── assets/             # Images, fonts, etc.
 ├── src/
 │   ├── app.js             # Main application logic and module loader
-│   ├── lithium.css        # Global styles
 │   ├── core/              # Core system components
-│   │   ├── logger/        # Logging utilities
-│   │   │   └── logger.js
-│   │   ├── network/       # Network utilities
-│   │   │   └── network.js
-│   │   ├── router/        # Routing utilities
-│   │   │   └── router.js
-│   │   └── storage/       # Storage utilities
-│   │       └── storage.js
-│   ├── init/              # Initialization modules and CSS
-│   │   ├── tabulator-simple.css  # Simple table styling
-│   │   ├── tabulator-full.css   # Advanced table styling
-│   │   ├── jsoneditor.css       # JSON editor styling
-│   │   ├── tabulator-init.js    # Tabulator initialization
-│   │   ├── jsoneditor-init.js   # JSONEditor initialization
-│   │   ├── suneditor-init.js    # SunEditor initialization
-│   │   ├── flatpickr-init.js    # Flatpickr initialization
-│   │   ├── codemirror-init.js   # CodeMirror initialization
-│   │   ├── prism-init.js        # Prism.js initialization
-│   │   └── highlight-init.js    # Highlight.js initialization
-│   ├── editors/            # Editor component folders
-│   │   ├── table-simple/    # Simple table editor
-│   │   ├── table-full/      # Advanced table editor
-│   │   └── json/            # JSON editor
-│   └── modules/           # All application modules
-│       ├── login/         # Login module
-│       │   ├── login.js
-│       │   └── login.html
-│       ├── main/          # Main menu module
-│       │   ├── main.js
-│       │   └── main.html
-│       ├── dashboard/     # Dashboard module
-│       ├── source-editor/ # Source editor module
-│       ├── queries/       # Queries module
-│       └── lookups/       # Lookups module
+│   │   ├── event-bus.js   # EventTarget-based event bus
+│   │   ├── jwt.js         # JWT decode/validate/store
+│   │   ├── json-request.js # HTTP client with auth
+│   │   ├── permissions.js # Punchcard permission system
+│   │   ├── config.js      # Runtime config loader
+│   │   └── utils.js       # Utility functions
+│   ├── styles/            # CSS architecture
+│   │   ├── base.css       # Variables, reset, font-face
+│   │   ├── layout.css     # Login, sidebar, workspace
+│   │   ├── components.css # Buttons, inputs, tables
+│   │   └── transitions.css # Fade, crossfade, animations
+│   ├── shared/            # Shared modules
+│   │   └── lookups.js     # Server-provided reference data
+│   ├── init/              # Third-party library initialization
+│   │   ├── tabulator-init.js
+│   │   ├── codemirror-init.js
+│   │   └── ...
+│   └── managers/          # Feature modules (UI components)
+│       ├── login/         # Login manager
+│       ├── main/          # Main layout manager
+│       ├── style-manager/ # Theme management
+│       ├── profile-manager/ # User preferences (stub)
+│       ├── dashboard/     # Dashboard (stub)
+│       ├── lookups/       # Reference data (stub)
+│       └── queries/       # Query builder (stub)
 └── tests/                  # Test suite
+    ├── unit/              # Unit tests (127 tests)
+    │   ├── event-bus.test.js
+    │   ├── jwt.test.js
+    │   ├── permissions.test.js
+    │   ├── config.test.js
+    │   ├── utils.test.js
+    │   ├── json-request.test.js
+    │   └── lookups.test.js
+    └── integration/       # Integration tests (12 tests)
+        └── auth.integration.test.js
 ```
 
 ## Development Setup
@@ -286,6 +288,99 @@ sunEditorInit.configureFontAwesome('editor1', true, ['fa-user', 'fa-envelope', '
 6. **Coverage Dashboard:** `@vitest/coverage-v8` generates professional HTML reports; copy to `public/coverage/` for deployment
 7. **Font Awesome:** Kit-based loading (`kit.fontawesome.com`) is more reliable than CDN with SRI hashes
 8. **Deployment Checklist:** Always verify `public/src/managers/` contains HTML templates before deploying
+
+## Authentication
+
+Lithium uses JWT-based authentication against a Hydrogen backend server.
+
+### Auth Flow
+
+1. **Login** — POST `/api/auth/login` with `login_id`, `password`, `api_key`, `tz`, `database`
+2. **Token Storage** — JWT stored in `localStorage` (key: `lithium_jwt`)
+3. **Token Usage** — Attached as `Authorization: Bearer <token>` header
+4. **Auto-Renewal** — Token renewed at 80% of lifetime via `/api/auth/renew`
+5. **Logout** — POST `/api/auth/logout` and clear localStorage
+
+### Configuration
+
+Edit `config/lithium.json`:
+
+```json
+{
+  "server": {
+    "url": "https://lithium.philement.com",
+    "api_prefix": "/api"
+  },
+  "auth": {
+    "api_key": "your-api-key",
+    "default_database": "Lithium",
+    "session_timeout_minutes": 30
+  }
+}
+```
+
+### JWT Claims
+
+| Claim | Description |
+|-------|-------------|
+| `user_id` | Account ID |
+| `username` | Login username |
+| `email` | User email |
+| `roles` | User roles (JSON string) |
+| `exp` | Expiration timestamp (3600s lifetime) |
+| `database` | Database name for routing |
+| `tz`/`tzoffset` | Timezone info |
+
+### Auth Event Bus Events
+
+| Event | Payload | When |
+|-------|---------|------|
+| `auth:login` | `{ userId, username, roles }` | Login success |
+| `auth:logout` | `{}` | User logs out |
+| `auth:expired` | `{}` | JWT expired, renewal failed |
+| `auth:renewed` | `{ expiresAt }` | JWT renewed |
+
+## Testing
+
+### Running Tests
+
+```bash
+# All tests (unit + integration)
+npm test
+
+# Unit tests only
+npm test -- --run tests/unit/
+
+# Integration tests (requires Hydrogen server)
+export HYDROGEN_SERVER_URL=https://lithium.philement.com
+export HYDROGEN_DEMO_USER_NAME=testuser
+export HYDROGEN_DEMO_USER_PASS=usertest
+export HYDROGEN_DEMO_API_KEY=EveryGoodBoyDeservesFudge
+npm test -- --run tests/integration/
+
+# With coverage
+npm run test:coverage
+```
+
+### Test Structure
+
+- **Unit Tests** (`tests/unit/`) — Test individual modules in isolation with mocked dependencies
+- **Integration Tests** (`tests/integration/`) — Test against live Hydrogen server with real API calls
+
+### Writing Integration Tests
+
+Integration tests check server connectivity before running:
+
+```javascript
+const SERVER_URL = process.env.HYDROGEN_SERVER_URL || 'http://localhost:8080';
+
+// Skip tests if credentials missing
+const hasCredentials = () => !!(LOGIN_ID && PASSWORD && API_KEY);
+
+// Use AbortController for fetch timeouts (not AbortSignal.timeout)
+const controller = new AbortController();
+setTimeout(() => controller.abort(), 5000);
+```
 
 ## Troubleshooting
 

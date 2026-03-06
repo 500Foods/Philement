@@ -368,7 +368,7 @@ Implemented in `src/shared/lookups.js`.
 
 ## 16. Testing
 
-### Current Status: 127 tests, 0 failures
+### Current Status: 139 tests, 0 failures
 
 | File | Stmts | Branch | Tests |
 |------|-------|--------|-------|
@@ -379,6 +379,57 @@ Implemented in `src/shared/lookups.js`.
 | jwt.js | 75% | 73% | 25 |
 | json-request.js | 40% | 31% | 14 |
 | lookups.js | 37% | 18% | 8 |
+
+### Test Structure
+
+```structure
+tests/
+├── unit/                    # Unit tests (127 tests)
+│   ├── event-bus.test.js
+│   ├── jwt.test.js
+│   ├── permissions.test.js
+│   ├── config.test.js
+│   ├── utils.test.js
+│   ├── json-request.test.js
+│   └── lookups.test.js
+└── integration/             # Integration tests (12 tests)
+    └── auth.integration.test.js
+```
+
+### Integration Tests
+
+**New:** [`tests/integration/auth.integration.test.js`](tests/integration/auth.integration.test.js) — 12 tests against live Hydrogen server:
+
+- **Login Tests** (5): Valid credentials, invalid password, invalid username, invalid API key, missing fields
+- **Token Renewal** (2): Valid token renewal, invalid token rejection
+- **Logout** (2): Valid token logout, expired token handling
+- **End-to-End Flow** (1): Complete auth lifecycle
+- **JWT Claims Verification** (2): All 17 claims present, correct 3600s lifetime
+
+**Environment Variables:**
+
+```bash
+HYDROGEN_SERVER_URL=https://lithium.philement.com
+HYDROGEN_DEMO_USER_NAME=testuser
+HYDROGEN_DEMO_USER_PASS=usertest
+HYDROGEN_DEMO_API_KEY=EveryGoodBoyDeservesFudge
+```
+
+**Running Integration Tests:**
+
+```bash
+# With environment variables
+export HYDROGEN_SERVER_URL=https://lithium.philement.com
+export HYDROGEN_DEMO_USER_NAME=testuser
+export HYDROGEN_DEMO_USER_PASS=usertest
+export HYDROGEN_DEMO_API_KEY=EveryGoodBoyDeservesFudge
+npm test -- --run tests/integration/
+
+# Or via shell script
+cd tests && ./test_50_lithium_auth.sh
+```
+
+Tests automatically skip with clear messaging if server or credentials are unavailable.
 
 ### Coverage Dashboard
 
@@ -401,7 +452,7 @@ The dashboard includes:
 
 ### Still Needed
 
-- [ ] Integration test: login flow with mocked Hydrogen responses
+- [x] Integration test: login flow with live Hydrogen server ✅
 - [ ] Integration test: manager loading into workspace
 - [ ] Integration test: menu generation from permissions
 - [ ] Improve json-request.js coverage (error handling paths)
@@ -623,3 +674,7 @@ None of these block the current Lithium work.
 2. **Font Awesome Loading** — CDN links with SRI hashes can fail if the CDN content changes. Font Awesome Kit (`https://kit.fontawesome.com/`) is more reliable for production as it handles its own caching and integrity.
 
 3. **Build Output Verification** — Always verify the deployment directory structure matches runtime expectations. Missing static assets cause 404 errors that don't appear in development (where `src/` is served).
+
+4. **Integration Test Environment Variables** — Vitest passes `process.env` to tests, but `beforeAll` hooks may not run if all tests are skipped via `it.skip()`. Use synchronous checks at describe-block level for environment validation, and avoid `AbortSignal.timeout()` (not available in all Node.js versions) in favor of `AbortController` with `setTimeout()`.
+
+5. **Auth Integration Testing** — When testing against a live Hydrogen server, use a dedicated test database (like "Lithium") with known demo credentials. Tests should validate both success paths and expected error responses (401, 429, etc.) to ensure the client handles all server responses correctly.
