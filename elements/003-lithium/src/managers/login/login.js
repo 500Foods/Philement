@@ -10,6 +10,7 @@ import { eventBus, Events } from '../../core/event-bus.js';
 import { storeJWT } from '../../core/jwt.js';
 import { getConfig, getConfigValue } from '../../core/config.js';
 import { getTransitionDuration, waitForTransition } from '../../core/transitions.js';
+import { hasLookup } from '../../shared/lookups.js';
 
 /**
  * Login Manager Class
@@ -24,6 +25,7 @@ export default class LoginManager {
     this.isCapsLockOn = false;
     this.currentPanel = 'login'; // 'login', 'theme', 'logs'
     this.panels = {};
+    this.lookupListeners = [];
   }
 
   /**
@@ -32,10 +34,73 @@ export default class LoginManager {
   async init() {
     await this.render();
     this.setupEventListeners();
+    this.setupLookupListeners();
+    this.initializeButtonStates();
     this.show();
-    
+
     // Check for URL query parameters for auto-login
     this.checkForAutoLogin();
+  }
+
+  /**
+   * Initialize button states based on current lookups availability
+   * Buttons start disabled and are enabled when data arrives
+   */
+  initializeButtonStates() {
+    // Start with buttons disabled
+    this.setThemeButtonEnabled(false);
+    this.setLogsButtonEnabled(false);
+
+    // If lookups are already loaded, enable buttons immediately
+    if (hasLookup('themes')) {
+      this.setThemeButtonEnabled(true);
+    }
+    if (hasLookup('system_info')) {
+      this.setLogsButtonEnabled(true);
+    }
+  }
+
+  /**
+   * Set up event listeners for lookups loaded events
+   */
+  setupLookupListeners() {
+    // Listen for themes lookup - enable theme button when themes are loaded
+    const handleThemesLoaded = () => {
+      this.setThemeButtonEnabled(true);
+    };
+
+    // Listen for system_info lookup - enable logs button when system info is loaded
+    const handleSystemInfoLoaded = () => {
+      this.setLogsButtonEnabled(true);
+    };
+
+    // Subscribe to specific lookup events
+    eventBus.on(Events.LOOKUPS_THEMES_LOADED, handleThemesLoaded);
+    eventBus.on(Events.LOOKUPS_SYSTEM_INFO_LOADED, handleSystemInfoLoaded);
+
+    // Store unsubscribe functions for cleanup
+    this.lookupListeners.push(() => eventBus.off(Events.LOOKUPS_THEMES_LOADED, handleThemesLoaded));
+    this.lookupListeners.push(() => eventBus.off(Events.LOOKUPS_SYSTEM_INFO_LOADED, handleSystemInfoLoaded));
+  }
+
+  /**
+   * Enable or disable the theme button
+   * @param {boolean} enabled - Whether to enable the button
+   */
+  setThemeButtonEnabled(enabled) {
+    if (this.elements.themeBtn) {
+      this.elements.themeBtn.disabled = !enabled;
+    }
+  }
+
+  /**
+   * Enable or disable the logs button
+   * @param {boolean} enabled - Whether to enable the button
+   */
+  setLogsButtonEnabled(enabled) {
+    if (this.elements.logsBtn) {
+      this.elements.logsBtn.disabled = !enabled;
+    }
   }
 
   /**
@@ -613,6 +678,10 @@ export default class LoginManager {
     if (this.handleKeyUp) {
       document.removeEventListener('keyup', this.handleKeyUp);
     }
+
+    // Remove lookup event listeners
+    this.lookupListeners.forEach(unsubscribe => unsubscribe());
+    this.lookupListeners = [];
 
     // Clear references
     this.elements = {};

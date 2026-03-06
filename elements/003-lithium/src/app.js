@@ -14,6 +14,7 @@ import { eventBus, Events } from './core/event-bus.js';
 import { validateJWT, retrieveJWT, getClaims, getRenewalTime } from './core/jwt.js';
 import { getPermittedManagers } from './core/permissions.js';
 import { createRequest } from './core/json-request.js';
+import { fetchLookups, init as initLookups } from './shared/lookups.js';
 
 /**
  * Main Lithium Application Class
@@ -52,10 +53,15 @@ class LithiumApp {
       // Step 2: Create API client with config
       this.api = createRequest(this.config);
 
-      // Step 3: Reveal the page (FOUC prevention)
+      // Step 3: Initialize lookups (fetch open lookups from cache or server)
+      // This happens before auth check so lookups are available for login UI
+      initLookups();
+      this.fetchLookups();
+
+      // Step 4: Reveal the page (FOUC prevention)
       this.revealPage();
 
-      // Step 4: Check authentication and load appropriate manager
+      // Step 5: Check authentication and load appropriate manager
       await this.checkAuthAndLoad();
 
       // Step 5: Set up global event listeners
@@ -349,6 +355,20 @@ class LithiumApp {
     // Show expired message and redirect to login
     alert('Your session has expired. Please log in again.');
     await this.loadLoginManager();
+  }
+
+  /**
+   * Fetch lookups from server or cache
+   * This is called during initialization to ensure lookups are available
+   */
+  async fetchLookups() {
+    try {
+      console.log('[Lithium] Fetching lookups...');
+      await fetchLookups();
+    } catch (error) {
+      console.warn('[Lithium] Failed to fetch lookups:', error.message);
+      // Non-fatal error, continue without lookups
+    }
   }
 
   /**

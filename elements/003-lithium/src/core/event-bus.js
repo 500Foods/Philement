@@ -70,4 +70,17 @@ export const Events = {
   // Network events
   NETWORK_ONLINE: 'network:online',
   NETWORK_OFFLINE: 'network:offline',
+
+  // Lookup events
+  LOOKUPS_LOADING: 'lookups:loading',
+  LOOKUPS_LOADED: 'lookups:loaded',
+  LOOKUPS_ERROR: 'lookups:error',
+
+  // Lookup-specific events (for monitoring specific lookup categories)
+  // Pattern: lookups:{category}:loaded - e.g., lookups:themes:loaded
+  LOOKUPS_THEMES_LOADED: 'lookups:themes:loaded',
+  LOOKUPS_ICONS_LOADED: 'lookups:icons:loaded',
+  LOOKUPS_SYSTEM_INFO_LOADED: 'lookups:system_info:loaded',
+  LOOKUPS_MANAGERS_LOADED: 'lookups:managers:loaded',
+  LOOKUPS_LOOKUP_NAMES_LOADED: 'lookups:lookup_names:loaded',
 };
