@@ -35,15 +35,21 @@ export default class MainManager {
    * Initialize the main manager
    */
   async init() {
-    await this.render();
-    this.setupEventListeners();
-    this.loadUserInfo();
-    this.buildSidebar();
-    this.show();
+    console.log('[MainManager] Initializing...');
+    
+    try {
+      await this.render();
+      this.setupEventListeners();
+      this.loadUserInfo();
+      this.buildSidebar();
+      this.show();
 
-    // Load first permitted manager by default
-    if (this.permittedManagers.length > 0) {
-      await this.loadManager(this.permittedManagers[0]);
+      // Load first permitted manager by default
+      if (this.permittedManagers.length > 0) {
+        await this.loadManager(this.permittedManagers[0]);
+      }
+    } catch (error) {
+      console.error('[MainManager] Initialization error:', error);
     }
   }
 
