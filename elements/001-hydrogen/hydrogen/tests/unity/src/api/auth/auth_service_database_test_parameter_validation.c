@@ -20,8 +20,9 @@ bool verify_api_key(const char* api_key, const char* database, system_info_t* sy
 bool check_username_availability(const char* username, const char* database);
 int create_account_record(const char* username, const char* email,
                           const char* hashed_password, const char* full_name, const char* database);
+void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip);
 void update_jwt_storage(int account_id, const char* old_jwt_hash,
-                        const char* new_jwt_hash, time_t new_expires, int system_id, int app_id, const char* database);
+                        const char* new_jwt_hash, time_t new_expires, int system_id, int app_id, const char* database, const char* client_ip);
 void delete_jwt_from_storage(const char* jwt_hash, const char* database);
 void block_ip_address(const char* client_ip, int duration_minutes, const char* database);
 
@@ -44,6 +45,12 @@ void test_create_account_record_with_null_email(void);
 void test_create_account_record_with_null_password(void);
 void test_create_account_record_with_null_database(void);
 void test_create_account_record_with_null_full_name(void);
+void test_store_jwt_with_null_jwt_hash(void);
+void test_store_jwt_with_zero_account_id(void);
+void test_store_jwt_with_null_database(void);
+void test_store_jwt_with_null_client_ip(void);
+void test_store_jwt_with_ipv4_client_ip(void);
+void test_store_jwt_with_ipv6_client_ip(void);
 void test_update_jwt_storage_with_null_old_jwt_hash(void);
 void test_update_jwt_storage_with_null_new_jwt_hash(void);
 void test_update_jwt_storage_with_zero_account_id(void);
@@ -258,13 +265,78 @@ void test_create_account_record_with_null_full_name(void) {
 }
 
 /**
+ * Test: store_jwt_with_null_jwt_hash
+ * Purpose: Verify function returns early when jwt_hash is NULL
+ * Coverage: Line 468
+ */
+void test_store_jwt_with_null_jwt_hash(void) {
+    // Function returns void, so we just ensure it doesn't crash
+    store_jwt(1, NULL, time(NULL) + 3600, 1, 1, "test_db", "192.168.1.1");
+    // If we get here without crashing, the test passes
+    TEST_ASSERT_TRUE(true);
+}
+
+/**
+ * Test: store_jwt_with_zero_account_id
+ * Purpose: Verify function returns early when account_id is 0
+ * Coverage: Line 468
+ */
+void test_store_jwt_with_zero_account_id(void) {
+    store_jwt(0, "jwt_hash", time(NULL) + 3600, 1, 1, "test_db", "192.168.1.1");
+    TEST_ASSERT_TRUE(true);
+}
+
+/**
+ * Test: store_jwt_with_null_database
+ * Purpose: Verify function returns early when database is NULL
+ * Coverage: Line 468
+ */
+void test_store_jwt_with_null_database(void) {
+    store_jwt(1, "jwt_hash", time(NULL) + 3600, 1, 1, NULL, "192.168.1.1");
+    TEST_ASSERT_TRUE(true);
+}
+
+/**
+ * Test: store_jwt_with_null_client_ip
+ * Purpose: Verify function handles NULL client_ip gracefully
+ * Coverage: Line 484
+ */
+void test_store_jwt_with_null_client_ip(void) {
+    // Function should handle NULL client_ip by converting to empty string
+    store_jwt(1, "jwt_hash", time(NULL) + 3600, 1, 1, "test_db", NULL);
+    TEST_ASSERT_TRUE(true);
+}
+
+/**
+ * Test: store_jwt_with_ipv4_client_ip
+ * Purpose: Verify function accepts IPv4 client IP
+ * Coverage: Lines 480-500
+ */
+void test_store_jwt_with_ipv4_client_ip(void) {
+    // Function should accept standard IPv4 address
+    store_jwt(1, "jwt_hash", time(NULL) + 3600, 1, 1, "test_db", "192.168.1.100");
+    TEST_ASSERT_TRUE(true);
+}
+
+/**
+ * Test: store_jwt_with_ipv6_client_ip
+ * Purpose: Verify function accepts IPv6 client IP
+ * Coverage: Lines 480-500
+ */
+void test_store_jwt_with_ipv6_client_ip(void) {
+    // Function should accept IPv6 address including IPv4-mapped format
+    store_jwt(1, "jwt_hash", time(NULL) + 3600, 1, 1, "test_db", "::ffff:10.119.4.186");
+    TEST_ASSERT_TRUE(true);
+}
+
+/**
  * Test: update_jwt_storage_with_null_old_jwt_hash
  * Purpose: Verify function returns early when old_jwt_hash is NULL
  * Coverage: Line 441
  */
 void test_update_jwt_storage_with_null_old_jwt_hash(void) {
     // Function returns void, so we just ensure it doesn't crash
-    update_jwt_storage(1, NULL, "new_hash", time(NULL), 1, 1, "test_db");
+    update_jwt_storage(1, NULL, "new_hash", time(NULL), 1, 1, "test_db", "192.168.1.1");
     // If we get here without crashing, the test passes
     TEST_ASSERT_TRUE(true);
 }
@@ -275,7 +347,7 @@ void test_update_jwt_storage_with_null_old_jwt_hash(void) {
  * Coverage: Line 441
  */
 void test_update_jwt_storage_with_null_new_jwt_hash(void) {
-    update_jwt_storage(1, "old_hash", NULL, time(NULL), 1, 1, "test_db");
+    update_jwt_storage(1, "old_hash", NULL, time(NULL), 1, 1, "test_db", "192.168.1.1");
     TEST_ASSERT_TRUE(true);
 }
 
@@ -285,7 +357,7 @@ void test_update_jwt_storage_with_null_new_jwt_hash(void) {
  * Coverage: Line 441
  */
 void test_update_jwt_storage_with_zero_account_id(void) {
-    update_jwt_storage(0, "old_hash", "new_hash", time(NULL), 1, 1, "test_db");
+    update_jwt_storage(0, "old_hash", "new_hash", time(NULL), 1, 1, "test_db", "192.168.1.1");
     TEST_ASSERT_TRUE(true);
 }
 
@@ -295,7 +367,7 @@ void test_update_jwt_storage_with_zero_account_id(void) {
  * Coverage: Line 441
  */
 void test_update_jwt_storage_with_null_database(void) {
-    update_jwt_storage(1, "old_hash", "new_hash", time(NULL), 1, 1, NULL);
+    update_jwt_storage(1, "old_hash", "new_hash", time(NULL), 1, 1, NULL, "192.168.1.1");
     TEST_ASSERT_TRUE(true);
 }
 
@@ -369,6 +441,14 @@ int main(void) {
     RUN_TEST(test_create_account_record_with_null_password);
     RUN_TEST(test_create_account_record_with_null_database);
     RUN_TEST(test_create_account_record_with_null_full_name);
+
+    // Test store_jwt parameter validation
+    RUN_TEST(test_store_jwt_with_null_jwt_hash);
+    RUN_TEST(test_store_jwt_with_zero_account_id);
+    RUN_TEST(test_store_jwt_with_null_database);
+    RUN_TEST(test_store_jwt_with_null_client_ip);
+    RUN_TEST(test_store_jwt_with_ipv4_client_ip);
+    RUN_TEST(test_store_jwt_with_ipv6_client_ip);
 
     // Test update_jwt_storage parameter validation
     RUN_TEST(test_update_jwt_storage_with_null_old_jwt_hash);

@@ -98,9 +98,9 @@ char* mock_compute_token_hash(const char* token) {
 
 __attribute__((weak))
 void mock_update_jwt_storage(int user_id, const char* old_hash, const char* new_hash,
-                           time_t expires_at, int system_id, int app_id, const char* database) {
+                           time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip) {
     (void)user_id; (void)old_hash; (void)new_hash; (void)expires_at;
-    (void)system_id; (void)app_id; (void)database;
+    (void)system_id; (void)app_id; (void)database; (void)client_ip;
     // No-op for mocking
 }
 
