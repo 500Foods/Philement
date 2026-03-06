@@ -3,7 +3,11 @@
   CCC-style login page: centered card, gradient header, clean inputs
 -->
 <div id="login-page">
-  <div class="login-container">
+  <!-- Transition overlay - blocks interaction during transitions -->
+  <div class="transition-overlay" id="transition-overlay"></div>
+  
+  <!-- Main Login Panel -->
+  <div class="login-container" id="login-panel" style="display: none;">
     <!-- Header with logo and title -->
     <div class="login-header">
       <img src="/assets/images/logo-li.svg" alt="" class="login-logo" width="48" height="48">
@@ -16,26 +20,36 @@
     <!-- Login form -->
     <form class="login-form" id="login-form">
       <div class="form-group">
-        <input 
-          type="text" 
-          id="login-username" 
-          name="username"
-          placeholder="Username" 
-          required
-          autocomplete="username"
-          autofocus
-        >
+        <div class="input-with-icon">
+          <input 
+            type="text" 
+            id="login-username" 
+            name="username"
+            placeholder="Username" 
+            required
+            autocomplete="username"
+            autofocus
+          >
+          <button type="button" class="input-icon-btn" id="login-clear-username" data-tooltip="Clear">
+            <i class="fas fa-xmark"></i>
+          </button>
+        </div>
       </div>
       
       <div class="form-group">
-        <input 
-          type="password" 
-          id="login-password" 
-          name="password"
-          placeholder="Password" 
-          required
-          autocomplete="current-password"
-        >
+        <div class="input-with-icon">
+          <input 
+            type="password" 
+            id="login-password" 
+            name="password"
+            placeholder="Password" 
+            required
+            autocomplete="current-password"
+          >
+          <button type="button" class="input-icon-btn" id="login-toggle-password" data-tooltip="Show password">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Error message (hidden by default) -->
@@ -44,11 +58,74 @@
         <span id="login-error-text">Invalid username or password</span>
       </div>
 
-      <!-- Submit button -->
-      <button type="submit" class="login-btn" id="login-submit">
-        <i class="fas fa-sign-in-alt"></i>
-        <span>Login</span>
-      </button>
+      <!-- Button group: Theme, Login, Logs -->
+      <div class="login-btn-group">
+        <button type="button" class="login-btn-icon" id="login-theme-btn" data-tooltip="Select theme">
+          <i class="fas fa-palette"></i>
+        </button>
+        <button type="submit" class="login-btn-primary" id="login-submit" data-tooltip="Login">
+          <i class="fas fa-sign-in-alt"></i>
+          <span>Login</span>
+        </button>
+        <button type="button" class="login-btn-icon" id="login-logs-btn" data-tooltip="View Logs">
+          <i class="fas fa-scroll"></i>
+        </button>
+      </div>
     </form>
   </div>
+
+  <!-- Theme Selector Panel (initially hidden) -->
+  <div class="login-subpanel" id="theme-panel" style="display: none;">
+    <div class="subpanel-header">
+      <h2>Select Theme</h2>
+      <button type="button" class="subpanel-close" id="theme-close-btn" data-tooltip="Close (ESC)">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+    <div class="subpanel-content">
+      <div class="theme-list" id="theme-list">
+        <!-- Theme items will be populated here -->
+        <div class="theme-item">
+          <span class="theme-name">Midnight Indigo</span>
+          <button class="theme-apply-btn">Apply</button>
+        </div>
+        <div class="theme-item">
+          <span class="theme-name">Ocean Blue</span>
+          <button class="theme-apply-btn">Apply</button>
+        </div>
+        <div class="theme-item">
+          <span class="theme-name">Forest Green</span>
+          <button class="theme-apply-btn">Apply</button>
+        </div>
+        <div class="theme-item">
+          <span class="theme-name">Sunset Orange</span>
+          <button class="theme-apply-btn">Apply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log Viewer Panel (initially hidden) -->
+  <div class="login-subpanel" id="logs-panel" style="display: none;">
+    <div class="subpanel-header">
+      <h2>System Logs</h2>
+      <button type="button" class="subpanel-close" id="logs-close-btn" data-tooltip="Close (ESC)">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+    <div class="subpanel-content">
+      <div class="log-viewer" id="log-viewer">
+        <!-- CodeMirror will be initialized here -->
+        <div class="log-placeholder">
+          <p>Log viewer will be initialized here...</p>
+          <pre class="log-content">[2025-03-06 10:30:15] INFO: System initialized
+[2025-03-06 10:30:16] INFO: Connecting to Hydrogen server...
+[2025-03-06 10:30:17] INFO: Connection established
+[2025-03-06 10:30:18] DEBUG: Loading configuration...
+[2025-03-06 10:30:19] INFO: Configuration loaded successfully</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>

@@ -3,11 +3,13 @@
  * 
  * Handles user authentication against the Hydrogen server.
  * Loads CCC-style login page, validates credentials, stores JWT.
+ * Features: Theme selector, Log viewer with fade transitions
  */
 
 import { eventBus, Events } from '../../core/event-bus.js';
 import { storeJWT } from '../../core/jwt.js';
 import { getConfig, getConfigValue } from '../../core/config.js';
+import { getTransitionDuration, waitForTransition } from '../../core/transitions.js';
 
 /**
  * Login Manager Class
@@ -18,6 +20,10 @@ export default class LoginManager {
     this.container = container;
     this.elements = {};
     this.isSubmitting = false;
+    this.isPasswordVisible = false;
+    this.isCapsLockOn = false;
+    this.currentPanel = 'login'; // 'login', 'theme', 'logs'
+    this.panels = {};
   }
 
   /**
@@ -75,18 +81,36 @@ export default class LoginManager {
     // Cache DOM elements
     this.elements = {
       page: this.container.querySelector('#login-page'),
+      overlay: this.container.querySelector('#transition-overlay'),
+      loginPanel: this.container.querySelector('#login-panel'),
+      themePanel: this.container.querySelector('#theme-panel'),
+      logsPanel: this.container.querySelector('#logs-panel'),
       form: this.container.querySelector('#login-form'),
       username: this.container.querySelector('#login-username'),
       password: this.container.querySelector('#login-password'),
       submit: this.container.querySelector('#login-submit'),
+      themeBtn: this.container.querySelector('#login-theme-btn'),
+      logsBtn: this.container.querySelector('#login-logs-btn'),
+      clearUsernameBtn: this.container.querySelector('#login-clear-username'),
+      togglePasswordBtn: this.container.querySelector('#login-toggle-password'),
+      passwordIcon: this.container.querySelector('#login-toggle-password i'),
+      themeCloseBtn: this.container.querySelector('#theme-close-btn'),
+      logsCloseBtn: this.container.querySelector('#logs-close-btn'),
       error: this.container.querySelector('#login-error'),
       errorText: this.container.querySelector('#login-error-text'),
     };
 
-    // Focus username field after a short delay (allows transition)
-    setTimeout(() => {
-      this.elements.username?.focus();
-    }, 500);
+    // Cache panels for transition management
+    this.panels = {
+      login: this.elements.loginPanel,
+      theme: this.elements.themePanel,
+      logs: this.elements.logsPanel,
+    };
+
+    // Add tooltip classes to buttons
+    this.elements.submit?.classList.add('tooltip');
+    this.elements.themeBtn?.classList.add('tooltip');
+    this.elements.logsBtn?.classList.add('tooltip');
   }
 
   /**
@@ -95,22 +119,43 @@ export default class LoginManager {
   renderFallback() {
     this.container.innerHTML = `
       <div id="login-page">
-        <div class="login-container">
+        <div class="login-container" id="login-panel">
           <div class="login-header">
             <h1>Lithium</h1>
             <p>A Philement Project</p>
           </div>
           <form class="login-form" id="login-form">
             <div class="form-group">
-              <input type="text" id="login-username" placeholder="Username" required>
+              <div class="input-with-icon">
+                <input type="text" id="login-username" placeholder="Username" required>
+                <button type="button" class="input-icon-btn" id="login-clear-username" data-tooltip="Clear">
+                  <i class="fas fa-xmark"></i>
+                </button>
+              </div>
             </div>
             <div class="form-group">
-              <input type="password" id="login-password" placeholder="Password" required>
+              <div class="input-with-icon">
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button type="button" class="input-icon-btn" id="login-toggle-password" data-tooltip="Show password">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
             </div>
             <div class="login-error" id="login-error">
               <span id="login-error-text">Error</span>
             </div>
-            <button type="submit" class="login-btn" id="login-submit">Login</button>
+            <div class="login-btn-group">
+              <button type="button" class="login-btn-icon tooltip" id="login-theme-btn" data-tooltip="Select theme">
+                <i class="fas fa-palette"></i>
+              </button>
+              <button type="submit" class="login-btn-primary tooltip" id="login-submit" data-tooltip="Login">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Login</span>
+              </button>
+              <button type="button" class="login-btn-icon tooltip" id="login-logs-btn" data-tooltip="View Logs">
+                <i class="fas fa-scroll"></i>
+              </button>
+            </div>
           </form>
         </div>
       </div>
@@ -130,25 +175,246 @@ export default class LoginManager {
     // Clear error on input
     this.elements.username?.addEventListener('input', () => this.hideError());
     this.elements.password?.addEventListener('input', () => this.hideError());
+
+    // Theme button click - show theme panel
+    this.elements.themeBtn?.addEventListener('click', () => {
+      this.switchPanel('theme');
+    });
+
+    // Logs button click - show logs panel
+    this.elements.logsBtn?.addEventListener('click', () => {
+      this.switchPanel('logs');
+    });
+
+    // Close buttons
+    this.elements.themeCloseBtn?.addEventListener('click', () => {
+      this.switchPanel('login');
+    });
+
+    this.elements.logsCloseBtn?.addEventListener('click', () => {
+      this.switchPanel('login');
+    });
+
+    // Clear username button click
+    this.elements.clearUsernameBtn?.addEventListener('click', () => {
+      this.handleClearUsername();
+    });
+
+    // Toggle password visibility button click
+    this.elements.togglePasswordBtn?.addEventListener('click', () => {
+      this.handleTogglePassword();
+    });
+
+    // Global CAPS LOCK detection - monitor entire page
+    this.handleKeyDown = (e) => {
+      this.checkCapsLock(e);
+      this.handleEscapeKey(e);
+    };
+    this.handleKeyUp = (e) => this.checkCapsLock(e);
+    document.addEventListener('keydown', this.handleKeyDown);
+    document.addEventListener('keyup', this.handleKeyUp);
+  }
+
+  /**
+   * Handle ESC key to return to login panel from subpanels
+   */
+  handleEscapeKey(event) {
+    if (event.key === 'Escape' && this.currentPanel !== 'login') {
+      this.switchPanel('login');
+    }
+  }
+
+  /**
+   * Enable the transition overlay to block interactions
+   */
+  enableTransitionOverlay() {
+    this.elements.overlay?.classList.add('active');
+  }
+
+  /**
+   * Disable the transition overlay
+   */
+  disableTransitionOverlay() {
+    this.elements.overlay?.classList.remove('active');
+  }
+
+  /**
+   * Switch between panels with fade transition
+   * @param {string} targetPanel - 'login', 'theme', or 'logs'
+   */
+  async switchPanel(targetPanel) {
+    if (targetPanel === this.currentPanel) return;
+
+    const fromPanel = this.panels[this.currentPanel];
+    const toPanel = this.panels[targetPanel];
+
+    if (!toPanel) return;
+
+    // Block interactions during transition
+    this.enableTransitionOverlay();
+
+    // Perform crossfade transition
+    await this.performPanelTransition(fromPanel, toPanel);
+
+    // Update current panel state
+    this.currentPanel = targetPanel;
+
+    // Re-enable interactions
+    this.disableTransitionOverlay();
+
+    // Focus management
+    if (targetPanel === 'login') {
+      // Focus username when returning to login
+      setTimeout(() => {
+        this.elements.username?.focus();
+      }, getTransitionDuration());
+    }
+  }
+
+  /**
+   * Perform the actual panel transition animation
+   */
+  async performPanelTransition(fromElement, toElement) {
+    const duration = getTransitionDuration();
+
+    // Determine the correct display value for the target panel
+    const isLoginPanel = toElement === this.elements.loginPanel;
+    const targetDisplay = isLoginPanel ? 'block' : 'flex';
+
+    // Step 1: Fade out current panel (opacity 1 -> 0)
+    if (fromElement) {
+      fromElement.classList.remove('visible');
+    }
+
+    // Step 2: Wait for fade out transition to complete
+    await waitForTransition(duration);
+
+    // Step 3: Hide the from element after fade out
+    if (fromElement) {
+      fromElement.style.display = 'none';
+    }
+
+    // Step 4: Show the to element (opacity is still 0)
+    if (toElement) {
+      toElement.style.display = targetDisplay;
+      
+      // Force reflow to ensure display is applied before opacity change
+      void toElement.offsetHeight;
+      
+      // Step 5: Fade in new panel (opacity 0 -> 1)
+      requestAnimationFrame(() => {
+        toElement.classList.add('visible');
+      });
+    }
+
+    // Step 6: Wait for fade in to complete
+    await waitForTransition(duration);
+  }
+
+  /**
+   * Check if CAPS LOCK is on
+   * Called on any key event anywhere on the page
+   */
+  checkCapsLock(event) {
+    // getModifierState is the standard way to detect CAPS LOCK state
+    // It returns true if CAPS LOCK is currently on, regardless of which key was pressed
+    const capsLockOn = event.getModifierState && event.getModifierState('CapsLock');
+    
+    // Only update if the state has changed
+    if (this.isCapsLockOn !== capsLockOn) {
+      this.isCapsLockOn = capsLockOn;
+      this.updateCapsLockIndicator(capsLockOn);
+    }
+  }
+
+  /**
+   * Update the password field background based on CAPS LOCK state
+   */
+  updateCapsLockIndicator(isCapsLockOn) {
+    if (this.elements.password) {
+      if (isCapsLockOn) {
+        this.elements.password.classList.add('caps-lock-active');
+      } else {
+        this.elements.password.classList.remove('caps-lock-active');
+      }
+    }
+  }
+
+  /**
+   * Handle clear username button click
+   */
+  handleClearUsername() {
+    if (this.elements.username) {
+      this.elements.username.value = '';
+      this.elements.username.focus();
+      this.hideError();
+    }
+  }
+
+  /**
+   * Handle toggle password visibility button click
+   */
+  handleTogglePassword() {
+    if (!this.elements.password || !this.elements.passwordIcon) return;
+
+    this.isPasswordVisible = !this.isPasswordVisible;
+
+    if (this.isPasswordVisible) {
+      // Show password
+      this.elements.password.type = 'text';
+      this.elements.passwordIcon.classList.remove('fa-eye');
+      this.elements.passwordIcon.classList.add('fa-eye-slash');
+      this.elements.togglePasswordBtn?.setAttribute('data-tooltip', 'Hide password');
+    } else {
+      // Hide password
+      this.elements.password.type = 'password';
+      this.elements.passwordIcon.classList.remove('fa-eye-slash');
+      this.elements.passwordIcon.classList.add('fa-eye');
+      this.elements.togglePasswordBtn?.setAttribute('data-tooltip', 'Show password');
+    }
   }
 
   /**
    * Show the login page with fade-in
    */
-  show() {
-    // Trigger reflow for transition
-    requestAnimationFrame(() => {
-      this.elements.page?.classList.add('visible');
-    });
+  async show() {
+    if (this.elements.loginPanel) {
+      // Step 1: Set display to block (but opacity is still 0 from CSS)
+      this.elements.loginPanel.style.display = 'block';
+
+      // Step 2: Force reflow to ensure display is applied
+      void this.elements.loginPanel.offsetHeight;
+
+      // Step 3: Add visible class to trigger opacity transition from 0 to 1
+      requestAnimationFrame(() => {
+        this.elements.loginPanel.classList.add('visible');
+      });
+    }
+
+    // Focus username field after transition completes
+    setTimeout(() => {
+      this.elements.username?.focus();
+    }, getTransitionDuration());
   }
 
   /**
    * Hide the login page with fade-out
    */
-  hide() {
+  async hide() {
     return new Promise((resolve) => {
-      this.elements.page?.classList.add('fade-out');
-      setTimeout(resolve, 800); // Match CSS transition duration
+      const duration = getTransitionDuration();
+      
+      // Fade out the current panel
+      const currentPanelEl = this.panels[this.currentPanel];
+      if (currentPanelEl) {
+        currentPanelEl.style.transition = `opacity ${duration}ms ease-in-out`;
+        currentPanelEl.style.opacity = '0';
+      }
+      
+      setTimeout(() => {
+        this.elements.page?.classList.add('fade-out');
+        setTimeout(resolve, 800); // Match CSS transition duration for page fade
+      }, duration);
     });
   }
 
@@ -320,13 +586,41 @@ export default class LoginManager {
         ? '<i class="fas fa-spinner fa-spin"></i> <span>Logging in...</span>'
         : '<i class="fas fa-sign-in-alt"></i> <span>Login</span>';
     }
+
+    // Disable icon buttons during loading
+    if (this.elements.themeBtn) {
+      this.elements.themeBtn.disabled = loading;
+    }
+    if (this.elements.logsBtn) {
+      this.elements.logsBtn.disabled = loading;
+    }
+    if (this.elements.clearUsernameBtn) {
+      this.elements.clearUsernameBtn.disabled = loading;
+    }
+    if (this.elements.togglePasswordBtn) {
+      this.elements.togglePasswordBtn.disabled = loading;
+    }
   }
 
   /**
    * Teardown the login manager
    */
   teardown() {
+    // Remove global event listeners
+    if (this.handleKeyDown) {
+      document.removeEventListener('keydown', this.handleKeyDown);
+    }
+    if (this.handleKeyUp) {
+      document.removeEventListener('keyup', this.handleKeyUp);
+    }
+
     // Clear references
     this.elements = {};
+    this.panels = {};
+    this.isPasswordVisible = false;
+    this.isCapsLockOn = false;
+    this.currentPanel = 'login';
+    this.handleKeyDown = null;
+    this.handleKeyUp = null;
   }
 }

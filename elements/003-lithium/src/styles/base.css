@@ -129,10 +129,11 @@ p, h1, h2, h3, h4, h5, h6 {
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 
-  /* Transitions */
-  --transition-fast: 150ms ease;
-  --transition-std: 300ms ease;
-  --transition-slow: 500ms ease;
+  /* Transitions - configurable duration for theming */
+  --transition-duration: 2500ms;
+  --transition-fast: calc(var(--transition-duration) * 0.3) ease;
+  --transition-std: var(--transition-duration) ease;
+  --transition-slow: calc(var(--transition-duration) * 2) ease;
 
   /* Scrollbar */
   --scrollbar-width: 8px;
