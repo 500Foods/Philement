@@ -47,7 +47,7 @@
 }
 
 /* ========================================
-   Login Subpanels (Theme, Logs)
+   Login Subpanels (Theme, Logs, Language, Help)
    ======================================== */
 
 .login-subpanel {
@@ -152,6 +152,113 @@
 
 .theme-apply-btn:hover {
   background-color: var(--accent-hover);
+}
+
+/* Language List Styles */
+.language-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.language-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.language-item:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.language-flag {
+  font-size: var(--font-size-xl);
+  line-height: 1;
+}
+
+.language-name {
+  flex: 1;
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+}
+
+.language-code {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* Help Panel Styles */
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.help-section {
+  padding: var(--space-4);
+  background-color: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+}
+
+.help-section h3 {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 var(--space-3);
+}
+
+.help-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  background: none;
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.help-link:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.help-info {
+  color: var(--text-secondary);
+}
+
+.help-info p {
+  margin: 0 0 var(--space-2);
+}
+
+.help-info p:last-child {
+  margin-bottom: 0;
+}
+
+.help-version {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.help-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 /* Log Viewer Styles */
@@ -443,9 +550,11 @@
 
 /* Tooltip styling for login buttons */
 .login-btn-group .tooltip::after,
+#login-language-btn.tooltip::after,
 #login-theme-btn.tooltip::after,
 #login-submit.tooltip::after,
-#login-logs-btn.tooltip::after {
+#login-logs-btn.tooltip::after,
+#login-help-btn.tooltip::after {
   content: attr(data-tooltip);
   position: absolute;
   bottom: 100%;
@@ -465,9 +574,11 @@
 }
 
 .login-btn-group .tooltip:hover::after,
+#login-language-btn.tooltip:hover::after,
 #login-theme-btn.tooltip:hover::after,
 #login-submit.tooltip:hover::after,
-#login-logs-btn.tooltip:hover::after {
+#login-logs-btn.tooltip:hover::after,
+#login-help-btn.tooltip:hover::after {
   opacity: 1;
   visibility: visible;
 }
