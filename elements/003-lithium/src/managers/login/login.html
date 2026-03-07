@@ -58,8 +58,11 @@
         <span id="login-error-text">Invalid username or password</span>
       </div>
 
-      <!-- Button group: Theme, Login, Logs -->
+      <!-- Button group: Language, Theme, Login, Logs, Help -->
       <div class="login-btn-group">
+        <button type="button" class="login-btn-icon" id="login-language-btn" data-tooltip="Select language">
+          <fa fa-globe></fa>
+        </button>
         <button type="button" class="login-btn-icon" id="login-theme-btn" data-tooltip="Select theme">
           <fa fa-palette></fa>
         </button>
@@ -69,6 +72,9 @@
         </button>
         <button type="button" class="login-btn-icon" id="login-logs-btn" data-tooltip="View Logs">
           <fa fa-scroll></fa>
+        </button>
+        <button type="button" class="login-btn-icon" id="login-help-btn" data-tooltip="Help">
+          <fa fa-circle-question></fa>
         </button>
       </div>
     </form>
@@ -123,6 +129,84 @@
 [2025-03-06 10:30:17] INFO: Connection established
 [2025-03-06 10:30:18] DEBUG: Loading configuration...
 [2025-03-06 10:30:19] INFO: Configuration loaded successfully</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Language Selector Panel (initially hidden) -->
+  <div class="login-subpanel" id="language-panel" style="display: none;">
+    <div class="subpanel-header">
+      <h2>Select Language</h2>
+      <button type="button" class="subpanel-close" id="language-close-btn" data-tooltip="Close (ESC)">
+        <fa fa-xmark></fa>
+      </button>
+    </div>
+    <div class="subpanel-content">
+      <div class="language-list" id="language-list">
+        <!-- Language items will be populated here -->
+        <div class="language-item">
+          <span class="language-flag">🇺🇸</span>
+          <span class="language-name">English (US)</span>
+          <span class="language-code">en-US</span>
+        </div>
+        <div class="language-item">
+          <span class="language-flag">🇬🇧</span>
+          <span class="language-name">English (UK)</span>
+          <span class="language-code">en-GB</span>
+        </div>
+        <div class="language-item">
+          <span class="language-flag">🇫🇷</span>
+          <span class="language-name">Français</span>
+          <span class="language-code">fr-FR</span>
+        </div>
+        <div class="language-item">
+          <span class="language-flag">🇩🇪</span>
+          <span class="language-name">Deutsch</span>
+          <span class="language-code">de-DE</span>
+        </div>
+        <div class="language-item">
+          <span class="language-flag">🇪🇸</span>
+          <span class="language-name">Español</span>
+          <span class="language-code">es-ES</span>
+        </div>
+        <div class="language-item">
+          <span class="language-flag">🇯🇵</span>
+          <span class="language-name">日本語</span>
+          <span class="language-code">ja-JP</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Panel (initially hidden) -->
+  <div class="login-subpanel" id="help-panel" style="display: none;">
+    <div class="subpanel-header">
+      <h2>Help</h2>
+      <button type="button" class="subpanel-close" id="help-close-btn" data-tooltip="Close (ESC)">
+        <fa fa-xmark></fa>
+      </button>
+    </div>
+    <div class="subpanel-content">
+      <div class="help-content" id="help-content">
+        <div class="help-section">
+          <h3>Account</h3>
+          <button type="button" class="help-link" id="help-forgot-password">
+            <fa fa-key></fa>
+            <span>Forgot Password</span>
+          </button>
+        </div>
+        <div class="help-section">
+          <h3>About</h3>
+          <div class="help-info">
+            <p><strong>Lithium</strong> - A Philement Project</p>
+            <p class="help-version">Version: <span id="help-app-version">1.0.0</span></p>
+            <p class="help-version">Build: <span id="help-build-date">2025-03-07</span></p>
+          </div>
+        </div>
+        <div class="help-section">
+          <h3>Support</h3>
+          <p class="help-text">Contact your system administrator for assistance.</p>
         </div>
       </div>
     </div>

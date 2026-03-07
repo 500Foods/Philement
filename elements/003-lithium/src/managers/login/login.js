@@ -23,7 +23,7 @@ export default class LoginManager {
     this.isSubmitting = false;
     this.isPasswordVisible = false;
     this.isCapsLockOn = false;
-    this.currentPanel = 'login'; // 'login', 'theme', 'logs'
+    this.currentPanel = 'login'; // 'login', 'theme', 'logs', 'language', 'help'
     this.panels = {};
     this.lookupListeners = [];
   }
@@ -150,17 +150,23 @@ export default class LoginManager {
       loginPanel: this.container.querySelector('#login-panel'),
       themePanel: this.container.querySelector('#theme-panel'),
       logsPanel: this.container.querySelector('#logs-panel'),
+      languagePanel: this.container.querySelector('#language-panel'),
+      helpPanel: this.container.querySelector('#help-panel'),
       form: this.container.querySelector('#login-form'),
       username: this.container.querySelector('#login-username'),
       password: this.container.querySelector('#login-password'),
       submit: this.container.querySelector('#login-submit'),
+      languageBtn: this.container.querySelector('#login-language-btn'),
       themeBtn: this.container.querySelector('#login-theme-btn'),
       logsBtn: this.container.querySelector('#login-logs-btn'),
+      helpBtn: this.container.querySelector('#login-help-btn'),
       clearUsernameBtn: this.container.querySelector('#login-clear-username'),
       togglePasswordBtn: this.container.querySelector('#login-toggle-password'),
       passwordIcon: this.container.querySelector('#login-toggle-password i'),
       themeCloseBtn: this.container.querySelector('#theme-close-btn'),
       logsCloseBtn: this.container.querySelector('#logs-close-btn'),
+      languageCloseBtn: this.container.querySelector('#language-close-btn'),
+      helpCloseBtn: this.container.querySelector('#help-close-btn'),
       error: this.container.querySelector('#login-error'),
       errorText: this.container.querySelector('#login-error-text'),
     };
@@ -170,12 +176,16 @@ export default class LoginManager {
       login: this.elements.loginPanel,
       theme: this.elements.themePanel,
       logs: this.elements.logsPanel,
+      language: this.elements.languagePanel,
+      help: this.elements.helpPanel,
     };
 
     // Add tooltip classes to buttons
     this.elements.submit?.classList.add('tooltip');
+    this.elements.languageBtn?.classList.add('tooltip');
     this.elements.themeBtn?.classList.add('tooltip');
     this.elements.logsBtn?.classList.add('tooltip');
+    this.elements.helpBtn?.classList.add('tooltip');
   }
 
   /**
@@ -210,6 +220,9 @@ export default class LoginManager {
               <span id="login-error-text">Error</span>
             </div>
             <div class="login-btn-group">
+              <button type="button" class="login-btn-icon tooltip" id="login-language-btn" data-tooltip="Select language">
+                <fa fa-globe></fa>
+              </button>
               <button type="button" class="login-btn-icon tooltip" id="login-theme-btn" data-tooltip="Select theme">
                 <fa fa-palette></fa>
               </button>
@@ -219,6 +232,9 @@ export default class LoginManager {
               </button>
               <button type="button" class="login-btn-icon tooltip" id="login-logs-btn" data-tooltip="View Logs">
                 <fa fa-scroll></fa>
+              </button>
+              <button type="button" class="login-btn-icon tooltip" id="login-help-btn" data-tooltip="Help">
+                <fa fa-circle-question></fa>
               </button>
             </div>
           </form>
@@ -241,6 +257,11 @@ export default class LoginManager {
     this.elements.username?.addEventListener('input', () => this.hideError());
     this.elements.password?.addEventListener('input', () => this.hideError());
 
+    // Language button click - show language panel
+    this.elements.languageBtn?.addEventListener('click', () => {
+      this.switchPanel('language');
+    });
+
     // Theme button click - show theme panel
     this.elements.themeBtn?.addEventListener('click', () => {
       this.switchPanel('theme');
@@ -251,12 +272,25 @@ export default class LoginManager {
       this.switchPanel('logs');
     });
 
+    // Help button click - show help panel
+    this.elements.helpBtn?.addEventListener('click', () => {
+      this.switchPanel('help');
+    });
+
     // Close buttons
     this.elements.themeCloseBtn?.addEventListener('click', () => {
       this.switchPanel('login');
     });
 
     this.elements.logsCloseBtn?.addEventListener('click', () => {
+      this.switchPanel('login');
+    });
+
+    this.elements.languageCloseBtn?.addEventListener('click', () => {
+      this.switchPanel('login');
+    });
+
+    this.elements.helpCloseBtn?.addEventListener('click', () => {
       this.switchPanel('login');
     });
 
@@ -653,11 +687,17 @@ export default class LoginManager {
     }
 
     // Disable icon buttons during loading
+    if (this.elements.languageBtn) {
+      this.elements.languageBtn.disabled = loading;
+    }
     if (this.elements.themeBtn) {
       this.elements.themeBtn.disabled = loading;
     }
     if (this.elements.logsBtn) {
       this.elements.logsBtn.disabled = loading;
+    }
+    if (this.elements.helpBtn) {
+      this.elements.helpBtn.disabled = loading;
     }
     if (this.elements.clearUsernameBtn) {
       this.elements.clearUsernameBtn.disabled = loading;
