@@ -43,8 +43,8 @@ versionData.build = oldBuild + 1;
 const now = new Date();
 versionData.timestamp = now.toISOString();
 
-// Update version string: "0.1.<build>"
-versionData.version = `0.1.${versionData.build}`;
+// Update version string: "1.1.<build>"
+versionData.version = `1.1.${versionData.build}`;
 
 // Write updated version.json back to project root
 writeFileSync(versionFile, JSON.stringify(versionData, null, 2) + '\n', 'utf-8');
