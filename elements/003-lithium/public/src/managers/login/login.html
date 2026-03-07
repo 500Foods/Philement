@@ -13,8 +13,13 @@
       <img src="/assets/images/logo-li.svg" alt="" class="login-logo" width="48" height="48">
       <div class="login-header-text">
         <h1>Lithium</h1>
-        <p>A Philement Project</p>
-        <p class="login-version" id="login-version"></p>
+      </div>
+      <!-- Version info box -->
+      <div class="version-box" id="login-version-box">
+        <div class="version-row" id="login-version-build">1000</div>
+        <div class="version-row" id="login-version-year">2026</div>
+        <div class="version-row" id="login-version-date">0101</div>
+        <div class="version-row" id="login-version-time">0000</div>
       </div>
     </div>
 
@@ -66,9 +71,8 @@
         <button type="button" class="login-btn-icon" id="login-theme-btn" data-tooltip="Select theme">
           <fa fa-palette></fa>
         </button>
-        <button type="submit" class="login-btn-primary" id="login-submit" data-tooltip="Login">
+        <button type="submit" value="Login" class="login-btn-primary" id="login-submit" data-tooltip="Login" aria-label="Login">
           <fa fa-sign-in-alt></fa>
-          <span>Login</span>
         </button>
         <button type="button" class="login-btn-icon" id="login-logs-btn" data-tooltip="View Logs">
           <fa fa-scroll></fa>

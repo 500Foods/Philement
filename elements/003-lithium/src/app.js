@@ -96,6 +96,7 @@ class LithiumApp {
         const data = await response.json();
         this.version = data.version;
         this.build = data.build;
+        this.timestamp = data.timestamp;
         console.log(`[Lithium] Version ${data.version} (build ${data.build})`);
       }
     } catch (error) {

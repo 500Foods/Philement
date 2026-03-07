@@ -11,6 +11,7 @@ import { storeJWT } from '../../core/jwt.js';
 import { getConfig, getConfigValue } from '../../core/config.js';
 import { getTransitionDuration, waitForTransition } from '../../core/transitions.js';
 import { hasLookup } from '../../shared/lookups.js';
+import './login.css';
 
 /**
  * Login Manager Class
@@ -105,7 +106,7 @@ export default class LoginManager {
 
   /**
    * Load version information from version.json and display it
-   * Populates the login header version line and the help panel version/build fields
+   * Populates the login header version box and the help panel version/build fields
    */
   async loadVersionInfo() {
     try {
@@ -115,23 +116,19 @@ export default class LoginManager {
       const versionData = await response.json();
       const { build, timestamp, version } = versionData;
 
-      // Format the timestamp for display (e.g. "2026-03-06 10:19 PM")
-      let buildDate = '';
-      if (timestamp) {
+      // Update version info box in login header (build, YYYY, MMDD, HHMM)
+      if (this.elements.versionBuild && timestamp) {
         const date = new Date(timestamp);
-        buildDate = date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        }) + ' ' + date.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-      }
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
 
-      // Update login header version line
-      if (this.elements.loginVersion) {
-        this.elements.loginVersion.textContent = `Build ${build}`;
+        this.elements.versionBuild.textContent = build;
+        this.elements.versionYear.textContent = year;
+        this.elements.versionDate.textContent = month + day;
+        this.elements.versionTime.textContent = hours + minutes;
       }
 
       // Update help panel version and build date
@@ -139,6 +136,15 @@ export default class LoginManager {
         this.elements.helpAppVersion.textContent = version || `0.1.${build}`;
       }
       if (this.elements.helpBuildDate) {
+        // Format timestamp for help panel
+        let buildDate = '';
+        if (timestamp) {
+          const date = new Date(timestamp);
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const hours = String(date.getUTCHours()).padStart(2, '0');
+          const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+          buildDate = `${date.getFullYear()}-${months[date.getUTCMonth()]}-${String(date.getUTCDate()).padStart(2, '0')} ${hours}:${minutes} UTC`;
+        }
         this.elements.helpBuildDate.textContent = buildDate || timestamp;
       }
     } catch (error) {
@@ -272,7 +278,11 @@ export default class LoginManager {
       helpCloseBtn: this.container.querySelector('#help-close-btn'),
       error: this.container.querySelector('#login-error'),
       errorText: this.container.querySelector('#login-error-text'),
-      loginVersion: this.container.querySelector('#login-version'),
+      versionBox: this.container.querySelector('#login-version-box'),
+      versionBuild: this.container.querySelector('#login-version-build'),
+      versionYear: this.container.querySelector('#login-version-year'),
+      versionDate: this.container.querySelector('#login-version-date'),
+      versionTime: this.container.querySelector('#login-version-time'),
       helpAppVersion: this.container.querySelector('#help-app-version'),
       helpBuildDate: this.container.querySelector('#help-build-date'),
     };
@@ -444,6 +454,70 @@ export default class LoginManager {
   }
 
   /**
+   * Password manager UI toggle state
+   */
+  _passwordManagerObserver = null;
+
+  /**
+   * Toggle password manager UI visibility
+   * Uses body class approach with MutationObserver for robustness
+   * @param {boolean} hide - True to hide, false to show
+   */
+  togglePasswordManagerUI(hide) {
+    const body = document.body;
+    
+    if (hide) {
+      body.classList.add('hide-password-manager-ui');
+      
+      // One-time cleanup of anything already present
+      const selectors = [
+        'com-1password-button',
+        '[id*="1p-"]',
+        '[class*="lastpass"]',
+        '[class*="bitwarden"]',
+        '[data-bitwarden]',
+        '[class*="dashlane"]',
+        '[data-dashlane]',
+      ];
+      
+      for (const selector of selectors) {
+        try {
+          document.querySelectorAll(selector).forEach(el => {
+            el.style.setProperty('display', 'none', 'important');
+          });
+        } catch (e) {
+          // Invalid selector, skip
+        }
+      }
+      
+      // Watch for any new injections while hidden
+      this._passwordManagerObserver = new MutationObserver(() => {
+        for (const selector of selectors) {
+          try {
+            document.querySelectorAll(selector).forEach(el => {
+              el.style.setProperty('display', 'none', 'important');
+            });
+          } catch (e) {
+            // Invalid selector, skip
+          }
+        }
+      });
+      this._passwordManagerObserver.observe(document.body, { childList: true, subtree: true });
+    } else {
+      body.classList.remove('hide-password-manager-ui');
+      this._passwordManagerObserver?.disconnect();
+      this._passwordManagerObserver = null;
+    }
+  }
+
+  /**
+   * Hide password manager injected UI elements (legacy method, kept for compatibility)
+   */
+  hidePasswordManagerElements() {
+    this.togglePasswordManagerUI(true);
+  }
+
+  /**
    * Switch between panels with fade transition
    * @param {string} targetPanel - 'login', 'theme', or 'logs'
    */
@@ -454,6 +528,15 @@ export default class LoginManager {
     const toPanel = this.panels[targetPanel];
 
     if (!toPanel) return;
+
+    // Hide password manager UI when leaving login panel, show when returning
+    if (targetPanel === 'login') {
+      // Returning to login - re-enable password manager UI
+      this.togglePasswordManagerUI(false);
+    } else {
+      // Going to subpanel - hide password manager UI
+      this.togglePasswordManagerUI(true);
+    }
 
     // Block interactions during transition
     this.enableTransitionOverlay();
@@ -634,6 +717,9 @@ export default class LoginManager {
    * @param {boolean} skipUsernameFocus - If true, focus password (username has value)
    */
   async show(skipUsernameFocus = false) {
+    // Enable password manager UI when showing login
+    this.togglePasswordManagerUI(false);
+    
     if (this.elements.loginPanel) {
       // Step 1: Set display to block (but opacity is still 0 from CSS)
       this.elements.loginPanel.style.display = 'block';
@@ -666,6 +752,9 @@ export default class LoginManager {
   async hide() {
     return new Promise((resolve) => {
       const duration = getTransitionDuration();
+      
+      // Hide password manager UI elements before fading out to main
+      this.togglePasswordManagerUI(true);
       
       // Fade out the current panel only
       // Let the app handle the transition to main manager
@@ -885,6 +974,11 @@ export default class LoginManager {
     if (this.handleKeyUp) {
       document.removeEventListener('keyup', this.handleKeyUp);
     }
+
+    // Clean up password manager UI observer
+    this._passwordManagerObserver?.disconnect();
+    this._passwordManagerObserver = null;
+    document.body.classList.remove('hide-password-manager-ui');
 
     // Remove lookup event listeners
     this.lookupListeners.forEach(unsubscribe => unsubscribe());
