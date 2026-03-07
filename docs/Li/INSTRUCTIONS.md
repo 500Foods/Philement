@@ -46,6 +46,7 @@ elements/003-lithium/
 │   │   ├── json-request.js   # HTTP client with auth
 │   │   ├── permissions.js    # Punchcard permission system
 │   │   ├── config.js         # Runtime config loader
+│   │   ├── icons.js          # Font Awesome icon system
 │   │   └── utils.js          # Utility functions
 │   ├── shared/
 │   │   └── lookups.js        # Server-provided reference data
@@ -98,7 +99,7 @@ This starts Vite dev server on <http://localhost:3000>
 - `npm run build:prod`: Production build with minification
 - `npm run preview`: Preview production build locally
 - `npm run serve`: Serve production build on port 3000
-- `npm test`: Run test suite (127 tests)
+- `npm test`: Run test suite (171 tests)
 - `npm run test:coverage`: Run tests with coverage report
 - `npm run coverage:copy`: Copy coverage report to public/ for deployment
 - `npm run lint`: Run ESLint
@@ -268,6 +269,124 @@ if (!styleEl) {
 styleEl.textContent = ':root { --bg-primary: #0D1117; }';
 ```
 
+## Icon System
+
+Lithium uses a custom icon system built on top of Font Awesome. Instead of using `<i class="fas fa-icon">` directly, use the `<fa>` tag and let the system apply your configured icon set.
+
+### Why `<fa>` Tags?
+
+The `<fa>` tag provides:
+
+- **Consistent icon styling** across the application
+- **Easy theme switching** between icon sets (solid, duotone, thin, etc.)
+- **Server-side icon overrides** via lookups (QueryRef 054)
+- **Automatic SVG conversion** via Font Awesome's mutation observer
+
+### Configuration
+
+Icon configuration is stored in `config/lithium.json`:
+
+```json
+{
+  "icons": {
+    "set": "duotone",
+    "weight": "thin",
+    "prefix": "fad",
+    "fallback": "solid"
+  }
+}
+```
+
+| Option | Values | Description |
+|--------|--------|-------------|
+| `set` | solid, regular, light, thin, duotone, sharp-* | The icon set family |
+| `weight` | thin, light, regular | Weight for duotone/sharp sets |
+| `prefix` | fas, far, fal, fat, fad, fab | Explicit prefix (optional) |
+| `fallback` | solid | Fallback set if requested unavailable |
+
+### Using `<fa>` Tags in HTML
+
+**Direct icon reference:**
+
+```html
+<!-- In your HTML templates -->
+<fa fa-user></fa>
+<fa fa-cog fa-fw></fa>
+<fa fa-trash fa-spin></fa>
+```
+
+**Lookup-based icons (from QueryRef 054):**
+
+```html
+<!-- "Status" is a lookup key that maps to an icon -->
+<fa Status></fa>
+```
+
+Lookup entries have this format:
+
+```json
+{
+  "lookup_value": "Status",
+  "value_txt": "<i class='fa fa-fw fa-flag'></i>"
+}
+```
+
+### Preserved Utility Classes
+
+The following classes are preserved when processing `<fa>` tags:
+
+- **Size:** `fa-xs`, `fa-sm`, `fa-lg`, `fa-xl`, `fa-2x` through `fa-10x`
+- **Animation:** `fa-spin`, `fa-pulse`, `fa-fade`, `fa-beat`, `fa-bounce`
+- **Layout:** `fa-fw`, `fa-border`, `fa-pull-left`, `fa-pull-right`
+- **Rotation:** `fa-rotate-90`, `fa-rotate-180`, `fa-rotate-270`
+
+### Programmatic Icon Manipulation
+
+```javascript
+import { setIcon, createIcon, processIcons } from './core/icons.js';
+
+// Set an icon on an existing element
+const element = document.getElementById('my-icon');
+setIcon(element, 'user', { set: 'solid', classes: ['fa-fw'] });
+// Result: <i class="fas fa-user fa-fw"></i>
+
+// Create a new icon element
+const icon = createIcon('cog', { set: 'duotone', weight: 'thin' });
+// Result: <i class="fad fa-thin fa-cog"></i>
+
+// Process dynamically added <fa> elements
+processIcons(container);
+```
+
+### JavaScript Dynamic Icons
+
+For dynamic icon changes in JavaScript (e.g., toggling a chevron):
+
+```javascript
+import { setIcon } from './core/icons.js';
+
+// Instead of direct class manipulation:
+// icon.className = 'fas fa-chevron-right';
+
+// Use setIcon for consistency:
+setIcon(icon, 'chevron-right');
+setIcon(icon, 'chevron-left');
+```
+
+### Migration from `<i>` to `<fa>`
+
+To migrate existing code:
+
+```html
+<!-- Before -->
+<i class="fas fa-user"></i>
+<i class="fas fa-cog fa-fw"></i>
+
+<!-- After -->
+<fa fa-user></fa>
+<fa fa-cog fa-fw></fa>
+```
+
 ## Authentication (JWT)
 
 ### JWT Flow
@@ -346,7 +465,7 @@ const features = getFeaturesForManager(1); // [1, 2, 3, 4, 5]
 | 4 | Use CSS code editor |
 | 5 | Delete themes |
 
-## Configuration
+## Runtime Configuration
 
 Runtime configuration is stored in `config/lithium.json`:
 
@@ -414,6 +533,7 @@ npm run deploy         # Coverage automatically included
 | config.js | 100% |
 | permissions.js | 96% |
 | utils.js | 88% |
+| icons.js | 85% |
 | jwt.js | 75% |
 | json-request.js | 40% |
 | lookups.js | 37% |

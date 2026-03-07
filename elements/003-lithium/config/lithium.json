@@ -17,6 +17,12 @@
     "default_theme": "dark",
     "default_language": "en-US"
   },
+  "icons": {
+    "set": "duotone",
+    "weight": "thin",
+    "prefix": "fa-duotone fa-thin",
+    "fallback": "solid"
+  },
   "features": {
     "offline_mode": true,
     "install_prompt": true,

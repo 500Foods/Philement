@@ -148,28 +148,28 @@ class CodeMirrorInit {
         <div class="codemirror-nav d-flex justify-content-between align-items-center mb-2">
           <div class="nav-left">
             <button class="btn btn-sm btn-outline-primary mr-2" id="${elementId}-refresh">
-              <i class="fas fa-sync-alt"></i> Refresh
+              <fa fa-sync-alt></fa> Refresh
             </button>
             <button class="btn btn-sm btn-outline-secondary mr-2" id="${elementId}-export">
-              <i class="fas fa-file-export"></i> Export
+              <fa fa-file-export></fa> Export
             </button>
             <button class="btn btn-sm btn-outline-secondary mr-2" id="${elementId}-import">
-              <i class="fas fa-file-import"></i> Import
+              <fa fa-file-import></fa> Import
             </button>
           </div>
           <div class="nav-right">
             <div class="btn-group btn-group-sm" role="group">
               <button class="btn btn-outline-secondary" id="${elementId}-mode-js" title="JavaScript">
-                <i class="fab fa-js"></i> JS
+                <fa fa-js></fa> JS
               </button>
               <button class="btn btn-outline-secondary" id="${elementId}-mode-html" title="HTML">
-                <i class="fab fa-html5"></i> HTML
+                <fa fa-html5></fa> HTML
               </button>
               <button class="btn btn-outline-secondary" id="${elementId}-mode-css" title="CSS">
-                <i class="fab fa-css3"></i> CSS
+                <fa fa-css3></fa> CSS
               </button>
               <button class="btn btn-outline-secondary" id="${elementId}-mode-sql" title="SQL">
-                <i class="fas fa-database"></i> SQL
+                <fa fa-database></fa> SQL
               </button>
             </div>
           </div>

@@ -111,7 +111,7 @@ class PrismInit {
     const copyButton = document.createElement('button');
     copyButton.className = 'prism-copy-btn btn btn-sm btn-outline-secondary';
     copyButton.title = 'Copy to clipboard';
-    copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+    copyButton.innerHTML = '<fa fa-copy></fa>';
     copyButton.style.position = 'absolute';
     copyButton.style.right = '10px';
     copyButton.style.top = '10px';
@@ -121,10 +121,10 @@ class PrismInit {
       const code = element.textContent;
       navigator.clipboard.writeText(code).then(() => {
         // Show success feedback
-        copyButton.innerHTML = '<i class="fas fa-check"></i>';
+        copyButton.innerHTML = '<fa fa-check></fa>';
         copyButton.title = 'Copied!';
         setTimeout(() => {
-          copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+          copyButton.innerHTML = '<fa fa-copy></fa>';
           copyButton.title = 'Copy to clipboard';
         }, 2000);
       }).catch((error) => {
@@ -150,7 +150,7 @@ class PrismInit {
     const downloadButton = document.createElement('button');
     downloadButton.className = 'prism-download-btn btn btn-sm btn-outline-secondary';
     downloadButton.title = 'Download code';
-    downloadButton.innerHTML = '<i class="fas fa-download"></i>';
+    downloadButton.innerHTML = '<fa fa-download></fa>';
     downloadButton.style.position = 'absolute';
     downloadButton.style.right = '50px';
     downloadButton.style.top = '10px';

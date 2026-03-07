@@ -374,20 +374,20 @@ export default class StyleManager {
             
             // Apply button
             html += `<button class="theme-action-btn btn-apply" data-action="apply" data-id="${themeId}" title="Apply theme">
-              <i class="fas fa-check"></i>
+              <fa fa-check></fa>
             </button>`;
             
             // Edit button (if canEdit)
             if (canEdit) {
               html += `<button class="theme-action-btn btn-edit" data-action="edit" data-id="${themeId}" title="Edit theme">
-                <i class="fas fa-edit"></i>
+                <fa fa-edit></fa>
               </button>`;
             }
             
             // Delete button (if canDelete)
             if (canDelete) {
               html += `<button class="theme-action-btn btn-delete" data-action="delete" data-id="${themeId}" title="Delete theme">
-                <i class="fas fa-trash"></i>
+                <fa fa-trash></fa>
               </button>`;
             }
             

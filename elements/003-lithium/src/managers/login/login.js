@@ -194,7 +194,7 @@ export default class LoginManager {
               <div class="input-with-icon">
                 <input type="text" id="login-username" placeholder="Username" required>
                 <button type="button" class="input-icon-btn" id="login-clear-username" data-tooltip="Clear">
-                  <i class="fas fa-xmark"></i>
+                  <fa fa-xmark></fa>
                 </button>
               </div>
             </div>
@@ -202,7 +202,7 @@ export default class LoginManager {
               <div class="input-with-icon">
                 <input type="password" id="login-password" placeholder="Password" required>
                 <button type="button" class="input-icon-btn" id="login-toggle-password" data-tooltip="Show password">
-                  <i class="fas fa-eye"></i>
+                  <fa fa-eye></fa>
                 </button>
               </div>
             </div>
@@ -211,14 +211,14 @@ export default class LoginManager {
             </div>
             <div class="login-btn-group">
               <button type="button" class="login-btn-icon tooltip" id="login-theme-btn" data-tooltip="Select theme">
-                <i class="fas fa-palette"></i>
+                <fa fa-palette></fa>
               </button>
               <button type="submit" class="login-btn-primary tooltip" id="login-submit" data-tooltip="Login">
-                <i class="fas fa-sign-in-alt"></i>
+                <fa fa-sign-in-alt></fa>
                 <span>Login</span>
               </button>
               <button type="button" class="login-btn-icon tooltip" id="login-logs-btn" data-tooltip="View Logs">
-                <i class="fas fa-scroll"></i>
+                <fa fa-scroll></fa>
               </button>
             </div>
           </form>
@@ -648,8 +648,8 @@ export default class LoginManager {
     if (this.elements.submit) {
       this.elements.submit.disabled = loading;
       this.elements.submit.innerHTML = loading
-        ? '<i class="fas fa-spinner fa-spin"></i> <span>Logging in...</span>'
-        : '<i class="fas fa-sign-in-alt"></i> <span>Login</span>';
+        ? '<fa fa-spinner fa-spin></fa> <span>Logging in...</span>'
+        : '<fa fa-sign-in-alt></fa> <span>Login</span>';
     }
 
     // Disable icon buttons during loading
