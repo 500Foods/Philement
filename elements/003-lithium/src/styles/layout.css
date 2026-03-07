@@ -43,8 +43,32 @@
   pointer-events: auto;
 }
 
+/* Hide password manager injected UI elements when body has hide-password-manager-ui class */
+/* 1Password custom elements */
+body.hide-password-manager-ui com-1password-button,
+body.hide-password-manager-ui [id*="1p-"],
+body.hide-password-manager-ui [class*="1password"],
+/* LastPass */
+body.hide-password-manager-ui [class*="lastpass"],
+body.hide-password-manager-ui [id*="lastpass"],
+/* Bitwarden */
+body.hide-password-manager-ui [class*="bitwarden"],
+body.hide-password-manager-ui [data-bitwarden],
+/* Dashlane */
+body.hide-password-manager-ui [class*="dashlane"],
+body.hide-password-manager-ui [data-dashlane],
+/* Generic autofill indicators */
+body.hide-password-manager-ui [class*="autofill"][role="button"],
+body.hide-password-manager-ui [class*="password-icon"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 .login-container {
   width: 360px;
+  position: relative;
   background-color: var(--bg-secondary);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-lg);
@@ -91,6 +115,8 @@
   gap: 2px;    
   outline: 5px solid var(--accent-primary);
   outline-offset: -10px;       
+  line-height: 1;
+  height: 35px;
 }
 
 .subpanel-header-group > button {
@@ -122,11 +148,14 @@
   background-color: var(--accent-primary);
   border: none;
   color: white;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-medium);
   cursor: default;
   transition: background-color var(--transition-fast);
   text-align: left;
+}
+.subpanel-header-primary > span {
+  font-size: var(--font-size-base);
 }
 
 /* Close button in header */
@@ -134,12 +163,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
   padding: var(--space-3);
   background-color: var(--accent-primary);
   border: none;
   color: white;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-xl);
   cursor: pointer;
   transition: background-color var(--transition-fast);
 }
@@ -428,6 +456,26 @@
   letter-spacing: 0.02em;
 }
 
+/* Version info under title - "ver X.X.XXXXX rel YYYY-Mon-DD HH:MM UTC" */
+.login-version-info {
+  font-size: var(--font-size-us) !important;
+  font-family: var(--font-mono);
+  margin: var(--space-1) 0 0;
+}
+
+.login-version-info .ver {
+  color: var(--accent-primary);
+}
+
+.login-version-info .rel {
+  color: var(--accent-primary);
+}
+
+.login-version-info .version-number,
+.login-version-info .release-date {
+  color: var(--text-muted);
+}
+
 .login-form {
   padding: var(--space-5);
   margin-top: calc(-1 * var(--space-5));
@@ -440,7 +488,7 @@
 .form-group input {
   width: 100%;
   padding: var(--space-3) var(--space-4);
-  background-color: var(--bg-input);
+  background: var(--bg-input) !important;
   border: var(--border-standard);
   border-radius: var(--border-radius-md);
   color: var(--text-primary);
@@ -573,7 +621,7 @@
   border: none;
   border-radius: var(--border-radius-md);
   color: white;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: background-color var(--transition-fast);
@@ -595,6 +643,8 @@
   margin-top: var(--space-5);
   outline: 5px solid var(--accent-primary);
   outline-offset: -10px;       
+  line-height: 1;
+  height: 35px;
 }
 
 .login-btn-group > button {
@@ -633,14 +683,13 @@
   background-color: var(--accent-primary);
   border: none;
   color: white;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: background-color var(--transition-fast);
 }
-
-.login-btn-primary:hover {
-  background-color: var(--accent-hover);
+.login-btn-primary > span {
+  font-size: var(--font-size-lg);
 }
 
 .login-btn-primary:disabled {
@@ -653,12 +702,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
   padding: var(--space-3);
   background-color: var(--accent-primary);
   border: none;
   color: white;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-xl);
   cursor: pointer;
   transition: background-color var(--transition-fast);
   margin: 0px 1px 0px 1px !important;
@@ -777,7 +825,7 @@
   border: none;
   border-radius: var(--border-radius-md);
   color: var(--text-secondary);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-xl);
   text-align: left;
   cursor: pointer;
   transition: all var(--transition-fast);

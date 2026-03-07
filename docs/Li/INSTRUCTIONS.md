@@ -31,7 +31,8 @@ elements/003-lithium/
 ├── config/
 │   └── lithium.json            # Runtime configuration
 ├── scripts/
-│   └── bump-version.js         # Auto-increment build on deploy
+│   ├── bump-version.js         # Auto-increment build on deploy
+│   └── copy-templates.js      # Copy manager HTML templates to public/
 ├── public/                      # Static assets (copied as-is to dist/)
 │   ├── manifest.json           # PWA manifest
 │   ├── service-worker.js       # PWA service worker (CACHE_VERSION = build)
@@ -41,6 +42,7 @@ elements/003-lithium/
 │   └── src/managers/          # HTML templates for runtime fetch
 │       ├── login/login.html
 │       ├── main/main.html
+│       ├── profile-manager/profile-manager.html
 │       └── style-manager/style-manager.html
 ├── src/
 │   ├── app.js                 # Bootstrap + manager loader
@@ -106,6 +108,7 @@ This starts Vite dev server on <http://localhost:3000>
 - `npm test`: Run test suite (171 tests)
 - `npm run test:coverage`: Run tests with coverage report
 - `npm run coverage:copy`: Copy coverage report to public/ for deployment
+- `npm run templates:copy`: Copy manager HTML templates to public/ for deployment
 - `npm run version:bump`: Increment build number, update service worker cache version
 - `npm run lint`: Run ESLint
 - `npm run format`: Format code with Prettier
@@ -191,14 +194,10 @@ this.managerRegistry = {
 3. Create `new-manager.html` template
 4. Create `new-manager.css` styles
 5. Register in `app.js` managerRegistry
-6. **Copy HTML template to public folder:**
+6. HTML templates are copied automatically on deploy
 
-   ```bash
-   mkdir -p public/src/managers/new-manager
-   cp src/managers/new-manager/new-manager.html public/src/managers/new-manager/
-   ```
-
-> **Important:** HTML templates are fetched at runtime, not bundled by Vite. They must exist in `public/src/managers/{name}/` to be available in production. The `coverage:copy` script handles this automatically for existing managers during deployment.
+   The `templates:copy` script runs automatically during `npm run deploy` to copy
+   all manager HTML templates from `src/managers/` to `public/src/managers/`.
 
 ## Event Bus
 
@@ -744,10 +743,11 @@ npm run deploy
 1. Validates `$LITHIUM_DEPLOY` is set
 2. Runs full test suite with coverage report
 3. Copies coverage report to `public/` for deployment
-4. Bumps build number in `version.json`, updates service worker `CACHE_VERSION`
-5. Builds directly to deployment directory
-6. Copies `config/lithium.json` if not present (preserves runtime config)
-7. Minifies HTML and service worker
+4. Copies manager HTML templates to `public/` for deployment
+5. Bumps build number in `version.json`, updates service worker `CACHE_VERSION`
+6. Builds directly to deployment directory
+7. Copies `config/lithium.json` if not present (preserves runtime config)
+8. Minifies HTML and service worker
 
 ## Common Tasks
 
@@ -933,7 +933,7 @@ open "http://localhost:3000/?USER=$HYDROGEN_DEMO_USER_NAME&PASS=$HYDROGEN_DEMO_U
 If managers fail to load with 404 errors for `.html` files:
 
 1. Verify templates exist in `public/src/managers/{name}/`
-2. Ensure `coverage:copy` ran before deploy (it copies manager templates too)
+2. Run `npm run templates:copy` to copy templates to public/
 3. Check that `public/` is copied to deployment directory
 
 ### Font Awesome Icons Not Loading

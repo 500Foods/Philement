@@ -14,17 +14,6 @@
   justify-content: center;
   background: var(--bg-primary);
   z-index: 1000;
-  opacity: 0;
-  transition: opacity 0.8s ease;
-}
-
-#login-page.visible {
-  opacity: 1;
-}
-
-#login-page.fade-out {
-  opacity: 0;
-  pointer-events: none;
 }
 
 /* Login container card */
@@ -34,11 +23,18 @@
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.login-container.visible {
+  opacity: 1;
 }
 
 /* Gradient header with logo and title */
 .login-header {
   display: flex;
+  position: relative;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-5);
@@ -70,6 +66,26 @@
   margin: var(--space-1) 0 0;
   opacity: 0.9;
   color: white;
+}
+
+/* Login header version info box */
+.login-header .version-box {
+  display: block;
+  padding: 6px 5px 4px 5px;
+  background: #00000040;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: var(--border-radius-sm);
+  position: absolute;
+  right: var(--space-5);
+}
+
+.login-header .version-row {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
 }
 
 /* Login form */

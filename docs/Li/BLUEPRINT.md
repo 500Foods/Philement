@@ -476,12 +476,13 @@ npm run coverage:copy   # Copy coverage report to public/ for deployment
 1. `predeploy` — Validates `$LITHIUM_DEPLOY` is set
 2. `test:coverage` — Runs full test suite with coverage report
 3. `coverage:copy` — Copies coverage report to `public/` for deployment
-4. `version:bump` — Increments build number in `version.json`, updates
+4. `templates:copy` — Copies manager HTML templates to `public/` for deployment
+5. `version:bump` — Increments build number in `version.json`, updates
    service worker `CACHE_VERSION`, copies `version.json` to `public/`
-5. `vite build --mode deploy` — Builds directly to `$LITHIUM_DEPLOY`
+6. `vite build --mode deploy` — Builds directly to `$LITHIUM_DEPLOY`
    (does **not** empty the directory, preserving runtime config)
-6. `deploy:config` — Copies `config/lithium.json` only if not already present
-7. `deploy:postbuild` — Minifies HTML and service worker in-place
+7. `deploy:config` — Copies `config/lithium.json` only if not already present
+8. `deploy:postbuild` — Minifies HTML and service worker in-place
 
 ### Config Handling
 

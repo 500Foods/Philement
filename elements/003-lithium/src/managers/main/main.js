@@ -78,6 +78,7 @@ export default class MainManager {
       this.loadUserInfo();
       this.buildSidebar();
       this.loadSidebarState();
+      this.updateVersionBox();
       
       // Only run show animation if not skipping (e.g., during crossfade transition)
       if (!options.skipShowAnimation) {
@@ -129,6 +130,11 @@ export default class MainManager {
       sidebarOverlay: this.container.querySelector('#sidebar-overlay'),
       mobileMenuBtn: this.container.querySelector('#mobile-menu-btn'),
       headerTitle: this.container.querySelector('#header-title'),
+      versionBox: this.container.querySelector('#version-box'),
+      versionBuild: this.container.querySelector('#version-build'),
+      versionYear: this.container.querySelector('#version-year'),
+      versionDate: this.container.querySelector('#version-date'),
+      versionTime: this.container.querySelector('#version-time'),
       workspace: this.container.querySelector('#workspace'),
       logoutBtn: this.container.querySelector('#logout-btn'),
       profileBtn: this.container.querySelector('#profile-btn'),
@@ -442,6 +448,32 @@ export default class MainManager {
     } catch (error) {
       console.warn('[MainManager] Failed to load sidebar state:', error);
     }
+  }
+
+  /**
+   * Update the version info box with build and timestamp data
+   * Displays: build, YYYY, MMDD, HHMM
+   */
+  updateVersionBox() {
+    if (!this.elements.versionBuild || !this.app?.build) return;
+
+    const build = this.app.build;
+    const timestamp = this.app.timestamp || new Date().toISOString();
+
+    // Parse the timestamp
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    // Month is 0-indexed, so add 1 and pad with leading zero
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    // Update the version box elements
+    this.elements.versionBuild.textContent = build;
+    this.elements.versionYear.textContent = year;
+    this.elements.versionDate.textContent = month + day;
+    this.elements.versionTime.textContent = hours + minutes;
   }
 
   /**
