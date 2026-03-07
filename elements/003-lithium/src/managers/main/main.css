@@ -229,7 +229,7 @@
   flex-direction: column;
   flex-shrink: 0;
   position: relative;
-  transition: width var(--transition-std) ease, min-width var(--transition-std) ease, max-width var(--transition-std) ease;
+  transition: width calc(var(--transition-duration) / 2) ease, min-width calc(var(--transition-duration) / 2) ease, max-width calc(var(--transition-duration) / 2) ease;
 }
 
 /* Collapsed state */
@@ -269,7 +269,7 @@
   color: white;
   white-space: nowrap;
   overflow: hidden;
-  transition: opacity var(--transition-std) ease, width var(--transition-std) ease;
+  transition: opacity calc(var(--transition-duration) / 2) ease, width calc(var(--transition-duration) / 2) ease;
 }
 
 /* Hide title when collapsed */
@@ -319,7 +319,7 @@
 .menu-item span {
   white-space: nowrap;
   overflow: hidden;
-  transition: opacity var(--transition-std) ease;
+  transition: opacity calc(var(--transition-duration) / 2) ease;
 }
 
 /* Hide text when collapsed */
@@ -329,66 +329,165 @@
 }
 
 /* ========================================
-   Sidebar Footer with Icon Group
+   Sidebar Footer with Icon Group — Two-Stage Animation
+
+   Collapse:
+     Stage 1 — Icons slide horizontally behind the arrow icon,
+               sidebar narrows, arrow rotates left → up.
+     Stage 2 — flex-direction snaps to column, icons fan out
+               vertically, arrow rotates up → right.
+
+   Expand (reverse):
+     Stage 1 — Icons collapse vertically back to a stack,
+               arrow rotates right → down.
+     Stage 2 — flex-direction snaps to row, icons fan out
+               horizontally, sidebar widens, arrow rotates
+               down → left.
+
+   Transforms are JS-driven for per-stage coordination.
+   CSS controls layout, sizing, and border-radius.
+   Each stage uses half of --transition-duration.
    ======================================== */
 
 .sidebar-footer {
   padding: var(--space-2);
   border-top: var(--border-standard);
   flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
 }
 
-/* Icon group matching login button group style */
+/* Icon group container */
 .sidebar-icon-group {
+  /* Animation tuning — adjust these to resize icons / spacing */
+  --icon-h: 35px;
+  --icon-w: 40px;
+  --icon-gap: 2px;
+  --icon-count: 5;
+  --stage-dur: calc(var(--transition-duration) / 2);
+
   display: flex;
-  gap: 0;    
+  flex-direction: row;
+  gap: var(--icon-gap);
+  width: 100%;
+  height: var(--icon-h);
+  position: relative;
+  overflow: hidden;
+  transition: width var(--stage-dur) ease,
+              height var(--stage-dur) ease;
   outline: 5px solid var(--accent-primary);
   outline-offset: -10px;
-  line-height: 1;
+}
+
+/* Individual icon wrapper */
+.sidebar-icon-wrapper {
+  position: relative;
+  flex: 1 0 var(--icon-w);
+  min-width: var(--icon-w);
+  display: flex;
+  align-items: stretch;
   justify-content: stretch;
-  height: 35px;
-}
-
-.sidebar-icon-group > button {
-  margin: 0;
-  border-radius: 0;
   z-index: 1;
+  /* transform is JS-driven; flex-grow animates for layout/outline sync */
+  transition: transform var(--stage-dur) ease,
+              flex-grow var(--stage-dur) ease;
 }
 
-/* Left button - rounded left corners */
-.sidebar-icon-group > button:first-child {
-  border-top-left-radius: var(--border-radius-md);
-  border-bottom-left-radius: var(--border-radius-md);
-}
+/* Z-index stacking order — first icon (arrow) on top */
+.sidebar-icon-wrapper[data-index="0"] { z-index: 5; }
+.sidebar-icon-wrapper[data-index="1"] { z-index: 4; }
+.sidebar-icon-wrapper[data-index="2"] { z-index: 3; }
+.sidebar-icon-wrapper[data-index="3"] { z-index: 2; }
+.sidebar-icon-wrapper[data-index="4"] { z-index: 1; }
 
-/* Right button - rounded right corners */
-.sidebar-icon-group > button:last-child {
-  border-top-right-radius: var(--border-radius-md);
-  border-bottom-right-radius: var(--border-radius-md);
-}
-
-/* Middle buttons - remove side borders to blend together */
-.sidebar-icon-group > button:not(:first-child):not(:last-child) {
-  border-left: none;
-  border-right: none;
-}
-
-/* Icon-only buttons matching login-btn-icon style */
+/* Icon button styling */
 .sidebar-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-3);
-  margin: 0px 1px 0px 1px !important;
+  margin: 0;
+  width: 100%;
+  height: 100%;
   background-color: var(--accent-primary);
   border: none;
   color: white;
   font-size: var(--font-size-xl);
   cursor: pointer;
-  transition: background-color var(--transition-fast), transform var(--transition-std) ease;
+  transition:
+    background-color var(--transition-fast),
+    border-radius var(--stage-dur) ease;
   position: relative;
-  flex-grow: 1;
 }
+
+/* ---- Expanded state (default) ---- */
+
+.sidebar-icon-group:not(.collapsed) .sidebar-icon-btn {
+  border-radius: 0;
+}
+
+.sidebar-icon-group:not(.collapsed) .sidebar-icon-wrapper:first-child .sidebar-icon-btn {
+  border-top-left-radius: var(--border-radius-md);
+  border-bottom-left-radius: var(--border-radius-md);
+}
+
+.sidebar-icon-group:not(.collapsed) .sidebar-icon-wrapper:last-child .sidebar-icon-btn {
+  border-top-right-radius: var(--border-radius-md);
+  border-bottom-right-radius: var(--border-radius-md);
+}
+
+/* ---- Stage 1: Collapsed / stacked ---- */
+
+.sidebar-icon-group.collapsed {
+  width: var(--icon-w);
+  height: var(--icon-h);
+}
+
+.sidebar-icon-group.collapsed .sidebar-icon-wrapper {
+  flex: 0 0 var(--icon-w);
+}
+
+/* All buttons get full rounding when stacked */
+.sidebar-icon-group.collapsed .sidebar-icon-btn {
+  border-radius: var(--border-radius-md);
+}
+
+/* ---- Stage 2: Collapsed + vertical (fanned out) ---- */
+
+.sidebar-icon-group.collapsed.vertical {
+  flex-direction: column;
+  height: calc(var(--icon-count) * var(--icon-h)
+             + (var(--icon-count) - 1) * var(--icon-gap));
+  outline-offset: -15px;
+}
+
+.sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper {
+  flex: 0 0 var(--icon-h);
+}
+
+/* Top / bottom rounding in vertical layout */
+.sidebar-icon-group.collapsed.vertical .sidebar-icon-btn {
+  border-radius: 0;
+}
+
+.sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper:first-child .sidebar-icon-btn {
+  border-top-left-radius: var(--border-radius-md);
+  border-top-right-radius: var(--border-radius-md);
+}
+
+.sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper:last-child .sidebar-icon-btn {
+  border-bottom-left-radius: var(--border-radius-md);
+  border-bottom-right-radius: var(--border-radius-md);
+}
+
+/* ---- Stacking override (full rounding while icons collapse to stack) ---- */
+
+.sidebar-icon-group.stacking .sidebar-icon-btn {
+  border-radius: var(--border-radius-md) !important;
+}
+
+/* ---- Hover / disabled ---- */
 
 .sidebar-icon-btn:hover {
   background-color: var(--accent-hover);
@@ -399,21 +498,19 @@
   cursor: not-allowed;
 }
 
-/* Logout button - danger color on hover */
 .sidebar-icon-btn.sidebar-logout:hover {
   background-color: var(--accent-danger);
 }
 
-/* Collapse icon rotation animation */
+/* ---- Collapse icon (arrow) rotation ---- */
+/* JS drives the rotation value for multi-stage directional control */
+
 #collapse-icon {
-  transition: transform var(--transition-std) ease;
+  transition: transform calc(var(--transition-duration) / 2) ease;
 }
 
-.main-sidebar.collapsed #collapse-icon {
-  transform: rotate(180deg);
-}
+/* ---- Tooltips ---- */
 
-/* Tooltip styling for sidebar buttons */
 .sidebar-icon-btn[data-tooltip]::after,
 .sidebar-icon-btn[title]::after {
   content: attr(title);
@@ -441,7 +538,6 @@
   visibility: visible;
 }
 
-/* Hide tooltips when sidebar is expanded (titles are visible) */
 .main-sidebar:not(.collapsed) .sidebar-icon-btn[title]::after {
   display: none;
 }
@@ -751,6 +847,20 @@ body.resizing * {
     width: auto;
   }
 
+  /* Reset icon group to expanded horizontal on mobile */
+  .sidebar-icon-group.collapsed,
+  .sidebar-icon-group.collapsed.vertical {
+    flex-direction: row !important;
+    width: 100% !important;
+    height: var(--icon-h, 35px) !important;
+  }
+
+  .sidebar-icon-group.collapsed .sidebar-icon-wrapper,
+  .sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper {
+    flex: 1 1 var(--icon-w, 40px) !important;
+    transform: none !important;
+  }
+
   .sidebar-splitter {
     display: none;
   }
@@ -759,9 +869,9 @@ body.resizing * {
     display: flex;
   }
 
-  /* Reset collapse icon on mobile */
-  .main-sidebar.collapsed #collapse-icon {
-    transform: none;
+  /* Arrow rotation is JS-driven; force-reset on mobile */
+  #collapse-icon {
+    transform: none !important;
   }
 }
 
@@ -771,6 +881,8 @@ body.resizing * {
   .main-sidebar,
   .menu-item,
   .sidebar-icon-btn,
+  .sidebar-icon-wrapper,
+  .sidebar-icon-group,
   .header-btn,
   .manager-container,
   .logout-overlay,
