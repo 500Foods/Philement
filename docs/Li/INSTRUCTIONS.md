@@ -269,6 +269,69 @@ if (!styleEl) {
 styleEl.textContent = ':root { --bg-primary: #0D1117; }';
 ```
 
+### Button Group Design Pattern
+
+Lithium uses a consistent button group pattern for related actions and panel headers. This design features:
+
+- **Small gaps** (2px) between buttons
+- **Connected appearance** with shared height and alignment
+- **Rounded corners** on first and last buttons
+- **Consistent styling** using accent colors
+
+**Example: Login Button Group**
+
+```html
+<div class="login-btn-group">
+  <button type="button" class="login-btn-icon" id="login-language-btn">
+    <fa fa-globe></fa>
+  </button>
+  <button type="button" class="login-btn-icon" id="login-theme-btn">
+    <fa fa-palette></fa>
+  </button>
+  <button type="submit" class="login-btn-primary" id="login-submit">
+    <fa fa-sign-in-alt></fa>
+    <span>Login</span>
+  </button>
+  <button type="button" class="login-btn-icon" id="login-logs-btn">
+    <fa fa-scroll></fa>
+  </button>
+  <button type="button" class="login-btn-icon" id="login-help-btn">
+    <fa fa-circle-question></fa>
+  </button>
+</div>
+```
+
+**Example: Panel Header Button Group**
+
+```html
+<div class="subpanel-header-group">
+  <button type="button" class="subpanel-header-btn subpanel-header-primary">
+    <fa fa-palette></fa>
+    <span>Select Theme</span>
+  </button>
+  <button type="button" class="subpanel-header-btn subpanel-header-close" id="theme-close-btn">
+    <fa fa-xmark></fa>
+  </button>
+</div>
+```
+
+**CSS Classes:**
+
+| Class | Purpose |
+|-------|---------|
+| `.login-btn-group` | Container for login page buttons |
+| `.login-btn-icon` | Icon-only buttons in the group |
+| `.login-btn-primary` | Main action button (flex: 1) |
+| `.subpanel-header-group` | Container for panel header buttons |
+| `.subpanel-header-primary` | Icon + text title button (flex: 1) |
+| `.subpanel-header-close` | Close button (fixed width) |
+
+**When to use this pattern:**
+
+- Grouping related actions (login buttons, panel controls)
+- Panel headers with icon + title and close button
+- Anywhere you need visually connected buttons with a cohesive look
+
 ## Icon System
 
 Lithium uses a custom icon system built on top of Font Awesome. Instead of using `<i class="fas fa-icon">` directly, use the `<fa>` tag and let the system apply your configured icon set.
