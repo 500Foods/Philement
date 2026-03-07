@@ -38,8 +38,48 @@ export default class LoginManager {
     this.initializeButtonStates();
     this.show();
 
+    // Load remembered username and set focus after panel is visible
+    this.loadRememberedUsername();
+
     // Check for URL query parameters for auto-login
     this.checkForAutoLogin();
+  }
+
+  /**
+   * Load remembered username from localStorage
+   * If username exists, pre-fill it and focus password field
+   */
+  loadRememberedUsername() {
+    try {
+      const rememberedUsername = localStorage.getItem('lithium_last_username');
+      if (rememberedUsername && this.elements.username) {
+        this.elements.username.value = rememberedUsername;
+      }
+      
+      // Focus password if username has a value (either remembered or pre-filled)
+      if (this.elements.username?.value && this.elements.password) {
+        // Small delay to ensure element is visible and interactive
+        requestAnimationFrame(() => {
+          this.elements.password.focus();
+        });
+      }
+    } catch (error) {
+      console.warn('[LoginManager] Could not load remembered username:', error);
+    }
+  }
+
+  /**
+   * Save username to localStorage for next visit
+   * @param {string} username - Username to remember
+   */
+  saveRememberedUsername(username) {
+    try {
+      if (username) {
+        localStorage.setItem('lithium_last_username', username);
+      }
+    } catch (error) {
+      console.warn('[LoginManager] Could not save username:', error);
+    }
   }
 
   /**
@@ -48,10 +88,14 @@ export default class LoginManager {
    */
   initializeButtonStates() {
     // Start with buttons disabled
+    this.setLanguageButtonEnabled(false);
     this.setThemeButtonEnabled(false);
     this.setLogsButtonEnabled(false);
 
     // If lookups are already loaded, enable buttons immediately
+    if (hasLookup('lookup_names')) {
+      this.setLanguageButtonEnabled(true);
+    }
     if (hasLookup('themes')) {
       this.setThemeButtonEnabled(true);
     }
@@ -64,6 +108,11 @@ export default class LoginManager {
    * Set up event listeners for lookups loaded events
    */
   setupLookupListeners() {
+    // Listen for lookup_names lookup - enable language button when translations are available
+    const handleLookupNamesLoaded = () => {
+      this.setLanguageButtonEnabled(true);
+    };
+
     // Listen for themes lookup - enable theme button when themes are loaded
     const handleThemesLoaded = () => {
       this.setThemeButtonEnabled(true);
@@ -75,10 +124,12 @@ export default class LoginManager {
     };
 
     // Subscribe to specific lookup events
+    eventBus.on(Events.LOOKUPS_LOOKUP_NAMES_LOADED, handleLookupNamesLoaded);
     eventBus.on(Events.LOOKUPS_THEMES_LOADED, handleThemesLoaded);
     eventBus.on(Events.LOOKUPS_SYSTEM_INFO_LOADED, handleSystemInfoLoaded);
 
     // Store unsubscribe functions for cleanup
+    this.lookupListeners.push(() => eventBus.off(Events.LOOKUPS_LOOKUP_NAMES_LOADED, handleLookupNamesLoaded));
     this.lookupListeners.push(() => eventBus.off(Events.LOOKUPS_THEMES_LOADED, handleThemesLoaded));
     this.lookupListeners.push(() => eventBus.off(Events.LOOKUPS_SYSTEM_INFO_LOADED, handleSystemInfoLoaded));
   }
@@ -100,6 +151,16 @@ export default class LoginManager {
   setLogsButtonEnabled(enabled) {
     if (this.elements.logsBtn) {
       this.elements.logsBtn.disabled = !enabled;
+    }
+  }
+
+  /**
+   * Enable or disable the language button
+   * @param {boolean} enabled - Whether to enable the button
+   */
+  setLanguageButtonEnabled(enabled) {
+    if (this.elements.languageBtn) {
+      this.elements.languageBtn.disabled = !enabled;
     }
   }
 
@@ -371,7 +432,7 @@ export default class LoginManager {
   }
 
   /**
-   * Perform the actual panel transition animation
+   * Perform the actual panel transition animation with crossfade
    */
   async performPanelTransition(fromElement, toElement) {
     const duration = getTransitionDuration();
@@ -380,34 +441,80 @@ export default class LoginManager {
     const isLoginPanel = toElement === this.elements.loginPanel;
     const targetDisplay = isLoginPanel ? 'block' : 'flex';
 
-    // Step 1: Fade out current panel (opacity 1 -> 0)
-    if (fromElement) {
-      fromElement.classList.remove('visible');
-    }
-
-    // Step 2: Wait for fade out transition to complete
-    await waitForTransition(duration);
-
-    // Step 3: Hide the from element after fade out
-    if (fromElement) {
-      fromElement.style.display = 'none';
-    }
-
-    // Step 4: Show the to element (opacity is still 0)
-    if (toElement) {
-      toElement.style.display = targetDisplay;
+    // If we have both elements, do a true crossfade with absolute positioning
+    if (fromElement && toElement) {
+      // Get current dimensions before we modify anything
+      const fromWidth = fromElement.offsetWidth;
+      const fromHeight = fromElement.offsetHeight;
+      const toWidth = toElement.offsetWidth || fromWidth; // fallback if not yet rendered
+      const toHeight = toElement.offsetHeight || fromHeight;
       
-      // Force reflow to ensure display is applied before opacity change
+      // Position both panels absolutely in the center of the container
+      // This ensures they overlap perfectly during the crossfade
+      const centerStyles = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        margin: 0;
+      `;
+      
+      // Apply absolute positioning to from element (keep visible during fade)
+      fromElement.style.cssText = `
+        ${centerStyles}
+        width: ${fromWidth}px;
+        height: ${fromHeight}px;
+        display: ${fromElement.style.display || (fromElement === this.elements.loginPanel ? 'block' : 'flex')};
+        opacity: 1;
+        transition: opacity ${duration}ms ease-in-out;
+        z-index: 1;
+      `;
+      
+      // Prepare target element - also absolutely positioned in center
+      toElement.style.cssText = `
+        ${centerStyles}
+        width: ${toElement === this.elements.loginPanel ? '360px' : '480px'};
+        display: ${targetDisplay};
+        opacity: 0;
+        transition: opacity ${duration}ms ease-in-out;
+        z-index: 2;
+      `;
+      
+      // Force reflow
       void toElement.offsetHeight;
+
+      // Start crossfade
+      requestAnimationFrame(() => {
+        // Fade out current panel
+        fromElement.style.opacity = '0';
+        
+        // Fade in new panel (with slight delay for overlap effect)
+        setTimeout(() => {
+          toElement.style.opacity = '1';
+        }, duration / 4);
+      });
+
+      // Wait for transition to complete
+      await waitForTransition(duration + duration / 4 + 50);
+
+      // Clean up from element
+      fromElement.style.cssText = 'display: none;';
       
-      // Step 5: Fade in new panel (opacity 0 -> 1)
+      // Restore target element to normal flow (remove absolute positioning)
+      // Keep its natural display and size
+      toElement.style.cssText = '';
+      toElement.style.display = targetDisplay;
+      toElement.style.opacity = '1';
+      toElement.classList.add('visible');
+    } else if (toElement) {
+      // No from element, just fade in normally
+      toElement.style.display = targetDisplay;
+      void toElement.offsetHeight;
       requestAnimationFrame(() => {
         toElement.classList.add('visible');
       });
+      await waitForTransition(duration);
     }
-
-    // Step 6: Wait for fade in to complete
-    await waitForTransition(duration);
   }
 
   /**
@@ -441,13 +548,17 @@ export default class LoginManager {
 
   /**
    * Handle clear username button click
+   * Clears both username and password, then focuses username for immediate typing
    */
   handleClearUsername() {
     if (this.elements.username) {
       this.elements.username.value = '';
       this.elements.username.focus();
-      this.hideError();
     }
+    if (this.elements.password) {
+      this.elements.password.value = '';
+    }
+    this.hideError();
   }
 
   /**
@@ -601,6 +712,9 @@ export default class LoginManager {
       throw new Error('No token received from server');
     }
 
+    // Remember username for next visit
+    this.saveRememberedUsername(username);
+
     // Success - emit login event
     eventBus.emit(Events.AUTH_LOGIN, {
       userId: data.user_id,
@@ -687,14 +801,16 @@ export default class LoginManager {
     }
 
     // Disable icon buttons during loading
+    // Note: Language, Theme, and Logs buttons are also controlled by lookup availability
+    // We'll respect the lookup-based state when not loading
     if (this.elements.languageBtn) {
-      this.elements.languageBtn.disabled = loading;
+      this.elements.languageBtn.disabled = loading || !hasLookup('lookup_names');
     }
     if (this.elements.themeBtn) {
-      this.elements.themeBtn.disabled = loading;
+      this.elements.themeBtn.disabled = loading || !hasLookup('themes');
     }
     if (this.elements.logsBtn) {
-      this.elements.logsBtn.disabled = loading;
+      this.elements.logsBtn.disabled = loading || !hasLookup('system_info');
     }
     if (this.elements.helpBtn) {
       this.elements.helpBtn.disabled = loading;

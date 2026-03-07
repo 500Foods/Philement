@@ -16,6 +16,7 @@ import { getPermittedManagers } from './core/permissions.js';
 import { createRequest } from './core/json-request.js';
 import { fetchLookups, init as initLookups } from './shared/lookups.js';
 import { init as initIcons } from './core/icons.js';
+import { getTransitionDuration } from './core/transitions.js';
 
 /**
  * Main Lithium Application Class
@@ -286,6 +287,7 @@ class LithiumApp {
   setupEventListeners() {
     // Auth events
     eventBus.on(Events.AUTH_LOGIN, (event) => this.handleLogin(event.detail));
+    eventBus.on('logout:initiate', () => this.handleLogoutTransition());
     eventBus.on(Events.AUTH_LOGOUT, () => this.handleLogout());
     eventBus.on(Events.AUTH_EXPIRED, () => this.handleAuthExpired());
 
@@ -319,12 +321,129 @@ class LithiumApp {
       this.scheduleTokenRenewal(token);
     }
 
-    // Transition to main manager
-    await this.loadMainManager();
+    // Crossfade transition from login to main manager
+    await this.transitionToMainManager();
   }
 
   /**
-   * Handle logout
+   * Perform crossfade transition from login to main manager
+   */
+  async transitionToMainManager() {
+    const container = document.getElementById('app');
+    const loginElement = container.firstElementChild;
+    
+    if (!loginElement) {
+      // Fallback: just load main manager normally
+      await this.loadMainManager();
+      return;
+    }
+
+    const duration = getTransitionDuration();
+
+    try {
+      // Create and load main manager in a new container
+      const { default: MainManager } = await import('./managers/main/main.js');
+      const permittedManagers = getPermittedManagers();
+
+      // Create wrapper for main manager with initial opacity 0
+      const mainWrapper = document.createElement('div');
+      mainWrapper.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        opacity: 0;
+        transition: opacity ${duration}ms ease-in-out;
+        z-index: 10;
+      `;
+      container.appendChild(mainWrapper);
+
+      // Initialize main manager (skip internal show animation, we handle it via crossfade)
+      const mainManager = new MainManager(this, mainWrapper, permittedManagers);
+      await mainManager.init({ skipShowAnimation: true });
+
+      // Start crossfade: fade out login, fade in main
+      requestAnimationFrame(() => {
+        // Fade out login
+        if (loginElement) {
+          loginElement.style.transition = `opacity ${duration}ms ease-in-out`;
+          loginElement.style.opacity = '0';
+        }
+        // Fade in main (with slight delay for overlap effect)
+        setTimeout(() => {
+          mainWrapper.style.opacity = '1';
+        }, duration / 4);
+      });
+
+      // Wait for transition to complete
+      await new Promise(resolve => setTimeout(resolve, duration + 50));
+
+      // Remove login element
+      if (loginElement) {
+        loginElement.remove();
+      }
+      
+      // Clean up transition styles but keep opacity at 1
+      // This prevents a flash when removing the transition
+      mainWrapper.style.transition = '';
+      mainWrapper.style.opacity = '1';
+      mainWrapper.style.position = '';
+      mainWrapper.style.top = '';
+      mainWrapper.style.left = '';
+      mainWrapper.style.right = '';
+      mainWrapper.style.bottom = '';
+      mainWrapper.style.zIndex = '';
+
+      // Update current manager reference
+      this.currentManager = { name: 'main', instance: mainManager };
+
+      console.log('[Lithium] Main manager loaded with crossfade transition');
+    } catch (error) {
+      console.error('[Lithium] Failed to transition to main manager:', error);
+      // Fallback: clear and load normally
+      container.innerHTML = '';
+      await this.loadMainManager();
+    }
+  }
+
+  /**
+   * Handle logout with fade out transition and page reload
+   */
+  async handleLogoutTransition() {
+    console.log('[Lithium] Initiating logout with fade transition...');
+
+    const container = document.getElementById('app');
+    const mainElement = container?.firstElementChild;
+    const duration = getTransitionDuration();
+
+    // Fade out main content
+    if (mainElement) {
+      mainElement.style.transition = `opacity ${duration}ms ease-in-out`;
+      mainElement.style.opacity = '0';
+      
+      // Wait for fade out
+      await new Promise(resolve => setTimeout(resolve, duration));
+    }
+
+    // Call logout API
+    try {
+      await this.api.post('auth/logout');
+    } catch (error) {
+      console.warn('[Lithium] Logout API call failed:', error);
+    }
+
+    // Clear JWT
+    const { clearJWT } = await import('./core/jwt.js');
+    clearJWT();
+
+    // Reload page for clean state
+    console.log('[Lithium] Reloading page...');
+    window.location.reload();
+  }
+
+  /**
+   * Handle logout (used for auth expiration, no transition)
    */
   async handleLogout() {
     console.log('[Lithium] Logging out...');

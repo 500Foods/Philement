@@ -34,8 +34,10 @@ export default class MainManager {
 
   /**
    * Initialize the main manager
+   * @param {Object} options - Initialization options
+   * @param {boolean} options.skipShowAnimation - If true, skip the show animation (used during crossfade)
    */
-  async init() {
+  async init(options = {}) {
     console.log('[MainManager] Initializing...');
     
     try {
@@ -43,7 +45,11 @@ export default class MainManager {
       this.setupEventListeners();
       this.loadUserInfo();
       this.buildSidebar();
-      this.show();
+      
+      // Only run show animation if not skipping (e.g., during crossfade transition)
+      if (!options.skipShowAnimation) {
+        this.show();
+      }
 
       // Load first permitted manager by default
       if (this.permittedManagers.length > 0) {
@@ -113,9 +119,10 @@ export default class MainManager {
    * Set up event listeners
    */
   setupEventListeners() {
-    // Logout button
-    this.elements.logoutBtn?.addEventListener('click', () => {
-      eventBus.emit(Events.AUTH_LOGOUT);
+    // Logout button - emit logout:initiate for transition, then AUTH_LOGOUT
+    this.elements.logoutBtn?.addEventListener('click', async () => {
+      // Emit initiate logout for transition handling
+      eventBus.emit('logout:initiate', {});
     });
 
     // Sidebar toggle (collapse/expand)
