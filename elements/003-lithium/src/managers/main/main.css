@@ -3,7 +3,7 @@
  * 
  * Layout: Resizable Sidebar + Workspace + Header Bar
  * Sidebar has gradient header (like login panel), scrollable menu, icon footer
- * Splitter between sidebar and main content (200px-400px range)
+ * Splitter between sidebar and main content (220px-400px range)
  */
 
 /* ========================================
@@ -220,7 +220,7 @@
 
 .main-sidebar {
   width: 260px;
-  min-width: 200px;
+  min-width: 220px;
   max-width: 400px;
   height: 100vh;
   background: var(--bg-secondary);
@@ -234,9 +234,9 @@
 
 /* Collapsed state */
 .main-sidebar.collapsed {
-  width: 56px !important;
-  min-width: 56px !important;
-  max-width: 56px !important;
+  width: 50px !important;
+  min-width: 50px !important;
+  max-width: 50px !important;
 }
 
 /* Gradient header matching login panel */
@@ -503,10 +503,12 @@
 }
 
 /* ---- Collapse icon (arrow) rotation ---- */
-/* JS drives the rotation value for multi-stage directional control */
+/* JS drives the rotation value; broader selector ensures
+   the transition survives Font Awesome SVG replacement. */
 
+#sidebar-collapse-btn > *,
 #collapse-icon {
-  transition: transform calc(var(--transition-duration) / 2) ease;
+  transition: transform var(--stage-dur) ease;
 }
 
 /* ---- Tooltips ---- */
@@ -870,6 +872,7 @@ body.resizing * {
   }
 
   /* Arrow rotation is JS-driven; force-reset on mobile */
+  #sidebar-collapse-btn > *,
   #collapse-icon {
     transform: none !important;
   }
@@ -890,6 +893,7 @@ body.resizing * {
   .logout-option,
   .sidebar-title,
   .menu-item span,
+  #sidebar-collapse-btn > *,
   #collapse-icon,
   .sidebar-splitter,
   .sidebar-splitter::after,

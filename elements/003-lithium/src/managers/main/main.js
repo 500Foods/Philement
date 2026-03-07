@@ -7,7 +7,7 @@
  *   - Gradient header matching login panel
  *   - Scrollable menu
  *   - Icon-only footer with collapse/expand button
- *   - Resizable width (200px-400px) with splitter
+ *   - Resizable width (220px-400px) with splitter
  *   - Width persisted to localStorage
  */
 
@@ -22,7 +22,7 @@ const SIDEBAR_WIDTH_KEY = 'lithium_sidebar_width';
 const SIDEBAR_COLLAPSED_KEY = 'lithium_sidebar_collapsed';
 
 // Sidebar constraints
-const MIN_SIDEBAR_WIDTH = 200;
+const MIN_SIDEBAR_WIDTH = 220;
 const MAX_SIDEBAR_WIDTH = 400;
 const DEFAULT_SIDEBAR_WIDTH = 260;
 const COLLAPSED_WIDTH = 56;
@@ -428,8 +428,27 @@ export default class MainManager {
       this.expandedWidth = sidebar.offsetWidth;
 
       // Stage 1: sidebar narrows, icons stack horizontally
+      //
+      // Snap icon group to content width (removing flex-grow spacing)
+      // so the width delta matches the icon translateX delta exactly.
+      // This keeps the outline/background in sync with the sliding icons.
+      iconGroup.style.transition = 'none';
+      this._setWrapperTransitions(wrappers, 'none');
+      wrappers.forEach(w => { w.style.flex = `0 0 ${ICON_W}px`; });
+      iconGroup.style.width =
+        (wrappers.length * ICON_W + (wrappers.length - 1) * ICON_GAP) + 'px';
+      void iconGroup.offsetHeight;                       // flush snap
+
+      // Re-enable transitions and animate to collapsed targets
+      iconGroup.style.transition = '';
+      this._setWrapperTransitions(wrappers, '');
+
       sidebar.classList.add('collapsed');
       iconGroup.classList.add('collapsed');
+
+      // Clear inline overrides — CSS .collapsed provides identical values
+      wrappers.forEach(w => { w.style.flex = ''; });
+      iconGroup.style.width = '';
 
       wrappers.forEach((w, i) => {
         if (i > 0) w.style.transform = `translateX(${-i * STEP_X}px)`;
@@ -944,7 +963,8 @@ export default class MainManager {
    * @returns {Element|null}
    */
   _getArrowEl() {
-    return document.querySelector('#collapse-icon');
+    return document.querySelector('#collapse-icon') ||
+           document.querySelector('#sidebar-collapse-btn')?.firstElementChild;
   }
 
   /**
