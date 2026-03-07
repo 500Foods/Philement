@@ -363,9 +363,9 @@ class LithiumApp {
       const mainManager = new MainManager(this, mainWrapper, permittedManagers);
       await mainManager.init({ skipShowAnimation: true });
 
-      // Start crossfade: fade out login, fade in main
+      // Start crossfade: fade out login (if not already faded), fade in main
       requestAnimationFrame(() => {
-        // Fade out login
+        // Fade out login (it may already be at opacity 0 from login.hide(), but ensure it)
         if (loginElement) {
           loginElement.style.transition = `opacity ${duration}ms ease-in-out`;
           loginElement.style.opacity = '0';
@@ -385,9 +385,8 @@ class LithiumApp {
       }
       
       // Clean up transition styles but keep opacity at 1
-      // This prevents a flash when removing the transition
       mainWrapper.style.transition = '';
-      mainWrapper.style.opacity = '1';
+      mainWrapper.style.opacity = '';
       mainWrapper.style.position = '';
       mainWrapper.style.top = '';
       mainWrapper.style.left = '';
