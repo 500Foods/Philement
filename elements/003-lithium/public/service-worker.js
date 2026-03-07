@@ -1,7 +1,7 @@
 // Lithium PWA Service Worker
 // Cache strategy: cache-first for statics, stale-while-revalidate for API data
 
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 1000;
 const STATIC_CACHE = `lithium-static-v${CACHE_VERSION}`;
 const API_CACHE = `lithium-api-v${CACHE_VERSION}`;
 
@@ -71,8 +71,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Config file — stale-while-revalidate (allows runtime updates)
-  if (url.pathname.endsWith('/lithium.json')) {
+  // Config and version files — stale-while-revalidate (allows runtime updates)
+  if (url.pathname.endsWith('/lithium.json') || url.pathname.endsWith('/version.json')) {
     event.respondWith(staleWhileRevalidate(event.request, API_CACHE));
     return;
   }

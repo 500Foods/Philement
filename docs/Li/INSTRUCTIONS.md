@@ -24,14 +24,18 @@ Lithium is a lightweight, performant, modular SPA using vanilla JavaScript ES mo
 elements/003-lithium/
 ├── index.html                    # Entry point (Bootstrap removed)
 ├── package.json                  # Dependencies and scripts
+├── version.json                 # Build number, timestamp, version string
 ├── vite.config.js               # Vite build configuration
 ├── vitest.config.js             # Vitest configuration
 ├── eslint.config.js             # ESLint flat config
 ├── config/
 │   └── lithium.json            # Runtime configuration
+├── scripts/
+│   └── bump-version.js         # Auto-increment build on deploy
 ├── public/                      # Static assets (copied as-is to dist/)
 │   ├── manifest.json           # PWA manifest
-│   ├── service-worker.js       # PWA service worker
+│   ├── service-worker.js       # PWA service worker (CACHE_VERSION = build)
+│   ├── version.json            # Copied from root by bump-version script
 │   ├── assets/                # Fonts, images
 │   ├── coverage/              # Test coverage report (deployed to /coverage/)
 │   └── src/managers/          # HTML templates for runtime fetch
@@ -102,10 +106,11 @@ This starts Vite dev server on <http://localhost:3000>
 - `npm test`: Run test suite (171 tests)
 - `npm run test:coverage`: Run tests with coverage report
 - `npm run coverage:copy`: Copy coverage report to public/ for deployment
+- `npm run version:bump`: Increment build number, update service worker cache version
 - `npm run lint`: Run ESLint
 - `npm run format`: Format code with Prettier
 - `npm run clean`: Clean build artifacts
-- `npm run deploy`: Build and deploy to $LITHIUM_DEPLOY (includes coverage if generated)
+- `npm run deploy`: Test + bump version + build + deploy to $LITHIUM_DEPLOY
 
 ## Manager System
 
@@ -647,6 +652,55 @@ const { css } = await import('@codemirror/lang-css');
 | Font Awesome | Icons | CDN |
 | Vanadium Sans/Mono | Fonts | Local WOFF2 |
 
+## Version System
+
+Lithium uses an auto-incrementing build number system independent of git hashes.
+
+### version.json
+
+Located at the project root, `version.json` tracks:
+
+```json
+{
+  "build": 1000,
+  "timestamp": "2026-03-06T22:19:00-08:00",
+  "version": "0.1.1000"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `build` | Monotonic integer starting at 1000, incremented on each deploy |
+| `timestamp` | ISO 8601 timestamp of when the build was created |
+| `version` | Semantic-style version string: `0.1.<build>` |
+
+### How It Works
+
+1. `npm run version:bump` runs `scripts/bump-version.js`
+2. The script reads `version.json`, increments `build`, updates `timestamp`
+3. Writes updated `version.json` back to project root
+4. Copies `version.json` to `public/` (so it's available at runtime via `fetch('/version.json')`)
+5. Updates `CACHE_VERSION` in `public/service-worker.js` to match the build number
+
+### Where Version Is Displayed
+
+- **Login screen header** — "Build 1001" below "A Philement Project"
+- **Help panel** — Version string and build date
+- **`app.getState()`** — Returns `{ version, build, ... }` for debugging
+
+### Cache Busting
+
+The service worker uses `CACHE_VERSION` in its cache names (`lithium-static-v1001`, `lithium-api-v1001`). When the build number changes, the old caches are automatically cleaned up on the `activate` event. Vite-bundled JS/CSS files already have content hashes in their filenames (`index-[hash].js`), so they are cache-busted by default.
+
+### Import Rules
+
+Core modules (`jwt.js`, `config.js`, `event-bus.js`, `permissions.js`, etc.) should always be **statically imported** at the top of files that need them. Dynamic `import()` should only be used for:
+
+- **Managers** — Lazy-loaded on demand (`import('./managers/login/login.js')`)
+- **Heavy third-party libraries** — Tabulator, CodeMirror, DOMPurify
+
+Mixing static and dynamic imports of the same module causes Vite warnings and prevents code splitting. If a module is already statically imported, use the static reference everywhere in that file.
+
 ## PWA Features
 
 ### Service Worker
@@ -688,9 +742,12 @@ npm run deploy
 ```
 
 1. Validates `$LITHIUM_DEPLOY` is set
-2. Builds directly to deployment directory
-3. Copies `config/lithium.json` if not present (preserves runtime config)
-4. Minifies HTML and service worker
+2. Runs full test suite with coverage report
+3. Copies coverage report to `public/` for deployment
+4. Bumps build number in `version.json`, updates service worker `CACHE_VERSION`
+5. Builds directly to deployment directory
+6. Copies `config/lithium.json` if not present (preserves runtime config)
+7. Minifies HTML and service worker
 
 ## Common Tasks
 
@@ -898,6 +955,12 @@ If icons appear as squares or don't load:
 - Run `npm install`
 - Check Vite configuration
 - Verify ES module syntax
+
+### Vite "Dynamically Imported by ... but Also Statically Imported" Warning
+
+This warning means a module is both `import`-ed at the top of a file and `await import()`-ed elsewhere in the same file. The dynamic import cannot create a separate chunk because the static import already includes the module in the main bundle.
+
+**Fix:** Add all needed exports to the static import and remove the dynamic `import()` calls. Only use dynamic `import()` for lazy-loaded managers and heavy third-party libraries.
 
 ### PWA Issues
 

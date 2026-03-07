@@ -58,10 +58,13 @@ are independently loadable via dynamic `import()`.
 elements/003-lithium/
 ├── index.html                    ✅ Stripped of Bootstrap, clean
 ├── package.json                  ✅ Vitest 4.x, happy-dom 20.x, ESLint 10
+├── version.json                  ✅ Build number, timestamp, version string
 ├── vite.config.js                ✅
 ├── vitest.config.js              ✅
 ├── eslint.config.js              ✅ Flat config
 ├── config/lithium.json           ✅ Runtime config
+├── scripts/
+│   └── bump-version.js           ✅ Auto-increment build on deploy
 │
 ├── src/
 │   ├── app.js                    ✅ Bootstrap + manager loader
@@ -90,18 +93,21 @@ elements/003-lithium/
 │   └── init/                     ✅ Third-party lib wrappers (kept as-is)
 │
 ├── tests/
-│   └── unit/                     ✅ 127 tests, 0 failures
+│   └── unit/                     ✅ 171 tests, 0 failures
 │       ├── event-bus.test.js     6 tests
 │       ├── jwt.test.js           25 tests
 │       ├── permissions.test.js   23 tests
 │       ├── config.test.js        13 tests
 │       ├── utils.test.js         38 tests
 │       ├── json-request.test.js  14 tests
-│       └── lookups.test.js       8 tests
+│       ├── lookups.test.js       8 tests
+│       ├── icons.test.js         26 tests
+│       └── auth.integration.test.js  12 tests
 │
 └── public/
     ├── manifest.json             ✅ Lithium branding, dark theme
-    ├── service-worker.js         ✅ Cache-first statics, stale-while-revalidate API
+    ├── service-worker.js         ✅ Cache-first statics, build-versioned caches
+    ├── version.json              ✅ Copied from root by bump-version script
     ├── assets/
     │   ├── fonts/                ✅ Vanadium WOFF2 files
     │   └── images/               ✅ logo-li.svg, logo-192x192.png, logo-512x512.png
@@ -134,15 +140,16 @@ elements/003-lithium/
 
 ```flow
 1. index.html → <script type="module" src="/src/app.js">
-2. app.js: Load config/lithium.json
-3. app.js: Initialize core modules
-4. app.js: Reveal page (FOUC prevention — visibility: hidden → visible)
-5. app.js: Check JWT in localStorage → valid? → load Main Manager
-6. No/expired JWT → load Login Manager
-7. Login success → store JWT, fire auth:login, schedule renewal, load Main Manager
-8. Main Manager: build sidebar from permitted managers, render header
-9. Menu clicks → lazy import() manager → init/render in workspace
-10. Manager state preserved on switch (hide/show, not destroy)
+2. app.js: Load version.json (build number, timestamp)
+3. app.js: Load config/lithium.json
+4. app.js: Initialize core modules
+5. app.js: Reveal page (FOUC prevention — visibility: hidden → visible)
+6. app.js: Check JWT in localStorage → valid? → load Main Manager
+7. No/expired JWT → load Login Manager
+8. Login success → store JWT, fire auth:login, schedule renewal, load Main Manager
+9. Main Manager: build sidebar from permitted managers, render header
+10. Menu clicks → lazy import() manager → init/render in workspace
+11. Manager state preserved on switch (hide/show, not destroy)
 ```
 
 ---
@@ -368,7 +375,7 @@ Implemented in `src/shared/lookups.js`.
 
 ## 16. Testing
 
-### Current Status: 127 tests, 0 failures
+### Current Status: 171 tests, 0 failures
 
 | File | Stmts | Branch | Tests |
 |------|-------|--------|-------|
@@ -458,7 +465,8 @@ hardcoded to a particular machine or directory layout.
 npm run build           # Vite build → $LITHIUM_ROOT/dist/
 npm run build:prod      # Production build + HTML/JS minification → dist/
 npm run preview         # Preview production build locally
-npm run deploy          # Build + deploy to $LITHIUM_DEPLOY (web root)
+npm run deploy          # Test + bump version + build + deploy to $LITHIUM_DEPLOY
+npm run version:bump    # Increment build number, update SW cache version
 npm run test:coverage   # Run tests with coverage report → coverage/
 npm run coverage:copy   # Copy coverage report to public/ for deployment
 ```
@@ -466,10 +474,14 @@ npm run coverage:copy   # Copy coverage report to public/ for deployment
 ### Deploy Flow
 
 1. `predeploy` — Validates `$LITHIUM_DEPLOY` is set
-2. `vite build --mode deploy` — Builds directly to `$LITHIUM_DEPLOY`
+2. `test:coverage` — Runs full test suite with coverage report
+3. `coverage:copy` — Copies coverage report to `public/` for deployment
+4. `version:bump` — Increments build number in `version.json`, updates
+   service worker `CACHE_VERSION`, copies `version.json` to `public/`
+5. `vite build --mode deploy` — Builds directly to `$LITHIUM_DEPLOY`
    (does **not** empty the directory, preserving runtime config)
-3. `deploy:config` — Copies `config/lithium.json` only if not already present
-4. `deploy:postbuild` — Minifies HTML and service worker in-place
+6. `deploy:config` — Copies `config/lithium.json` only if not already present
+7. `deploy:postbuild` — Minifies HTML and service worker in-place
 
 ### Config Handling
 
@@ -484,7 +496,8 @@ are not overwritten.
 $LITHIUM_DEPLOY/
 ├── index.html                    Minified entry point
 ├── manifest.json                 PWA manifest
-├── service-worker.js             Minified SW
+├── service-worker.js             Minified SW (CACHE_VERSION = build number)
+├── version.json                  Build number + timestamp (updated each deploy)
 ├── favicon.ico
 ├── config/
 │   └── lithium.json              Runtime config (not overwritten on redeploy)
@@ -623,3 +636,11 @@ None of these block the current Lithium work.
 2. **Font Awesome Loading** — CDN links with SRI hashes can fail if the CDN content changes. Font Awesome Kit (`https://kit.fontawesome.com/`) is more reliable for production as it handles its own caching and integrity.
 
 3. **Build Output Verification** — Always verify the deployment directory structure matches runtime expectations. Missing static assets cause 404 errors that don't appear in development (where `src/` is served).
+
+### Build & Import Lessons Learned (March 2026)
+
+4. **Mixed Dynamic/Static Imports** — Vite warns when a module is both statically imported (`import { x } from './mod.js'`) and dynamically imported (`await import('./mod.js')`) in the same file. The dynamic import cannot move the module into a separate chunk because the static import already pulls it into the main bundle. **Fix:** Use static imports for all core modules that are needed at startup. Reserve dynamic `import()` only for lazy-loaded managers and heavy third-party libraries (Tabulator, CodeMirror, DOMPurify).
+
+5. **Service Worker Cache Busting** — The service worker's `CACHE_VERSION` must change on each deploy to invalidate stale caches. The `bump-version.js` script automatically updates `CACHE_VERSION` in `service-worker.js` to match the build number, ensuring old caches are cleaned up on `activate`.
+
+6. **Version System** — `version.json` at the project root tracks build number (starting at 1000), timestamp, and version string. The `bump-version.js` script increments it on each deploy and copies it to `public/` for runtime access. The login screen and help panel fetch `/version.json` to display the current build. This is independent of git hashes — it's a simple monotonic counter.
