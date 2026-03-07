@@ -769,6 +769,51 @@ npm run deploy         # Coverage copied to public/ and deployed
 
 Access the dashboard at: `https://lithium.philement.com/coverage/`
 
+## Login Panel Features
+
+### Transition Animations
+
+The login panel supports smooth crossfade transitions:
+
+**Login ↔ Subpanels:** When switching between the main login panel and subpanels (Language, Theme, Logs, Help), a crossfade animation plays with both panels visible simultaneously during the transition.
+
+**Login → Main:** After successful login, the login panel crossfades to the main interface.
+
+**Logout:** Clicking logout fades out the main interface, then reloads the page for a clean state.
+
+### Username Remembering
+
+The login panel automatically remembers the last used username:
+
+- On successful login, the username is saved to localStorage
+- On return visits, the username field is pre-filled
+- If a username is present, focus automatically moves to the password field
+- Storage key: `lithium_last_username`
+
+### Lookup-Enabled Buttons
+
+The login panel buttons are enabled based on lookup data availability:
+
+| Button | Lookup Required | Event |
+|--------|----------------|-------|
+| Language | `lookup_names` | `lookups:lookup_names:loaded` |
+| Theme | `themes` | `lookups:themes:loaded` |
+| Logs | `system_info` | `lookups:system_info:loaded` |
+| Help | (always enabled) | - |
+
+Buttons start disabled and enable when their respective lookups are loaded from cache or server.
+
+### Clear Button
+
+The X button next to the username field:
+- Clears both username and password fields
+- Focuses the username field for immediate typing
+- Hides any error messages
+
+### CAPS LOCK Detection
+
+The password field shows a yellow background when CAPS LOCK is active, helping users avoid accidental uppercase input.
+
 ## Development Auto-Login
 
 For faster development workflow, you can auto-login by passing credentials as URL query parameters:

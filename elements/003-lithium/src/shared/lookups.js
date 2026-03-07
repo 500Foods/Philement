@@ -518,10 +518,10 @@ export function init() {
     refreshLookups();
   });
 
-  // Clear cache on logout
-  eventBus.on(Events.AUTH_LOGOUT, () => {
-    clearCache();
-  });
+  // Note: We intentionally do NOT clear cache on logout.
+  // Lookups contain "open" data (themes, system_info, icons, lookup_names)
+  // that don't require authentication and should persist for the login page.
+  // The in-memory cache is naturally cleared on page reload.
 }
 
 // Default export
