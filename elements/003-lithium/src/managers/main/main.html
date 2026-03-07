@@ -77,22 +77,32 @@
 
     <!-- Footer with icon-only buttons matching login style -->
     <div class="sidebar-footer">
-      <div class="sidebar-icon-group">
-        <button type="button" class="sidebar-icon-btn" id="sidebar-collapse-btn" title="Collapse sidebar">
-          <fa fa-angles-left id="collapse-icon"></fa>
-        </button>
-        <button type="button" class="sidebar-icon-btn" id="sidebar-theme-btn" title="Toggle theme">
-          <fa fa-palette></fa>
-        </button>
-        <button type="button" class="sidebar-icon-btn" id="sidebar-profile-btn" title="Profile">
-          <fa fa-user-cog></fa>
-        </button>
-        <button type="button" class="sidebar-icon-btn" id="sidebar-help-btn" title="Help">
-          <fa fa-circle-question></fa>
-        </button>
-        <button type="button" class="sidebar-icon-btn sidebar-logout" id="sidebar-logout-btn" title="Logout">
-          <fa fa-sign-out-alt></fa>
-        </button>
+      <div class="sidebar-icon-group" id="sidebar-icon-group">
+        <div class="sidebar-icon-wrapper" data-index="0">
+          <button type="button" class="sidebar-icon-btn" id="sidebar-collapse-btn" title="Collapse sidebar">
+            <fa fa-angles-left id="collapse-icon"></fa>
+          </button>
+        </div>
+        <div class="sidebar-icon-wrapper" data-index="1">
+          <button type="button" class="sidebar-icon-btn" id="sidebar-theme-btn" title="Toggle theme">
+            <fa fa-palette></fa>
+          </button>
+        </div>
+        <div class="sidebar-icon-wrapper" data-index="2">
+          <button type="button" class="sidebar-icon-btn" id="sidebar-profile-btn" title="Profile">
+            <fa fa-user-cog></fa>
+          </button>
+        </div>
+        <div class="sidebar-icon-wrapper" data-index="3">
+          <button type="button" class="sidebar-icon-btn" id="sidebar-help-btn" title="Help">
+            <fa fa-circle-question></fa>
+          </button>
+        </div>
+        <div class="sidebar-icon-wrapper" data-index="4">
+          <button type="button" class="sidebar-icon-btn sidebar-logout" id="sidebar-logout-btn" title="Logout">
+            <fa fa-sign-out-alt></fa>
+          </button>
+        </div>
       </div>
     </div>
   </aside>
