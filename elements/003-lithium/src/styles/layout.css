@@ -698,25 +698,8 @@
    Main Application Layout
    ======================================== */
 
-#main-layout {
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  opacity: 1;
-}
-
-/* Disable all transitions on main layout and children during crossfade */
-#main-layout,
-#main-layout * {
-  transition: none !important;
-}
-
-/* Re-enable specific transitions after load (these are for hover effects only) */
-#main-layout .sidebar-menu-btn,
-#main-layout .header-btn,
-#main-layout .logout-btn {
-  transition: background-color var(--transition-fast), color var(--transition-fast) !important;
-}
+/* Structural styles only — main.css (imported by main.js) handles
+   opacity, transitions, and the full sidebar/header/workspace layout. */
 
 #app-container {
   display: flex;
