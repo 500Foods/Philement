@@ -420,10 +420,125 @@ export default class LoginManager {
       this.handleTogglePassword();
     });
 
-    // Global CAPS LOCK detection - monitor entire page
+    // Set up keyboard shortcuts (only active on login panel)
+    this.setupKeyboardShortcuts();
+  }
+
+  /**
+   * Handle all keyboard shortcuts
+   * ESC - clear username and password and focus username (when on login panel)
+   * Ctrl+Shift+U - focus username field and select its contents
+   * Ctrl+Shift+P - focus password field and select its contents
+   * F1 - click help button
+   * Ctrl+Shift+I - click language button
+   * Ctrl+Shift+T - click theme button
+   * Ctrl+Shift+L - click log button
+   * 
+   * Note: Shortcuts (except ESC) only work when on the login panel
+   */
+  handleKeyboardShortcuts(event) {
+    const key = event.key;
+    const ctrl = event.ctrlKey;
+    const shift = event.shiftKey;
+    const alt = event.altKey;
+    const isOnLoginPanel = this.currentPanel === 'login';
+    
+    // ESC - always works to return to login panel or clear fields
+    if (key === 'Escape') {
+      if (isOnLoginPanel) {
+        // Clear username and password, focus username
+        this.handleClearUsername();
+        event.preventDefault();
+      } else {
+        // Switch to login panel from subpanels
+        this.switchPanel('login');
+        event.preventDefault();
+      }
+      return;
+    }
+    
+    // All other shortcuts only work when on login panel
+    if (!isOnLoginPanel) {
+      return;
+    }
+    
+    // Ctrl+Shift+U - focus username and select contents
+    if (ctrl && shift && key.toLowerCase() === 'u') {
+      if (this.elements.username) {
+        this.elements.username.focus();
+        this.elements.username.select();
+      }
+      event.preventDefault();
+      return;
+    }
+    
+    // Ctrl+Shift+P - focus password and select contents
+    if (ctrl && shift && key.toLowerCase() === 'p') {
+      if (this.elements.password) {
+        this.elements.password.focus();
+        this.elements.password.select();
+      }
+      event.preventDefault();
+      return;
+    }
+    
+    // F1 - click help button
+    if (key === 'F1') {
+      if (this.elements.helpBtn && !this.elements.helpBtn.disabled) {
+        this.elements.helpBtn.click();
+      }
+      event.preventDefault();
+      return;
+    }
+    
+    // Ctrl+Shift+I - click language (internationalization) button
+    if (ctrl && shift && key.toLowerCase() === 'i') {
+      if (this.elements.languageBtn && !this.elements.languageBtn.disabled) {
+        this.elements.languageBtn.click();
+      }
+      event.preventDefault();
+      return;
+    }
+    
+    // Ctrl+Shift+T - click theme button
+    if (ctrl && shift && key.toLowerCase() === 't') {
+      if (this.elements.themeBtn && !this.elements.themeBtn.disabled) {
+        this.elements.themeBtn.click();
+      }
+      event.preventDefault();
+      return;
+    }
+    
+    // Ctrl+Shift+L - click log button
+    if (ctrl && shift && key.toLowerCase() === 'l') {
+      if (this.elements.logsBtn && !this.elements.logsBtn.disabled) {
+        this.elements.logsBtn.click();
+      }
+      event.preventDefault();
+      return;
+    }
+  }
+
+  /**
+   * Handle ESC key to return to login panel from subpanels
+   * @deprecated Use handleKeyboardShortcuts instead
+   */
+  handleEscapeKey(event) {
+    if (event.key === 'Escape' && this.currentPanel !== 'login') {
+      this.switchPanel('login');
+    }
+  }
+
+  /**
+   * Set up keyboard shortcut event listeners
+   */
+  setupKeyboardShortcuts() {
+    // Only add if not already added
+    if (this.handleKeyDown) return;
+    
     this.handleKeyDown = (e) => {
       this.checkCapsLock(e);
-      this.handleEscapeKey(e);
+      this.handleKeyboardShortcuts(e);
     };
     this.handleKeyUp = (e) => this.checkCapsLock(e);
     document.addEventListener('keydown', this.handleKeyDown);
@@ -431,11 +546,16 @@ export default class LoginManager {
   }
 
   /**
-   * Handle ESC key to return to login panel from subpanels
+   * Remove keyboard shortcut event listeners
    */
-  handleEscapeKey(event) {
-    if (event.key === 'Escape' && this.currentPanel !== 'login') {
-      this.switchPanel('login');
+  removeKeyboardShortcuts() {
+    if (this.handleKeyDown) {
+      document.removeEventListener('keydown', this.handleKeyDown);
+      this.handleKeyDown = null;
+    }
+    if (this.handleKeyUp) {
+      document.removeEventListener('keyup', this.handleKeyUp);
+      this.handleKeyUp = null;
     }
   }
 
@@ -967,13 +1087,8 @@ export default class LoginManager {
    * Teardown the login manager
    */
   teardown() {
-    // Remove global event listeners
-    if (this.handleKeyDown) {
-      document.removeEventListener('keydown', this.handleKeyDown);
-    }
-    if (this.handleKeyUp) {
-      document.removeEventListener('keyup', this.handleKeyUp);
-    }
+    // Remove keyboard shortcut event listeners
+    this.removeKeyboardShortcuts();
 
     // Clean up password manager UI observer
     this._passwordManagerObserver?.disconnect();
@@ -990,7 +1105,5 @@ export default class LoginManager {
     this.isPasswordVisible = false;
     this.isCapsLockOn = false;
     this.currentPanel = 'login';
-    this.handleKeyDown = null;
-    this.handleKeyUp = null;
   }
 }
