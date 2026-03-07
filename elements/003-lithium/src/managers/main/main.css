@@ -1,11 +1,207 @@
 /**
  * Main Menu Manager Styles
  * 
- * Layout: Sidebar + Workspace + Header Bar
- * Responsive design with collapsible sidebar
+ * Layout: Resizable Sidebar + Workspace + Header Bar
+ * Sidebar has gradient header (like login panel), scrollable menu, icon footer
+ * Splitter between sidebar and main content (200px-400px range)
  */
 
-/* Main layout container */
+/* ========================================
+   Logout Overlay and Panel
+   ======================================== */
+
+/* Dark overlay covering entire viewport */
+.logout-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.logout-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Logout panel - centered modal like login subpanels */
+.logout-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 480px;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  overflow: hidden;
+}
+
+.logout-panel.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Header with gradient like login panels */
+.logout-panel-header {
+  padding: var(--space-4);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.logout-panel-header .subpanel-header-group {
+  display: flex;
+  gap: 2px;
+}
+
+.logout-panel-header .subpanel-header-primary {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
+  color: white;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  cursor: default;
+}
+
+.logout-panel-header .subpanel-header-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  padding: var(--space-3);
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+  color: white;
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.logout-panel-header .subpanel-header-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.logout-panel-content {
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+
+/* Logout options - vertical stack like language list */
+.logout-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Individual logout option - styled like language-item */
+.logout-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.logout-option:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.logout-option:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.3);
+}
+
+/* Number badge */
+.logout-option-number {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-primary);
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  flex-shrink: 0;
+}
+
+/* Info container */
+.logout-option-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.logout-option-title {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.logout-option-desc {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+/* Keyboard hints */
+.logout-hints {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--border-standard);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.logout-hints kbd {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin: 0 2px;
+}
+
+/* ========================================
+   Main Layout Container
+   ======================================== */
+
 #main-layout {
   position: fixed;
   inset: 0;
@@ -19,29 +215,41 @@
   opacity: 1;
 }
 
-/* Sidebar */
+/* ========================================
+   Sidebar - Fixed 100% height
+   ======================================== */
+
 .main-sidebar {
-  width: 240px;
+  width: 260px;
+  min-width: 200px;
+  max-width: 400px;
+  height: 100vh;
   background: var(--bg-secondary);
   border-right: var(--border-standard);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: width var(--transition-std);
+  position: relative;
+  transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
 }
 
+/* Collapsed state */
 .main-sidebar.collapsed {
-  width: 60px;
+  width: 56px !important;
+  min-width: 56px !important;
+  max-width: 56px !important;
 }
 
-/* Sidebar header with logo */
-.sidebar-header {
+/* Gradient header matching login panel */
+.sidebar-header-gradient {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-4);
-  border-bottom: var(--border-standard);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  color: white;
   min-height: 64px;
+  flex-shrink: 0;
 }
 
 .sidebar-logo {
@@ -50,21 +258,30 @@
   flex-shrink: 0;
 }
 
+.sidebar-header-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .sidebar-title {
   font-size: var(--font-size-lg);
   font-weight: 600;
-  color: var(--text-primary);
+  color: white;
   white-space: nowrap;
   overflow: hidden;
-  transition: opacity var(--transition-fast);
+  transition: opacity 0.3s ease, width 0.3s ease;
 }
 
-.main-sidebar.collapsed .sidebar-title {
-  opacity: 0;
-  width: 0;
+/* Hide title when collapsed */
+.main-sidebar.collapsed .sidebar-header-text {
+  display: none;
 }
 
-/* Sidebar menu */
+/* ========================================
+   Sidebar Menu (Scrollable)
+   ======================================== */
+
 .sidebar-menu {
   flex: 1;
   overflow-y: auto;
@@ -80,6 +297,8 @@
   cursor: pointer;
   transition: background-color var(--transition-fast), color var(--transition-fast);
   margin-bottom: var(--space-1);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .menu-item:hover {
@@ -91,6 +310,7 @@
   color: white;
 }
 
+.menu-item fa-icon,
 .menu-item i {
   width: 20px;
   text-align: center;
@@ -100,81 +320,184 @@
 .menu-item span {
   white-space: nowrap;
   overflow: hidden;
-  transition: opacity var(--transition-fast);
+  transition: opacity 0.3s ease;
 }
 
+/* Hide text when collapsed */
 .main-sidebar.collapsed .menu-item span {
   opacity: 0;
   width: 0;
 }
 
-/* Sidebar footer with logout */
+/* ========================================
+   Sidebar Footer with Icon Group
+   ======================================== */
+
 .sidebar-footer {
   padding: var(--space-2);
   border-top: var(--border-standard);
-}
-
-.logout-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  background: transparent;
-  border: none;
-  border-radius: var(--border-radius-md);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.logout-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--accent-danger);
-}
-
-.logout-btn i {
-  width: 20px;
-  text-align: center;
   flex-shrink: 0;
 }
 
-.logout-btn span {
-  white-space: nowrap;
-  transition: opacity var(--transition-fast);
-}
-
-.main-sidebar.collapsed .logout-btn span {
-  opacity: 0;
-  width: 0;
-}
-
-/* Collapse toggle button */
-.sidebar-toggle {
-  position: absolute;
-  right: -12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
-  background: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: 50%;
+/* Icon group matching login button group style */
+.sidebar-icon-group {
   display: flex;
+  gap: 0;
+}
+
+.sidebar-icon-group > button {
+  margin: 0;
+  border-radius: 0;
+}
+
+/* Left button - rounded left corners */
+.sidebar-icon-group > button:first-child {
+  border-top-left-radius: var(--border-radius-md);
+  border-bottom-left-radius: var(--border-radius-md);
+}
+
+/* Right button - rounded right corners */
+.sidebar-icon-group > button:last-child {
+  border-top-right-radius: var(--border-radius-md);
+  border-bottom-right-radius: var(--border-radius-md);
+}
+
+/* Middle buttons - remove side borders to blend together */
+.sidebar-icon-group > button:not(:first-child):not(:last-child) {
+  border-left: none;
+  border-right: none;
+}
+
+/* Icon-only buttons matching login-btn-icon style */
+.sidebar-icon-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  color: var(--text-secondary);
-  font-size: 10px;
-  transition: background-color var(--transition-fast);
-}
-
-.sidebar-toggle:hover {
-  background: var(--accent-primary);
+  width: 44px;
+  height: 40px;
+  padding: var(--space-3);
+  background-color: var(--accent-primary);
+  border: none;
   color: white;
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), transform 0.3s ease;
+  position: relative;
 }
 
-/* Main content area */
+.sidebar-icon-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+.sidebar-icon-btn:disabled {
+  background-color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+/* Logout button - danger color on hover */
+.sidebar-icon-btn.sidebar-logout:hover {
+  background-color: var(--accent-danger);
+}
+
+/* Collapse icon rotation animation */
+#collapse-icon {
+  transition: transform 0.3s ease;
+}
+
+.main-sidebar.collapsed #collapse-icon {
+  transform: rotate(180deg);
+}
+
+/* Tooltip styling for sidebar buttons */
+.sidebar-icon-btn[data-tooltip]::after,
+.sidebar-icon-btn[title]::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-fast);
+  z-index: var(--z-tooltip);
+  pointer-events: none;
+}
+
+.sidebar-icon-btn[data-tooltip]:hover::after,
+.sidebar-icon-btn[title]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Hide tooltips when sidebar is expanded (titles are visible) */
+.main-sidebar:not(.collapsed) .sidebar-icon-btn[title]::after {
+  display: none;
+}
+
+/* ========================================
+   Splitter
+   ======================================== */
+
+.sidebar-splitter {
+  width: 6px;
+  background: transparent;
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-splitter:hover,
+.sidebar-splitter.resizing {
+  background-color: var(--accent-primary);
+}
+
+/* Visual indicator line in the splitter */
+.sidebar-splitter::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 40px;
+  background-color: var(--border-color);
+  border-radius: 1px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-splitter:hover::after,
+.sidebar-splitter.resizing::after {
+  background-color: white;
+}
+
+/* Hide splitter when sidebar is collapsed */
+.main-sidebar.collapsed + .sidebar-splitter {
+  display: none;
+}
+
+/* Disable text selection during resize */
+body.resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+
+body.resizing * {
+  cursor: col-resize !important;
+}
+
+/* ========================================
+   Main Content Area
+   ======================================== */
+
 .main-content {
   flex: 1;
   display: flex;
@@ -232,7 +555,8 @@
   color: var(--text-primary);
 }
 
-.header-btn i {
+.header-btn i,
+.header-btn fa-icon {
   font-size: var(--font-size-sm);
 }
 
@@ -323,47 +647,6 @@
   display: flex;
 }
 
-/* Responsive: Stack sidebar on mobile */
-@media (max-width: 768px) {
-  .main-sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    z-index: 100;
-    transform: translateX(-100%);
-    transition: transform var(--transition-std);
-  }
-
-  .main-sidebar.open {
-    transform: translateX(0);
-  }
-
-  .main-sidebar.collapsed {
-    width: 240px;
-  }
-
-  .sidebar-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 99;
-  }
-
-  .sidebar-overlay.visible {
-    display: block;
-  }
-
-  .sidebar-toggle {
-    display: none;
-  }
-
-  .mobile-menu-btn {
-    display: flex;
-  }
-}
-
 /* Mobile menu button (hidden on desktop) */
 .mobile-menu-btn {
   display: none;
@@ -377,14 +660,94 @@
   cursor: pointer;
 }
 
+/* ========================================
+   Mobile Overlay
+   ======================================== */
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+}
+
+.sidebar-overlay.visible {
+  display: block;
+}
+
+/* ========================================
+   Responsive: Stack sidebar on mobile
+   ======================================== */
+
+@media (max-width: 768px) {
+  .main-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform var(--transition-std);
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+  }
+
+  .main-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-sidebar.collapsed {
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+  }
+
+  /* Show text on mobile even when "collapsed" */
+  .main-sidebar.collapsed .sidebar-header-text,
+  .main-sidebar.collapsed .menu-item span {
+    display: block;
+    opacity: 1;
+    width: auto;
+  }
+
+  .sidebar-splitter {
+    display: none;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  /* Reset collapse icon on mobile */
+  .main-sidebar.collapsed #collapse-icon {
+    transform: none;
+  }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   #main-layout,
   .main-sidebar,
   .menu-item,
-  .logout-btn,
+  .sidebar-icon-btn,
   .header-btn,
-  .manager-container {
-    transition: none;
+  .manager-container,
+  .logout-overlay,
+  .logout-panel,
+  .logout-option,
+  .sidebar-title,
+  .menu-item span,
+  #collapse-icon,
+  .sidebar-splitter,
+  .sidebar-splitter::after,
+  .logout-panel-header .subpanel-header-close {
+    transition: none !important;
+  }
+  
+  .logout-overlay,
+  .logout-panel {
+    transition: opacity 0.01ms ease, visibility 0.01ms ease !important;
   }
 }

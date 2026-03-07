@@ -287,7 +287,7 @@ class LithiumApp {
   setupEventListeners() {
     // Auth events
     eventBus.on(Events.AUTH_LOGIN, (event) => this.handleLogin(event.detail));
-    eventBus.on('logout:initiate', () => this.handleLogoutTransition());
+    eventBus.on('logout:initiate', (event) => this.handleLogoutTransition(event.detail));
     eventBus.on(Events.AUTH_LOGOUT, () => this.handleLogout());
     eventBus.on(Events.AUTH_EXPIRED, () => this.handleAuthExpired());
 
@@ -408,37 +408,118 @@ class LithiumApp {
 
   /**
    * Handle logout with fade out transition and page reload
+   * @param {Object} eventDetail - Optional event detail with logoutType
    */
-  async handleLogoutTransition() {
-    console.log('[Lithium] Initiating logout with fade transition...');
+  async handleLogoutTransition(eventDetail = {}) {
+    const logoutType = eventDetail?.logoutType || 'quick';
+    console.log(`[Lithium] Initiating ${logoutType} logout with fade transition...`);
 
     const container = document.getElementById('app');
     const mainElement = container?.firstElementChild;
     const duration = getTransitionDuration();
 
+    // Wait for logout panel fade out (already handled by main.js)
+    // Just wait a bit for the panel to close
+    await new Promise(resolve => setTimeout(resolve, duration / 2));
+
     // Fade out main content
     if (mainElement) {
       mainElement.style.transition = `opacity ${duration}ms ease-in-out`;
       mainElement.style.opacity = '0';
-      
+
       // Wait for fade out
       await new Promise(resolve => setTimeout(resolve, duration));
     }
 
-    // Call logout API
+    // Perform logout actions based on type
+    await this.performLogoutActions(logoutType);
+
+    // Reload page for clean state
+    console.log('[Lithium] Reloading page...');
+    window.location.reload();
+  }
+
+  /**
+   * Perform logout actions based on the selected logout type
+   * @param {string} logoutType - 'quick', 'normal', 'public', or 'global'
+   */
+  async performLogoutActions(logoutType) {
+    // Call logout API (for all types)
     try {
       await this.api.post('auth/logout');
     } catch (error) {
       console.warn('[Lithium] Logout API call failed:', error);
     }
 
-    // Clear JWT
+    // Import JWT module dynamically
     const { clearJWT } = await import('./core/jwt.js');
-    clearJWT();
 
-    // Reload page for clean state
-    console.log('[Lithium] Reloading page...');
-    window.location.reload();
+    switch (logoutType) {
+      case 'quick':
+        // Normal logout but don't remove any cached data
+        // Just clear the JWT
+        clearJWT();
+        break;
+
+      case 'normal':
+        // Logout and don't remember the username for logging in again
+        clearJWT();
+        try {
+          localStorage.removeItem('lithium_last_username');
+        } catch (error) {
+          console.warn('[Lithium] Could not clear remembered username:', error);
+        }
+        break;
+
+      case 'public':
+        // Logout and clear all local history/content/etc.
+        clearJWT();
+        this.clearLocalData();
+        break;
+
+      case 'global':
+        // Logout Public + remove all server JWTs so no other sessions are active
+        clearJWT();
+        this.clearLocalData();
+        // TODO: Call endpoint to invalidate all server sessions
+        // await this.api.post('auth/logout/all');
+        console.log('[Lithium] Global logout - all sessions should be invalidated');
+        break;
+
+      default:
+        // Default to quick logout
+        clearJWT();
+    }
+  }
+
+  /**
+   * Clear local data for public/global logout
+   */
+  clearLocalData() {
+    console.log('[Lithium] Clearing local data...');
+
+    try {
+      // Clear remembered username
+      localStorage.removeItem('lithium_last_username');
+
+      // Clear any cached lookups or preferences
+      localStorage.removeItem('lithium_lookups');
+      localStorage.removeItem('lithium_preferences');
+
+      // Clear any session-specific data (but keep config)
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('lithium_') && !key.includes('config')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
+      console.log('[Lithium] Local data cleared');
+    } catch (error) {
+      console.warn('[Lithium] Could not clear local data:', error);
+    }
   }
 
   /**
