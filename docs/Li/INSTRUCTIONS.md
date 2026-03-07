@@ -278,7 +278,7 @@ Lithium uses a consistent button group pattern for related actions and panel hea
 - **Rounded corners** on first and last buttons
 - **Consistent styling** using accent colors
 
-**Example: Login Button Group**
+#### Example: Login Button Group
 
 ```html
 <div class="login-btn-group">
@@ -301,7 +301,7 @@ Lithium uses a consistent button group pattern for related actions and panel hea
 </div>
 ```
 
-**Example: Panel Header Button Group**
+#### Example: Panel Header Button Group
 
 ```html
 <div class="subpanel-header-group">
@@ -781,6 +781,32 @@ The login panel supports smooth crossfade transitions:
 
 **Logout:** Clicking logout fades out the main interface, then reloads the page for a clean state.
 
+### Transition System Implementation (March 2025 Fix)
+
+The transition system was refactored to fix double-fade-in issues and focus race conditions:
+
+**Issues Fixed:**
+
+1. **Double-fade-in on login page** - Removed `autofocus` attribute from username input to prevent browser focus conflicts with CSS transitions
+2. **Double-fade-in when logging in** - Simplified `hide()` to fade only the panel, letting `transitionToMainManager()` handle the crossfade cleanly
+3. **Focus switching back to username after logout** - Consolidated focus logic into `show()` method with proper timing
+
+**Key Implementation Details:**
+
+- **Focus Management:** The `show()` method accepts a `skipUsernameFocus` parameter. When `true` (username was pre-filled), it focuses the password field instead of username after the transition completes.
+
+- **Username Loading:** `loadRememberedUsername()` now returns a boolean indicating whether a username was loaded, which is passed to `show()` to determine proper focus.
+
+- **Transition Timing:** Focus changes occur after `getTransitionDuration() + 50ms` to ensure CSS transitions complete and elements are fully interactive.
+
+- **No Duplicate Animations:** Login panel fade-out and main manager crossfade are coordinated so they don't overlap. The `hide()` method only fades the current panel, not the entire page.
+
+**Files Modified:**
+
+- `src/managers/login/login.html` - Removed `autofocus` attribute
+- `src/managers/login/login.js` - Fixed focus race condition, simplified `hide()`
+- `src/app.js` - Cleaned up `transitionToMainManager()` timing
+
 ### Username Remembering
 
 The login panel automatically remembers the last used username:
@@ -806,6 +832,7 @@ Buttons start disabled and enable when their respective lookups are loaded from 
 ### Clear Button
 
 The X button next to the username field:
+
 - Clears both username and password fields
 - Focuses the username field for immediate typing
 - Hides any error messages

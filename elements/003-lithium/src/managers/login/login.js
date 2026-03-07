@@ -36,10 +36,12 @@ export default class LoginManager {
     this.setupEventListeners();
     this.setupLookupListeners();
     this.initializeButtonStates();
-    this.show();
 
-    // Load remembered username and set focus after panel is visible
-    this.loadRememberedUsername();
+    // Load remembered username before showing (sets initial values)
+    const hadRememberedUsername = this.loadRememberedUsername();
+
+    // Show the panel with fade-in (pass focus info to avoid double focus)
+    await this.show(hadRememberedUsername);
 
     // Check for URL query parameters for auto-login
     this.checkForAutoLogin();
@@ -48,23 +50,19 @@ export default class LoginManager {
   /**
    * Load remembered username from localStorage
    * If username exists, pre-fill it and focus password field
+   * @returns {boolean} True if a username was loaded
    */
   loadRememberedUsername() {
     try {
       const rememberedUsername = localStorage.getItem('lithium_last_username');
       if (rememberedUsername && this.elements.username) {
         this.elements.username.value = rememberedUsername;
+        return true;
       }
-      
-      // Focus password if username has a value (either remembered or pre-filled)
-      if (this.elements.username?.value && this.elements.password) {
-        // Small delay to ensure element is visible and interactive
-        requestAnimationFrame(() => {
-          this.elements.password.focus();
-        });
-      }
+      return false;
     } catch (error) {
       console.warn('[LoginManager] Could not load remembered username:', error);
+      return false;
     }
   }
 
@@ -586,8 +584,9 @@ export default class LoginManager {
 
   /**
    * Show the login page with fade-in
+   * @param {boolean} skipUsernameFocus - If true, focus password (username has value)
    */
-  async show() {
+  async show(skipUsernameFocus = false) {
     if (this.elements.loginPanel) {
       // Step 1: Set display to block (but opacity is still 0 from CSS)
       this.elements.loginPanel.style.display = 'block';
@@ -601,10 +600,17 @@ export default class LoginManager {
       });
     }
 
-    // Focus username field after transition completes
+    // Focus appropriate field after transition completes
+    // Use a slightly longer delay to ensure transition is fully done and element is interactive
     setTimeout(() => {
-      this.elements.username?.focus();
-    }, getTransitionDuration());
+      if (skipUsernameFocus && this.elements.password) {
+        // Username was pre-filled, focus password
+        this.elements.password.focus();
+      } else if (this.elements.username) {
+        // No username or empty, focus username
+        this.elements.username.focus();
+      }
+    }, getTransitionDuration() + 50);
   }
 
   /**
@@ -614,17 +620,15 @@ export default class LoginManager {
     return new Promise((resolve) => {
       const duration = getTransitionDuration();
       
-      // Fade out the current panel
+      // Fade out the current panel only
+      // Let the app handle the transition to main manager
       const currentPanelEl = this.panels[this.currentPanel];
       if (currentPanelEl) {
         currentPanelEl.style.transition = `opacity ${duration}ms ease-in-out`;
         currentPanelEl.style.opacity = '0';
       }
       
-      setTimeout(() => {
-        this.elements.page?.classList.add('fade-out');
-        setTimeout(resolve, 800); // Match CSS transition duration for page fade
-      }, duration);
+      setTimeout(resolve, duration);
     });
   }
 

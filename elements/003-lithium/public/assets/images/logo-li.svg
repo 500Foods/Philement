@@ -8,19 +8,19 @@
   <!-- Large outer circle – orbital boundary -->
   <g transform="translate(0.5, 0.5)">
     <ellipse cx="50" cy="50" rx="50" ry="50"
-             fill="#ffffff"
+             fill="transparent"
              stroke="#000000"
              pointer-events="all"
-             style="fill: rgb(255, 255, 255); stroke: rgb(0, 0, 0);"/>
+             style="stroke: rgb(0, 0, 0);"/>
  </g>
 
   <!-- inner  circle – orbital boundary -->
   <g transform="translate(0.5, 0.5)">
     <ellipse cx="50" cy="50" rx="33" ry="33"
-	     fill="#ffffff"
+             fill="transparent"
 	     stroke="#000000"
 	     pointer-events="all"
-	     style="fill: rgb(255, 255, 255); stroke: rgb(0, 0, 0);"/>
+	     style="stroke: rgb(0, 0, 0);"/>
   </g>
 
   <!-- Central nucleus -->
@@ -62,7 +62,7 @@
   </g>
 
   <!-- All three electrons – orbiting together at 120° spacing -->
-  <g class="orbit-all">
+  <g class="orbit-one">
     <g transform="translate(0.5, 0.5)">
 
       <!-- Electron 1 @ 0° (right) – outer -->
@@ -72,6 +72,11 @@
                  style="fill: rgb(255, 255, 255); stroke: rgb(0, 0, 0);"/>
       </g>
 
+    </g>
+  </g>
+
+  <g class="orbit-two">
+    <g transform="translate(0.5, 0.5)">
       <!-- Electron 2 @ 120° -->
       <g transform="translate(22, 22)">
         <ellipse cx="5" cy="5" rx="5" ry="5"
@@ -91,9 +96,13 @@
 
   <!-- Animation – all electrons rotate together -->
   <style>
-    .orbit-all {
+    .orbit-one {
       transform-origin: 50px 50px;
-      animation: orbit 5.5s linear infinite;
+      animation: orbit 5.0s linear infinite;
+    }
+    .orbit-two {
+      transform-origin: 50px 50px;
+      animation: orbit 2.5s linear infinite;
     }
     @keyframes orbit {
       from { transform: rotate(0deg); }
