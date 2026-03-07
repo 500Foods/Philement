@@ -159,21 +159,21 @@ class SunEditorInit {
         <div class="suneditor-nav d-flex justify-content-between align-items-center mb-2">
           <div class="nav-left">
             <button class="btn btn-sm btn-outline-primary mr-2" id="${elementId}-refresh">
-              <i class="fas fa-sync-alt"></i> Refresh
+              <fa fa-sync-alt></fa> Refresh
             </button>
             <button class="btn btn-sm btn-outline-secondary mr-2" id="${elementId}-export">
-              <i class="fas fa-file-export"></i> Export HTML
+              <fa fa-file-export></fa> Export HTML
             </button>
             <button class="btn btn-sm btn-outline-secondary mr-2" id="${elementId}-export-text">
-              <i class="fas fa-file-alt"></i> Export Text
+              <fa fa-file-alt></fa> Export Text
             </button>
           </div>
           <div class="nav-right">
             <button class="btn btn-sm btn-outline-secondary mr-2" id="${elementId}-clear">
-              <i class="fas fa-eraser"></i> Clear
+              <fa fa-eraser></fa> Clear
             </button>
             <button class="btn btn-sm btn-outline-secondary" id="${elementId}-fullscreen">
-              <i class="fas fa-expand"></i> Fullscreen
+              <fa fa-expand></fa> Fullscreen
             </button>
           </div>
         </div>

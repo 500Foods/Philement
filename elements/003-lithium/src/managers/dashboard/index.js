@@ -21,7 +21,7 @@ export default class DashboardManager {
         height: 100%;
         color: var(--text-secondary);
       ">
-        <i class="fas fa-chart-line" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+        <fa fa-chart-line style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></fa>
         <h2>Dashboard</h2>
         <p>Main dashboard coming soon</p>
       </div>

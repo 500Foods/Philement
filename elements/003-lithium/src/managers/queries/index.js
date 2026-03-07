@@ -21,7 +21,7 @@ export default class QueriesManager {
         height: 100%;
         color: var(--text-secondary);
       ">
-        <i class="fas fa-search" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+        <fa fa-search style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></fa>
         <h2>Queries</h2>
         <p>Query builder coming soon</p>
       </div>

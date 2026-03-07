@@ -122,28 +122,28 @@ class JSONEditorInit {
         <div class="jsoneditor-nav d-flex justify-content-between align-items-center mb-2">
           <div class="nav-left">
             <button class="btn btn-sm btn-outline-primary mr-2" id="${elementId}-refresh">
-              <i class="fas fa-sync-alt"></i> Refresh
+              <fa fa-sync-alt></fa> Refresh
             </button>
             <button class="btn btn-sm btn-outline-secondary mr-2" id="${elementId}-export">
-              <i class="fas fa-file-export"></i> Export
+              <fa fa-file-export></fa> Export
             </button>
             <button class="btn btn-sm btn-outline-secondary mr-2" id="${elementId}-import">
-              <i class="fas fa-file-import"></i> Import
+              <fa fa-file-import></fa> Import
             </button>
           </div>
           <div class="nav-right">
             <div class="btn-group btn-group-sm" role="group">
               <button class="btn btn-outline-secondary" id="${elementId}-mode-tree" title="Tree Mode">
-                <i class="fas fa-sitemap"></i>
+                <fa fa-sitemap></fa>
               </button>
               <button class="btn btn-outline-secondary" id="${elementId}-mode-code" title="Code Mode">
-                <i class="fas fa-code"></i>
+                <fa fa-code></fa>
               </button>
               <button class="btn btn-outline-secondary" id="${elementId}-mode-form" title="Form Mode">
-                <i class="fas fa-wpforms"></i>
+                <fa fa-wpforms></fa>
               </button>
               <button class="btn btn-outline-secondary" id="${elementId}-mode-view" title="View Mode">
-                <i class="fas fa-eye"></i>
+                <fa fa-eye></fa>
               </button>
             </div>
           </div>

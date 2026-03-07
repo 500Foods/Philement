@@ -25,7 +25,7 @@ class TabulatorInit {
       autoColumns: false,
       progressiveLoad: "scroll",
       progressiveLoadScrollMargin: 400,
-      ajaxLoaderLoading: "<div class='loader'><i class='fas fa-spinner fa-spin'></i> Loading...</div>",
+      ajaxLoaderLoading: "<div class='loader'><fa fa-spinner fa-spin></fa> Loading...</div>",
       ajaxError: (xhr) => {
         console.error("Tabulator AJAX Error:", xhr);
         return "Error loading data";
@@ -85,20 +85,20 @@ class TabulatorInit {
         <div class="tabulator-nav d-flex justify-content-between align-items-center mb-2">
           <div class="nav-left">
             <button class="btn btn-sm btn-outline-primary mr-2" id="${elementId}-refresh">
-              <i class="fas fa-sync-alt"></i> Refresh
+              <fa fa-sync-alt></fa> Refresh
             </button>
             <button class="btn btn-sm btn-outline-secondary mr-2" id="${elementId}-export-csv">
-              <i class="fas fa-file-csv"></i> Export CSV
+              <fa fa-file-csv></fa> Export CSV
             </button>
             <button class="btn btn-sm btn-outline-secondary" id="${elementId}-export-json">
-              <i class="fas fa-file-code"></i> Export JSON
+              <fa fa-file-code></fa> Export JSON
             </button>
           </div>
           <div class="nav-right">
             <div class="input-group input-group-sm" style="width: 200px;">
               <input type="text" class="form-control" placeholder="Search..." id="${elementId}-search">
               <button class="btn btn-outline-secondary" type="button" id="${elementId}-search-btn">
-                <i class="fas fa-search"></i>
+                <fa fa-search></fa>
               </button>
             </div>
           </div>

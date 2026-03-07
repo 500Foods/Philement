@@ -15,6 +15,7 @@ import { validateJWT, retrieveJWT, getClaims, getRenewalTime } from './core/jwt.
 import { getPermittedManagers } from './core/permissions.js';
 import { createRequest } from './core/json-request.js';
 import { fetchLookups, init as initLookups } from './shared/lookups.js';
+import { init as initIcons } from './core/icons.js';
 
 /**
  * Main Lithium Application Class
@@ -58,16 +59,19 @@ class LithiumApp {
       initLookups();
       this.fetchLookups();
 
-      // Step 4: Reveal the page (FOUC prevention)
+      // Step 4: Initialize icon system
+      initIcons();
+
+      // Step 5: Reveal the page (FOUC prevention)
       this.revealPage();
 
-      // Step 5: Check authentication and load appropriate manager
+      // Step 6: Check authentication and load appropriate manager
       await this.checkAuthAndLoad();
 
-      // Step 5: Set up global event listeners
+      // Step 7: Set up global event listeners
       this.setupEventListeners();
 
-      // Step 6: Set up network status monitoring
+      // Step 8: Set up network status monitoring
       this.setupNetworkMonitoring();
 
       console.log('[Lithium] Application initialized successfully');
@@ -401,10 +405,10 @@ class LithiumApp {
     if (app) {
       app.innerHTML = `
         <div class="fatal-error">
-          <h1><i class="fas fa-exclamation-triangle"></i> Error</h1>
+          <h1><fa fa-exclamation-triangle></fa> Error</h1>
           <p>${message}</p>
           <button onclick="window.location.reload()" class="btn btn-primary">
-            <i class="fas fa-redo"></i> Reload Page
+            <fa fa-redo></fa> Reload Page
           </button>
         </div>
       `;

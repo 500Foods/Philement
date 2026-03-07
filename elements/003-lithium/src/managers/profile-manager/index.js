@@ -9,6 +9,7 @@ import { eventBus, Events } from '../../core/event-bus.js';
 import { getClaims, storeJWT } from '../../core/jwt.js';
 import { getConfigValue } from '../../core/config.js';
 import { createRequest } from '../../core/json-request.js';
+import { setIcon } from '../../core/icons.js';
 
 /**
  * Profile Manager Class
@@ -544,7 +545,7 @@ export default class ProfileManager {
     // Update icon based on type
     const icon = this.elements.toast.querySelector('i');
     if (icon) {
-      icon.className = type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
+      setIcon(icon, type === 'error' ? 'exclamation-circle' : 'check-circle');
     }
 
     // Update border color

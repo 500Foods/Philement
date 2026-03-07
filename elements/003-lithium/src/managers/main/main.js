@@ -8,6 +8,7 @@
 import { eventBus, Events } from '../../core/event-bus.js';
 import { getClaims } from '../../core/jwt.js';
 import { getPermittedManagers, canAccessManager } from '../../core/permissions.js';
+import { setIcon } from '../../core/icons.js';
 
 /**
  * Main Menu Manager Class
@@ -200,7 +201,7 @@ export default class MainManager {
       button.className = 'menu-item';
       button.dataset.managerId = managerId;
       button.innerHTML = `
-        <i class="fas ${managerInfo.icon}"></i>
+        <fa ${managerInfo.icon}></fa>
         <span>${managerInfo.name}</span>
       `;
 
@@ -257,7 +258,7 @@ export default class MainManager {
     const icon = this.elements.sidebarToggle?.querySelector('i');
     if (icon) {
       const isCollapsed = this.elements.sidebar?.classList.contains('collapsed');
-      icon.className = isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+      setIcon(icon, isCollapsed ? 'chevron-right' : 'chevron-left');
     }
   }
 
