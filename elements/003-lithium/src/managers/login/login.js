@@ -36,6 +36,7 @@ export default class LoginManager {
     this.setupEventListeners();
     this.setupLookupListeners();
     this.initializeButtonStates();
+    this.loadVersionInfo();
 
     // Load remembered username before showing (sets initial values)
     const hadRememberedUsername = this.loadRememberedUsername();
@@ -99,6 +100,49 @@ export default class LoginManager {
     }
     if (hasLookup('system_info')) {
       this.setLogsButtonEnabled(true);
+    }
+  }
+
+  /**
+   * Load version information from version.json and display it
+   * Populates the login header version line and the help panel version/build fields
+   */
+  async loadVersionInfo() {
+    try {
+      const response = await fetch('/version.json');
+      if (!response.ok) return;
+
+      const versionData = await response.json();
+      const { build, timestamp, version } = versionData;
+
+      // Format the timestamp for display (e.g. "2026-03-06 10:19 PM")
+      let buildDate = '';
+      if (timestamp) {
+        const date = new Date(timestamp);
+        buildDate = date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        }) + ' ' + date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      }
+
+      // Update login header version line
+      if (this.elements.loginVersion) {
+        this.elements.loginVersion.textContent = `Build ${build}`;
+      }
+
+      // Update help panel version and build date
+      if (this.elements.helpAppVersion) {
+        this.elements.helpAppVersion.textContent = version || `0.1.${build}`;
+      }
+      if (this.elements.helpBuildDate) {
+        this.elements.helpBuildDate.textContent = buildDate || timestamp;
+      }
+    } catch (error) {
+      console.warn('[LoginManager] Could not load version info:', error);
     }
   }
 
@@ -228,6 +272,9 @@ export default class LoginManager {
       helpCloseBtn: this.container.querySelector('#help-close-btn'),
       error: this.container.querySelector('#login-error'),
       errorText: this.container.querySelector('#login-error-text'),
+      loginVersion: this.container.querySelector('#login-version'),
+      helpAppVersion: this.container.querySelector('#help-app-version'),
+      helpBuildDate: this.container.querySelector('#help-build-date'),
     };
 
     // Cache panels for transition management

@@ -11,7 +11,7 @@
 
 import { loadConfig, getConfig, getConfigValue } from './core/config.js';
 import { eventBus, Events } from './core/event-bus.js';
-import { validateJWT, retrieveJWT, getClaims, getRenewalTime } from './core/jwt.js';
+import { validateJWT, retrieveJWT, getClaims, getRenewalTime, storeJWT, clearJWT } from './core/jwt.js';
 import { getPermittedManagers } from './core/permissions.js';
 import { createRequest } from './core/json-request.js';
 import { fetchLookups, init as initLookups } from './shared/lookups.js';
@@ -23,7 +23,8 @@ import { getTransitionDuration } from './core/transitions.js';
  */
 class LithiumApp {
   constructor() {
-    this.version = '1.0.0';
+    this.version = null;
+    this.build = null;
     this.config = null;
     this.api = null;
     this.currentManager = null;
@@ -48,37 +49,57 @@ class LithiumApp {
     try {
       console.log('[Lithium] Initializing application...');
 
-      // Step 1: Load configuration
+      // Step 1: Load version info
+      await this.loadVersion();
+
+      // Step 2: Load configuration
       this.config = await loadConfig();
       console.log('[Lithium] Configuration loaded:', this.config.app.name);
 
-      // Step 2: Create API client with config
+      // Step 3: Create API client with config
       this.api = createRequest(this.config);
 
-      // Step 3: Initialize lookups (fetch open lookups from cache or server)
+      // Step 4: Initialize lookups (fetch open lookups from cache or server)
       // This happens before auth check so lookups are available for login UI
       initLookups();
       this.fetchLookups();
 
-      // Step 4: Initialize icon system
+      // Step 5: Initialize icon system
       initIcons();
 
-      // Step 5: Reveal the page (FOUC prevention)
+      // Step 6: Reveal the page (FOUC prevention)
       this.revealPage();
 
-      // Step 6: Check authentication and load appropriate manager
+      // Step 7: Check authentication and load appropriate manager
       await this.checkAuthAndLoad();
 
-      // Step 7: Set up global event listeners
+      // Step 8: Set up global event listeners
       this.setupEventListeners();
 
-      // Step 8: Set up network status monitoring
+      // Step 9: Set up network status monitoring
       this.setupNetworkMonitoring();
 
       console.log('[Lithium] Application initialized successfully');
     } catch (error) {
       console.error('[Lithium] Failed to initialize:', error);
       this.showFatalError('Failed to initialize application. Please refresh the page.');
+    }
+  }
+
+  /**
+   * Load version info from version.json
+   */
+  async loadVersion() {
+    try {
+      const response = await fetch('/version.json');
+      if (response.ok) {
+        const data = await response.json();
+        this.version = data.version;
+        this.build = data.build;
+        console.log(`[Lithium] Version ${data.version} (build ${data.build})`);
+      }
+    } catch (error) {
+      console.warn('[Lithium] Could not load version info:', error);
     }
   }
 
@@ -148,7 +169,6 @@ class LithiumApp {
     const response = await this.api.post('auth/renew');
 
     if (response.token) {
-      const { storeJWT } = await import('./core/jwt.js');
       storeJWT(response.token);
       this.scheduleTokenRenewal(response.token);
       eventBus.emit(Events.AUTH_RENEWED, { expiresAt: response.expires_at });
@@ -451,9 +471,6 @@ class LithiumApp {
       console.warn('[Lithium] Logout API call failed:', error);
     }
 
-    // Import JWT module dynamically
-    const { clearJWT } = await import('./core/jwt.js');
-
     switch (logoutType) {
       case 'quick':
         // Normal logout but don't remove any cached data
@@ -536,7 +553,6 @@ class LithiumApp {
     }
 
     // Clear local state
-    const { clearJWT } = await import('./core/jwt.js');
     clearJWT();
     this.user = null;
     this.loadedManagers.clear();
@@ -550,7 +566,6 @@ class LithiumApp {
    */
   async handleAuthExpired() {
     console.log('[Lithium] Authentication expired');
-    const { clearJWT } = await import('./core/jwt.js');
     clearJWT();
     this.user = null;
     this.loadedManagers.clear();
@@ -621,6 +636,7 @@ class LithiumApp {
   getState() {
     return {
       version: this.version,
+      build: this.build,
       config: this.config,
       user: this.user,
       currentManager: this.currentManager?.name || null,

@@ -417,6 +417,14 @@
   margin: var(--space-1) 0 0;
 }
 
+.login-version {
+  font-size: var(--font-size-xs);
+  opacity: 0.6;
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
 .login-form {
   padding: var(--space-5);
   margin-top: calc(-1 * var(--space-5));
