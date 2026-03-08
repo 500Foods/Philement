@@ -184,6 +184,19 @@
   font-size: var(--font-size-sm);
 }
 
+/* ── Log viewer (CodeMirror) ──────────────────────────────────────────────── */
+
+/* Force Vanadium Mono across all CodeMirror elements in the log viewer.
+   The oneDark theme injects its own font-family; this page-level rule wins. */
+#log-viewer .cm-editor,
+#log-viewer .cm-editor .cm-scroller,
+#log-viewer .cm-editor .cm-content,
+#log-viewer .cm-editor .cm-line,
+#log-viewer .cm-editor .cm-gutters,
+#log-viewer .cm-editor .cm-lineNumbers {
+  font-family: var(--font-mono) !important;
+}
+
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   #login-page {

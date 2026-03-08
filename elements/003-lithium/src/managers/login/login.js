@@ -11,6 +11,7 @@ import { storeJWT } from '../../core/jwt.js';
 import { getConfig, getConfigValue } from '../../core/config.js';
 import { getTransitionDuration, waitForTransition } from '../../core/transitions.js';
 import { hasLookup } from '../../shared/lookups.js';
+import { getRawLog } from '../../core/log.js';
 import './login.css';
 
 /**
@@ -90,7 +91,8 @@ export default class LoginManager {
     // Start with buttons disabled
     this.setLanguageButtonEnabled(false);
     this.setThemeButtonEnabled(false);
-    this.setLogsButtonEnabled(false);
+    // Logs button is always enabled since we have client-side action logs
+    this.setLogsButtonEnabled(true);
 
     // If lookups are already loaded, enable buttons immediately
     if (hasLookup('lookup_names')) {
@@ -99,9 +101,7 @@ export default class LoginManager {
     if (hasLookup('themes')) {
       this.setThemeButtonEnabled(true);
     }
-    if (hasLookup('system_info')) {
-      this.setLogsButtonEnabled(true);
-    }
+    // Logs button is always enabled
   }
 
   /**
@@ -259,6 +259,7 @@ export default class LoginManager {
       loginPanel: this.container.querySelector('#login-panel'),
       themePanel: this.container.querySelector('#theme-panel'),
       logsPanel: this.container.querySelector('#logs-panel'),
+      logViewer: this.container.querySelector('#log-viewer'),
       languagePanel: this.container.querySelector('#language-panel'),
       helpPanel: this.container.querySelector('#help-panel'),
       form: this.container.querySelector('#login-form'),
@@ -661,6 +662,11 @@ export default class LoginManager {
     // Block interactions during transition
     this.enableTransitionOverlay();
 
+    // If switching to logs panel, populate it with action logs
+    if (targetPanel === 'logs') {
+      this.populateLogsPanel();
+    }
+
     // Perform crossfade transition
     await this.performPanelTransition(fromPanel, toPanel);
 
@@ -676,6 +682,130 @@ export default class LoginManager {
       setTimeout(() => {
         this.elements.username?.focus();
       }, getTransitionDuration());
+    }
+  }
+
+  /**
+   * Populate the logs panel with action logs using CodeMirror
+   */
+  async populateLogsPanel() {
+    const logViewer = this.elements.logViewer;
+    if (!logViewer) {
+      console.warn('[LoginManager] logViewer element not found');
+      return;
+    }
+
+    const entries = getRawLog();
+
+    let logText;
+    if (entries.length === 0) {
+      logText = '(No log entries yet)';
+    } else {
+      // Determine max subsystem width for fixed-width column alignment
+      const maxSubsystemLen = entries.reduce((max, e) => Math.max(max, (e.subsystem || '').length), 0);
+
+      // Build display lines, expanding grouped entries ({ title, items }) to multiple lines
+      const lines = [];
+      for (const entry of entries) {
+        const date = new Date(entry.timestamp);
+        const time = String(date.getHours()).padStart(2, '0') + ':' +
+          String(date.getMinutes()).padStart(2, '0') + ':' +
+          String(date.getSeconds()).padStart(2, '0') + '.' +
+          String(date.getMilliseconds()).padStart(3, '0');
+        const subsystem = (entry.subsystem || '').padEnd(maxSubsystemLen);
+        const desc = entry.description;
+
+        if (desc && typeof desc === 'object' && desc.title !== undefined && Array.isArray(desc.items)) {
+          // Grouped entry: render title + ― continuation lines
+          lines.push(`${time}  ${subsystem}  ${desc.title}`);
+          for (const item of desc.items) {
+            lines.push(`${time}  ${subsystem}  ― ${item}`);
+          }
+        } else {
+          lines.push(`${time}  ${subsystem}  ${desc}`);
+        }
+      }
+      logText = lines.join('\n');
+    }
+
+    // If CodeMirror is already initialized, just update the content
+    if (this._logEditor) {
+      this._logEditor.dispatch({
+        changes: { from: 0, to: this._logEditor.state.doc.length, insert: logText }
+      });
+      return;
+    }
+
+    // Build a proper CodeMirror 6 editor from the individual @codemirror packages
+    // (there is no top-level 'codemirror' meta-package in this project)
+    // SQL language is intentionally loaded: logs may contain SQL content in future,
+    // and this also pre-warms the module for the SQL editor elsewhere in the app.
+    try {
+      const [
+        { EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, keymap },
+        { EditorState },
+        { defaultKeymap, historyKeymap, history },
+        { oneDark },
+        { sql },
+      ] = await Promise.all([
+        import('@codemirror/view'),
+        import('@codemirror/state'),
+        import('@codemirror/commands'),
+        import('@codemirror/theme-one-dark'),
+        import('@codemirror/lang-sql'),
+      ]);
+
+      // Custom 4-digit zero-padded line number formatter
+      const zeroPaddedLineNumbers = lineNumbers({
+        formatNumber: (n) => String(n).padStart(4, '0'),
+      });
+
+      const extensions = [
+        // Visual chrome
+        zeroPaddedLineNumbers,
+        highlightActiveLine(),
+        highlightActiveLineGutter(),
+        drawSelection(),
+        history(),
+        keymap.of([...defaultKeymap, ...historyKeymap]),
+
+        // SQL language (pre-warms module; also highlights any SQL snippets in logs)
+        sql(),
+
+        // Dark theme
+        oneDark,
+
+        // Read-only
+        EditorState.readOnly.of(true),
+
+        // Sizing and font
+        EditorView.theme({
+          '&': {
+            height: '100%',
+            fontSize: '10px',
+            fontFamily: "'Vanadium Mono', 'Courier New', Courier, monospace",
+          },
+          '.cm-scroller': {
+            overflow: 'auto',
+            scrollbarWidth: 'thin',       // Firefox: always show thin scrollbar
+            scrollbarColor: '#555 #222',  // Firefox: thumb / track
+          },
+          // WebKit: always-visible scrollbars
+          '.cm-scroller::-webkit-scrollbar': { width: '8px', height: '8px' },
+          '.cm-scroller::-webkit-scrollbar-track': { background: '#1e1e2e' },
+          '.cm-scroller::-webkit-scrollbar-thumb': { background: '#555', borderRadius: '4px' },
+          '.cm-scroller::-webkit-scrollbar-corner': { background: '#1e1e2e' },
+          '.cm-content': { whiteSpace: 'pre' },
+        }),
+      ];
+
+      const state = EditorState.create({ doc: logText, extensions });
+
+      logViewer.innerHTML = '';
+      this._logEditor = new EditorView({ state, parent: logViewer });
+    } catch (error) {
+      console.warn('[LoginManager] CodeMirror failed to load, using plain text:', error);
+      logViewer.innerHTML = `<pre class="log-content">${logText}</pre>`;
     }
   }
 
@@ -1070,7 +1200,8 @@ export default class LoginManager {
       this.elements.themeBtn.disabled = loading || !hasLookup('themes');
     }
     if (this.elements.logsBtn) {
-      this.elements.logsBtn.disabled = loading || !hasLookup('system_info');
+      // Logs button is always enabled (client-side logs are always available)
+      this.elements.logsBtn.disabled = loading;
     }
     if (this.elements.helpBtn) {
       this.elements.helpBtn.disabled = loading;
@@ -1087,6 +1218,12 @@ export default class LoginManager {
    * Teardown the login manager
    */
   teardown() {
+    // Clean up CodeMirror editor if present
+    if (this._logEditor) {
+      this._logEditor.destroy();
+      this._logEditor = null;
+    }
+
     // Remove keyboard shortcut event listeners
     this.removeKeyboardShortcuts();
 

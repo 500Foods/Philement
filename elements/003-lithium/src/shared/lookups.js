@@ -15,6 +15,7 @@
 
 import { eventBus, Events } from '../core/event-bus.js';
 import { getConfigValue } from '../core/config.js';
+import { log, Subsystems, Status } from '../core/log.js';
 
 // In-memory cache for lookups
 let cache = null;
@@ -22,9 +23,18 @@ let fetchPromise = null;
 
 // Simple logger that works before any manager is loaded
 const logger = {
-  info: (message) => console.log(`[Lookups] ${message}`),
-  warn: (message) => console.warn(`[Lookups] ${message}`),
-  error: (message) => console.error(`[Lookups] ${message}`)
+  info: (message) => {
+    console.log(`[Lookups] ${message}`);
+    log(Subsystems.LOOKUPS, Status.INFO, message);
+  },
+  warn: (message) => {
+    console.warn(`[Lookups] ${message}`);
+    log(Subsystems.LOOKUPS, Status.WARN, message);
+  },
+  error: (message) => {
+    console.error(`[Lookups] ${message}`);
+    log(Subsystems.LOOKUPS, Status.ERROR, message);
+  },
 };
 
 /**
@@ -70,15 +80,15 @@ function loadFromLocalStorage() {
     // Check if cache is still valid
     const age = Date.now() - parseInt(timestamp, 10);
     if (age > CACHE_TTL_MS) {
-      console.log('[Lookups] Cache expired, will fetch fresh data');
+      logger.info('Cache expired, will fetch fresh data');
       return null;
     }
 
     const data = JSON.parse(stored);
-    console.log('[Lookups] Loaded from localStorage cache');
+    logger.info('Loaded from localStorage cache');
     return data;
   } catch (error) {
-    console.warn('[Lookups] Failed to load from localStorage:', error.message);
+    logger.warn(`Failed to load from localStorage: ${error.message}`);
     return null;
   }
 }
@@ -91,9 +101,9 @@ function saveToLocalStorage(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     localStorage.setItem(STORAGE_TIMESTAMP_KEY, String(Date.now()));
-    console.log('[Lookups] Saved to localStorage cache');
+    logger.info('Saved to localStorage cache');
   } catch (error) {
-    console.warn('[Lookups] Failed to save to localStorage:', error.message);
+    logger.warn(`Failed to save to localStorage: ${error.message}`);
   }
 }
 
@@ -104,9 +114,9 @@ function clearLocalStorage() {
   try {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(STORAGE_TIMESTAMP_KEY);
-    console.log('[Lookups] Cleared localStorage cache');
+    logger.info('Cleared localStorage cache');
   } catch (error) {
-    console.warn('[Lookups] Failed to clear localStorage:', error.message);
+    logger.warn(`Failed to clear localStorage: ${error.message}`);
   }
 }
 
@@ -328,12 +338,12 @@ async function fetchFreshLookups(silent = false) {
       });
     }
 
-    console.log('[Lookups] Fetched from server:', Object.keys(cache));
+    logger.info(`Fetched from server: ${Object.keys(cache).join(', ')}`);
     fetchPromise = null;
     return cache;
   } catch (error) {
     fetchPromise = null;
-    console.warn('[Lookups] Failed to fetch from server:', error.message);
+    logger.warn(`Failed to fetch from server: ${error.message}`);
 
     // If we have cache, return it even on error
     if (cache) {
@@ -383,7 +393,7 @@ export function hasLookup(category) {
  */
 export function getLookup(category, key, defaultValue = null) {
   if (!cache) {
-    console.warn('[Lookups] Lookups not loaded yet');
+    logger.warn('Lookups not loaded yet');
     return defaultValue !== null ? defaultValue : key;
   }
 
@@ -465,7 +475,7 @@ export function getFeatureName(managerId, featureId, defaultName = null) {
  */
 export function getLookupCategory(category) {
   if (!cache) {
-    console.warn('[Lookups] Lookups not loaded yet');
+    logger.warn('Lookups not loaded yet');
     return null;
   }
   return cache[category] || null;
