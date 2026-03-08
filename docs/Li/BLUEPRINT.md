@@ -44,11 +44,148 @@ designed for the Style Manager theming system from day one.
 |------|-----------|
 | **Module** | An ES module (`.js` file). Building block of the codebase. |
 | **Manager** | User-facing feature set with UI. Has init/render/teardown lifecycle. |
+| **Menu Manager** | A manager that appears as a named button in the sidebar navigation menu. Permission-gated via Punchcard. |
+| **Utility Manager** | A manager bound to a fixed sidebar footer button. Always available regardless of Punchcard; never appears in the menu. |
+| **Standalone Manager** | A manager loaded directly via URL parameter, rendered without sidebar/header/footer chrome. |
+| **Popup Panel** | A lightweight overlay that does not occupy the workspace. Simpler open/close lifecycle. Not registered as a manager. |
 | **Feature** | Capability within a manager, controlled by Punchcard permissions. |
 | **Core** | Infrastructure modules managers depend on: event bus, config, JWT, etc. |
 
 Managers require one or more modules. Not all modules are managers. Managers
-are independently loadable via dynamic `import()`.
+are independently loadable via dynamic `import()`. The manager *type* determines
+how it is surfaced to the user — not how it is coded. All three manager types
+share the same `init()` / `render()` / `teardown()` lifecycle contract.
+Popup Panels are not managers — they have a simpler `open()` / `close()` / `destroy()`
+contract and are not registered in any manager registry.
+
+---
+
+## 3a. Manager Types
+
+### Menu Managers (permission-gated, sidebar navigation)
+
+Menu managers appear as labelled icon buttons in the scrollable sidebar `<nav>`.
+The set of visible buttons is built from `getPermittedManagers()`, which reads
+the Punchcard JWT claim (or allows all when Punchcard is absent). Clicking a
+button lazy-loads the manager into the workspace. State is preserved on switch
+(hide/show, not destroy).
+
+Current menu managers registered in `app.js` `managerRegistry`:
+
+| ID | Name | Status |
+|----|------|--------|
+| 1 | Style Manager | ✅ Implemented |
+| 2 | Profile Manager | ⬜ Placeholder |
+| 3 | Dashboard | ⬜ Placeholder |
+| 4 | Lookups | ⬜ Placeholder |
+| 5 | Queries | ⬜ Placeholder |
+
+### Utility Managers (always-present, sidebar footer)
+
+Utility managers are bound to specific icon buttons in the sidebar footer row.
+They are **not** Punchcard-gated and **do not** appear in the sidebar menu.
+They are loaded on demand (click or keyboard shortcut) and rendered in the
+workspace the same way menu managers are. They are registered in a separate
+`utilityManagerRegistry` in `app.js` (TBD) to keep Punchcard IDs separate.
+
+Planned utility managers and their sidebar footer bindings:
+
+| Footer Button | Icon | Manager | Status |
+|--------------|------|---------|--------|
+| Session Log | `fa-scroll` | `session-log/` | ⬜ Next |
+| User Profile | `fa-user-cog` | `user-profile/` | ⬜ Placeholder |
+
+> **Note:** The current sidebar footer contains a **Help** button (`fa-circle-question`).
+> This will be **replaced** by the Session Log button. Help content will move
+> into a help panel within the Session Log manager or a separate inline popup.
+
+### Standalone Managers (URL-driven, no chrome)
+
+A standalone manager is loaded when a URL parameter requests it directly,
+e.g. `lithium.philement.com?USER=x&PASS=y&manager=AccountManager`. In this
+mode the app skips the Main Manager entirely and renders only the requested
+manager, with no sidebar, header, or footer. The workspace fills the full
+viewport. This is useful for embedding Lithium panels in external dashboards
+or kiosk displays.
+
+Standalone mode is not yet implemented. When it is:
+
+- `app.js` reads `?manager=<name>` after successful auth
+- If present, `loadStandaloneManager(name)` is called instead of `loadMainManager()`
+- The manager must be listed in `managerRegistry` or `utilityManagerRegistry`
+- No `MainManager` is instantiated; no sidebar/header DOM is created
+
+---
+
+## 3b. Popup Panels
+
+Popup panels are lightweight overlays that appear on top of the current view
+without replacing the workspace content. They are **not managers** — they do
+not have the `init()`/`render()`/`teardown()` lifecycle, are not registered in
+any manager registry, and are not Punchcard-gated (though individual panels
+may apply their own access logic).
+
+### Characteristics
+
+| Property | Value |
+|----------|-------|
+| DOM location | Fixed overlay layer (`document.body` child), not the workspace |
+| Lifecycle | `open()` / `close()` / `destroy()` — simpler than manager contract |
+| Registration | None — instantiated directly by the triggering component |
+| Punchcard | Not gated (access logic is the panel's own concern) |
+| Multiple instances | Not supported (popup replaces itself on re-open) |
+| Keyboard | Each panel installs/removes its own `keydown` listener |
+
+### Existing Popup: Logout Panel
+
+Already implemented in `src/managers/main/`. Proof-of-concept for the pattern:
+
+- Fixed overlay + panel DOM appended to `document.body` in `render()`
+- `showLogoutPanel()` / `hideLogoutPanel()` methods on `MainManager`
+- Keyboard: ESC cancels, Enter = Quick logout, `1`-`4` select option
+- Removes DOM nodes from `document.body` on `teardown()`
+
+### Planned Popup: Manager Switcher
+
+Shows all currently loaded (cached) manager instances across all manager types.
+Allows the user to switch between multiple instances of the same manager type,
+e.g. two Accounts Managers open at once.
+
+Key design decisions:
+
+- Triggered by a keyboard shortcut or a dedicated button (TBD)
+- Lists instances grouped by manager type (icon + name + instance label)
+- Clicking an entry calls `app.showManager(managerId, instanceId)` to make it visible
+- The manager loading system must be extended to support multiple instances per
+  manager ID (currently `loadedManagers` is a `Map<id, instance>` — needs to
+  become `Map<id, instance[]>` or a keyed structure)
+- Instance labels could be user-assigned or auto-generated (e.g. "Accounts #1")
+
+Implementation is deferred until a menu manager that benefits from multiple
+instances is being built.
+
+### Planned Popup: Annotations
+
+A compact notes/scratch-pad overlay. Not a full manager — no persistent server
+storage required initially. Intended as a contextual tool that can be opened
+from within any manager.
+
+- Triggered on-demand (keyboard shortcut or in-manager button — TBD)
+- Not bound to the sidebar footer
+- Simple text area or lightweight editor (not CodeMirror-heavy)
+- Annotations scoped to: global session, current manager type, or current record
+- May be promoted to a full menu manager later if server-side storage is added
+
+### Adding a New Popup Panel
+
+1. Create `src/panels/popup-name/popup-name.js` (and `.html`, `.css` if needed)
+2. Export a class with `open(anchorOrOptions?)`, `close()`, `destroy()`
+3. In `open()`: create DOM, append to `document.body`, add keyboard listener
+4. In `close()`: hide DOM (opacity/display), remove keyboard listener
+5. In `destroy()`: remove DOM from `document.body`, clean up all refs
+6. Instantiate from the triggering component (manager, `app.js`, or another panel)
+7. Store the instance on the triggering component so `destroy()` can be called
+   during that component's `teardown()`
 
 ---
 
@@ -262,11 +399,37 @@ logo + title gradient header, fade transition to main app.
 
 Implemented in `src/managers/main/`. Sidebar + header + workspace layout.
 
-- Sidebar buttons generated from `getPermittedManagers()`
+- Sidebar menu buttons generated from `getPermittedManagers()` (menu managers only)
 - Click → lazy load → render in workspace; state preserved on switch
-- Header: manager name, profile button (stub), theme button (stub), logout
+- Header: manager name, offline indicator, version box, theme stub, profile button, logout
 - Sidebar collapsible (desktop) and overlay-based (mobile)
-- Logout: API call → clear JWT → fire `auth:logout` → return to login
+- Logout: four-option panel (Quick / Normal / Public / Global) with keyboard shortcuts
+
+### Sidebar Footer Buttons (current)
+
+| Position | ID | Icon | Action |
+|----------|----|------|--------|
+| 0 | `sidebar-collapse-btn` | `fa-angles-left` | Collapse/expand sidebar |
+| 1 | `sidebar-theme-btn` | `fa-palette` | Open Style Manager (stub) |
+| 2 | `sidebar-profile-btn` | `fa-user-cog` | Open Profile Manager (loads manager 2) |
+| 3 | `sidebar-help-btn` | `fa-circle-question` | Help (stub — **to be replaced**) |
+| 4 | `sidebar-logout-btn` | `fa-sign-out-alt` | Open logout panel |
+
+### Planned Sidebar Footer Changes
+
+The **Help** button (position 3) will be replaced by the **Session Log** utility
+manager button. Help will be surfaced as a panel within the Session Log manager
+or as a separate lightweight popup.
+
+When utility managers are implemented the footer will become:
+
+| Position | ID | Icon | Action |
+|----------|----|------|--------|
+| 0 | `sidebar-collapse-btn` | `fa-angles-left` | Collapse/expand sidebar |
+| 1 | `sidebar-theme-btn` | `fa-palette` | Open Style Manager (stub) |
+| 2 | `sidebar-profile-btn` | `fa-user-cog` | Open User Profile utility manager |
+| 3 | `sidebar-logs-btn` | `fa-scroll` | Open Session Log utility manager |
+| 4 | `sidebar-logout-btn` | `fa-sign-out-alt` | Open logout panel |
 
 ---
 
@@ -326,7 +489,7 @@ Theme management: list, apply, edit, share themes. Fully implemented in
 
 ---
 
-## 14. Profile Manager ⬜ NEXT
+## 14. Profile Manager ⬜
 
 User preferences. Currently a placeholder stub.
 
@@ -358,6 +521,63 @@ User preferences. Currently a placeholder stub.
 - [ ] Active theme quick-apply dropdown
 - [ ] Save → API call → JWT refresh if needed
 - [ ] `locale:changed` event on save
+
+---
+
+## 14a. Session Log Manager ⬜ NEXT (Utility Manager)
+
+The Session Log manager is a **utility manager** — always available from the
+sidebar footer regardless of Punchcard. It replaces the current Help button.
+
+### Purpose
+
+Display the current session's client-side action log in a full-featured
+CodeMirror viewer, with the same rendering as the login panel's System Logs
+subpanel but with additional capabilities appropriate for an authenticated
+session.
+
+### Relationship to Login Panel Logs
+
+The login panel already has a System Logs subpanel (accessible via `fa-scroll`
+before login). The Session Log manager is the post-login equivalent. Both read
+from the same `src/core/log.js` buffer. Differences:
+
+| Aspect | Login panel subpanel | Session Log manager |
+|--------|---------------------|---------------------|
+| Trigger | Button in login footer | Sidebar footer button (always) |
+| Location | Replaces login form | Loads in workspace |
+| Header bar | Coverage + Close buttons | Full subpanel header with more actions |
+| Auto-refresh | No (snapshot on open) | Yes — live tail / refresh button |
+| Coverage link | Yes (`fa-chart-line`) | Yes |
+| Server log browsing | No | Future (Session Logs Manager, separate menu manager) |
+
+### Layout
+
+Single view with a CodeMirror read-only editor (same config as login subpanel:
+`oneDark` theme, `Vanadium Mono` font, 4-digit zero-padded line numbers).
+
+Header bar:
+
+| Button | Icon | Action |
+|--------|------|--------|
+| Title | `fa-scroll` Session Log | Non-interactive label |
+| Refresh | `fa-rotate` | Reload log from buffer |
+| Coverage | `fa-chart-line` | Open `/coverage/index.html` in new tab |
+| Clear archived | `fa-trash-can` | Remove previous-session archives from localStorage |
+
+### Implementation Checklist
+
+- [ ] Create `src/managers/session-log/index.js` with init/render/teardown
+- [ ] Create `src/managers/session-log/session-log.html` and `.css`
+- [ ] Replace Help button in `main.html` sidebar footer with Session Log button
+- [ ] Wire `sidebar-logs-btn` click to load Session Log utility manager
+- [ ] Register in `app.js` utility manager registry (separate from Punchcard IDs)
+- [ ] CodeMirror read-only viewer (reuse login panel approach)
+- [ ] Refresh button — re-reads `getRawLog()` and updates editor content
+- [ ] Coverage link button
+- [ ] Clear archived sessions button (`window.lithiumLogs.archived`)
+- [ ] Add `Subsystems.SESSIONLOG` constant to `log.js`
+- [ ] Log all button interactions via `log(LOGIN, ...)` pattern
 
 ---
 
@@ -568,6 +788,16 @@ Sidebar + header + workspace, manager lazy loading, responsive.
 - [ ] Theme data model and API integration (waiting for Hydrogen endpoint)
 - [x] DOMPurify sanitization
 
+### Phase 4a: Utility Managers & Sidebar Footer ⬜ NEXT
+
+Introduce the utility manager concept and deliver the first utility manager.
+
+- [ ] Add `utilityManagerRegistry` to `app.js` (separate from Punchcard `managerRegistry`)
+- [ ] Replace Help button with Session Log button in `main.html` sidebar footer
+- [ ] Implement `session-log/` utility manager (see Section 14a)
+- [ ] Wire footer button → load utility manager into workspace
+- [ ] Document standalone manager URL mode in `app.js` (groundwork only, not full impl)
+
 ### Phase 5: Profile Manager ⬜
 
 - [ ] Preference form (language, date, time, number, theme)
@@ -613,11 +843,18 @@ None of these block the current Lithium work.
 
 ## 23. Recommended Next Steps
 
-1. **Style Manager** — The main unfinished piece. Exercises Tabulator, CodeMirror,
-   DOMPurify, theme injection, and permission-gated UI end-to-end.
+1. **Session Log Utility Manager** — First utility manager. Replaces the Help
+   sidebar footer button. Reuses the login panel log viewer pattern but with
+   refresh + clear-archived actions. Validates the utility manager architecture
+   end-to-end before Phase 5.
 2. **Profile Manager** — Demonstrates preferences → JWT refresh → event system flow.
-3. **Integration tests** — Mock Hydrogen, test login → main menu → manager loading.
-4. **Documentation** — Rewrite INSTRUCTIONS.md to match current architecture.
+3. **Style Manager** — Remaining items: theme data from Hydrogen API, unit tests.
+4. **Manager Switcher Popup** — Deferred until a menu manager that benefits from
+   multi-instance support is actively being built. At that point extend
+   `loadedManagers` and implement the switcher popup (see § 3b).
+5. **Integration tests** — Mock Hydrogen, test login → main menu → manager loading.
+6. **Documentation** — Update INSTRUCTIONS.md with utility manager pattern,
+   popup panel pattern, and standalone manager URL mode.
 
 ---
 
