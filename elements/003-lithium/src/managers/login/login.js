@@ -11,8 +11,11 @@ import { storeJWT } from '../../core/jwt.js';
 import { getConfig, getConfigValue } from '../../core/config.js';
 import { getTransitionDuration, waitForTransition } from '../../core/transitions.js';
 import { hasLookup } from '../../shared/lookups.js';
-import { getRawLog } from '../../core/log.js';
+import { log, logGroup, getRawLog, Subsystems, Status } from '../../core/log.js';
 import './login.css';
+
+// Convenience alias for this module's subsystem
+const LOGIN = Subsystems.LOGIN;
 
 /**
  * Login Manager Class
@@ -28,6 +31,8 @@ export default class LoginManager {
     this.currentPanel = 'login'; // 'login', 'theme', 'logs', 'language', 'help'
     this.panels = {};
     this.lookupListeners = [];
+    this._startupComplete = false; // Tracks whether background startup has finished
+    this._loginFocusTimer = null; // Timer ID for the post-return-to-login focus delay
   }
 
   /**
@@ -91,8 +96,8 @@ export default class LoginManager {
     // Start with buttons disabled
     this.setLanguageButtonEnabled(false);
     this.setThemeButtonEnabled(false);
-    // Logs button is always enabled since we have client-side action logs
-    this.setLogsButtonEnabled(true);
+    // Logs button starts disabled; enabled once background startup completes
+    this.setLogsButtonEnabled(false);
 
     // If lookups are already loaded, enable buttons immediately
     if (hasLookup('lookup_names')) {
@@ -101,7 +106,6 @@ export default class LoginManager {
     if (hasLookup('themes')) {
       this.setThemeButtonEnabled(true);
     }
-    // Logs button is always enabled
   }
 
   /**
@@ -166,20 +170,21 @@ export default class LoginManager {
       this.setThemeButtonEnabled(true);
     };
 
-    // Listen for system_info lookup - enable logs button when system info is loaded
-    const handleSystemInfoLoaded = () => {
+    // Listen for startup complete - enable logs button once background init is done
+    const handleStartupComplete = () => {
+      this._startupComplete = true;
       this.setLogsButtonEnabled(true);
     };
 
     // Subscribe to specific lookup events
     eventBus.on(Events.LOOKUPS_LOOKUP_NAMES_LOADED, handleLookupNamesLoaded);
     eventBus.on(Events.LOOKUPS_THEMES_LOADED, handleThemesLoaded);
-    eventBus.on(Events.LOOKUPS_SYSTEM_INFO_LOADED, handleSystemInfoLoaded);
+    eventBus.once(Events.STARTUP_COMPLETE, handleStartupComplete);
 
     // Store unsubscribe functions for cleanup
     this.lookupListeners.push(() => eventBus.off(Events.LOOKUPS_LOOKUP_NAMES_LOADED, handleLookupNamesLoaded));
     this.lookupListeners.push(() => eventBus.off(Events.LOOKUPS_THEMES_LOADED, handleThemesLoaded));
-    this.lookupListeners.push(() => eventBus.off(Events.LOOKUPS_SYSTEM_INFO_LOADED, handleSystemInfoLoaded));
+    this.lookupListeners.push(() => eventBus.off(Events.STARTUP_COMPLETE, handleStartupComplete));
   }
 
   /**
@@ -221,7 +226,7 @@ export default class LoginManager {
     const password = urlParams.get('PASS');
 
     if (username && password) {
-      console.log('[LoginManager] Auto-login credentials detected in URL');
+      log(LOGIN, Status.INFO, `Auto-login: credentials detected in URL for user "${username}"`);
       
       // Pre-fill the form fields
       if (this.elements.username) {
@@ -347,7 +352,7 @@ export default class LoginManager {
                 <fa fa-sign-in-alt></fa>
                 <span>Login</span>
               </button>
-              <button type="button" class="login-btn-icon tooltip" id="login-logs-btn" data-tooltip="View Logs">
+              <button type="button" class="login-btn-icon tooltip" id="login-logs-btn" data-tooltip="View Session Log">
                 <fa fa-scroll></fa>
               </button>
               <button type="button" class="login-btn-icon tooltip" id="login-help-btn" data-tooltip="Help">
@@ -370,44 +375,62 @@ export default class LoginManager {
       this.handleSubmit();
     });
 
-    // Clear error on input
+    // Clear error on input; log field-level interactions on blur (not on every keystroke)
     this.elements.username?.addEventListener('input', () => this.hideError());
     this.elements.password?.addEventListener('input', () => this.hideError());
 
+    this.elements.username?.addEventListener('blur', () => {
+      const hasValue = !!(this.elements.username?.value?.trim());
+      log(LOGIN, Status.INFO, `Username field: ${hasValue ? 'filled' : 'empty'}`);
+    });
+
+    this.elements.password?.addEventListener('blur', () => {
+      const hasValue = !!(this.elements.password?.value);
+      log(LOGIN, Status.INFO, `Password field: ${hasValue ? 'filled' : 'empty'}`);
+    });
+
     // Language button click - show language panel
     this.elements.languageBtn?.addEventListener('click', () => {
+      log(LOGIN, Status.INFO, 'Button clicked: Language');
       this.switchPanel('language');
     });
 
     // Theme button click - show theme panel
     this.elements.themeBtn?.addEventListener('click', () => {
+      log(LOGIN, Status.INFO, 'Button clicked: Theme');
       this.switchPanel('theme');
     });
 
     // Logs button click - show logs panel
     this.elements.logsBtn?.addEventListener('click', () => {
+      log(LOGIN, Status.INFO, 'Button clicked: Logs');
       this.switchPanel('logs');
     });
 
     // Help button click - show help panel
     this.elements.helpBtn?.addEventListener('click', () => {
+      log(LOGIN, Status.INFO, 'Button clicked: Help');
       this.switchPanel('help');
     });
 
     // Close buttons
     this.elements.themeCloseBtn?.addEventListener('click', () => {
+      log(LOGIN, Status.INFO, 'Button clicked: Theme Close');
       this.switchPanel('login');
     });
 
     this.elements.logsCloseBtn?.addEventListener('click', () => {
+      log(LOGIN, Status.INFO, 'Button clicked: Logs Close');
       this.switchPanel('login');
     });
 
     this.elements.languageCloseBtn?.addEventListener('click', () => {
+      log(LOGIN, Status.INFO, 'Button clicked: Language Close');
       this.switchPanel('login');
     });
 
     this.elements.helpCloseBtn?.addEventListener('click', () => {
+      log(LOGIN, Status.INFO, 'Button clicked: Help Close');
       this.switchPanel('login');
     });
 
@@ -590,7 +613,7 @@ export default class LoginManager {
     if (hide) {
       body.classList.add('hide-password-manager-ui');
       
-      // One-time cleanup of anything already present
+      // Selectors for password manager injected elements.
       const selectors = [
         'com-1password-button',
         '[id*="1p-"]',
@@ -600,34 +623,77 @@ export default class LoginManager {
         '[class*="dashlane"]',
         '[data-dashlane]',
       ];
-      
-      for (const selector of selectors) {
+
+      const suppressElements = () => {
+        // Temporarily disconnect the observer while we mutate styles so that our
+        // own setAttribute calls do not re-trigger this callback (infinite loop).
+        // We immediately reconnect after the sweep so new 1Password injections
+        // are still caught.
+        this._passwordManagerObserver?.disconnect();
         try {
-          document.querySelectorAll(selector).forEach(el => {
-            el.style.setProperty('display', 'none', 'important');
-          });
-        } catch (e) {
-          // Invalid selector, skip
-        }
-      }
-      
-      // Watch for any new injections while hidden
-      this._passwordManagerObserver = new MutationObserver(() => {
-        for (const selector of selectors) {
-          try {
-            document.querySelectorAll(selector).forEach(el => {
-              el.style.setProperty('display', 'none', 'important');
+          for (const selector of selectors) {
+            try {
+              document.querySelectorAll(selector).forEach(el => {
+                el.style.setProperty('display', 'none', 'important');
+                el.style.setProperty('visibility', 'hidden', 'important');
+                el.style.setProperty('opacity', '0', 'important');
+                el.style.setProperty('pointer-events', 'none', 'important');
+              });
+            } catch (e) {
+              // Invalid selector, skip
+            }
+          }
+        } finally {
+          // Reconnect so future 1Password re-injections/re-shows are caught.
+          // Guard against calling observe() after teardown (observer may be null).
+          if (this._passwordManagerObserver) {
+            this._passwordManagerObserver.observe(document.body, {
+              childList: true,
+              subtree: true,
+              attributes: true,
+              attributeFilter: ['style', 'class'],
             });
-          } catch (e) {
-            // Invalid selector, skip
           }
         }
-      });
-      this._passwordManagerObserver.observe(document.body, { childList: true, subtree: true });
+      };
+
+      // Create the observer (initially disconnected; suppressElements reconnects it).
+      this._passwordManagerObserver = new MutationObserver(suppressElements);
+
+      // Run the initial suppression sweep, which also starts the observer.
+      suppressElements();
+
+      // Schedule a follow-up sweep on the next animation frame so we get the
+      // last word after any 1Password re-assertion in the same microtask flush.
+      requestAnimationFrame(suppressElements);
     } else {
       body.classList.remove('hide-password-manager-ui');
       this._passwordManagerObserver?.disconnect();
       this._passwordManagerObserver = null;
+    }
+  }
+
+  /**
+   * Remove 1Password (and other password manager) injected elements from the DOM.
+   * Called after a successful login — at that point we want the elements gone
+   * entirely, not just hidden, so they do not linger in the post-login view.
+   */
+  removePasswordManagerElements() {
+    const selectors = [
+      'com-1password-button',
+      '[id*="1p-"]',
+      '[class*="lastpass"]',
+      '[class*="bitwarden"]',
+      '[data-bitwarden]',
+      '[class*="dashlane"]',
+      '[data-dashlane]',
+    ];
+    for (const selector of selectors) {
+      try {
+        document.querySelectorAll(selector).forEach(el => el.remove());
+      } catch (e) {
+        // Invalid selector, skip
+      }
     }
   }
 
@@ -644,11 +710,20 @@ export default class LoginManager {
    */
   async switchPanel(targetPanel) {
     if (targetPanel === this.currentPanel) return;
+    const panelStart = performance.now();
 
     const fromPanel = this.panels[this.currentPanel];
     const toPanel = this.panels[targetPanel];
 
     if (!toPanel) return;
+
+    // Cancel any pending focus-on-login timer from a previous switchPanel('login') call.
+    // This prevents a stale focus from firing on the wrong panel if the user navigates
+    // away before the delay expires (which would trigger 1Password on a subpanel).
+    if (this._loginFocusTimer !== null) {
+      clearTimeout(this._loginFocusTimer);
+      this._loginFocusTimer = null;
+    }
 
     // Hide password manager UI when leaving login panel, show when returning
     if (targetPanel === 'login') {
@@ -671,16 +746,25 @@ export default class LoginManager {
     await this.performPanelTransition(fromPanel, toPanel);
 
     // Update current panel state
+    const fromPanelName = this.currentPanel;
     this.currentPanel = targetPanel;
+    const panelDuration = Math.round(performance.now() - panelStart);
+    log(LOGIN, Status.INFO, `Panel: ${fromPanelName} → ${targetPanel}`, panelDuration);
 
     // Re-enable interactions
     this.disableTransitionOverlay();
 
     // Focus management
     if (targetPanel === 'login') {
-      // Focus username when returning to login
-      setTimeout(() => {
-        this.elements.username?.focus();
+      // Delay the focus slightly to let the transition fully settle, then check
+      // we are still on the login panel before focusing.  Storing the timer ID
+      // lets any subsequent switchPanel call cancel it immediately, so 1Password
+      // is never triggered by a focus event that fires on the wrong panel.
+      this._loginFocusTimer = setTimeout(() => {
+        this._loginFocusTimer = null;
+        if (this.currentPanel === 'login') {
+          this.elements.username?.focus();
+        }
       }, getTransitionDuration());
     }
   }
@@ -701,10 +785,18 @@ export default class LoginManager {
     if (entries.length === 0) {
       logText = '(No log entries yet)';
     } else {
-      // Determine max subsystem width for fixed-width column alignment
-      const maxSubsystemLen = entries.reduce((max, e) => Math.max(max, (e.subsystem || '').length), 0);
+      // Determine max subsystem width for fixed-width column alignment.
+      // Bracketed entries (EventBus) are excluded from this calculation because their
+      // brackets already account for the two-space column separator.
+      const maxSubsystemLen = entries.reduce((max, e) => {
+        const s = e.subsystem || '';
+        return s.startsWith('[') ? max : Math.max(max, s.length);
+      }, 0);
 
-      // Build display lines, expanding grouped entries ({ title, items }) to multiple lines
+      // Build display lines, expanding grouped entries ({ title, items }) to multiple lines.
+      // Subsystems stored with bracket notation (e.g. "[Lookups]") are EventBus entries:
+      // they are rendered without extra padding because the brackets consume the two
+      // separator spaces, keeping columns visually aligned with plain subsystem names.
       const lines = [];
       for (const entry of entries) {
         const date = new Date(entry.timestamp);
@@ -712,17 +804,26 @@ export default class LoginManager {
           String(date.getMinutes()).padStart(2, '0') + ':' +
           String(date.getSeconds()).padStart(2, '0') + '.' +
           String(date.getMilliseconds()).padStart(3, '0');
-        const subsystem = (entry.subsystem || '').padEnd(maxSubsystemLen);
+        const raw = entry.subsystem || '';
+        const isBracketed = raw.startsWith('[');
+        // Bracketed entries (EventBus) use a single space before and after the label.
+        // The two bracket characters replace the two padding spaces from plain entries,
+        // keeping columns visually aligned:
+        //   time  Lookups  desc  →  pre(2) + name(7) + sep(2) = 11 chars before desc
+        //   time [Lookups] desc  →  pre(1) + name(9) + sep(1) = 11 chars before desc ✓
+        const subsystem = isBracketed ? raw : raw.padEnd(maxSubsystemLen);
+        const pre = isBracketed ? ' ' : '  ';
+        const sep = isBracketed ? ' ' : '  ';
         const desc = entry.description;
 
         if (desc && typeof desc === 'object' && desc.title !== undefined && Array.isArray(desc.items)) {
           // Grouped entry: render title + ― continuation lines
-          lines.push(`${time}  ${subsystem}  ${desc.title}`);
+          lines.push(`${time}${pre}${subsystem}${sep}${desc.title}`);
           for (const item of desc.items) {
-            lines.push(`${time}  ${subsystem}  ― ${item}`);
+            lines.push(`${time}${pre}${subsystem}${sep}― ${item}`);
           }
         } else {
-          lines.push(`${time}  ${subsystem}  ${desc}`);
+          lines.push(`${time}${pre}${subsystem}${sep}${desc}`);
         }
       }
       logText = lines.join('\n');
@@ -929,6 +1030,7 @@ export default class LoginManager {
    * Clears both username and password, then focuses username for immediate typing
    */
   handleClearUsername() {
+    log(LOGIN, Status.INFO, 'Credentials cleared');
     if (this.elements.username) {
       this.elements.username.value = '';
       this.elements.username.focus();
@@ -946,6 +1048,7 @@ export default class LoginManager {
     if (!this.elements.password || !this.elements.passwordIcon) return;
 
     this.isPasswordVisible = !this.isPasswordVisible;
+    log(LOGIN, Status.INFO, `Password visibility: ${this.isPasswordVisible ? 'shown' : 'hidden'}`);
 
     if (this.isPasswordVisible) {
       // Show password
@@ -1003,8 +1106,16 @@ export default class LoginManager {
     return new Promise((resolve) => {
       const duration = getTransitionDuration();
       
-      // Hide password manager UI elements before fading out to main
+      // Hide password manager UI elements before fading out to main.
+      // This adds the body class, starts the MutationObserver, and sweeps
+      // any existing elements so they disappear immediately.
       this.togglePasswordManagerUI(true);
+
+      // Physically remove all injected password manager elements from the DOM.
+      // This ensures they do not linger in the post-login view as invisible orphan
+      // nodes (e.g. 1Password's live-region divs) and that 1Password cannot simply
+      // re-show them by attribute mutation without re-inserting them first.
+      this.removePasswordManagerElements();
       
       // Fade out the current panel only
       // Let the app handle the transition to main manager
@@ -1028,9 +1139,13 @@ export default class LoginManager {
     const password = this.elements.password?.value;
 
     if (!username || !password) {
+      log(LOGIN, Status.WARN, 'Login attempted with empty credentials');
       this.showError('Please enter both username and password');
       return;
     }
+
+    log(LOGIN, Status.INFO, `Login attempt: user "${username}"`);
+    this._loginStart = performance.now();
 
     this.isSubmitting = true;
     this.setLoading(true);
@@ -1105,7 +1220,10 @@ export default class LoginManager {
     // Remember username for next visit
     this.saveRememberedUsername(username);
 
-    // Success - emit login event
+    // Success — log and emit login event
+    const loginDuration = this._loginStart ? Math.round(performance.now() - this._loginStart) : 0;
+    this._loginStart = null;
+    log(LOGIN, Status.SUCCESS, `Login successful: user "${username}"`, loginDuration);
     eventBus.emit(Events.AUTH_LOGIN, {
       userId: data.user_id,
       username,
@@ -1121,6 +1239,9 @@ export default class LoginManager {
    * Handle login errors
    */
   handleLoginError(error) {
+    const loginDuration = this._loginStart ? Math.round(performance.now() - this._loginStart) : 0;
+    this._loginStart = null;
+    log(LOGIN, Status.ERROR, `Login failed: HTTP ${error.status || error.message}`, loginDuration);
     console.error('[LoginManager] Login failed:', error);
 
     let message = 'Login failed. Please try again.';
@@ -1200,8 +1321,8 @@ export default class LoginManager {
       this.elements.themeBtn.disabled = loading || !hasLookup('themes');
     }
     if (this.elements.logsBtn) {
-      // Logs button is always enabled (client-side logs are always available)
-      this.elements.logsBtn.disabled = loading;
+      // Logs button is gated on both loading state and startup completion
+      this.elements.logsBtn.disabled = loading || !this._startupComplete;
     }
     if (this.elements.helpBtn) {
       this.elements.helpBtn.disabled = loading;
@@ -1224,13 +1345,20 @@ export default class LoginManager {
       this._logEditor = null;
     }
 
+    // Cancel any pending post-login-return focus timer
+    if (this._loginFocusTimer !== null) {
+      clearTimeout(this._loginFocusTimer);
+      this._loginFocusTimer = null;
+    }
+
     // Remove keyboard shortcut event listeners
     this.removeKeyboardShortcuts();
 
-    // Clean up password manager UI observer
+    // Clean up password manager UI observer and remove any lingering injected elements
     this._passwordManagerObserver?.disconnect();
     this._passwordManagerObserver = null;
     document.body.classList.remove('hide-password-manager-ui');
+    this.removePasswordManagerElements();
 
     // Remove lookup event listeners
     this.lookupListeners.forEach(unsubscribe => unsubscribe());

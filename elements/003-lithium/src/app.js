@@ -47,69 +47,137 @@ class LithiumApp {
    * Initialize the application
    */
   async init() {
+    // Track total initialization time
+    const initStart = Date.now();
+
     try {
-      // First log entry: headline so the log viewer has an obvious start marker
-      logStartup('Lithium App startup');
+      // Step 0: Load version info first so we can include it in the startup log
+      await this.loadVersion();
+
+      // Format timestamp for display
+      let releaseDate = '';
+      if (this.timestamp) {
+        const date = new Date(this.timestamp);
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        releaseDate = `${date.getUTCFullYear()}-${months[date.getUTCMonth()]}-${String(date.getUTCDate()).padStart(2, '0')} ${hours}:${minutes} UTC`;
+      }
+
+      // First log entry: headline with version info
+      logGroup(Subsystems.STARTUP, Status.INFO, 'Lithium Application Started', [
+        `Version: ${this.version || 'unknown'}`,
+        `Release: ${releaseDate || 'unknown'}`,
+      ]);
 
       // Log environment info immediately
       this._logEnvironment();
 
       logStartup('Application initializing');
 
-      // Step 1: Load version info
-      const versionStart = Date.now();
-      await this.loadVersion();
-      logStartup(`Version: ${this.version || 'unknown'} (build ${this.build || 'unknown'})`, Date.now() - versionStart);
-
-      // Step 2: Load configuration
-      const configStart = Date.now();
+      // Step 1: Load configuration
       this.config = await loadConfig();
       const serverUrl = getConfigValue('server.url', 'unknown');
       const apiPrefix = getConfigValue('server.api_prefix', '/api');
-      logStartup(`Config: ${this.config.app.name}, Server: ${serverUrl}${apiPrefix}`, Date.now() - configStart);
+      const iconSet = getConfigValue('icons.set', 'duotone');
+      const iconWeight = getConfigValue('icons.weight', 'thin');
+      const iconPrefix = getConfigValue('icons.prefix', 'fad');
+      const iconFallback = getConfigValue('icons.fallback', 'solid');
+      // Get config file size from response headers if available
+      let configFileSize = '';
+      try {
+        const configResponse = await fetch('/config/lithium.json', { method: 'HEAD' });
+        if (configResponse.ok) {
+          const contentLength = configResponse.headers.get('content-length');
+          if (contentLength) {
+            configFileSize = ` (${parseInt(contentLength).toLocaleString()} bytes)`;
+          }
+        }
+      } catch (e) {
+        // Ignore errors, size is optional
+      }
+      logGroup(Subsystems.STARTUP, Status.INFO, 'Application Configuration', [
+        `ConfigFile: /config/lithium.json${configFileSize}`,
+        `Server: ${serverUrl}${apiPrefix}`,
+        `Icons: ${iconPrefix}-${iconWeight} ${iconSet} (fallback: ${iconFallback})`,
+      ]);
 
-      // Step 3: Log available managers
+      // Step 2: Log available managers
       this._logManagers();
 
-      // Step 4: Create API client with config
+      // Step 3: Create API client with config
       const apiStart = Date.now();
       this.api = createRequest(this.config);
       logStartup('API client created', Date.now() - apiStart);
 
-      // Step 5: Initialize lookups (fetch open lookups from cache or server)
-      // This happens before auth check so lookups are available for login UI
+      // Step 4: Initialize icon system (requires config for icon set selection)
+      const iconsStart = Date.now();
+      initIcons();
+      logStartup('Icon system initialized', Date.now() - iconsStart);
+
+      // Step 5: Reveal the page (FOUC prevention) and load login/main UI immediately
+      this.revealPage();
+      logStartup('Page revealed');
+
+      // Step 6: Check authentication and load appropriate manager
+      // The login panel starts with its logs button disabled; it will be enabled
+      // once background startup tasks complete and STARTUP_COMPLETE is emitted.
+      const authStart = Date.now();
+      await this.checkAuthAndLoad();
+      logStartup('Auth check complete', Date.now() - authStart);
+
+      // Step 7: Set up global event listeners
+      this.setupEventListeners();
+      logStartup('Event listeners registered');
+
+      // Step 8: Run remaining startup tasks in the background so the UI is
+      // already visible and interactive while these complete.
+      this._runBackgroundStartup(initStart);
+    } catch (error) {
+      logStartup(`Initialization failed: ${error.message}`);
+      console.error('[Lithium] Failed to initialize:', error);
+      this.showFatalError('Failed to initialize application. Please refresh the page.');
+    }
+  }
+
+  /**
+   * Run background startup tasks after the UI is already visible.
+   * Emits STARTUP_COMPLETE when finished so dependent UI (e.g. logs button) can enable.
+   * @param {number} initStart - Timestamp when init() began, for total-time reporting
+   */
+  async _runBackgroundStartup(initStart) {
+    try {
+      // Step 9: Check server health
+      try {
+        const healthResponse = await this.api.get('system/health');
+        const healthStatus = healthResponse.status || healthResponse.message || 'unknown';
+        logGroup(Subsystems.STARTUP, Status.INFO, 'Server Health Check', [
+          `Status: ${healthStatus}`,
+        ]);
+      } catch (error) {
+        logGroup(Subsystems.STARTUP, Status.WARN, 'Server Health Check', [
+          `Status: Failed`,
+          `Error: ${error.message}`,
+        ]);
+      }
+
+      // Step 10: Initialize lookups (fetch open lookups from cache or server)
       const lookupsStart = Date.now();
       initLookups();
       this.fetchLookups();
       logStartup('Lookups initialized', Date.now() - lookupsStart);
 
-      // Step 6: Initialize icon system
-      const iconsStart = Date.now();
-      initIcons();
-      logStartup('Icon system initialized', Date.now() - iconsStart);
-
-      // Step 7: Reveal the page (FOUC prevention)
-      this.revealPage();
-      logStartup('Page revealed');
-
-      // Step 8: Check authentication and load appropriate manager
-      const authStart = Date.now();
-      await this.checkAuthAndLoad();
-      logStartup('Auth check complete', Date.now() - authStart);
-
-      // Step 9: Set up global event listeners
-      this.setupEventListeners();
-      logStartup('Event listeners registered');
-
-      // Step 10: Set up network status monitoring
+      // Step 11: Set up network status monitoring
       this.setupNetworkMonitoring();
       logStartup('Network monitoring active');
 
-      logStartup('Application initialized successfully');
+      const totalInitTime = Date.now() - initStart;
+      logStartup(`Application initialized successfully in ${(totalInitTime / 1000).toFixed(2)}s`);
     } catch (error) {
-      logStartup(`Initialization failed: ${error.message}`);
-      console.error('[Lithium] Failed to initialize:', error);
-      this.showFatalError('Failed to initialize application. Please refresh the page.');
+      logStartup(`Background startup error: ${error.message}`);
+    } finally {
+      // Always emit STARTUP_COMPLETE so the logs button is enabled even on error
+      eventBus.emit(Events.STARTUP_COMPLETE);
     }
   }
 
@@ -126,8 +194,8 @@ class LithiumApp {
       `Browser: ${browser.name} ${browser.version}`,
       `Platform: ${navigator.platform}`,
       `Language: ${navigator.language}`,
-      `Online: ${navigator.onLine}`,
       `Screen: ${window.screen.width}x${window.screen.height}, Color Depth: ${window.screen.colorDepth}`,
+      `Online: ${navigator.onLine}`,
     ]);
   }
 
@@ -156,12 +224,14 @@ class LithiumApp {
   }
 
   /**
-   * Log available managers as a single grouped entry
+   * Log available managers as a single grouped entry.
+   * Each manager is displayed as a 4-digit zero-padded ID followed by its name.
+   * The first two digits are reserved for client namespacing (00 = core).
    */
   _logManagers() {
     const managers = Object.values(this.managerRegistry);
     logGroup(Subsystems.STARTUP, Status.INFO, `Managers available: ${managers.length}`,
-      managers.map(m => `${m.name} (id=${m.id})`));
+      managers.map(m => `${String(m.id).padStart(4, '0')}: ${m.name}`));
   }
 
   /**
@@ -175,10 +245,9 @@ class LithiumApp {
         this.version = data.version;
         this.build = data.build;
         this.timestamp = data.timestamp;
-        console.log(`[Lithium] Version ${data.version} (build ${data.build})`);
       }
     } catch (error) {
-      console.warn('[Lithium] Could not load version info:', error);
+      // Non-fatal: version info is optional
     }
   }
 
@@ -189,7 +258,6 @@ class LithiumApp {
     // Small delay to ensure CSS is parsed
     requestAnimationFrame(() => {
       document.documentElement.style.visibility = 'visible';
-      console.log('[Lithium] Page revealed');
     });
   }
 
@@ -397,11 +465,11 @@ class LithiumApp {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       this.deferredInstallPrompt = e;
-      console.log('[Lithium] PWA install prompt available');
+      logStartup('PWA install prompt available');
     });
 
     window.addEventListener('appinstalled', () => {
-      console.log('[Lithium] PWA was installed');
+      logStartup('PWA was installed');
       this.deferredInstallPrompt = null;
     });
   }
@@ -499,7 +567,7 @@ class LithiumApp {
       // Update current manager reference
       this.currentManager = { name: 'main', instance: mainManager };
 
-      console.log('[Lithium] Main manager loaded with crossfade transition');
+      logStartup('Main manager loaded with crossfade transition');
     } catch (error) {
       console.error('[Lithium] Failed to transition to main manager:', error);
       // Fallback: clear and load normally
@@ -514,7 +582,7 @@ class LithiumApp {
    */
   async handleLogoutTransition(eventDetail = {}) {
     const logoutType = eventDetail?.logoutType || 'quick';
-    console.log(`[Lithium] Initiating ${logoutType} logout with fade transition...`);
+    logAuth(Status.INFO, `Initiating ${logoutType} logout with fade transition`);
 
     const container = document.getElementById('app');
     const mainElement = container?.firstElementChild;
@@ -537,7 +605,6 @@ class LithiumApp {
     await this.performLogoutActions(logoutType);
 
     // Reload page for clean state
-    console.log('[Lithium] Reloading page...');
     window.location.reload();
   }
 
@@ -600,8 +667,6 @@ class LithiumApp {
    * Clear local data for public/global logout
    */
   clearLocalData() {
-    console.log('[Lithium] Clearing local data...');
-
     try {
       // Clear remembered username
       localStorage.removeItem('lithium_last_username');
@@ -620,9 +685,9 @@ class LithiumApp {
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
 
-      console.log('[Lithium] Local data cleared');
+      logAuth(Status.INFO, 'Local data cleared');
     } catch (error) {
-      console.warn('[Lithium] Could not clear local data:', error);
+      logAuth(Status.WARN, `Could not clear local data: ${error.message}`);
     }
   }
 
@@ -664,14 +729,12 @@ class LithiumApp {
 
   /**
    * Fetch lookups from server or cache
-   * This is called during initialization to ensure lookups are available
+   * This is called during initialization to ensure lookups are available.
+   * logging is handled inside lookups.js — no duplicate log lines here.
    */
   async fetchLookups() {
     try {
-      const start = Date.now();
-      log(Subsystems.LOOKUPS, Status.INFO, 'Fetching lookups from server or cache');
       await fetchLookups();
-      log(Subsystems.LOOKUPS, Status.SUCCESS, 'Lookups fetch initiated', Date.now() - start);
     } catch (error) {
       log(Subsystems.LOOKUPS, Status.WARN, `Failed to fetch lookups: ${error.message}`);
       // Non-fatal error, continue without lookups

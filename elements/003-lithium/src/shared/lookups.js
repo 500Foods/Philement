@@ -15,7 +15,7 @@
 
 import { eventBus, Events } from '../core/event-bus.js';
 import { getConfigValue } from '../core/config.js';
-import { log, Subsystems, Status } from '../core/log.js';
+import { log, logGroup, Subsystems, Status, logHttpRequest, logHttpResponse } from '../core/log.js';
 
 // In-memory cache for lookups
 let cache = null;
@@ -37,14 +37,66 @@ const logger = {
   },
 };
 
+// Friendly metadata for each lookup category
+// Maps category key → { queryRef, label, countLabel }
+const LOOKUP_META = {
+  system_info:   { queryRef: '001', label: 'System Info',    countLabel: 'elements' },
+  lookup_names:  { queryRef: '030', label: 'Lookup Names',   countLabel: 'lookups' },
+  themes:        { queryRef: '053', label: 'Themes',         countLabel: 'themes' },
+  icons:         { queryRef: '054', label: 'Icons',          countLabel: 'icons' },
+};
+
 /**
- * Emit an event to the event bus with logging
- * @param {string} eventName - Name of the event
- * @param {Object} detail - Event detail payload
+ * Emit lookups-loaded events via the event bus.
+ * For each category a rich logGroup entry is written directly, and the
+ * per-category event is dispatched silently (no duplicate EventBus log line).
+ * The general LOOKUPS_LOADED event is still emitted normally so any
+ * subscribers (e.g. future analytics) can act on it.
+ *
+ * @param {string} source - 'cache', 'server', or 'cache_fallback'
+ * @param {string[]} categoryKeys - Names of loaded categories
+ * @param {Object} categoryData - Map of category → data (array or object)
  */
-function emitEvent(eventName, detail) {
-  logger.info(`event: ${eventName} ${JSON.stringify(detail).substring(0, 100)}`);
-  eventBus.emit(eventName, detail);
+function emitLookupsLoaded(source, categoryKeys, categoryData) {
+  // General event: only emitted when data is new or refreshed (server / cache_fallback),
+  // NOT when restoring from localStorage cache — that's not a state change for subscribers.
+  if (source !== 'cache') {
+    eventBus.emit(Events.LOOKUPS_LOADED, { source, lookups: categoryKeys });
+  }
+
+  // Per-category: rich logGroup entry + silent event dispatch
+  categoryKeys.forEach(category => {
+    const eventName = `lookups:${category}:loaded`;
+    const data = categoryData[category];
+    const count = Array.isArray(data) ? data.length : Object.keys(data || {}).length;
+    const meta = LOOKUP_META[category];
+    const label = meta ? meta.label : category;
+    const queryRef = meta ? meta.queryRef : '???';
+    const countLabel = meta ? meta.countLabel : 'items';
+
+    // Compute byte size of the serialised data
+    let sizeStr = '';
+    try {
+      const bytes = new TextEncoder().encode(JSON.stringify(data)).length;
+      sizeStr = bytes.toLocaleString() + ' bytes';
+    } catch (_) {
+      sizeStr = 'unknown';
+    }
+
+    // Rich grouped log entry using [Lookups] bracket notation — consistent with
+    // event bus auto-log style so the log viewer renders it in the same column.
+    logGroup('[Lookups]', Status.INFO,
+      `Loaded lookup ${queryRef}: ${label}`,
+      [
+        `${countLabel.charAt(0).toUpperCase() + countLabel.slice(1)}: ${count}`,
+        `Source: ${source}`,
+        `Size: ${sizeStr}`,
+      ]
+    );
+
+    // Silent event — callers (e.g. login.js) still receive it but no duplicate log line
+    eventBus.emitSilent(eventName, { category, count });
+  });
 }
 
 // Lookup categories and their QueryRefs
@@ -85,7 +137,6 @@ function loadFromLocalStorage() {
     }
 
     const data = JSON.parse(stored);
-    logger.info('Loaded from localStorage cache');
     return data;
   } catch (error) {
     logger.warn(`Failed to load from localStorage: ${error.message}`);
@@ -155,8 +206,9 @@ async function fetchBatchQueries(queryRefs, requestId) {
     };
   });
 
-  // Log the request
-  logger.info(`request ${requestId}: initial lookups ${queryRefs.join(', ')}`);
+  // Log the request using RESTAPI-style logging
+  const requestPath = `conduit/queries [${queryRefs.join(', ')}]`;
+  const requestNum = logHttpRequest('POST', requestPath);
 
   const response = await fetch(`${serverUrl}${apiPrefix}/conduit/queries`, {
     method: 'POST',
@@ -167,19 +219,20 @@ async function fetchBatchQueries(queryRefs, requestId) {
     body: JSON.stringify({ database, queries }),
   });
 
+  const duration = Math.round(performance.now() - startTime);
+
   if (!response.ok) {
+    logHttpResponse(requestNum, 'POST', requestPath, response.status, null, duration);
     const error = new Error(`HTTP ${response.status}`);
     error.status = response.status;
     throw error;
   }
 
   const data = await response.json();
-  const duration = Math.round(performance.now() - startTime);
   const bytes = JSON.stringify(data).length;
 
-  // Log the response
-  const resultKeys = Object.keys(data).join(', ');
-  logger.info(`response ${requestId}: initial lookups received ${bytes.toLocaleString()} bytes in ${duration}ms (${resultKeys})`);
+  // Log the response with code, size, and duration
+  logHttpResponse(requestNum, 'POST', requestPath, response.status, bytes, duration);
 
   return data;
 }
@@ -212,27 +265,21 @@ function processBatchResults(batchResults) {
       case 1:
         // QueryRef 001 - System Information (first row contains license info)
         lookups.system_info = rows[0] || {};
-        logger.info(`Processed system_info: ${rows.length} rows`);
         break;
 
       case 30:
         // QueryRef 030 - Names of all lookups
         lookups.lookup_names = rows;
-        logger.info(`Processed lookup_names: ${rows.length} lookups`);
         break;
 
       case 53:
         // QueryRef 053 - Themes
         lookups.themes = rows;
-        // Extract theme names for logging
-        const themeNames = rows.map(r => r.value_txt).filter(Boolean).join(', ');
-        logger.info(`Processed themes: ${rows.length} themes (${themeNames})`);
         break;
 
       case 54:
         // QueryRef 054 - Icons
         lookups.icons = rows;
-        logger.info(`Processed icons: ${rows.length} icons`);
         break;
 
       default:
@@ -268,21 +315,14 @@ export async function fetchLookups(options = {}) {
     const localData = loadFromLocalStorage();
     if (localData) {
       cache = localData;
+      const qrefs = Object.keys(cache)
+        .map(k => LOOKUP_META[k]?.queryRef)
+        .filter(Boolean)
+        .join(', ');
+      logger.info(`Loading lookups [${qrefs}] from localStorage`);
       // Emit event that lookups are loaded from cache
       if (!silent) {
-        emitEvent(Events.LOOKUPS_LOADED, {
-          source: 'cache',
-          lookups: Object.keys(cache),
-        });
-
-        // Emit specific lookup category events for cached data
-        Object.keys(cache).forEach(category => {
-          const eventName = `lookups:${category}:loaded`;
-          emitEvent(eventName, {
-            category,
-            count: Array.isArray(cache[category]) ? cache[category].length : Object.keys(cache[category] || {}).length,
-          });
-        });
+        emitLookupsLoaded('cache', Object.keys(cache), cache);
       }
       // Still fetch fresh data in background
       fetchFreshLookups(silent);
@@ -303,11 +343,13 @@ export async function fetchLookups(options = {}) {
 async function fetchFreshLookups(silent = false) {
   try {
     if (!silent) {
-      emitEvent(Events.LOOKUPS_LOADING, {});
+      eventBus.emitSilent(Events.LOOKUPS_LOADING, {});
     }
 
     // Fetch all open lookups in one batch
     const queryRefs = [1, 30, 53, 54]; // QueryRefs 001, 030, 053, 054
+    const qrefLabels = queryRefs.map(r => String(r).padStart(3, '0')).join(', ');
+    logger.info(`Loading lookups [${qrefLabels}] from server`);
     const batchResults = await fetchBatchQueries(queryRefs, '001');
 
     // Process results into lookup categories
@@ -319,26 +361,11 @@ async function fetchFreshLookups(silent = false) {
     // Save to localStorage
     saveToLocalStorage(cache);
 
-    // Emit general lookups loaded event
+    // Emit server-loaded event
     if (!silent) {
-      emitEvent(Events.LOOKUPS_LOADED, {
-        source: 'server',
-        lookups: Object.keys(cache),
-      });
-
-      // Emit specific lookup category events so UI can monitor individual lookups
-      Object.keys(freshLookups).forEach(category => {
-        const eventName = `lookups:${category}:loaded`;
-        const data = freshLookups[category];
-        const count = Array.isArray(data) ? data.length : Object.keys(data || {}).length;
-        emitEvent(eventName, {
-          category,
-          count,
-        });
-      });
+      emitLookupsLoaded('server', Object.keys(freshLookups), freshLookups);
     }
 
-    logger.info(`Fetched from server: ${Object.keys(cache).join(', ')}`);
     fetchPromise = null;
     return cache;
   } catch (error) {
@@ -348,27 +375,13 @@ async function fetchFreshLookups(silent = false) {
     // If we have cache, return it even on error
     if (cache) {
       if (!silent) {
-        emitEvent(Events.LOOKUPS_LOADED, {
-          source: 'cache_fallback',
-          lookups: Object.keys(cache),
-        });
-
-        // Emit specific lookup category events for cached data
-        Object.keys(cache).forEach(category => {
-          const eventName = `lookups:${category}:loaded`;
-          const data = cache[category];
-          const count = Array.isArray(data) ? data.length : Object.keys(data || {}).length;
-          emitEvent(eventName, {
-            category,
-            count,
-          });
-        });
+        emitLookupsLoaded('cache_fallback', Object.keys(cache), cache);
       }
       return cache;
     }
 
     // Emit error event
-    emitEvent(Events.LOOKUPS_ERROR, { error: error.message });
+    eventBus.emit(Events.LOOKUPS_ERROR, { error: error.message });
 
     // Return empty object on error
     return {};
