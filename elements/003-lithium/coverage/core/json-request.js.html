@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">78.94% </span>
+                <span class="strong">77.89% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>75/95</span>
+                <span class='fraction'>74/95</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">78.94% </span>
+                <span class="strong">77.89% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>75/95</span>
+                <span class='fraction'>74/95</span>
             </div>
         
             
@@ -394,7 +394,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -447,29 +447,29 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
@@ -490,7 +490,7 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -656,7 +656,7 @@
 &nbsp;
 import { retrieveJWT } from './jwt.js';
 import { eventBus, Events } from './event-bus.js';
-import { logHttp, Status } from './log.js';
+import { logHttpRequest, logHttpResponse, Status } from './log.js';
 &nbsp;
 /**
  * Build full URL from path
@@ -765,7 +765,7 @@ export async function get(path, options = {}) {
   const { config, includeAuth = true, ...fetchOptions } = options;
   
   const url = buildUrl(path, config);
-  logHttp(`GET ${path}`, 0);
+  const requestNum = logHttpRequest('GET', path);
   
   const response = await fetch(url, {
     method: 'GET',
@@ -777,12 +777,12 @@ export async function get(path, options = {}) {
   const contentLength = response.headers.get('content-length') || 0;
   
   if (response.ok) {
-    logHttp(`GET ${path} - ${response.status}, ${contentLength} bytes`, duration);
+    logHttpResponse(requestNum, 'GET', path, response.status, contentLength, duration);
   } else {
-    logHttp(`GET ${path} - ${response.status} ERROR`, duration);
+    logHttpResponse(requestNum, 'GET', path, response.status, null, duration);
   }
   
-  return handleResponse(response);
+<span class="cstat-no" title="statement not covered" >  return handleResponse(response);</span>
 }
 &nbsp;
 /**
@@ -797,7 +797,7 @@ export async function post(path, body, options = {}) {
   const { config, includeAuth = true, ...fetchOptions } = options;
   
   const url = buildUrl(path, config);
-  logHttp(`POST ${path}`, 0);
+  const requestNum = logHttpRequest('POST', path);
   
   const response = await fetch(url, {
     method: 'POST',
@@ -810,9 +810,9 @@ export async function post(path, body, options = {}) {
   const contentLength = response.headers.get('content-length') || 0;
   
   if (response.ok) {
-    logHttp(`POST ${path} - ${response.status}, ${contentLength} bytes received`, duration);
+    logHttpResponse(requestNum, 'POST', path, response.status, contentLength, duration);
   } else <span class="missing-if-branch" title="else path not taken" >E</span>{
-<span class="cstat-no" title="statement not covered" >    logHttp(`POST ${path} - ${response.status} ERROR`, duration);</span>
+<span class="cstat-no" title="statement not covered" >    logHttpResponse(requestNum, 'POST', path, response.status, null, duration);</span>
   }
   
   return handleResponse(response);
@@ -830,7 +830,7 @@ export async function put(path, body, options = {}) {
   const { config, includeAuth = true, ...fetchOptions } = options;
   
   const url = buildUrl(path, config);
-  logHttp(`PUT ${path}`, 0);
+  const requestNum = logHttpRequest('PUT', path);
   
   const response = await fetch(url, {
     method: 'PUT',
@@ -843,9 +843,9 @@ export async function put(path, body, options = {}) {
   const contentLength = response.headers.get('content-length') || <span class="branch-1 cbranch-no" title="branch not covered" >0;</span>
   
 <span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (response.ok) {</span>
-<span class="cstat-no" title="statement not covered" >    logHttp(`PUT ${path} - ${response.status}, ${contentLength} bytes received`, duration);</span>
+<span class="cstat-no" title="statement not covered" >    logHttpResponse(requestNum, 'PUT', path, response.status, contentLength, duration);</span>
   } else {
-    logHttp(`PUT ${path} - ${response.status} ERROR`, duration);
+    logHttpResponse(requestNum, 'PUT', path, response.status, null, duration);
   }
   
   return handleResponse(response);
@@ -862,7 +862,7 @@ export async function del(path, options = {}) {
   const { config, includeAuth = true, ...fetchOptions } = options;
   
   const url = buildUrl(path, config);
-  logHttp(`DELETE ${path}`, 0);
+  const requestNum = logHttpRequest('DELETE', path);
   
   const response = await fetch(url, {
     method: 'DELETE',
@@ -874,9 +874,9 @@ export async function del(path, options = {}) {
   const contentLength = response.headers.get('content-length') || <span class="branch-1 cbranch-no" title="branch not covered" >0;</span>
   
 <span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (response.ok) {</span>
-<span class="cstat-no" title="statement not covered" >    logHttp(`DELETE ${path} - ${response.status}, ${contentLength} bytes received`, duration);</span>
+<span class="cstat-no" title="statement not covered" >    logHttpResponse(requestNum, 'DELETE', path, response.status, contentLength, duration);</span>
   } else {
-    logHttp(`DELETE ${path} - ${response.status} ERROR`, duration);
+    logHttpResponse(requestNum, 'DELETE', path, response.status, null, duration);
   }
   
   return handleResponse(response);
@@ -894,7 +894,7 @@ export async function patch(path, body, options = {}) {
   const { config, includeAuth = true, ...fetchOptions } = options;
   
   const url = buildUrl(path, config);
-  logHttp(`PATCH ${path}`, 0);
+  const requestNum = logHttpRequest('PATCH', path);
   
   const response = await fetch(url, {
     method: 'PATCH',
@@ -907,9 +907,9 @@ export async function patch(path, body, options = {}) {
   const contentLength = <span class="cstat-no" title="statement not covered" >response.headers.get('content-length') || 0;</span>
   
 <span class="cstat-no" title="statement not covered" >  if (response.ok) {</span>
-<span class="cstat-no" title="statement not covered" >    logHttp(`PATCH ${path} - ${response.status}, ${contentLength} bytes received`, duration);</span>
+<span class="cstat-no" title="statement not covered" >    logHttpResponse(requestNum, 'PATCH', path, response.status, contentLength, duration);</span>
   } else {
-<span class="cstat-no" title="statement not covered" >    logHttp(`PATCH ${path} - ${response.status} ERROR`, duration);</span>
+<span class="cstat-no" title="statement not covered" >    logHttpResponse(requestNum, 'PATCH', path, response.status, null, duration);</span>
   }
   
 <span class="cstat-no" title="statement not covered" >  return handleResponse(response);</span>
@@ -946,7 +946,7 @@ export default {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-08T19:47:24.577Z
+                at 2026-03-08T22:48:30.342Z
             </div>
         <script src="../prettify.js"></script>
         <script>

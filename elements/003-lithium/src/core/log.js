@@ -21,6 +21,9 @@
 // Log entry counter
 let _counter = 0;
 
+// HTTP request counter for RESTAPI calls
+let _httpRequestCounter = 0;
+
 // Session identifier - generated on first log entry
 let _sessionId = null;
 
@@ -51,6 +54,7 @@ export const Subsystems = {
   JWT: 'JWT',
   EVENTBUS: 'EventBus',
   HTTP: 'HTTP',
+  RESTAPI: 'RESTAPI',
   MANAGER: 'Manager',
   SESSION: 'Session',
   AUTH: 'Auth',
@@ -59,6 +63,7 @@ export const Subsystems = {
   ICONS: 'Icons',
   PERMS: 'Permissions',
   THEME: 'Theme',
+  LOGIN: 'Login',
 };
 
 // Status constants
@@ -338,6 +343,49 @@ export function logHttp(description, duration = 0) {
   return log(Subsystems.HTTP, Status.INFO, description, duration);
 }
 
+/**
+ * Get next HTTP request number (for Request 001, Request 002, etc.)
+ * @returns {string} Zero-padded request number (e.g., "001")
+ */
+export function getNextHttpRequestNum() {
+  return String(++_httpRequestCounter).padStart(3, '0');
+}
+
+/**
+ * Log an HTTP request (RESTAPI subsystem)
+ * @param {string} method - HTTP method (GET, POST, PUT, DELETE, PATCH)
+ * @param {string} path - API path
+ * @returns {string} Request number for matching with response
+ */
+export function logHttpRequest(method, path) {
+  const num = getNextHttpRequestNum();
+  log(Subsystems.RESTAPI, Status.INFO, `Request ${num}: ${method} ${path}`, 0);
+  return num;
+}
+
+/**
+ * Log an HTTP response with optional code, size, and duration
+ * @param {string} requestNum - Request number from logHttpRequest
+ * @param {string} method - HTTP method
+ * @param {string} path - API path
+ * @param {number|null} code - HTTP status code (e.g., 200)
+ * @param {number|null} size - Response size in bytes
+ * @param {number|null} duration - Response time in ms
+ */
+export function logHttpResponse(requestNum, method, path, code = null, size = null, duration = null) {
+  // Build description based on what's available
+  const items = [];
+  if (code !== null) items.push(`Code: ${code}`);
+  if (size !== null) items.push(`Size: ${size.toLocaleString()} bytes`);
+  if (duration !== null) items.push(`Time: ${duration}ms`);
+  
+  if (items.length > 0) {
+    logGroup(Subsystems.RESTAPI, Status.INFO, `Response ${requestNum}: ${method} ${path}`, items, duration || 0);
+  } else {
+    log(Subsystems.RESTAPI, Status.INFO, `Response ${requestNum}: ${method} ${path}`, duration || 0);
+  }
+}
+
 // Shortcut for manager logs
 export function logManager(status, description, duration = 0) {
   return log(Subsystems.MANAGER, status, description, duration);
@@ -507,6 +555,9 @@ export default {
   logStartup,
   logAuth,
   logHttp,
+  logHttpRequest,
+  logHttpResponse,
+  getNextHttpRequestNum,
   logManager,
   logError,
   logWarn,

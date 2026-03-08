@@ -3,15 +3,57 @@
  * 
  * Provides a lightweight publish/subscribe mechanism for decoupled
  * communication between managers and core modules.
+ * 
+ * Automatically logs every emitted event using the log system.
+ * The subsystem label is derived from the event name's first segment
+ * (e.g. "lookups:loaded" → "[Lookups]") and is stored with brackets
+ * so that the log viewer can render it in bracket notation without
+ * disrupting column alignment.
  */
+
+import { log, Status } from './log.js';
+
+/**
+ * Derive a display subsystem label from an event name.
+ * e.g. "lookups:loaded"          → "[Lookups]"
+ *      "auth:login"              → "[Auth]"
+ *      "startup:complete"        → "[Startup]"
+ *      "lookups:themes:loaded"   → "[Lookups]"
+ * @param {string} eventName
+ * @returns {string} Bracket-wrapped, title-cased first segment
+ */
+function _subsystemFromEvent(eventName) {
+  const segment = eventName.split(':')[0] || eventName;
+  const label = segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase();
+  return `[${label}]`;
+}
 
 class EventBus extends EventTarget {
   /**
-   * Emit an event with optional detail payload
+   * Emit an event with optional detail payload.
+   * Automatically logs the emission so callers don't need to.
    * @param {string} name - Event name
    * @param {*} detail - Optional data payload
    */
   emit(name, detail = null) {
+    const subsystem = _subsystemFromEvent(name);
+    // Strip the first segment (already shown as the subsystem label) from the description.
+    // e.g. "network:online" → "online", "lookups:loaded" → "loaded", "startup:complete" → "complete"
+    const colonIdx = name.indexOf(':');
+    const suffix = colonIdx >= 0 ? name.slice(colonIdx + 1) : name;
+    const payload = detail !== null ? ' ' + JSON.stringify(detail).substring(0, 100) : '';
+    log(subsystem, Status.INFO, `${suffix}${payload}`);
+    this.dispatchEvent(new CustomEvent(name, { detail }));
+  }
+
+  /**
+   * Emit an event without logging.
+   * Use when the caller has already produced a richer log entry and the
+   * automatic EventBus log line would be redundant or noisy.
+   * @param {string} name - Event name
+   * @param {*} detail - Optional data payload
+   */
+  emitSilent(name, detail = null) {
     this.dispatchEvent(new CustomEvent(name, { detail }));
   }
 
@@ -48,6 +90,9 @@ export const eventBus = new EventBus();
 
 // Standard event names for consistency
 export const Events = {
+  // Application lifecycle events
+  STARTUP_COMPLETE: 'startup:complete',
+
   // Authentication events
   AUTH_LOGIN: 'auth:login',
   AUTH_LOGOUT: 'auth:logout',
