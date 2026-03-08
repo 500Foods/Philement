@@ -475,6 +475,7 @@ export default class LoginManager {
         event.preventDefault();
       } else {
         // Switch to login panel from subpanels
+        log(LOGIN, Status.INFO, `Keyboard: ESC closed ${this.currentPanel} panel`);
         this.switchPanel('login');
         event.preventDefault();
       }
@@ -489,6 +490,7 @@ export default class LoginManager {
     // Ctrl+Shift+U - focus username and select contents
     if (ctrl && shift && key.toLowerCase() === 'u') {
       if (this.elements.username) {
+        log(LOGIN, Status.INFO, 'Keyboard: Ctrl+Shift+U focused username field');
         this.elements.username.focus();
         this.elements.username.select();
       }
@@ -499,6 +501,7 @@ export default class LoginManager {
     // Ctrl+Shift+P - focus password and select contents
     if (ctrl && shift && key.toLowerCase() === 'p') {
       if (this.elements.password) {
+        log(LOGIN, Status.INFO, 'Keyboard: Ctrl+Shift+P focused password field');
         this.elements.password.focus();
         this.elements.password.select();
       }
