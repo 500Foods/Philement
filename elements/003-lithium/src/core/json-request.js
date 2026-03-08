@@ -7,6 +7,7 @@
 
 import { retrieveJWT } from './jwt.js';
 import { eventBus, Events } from './event-bus.js';
+import { logHttp, Status } from './log.js';
 
 /**
  * Build full URL from path
@@ -111,9 +112,11 @@ async function handleResponse(response) {
  * @returns {Promise} Response data
  */
 export async function get(path, options = {}) {
+  const startTime = Date.now();
   const { config, includeAuth = true, ...fetchOptions } = options;
   
   const url = buildUrl(path, config);
+  logHttp(`GET ${path}`, 0);
   
   const response = await fetch(url, {
     method: 'GET',
@@ -121,6 +124,15 @@ export async function get(path, options = {}) {
     ...fetchOptions,
   });
 
+  const duration = Date.now() - startTime;
+  const contentLength = response.headers.get('content-length') || 0;
+  
+  if (response.ok) {
+    logHttp(`GET ${path} - ${response.status}, ${contentLength} bytes`, duration);
+  } else {
+    logHttp(`GET ${path} - ${response.status} ERROR`, duration);
+  }
+  
   return handleResponse(response);
 }
 
@@ -132,9 +144,11 @@ export async function get(path, options = {}) {
  * @returns {Promise} Response data
  */
 export async function post(path, body, options = {}) {
+  const startTime = Date.now();
   const { config, includeAuth = true, ...fetchOptions } = options;
   
   const url = buildUrl(path, config);
+  logHttp(`POST ${path}`, 0);
   
   const response = await fetch(url, {
     method: 'POST',
@@ -143,6 +157,15 @@ export async function post(path, body, options = {}) {
     ...fetchOptions,
   });
 
+  const duration = Date.now() - startTime;
+  const contentLength = response.headers.get('content-length') || 0;
+  
+  if (response.ok) {
+    logHttp(`POST ${path} - ${response.status}, ${contentLength} bytes received`, duration);
+  } else {
+    logHttp(`POST ${path} - ${response.status} ERROR`, duration);
+  }
+  
   return handleResponse(response);
 }
 
@@ -154,9 +177,11 @@ export async function post(path, body, options = {}) {
  * @returns {Promise} Response data
  */
 export async function put(path, body, options = {}) {
+  const startTime = Date.now();
   const { config, includeAuth = true, ...fetchOptions } = options;
   
   const url = buildUrl(path, config);
+  logHttp(`PUT ${path}`, 0);
   
   const response = await fetch(url, {
     method: 'PUT',
@@ -165,6 +190,15 @@ export async function put(path, body, options = {}) {
     ...fetchOptions,
   });
 
+  const duration = Date.now() - startTime;
+  const contentLength = response.headers.get('content-length') || 0;
+  
+  if (response.ok) {
+    logHttp(`PUT ${path} - ${response.status}, ${contentLength} bytes received`, duration);
+  } else {
+    logHttp(`PUT ${path} - ${response.status} ERROR`, duration);
+  }
+  
   return handleResponse(response);
 }
 
@@ -175,9 +209,11 @@ export async function put(path, body, options = {}) {
  * @returns {Promise} Response data
  */
 export async function del(path, options = {}) {
+  const startTime = Date.now();
   const { config, includeAuth = true, ...fetchOptions } = options;
   
   const url = buildUrl(path, config);
+  logHttp(`DELETE ${path}`, 0);
   
   const response = await fetch(url, {
     method: 'DELETE',
@@ -185,6 +221,15 @@ export async function del(path, options = {}) {
     ...fetchOptions,
   });
 
+  const duration = Date.now() - startTime;
+  const contentLength = response.headers.get('content-length') || 0;
+  
+  if (response.ok) {
+    logHttp(`DELETE ${path} - ${response.status}, ${contentLength} bytes received`, duration);
+  } else {
+    logHttp(`DELETE ${path} - ${response.status} ERROR`, duration);
+  }
+  
   return handleResponse(response);
 }
 
@@ -196,9 +241,11 @@ export async function del(path, options = {}) {
  * @returns {Promise} Response data
  */
 export async function patch(path, body, options = {}) {
+  const startTime = Date.now();
   const { config, includeAuth = true, ...fetchOptions } = options;
   
   const url = buildUrl(path, config);
+  logHttp(`PATCH ${path}`, 0);
   
   const response = await fetch(url, {
     method: 'PATCH',
@@ -207,6 +254,15 @@ export async function patch(path, body, options = {}) {
     ...fetchOptions,
   });
 
+  const duration = Date.now() - startTime;
+  const contentLength = response.headers.get('content-length') || 0;
+  
+  if (response.ok) {
+    logHttp(`PATCH ${path} - ${response.status}, ${contentLength} bytes received`, duration);
+  } else {
+    logHttp(`PATCH ${path} - ${response.status} ERROR`, duration);
+  }
+  
   return handleResponse(response);
 }
 

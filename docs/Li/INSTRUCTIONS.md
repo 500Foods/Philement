@@ -790,6 +790,158 @@ const clean = DOMPurify.sanitize(dirtyHtml, {
 });
 ```
 
+## Logging System
+
+Lithium's client-side action log (`src/core/log.js`) tracks every significant
+event from startup through the session. It is designed to be:
+
+- **Non-blocking** — `log()` returns immediately; all I/O is fire-and-forget
+- **Persistent** — entries survive dynamic `import()` via `sessionStorage`
+- **Archivable** — previous-session entries are moved to `localStorage` for
+  future server upload
+- **Display-friendly** — entries can be plain strings or grouped objects that
+  render as multi-line visual blocks
+
+### Using the Log API
+
+Import the helpers you need from `src/core/log.js`:
+
+```javascript
+import {
+  log, logGroup,
+  logStartup, logAuth, logHttp, logManager,
+  logError, logWarn, logSuccess,
+  Subsystems, Status,
+} from '../../core/log.js';
+```
+
+#### Simple log entry
+
+```javascript
+logStartup('Application initializing');
+logAuth(Status.SUCCESS, 'Login successful for user alice', 142);
+logHttp('GET /api/lookups - 200, 8192 bytes', 76);
+log(Subsystems.MANAGER, Status.ERROR, 'Failed to load StyleManager: 404');
+```
+
+#### Grouped log entry (`logGroup`)
+
+Use `logGroup` when a single logical event has multiple related detail items.
+Stored as **one** buffer entry (one counter, one timestamp), displayed as multiple
+visual lines:
+
+```javascript
+logGroup(Subsystems.STARTUP, Status.INFO, 'Browser Environment', [
+  `Browser: Firefox 148`,
+  `Platform: Linux x86_64`,
+  `Language: en-US`,
+  `Online: ${navigator.onLine}`,
+]);
+```
+
+Displayed as:
+
+```log
+12:31:52.936  Startup  Browser Environment
+12:31:52.936  Startup  ― Browser: Firefox 148
+12:31:52.936  Startup  ― Platform: Linux x86_64
+12:31:52.936  Startup  ― Language: en-US
+12:31:52.936  Startup  ― Online: true
+```
+
+**Use grouped entries when:**
+
+- Multiple items share the same timestamp and are logically one event
+- You want log storage efficiency (one counter for many display lines)
+- The relationship between items is obvious from the title
+
+**Use individual `log()` calls when:**
+
+- Items arrive at different times (e.g., async operations)
+- Each item has independent significance or needs a distinct counter
+
+### Subsystem Constants
+
+```javascript
+Subsystems.STARTUP    // App bootstrap
+Subsystems.AUTH       // JWT / authentication
+Subsystems.HTTP       // Fetch / REST calls
+Subsystems.MANAGER    // Manager loading
+Subsystems.LOOKUPS    // Server reference data
+Subsystems.ICONS      // Icon system
+Subsystems.PERMS      // Punchcard permissions
+Subsystems.THEME      // Theme application
+// JWT, EVENTBUS, CONFIG, SESSION also available
+```
+
+### Status Constants
+
+```javascript
+Status.INFO     // Informational (default for most helpers)
+Status.SUCCESS  // Operation completed successfully
+Status.WARN     // Non-fatal warning
+Status.ERROR    // Error (with recovery)
+Status.FAIL     // Fatal / unrecoverable
+Status.DEBUG    // Verbose debug info (filtered in production)
+```
+
+### Logging Coverage Policy
+
+Every module that makes network calls or initializes a subsystem **must** log:
+
+1. **Before** the operation — what and where
+2. **After** success — duration and size/count where available
+3. **On failure** — status `WARN` or `ERROR` + error message
+
+Do not emit bare `console.log` / `console.warn` in application code.
+Route through `log()` so events appear in the System Logs panel.
+Modules that need a `console.*`-compatible interface (e.g., `lookups.js`)
+should use a local `logger` object that forwards to both:
+
+```javascript
+// lookups.js pattern
+const logger = {
+  info:  (msg) => { console.log(`[Lookups] ${msg}`);   log(Subsystems.LOOKUPS, Status.INFO,  msg); },
+  warn:  (msg) => { console.warn(`[Lookups] ${msg}`);  log(Subsystems.LOOKUPS, Status.WARN,  msg); },
+  error: (msg) => { console.error(`[Lookups] ${msg}`); log(Subsystems.LOOKUPS, Status.ERROR, msg); },
+};
+```
+
+### System Logs Panel (Login page)
+
+The `fa-scroll` button on the login page opens a full-featured log viewer powered
+by CodeMirror 6 (`oneDark` theme, `Vanadium Mono` font, 4-digit zero-padded line
+numbers, read-only).
+
+The panel header bar contains:
+
+| Button | Icon | Action |
+|--------|------|--------|
+| Title | `fa-scroll` System Logs | Non-interactive label |
+| Coverage | `fa-chart-line` | Opens `/coverage/index.html` in a new tab |
+| Close | `fa-xmark` | Returns to main login panel (or press ESC) |
+
+Grouped `{ title, items }` descriptions are expanded at display time:
+the title and each item share the same `HH:MM:SS.ZZZ  Subsystem` prefix,
+with '― ' prepended to each item.
+
+### Accessing Logs Programmatically
+
+```javascript
+// Browser console during development
+window.lithiumLogs.print(50);        // Print last 50 entries
+window.lithiumLogs.raw;              // Array of raw JSON entries
+window.lithiumLogs.display;          // Array of formatted strings
+window.lithiumLogs.recent(20);       // Last 20 formatted strings
+window.lithiumLogs.count;            // Current counter value
+window.lithiumLogs.sessionId;        // Current session ID
+window.lithiumLogs.archived;         // Previous-session archives
+window.lithiumLogs.flush();          // Force sync to server
+window.lithiumLogs.setConsoleLogging(true); // Enable console passthrough
+```
+
+---
+
 ## Production Deployment
 
 ### Deployment Checklist

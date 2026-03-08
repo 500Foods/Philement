@@ -621,6 +621,121 @@ None of these block the current Lithium work.
 
 ---
 
+## 24. Logging System ✅
+
+Lithium maintains a client-side action log in `src/core/log.js`. Entries are stored
+in memory (never cleared for the session), persisted to `sessionStorage` for cross-chunk
+access, and batched to `POST /api/logs` for optional server archival.
+
+### Architecture
+
+| Concern | Mechanism |
+|---------|-----------|
+| In-memory store | `_buffer` array, never cleared during a page session |
+| Cross-chunk access | `sessionStorage` — reloaded on each module evaluation |
+| Previous-session archive | Moved to `localStorage` keyed `lithium_log_archive_<id>_<ts>` on next page load |
+| Server upload | Batched to `POST /api/logs` (fire-and-forget, silent failure) |
+| Counter | Monotonic integer per session, zero-padded display "000 123" |
+| Session ID | Generated on first `log()` call — always unique per page load |
+
+### Raw Entry Format
+
+```json
+{
+  "sessionId": "mmi50w7i-afsf1mri-hcy1yqd6",
+  "counter": 7,
+  "timestamp": 1741398052712,
+  "subsystem": "Startup",
+  "status": "INFO",
+  "duration": 218.5,
+  "description": "Version: 1.1.1074 (build 1074)"
+}
+```
+
+`description` may also be a **grouped object** (see below).
+
+### Grouped Log Entries
+
+A single log entry can carry a **title** and an array of **items** as its description.
+This stores one entry (one counter, one timestamp) but renders as multiple visual lines
+in the log viewer with a `―` continuation prefix.
+
+```js
+logGroup(Subsystems.STARTUP, Status.INFO, 'Browser Environment', [
+  `Browser: Firefox 148`,
+  `Platform: Linux x86_64`,
+  `Language: en-US`,
+  `Online: true`,
+]);
+```
+
+Displays as:
+
+```log
+HH:MM:SS.ZZZ  Startup  Browser Environment
+HH:MM:SS.ZZZ  Startup  ― Browser: Firefox 148
+HH:MM:SS.ZZZ  Startup  ― Platform: Linux x86_64
+HH:MM:SS.ZZZ  Startup  ― Language: en-US
+HH:MM:SS.ZZZ  Startup  ― Online: true
+```
+
+The raw `description` field stores: `{ "title": "Browser Environment", "items": ["Browser: Firefox 148", ...] }`
+
+**When to use grouped entries:**
+
+- A single logical event with multiple related detail items (e.g., environment summary, manager list)
+- When items all share the same timestamp and semantic context
+- Prefer individual `log()` calls when items arrive at distinct times or have independent significance
+
+### Logging API
+
+| Function | Convenience for |
+|----------|----------------|
+| `log(subsystem, status, description, duration?)` | Generic log entry |
+| `logStartup(description, duration?)` | `Startup / INFO` |
+| `logAuth(status, description, duration?)` | `Auth / <status>` |
+| `logHttp(description, duration?)` | `HTTP / INFO` |
+| `logManager(status, description, duration?)` | `Manager / <status>` |
+| `logError(subsystem, description, duration?)` | `<subsystem> / ERROR` |
+| `logWarn(subsystem, description, duration?)` | `<subsystem> / WARN` |
+| `logSuccess(subsystem, description, duration?)` | `<subsystem> / SUCCESS` |
+| `logGroup(subsystem, status, title, items, duration?)` | Grouped entry with `―` continuation |
+
+### Subsystem Constants (`Subsystems.*`)
+
+`STARTUP`, `JWT`, `EVENTBUS`, `HTTP`, `MANAGER`, `SESSION`, `AUTH`, `CONFIG`,
+`LOOKUPS`, `ICONS`, `PERMS`, `THEME`
+
+### Status Constants (`Status.*`)
+
+`INFO`, `WARN`, `ERROR`, `FAIL`, `DEBUG`, `SUCCESS`
+
+### Logging Coverage Policy
+
+Every module that makes network calls or initializes subsystems **must** log:
+
+1. **Before** the call — describing intent and target
+2. **After** success — with duration and bytes/count where available
+3. **On error** — with status `WARN` or `ERROR` and the error message
+
+Modules must route through the `log()` API (not bare `console.log`). Use the module's
+`Subsystems.*` constant for consistent categorization. `lookups.js` uses a `logger`
+helper object that forwards to both `console.*` and `log()`.
+
+### Log Viewer (System Logs Panel)
+
+The login panel's "System Logs" subpanel renders log entries using CodeMirror 6
+(read-only, `oneDark` theme, `Vanadium Mono` font, zero-padded 4-digit line numbers).
+The log panel header includes two action buttons:
+
+- **Coverage** (`fa-chart-line`) — opens `/coverage/index.html` in a new tab
+- **Close** (`fa-xmark`) — returns to the main login panel
+
+Grouped `{ title, items }` descriptions are expanded to multiple display lines
+with shared `HH:MM:SS.ZZZ  Subsystem` prefix and `―` continuation marker for items.
+
+---
+
 ## Appendix: Known Limitations & Lessons Learned
 
 ### Current Limitations
