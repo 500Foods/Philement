@@ -456,22 +456,20 @@ all buttons appear as one connected strip — no visual breaks.
 
 ```layout
 [icon + manager name (flex:1)]  [manager-injected extras]  [close ✕]
-                                         ↑
-                              .slot-header-extras
-                              (display:contents)
 ```
 
 ### Slot Footer Layout
 
 ```layout
-[Reports Placeholder (flex:1)]  [footer-left extras]  [footer-right extras]  [Annotations]  [Tours]  [LMS]
-                                        ↑                      ↑
-                              .slot-footer-left-extras  .slot-footer-right-extras
-                              (display:contents)
+[Reports Placeholder (flex:1)]  [footer-left extras]  [footer-right extras]  [Notifications]  [Tickets]  [Annotations]  [Tours]  [LMS]
 ```
 
-Both insertion-point `<div>` elements use `display:contents` so their children
-appear directly as flex items inside the shared button group.
+Injected buttons are inserted **directly into the `subpanel-header-group`** flex
+container via `insertBefore()` (before the close button for header, before
+Notifications for footer).  The slot HTML contains `display:contents` marker
+divs (`.slot-header-extras`, `.slot-footer-left-extras`, `.slot-footer-right-extras`)
+as HTML comments only — they are **not** used as the injection target because
+`display:contents` divs can silently hide their children in some browsers.
 
 ### Button Injection API
 

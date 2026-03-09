@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/499</span>
+                <span class='fraction'>0/505</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/267</span>
+                <span class='fraction'>0/273</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/485</span>
+                <span class='fraction'>0/490</span>
             </div>
         
             
@@ -1440,7 +1440,21 @@
 <a name='L1375'></a><a href='#L1375'>1375</a>
 <a name='L1376'></a><a href='#L1376'>1376</a>
 <a name='L1377'></a><a href='#L1377'>1377</a>
-<a name='L1378'></a><a href='#L1378'>1378</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L1378'></a><a href='#L1378'>1378</a>
+<a name='L1379'></a><a href='#L1379'>1379</a>
+<a name='L1380'></a><a href='#L1380'>1380</a>
+<a name='L1381'></a><a href='#L1381'>1381</a>
+<a name='L1382'></a><a href='#L1382'>1382</a>
+<a name='L1383'></a><a href='#L1383'>1383</a>
+<a name='L1384'></a><a href='#L1384'>1384</a>
+<a name='L1385'></a><a href='#L1385'>1385</a>
+<a name='L1386'></a><a href='#L1386'>1386</a>
+<a name='L1387'></a><a href='#L1387'>1387</a>
+<a name='L1388'></a><a href='#L1388'>1388</a>
+<a name='L1389'></a><a href='#L1389'>1389</a>
+<a name='L1390'></a><a href='#L1390'>1390</a>
+<a name='L1391'></a><a href='#L1391'>1391</a>
+<a name='L1392'></a><a href='#L1392'>1392</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1555,11 +1569,25 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2930,13 +2958,27 @@ export default class LoginManager {
   /**
    * Load version information from version.json and display it
    * Populates the login header version box and the help panel version/build fields
+   * Uses cached data from early fetch in index.html if available
    */
   async <span class="fstat-no" title="function not covered" >loadVersionInfo(</span>) {
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const response = <span class="cstat-no" title="statement not covered" >await fetch('/version.json');</span>
-<span class="cstat-no" title="statement not covered" >      if (!response.ok) <span class="cstat-no" title="statement not covered" >return;</span></span>
-&nbsp;
-      const versionData = <span class="cstat-no" title="statement not covered" >await response.json();</span>
+      let versionData;
+      
+      // Check if we have cached version data from the early fetch in index.html
+<span class="cstat-no" title="statement not covered" >      if (window.__lithiumVersionData) {</span>
+<span class="cstat-no" title="statement not covered" >        versionData = window.__lithiumVersionData;</span>
+      } else <span class="cstat-no" title="statement not covered" >if (window.__lithiumVersionPromise) {</span>
+        // Wait for the early fetch promise to resolve
+<span class="cstat-no" title="statement not covered" >        versionData = await window.__lithiumVersionPromise;</span>
+      } else {
+        // Fallback: fetch version.json directly
+        const response = <span class="cstat-no" title="statement not covered" >await fetch('/version.json');</span>
+<span class="cstat-no" title="statement not covered" >        if (!response.ok) <span class="cstat-no" title="statement not covered" >return;</span></span>
+<span class="cstat-no" title="statement not covered" >        versionData = await response.json();</span>
+      }
+      
+<span class="cstat-no" title="statement not covered" >      if (!versionData) <span class="cstat-no" title="statement not covered" >return;</span></span>
+      
       const { build, timestamp, version } = <span class="cstat-no" title="statement not covered" >versionData;</span>
 &nbsp;
       // Update version info box in login header (build, YYYY, MMDD, HHMM)
@@ -4201,7 +4243,7 @@ export default class LoginManager {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-09T02:36:52.268Z
+                at 2026-03-09T03:56:13.389Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -305,9 +305,31 @@ class LithiumApp {
 
   /**
    * Load version info from version.json
+   * Uses cached data from early fetch in index.html if available
    */
   async loadVersion() {
     try {
+      // Check if we have cached version data from the early fetch in index.html
+      if (window.__lithiumVersionData) {
+        const data = window.__lithiumVersionData;
+        this.version = data.version;
+        this.build = data.build;
+        this.timestamp = data.timestamp;
+        return;
+      }
+      
+      // Check if there's a pending promise from the early fetch
+      if (window.__lithiumVersionPromise) {
+        const data = await window.__lithiumVersionPromise;
+        if (data) {
+          this.version = data.version;
+          this.build = data.build;
+          this.timestamp = data.timestamp;
+          return;
+        }
+      }
+      
+      // Fallback: fetch version.json directly
       const response = await fetch('/version.json');
       if (response.ok) {
         const data = await response.json();
@@ -433,7 +455,15 @@ class LithiumApp {
       this.mainManagerInstance = mainManager;
       await mainManager.init();
 
-      this.currentManager = { name: 'main', instance: mainManager };
+      // NOTE: Do NOT unconditionally overwrite this.currentManager here.
+      // mainManager.init() loads the first permitted manager, which calls
+      // app.loadManager() → showManager() → sets this.currentManager = { id: N }.
+      // Overwriting it would erase that slot ID and break subsequent crossfades —
+      // the outgoing slot would not be found, leaving ghost slot-visible elements on screen.
+      // Only provide a fallback when no manager slot was loaded (e.g. zero permitted managers).
+      if (this.currentManager?.id == null) {
+        this.currentManager = { name: 'main', instance: mainManager };
+      }
     } catch (error) {
       console.error('[Lithium] Failed to load main manager:', error);
       this.showFatalError('Failed to load application. Please refresh the page.');
@@ -660,6 +690,16 @@ class LithiumApp {
 
     if (!incomingSlot) return;
 
+    // Hide all other slots immediately before showing the incoming one.
+    // This prevents any stale slot-visible state from a previous transition
+    // leaving ghost headers visible behind the active one.
+    for (const [, entry] of this.loadedManagers) {
+      if (entry.slotEl && entry.slotEl !== incomingSlot && entry.slotEl !== outgoingSlot) {
+        entry.slotEl.classList.remove('slot-visible');
+        entry.slotEl.classList.add('slot-hidden');
+      }
+    }
+
     // If no outgoing, just show incoming immediately with fade-in
     if (!outgoingSlot || outgoingSlot === incomingSlot) {
       incomingSlot.classList.remove('slot-hidden');
@@ -810,8 +850,11 @@ class LithiumApp {
       mainWrapper.style.bottom = '';
       mainWrapper.style.zIndex = '';
 
-      // Update current manager reference
-      this.currentManager = { name: 'main', instance: mainManager };
+      // NOTE: Do NOT unconditionally overwrite this.currentManager here.
+      // mainManager.init() loads the first permitted manager slot; preserve that state.
+      if (this.currentManager?.id == null) {
+        this.currentManager = { name: 'main', instance: mainManager };
+      }
 
       logStartup('Main manager loaded with crossfade transition');
     } catch (error) {

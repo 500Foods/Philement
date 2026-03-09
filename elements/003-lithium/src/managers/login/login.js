@@ -111,13 +111,27 @@ export default class LoginManager {
   /**
    * Load version information from version.json and display it
    * Populates the login header version box and the help panel version/build fields
+   * Uses cached data from early fetch in index.html if available
    */
   async loadVersionInfo() {
     try {
-      const response = await fetch('/version.json');
-      if (!response.ok) return;
-
-      const versionData = await response.json();
+      let versionData;
+      
+      // Check if we have cached version data from the early fetch in index.html
+      if (window.__lithiumVersionData) {
+        versionData = window.__lithiumVersionData;
+      } else if (window.__lithiumVersionPromise) {
+        // Wait for the early fetch promise to resolve
+        versionData = await window.__lithiumVersionPromise;
+      } else {
+        // Fallback: fetch version.json directly
+        const response = await fetch('/version.json');
+        if (!response.ok) return;
+        versionData = await response.json();
+      }
+      
+      if (!versionData) return;
+      
       const { build, timestamp, version } = versionData;
 
       // Update version info box in login header (build, YYYY, MMDD, HHMM)

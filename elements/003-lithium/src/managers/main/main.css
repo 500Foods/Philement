@@ -772,12 +772,38 @@ body.resizing * {
   text-overflow: ellipsis;
 }
 
-/* Insertion-point containers use display:contents so their children
-   appear directly as flex items inside the subpanel-header-group */
-.slot-header-extras,
-.slot-footer-left-extras,
-.slot-footer-right-extras {
-  display: contents;
+/* ========================================
+   Footer Button Counters
+   Fixed 3-digit counter display with leading zeros
+   ======================================== */
+
+.btn-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 2px 4px;
+  margin-left: 6px;
+  background: var(--accent-primary);
+  color: white;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  letter-spacing: 0.5px;
+}
+
+/* Counter variations for different button types */
+.slot-notifications-btn .btn-counter {
+  background: var(--accent-primary);
+}
+
+.slot-tickets-btn .btn-counter {
+  background: var(--accent-secondary);
+}
+
+.slot-annotations-btn .btn-counter {
+  background: var(--accent-success, #28a745);
 }
 
 /* Offline indicator (inside slot header, right side) */
