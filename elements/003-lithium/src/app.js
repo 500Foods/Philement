@@ -17,7 +17,10 @@ import { createRequest } from './core/json-request.js';
 import { fetchLookups, init as initLookups } from './shared/lookups.js';
 import { init as initIcons } from './core/icons.js';
 import { getTransitionDuration } from './core/transitions.js';
-import { log, logGroup, logStartup, logAuth, logManager, Subsystems, Status, flush, getSessionId, getBuffer, getRecentLogs, getRawLog, getDisplayLog, getCounter, setConsoleLogging, getArchivedSessions, removeArchivedSession } from './core/log.js';
+import { log, logGroup, logStartup, logAuth, logManager, Subsystems, Status, flush, getSessionId, getRecentLogs, getRawLog, getDisplayLog, getCounter, setConsoleLogging, getArchivedSessions, removeArchivedSession } from './core/log.js';
+
+// Manager crossfade duration (ms) — shorter than main login crossfade
+const MANAGER_CROSSFADE_MS = 200;
 
 /**
  * Main Lithium Application Class
@@ -30,6 +33,7 @@ class LithiumApp {
     this.api = null;
     this.currentManager = null;
     this.loadedManagers = new Map();
+    this.mainManagerInstance = null;  // Reference to the MainManager for header updates
     this.user = null;
     this.deferredInstallPrompt = null;
 
@@ -365,6 +369,8 @@ class LithiumApp {
       const permittedManagers = getPermittedManagers();
 
       const mainManager = new MainManager(this, container, permittedManagers);
+      // Set reference BEFORE init() so that manager loading within init() can use it
+      this.mainManagerInstance = mainManager;
       await mainManager.init();
 
       this.currentManager = { name: 'main', instance: mainManager };
@@ -407,7 +413,17 @@ class LithiumApp {
   }
 
   /**
-   * Load a manager into the workspace
+   * Get the MainManager instance (if loaded) for updating UI like the manager header.
+   * Returns null if main manager has not been loaded yet.
+   * @returns {Object|null}
+   */
+  _getMainManager() {
+    return this.mainManagerInstance || null;
+  }
+
+  /**
+   * Load a manager into the workspace.
+   * Uses the slot-based system: each manager gets a slot (header+workspace+footer).
    */
   async loadManager(managerId) {
     const managerDef = this.managerRegistry[managerId];
@@ -419,8 +435,7 @@ class LithiumApp {
 
     // Check if already loaded
     if (this.loadedManagers.has(managerId)) {
-      const manager = this.loadedManagers.get(managerId);
-      this.showManager(managerId);
+      await this.showManager(managerId);
       eventBus.emit(Events.MANAGER_SWITCHED, { from: this.currentManager?.id, to: managerId });
       logManager(Status.INFO, `Switched to already-loaded manager: ${managerDef.name}`);
       return;
@@ -431,31 +446,35 @@ class LithiumApp {
       const loadStart = Date.now();
       const module = await this._importManager(managerId);
 
-      // Create workspace container
-      const workspace = document.getElementById('workspace');
-      if (!workspace) {
-        throw new Error('Workspace container not found');
+      // Get the MainManager to create a slot
+      const mainMgr = this._getMainManager();
+      if (!mainMgr) {
+        throw new Error('MainManager not ready');
       }
 
-      const container = document.createElement('div');
-      container.id = `manager-${managerId}`;
-      container.className = 'manager-container';
-      container.style.display = 'none';
-      workspace.appendChild(container);
+      // Look up icon for this manager
+      const iconInfo = mainMgr.managerIcons?.[managerId] || { icon: 'fa-cube', name: managerDef.name };
+      const slotId = mainMgr._slotId(managerId);
+      const slotResult = mainMgr.createSlot(slotId, iconInfo.icon, iconInfo.name);
+      if (!slotResult) {
+        throw new Error('Failed to create manager slot');
+      }
+      const { slotEl, workspaceEl } = slotResult;
 
-      // Initialize manager
+      // Initialize manager inside the slot's workspace
       const ManagerClass = module.default;
-      const managerInstance = new ManagerClass(this, container);
+      const managerInstance = new ManagerClass(this, workspaceEl);
       await managerInstance.init();
 
-      // Store and show
+      // Store and show with crossfade
       this.loadedManagers.set(managerId, {
         id: managerId,
         instance: managerInstance,
-        container,
+        slotEl,
+        workspaceEl,
       });
 
-      this.showManager(managerId);
+      await this.showManager(managerId);
       eventBus.emit(Events.MANAGER_LOADED, { managerId });
       eventBus.emit(Events.MANAGER_SWITCHED, { from: this.currentManager?.id, to: managerId });
 
@@ -466,8 +485,8 @@ class LithiumApp {
   }
 
   /**
-   * Load a utility manager into the workspace
-   * Utility managers are not Punchcard-gated and keyed by string (not integer ID)
+   * Load a utility manager into the workspace.
+   * Uses the slot-based system: each utility manager gets a slot.
    * @param {string} managerKey - The utility manager key (e.g. 'session-log')
    */
   async loadUtilityManager(managerKey) {
@@ -478,10 +497,10 @@ class LithiumApp {
       return;
     }
 
-    // Check if already loaded — if so, just show it
+    // Check if already loaded — if so, just show it with crossfade
     const loadedKey = `utility:${managerKey}`;
     if (this.loadedManagers.has(loadedKey)) {
-      this.showUtilityManager(loadedKey);
+      await this.showUtilityManager(loadedKey);
       logManager(Status.INFO, `Switched to already-loaded utility manager: ${managerDef.name}`);
       return;
     }
@@ -491,31 +510,34 @@ class LithiumApp {
       const loadStart = Date.now();
       const module = await this._importUtilityManager(managerKey);
 
-      // Create workspace container
-      const workspace = document.getElementById('workspace');
-      if (!workspace) {
-        throw new Error('Workspace container not found');
+      // Get the MainManager to create a slot
+      const mainMgr = this._getMainManager();
+      if (!mainMgr) {
+        throw new Error('MainManager not ready');
       }
 
-      const container = document.createElement('div');
-      container.id = `utility-manager-${managerKey}`;
-      container.className = 'manager-container';
-      container.style.display = 'none';
-      workspace.appendChild(container);
+      const iconInfo = mainMgr.utilityManagerIcons?.[managerKey] || { icon: 'fa-puzzle-piece', name: managerDef.name };
+      const slotId = mainMgr._utilitySlotId(managerKey);
+      const slotResult = mainMgr.createSlot(slotId, iconInfo.icon, iconInfo.name);
+      if (!slotResult) {
+        throw new Error('Failed to create utility manager slot');
+      }
+      const { slotEl, workspaceEl } = slotResult;
 
-      // Initialize manager
+      // Initialize manager inside the slot's workspace
       const ManagerClass = module.default;
-      const managerInstance = new ManagerClass(this, container);
+      const managerInstance = new ManagerClass(this, workspaceEl);
       await managerInstance.init();
 
-      // Store and show
+      // Store and show with crossfade
       this.loadedManagers.set(loadedKey, {
         id: loadedKey,
         instance: managerInstance,
-        container,
+        slotEl,
+        workspaceEl,
       });
 
-      this.showUtilityManager(loadedKey);
+      await this.showUtilityManager(loadedKey);
       logManager(Status.SUCCESS, `Utility manager ${managerDef.name} loaded`, Date.now() - loadStart);
     } catch (error) {
       logManager(Status.ERROR, `Failed to load utility manager ${managerDef.name}: ${error.message}`);
@@ -523,50 +545,71 @@ class LithiumApp {
   }
 
   /**
-   * Show a previously loaded utility manager (hides current manager, shows utility manager)
+   * Show a previously loaded utility manager with crossfade.
    * @param {string} loadedKey - The internal loaded key for the utility manager
    */
-  showUtilityManager(loadedKey) {
-    // Hide current manager
-    if (this.currentManager && this.currentManager.id) {
-      const current = this.loadedManagers.get(this.currentManager.id);
-      if (current) {
-        current.container.classList.add('manager-hidden');
-        current.container.style.display = 'none';
-      }
-    }
+  async showUtilityManager(loadedKey) {
+    const incoming = this.loadedManagers.get(loadedKey);
+    if (!incoming) return;
 
-    // Show utility manager
-    const manager = this.loadedManagers.get(loadedKey);
-    if (manager) {
-      manager.container.classList.remove('manager-hidden');
-      manager.container.classList.add('manager-visible');
-      manager.container.style.display = 'block';
-      this.currentManager = { id: loadedKey, instance: manager.instance };
-    }
+    await this._crossfadeSlots(loadedKey);
+    this.currentManager = { id: loadedKey, instance: incoming.instance };
   }
 
   /**
-   * Show a previously loaded manager
+   * Show a previously loaded manager with crossfade.
+   * @param {number} managerId
    */
-  showManager(managerId) {
-    // Hide current manager
-    if (this.currentManager && this.currentManager.id) {
-      const current = this.loadedManagers.get(this.currentManager.id);
-      if (current) {
-        current.container.classList.add('manager-hidden');
-        current.container.style.display = 'none';
-      }
+  async showManager(managerId) {
+    const incoming = this.loadedManagers.get(managerId);
+    if (!incoming) return;
+
+    await this._crossfadeSlots(managerId);
+    this.currentManager = { id: managerId, instance: incoming.instance };
+  }
+
+  /**
+   * Perform a crossfade transition between the current slot and an incoming one.
+   * The outgoing slot fades out simultaneously with the incoming fading in.
+   * Slots use .slot-visible / .slot-hidden CSS classes.
+   * @param {number|string} incomingId - The ID/key of the manager to show
+   */
+  async _crossfadeSlots(incomingId) {
+    const incoming = this.loadedManagers.get(incomingId);
+    if (!incoming) return;
+
+    const outgoingId = this.currentManager?.id;
+    const outgoing = outgoingId ? this.loadedManagers.get(outgoingId) : null;
+
+    const incomingSlot = incoming.slotEl;
+    const outgoingSlot = outgoing?.slotEl;
+
+    if (!incomingSlot) return;
+
+    // If no outgoing, just show incoming immediately with fade-in
+    if (!outgoingSlot || outgoingSlot === incomingSlot) {
+      incomingSlot.classList.remove('slot-hidden');
+      void incomingSlot.offsetHeight;  // force reflow
+      incomingSlot.classList.add('slot-visible');
+      return;
     }
 
-    // Show new manager
-    const manager = this.loadedManagers.get(managerId);
-    if (manager) {
-      manager.container.classList.remove('manager-hidden');
-      manager.container.classList.add('manager-visible');
-      manager.container.style.display = 'block';
-      this.currentManager = { id: managerId, instance: manager.instance };
-    }
+    // Both slots visible simultaneously during crossfade (absolute positioning handles overlap)
+    // Step 1: Show incoming (initially opacity 0 per CSS), make it active
+    incomingSlot.classList.remove('slot-hidden');
+
+    // Force reflow
+    void incomingSlot.offsetHeight;
+
+    // Step 2: Fade in incoming, fade out outgoing simultaneously
+    incomingSlot.classList.add('slot-visible');     // opacity → 1
+    outgoingSlot.classList.remove('slot-visible');  // opacity → 0
+
+    // Step 3: Wait for CSS transitions to complete
+    await new Promise(resolve => setTimeout(resolve, MANAGER_CROSSFADE_MS + 20));
+
+    // Step 4: Fully hide outgoing
+    outgoingSlot.classList.add('slot-hidden');
   }
 
   /**
@@ -649,6 +692,8 @@ class LithiumApp {
 
       // Initialize main manager (skip internal show animation, we handle it via crossfade)
       const mainManager = new MainManager(this, mainWrapper, permittedManagers);
+      // Set reference BEFORE init() so that manager loading within init() can use it
+      this.mainManagerInstance = mainManager;
       await mainManager.init({ skipShowAnimation: true });
 
       // Start crossfade: fade out login (if not already faded), fade in main
@@ -826,6 +871,7 @@ class LithiumApp {
     clearJWT();
     this.user = null;
     this.loadedManagers.clear();
+    this.mainManagerInstance = null;
 
     // Return to login
     await this.loadLoginManager();

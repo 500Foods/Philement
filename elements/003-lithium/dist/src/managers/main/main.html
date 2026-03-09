@@ -1,1 +1,128 @@
-<div class="logout-overlay" id="logout-overlay"></div><div class="logout-panel" id="logout-panel"><div class="logout-panel-header"><div class="subpanel-header-group"><button type="button" class="subpanel-header-btn subpanel-header-primary"><fa fa-sign-out-alt></fa><span>Select Logout Option</span></button> <button type="button" class="subpanel-header-btn subpanel-header-close" id="logout-close-btn" data-tooltip="Cancel (ESC)"><fa fa-xmark></fa></button></div></div><div class="logout-panel-content"><div class="logout-options"><button type="button" class="logout-option" data-logout-type="quick" data-key="1"><div class="logout-option-number">1</div><div class="logout-option-info"><span class="logout-option-title">Logout Quick</span> <span class="logout-option-desc">Normal logout, keep cached data</span></div></button> <button type="button" class="logout-option" data-logout-type="normal" data-key="2"><div class="logout-option-number">2</div><div class="logout-option-info"><span class="logout-option-title">Logout Normal</span> <span class="logout-option-desc">Logout without remembering username</span></div></button> <button type="button" class="logout-option" data-logout-type="public" data-key="3"><div class="logout-option-number">3</div><div class="logout-option-info"><span class="logout-option-title">Logout Public</span> <span class="logout-option-desc">Clear all local history and content</span></div></button> <button type="button" class="logout-option" data-logout-type="global" data-key="4"><div class="logout-option-number">4</div><div class="logout-option-info"><span class="logout-option-title">Logout Global</span> <span class="logout-option-desc">Logout Public + invalidate all sessions</span></div></button></div><div class="logout-hints"><span><fa fa-keyboard></fa>Press <kbd>1</kbd>-<kbd>4</kbd> to select, <kbd>Enter</kbd> for Quick, <kbd>Esc</kbd> to cancel</span></div></div></div><div id="main-layout"><div class="sidebar-overlay" id="sidebar-overlay"></div><aside class="main-sidebar" id="sidebar"><div class="sidebar-header-gradient"><img src="/assets/images/logo-li.svg" alt="" class="sidebar-logo" width="32" height="32"><div class="sidebar-header-text"><span class="sidebar-title">Lithium</span></div></div><nav class="sidebar-menu" id="sidebar-menu"></nav><div class="sidebar-footer"><div class="sidebar-icon-group" id="sidebar-icon-group"><div class="sidebar-icon-wrapper" data-index="0"><button type="button" class="sidebar-icon-btn" id="sidebar-collapse-btn" title="Collapse sidebar"><fa fa-angles-left id="collapse-icon"></fa></button></div><div class="sidebar-icon-wrapper" data-index="1"><button type="button" class="sidebar-icon-btn" id="sidebar-theme-btn" title="Toggle theme"><fa fa-palette></fa></button></div><div class="sidebar-icon-wrapper" data-index="2"><button type="button" class="sidebar-icon-btn" id="sidebar-profile-btn" title="Profile"><fa fa-user-cog></fa></button></div><div class="sidebar-icon-wrapper" data-index="3"><button type="button" class="sidebar-icon-btn" id="sidebar-help-btn" title="Help"><fa fa-circle-question></fa></button></div><div class="sidebar-icon-wrapper" data-index="4"><button type="button" class="sidebar-icon-btn sidebar-logout" id="sidebar-logout-btn" title="Logout"><fa fa-sign-out-alt></fa></button></div></div></div></aside><div class="sidebar-splitter" id="sidebar-splitter"></div><div class="main-content"><header class="main-header"><div class="header-left"><button class="mobile-menu-btn" id="mobile-menu-btn"><fa fa-bars></fa></button><h2 class="header-title" id="header-title">Dashboard</h2></div><div class="header-right"><div class="version-box" id="version-box"><div class="version-row" id="version-build">1000</div><div class="version-row" id="version-year">2026</div><div class="version-row" id="version-date">0101</div><div class="version-row" id="version-time">0000</div></div><div class="offline-indicator" id="offline-indicator"><fa fa-wifi-slash></fa><span>Offline</span></div><button class="header-btn" id="theme-btn" title="Toggle theme"><fa fa-moon></fa></button> <button class="profile-btn" id="profile-btn"><div class="profile-avatar" id="profile-avatar">U</div><div class="profile-info"><span class="profile-name" id="profile-name">User</span> <span class="profile-role" id="profile-role">Role</span></div></button></div></header><main class="workspace" id="workspace"></main></div></div>
+<!--
+  Main Menu Manager Template
+  Layout: Sidebar (left, always visible) + Manager Area (right, content controlled by current manager)
+
+  Manager Area uses "slots" — each loaded manager gets its own slot (header + workspace + footer)
+  that crossfades in/out as a unit when switching managers.
+
+  Sidebar: Gradient header, scrollable menu, icon footer (collapse/theme/profile/logs/logout)
+  Manager Slot: Header (icon+name on left, xmark on right), Workspace, Footer (reports left, icons right)
+-->
+
+<!-- Logout Overlay and Panel - positioned outside main layout to overlay everything -->
+<div class="logout-overlay" id="logout-overlay"></div>
+
+<div class="logout-panel" id="logout-panel">
+  <div class="logout-panel-header">
+    <div class="subpanel-header-group">
+      <button type="button" class="subpanel-header-btn subpanel-header-primary">
+        <fa fa-sign-out-alt></fa>
+        <span>Select Logout Option</span>
+      </button>
+      <button type="button" class="subpanel-header-btn subpanel-header-close" id="logout-close-btn" data-tooltip="Cancel (ESC)">
+        <fa fa-xmark></fa>
+      </button>
+    </div>
+  </div>
+  <div class="logout-panel-content">
+    <div class="logout-options">
+      <button type="button" class="logout-option" data-logout-type="quick" data-key="1">
+        <div class="logout-option-number">1</div>
+        <div class="logout-option-info">
+          <span class="logout-option-title">Logout Quick</span>
+          <span class="logout-option-desc">Normal logout, keep cached data</span>
+        </div>
+      </button>
+      <button type="button" class="logout-option" data-logout-type="normal" data-key="2">
+        <div class="logout-option-number">2</div>
+        <div class="logout-option-info">
+          <span class="logout-option-title">Logout Normal</span>
+          <span class="logout-option-desc">Logout without remembering username</span>
+        </div>
+      </button>
+      <button type="button" class="logout-option" data-logout-type="public" data-key="3">
+        <div class="logout-option-number">3</div>
+        <div class="logout-option-info">
+          <span class="logout-option-title">Logout Public</span>
+          <span class="logout-option-desc">Clear all local history and content</span>
+        </div>
+      </button>
+      <button type="button" class="logout-option" data-logout-type="global" data-key="4">
+        <div class="logout-option-number">4</div>
+        <div class="logout-option-info">
+          <span class="logout-option-title">Logout Global</span>
+          <span class="logout-option-desc">Logout Public + invalidate all sessions</span>
+        </div>
+      </button>
+    </div>
+    <div class="logout-hints">
+      <span><fa fa-keyboard></fa> Press <kbd>1</kbd>-<kbd>4</kbd> to select, <kbd>Enter</kbd> for Quick, <kbd>Esc</kbd> to cancel</span>
+    </div>
+  </div>
+</div>
+
+<div id="main-layout">
+  <!-- Mobile overlay for sidebar -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Sidebar (left side — Lithium chrome, always constrained here) -->
+  <aside class="main-sidebar" id="sidebar">
+    <!-- Gradient header matching login panel -->
+    <div class="sidebar-header-gradient">
+      <img src="/assets/images/logo-li.svg" alt="" class="sidebar-logo" width="32" height="32">
+      <div class="sidebar-header-text">
+        <span class="sidebar-title">Lithium</span>
+      </div>
+    </div>
+
+    <!-- Menu items - scrollable -->
+    <nav class="sidebar-menu" id="sidebar-menu">
+      <!-- Manager buttons will be inserted here dynamically -->
+    </nav>
+
+    <!-- Footer with icon-only buttons matching login style -->
+    <div class="sidebar-footer">
+      <div class="sidebar-icon-group" id="sidebar-icon-group">
+        <div class="sidebar-icon-wrapper" data-index="0">
+          <button type="button" class="sidebar-icon-btn" id="sidebar-collapse-btn" title="Collapse sidebar">
+            <fa fa-angles-left id="collapse-icon"></fa>
+          </button>
+        </div>
+        <div class="sidebar-icon-wrapper" data-index="1">
+          <button type="button" class="sidebar-icon-btn" id="sidebar-theme-btn" title="Style Manager">
+            <fa fa-palette></fa>
+          </button>
+        </div>
+        <div class="sidebar-icon-wrapper" data-index="2">
+          <button type="button" class="sidebar-icon-btn" id="sidebar-profile-btn" title="Profile">
+            <fa fa-user-cog></fa>
+          </button>
+        </div>
+        <div class="sidebar-icon-wrapper" data-index="3">
+          <button type="button" class="sidebar-icon-btn" id="sidebar-logs-btn" title="Session Log">
+            <fa fa-scroll></fa>
+          </button>
+        </div>
+        <div class="sidebar-icon-wrapper" data-index="4">
+          <button type="button" class="sidebar-icon-btn sidebar-logout" id="sidebar-logout-btn" title="Logout">
+            <fa fa-sign-out-alt></fa>
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Splitter handle -->
+  <div class="sidebar-splitter" id="sidebar-splitter"></div>
+
+  <!-- Manager area (right side — entirely controlled by current manager) -->
+  <div class="manager-area" id="manager-area">
+    <!-- Mobile menu button (only visible on mobile, lives outside slots) -->
+    <button class="mobile-menu-btn" id="mobile-menu-btn">
+      <fa fa-bars></fa>
+    </button>
+
+    <!-- Manager slots are injected here by app.js / main.js -->
+    <!-- Each slot: .manager-slot > (.manager-slot-header + .manager-slot-workspace + .manager-slot-footer) -->
+  </div>
+</div>

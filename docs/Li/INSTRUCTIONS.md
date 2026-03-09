@@ -336,6 +336,77 @@ Lithium uses a consistent button group pattern for related actions and panel hea
 - Panel headers with icon + title and close button
 - Anywhere you need visually connected buttons with a cohesive look
 
+### Manager Slot Button Injection
+
+Each manager slot (rendered by `MainManager`) has a single unified
+`subpanel-header-group` for both its header and its footer.  Managers must
+**not** create a separate toolbar element inside their workspace — instead they
+inject buttons into the slot's existing group via the `MainManager` API.  This
+keeps every button strip seamlessly connected with no visual breaks.
+
+#### Slot Header
+
+```layout
+[icon + name (flex:1)]  [manager extras here]  [close ✕]
+```
+
+To add buttons between the title and close:
+
+```javascript
+// Inside manager init() — called after the slot is created by app.js
+_injectSlotHeaderButtons() {
+  const mainMgr = this.app._getMainManager();
+  if (!mainMgr) return;
+
+  // Menu manager:   mainMgr._slotId(managerId)
+  // Utility manager: mainMgr._utilitySlotId(managerKey)
+  const slotId = mainMgr._utilitySlotId('my-manager');
+
+  mainMgr.addHeaderButtons(slotId, [
+    {
+      id:      'my-refresh-btn',
+      icon:    'fa-rotate',
+      title:   'Refresh',
+      tooltip: 'Refresh',
+      onClick: () => this.refresh(),
+    },
+    // More buttons…
+  ]);
+}
+```
+
+#### Slot Footer
+
+```layout
+[Reports (flex:1)]  [left extras]  [right extras]  [Annotations][Tours][LMS]
+```
+
+To add buttons to the footer:
+
+```javascript
+mainMgr.addFooterButtons(slotId, 'right', [
+  { id: 'export-btn', icon: 'fa-file-export', title: 'Export', onClick: fn },
+]);
+// side = 'left'  → between Reports and right extras
+// side = 'right' → between left extras and the fixed action icons
+```
+
+#### Button Descriptor Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `icon` | string | Yes* | FA icon attribute, e.g. `'fa-rotate'` |
+| `id` | string | No | DOM `id` for later `querySelector` access |
+| `title` | string | No | HTML `title` attribute (tooltip on hover) |
+| `tooltip` | string | No | `data-tooltip` attribute |
+| `onClick` | function | No | Click event handler |
+| `el` | HTMLElement | Yes* | Pre-built element (alternative to `icon`) |
+
+\* Either `icon` or `el` must be supplied.
+
+**Reference:** See `SessionLogManager._injectSlotHeaderButtons()` for the
+canonical example of this pattern in practice.
+
 ## Icon System
 
 Lithium uses a custom icon system built on top of Font Awesome. Instead of using `<i class="fas fa-icon">` directly, use the `<fa>` tag and let the system apply your configured icon set.

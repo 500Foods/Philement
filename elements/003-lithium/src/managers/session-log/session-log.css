@@ -1,28 +1,23 @@
 /**
  * Session Log Manager Styles
  *
- * Utility manager — renders in the workspace after login.
- * Full-height CodeMirror viewer with a header bar matching the
- * login panel's subpanel design.
+ * Utility manager — renders in the manager-slot workspace.
+ * The slot header (title + action buttons + close) is provided by MainManager's
+ * slot system.  Action buttons are injected via addHeaderButtons() so they sit
+ * in the same unified subpanel-header-group — no separate toolbar needed.
+ * This file only styles the CodeMirror log viewer inside the workspace.
  */
 
-/* Full-height page container */
+/* Full-height page container — fills the slot-workspace absolutely */
 #session-log-page {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
   overflow: hidden;
 }
 
-/* Header bar — mirrors login subpanel header layout */
-.session-log-header {
-  flex: 0 0 auto;
-  padding: var(--space-2) var(--space-3);
-  border-bottom: var(--border-standard);
-  background: var(--bg-secondary);
-}
-
-/* Viewer takes all remaining vertical space */
+/* Viewer takes all vertical space (no toolbar above it) */
 .session-log-viewer {
   flex: 1 1 auto;
   overflow: hidden;

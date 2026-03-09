@@ -367,9 +367,14 @@
 
 /* ========================================
    Modals
+   Generic modal structure for any manager to use.
+   NOTE: .modal-overlay here is the full-viewport backdrop wrapper
+   that CONTAINS the .modal content box.
+   Do NOT use .modal-overlay as an inner backdrop div (styling conflict).
    ======================================== */
 
-.modal-overlay {
+/* Full-viewport backdrop — use as the outermost wrapper for a modal */
+.modal-backdrop {
   position: fixed;
   inset: 0;
   display: flex;
@@ -380,6 +385,15 @@
   padding: var(--space-4);
 }
 
+/* Keep .modal-overlay for backward compat but neutralize its default display */
+.modal-overlay {
+  position: aboslute;
+  /* Base style — managers that use this class as a flex backdrop
+     must add their own display/position rules.
+     Intentionally not setting display or position to avoid conflicts. */
+}
+
+/* Modal content box */
 .modal {
   width: 100%;
   max-width: 480px;

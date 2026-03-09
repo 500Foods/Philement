@@ -1,7 +1,12 @@
 <!--
   Main Menu Manager Template
-  Layout: Resizable Sidebar + Header Bar + Workspace
-  Sidebar has gradient header (like login), scrollable menu, and icon footer
+  Layout: Sidebar (left, always visible) + Manager Area (right, content controlled by current manager)
+
+  Manager Area uses "slots" — each loaded manager gets its own slot (header + workspace + footer)
+  that crossfades in/out as a unit when switching managers.
+
+  Sidebar: Gradient header, scrollable menu, icon footer (collapse/theme/profile/logs/logout)
+  Manager Slot: Header (icon+name on left, xmark on right), Workspace, Footer (reports left, icons right)
 -->
 
 <!-- Logout Overlay and Panel - positioned outside main layout to overlay everything -->
@@ -60,7 +65,7 @@
   <!-- Mobile overlay for sidebar -->
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-  <!-- Sidebar -->
+  <!-- Sidebar (left side — Lithium chrome, always constrained here) -->
   <aside class="main-sidebar" id="sidebar">
     <!-- Gradient header matching login panel -->
     <div class="sidebar-header-gradient">
@@ -84,7 +89,7 @@
           </button>
         </div>
         <div class="sidebar-icon-wrapper" data-index="1">
-          <button type="button" class="sidebar-icon-btn" id="sidebar-theme-btn" title="Toggle theme">
+          <button type="button" class="sidebar-icon-btn" id="sidebar-theme-btn" title="Style Manager">
             <fa fa-palette></fa>
           </button>
         </div>
@@ -110,51 +115,14 @@
   <!-- Splitter handle -->
   <div class="sidebar-splitter" id="sidebar-splitter"></div>
 
-  <!-- Main content area -->
-  <div class="main-content">
-    <!-- Header bar -->
-    <header class="main-header">
-      <div class="header-left">
-        <button class="mobile-menu-btn" id="mobile-menu-btn">
-          <fa fa-bars></fa>
-        </button>
-        <h2 class="header-title" id="header-title">Dashboard</h2>
-      </div>
+  <!-- Manager area (right side — entirely controlled by current manager) -->
+  <div class="manager-area" id="manager-area">
+    <!-- Mobile menu button (only visible on mobile, lives outside slots) -->
+    <button class="mobile-menu-btn" id="mobile-menu-btn">
+      <fa fa-bars></fa>
+    </button>
 
-      <div class="header-right">
-        <!-- Version info box -->
-        <div class="version-box" id="version-box">
-          <div class="version-row" id="version-build">1000</div>
-          <div class="version-row" id="version-year">2026</div>
-          <div class="version-row" id="version-date">0101</div>
-          <div class="version-row" id="version-time">0000</div>
-        </div>
-
-        <!-- Offline indicator -->
-        <div class="offline-indicator" id="offline-indicator">
-          <fa fa-wifi-slash></fa>
-          <span>Offline</span>
-        </div>
-
-        <!-- Theme toggle (stub for now) -->
-        <button class="header-btn" id="theme-btn" title="Toggle theme">
-          <fa fa-moon></fa>
-        </button>
-
-        <!-- User profile -->
-        <button class="profile-btn" id="profile-btn">
-          <div class="profile-avatar" id="profile-avatar">U</div>
-          <div class="profile-info">
-            <span class="profile-name" id="profile-name">User</span>
-            <span class="profile-role" id="profile-role">Role</span>
-          </div>
-        </button>
-      </div>
-    </header>
-
-    <!-- Workspace for active manager -->
-    <main class="workspace" id="workspace">
-      <!-- Manager content will be loaded here -->
-    </main>
+    <!-- Manager slots are injected here by app.js / main.js -->
+    <!-- Each slot: .manager-slot > (.manager-slot-header + .manager-slot-workspace + .manager-slot-footer) -->
   </div>
 </div>

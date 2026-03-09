@@ -433,6 +433,85 @@ When utility managers are implemented the footer will become:
 
 ---
 
+## 12a. Manager Slot Button Injection
+
+Each manager slot (header + workspace + footer) is built by `MainManager.createSlot()`.
+The header and footer each use a **single unified** `subpanel-header-group` so that
+all buttons appear as one connected strip — no visual breaks.
+
+### Slot Header Layout
+
+```layout
+[icon + manager name (flex:1)]  [manager-injected extras]  [close ✕]
+                                         ↑
+                              .slot-header-extras
+                              (display:contents)
+```
+
+### Slot Footer Layout
+
+```layout
+[Reports Placeholder (flex:1)]  [footer-left extras]  [footer-right extras]  [Annotations]  [Tours]  [LMS]
+                                        ↑                      ↑
+                              .slot-footer-left-extras  .slot-footer-right-extras
+                              (display:contents)
+```
+
+Both insertion-point `<div>` elements use `display:contents` so their children
+appear directly as flex items inside the shared button group.
+
+### Button Injection API
+
+Managers call these `MainManager` methods from their `init()` (after the slot has
+been created by `app.js`):
+
+```javascript
+// Get the slot id from inside a manager
+const mainMgr = this.app._getMainManager();
+// Menu manager:
+const slotId = mainMgr._slotId(managerId);
+// Utility manager:
+const slotId = mainMgr._utilitySlotId(managerKey);  // e.g. 'session-log'
+
+// Inject buttons into the header (between title and close)
+mainMgr.addHeaderButtons(slotId, [
+  {
+    id:      'my-refresh-btn',        // optional DOM id
+    icon:    'fa-rotate',             // <fa> icon attribute
+    title:   'Refresh',              // HTML title (tooltip on hover)
+    tooltip: 'Refresh',              // data-tooltip attribute
+    onClick: () => this.refresh(),   // click handler
+  },
+  // Pre-built element form:
+  { el: document.createElement('button') },
+]);
+
+// Inject buttons into the footer
+mainMgr.addFooterButtons(slotId, 'right', [
+  { id: 'export-btn', icon: 'fa-file-export', title: 'Export', onClick: fn },
+]);
+// side = 'left'  → between Reports button and right extras
+// side = 'right' → between left extras and fixed action icons (Annotations/Tours/LMS)
+```
+
+`addHeaderButtons` / `addFooterButtons` also call `processIcons()` on the container
+after insertion so newly injected `<fa>` tags are converted by Font Awesome.
+
+### Session Log — Reference Implementation
+
+`SessionLogManager._injectSlotHeaderButtons()` is the canonical example. It:
+
+1. Gets `mainMgr` via `this.app._getMainManager()`
+2. Derives `slotId = mainMgr._utilitySlotId('session-log')`
+3. Calls `mainMgr.addHeaderButtons(slotId, [...])` with the Refresh, Coverage,
+   and Clear button descriptors
+4. Caches references to the injected elements for use by `refreshLog()` / `clearArchivedSessions()`
+
+The workspace template (`session-log.html`) contains **only** the log viewer —
+no separate toolbar `<div>`. This is the expected pattern for all managers.
+
+---
+
 ## 13. Style Manager ✅ IMPLEMENTED
 
 Theme management: list, apply, edit, share themes. Fully implemented in
@@ -996,6 +1075,6 @@ with shared `HH:MM:SS.ZZZ  Subsystem` prefix and `―` continuation marker for i
 
 2. **Dynamic Import with Runtime Variables** — `import(/* @vite-ignore */ someVar)` tells Vite to skip static analysis. The module at `someVar` is never bundled and the path does not exist in production. **Fix:** Use a static `switch` dispatching to literal `import('./path.js')` calls. Vite can see these at build time, create code-split chunks, and rewrite paths in the bundle. See `_importManager()` and `_importUtilityManager()` in `app.js`.
 
-2. **Service Worker Cache Busting** — The service worker's `CACHE_VERSION` must change on each deploy to invalidate stale caches. The `bump-version.js` script automatically updates `CACHE_VERSION` in `service-worker.js` to match the build number, ensuring old caches are cleaned up on `activate`.
+3. **Service Worker Cache Busting** — The service worker's `CACHE_VERSION` must change on each deploy to invalidate stale caches. The `bump-version.js` script automatically updates `CACHE_VERSION` in `service-worker.js` to match the build number, ensuring old caches are cleaned up on `activate`.
 
-3. **Version System** — `version.json` at the project root tracks build number (starting at 1000), timestamp, and version string. The `bump-version.js` script increments it on each deploy and copies it to `public/` for runtime access. The login screen and help panel fetch `/version.json` to display the current build. This is independent of git hashes — it's a simple monotonic counter.
+4. **Version System** — `version.json` at the project root tracks build number (starting at 1000), timestamp, and version string. The `bump-version.js` script increments it on each deploy and copies it to `public/` for runtime access. The login screen and help panel fetch `/version.json` to display the current build. This is independent of git hashes — it's a simple monotonic counter.

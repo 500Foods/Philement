@@ -35,6 +35,7 @@ export default class SessionLogManager {
   async init() {
     log(SESSIONLOG, Status.INFO, 'Session Log manager initializing');
     await this.render();
+    this._injectSlotHeaderButtons();
     this.setupEventListeners();
     await this.populateLog();
     this.show();
@@ -42,7 +43,8 @@ export default class SessionLogManager {
   }
 
   /**
-   * Render the session log page
+   * Render the session log page (workspace content only — no toolbar).
+   * Action buttons are injected into the slot header via _injectSlotHeaderButtons().
    */
   async render() {
     try {
@@ -54,39 +56,78 @@ export default class SessionLogManager {
       this.renderFallback();
     }
 
-    // Cache DOM elements
+    // Cache workspace DOM elements (buttons are in the slot header, not here)
     this.elements = {
       page: this.container.querySelector('#session-log-page'),
       viewer: this.container.querySelector('#session-log-viewer'),
-      refreshBtn: this.container.querySelector('#session-log-refresh-btn'),
-      coverageBtn: this.container.querySelector('#session-log-coverage-btn'),
-      clearBtn: this.container.querySelector('#session-log-clear-btn'),
+      // refreshBtn, coverageBtn, clearBtn will be populated by _injectSlotHeaderButtons
     };
   }
 
   /**
-   * Minimal fallback if template fetch fails
+   * Inject the Refresh, Coverage, and Clear buttons into the slot header via
+   * MainManager.addHeaderButtons().  This keeps all buttons in one unified
+   * subpanel-header-group — no separate toolbar, no visual break.
+   *
+   * Falls back gracefully if MainManager is not available (e.g. tests).
+   */
+  _injectSlotHeaderButtons() {
+    const mainMgr = this.app?._getMainManager?.();
+    if (!mainMgr) return;
+
+    const slotId = mainMgr._utilitySlotId('session-log');
+
+    mainMgr.addHeaderButtons(slotId, [
+      {
+        id:      'session-log-refresh-btn',
+        icon:    'fa-rotate',
+        title:   'Refresh log',
+        tooltip: 'Refresh',
+        onClick: () => {
+          log(SESSIONLOG, Status.INFO, 'Button clicked: Refresh');
+          this.refreshLog();
+        },
+      },
+      {
+        id:      'session-log-coverage-btn',
+        icon:    'fa-chart-simple-horizontal',
+        title:   'View coverage report',
+        tooltip: 'Coverage',
+        onClick: () => {
+          log(SESSIONLOG, Status.INFO, 'Button clicked: Coverage report');
+          window.open('/coverage/index.html', '_blank');
+        },
+      },
+      {
+        id:      'session-log-clear-btn',
+        icon:    'fa-trash-can',
+        title:   'Clear archived sessions',
+        tooltip: 'Clear archived',
+        onClick: () => {
+          log(SESSIONLOG, Status.INFO, 'Button clicked: Clear archived sessions');
+          this.clearArchivedSessions();
+        },
+      },
+    ]);
+
+    // Cache references to the injected buttons now that they're in the DOM
+    const area = mainMgr.elements?.managerArea;
+    if (area) {
+      const slot = area.querySelector(`#${slotId}`);
+      if (slot) {
+        this.elements.refreshBtn  = slot.querySelector('#session-log-refresh-btn');
+        this.elements.coverageBtn = slot.querySelector('#session-log-coverage-btn');
+        this.elements.clearBtn    = slot.querySelector('#session-log-clear-btn');
+      }
+    }
+  }
+
+  /**
+   * Minimal fallback if template fetch fails (no toolbar — buttons are in slot header)
    */
   renderFallback() {
     this.container.innerHTML = `
       <div id="session-log-page">
-        <div class="session-log-header">
-          <div class="subpanel-header-group">
-            <button type="button" class="subpanel-header-btn subpanel-header-primary">
-              <fa fa-scroll></fa>
-              <span>Session Log</span>
-            </button>
-            <button type="button" class="subpanel-header-btn" id="session-log-refresh-btn" data-tooltip="Refresh log">
-              <fa fa-rotate></fa>
-            </button>
-            <button type="button" class="subpanel-header-btn" id="session-log-coverage-btn" data-tooltip="View coverage report" onclick="window.open('/coverage/index.html', '_blank')">
-              <fa fa-chart-simple-horizontal></fa>
-            </button>
-            <button type="button" class="subpanel-header-btn" id="session-log-clear-btn" data-tooltip="Clear archived sessions">
-              <fa fa-trash-can></fa>
-            </button>
-          </div>
-        </div>
         <div class="session-log-viewer" id="session-log-viewer">
           <div class="log-placeholder"><p>Loading session log...</p></div>
         </div>
@@ -95,26 +136,13 @@ export default class SessionLogManager {
   }
 
   /**
-   * Set up event listeners for the action buttons
+   * Set up event listeners.
+   * Note: action button listeners are wired inline in _injectSlotHeaderButtons();
+   * this method handles any remaining workspace-level listeners.
    */
   setupEventListeners() {
-    // Refresh — re-read the log buffer and update editor
-    this.elements.refreshBtn?.addEventListener('click', () => {
-      log(SESSIONLOG, Status.INFO, 'Button clicked: Refresh');
-      this.refreshLog();
-    });
-
-    // Coverage button — opens /coverage/index.html in new tab (inline onclick handles it,
-    // but we also log the interaction here)
-    this.elements.coverageBtn?.addEventListener('click', () => {
-      log(SESSIONLOG, Status.INFO, 'Button clicked: Coverage report');
-    });
-
-    // Clear archived sessions
-    this.elements.clearBtn?.addEventListener('click', () => {
-      log(SESSIONLOG, Status.INFO, 'Button clicked: Clear archived sessions');
-      this.clearArchivedSessions();
-    });
+    // Action button listeners are already attached in _injectSlotHeaderButtons().
+    // Add any workspace-level event listeners here if needed in the future.
   }
 
   /**
