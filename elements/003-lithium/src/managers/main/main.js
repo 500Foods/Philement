@@ -136,7 +136,7 @@ export default class MainManager {
       collapseIcon: this.container.querySelector('#collapse-icon'),
       sidebarThemeBtn: this.container.querySelector('#sidebar-theme-btn'),
       sidebarProfileBtn: this.container.querySelector('#sidebar-profile-btn'),
-      sidebarHelpBtn: this.container.querySelector('#sidebar-help-btn'),
+      sidebarLogsBtn: this.container.querySelector('#sidebar-logs-btn'),
       sidebarLogoutBtn: this.container.querySelector('#sidebar-logout-btn'),
       sidebarOverlay: this.container.querySelector('#sidebar-overlay'),
       mobileMenuBtn: this.container.querySelector('#mobile-menu-btn'),
@@ -215,8 +215,9 @@ export default class MainManager {
       }
     });
 
-    this.elements.sidebarHelpBtn?.addEventListener('click', () => {
-      console.log('[MainManager] Help button clicked (stub)');
+    this.elements.sidebarLogsBtn?.addEventListener('click', () => {
+      console.log('[MainManager] Session Log button clicked');
+      this.app.loadUtilityManager('session-log');
     });
 
     // Sidebar logout button (icon-only in footer)

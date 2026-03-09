@@ -1,0 +1,35 @@
+<!--
+  Session Log Manager Template
+  Utility Manager — always available from sidebar footer (fa-scroll button)
+  Full-width workspace viewer for the current session's client-side action log.
+  Mirrors the login panel's System Logs subpanel with additional controls.
+-->
+<div id="session-log-page">
+
+  <!-- Header bar with action buttons -->
+  <div class="session-log-header">
+    <div class="subpanel-header-group">
+      <button type="button" class="subpanel-header-btn subpanel-header-primary">
+        <fa fa-scroll></fa>
+        <span>Session Log</span>
+      </button>
+      <button type="button" class="subpanel-header-btn" id="session-log-refresh-btn" data-tooltip="Refresh log">
+        <fa fa-rotate></fa>
+      </button>
+      <button type="button" class="subpanel-header-btn" id="session-log-coverage-btn" data-tooltip="View coverage report" onclick="window.open('/coverage/index.html', '_blank')">
+        <fa fa-chart-simple-horizontal></fa>
+      </button>
+      <button type="button" class="subpanel-header-btn" id="session-log-clear-btn" data-tooltip="Clear archived sessions">
+        <fa fa-trash-can></fa>
+      </button>
+    </div>
+  </div>
+
+  <!-- Log viewer (CodeMirror will be initialized here) -->
+  <div class="session-log-viewer" id="session-log-viewer">
+    <div class="log-placeholder">
+      <p>Loading session log...</p>
+    </div>
+  </div>
+
+</div>

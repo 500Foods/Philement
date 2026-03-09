@@ -33,13 +33,18 @@ class LithiumApp {
     this.user = null;
     this.deferredInstallPrompt = null;
 
-    // Manager definitions (id -> module path)
+    // Manager definitions — id -> name only (module loaded via _importManager)
     this.managerRegistry = {
-      1: { id: 1, name: 'Style Manager', path: '/src/managers/style-manager/index.js' },
-      2: { id: 2, name: 'Profile Manager', path: '/src/managers/profile-manager/index.js' },
-      3: { id: 3, name: 'Dashboard', path: '/src/managers/dashboard/index.js' },
-      4: { id: 4, name: 'Lookups', path: '/src/managers/lookups/index.js' },
-      5: { id: 5, name: 'Queries', path: '/src/managers/queries/index.js' },
+      1: { id: 1, name: 'Style Manager' },
+      2: { id: 2, name: 'Profile Manager' },
+      3: { id: 3, name: 'Dashboard' },
+      4: { id: 4, name: 'Lookups' },
+      5: { id: 5, name: 'Queries' },
+    };
+
+    // Utility manager definitions — key -> name only (module loaded via _importUtilityManager)
+    this.utilityManagerRegistry = {
+      'session-log': { key: 'session-log', name: 'Session Log' },
     };
   }
 
@@ -370,6 +375,38 @@ class LithiumApp {
   }
 
   /**
+   * Static-import helper for menu managers.
+   * Uses literal string literals inside import() so Vite/Rollup can analyse the
+   * module graph, create proper code-split chunks, and rewrite paths at build time.
+   * A /* @vite-ignore *\/ dynamic import with a runtime variable would bypass this.
+   * @param {number} managerId
+   * @returns {Promise<module>}
+   */
+  async _importManager(managerId) {
+    switch (managerId) {
+      case 1: return import('./managers/style-manager/index.js');
+      case 2: return import('./managers/profile-manager/index.js');
+      case 3: return import('./managers/dashboard/index.js');
+      case 4: return import('./managers/lookups/index.js');
+      case 5: return import('./managers/queries/index.js');
+      default: throw new Error(`No import mapping for manager ID: ${managerId}`);
+    }
+  }
+
+  /**
+   * Static-import helper for utility managers.
+   * Same rationale as _importManager — literal paths required for Vite analysis.
+   * @param {string} managerKey
+   * @returns {Promise<module>}
+   */
+  async _importUtilityManager(managerKey) {
+    switch (managerKey) {
+      case 'session-log': return import('./managers/session-log/index.js');
+      default: throw new Error(`No import mapping for utility manager key: ${managerKey}`);
+    }
+  }
+
+  /**
    * Load a manager into the workspace
    */
   async loadManager(managerId) {
@@ -392,7 +429,7 @@ class LithiumApp {
     try {
       logManager(Status.INFO, `Loading manager: ${managerDef.name}`);
       const loadStart = Date.now();
-      const module = await import(/* @vite-ignore */ managerDef.path);
+      const module = await this._importManager(managerId);
 
       // Create workspace container
       const workspace = document.getElementById('workspace');
@@ -425,6 +462,87 @@ class LithiumApp {
       logManager(Status.SUCCESS, `Manager ${managerDef.name} loaded`, Date.now() - loadStart);
     } catch (error) {
       logManager(Status.ERROR, `Failed to load manager ${managerDef.name}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Load a utility manager into the workspace
+   * Utility managers are not Punchcard-gated and keyed by string (not integer ID)
+   * @param {string} managerKey - The utility manager key (e.g. 'session-log')
+   */
+  async loadUtilityManager(managerKey) {
+    const managerDef = this.utilityManagerRegistry[managerKey];
+
+    if (!managerDef) {
+      logManager(Status.ERROR, `Unknown utility manager key: ${managerKey}`);
+      return;
+    }
+
+    // Check if already loaded — if so, just show it
+    const loadedKey = `utility:${managerKey}`;
+    if (this.loadedManagers.has(loadedKey)) {
+      this.showUtilityManager(loadedKey);
+      logManager(Status.INFO, `Switched to already-loaded utility manager: ${managerDef.name}`);
+      return;
+    }
+
+    try {
+      logManager(Status.INFO, `Loading utility manager: ${managerDef.name}`);
+      const loadStart = Date.now();
+      const module = await this._importUtilityManager(managerKey);
+
+      // Create workspace container
+      const workspace = document.getElementById('workspace');
+      if (!workspace) {
+        throw new Error('Workspace container not found');
+      }
+
+      const container = document.createElement('div');
+      container.id = `utility-manager-${managerKey}`;
+      container.className = 'manager-container';
+      container.style.display = 'none';
+      workspace.appendChild(container);
+
+      // Initialize manager
+      const ManagerClass = module.default;
+      const managerInstance = new ManagerClass(this, container);
+      await managerInstance.init();
+
+      // Store and show
+      this.loadedManagers.set(loadedKey, {
+        id: loadedKey,
+        instance: managerInstance,
+        container,
+      });
+
+      this.showUtilityManager(loadedKey);
+      logManager(Status.SUCCESS, `Utility manager ${managerDef.name} loaded`, Date.now() - loadStart);
+    } catch (error) {
+      logManager(Status.ERROR, `Failed to load utility manager ${managerDef.name}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Show a previously loaded utility manager (hides current manager, shows utility manager)
+   * @param {string} loadedKey - The internal loaded key for the utility manager
+   */
+  showUtilityManager(loadedKey) {
+    // Hide current manager
+    if (this.currentManager && this.currentManager.id) {
+      const current = this.loadedManagers.get(this.currentManager.id);
+      if (current) {
+        current.container.classList.add('manager-hidden');
+        current.container.style.display = 'none';
+      }
+    }
+
+    // Show utility manager
+    const manager = this.loadedManagers.get(loadedKey);
+    if (manager) {
+      manager.container.classList.remove('manager-hidden');
+      manager.container.classList.add('manager-visible');
+      manager.container.style.display = 'block';
+      this.currentManager = { id: loadedKey, instance: manager.instance };
     }
   }
 

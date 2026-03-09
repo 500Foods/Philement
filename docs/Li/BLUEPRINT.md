@@ -92,7 +92,7 @@ Planned utility managers and their sidebar footer bindings:
 
 | Footer Button | Icon | Manager | Status |
 |--------------|------|---------|--------|
-| Session Log | `fa-scroll` | `session-log/` | ⬜ Next |
+| Session Log | `fa-scroll` | `session-log/` | ✅ Implemented |
 | User Profile | `fa-user-cog` | `user-profile/` | ⬜ Placeholder |
 
 > **Note:** The current sidebar footer contains a **Help** button (`fa-circle-question`).
@@ -524,7 +524,7 @@ User preferences. Currently a placeholder stub.
 
 ---
 
-## 14a. Session Log Manager ⬜ NEXT (Utility Manager)
+## 14a. Session Log Manager ✅ IMPLEMENTED (Utility Manager)
 
 The Session Log manager is a **utility manager** — always available from the
 sidebar footer regardless of Punchcard. It replaces the current Help button.
@@ -567,17 +567,17 @@ Header bar:
 
 ### Implementation Checklist
 
-- [ ] Create `src/managers/session-log/index.js` with init/render/teardown
-- [ ] Create `src/managers/session-log/session-log.html` and `.css`
-- [ ] Replace Help button in `main.html` sidebar footer with Session Log button
-- [ ] Wire `sidebar-logs-btn` click to load Session Log utility manager
-- [ ] Register in `app.js` utility manager registry (separate from Punchcard IDs)
-- [ ] CodeMirror read-only viewer (reuse login panel approach)
-- [ ] Refresh button — re-reads `getRawLog()` and updates editor content
-- [ ] Coverage link button
-- [ ] Clear archived sessions button (`window.lithiumLogs.archived`)
-- [ ] Add `Subsystems.SESSIONLOG` constant to `log.js`
-- [ ] Log all button interactions via `log(LOGIN, ...)` pattern
+- [x] Create `src/managers/session-log/index.js` with init/render/teardown
+- [x] Create `src/managers/session-log/session-log.html` and `.css`
+- [x] Replace Help button in `main.html` sidebar footer with Session Log button
+- [x] Wire `sidebar-logs-btn` click to load Session Log utility manager
+- [x] Register in `app.js` utility manager registry (separate from Punchcard IDs)
+- [x] CodeMirror read-only viewer (reuse login panel approach)
+- [x] Refresh button — re-reads `getRawLog()` and updates editor content
+- [x] Coverage link button
+- [x] Clear archived sessions button (`window.lithiumLogs.archived`)
+- [x] Add `Subsystems.SESSIONLOG` constant to `log.js`
+- [x] Log all button interactions via `log(SESSIONLOG, ...)` pattern
 
 ---
 
@@ -788,14 +788,14 @@ Sidebar + header + workspace, manager lazy loading, responsive.
 - [ ] Theme data model and API integration (waiting for Hydrogen endpoint)
 - [x] DOMPurify sanitization
 
-### Phase 4a: Utility Managers & Sidebar Footer ⬜ NEXT
+### Phase 4a: Utility Managers & Sidebar Footer ✅ COMPLETE
 
-Introduce the utility manager concept and deliver the first utility manager.
+Introduced the utility manager concept and delivered the first utility manager.
 
-- [ ] Add `utilityManagerRegistry` to `app.js` (separate from Punchcard `managerRegistry`)
-- [ ] Replace Help button with Session Log button in `main.html` sidebar footer
-- [ ] Implement `session-log/` utility manager (see Section 14a)
-- [ ] Wire footer button → load utility manager into workspace
+- [x] Add `utilityManagerRegistry` to `app.js` (separate from Punchcard `managerRegistry`)
+- [x] Replace Help button with Session Log button in `main.html` sidebar footer
+- [x] Implement `session-log/` utility manager (see Section 14a)
+- [x] Wire footer button → load utility manager into workspace
 - [ ] Document standalone manager URL mode in `app.js` (groundwork only, not full impl)
 
 ### Phase 5: Profile Manager ⬜
@@ -993,6 +993,8 @@ with shared `HH:MM:SS.ZZZ  Subsystem` prefix and `―` continuation marker for i
 ### Build & Import Lessons Learned (March 2026)
 
 1. **Mixed Dynamic/Static Imports** — Vite warns when a module is both statically imported (`import { x } from './mod.js'`) and dynamically imported (`await import('./mod.js')`) in the same file. The dynamic import cannot move the module into a separate chunk because the static import already pulls it into the main bundle. **Fix:** Use static imports for all core modules that are needed at startup. Reserve dynamic `import()` only for lazy-loaded managers and heavy third-party libraries (Tabulator, CodeMirror, DOMPurify).
+
+2. **Dynamic Import with Runtime Variables** — `import(/* @vite-ignore */ someVar)` tells Vite to skip static analysis. The module at `someVar` is never bundled and the path does not exist in production. **Fix:** Use a static `switch` dispatching to literal `import('./path.js')` calls. Vite can see these at build time, create code-split chunks, and rewrite paths in the bundle. See `_importManager()` and `_importUtilityManager()` in `app.js`.
 
 2. **Service Worker Cache Busting** — The service worker's `CACHE_VERSION` must change on each deploy to invalidate stale caches. The `bump-version.js` script automatically updates `CACHE_VERSION` in `service-worker.js` to match the build number, ensuring old caches are cleaned up on `activate`.
 
