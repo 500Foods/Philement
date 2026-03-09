@@ -24,9 +24,11 @@
     "clean": "rm -rf dist coverage reports",
     "predeploy": "test -n \"$LITHIUM_DEPLOY\" || { echo 'Error: $LITHIUM_DEPLOY is not set'; exit 1; }",
     "version:bump": "node scripts/bump-version.js",
-    "deploy": "npm run test:coverage && npm run coverage:copy && npm run templates:copy && npm run version:bump && vite build --mode deploy && npm run deploy:config && npm run deploy:postbuild",
+    "deploy": "npm run test:coverage && npm run coverage:copy && npm run templates:copy && npm run version:bump && vite build --mode deploy && npm run deploy:config && npm run deploy:postbuild && npm run deploy:prune && npm run deploy:brotli",
     "deploy:config": "test -f \"$LITHIUM_DEPLOY/config/lithium.json\" || cp -r \"$LITHIUM_ROOT/config\" \"$LITHIUM_DEPLOY/config\"",
-    "deploy:postbuild": "html-minifier-terser --input-dir \"$LITHIUM_DEPLOY\" --output-dir \"$LITHIUM_DEPLOY\" --file-ext html --collapse-whitespace --remove-comments --minify-js --minify-css && terser \"$LITHIUM_DEPLOY/service-worker.js\" -o \"$LITHIUM_DEPLOY/service-worker.js\" --compress --mangle"
+    "deploy:postbuild": "html-minifier-terser --input-dir \"$LITHIUM_DEPLOY\" --output-dir \"$LITHIUM_DEPLOY\" --file-ext html --collapse-whitespace --remove-comments --minify-js --minify-css && terser \"$LITHIUM_DEPLOY/service-worker.js\" -o \"$LITHIUM_DEPLOY/service-worker.js\" --compress --mangle",
+    "deploy:prune": "node scripts/prune-deploy-assets.js \"$LITHIUM_DEPLOY\"",
+    "deploy:brotli": "node scripts/generate-brotli.js \"$LITHIUM_DEPLOY\""
   },
   "dependencies": {
     "country-flag-icons": "^1.6.15",

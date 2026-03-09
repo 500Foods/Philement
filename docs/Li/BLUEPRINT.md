@@ -775,6 +775,7 @@ The dashboard includes:
 |----------|---------|---------|
 | `LITHIUM_ROOT` | Project source directory | `/mnt/extra/Projects/Philement/elements/003-lithium` |
 | `LITHIUM_DEPLOY` | Web server document root | `/fvl/tnt/t-philement/lithium` |
+| `LITHIUM_DEPLOY_KEEP` | Rollback window for hashed JS/CSS asset versions retained during deploy pruning | `3` |
 | `LITHIUM_DOCS_ROOT` | Documentation directory | `/mnt/extra/Projects/Philement/docs/Li` |
 
 All build and deploy scripts use these environment variables so nothing is
@@ -804,6 +805,10 @@ npm run coverage:copy   # Copy coverage report to public/ for deployment
    (does **not** empty the directory, preserving runtime config)
 7. `deploy:config` — Copies `config/lithium.json` only if not already present
 8. `deploy:postbuild` — Minifies HTML and service worker in-place
+9. `deploy:prune` — Removes old hashed JS/CSS asset versions from `$LITHIUM_DEPLOY/assets` while keeping a rollback window (default 3 versions per asset family), including related `.map` and `.br` sidecars
+10. `deploy:brotli` — Generates `.br` sidecars for deploy output `.css`, `.css.map`, `.html`, `.json`, `.svg`, `.js`, and `.js.map` files; skips unchanged sources and ignores binary assets such as PNG
+
+The Brotli deploy step reports aggregate compression results for the eligible asset set: original bytes, Brotli bytes, and total byte/percentage savings.
 
 ### Config Handling
 
@@ -819,7 +824,9 @@ $LITHIUM_DEPLOY/
 ├── index.html                    Minified entry point
 ├── manifest.json                 PWA manifest
 ├── service-worker.js             Minified SW (CACHE_VERSION = build number)
+├── service-worker.js.br          Brotli sidecar for eligible text asset
 ├── version.json                  Build number + timestamp (updated each deploy)
+├── version.json.br               Brotli sidecar for eligible text asset
 ├── favicon.ico
 ├── config/
 │   └── lithium.json              Runtime config (not overwritten on redeploy)
@@ -827,13 +834,28 @@ $LITHIUM_DEPLOY/
 │   ├── fonts/                    Vanadium WOFF2
 │   ├── images/                   Logo SVG + PNG icons
 │   ├── index-[hash].css          Combined CSS
+│   ├── index-[hash].css.br       Brotli sidecar
+│   ├── index-[hash].css.map      Source map (if enabled)
+│   ├── index-[hash].css.map.br   Brotli sidecar for source map
 │   ├── index-[hash].js           Core + shared modules
+│   ├── index-[hash].js.br        Brotli sidecar
+│   ├── index-[hash].js.map       Source map (if enabled)
+│   ├── index-[hash].js.map.br    Brotli sidecar for source map
 │   ├── login-[hash].js           Login manager chunk
-│   └── main-[hash].js            Main manager chunk
+│   ├── login-[hash].js.br        Brotli sidecar
+│   ├── login-[hash].js.map       Source map (if enabled)
+│   ├── login-[hash].js.map.br    Brotli sidecar for source map
+│   ├── main-[hash].js            Main manager chunk
+│   └── main-[hash].js.br         Brotli sidecar
+│   ├── main-[hash].js.map        Source map (if enabled)
+│   └── main-[hash].js.map.br     Brotli sidecar for source map
 ├── src/managers/                 HTML templates for runtime fetch
 │   ├── login/login.html
+│   ├── login/login.html.br
 │   ├── main/main.html
+│   ├── main/main.html.br
 │   └── style-manager/style-manager.html
+│       └── style-manager/style-manager.html.br
 └── coverage/                     Test coverage report (if generated)
     ├── index.html                Coverage dashboard
     ├── coverage-final.json       Raw coverage data
@@ -862,6 +884,10 @@ npm run deploy          # Coverage automatically copied to public/
 ```
 
 Serve from Hydrogen or any static server. HTTPS required for PWA.
+
+### Retention Rationale
+
+Lithium intentionally does **not** empty the entire deploy directory because runtime configuration must survive redeploys. The consequence is that hashed bundle outputs can pile up over time. The deploy prune step addresses this by retaining only a small per-family rollback window for hashed JS/CSS bundles and their related map/Brotli sidecars. This is safer than deleting the whole deploy tree and far smaller than indefinite accumulation.
 
 ---
 
