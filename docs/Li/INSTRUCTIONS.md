@@ -389,6 +389,12 @@ Each manager slot (rendered by `MainManager`) has a single unified
 inject buttons into the slot's existing group via the `MainManager` API.  This
 keeps every button strip seamlessly connected with no visual breaks.
 
+Buttons are inserted **directly into the `subpanel-header-group`** flex
+container via `insertBefore()`.  The slot HTML contains marker divs
+(`.slot-header-extras` etc.) with `display:contents` as HTML comments only —
+they are **not** used as injection targets because `display:contents` divs
+can silently hide their children in some browsers.
+
 #### Slot Header
 
 ```layout
@@ -887,6 +893,38 @@ The service worker (`public/service-worker.js`) implements:
 - Cache-first strategy for static assets
 - Stale-while-revalidate for API calls
 - Versioned cache names with cleanup on activate
+
+### Automatic Version Updates
+
+Lithium automatically detects and applies updates without user intervention:
+
+**How It Works:**
+
+1. On every page load, an early version check runs in [`index.html`](elements/003-lithium/index.html:68-87) **before** the app loads
+2. It fetches `/version.json` with `cache: 'no-store'` to bypass any caching
+3. Compares the build number with the version stored in `sessionStorage`
+4. If different, updates the stored version and reloads the page immediately
+5. This happens before any UI renders, preventing the login form from appearing briefly
+
+**Version Data Caching:**
+
+The early fetch stores version data globally so other components can use it without re-fetching:
+
+```javascript
+// app.js and login.js use the cached data
+if (window.__lithiumVersionData) {
+  versionData = window.__lithiumVersionData;
+} else if (window.__lithiumVersionPromise) {
+  versionData = await window.__lithiumVersionPromise;
+}
+```
+
+**Benefits:**
+
+- **No UI flash:** Update happens before login UI renders
+- **Single fetch:** version.json is fetched once and reused
+- **Non-blocking:** App modules load in parallel with the version check
+- **Fallback safe:** If the fetch fails, the app continues loading normally
 
 ### Manifest
 

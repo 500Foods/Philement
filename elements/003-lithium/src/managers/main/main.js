@@ -47,8 +47,10 @@ const STEP_Y = ICON_H + ICON_GAP;   // 37px — vertical step
  * any buttons added by the manager via addHeaderButtons() / addFooterButtons()
  * merge seamlessly into the same visually connected button strip — no breaks.
  *
- * Named insertion points (data-slot-* containers) sit between the fixed
- * buttons so injected buttons appear in a predictable position.
+ * Buttons are inserted directly into the group via insertBefore() — the
+ * slot-header-extras / slot-footer-*-extras divs are kept as HTML markers
+ * only and are NOT used as the injection target (display:contents divs can
+ * hide injected content in some browsers).
  *
  * @param {string} slotId - The slot's DOM id
  * @param {string} icon - FA icon class e.g. 'fa-palette'
@@ -68,8 +70,7 @@ function buildSlotHTML(slotId, icon, name) {
         <fa ${icon} class="slot-icon"></fa>
         <span class="slot-name" style="white-space:nowrap;text-overflow:ellipsis;">${name}</span>
       </button>
-      <!-- [header-extras] manager-injected header buttons land here -->
-      <div class="slot-header-extras" data-slot-extras="header" style="display:contents;"></div>
+      <!-- manager-injected header buttons are inserted here by addHeaderButtons() -->
       <button type="button" class="subpanel-header-btn subpanel-header-close slot-close-btn" title="Close">
         <fa fa-xmark></fa>
       </button>
@@ -89,12 +90,18 @@ function buildSlotHTML(slotId, icon, name) {
         <fa fa-chart-bar></fa>
         <span style="white-space:nowrap;text-overflow:ellipsis;">Reports Placeholder</span>
       </button>
-      <!-- [footer-left-extras] manager-injected left-footer buttons land here -->
-      <div class="slot-footer-left-extras" data-slot-extras="footer-left" style="display:contents;"></div>
-      <!-- [footer-right-extras] manager-injected right-footer buttons land here -->
-      <div class="slot-footer-right-extras" data-slot-extras="footer-right" style="display:contents;"></div>
+      <!-- manager-injected footer buttons are inserted here by addFooterButtons() -->
+      <button type="button" class="subpanel-header-btn subpanel-header-close slot-notifications-btn" title="Notifications">
+        <fa fa-bell></fa>
+        <span class="btn-counter" data-counter="notifications">000</span>
+      </button>
+      <button type="button" class="subpanel-header-btn subpanel-header-close slot-tickets-btn" title="Support Tickets">
+        <fa fa-bell-concierge></fa>
+        <span class="btn-counter" data-counter="tickets">000</span>
+      </button>
       <button type="button" class="subpanel-header-btn subpanel-header-close slot-annotations-btn" title="Annotations">
         <fa fa-tags></fa>
+        <span class="btn-counter" data-counter="annotations">000</span>
       </button>
       <button type="button" class="subpanel-header-btn subpanel-header-close slot-tours-btn" title="Tours">
         <fa fa-signs-post></fa>
@@ -206,6 +213,12 @@ export default class MainManager {
     slotEl.querySelector('.slot-reports-btn')?.addEventListener('click', () => {
       console.log(`[MainManager] Reports placeholder clicked for slot ${slotId}`);
     });
+    slotEl.querySelector('.slot-notifications-btn')?.addEventListener('click', () => {
+      console.log(`[MainManager] Notifications clicked for slot ${slotId}`);
+    });
+    slotEl.querySelector('.slot-tickets-btn')?.addEventListener('click', () => {
+      console.log(`[MainManager] Support Tickets clicked for slot ${slotId}`);
+    });
     slotEl.querySelector('.slot-annotations-btn')?.addEventListener('click', () => {
       console.log(`[MainManager] Annotations clicked for slot ${slotId}`);
     });
@@ -225,10 +238,10 @@ export default class MainManager {
   /**
    * Inject buttons into the header of a manager slot.
    *
-   * Buttons are inserted into the `.slot-header-extras` container which sits
-   * between the title button and the close button inside the single unified
-   * subpanel-header-group.  All injected buttons therefore share the same
-   * connected button-group appearance — no visual break.
+   * Buttons are inserted directly into the slot's `subpanel-header-group`,
+   * immediately before the close button, so they appear between the title
+   * and the close in the unified button strip.  All injected buttons inherit
+   * the same `.subpanel-header-close` styling — no visual break.
    *
    * Each button object must have:
    *   { el: HTMLButtonElement }
@@ -244,27 +257,39 @@ export default class MainManager {
     if (!area) return;
     const slot = area.querySelector(`#${slotId}`);
     if (!slot) return;
-    const container = slot.querySelector('.slot-header-extras');
-    if (!container) return;
+
+    // Inject buttons directly into the subpanel-header-group, before the close
+    // button.  We do NOT use the display:contents wrapper — inserting into it
+    // causes the buttons to be invisible in some browsers even though they are
+    // present in the DOM.  Direct insertion into the flex parent is reliable.
+    const group = slot.querySelector('.manager-slot-header .subpanel-header-group');
+    const closeBtn = slot.querySelector('.slot-close-btn');
+    if (!group) return;
 
     for (const def of buttonDefs) {
-      if (def.el) {
-        container.appendChild(def.el);
-      } else {
+      const el = def.el ?? (() => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'subpanel-header-btn subpanel-header-close';
-        if (def.id)    btn.id = def.id;
-        if (def.title) btn.title = def.title;
+        if (def.id)      btn.id = def.id;
+        if (def.title)   btn.title = def.title;
         if (def.tooltip) btn.dataset.tooltip = def.tooltip;
         btn.innerHTML = `<fa ${def.icon}></fa>`;
         if (def.onClick) btn.addEventListener('click', def.onClick);
-        container.appendChild(btn);
+        return btn;
+      })();
+
+      // Insert before the close button so the close stays on the far right.
+      // If there is no close button fall back to appending.
+      if (closeBtn) {
+        group.insertBefore(el, closeBtn);
+      } else {
+        group.appendChild(el);
       }
     }
 
-    // Process any newly injected <fa> tags
-    processIcons(container);
+    // Convert any newly injected <fa> tags to Font Awesome <i> elements.
+    processIcons(group);
   }
 
   /**
@@ -288,28 +313,42 @@ export default class MainManager {
     if (!area) return;
     const slot = area.querySelector(`#${slotId}`);
     if (!slot) return;
-    const selector = side === 'left' ? '.slot-footer-left-extras' : '.slot-footer-right-extras';
-    const container = slot.querySelector(selector);
-    if (!container) return;
+
+    // Inject buttons directly into the footer subpanel-header-group.
+    // For 'left': insert before the right-extras anchor (or notifications btn).
+    // For 'right': insert before the notifications button.
+    // Using display:contents wrapper divs caused buttons to be invisible —
+    // direct insertion into the flex parent is reliable.
+    const group = slot.querySelector('.manager-slot-footer .subpanel-header-group');
+    if (!group) return;
+
+    // Find the insertion anchor for this side.
+    // 'left'  → insert before the first right-side fixed button (notifications)
+    // 'right' → same anchor (between any left extras and fixed buttons)
+    const anchor = group.querySelector('.slot-notifications-btn');
 
     for (const def of buttonDefs) {
-      if (def.el) {
-        container.appendChild(def.el);
-      } else {
+      const el = def.el ?? (() => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'subpanel-header-btn subpanel-header-close';
-        if (def.id)    btn.id = def.id;
-        if (def.title) btn.title = def.title;
+        if (def.id)      btn.id = def.id;
+        if (def.title)   btn.title = def.title;
         if (def.tooltip) btn.dataset.tooltip = def.tooltip;
         btn.innerHTML = `<fa ${def.icon}></fa>`;
         if (def.onClick) btn.addEventListener('click', def.onClick);
-        container.appendChild(btn);
+        return btn;
+      })();
+
+      if (anchor) {
+        group.insertBefore(el, anchor);
+      } else {
+        group.appendChild(el);
       }
     }
 
-    // Process any newly injected <fa> tags
-    processIcons(container);
+    // Convert any newly injected <fa> tags to Font Awesome <i> elements.
+    processIcons(group);
   }
 
   /**

@@ -65,6 +65,37 @@
       <!-- Content loaded dynamically by app.js -->
     </div>
 
+    <!-- Early Version Check - Non-blocking, prevents UI flash on update -->
+    <script>
+      (function() {
+        // Store version promise globally so app.js can use it without re-fetching
+        window.__lithiumVersionPromise = fetch('/version.json', { cache: 'no-store' })
+          .then(r => r.json())
+          .then(data => {
+            const stored = sessionStorage.getItem('lithium_build');
+            const current = String(data.build);
+            
+            // Store for app.js to use later
+            window.__lithiumVersionData = data;
+            
+            if (stored && stored !== current) {
+              // Version changed - update stored build and reload immediately
+              sessionStorage.setItem('lithium_build', current);
+              window.location.reload();
+              return null; // Prevent further execution
+            }
+            
+            // First visit or same version - store and continue
+            sessionStorage.setItem('lithium_build', current);
+            return data;
+          })
+          .catch(() => {
+            // If fetch fails, continue with app load
+            return null;
+          });
+      })();
+    </script>
+
     <!-- PWA Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
@@ -78,7 +109,7 @@
             });
         });
 
-        // Check for updates
+        // Check for updates (fallback for browsers that don't trigger the early check)
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           window.location.reload();
         });

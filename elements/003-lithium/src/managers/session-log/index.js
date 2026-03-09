@@ -72,10 +72,16 @@ export default class SessionLogManager {
    * Falls back gracefully if MainManager is not available (e.g. tests).
    */
   _injectSlotHeaderButtons() {
+    console.log('[SessionLogManager] _injectSlotHeaderButtons called');
     const mainMgr = this.app?._getMainManager?.();
-    if (!mainMgr) return;
+    console.log('[SessionLogManager] mainMgr:', mainMgr);
+    if (!mainMgr) {
+      console.warn('[SessionLogManager] No main manager found');
+      return;
+    }
 
     const slotId = mainMgr._utilitySlotId('session-log');
+    console.log('[SessionLogManager] slotId:', slotId);
 
     mainMgr.addHeaderButtons(slotId, [
       {
