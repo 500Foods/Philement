@@ -285,7 +285,7 @@ export default class SessionLogManager {
         // Read-only
         EditorState.readOnly.of(true),
 
-        // Sizing and font
+        // Sizing and font - using CSS variables for consistent theming
         EditorView.theme({
           '&': {
             height: '100%',
@@ -294,13 +294,28 @@ export default class SessionLogManager {
           },
           '.cm-scroller': {
             overflow: 'auto',
-            scrollbarWidth: 'thin',
-            scrollbarColor: '#555 #222',
+            // Firefox: auto for visible scrollbars, use CSS variables for colors
+            scrollbarWidth: 'auto',
+            scrollbarColor: 'var(--scrollbar-thumb) var(--scrollbar-track)',
           },
-          '.cm-scroller::-webkit-scrollbar': { width: '8px', height: '8px' },
-          '.cm-scroller::-webkit-scrollbar-track': { background: '#1e1e2e' },
-          '.cm-scroller::-webkit-scrollbar-thumb': { background: '#555', borderRadius: '4px' },
-          '.cm-scroller::-webkit-scrollbar-corner': { background: '#1e1e2e' },
+          // WebKit: use CSS variables for consistent scrollbar styling
+          '.cm-scroller::-webkit-scrollbar': {
+            width: 'var(--scrollbar-size)',
+            height: 'var(--scrollbar-size)',
+          },
+          '.cm-scroller::-webkit-scrollbar-track': {
+            background: 'var(--scrollbar-track)',
+          },
+          '.cm-scroller::-webkit-scrollbar-thumb': {
+            background: 'var(--scrollbar-thumb)',
+            borderRadius: 'var(--border-radius-full)',
+          },
+          '.cm-scroller::-webkit-scrollbar-thumb:hover': {
+            background: 'var(--scrollbar-thumb-hover)',
+          },
+          '.cm-scroller::-webkit-scrollbar-corner': {
+            background: 'var(--scrollbar-track)',
+          },
           '.cm-content': { whiteSpace: 'pre' },
         }),
       ];

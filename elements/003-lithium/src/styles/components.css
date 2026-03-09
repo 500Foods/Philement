@@ -387,7 +387,6 @@
 
 /* Keep .modal-overlay for backward compat but neutralize its default display */
 .modal-overlay {
-  position: aboslute;
   /* Base style — managers that use this class as a flex backdrop
      must add their own display/position rules.
      Intentionally not setting display or position to avoid conflicts. */
