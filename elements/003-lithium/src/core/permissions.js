@@ -79,8 +79,8 @@ export function hasFeature(managerId, featureId, punchcard = null) {
 export function getPermittedManagers(punchcard = null) {
   // Fallback: return all default managers if no punchcard
   if (!punchcard) {
-    // Return default manager IDs (Style Manager = 1, Profile Manager = 2, etc.)
-    return [1, 2, 3, 4, 5];
+    // Return default manager IDs (Profile Manager = 2 is a utility manager, not in menu)
+    return [1, 3, 4, 5];
   }
 
   return punchcard.managers || [];
@@ -114,7 +114,7 @@ export function parsePermissions(claims) {
   if (!claims || !claims.punchcard) {
     return {
       hasPunchcard: false,
-      managers: [1, 2, 3, 4, 5], // Default all managers
+      managers: [1, 3, 4, 5], // Default menu managers (Profile Manager = 2 is utility, not in menu)
       features: {},
     };
   }

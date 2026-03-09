@@ -173,31 +173,76 @@ export default class ExampleManager {
 }
 ```
 
-### Manager Registry
+### Manager Types
 
-Managers are registered in [`app.js`](elements/003-lithium/src/app.js:32):
+Lithium has two types of managers:
+
+| Type | Description | Registry | Access Control |
+|------|-------------|----------|----------------|
+| **Menu Manager** | Appears in sidebar navigation menu | `managerRegistry` (numeric IDs) | Punchcard permissions |
+| **Utility Manager** | Bound to sidebar footer button | `utilityManagerRegistry` (string keys) | Always available |
+
+### Menu Manager Registry
+
+Menu managers are registered in [`app.js`](elements/003-lithium/src/app.js:32) with numeric IDs:
 
 ```javascript
 this.managerRegistry = {
   1: { id: 1, name: 'Style Manager', path: '/src/managers/style-manager/index.js' },
-  2: { id: 2, name: 'Profile Manager', path: '/src/managers/profile-manager/index.js' },
   3: { id: 3, name: 'Dashboard', path: '/src/managers/dashboard/index.js' },
   4: { id: 4, name: 'Lookups', path: '/src/managers/lookups/index.js' },
   5: { id: 5, name: 'Queries', path: '/src/managers/queries/index.js' },
 };
 ```
 
+**Note:** Profile Manager was converted to a utility manager and removed from
+the menu registry. It is now accessed via the sidebar footer profile button.
+
+### Utility Manager Registry
+
+Utility managers are registered in [`app.js`](elements/003-lithium/src/app.js:40) with string keys:
+
+```javascript
+this.utilityManagerRegistry = {
+  'session-log': { key: 'session-log', name: 'Session Log' },
+  'user-profile': { key: 'user-profile', name: 'User Profile' },
+};
+```
+
+Utility managers:
+
+- Are always available regardless of Punchcard permissions
+- Load into the workspace like menu managers but don't appear in the sidebar menu
+- Have active state highlighting on their sidebar footer button
+- Mutually exclusive with menu managers (selecting one deselects the other)
+
 ### Creating a New Manager
+
+#### Menu Manager (sidebar navigation)
 
 1. Create directory: `src/managers/new-manager/`
 2. Create `index.js` with manager class
 3. Create `new-manager.html` template
 4. Create `new-manager.css` styles
-5. Register in `app.js` managerRegistry
-6. HTML templates are copied automatically on deploy
+5. Register in `app.js` `managerRegistry` with numeric ID
+6. Add icon/name in `main.js` `managerIcons`
+7. HTML templates are copied automatically on deploy
 
-   The `templates:copy` script runs automatically during `npm run deploy` to copy
-   all manager HTML templates from `src/managers/` to `public/src/managers/`.
+#### Utility Manager (sidebar footer)
+
+1. Create directory: `src/managers/new-manager/`
+2. Create `index.js` with manager class
+3. Create `new-manager.html` template
+4. Create `new-manager.css` styles
+5. Register in `app.js`:
+   - Add to `utilityManagerRegistry` with string key
+   - Add import case in `_importUtilityManager()`
+6. Add button to `main.html` sidebar footer
+7. Wire button click in `main.js` to call `app.showUtilityManager()`
+8. HTML templates are copied automatically on deploy
+
+The `templates:copy` script runs automatically during `npm run deploy` to copy
+all manager HTML templates from `src/managers/` to `public/src/managers/`.
 
 ## Event Bus
 
@@ -407,6 +452,68 @@ mainMgr.addFooterButtons(slotId, 'right', [
 **Reference:** See `SessionLogManager._injectSlotHeaderButtons()` for the
 canonical example of this pattern in practice.
 
+### Transition Overlay System
+
+When switching managers (menu or utility), a transparent overlay blocks user
+interaction during the transition to prevent race conditions from rapid clicking:
+
+```javascript
+// app.js creates overlay during manager switches
+const overlay = this.getTransitionOverlay();
+overlay.style.pointerEvents = 'auto';  // Block clicks
+// ... perform manager load ...
+overlay.style.pointerEvents = 'none';  // Allow clicks
+```
+
+**Key characteristics:**
+
+- **Full viewport coverage:** Uses `position: fixed` with `z-index: 9999` to cover both sidebar and workspace
+- **Pointer-events toggle:** Overlay is always present but switches between `none` (transparent to clicks) and `auto` (blocking)
+- **Automatic management:** Created on demand in `app.js`, reused across transitions
+- **No visual appearance:** Completely transparent, purely for interaction blocking
+
+This prevents users from clicking sidebar buttons while a manager is still loading,
+which could cause state corruption or double-loading issues.
+
+### Utility Manager Active State
+
+Utility manager buttons in the sidebar footer show an active state when their
+manager is loaded:
+
+| Button | Active Class | Visual |
+|--------|-------------|--------|
+| Profile | `.active` | Accent-secondary background, inset shadow |
+| Session Log | `.active` | Accent-secondary background, inset shadow |
+
+**Implementation in `main.js`:**
+
+```javascript
+// Set active state when loading utility manager
+setActiveUtilityButton(key) {
+  this.clearActiveMenuItem();        // Deselect any menu item
+  this.clearActiveUtilityButtons();  // Clear other utility buttons
+  this.currentUtilityKey = key;
+  this.currentManagerId = null;      // Reset menu manager state
+  
+  const btn = document.getElementById(`sidebar-${key}-btn`);
+  btn?.classList.add('active');
+}
+
+// Clear when loading a menu manager
+loadManager(managerId) {
+  this.clearActiveUtilityButtons();  // Deselect utility buttons
+  this.currentUtilityKey = null;
+  // ... load menu manager
+}
+```
+
+**State management principles:**
+
+- **Mutual exclusion:** Only one of {menu manager, utility manager} can be active
+- **State tracking:** `currentManagerId` (numeric) vs `currentUtilityKey` (string)
+- **Visual consistency:** Both menu items and utility buttons use the same `.active` class styling
+- **State reset:** Loading one type automatically clears the other's active state
+
 ## Icon System
 
 Lithium uses a custom icon system built on top of Font Awesome. Instead of using `<i class="fas fa-icon">` directly, use the `<fa>` tag and let the system apply your configured icon set.
@@ -587,7 +694,7 @@ const canAccess = canAccessManager(1); // true/false
 const canEdit = hasFeature(1, 2); // Style Manager, Feature 2 (Edit)
 
 // Get all permitted manager IDs
-const managers = getPermittedManagers(); // [1, 2, 3, 4, 5]
+const managers = getPermittedManagers(); // [1, 3, 4, 5]
 
 // Get features for a manager
 const features = getFeaturesForManager(1); // [1, 2, 3, 4, 5]
@@ -822,13 +929,24 @@ npm run deploy
 
 ## Common Tasks
 
-### Adding a New Manager
+### Adding a New Menu Manager
 
 1. Create `src/managers/new-manager/index.js`
 2. Create `src/managers/new-manager/new-manager.html`
 3. Create `src/managers/new-manager/new-manager.css`
-4. Register in `app.js` managerRegistry
-5. Add icon/name in `main.js` managerIcons
+4. Register in `app.js` `managerRegistry` with numeric ID
+5. Add icon/name in `main.js` `managerIcons`
+
+### Adding a New Utility Manager
+
+1. Create `src/managers/new-manager/index.js`
+2. Create `src/managers/new-manager/new-manager.html`
+3. Create `src/managers/new-manager/new-manager.css`
+4. Register in `app.js`:
+   - Add entry to `utilityManagerRegistry` with string key
+   - Add case in `_importUtilityManager()` method
+5. Add button to sidebar footer in `main.html`
+6. Wire button click in `main.js` to call `app.showUtilityManager('key')`
 
 ### Adding a New Core Module
 
