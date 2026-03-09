@@ -54,6 +54,9 @@ void request_completed(void *cls, struct MHD_Connection *connection,
 // File serving function (made non-static for unit testing)
 enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path);
 
+// File serving function with method support for HEAD requests
+enum MHD_Result serve_file_for_method(struct MHD_Connection *connection, const char *file_path, const char *method);
+
 // Custom headers functions
 bool matches_pattern(const char* path, const char* pattern);
 void add_custom_headers(struct MHD_Response *response, const char* file_path, const WebServerConfig* web_config);
