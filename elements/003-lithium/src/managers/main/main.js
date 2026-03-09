@@ -1,4 +1,4 @@
-nsh/**
+/**
  * Main Menu Manager
  * 
  * Handles the main application layout: resizable sidebar + manager area.

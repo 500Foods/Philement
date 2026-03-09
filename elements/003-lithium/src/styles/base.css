@@ -142,8 +142,8 @@ p, h1, h2, h3, h4, h5, h6 {
   --transition-std: var(--transition-duration) ease;
   --transition-slow: calc(var(--transition-duration) * 2) ease;
 
-  /* Scrollbar */
-  --scrollbar-width: 8px;
+  /* Scrollbar - explicit size for WebKit, Firefox uses scrollbar-width property */
+  --scrollbar-size: 10px;
   --scrollbar-track: var(--bg-secondary);
   --scrollbar-thumb: var(--bg-tertiary);
   --scrollbar-thumb-hover: var(--border-color-hover);
@@ -213,10 +213,10 @@ body {
    Scrollbar Styling
    ======================================== */
 
-/* WebKit (Chrome, Safari, Edge) */
+/* WebKit (Chrome, Safari, Edge) - explicit pixel sizes */
 ::-webkit-scrollbar {
-  width: var(--scrollbar-width);
-  height: var(--scrollbar-width);
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
 }
 
 ::-webkit-scrollbar-track {
@@ -232,10 +232,29 @@ body {
   background: var(--scrollbar-thumb-hover);
 }
 
-/* Firefox */
+/* Firefox - use 'auto' for visible scrollbars (not 'thin' which can overlay/hide) */
 * {
-  scrollbar-width: thin;
+  scrollbar-width: auto;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Ensure scrollable areas reserve space for scrollbars */
+.scrollbar-stable {
+  scrollbar-gutter: stable;
+}
+
+/* Override for elements that need explicit thin scrollbars */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+/* Target CodeMirror and log viewers for consistent scrollbar visibility */
+.cm-scroller,
+.log-viewer,
+.session-log-viewer {
+  /* Firefox: auto ensures visible scrollbars */
+  scrollbar-width: auto !important;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track) !important;
 }
 
 /* ========================================
