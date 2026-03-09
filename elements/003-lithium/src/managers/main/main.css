@@ -22,7 +22,7 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity var(--transition-std) ease, visibility var(--transition-std) ease;
+  transition: opacity var(--transition-duration) ease, visibility var(--transition-duration) ease;
 }
 
 .logout-overlay.visible {
@@ -31,25 +31,16 @@
   pointer-events: auto;
 }
 
-/* Logout panel - centered modal like login subpanels */
+/* Logout panel - outer container for positioning */
 .logout-panel {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 480px;
-  max-width: 90vw;
-  max-height: 90vh;
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-lg);
   z-index: 1001;
-  display: flex;
-  flex-direction: column;
   opacity: 0;
   visibility: hidden;
-  transition: opacity var(--transition-std) ease, visibility var(--transition-std) ease;
-  overflow: hidden;
+  transition: opacity var(--transition-duration) ease, visibility var(--transition-duration) ease;
 }
 
 .logout-panel.visible {
@@ -57,11 +48,24 @@
   visibility: visible;
 }
 
-/* Header with gradient like login panels */
+/* Inner panel - styled like manager slots and login subpanels */
+.logout-panel-inner {
+  width: 480px;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header matching manager slot header style */
 .logout-panel-header {
+  flex-shrink: 0;
   padding: var(--space-4);
-  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  margin: var(--space-4);  
 }
 
 .logout-panel-header .subpanel-header-group {
@@ -73,14 +77,13 @@
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background: rgba(255, 255, 255, 0.2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--accent-primary);
   border: none;
   border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
   color: white;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-xl);
   font-weight: 500;
   cursor: default;
 }
@@ -89,44 +92,46 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-3);
-  background: rgba(255, 255, 255, 0.2);
+  width: 36px;
+  padding: var(--space-2);
   border: none;
   border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
   color: white;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-xl);
   cursor: pointer;
-  transition: background var(--transition-std) ease;
+  transition: background-color var(--transition-fast) ease;
 }
 
 .logout-panel-header .subpanel-header-close:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--accent-hover);
 }
 
+/* Content area */
 .logout-panel-content {
-  padding: var(--space-4);
+  flex: 1;
+  padding: 0 var(--space-5) var(--space-5) var(--space-5);;
   overflow-y: auto;
 }
 
-/* Logout options - vertical stack like language list */
+/* Logout options - clean vertical stack */
 .logout-options {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
-/* Individual logout option - styled like language-item */
+/* Individual logout option - two column layout with type and description */
 .logout-option {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-4);
   width: 100%;
   padding: var(--space-3) var(--space-4);
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
   border: var(--border-standard);
   border-radius: var(--border-radius-md);
   cursor: pointer;
-  transition: all var(--transition-std) ease;
+  transition: all var(--transition-fast) ease;
   text-align: left;
 }
 
@@ -141,60 +146,25 @@
   box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.3);
 }
 
-/* Number badge */
-.logout-option-number {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Logout type label - left column */
+.logout-option-type {
+  min-width: 60px;
+  padding: var(--space-3);
   background: var(--accent-primary);
   color: white;
   font-size: var(--font-size-sm);
   font-weight: 600;
+  text-align: center;
   border-radius: var(--border-radius-sm);
   flex-shrink: 0;
 }
 
-/* Info container */
-.logout-option-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.logout-option-title {
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
+/* Logout description - right column, multiline */
 .logout-option-desc {
+  flex: 1;
   font-size: var(--font-size-sm);
-  color: var(--text-muted);
-}
-
-/* Keyboard hints */
-.logout-hints {
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  border-top: var(--border-standard);
-  text-align: center;
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
-}
-
-.logout-hints kbd {
-  display: inline-block;
-  padding: var(--space-1) var(--space-2);
-  background: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-sm);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
   color: var(--text-secondary);
-  margin: 0 2px;
+  line-height: 1.25;
 }
 
 /* ========================================
@@ -949,11 +919,6 @@ body.resizing * {
   .sidebar-splitter::after,
   .logout-panel-header .subpanel-header-close {
     transition: none !important;
-  }
-  
-  .logout-overlay,
-  .logout-panel {
-    transition: opacity 0.01ms ease, visibility 0.01ms ease !important;
   }
 
   .manager-slot,
