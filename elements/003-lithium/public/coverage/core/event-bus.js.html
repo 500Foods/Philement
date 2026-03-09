@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">93.33% </span>
+                <span class="strong">86.66% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>14/15</span>
+                <span class='fraction'>13/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">62.5% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>8/8</span>
+                <span class='fraction'>5/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.66% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>4/6</span>
+                <span class='fraction'>5/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">93.33% </span>
+                <span class="strong">86.66% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>14/15</span>
+                <span class='fraction'>13/15</span>
             </div>
         
             
@@ -219,24 +219,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
@@ -251,6 +233,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -269,6 +260,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -350,7 +350,7 @@ import { log, Status } from './log.js';
  * @returns {string} Bracket-wrapped, title-cased first segment
  */
 function _subsystemFromEvent(eventName) {
-  const segment = eventName.split(':')[0] || eventName;
+  const segment = eventName.split(':')[0] || <span class="branch-1 cbranch-no" title="branch not covered" >eventName;</span>
   const label = segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase();
   return `[${label}]`;
 }
@@ -367,9 +367,9 @@ class EventBus extends EventTarget {
     // Strip the first segment (already shown as the subsystem label) from the description.
     // e.g. "network:online" → "online", "lookups:loaded" → "loaded", "startup:complete" → "complete"
     const colonIdx = name.indexOf(':');
-    const suffix = colonIdx &gt;= 0 ? name.slice(colonIdx + 1) : name;
+    const suffix = colonIdx &gt;= 0 ? name.slice(colonIdx + 1) : <span class="branch-1 cbranch-no" title="branch not covered" >name;</span>
     const payload = detail !== null ? ' ' + JSON.stringify(detail).substring(0, 100) : '';
-    log(subsystem, Status.INFO, `${suffix}${payload}`);
+<span class="cstat-no" title="statement not covered" >    log(subsystem, Status.INFO, `${suffix}${payload}`);</span>
     this.dispatchEvent(new CustomEvent(name, { detail }));
   }
 &nbsp;
@@ -380,8 +380,8 @@ class EventBus extends EventTarget {
    * @param {string} name - Event name
    * @param {*} detail - Optional data payload
    */
-<span class="fstat-no" title="function not covered" >  emitSilent(</span>name, detail = null) {
-    this.dispatchEvent(new CustomEvent(name, { detail }));
+<span class="fstat-no" title="function not covered" >  emitSilent(</span>name, detail = <span class="branch-0 cbranch-no" title="branch not covered" >null)</span> {
+<span class="cstat-no" title="statement not covered" >    this.dispatchEvent(new CustomEvent(name, { detail }));</span>
   }
 &nbsp;
   /**
@@ -389,8 +389,8 @@ class EventBus extends EventTarget {
    * @param {string} name - Event name
    * @param {Function} handler - Event handler callback
    */
-<span class="fstat-no" title="function not covered" >  on(</span>name, handler) {
-<span class="cstat-no" title="statement not covered" >    this.addEventListener(name, handler);</span>
+  on(name, handler) {
+    this.addEventListener(name, handler);
   }
 &nbsp;
   /**
@@ -463,7 +463,7 @@ export const Events = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-09T05:52:56.007Z
+                at 2026-03-09T07:48:26.781Z
             </div>
         <script src="../prettify.js"></script>
         <script>

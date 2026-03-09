@@ -13,50 +13,39 @@
 <div class="logout-overlay" id="logout-overlay"></div>
 
 <div class="logout-panel" id="logout-panel">
-  <div class="logout-panel-header">
-    <div class="subpanel-header-group">
-      <button type="button" class="subpanel-header-btn subpanel-header-primary">
-        <fa fa-sign-out-alt></fa>
-        <span>Select Logout Option</span>
-      </button>
-      <button type="button" class="subpanel-header-btn subpanel-header-close" id="logout-close-btn" data-tooltip="Cancel (ESC)">
-        <fa fa-xmark></fa>
-      </button>
+  <div class="logout-panel-inner">
+    <!-- Header matching manager slot header style -->
+    <div class="logout-panel-header">
+      <div class="subpanel-header-group">
+        <button type="button" class="subpanel-header-btn subpanel-header-primary">
+          <fa fa-sign-out-alt></fa>
+          <span>Select Logout Option</span>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close" id="logout-close-btn" title="Cancel (ESC)">
+          <fa fa-xmark></fa>
+        </button>
+      </div>
     </div>
-  </div>
-  <div class="logout-panel-content">
-    <div class="logout-options">
-      <button type="button" class="logout-option" data-logout-type="quick" data-key="1">
-        <div class="logout-option-number">1</div>
-        <div class="logout-option-info">
-          <span class="logout-option-title">Logout Quick</span>
-          <span class="logout-option-desc">Normal logout, keep cached data</span>
-        </div>
-      </button>
-      <button type="button" class="logout-option" data-logout-type="normal" data-key="2">
-        <div class="logout-option-number">2</div>
-        <div class="logout-option-info">
-          <span class="logout-option-title">Logout Normal</span>
-          <span class="logout-option-desc">Logout without remembering username</span>
-        </div>
-      </button>
-      <button type="button" class="logout-option" data-logout-type="public" data-key="3">
-        <div class="logout-option-number">3</div>
-        <div class="logout-option-info">
-          <span class="logout-option-title">Logout Public</span>
-          <span class="logout-option-desc">Clear all local history and content</span>
-        </div>
-      </button>
-      <button type="button" class="logout-option" data-logout-type="global" data-key="4">
-        <div class="logout-option-number">4</div>
-        <div class="logout-option-info">
-          <span class="logout-option-title">Logout Global</span>
-          <span class="logout-option-desc">Logout Public + invalidate all sessions</span>
-        </div>
-      </button>
-    </div>
-    <div class="logout-hints">
-      <span><fa fa-keyboard></fa> Press <kbd>1</kbd>-<kbd>4</kbd> to select, <kbd>Enter</kbd> for Quick, <kbd>Esc</kbd> to cancel</span>
+    <!-- Content area with logout options -->
+    <div class="logout-panel-content">
+      <div class="logout-options">
+        <button type="button" class="logout-option" data-logout-type="quick">
+          <span class="logout-option-type">Quick</span>
+          <span class="logout-option-desc">Standard logout. Your session ends but cached data and preferences are preserved for your next visit.</span>
+        </button>
+        <button type="button" class="logout-option" data-logout-type="normal">
+          <span class="logout-option-type">Normal</span>
+          <span class="logout-option-desc">Logout without remembering your username. The login form will be empty next time.</span>
+        </button>
+        <button type="button" class="logout-option" data-logout-type="public">
+          <span class="logout-option-type">Public</span>
+          <span class="logout-option-desc">Clear all local data including cached content, settings, and session history. Use this on shared computers.</span>
+        </button>
+        <button type="button" class="logout-option" data-logout-type="global">
+          <span class="logout-option-type">Global</span>
+          <span class="logout-option-desc">Maximum security logout. Clears all local data and invalidates all your active sessions on the server.</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>

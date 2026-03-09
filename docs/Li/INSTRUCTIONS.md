@@ -4,6 +4,11 @@
 
 Lithium is a lightweight, performant, modular SPA using vanilla JavaScript ES modules. It features a login system, main menu layout, and multiple manager modules. This document provides comprehensive guidance for working with the Lithium codebase.
 
+## Quick Gotchas
+
+- The user will run anything to do with brwoser tests, don't do this yourself
+- Update INSTRUCTIONS.md and BLUEPRINT.md anytime changes are made that might be useful for future development work
+
 ## Tech Stack
 
 | Category | Technology |
