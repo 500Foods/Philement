@@ -86,7 +86,7 @@ body.hide-password-manager-ui [class*="password-icon"] {
    ======================================== */
 
 .login-subpanel {
-  width: 480px;
+  width: 384px; /* Reduced from 480px by 20% */
   max-width: calc(100vw - var(--space-6));
   max-height: calc(100vh - var(--space-6));
   background-color: var(--bg-secondary);

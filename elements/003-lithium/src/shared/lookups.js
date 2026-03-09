@@ -533,10 +533,11 @@ export async function refreshLookups(options = {}) {
  * Sets up event listeners for auto-refresh
  */
 export function init() {
-  // Refresh lookups when locale changes
-  eventBus.on(Events.LOCALE_CHANGED, () => {
-    refreshLookups();
-  });
+  // Note: We intentionally do NOT refresh lookups when locale changes.
+  // The lookup data (themes, icons, system_info, lookup_names) is not
+  // locale-dependent, so there's no need for a server round-trip.
+  // If locale-specific lookups are needed in the future, add a
+  // filtered getter that applies Intl to the cached data instead.
 
   // Note: We intentionally do NOT clear cache on logout.
   // Lookups contain "open" data (themes, system_info, icons, lookup_names)

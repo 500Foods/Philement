@@ -1,4 +1,4 @@
-<!--
+l!--
   Login Manager Template
   CCC-style login page: centered card, gradient header, clean inputs
 -->
@@ -66,7 +66,7 @@
       <!-- Button group: Language, Theme, Login, Logs, Help -->
       <div class="login-btn-group">
         <button type="button" class="login-btn-icon" id="login-language-btn" data-tooltip="Select language">
-          <fa fa-globe></fa>
+          <fa fa-earth-americas></fa>
         </button>
         <button type="button" class="login-btn-icon" id="login-theme-btn" data-tooltip="Select theme">
           <fa fa-palette></fa>
@@ -156,47 +156,37 @@
     <div class="subpanel-header">
       <div class="subpanel-header-group">
         <button type="button" class="subpanel-header-btn subpanel-header-primary">
-          <fa fa-globe></fa>
+          <fa fa-earth-americas></fa>
           <span>Select Language</span>
+        </button>
+        <button type="button" class="subpanel-header-btn language-current-btn" id="language-current-btn" disabled>
+          <span class="language-current-flag" id="language-current-flag"></span>
+          <span class="language-current-code" id="language-current-code">en-US</span>
         </button>
         <button type="button" class="subpanel-header-btn subpanel-header-close" id="language-close-btn" data-tooltip="Close (ESC)">
           <fa fa-xmark></fa>
         </button>
       </div>
     </div>
-    <div class="subpanel-content">
-      <div class="language-list" id="language-list">
-        <!-- Language items will be populated here -->
-        <div class="language-item">
-          <span class="language-flag">🇺🇸</span>
-          <span class="language-name">English (US)</span>
-          <span class="language-code">en-US</span>
+    <div class="subpanel-content language-panel-content">
+      <!-- Filter input for language search -->
+      <div class="language-filter-container">
+        <div class="input-with-icon language-filter-input">
+          <fa fa-search></fa>
+          <input
+            type="text"
+            id="language-filter"
+            placeholder="Search language, country, or locale..."
+            autocomplete="off"
+          >
+          <button type="button" class="input-icon-btn" id="language-clear-filter" data-tooltip="Clear filter">
+            <fa fa-xmark></fa>
+          </button>
         </div>
-        <div class="language-item">
-          <span class="language-flag">🇬🇧</span>
-          <span class="language-name">English (UK)</span>
-          <span class="language-code">en-GB</span>
-        </div>
-        <div class="language-item">
-          <span class="language-flag">🇫🇷</span>
-          <span class="language-name">Français</span>
-          <span class="language-code">fr-FR</span>
-        </div>
-        <div class="language-item">
-          <span class="language-flag">🇩🇪</span>
-          <span class="language-name">Deutsch</span>
-          <span class="language-code">de-DE</span>
-        </div>
-        <div class="language-item">
-          <span class="language-flag">🇪🇸</span>
-          <span class="language-name">Español</span>
-          <span class="language-code">es-ES</span>
-        </div>
-        <div class="language-item">
-          <span class="language-flag">🇯🇵</span>
-          <span class="language-name">日本語</span>
-          <span class="language-code">ja-JP</span>
-        </div>
+      </div>
+      <!-- Tabulator table container -->
+      <div class="language-table-container">
+        <div id="language-table"></div>
       </div>
     </div>
   </div>
