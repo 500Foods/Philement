@@ -118,7 +118,7 @@ This starts Vite dev server on <http://localhost:3000>
 - `npm run lint`: Run ESLint
 - `npm run format`: Format code with Prettier
 - `npm run clean`: Clean build artifacts
-- `npm run deploy`: Test + bump version + build + deploy to $LITHIUM_DEPLOY
+- `npm run deploy`: Test + bump version + build + deploy to $LITHIUM_DEPLOY, then generate Brotli sidecars for eligible static text assets
 
 ## Manager System
 
@@ -965,6 +965,7 @@ if (window.__lithiumVersionData) {
 |----------|---------|---------|
 | `LITHIUM_ROOT` | Project source | `/mnt/extra/Projects/Philement/elements/003-lithium` |
 | `LITHIUM_DEPLOY` | Web server root | `/fvl/tnt/t-philement/lithium` |
+| `LITHIUM_DEPLOY_KEEP` | Number of hashed JS/CSS asset versions to retain per family during deploy pruning (default `3`) | `3` |
 
 ### Deploy Flow
 
@@ -980,6 +981,40 @@ npm run deploy
 6. Builds directly to deployment directory
 7. Copies `config/lithium.json` if not present (preserves runtime config)
 8. Minifies HTML and service worker
+9. Prunes old hashed JS/CSS deploy assets while retaining a small rollback window (default 3 versions per asset family)
+10. Generates `.br` sidecars for deploy output `.css`, `.css.map`, `.html`, `.json`, `.svg`, `.js`, and `.js.map` files; existing `.br` files are reused unless the source changed
+
+### Brotli Sidecars
+
+After [`npm run deploy`](elements/003-lithium/package.json), Lithium generates Brotli-compressed sidecar files for deployable text assets only:
+
+- `.css`
+- `.css.map`
+- `.html`
+- `.json`
+- `.svg`
+- `.js`
+- `.js.map`
+
+Files are written beside the original asset using the same filename plus `.br`, for example:
+
+- `assets/index-abc123.js` → `assets/index-abc123.js.br`
+- `src/managers/login/login.html` → `src/managers/login/login.html.br`
+
+The deploy step intentionally does **not** compress other file types such as `.png`, `.woff2`, or other binary assets. Source map files are included and emitted as sidecars such as `assets/index-abc123.js.map.br`. Brotli files are regenerated only when missing or older than their source asset, so unchanged deploy outputs keep their existing `.br` sidecars.
+
+The Brotli step also prints a deploy summary showing total eligible source bytes, total Brotli bytes, and the aggregate byte/percentage savings achieved by the generated sidecars.
+
+### Deploy Asset Retention
+
+Because Lithium deploys Vite's hashed bundles directly into [`$LITHIUM_DEPLOY/assets`](elements/003-lithium/vite.config.js:20) without emptying the whole deploy root, old hashed JS/CSS files can accumulate indefinitely. [`npm run deploy`](elements/003-lithium/package.json:27) now runs a prune step that:
+
+- Targets only top-level hashed `assets/*.js` and `assets/*.css` bundle families
+- Treats matching `.map`, `.br`, and `.map.br` files as part of the same version set
+- Keeps the newest `LITHIUM_DEPLOY_KEEP` versions of each asset family (default `3`)
+- Leaves fonts, images, config files, coverage files, and non-hashed assets untouched
+
+This gives a small rollback window without leaving hundreds of obsolete hashed assets in the deploy directory.
 
 ## Common Tasks
 
