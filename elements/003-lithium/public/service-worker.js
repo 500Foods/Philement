@@ -1,7 +1,7 @@
 // Lithium PWA Service Worker
 // Cache strategy: cache-first for statics, stale-while-revalidate for API data
 
-const CACHE_VERSION = 1160;
+const CACHE_VERSION = 1164;
 const STATIC_CACHE = `lithium-static-v${CACHE_VERSION}`;
 const API_CACHE = `lithium-api-v${CACHE_VERSION}`;
 
@@ -31,6 +31,13 @@ self.addEventListener('install', (event) => {
         console.error('[SW] Failed to pre-cache:', error);
       })
   );
+});
+
+// Allow the page to request immediate activation when an updated worker is waiting
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Activate event — clean up old cache versions
@@ -71,8 +78,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Config and version files — stale-while-revalidate (allows runtime updates)
-  if (url.pathname.endsWith('/lithium.json') || url.pathname.endsWith('/version.json')) {
+  // Version file — network-first (must return fresh data for update detection)
+  if (url.pathname.endsWith('/version.json')) {
+    event.respondWith(networkFirst(event.request, API_CACHE));
+    return;
+  }
+
+  // Config file — stale-while-revalidate (allows runtime updates)
+  if (url.pathname.endsWith('/lithium.json')) {
     event.respondWith(staleWhileRevalidate(event.request, API_CACHE));
     return;
   }
@@ -105,6 +118,32 @@ async function cacheFirst(request, cacheName) {
     // Offline fallback for navigation requests
     if (request.destination === 'document') {
       return caches.match('/index.html');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Network-first strategy: try network, fall back to cache.
+ * Used for version.json where freshness is critical for update detection.
+ */
+async function networkFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+
+  try {
+    const response = await fetch(request);
+
+    // Cache successful responses for offline fallback
+    if (response && response.status === 200) {
+      cache.put(request, response.clone());
+    }
+
+    return response;
+  } catch (error) {
+    // Network failed — return cached version if available
+    const cached = await cache.match(request);
+    if (cached) {
+      return cached;
     }
     throw error;
   }

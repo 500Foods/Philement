@@ -747,7 +747,7 @@ The dashboard includes:
 ## 17. PWA
 
 - [x] Update `manifest.json` — Lithium branding, dark theme, SVG + PNG icons
-- [x] Update `service-worker.js` — cache-first statics, stale-while-revalidate API
+- [x] Update `service-worker.js` — cache-first statics, network-first version.json, stale-while-revalidate API/config
 - [x] Versioned cache names with cleanup on `activate`
 - [x] Generate 192x192 + 512x512 PNG icons from logo SVG
 - [x] Copy `logo-li.svg` to `public/assets/images/`
@@ -1104,3 +1104,5 @@ with shared `HH:MM:SS.ZZZ  Subsystem` prefix and `―` continuation marker for i
 3. **Service Worker Cache Busting** — The service worker's `CACHE_VERSION` must change on each deploy to invalidate stale caches. The `bump-version.js` script automatically updates `CACHE_VERSION` in `service-worker.js` to match the build number, ensuring old caches are cleaned up on `activate`.
 
 4. **Version System** — `version.json` at the project root tracks build number (starting at 1000), timestamp, and version string. The `bump-version.js` script increments it on each deploy and copies it to `public/` for runtime access. The login screen and help panel fetch `/version.json` to display the current build. This is independent of git hashes — it's a simple monotonic counter.
+
+5. **PWA Update Detection** — The early bootstrap gate in `index.html` must block `app.js` from rendering any UI when a reload is needed. Four mechanisms work together: (a) the service worker uses **network-first** for `version.json` so the inline script always gets fresh build data; (b) the inline script's promise **never resolves** when `location.reload()` is called, which blocks `app.js` at `loadVersion()` before `revealPage()` — the page stays `visibility: hidden`; (c) the page now registers the service worker **immediately during bootstrap** (not on `window.load`) with `updateViaCache: 'none'`, calls `registration.update()`, and briefly waits when an updated worker is already installing/waiting under an old controller; (d) the `controllerchange` event provides a fallback reload if the service worker itself is replaced. This avoids the old behavior where the previously cached UI could fully render and only then refresh to the new build.
