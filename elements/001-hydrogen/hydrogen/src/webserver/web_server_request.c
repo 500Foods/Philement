@@ -12,6 +12,13 @@
 #include <src/api/system/config/config.h>
 #include <src/api/system/prometheus/prometheus.h>
 
+// Function prototypes
+bool format_http_date(time_t timestamp, char *buffer, size_t buffer_size);
+time_t parse_http_date(const char *http_date);
+bool build_static_etag(const struct stat *file_stat, bool use_br_file, char *etag, size_t etag_size);
+void add_static_metadata_headers(struct MHD_Response *response, const struct stat *file_stat, const char *etag);
+bool is_static_file_not_modified(struct MHD_Connection *connection, const char *etag, const struct stat *file_stat);
+
 // Helper function to check if a file path matches a pattern
 // Supports wildcard (*) matching
 bool matches_pattern(const char* path, const char* pattern) {
@@ -46,9 +53,15 @@ static volatile size_t http_upload_contexts_current = 0;
 
 bool resolve_static_file_path(const char *url, char *resolved_path, size_t resolved_path_size) {
     struct stat path_stat;
+    size_t url_len;
 
     if (!url || !resolved_path || resolved_path_size == 0 || !app_config ||
         !app_config->webserver.web_root) {
+        return false;
+    }
+
+    url_len = strlen(url);
+    if (url_len == 0) {
         return false;
     }
 
@@ -61,7 +74,7 @@ bool resolve_static_file_path(const char *url, char *resolved_path, size_t resol
         return true;
     }
 
-    if (url[strlen(url) - 1] == '/' ||
+    if (url[url_len - 1] == '/' ||
         (stat(resolved_path, &path_stat) == 0 && S_ISDIR(path_stat.st_mode))) {
         char directory_path[PATH_MAX];
         const char *default_files[] = { "index.html", "Project1.html" };
@@ -167,9 +180,103 @@ void add_custom_headers(struct MHD_Response *response, const char* file_path, co
     }
 }
 
+bool format_http_date(time_t timestamp, char *buffer, size_t buffer_size) {
+    struct tm tm_value;
+
+    if (!buffer || buffer_size == 0) {
+        return false;
+    }
+
+    if (gmtime_r(&timestamp, &tm_value) == NULL) {
+        return false;
+    }
+
+    return strftime(buffer, buffer_size, "%a, %d %b %Y %H:%M:%S GMT", &tm_value) > 0;
+}
+
+time_t parse_http_date(const char *http_date) {
+    struct tm tm_value;
+    const char *parse_end;
+
+    if (!http_date) {
+        return (time_t)-1;
+    }
+
+    memset(&tm_value, 0, sizeof(tm_value));
+    parse_end = strptime(http_date, "%a, %d %b %Y %H:%M:%S GMT", &tm_value);
+    if (!parse_end || *parse_end != '\0') {
+        return (time_t)-1;
+    }
+
+    return timegm(&tm_value);
+}
+
+bool build_static_etag(const struct stat *file_stat, bool use_br_file, char *etag, size_t etag_size) {
+    if (!file_stat || !etag || etag_size == 0) {
+        return false;
+    }
+
+    return snprintf(etag, etag_size, "\"%llx-%llx-%llx-%c\"",
+                    (unsigned long long)file_stat->st_ino,
+                    (unsigned long long)file_stat->st_size,
+                    (unsigned long long)file_stat->st_mtime,
+                    use_br_file ? 'b' : 'r') < (int)etag_size;
+}
+
+void add_static_metadata_headers(struct MHD_Response *response, const struct stat *file_stat, const char *etag) {
+    char last_modified[128];
+
+    if (!response || !file_stat) {
+        return;
+    }
+
+    MHD_add_response_header(response, "Cache-Control", "no-cache, must-revalidate");
+    MHD_add_response_header(response, "Pragma", "no-cache");
+
+    if (etag && etag[0] != '\0') {
+        MHD_add_response_header(response, "ETag", etag);
+    }
+
+    if (format_http_date(file_stat->st_mtime, last_modified, sizeof(last_modified))) {
+        MHD_add_response_header(response, "Last-Modified", last_modified);
+    }
+}
+
+bool is_static_file_not_modified(struct MHD_Connection *connection, const char *etag, const struct stat *file_stat) {
+    const char *if_none_match;
+    const char *if_modified_since;
+    time_t modified_since_time;
+
+    if (!connection || !etag || !file_stat) {
+        return false;
+    }
+
+    if_none_match = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "If-None-Match");
+    if (if_none_match) {
+        if (strcmp(if_none_match, "*") == 0 || strstr(if_none_match, etag) != NULL) {
+            return true;
+        }
+
+        return false;
+    }
+
+    if_modified_since = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "If-Modified-Since");
+    if (!if_modified_since) {
+        return false;
+    }
+
+    modified_since_time = parse_http_date(if_modified_since);
+    if (modified_since_time == (time_t)-1) {
+        return false;
+    }
+
+    return file_stat->st_mtime <= modified_since_time;
+}
+
 enum MHD_Result serve_file_for_method(struct MHD_Connection *connection, const char *file_path, const char *method) {
     // Check if client accepts Brotli compression
     bool accepts_brotli = client_accepts_brotli(connection);
+    char etag[128];
     
     // If client accepts Brotli, check if we have a pre-compressed version
     char br_file_path[PATH_MAX];
@@ -187,6 +294,33 @@ enum MHD_Result serve_file_for_method(struct MHD_Connection *connection, const c
         close(fd);
         return MHD_NO;
     }
+
+    if (!build_static_etag(&st, use_br_file, etag, sizeof(etag))) {
+        close(fd);
+        return MHD_NO;
+    }
+
+    if (is_static_file_not_modified(connection, etag, &st)) {
+        struct MHD_Response *not_modified_response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
+        if (!not_modified_response) {
+            close(fd);
+            return MHD_NO;
+        }
+
+        add_cors_headers(not_modified_response);
+        add_custom_headers(not_modified_response, file_path, server_web_config);
+        add_static_metadata_headers(not_modified_response, &st, etag);
+
+        if (use_br_file) {
+            add_brotli_header(not_modified_response);
+        }
+
+        close(fd);
+
+        enum MHD_Result not_modified_ret = MHD_queue_response(connection, MHD_HTTP_NOT_MODIFIED, not_modified_response);
+        MHD_destroy_response(not_modified_response);
+        return not_modified_ret;
+    }
     
     struct MHD_Response *response = MHD_create_response_from_fd((size_t)st.st_size, fd);
     if (!response) {
@@ -198,6 +332,7 @@ enum MHD_Result serve_file_for_method(struct MHD_Connection *connection, const c
     
     // Add custom headers based on file path
     add_custom_headers(response, file_path, server_web_config);
+    add_static_metadata_headers(response, &st, etag);
     
     // Set Content-Type based on the original file (not the .br version)
     const char *ext = strrchr(file_path, '.');
@@ -257,6 +392,7 @@ enum MHD_Result serve_file_for_method(struct MHD_Connection *connection, const c
         
         add_cors_headers(head_response);
         add_custom_headers(head_response, file_path, server_web_config);
+        add_static_metadata_headers(head_response, &st, etag);
         
         // Set Content-Type based on the original file (reuse ext from above)
         if (ext) {
