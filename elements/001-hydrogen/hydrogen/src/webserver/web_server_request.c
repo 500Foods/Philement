@@ -64,7 +64,7 @@ void add_custom_headers(struct MHD_Response *response, const char* file_path, co
     }
 }
 
-enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
+enum MHD_Result serve_file_for_method(struct MHD_Connection *connection, const char *file_path, const char *method) {
     // Check if client accepts Brotli compression
     bool accepts_brotli = client_accepts_brotli(connection);
     
@@ -138,9 +138,71 @@ enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_p
         log_this(SR_WEBSERVER, "Serving pre-compressed Brotli file: %s", LOG_LEVEL_DEBUG, 1, br_file_path);
     }
     
-    enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-    MHD_destroy_response(response);
+    // For HEAD requests, we return only headers without body content
+    // MHD_create_response_from_fd includes the file content, so we need to handle HEAD specially
+    enum MHD_Result ret;
+    if (method != NULL && strcmp(method, "HEAD") == 0) {
+        // For HEAD, create a response with empty body but same headers
+        MHD_destroy_response(response);
+        close(fd);  // Close the file descriptor since we won't use it
+        
+        // Create empty response with same headers
+        struct MHD_Response *head_response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
+        if (!head_response) {
+            return MHD_NO;
+        }
+        
+        add_cors_headers(head_response);
+        add_custom_headers(head_response, file_path, server_web_config);
+        
+        // Set Content-Type based on the original file (reuse ext from above)
+        if (ext) {
+            if (strcmp(ext, ".html") == 0) MHD_add_response_header(head_response, "Content-Type", "text/html");
+            else if (strcmp(ext, ".css") == 0) MHD_add_response_header(head_response, "Content-Type", "text/css");
+            else if (strcmp(ext, ".js") == 0) MHD_add_response_header(head_response, "Content-Type", "application/javascript");
+            else if (strcmp(ext, ".txt") == 0) MHD_add_response_header(head_response, "Content-Type", "text/plain");
+            else if (strcmp(ext, ".json") == 0) MHD_add_response_header(head_response, "Content-Type", "application/json");
+            else if (strcmp(ext, ".xml") == 0) MHD_add_response_header(head_response, "Content-Type", "application/xml");
+            else if (strcmp(ext, ".csv") == 0) MHD_add_response_header(head_response, "Content-Type", "text/csv");
+            else if (strcmp(ext, ".svg") == 0) MHD_add_response_header(head_response, "Content-Type", "image/svg+xml");
+            else if (strcmp(ext, ".png") == 0) MHD_add_response_header(head_response, "Content-Type", "image/png");
+            else if (strcmp(ext, ".jpg") == 0 || strcmp(ext, ".jpeg") == 0) MHD_add_response_header(head_response, "Content-Type", "image/jpeg");
+            else if (strcmp(ext, ".gif") == 0) MHD_add_response_header(head_response, "Content-Type", "image/gif");
+            else if (strcmp(ext, ".ico") == 0) MHD_add_response_header(head_response, "Content-Type", "image/x-icon");
+            else if (strcmp(ext, ".webp") == 0) MHD_add_response_header(head_response, "Content-Type", "image/webp");
+            else if (strcmp(ext, ".bmp") == 0) MHD_add_response_header(head_response, "Content-Type", "image/bmp");
+            else if (strcmp(ext, ".tif") == 0 || strcmp(ext, ".tiff") == 0) MHD_add_response_header(head_response, "Content-Type", "image/tiff");
+            else if (strcmp(ext, ".avif") == 0) MHD_add_response_header(head_response, "Content-Type", "image/avif");
+            else if (strcmp(ext, ".woff") == 0) MHD_add_response_header(head_response, "Content-Type", "font/woff");
+            else if (strcmp(ext, ".woff2") == 0) MHD_add_response_header(head_response, "Content-Type", "font/woff2");
+            else if (strcmp(ext, ".ttf") == 0) MHD_add_response_header(head_response, "Content-Type", "font/ttf");
+            else if (strcmp(ext, ".otf") == 0) MHD_add_response_header(head_response, "Content-Type", "font/otf");
+            else if (strcmp(ext, ".pdf") == 0) MHD_add_response_header(head_response, "Content-Type", "application/pdf");
+            else if (strcmp(ext, ".zip") == 0) MHD_add_response_header(head_response, "Content-Type", "application/zip");
+            else if (strcmp(ext, ".wasm") == 0) MHD_add_response_header(head_response, "Content-Type", "application/wasm");
+        }
+        
+        // Add Content-Length header with the actual file size
+        char content_length[32];
+        snprintf(content_length, sizeof(content_length), "%zu", (size_t)st.st_size);
+        MHD_add_response_header(head_response, "Content-Length", content_length);
+        
+        if (use_br_file) {
+            add_brotli_header(head_response);
+        }
+        
+        ret = MHD_queue_response(connection, MHD_HTTP_OK, head_response);
+        MHD_destroy_response(head_response);
+    } else {
+        ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+        MHD_destroy_response(response);
+    }
     return ret;
+}
+
+// Legacy serve_file function for backward compatibility
+enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
+    return serve_file_for_method(connection, file_path, "GET");
 }
 
 enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
@@ -185,8 +247,8 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         return ret;
     }
 
-    // Handle GET requests
-    if (strcmp(method, "GET") == 0) {
+    // Handle GET and HEAD requests (HEAD is like GET but without body)
+    if (strcmp(method, "GET") == 0 || strcmp(method, "HEAD") == 0) {
         // Check for Swagger UI requests if Swagger is enabled
         if (app_config && app_config->swagger.enabled && 
             is_swagger_request(url, &app_config->swagger)) {
@@ -232,7 +294,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         // Serve up the requested file
         if (access(file_path, F_OK) != -1) {
             log_this(SR_WEBSERVER, "Served File: %s", LOG_LEVEL_DEBUG, 1, file_path);
-            return serve_file(connection, file_path);
+            return serve_file_for_method(connection, file_path, method);
         }
 
         // If file not found, return 404
