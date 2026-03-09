@@ -52,7 +52,6 @@ export default class SessionLogManager {
       const html = await response.text();
       this.container.innerHTML = html;
     } catch (error) {
-      console.error('[SessionLogManager] Failed to load template:', error);
       this.renderFallback();
     }
 
@@ -72,16 +71,12 @@ export default class SessionLogManager {
    * Falls back gracefully if MainManager is not available (e.g. tests).
    */
   _injectSlotHeaderButtons() {
-    console.log('[SessionLogManager] _injectSlotHeaderButtons called');
     const mainMgr = this.app?._getMainManager?.();
-    console.log('[SessionLogManager] mainMgr:', mainMgr);
     if (!mainMgr) {
-      console.warn('[SessionLogManager] No main manager found');
       return;
     }
 
     const slotId = mainMgr._utilitySlotId('session-log');
-    console.log('[SessionLogManager] slotId:', slotId);
 
     mainMgr.addHeaderButtons(slotId, [
       {
@@ -238,7 +233,6 @@ export default class SessionLogManager {
   async populateLog() {
     const viewer = this.elements.viewer;
     if (!viewer) {
-      console.warn('[SessionLogManager] viewer element not found');
       return;
     }
 
@@ -315,7 +309,6 @@ export default class SessionLogManager {
       viewer.innerHTML = '';
       this._logEditor = new EditorView({ state, parent: viewer });
     } catch (error) {
-      console.warn('[SessionLogManager] CodeMirror failed to load, using plain text:', error);
       viewer.innerHTML = `<pre class="log-content" style="padding:1em;font-size:10px;overflow:auto;height:100%;margin:0;">${logText}</pre>`;
     }
   }

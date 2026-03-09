@@ -24,15 +24,12 @@ let fetchPromise = null;
 // Simple logger that works before any manager is loaded
 const logger = {
   info: (message) => {
-    console.log(`[Lookups] ${message}`);
     log(Subsystems.LOOKUPS, Status.INFO, message);
   },
   warn: (message) => {
-    console.warn(`[Lookups] ${message}`);
     log(Subsystems.LOOKUPS, Status.WARN, message);
   },
   error: (message) => {
-    console.error(`[Lookups] ${message}`);
     log(Subsystems.LOOKUPS, Status.ERROR, message);
   },
 };

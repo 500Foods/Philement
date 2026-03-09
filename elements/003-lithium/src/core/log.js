@@ -300,22 +300,9 @@ function _scheduleFlush() {
  * @private
  */
 async function _flushToServer() {
-  if (_syncQueue.length === 0) return;
-  
-  const entries = _syncQueue.splice(0, _syncQueue.length);
-  
-  try {
-    // Try to send to server - fire and forget
-    // This will fail silently if server endpoint doesn't exist
-    const response = await fetch('/api/logs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entries }),
-    });
-  } catch (e) {
-    // Silently ignore network errors - logs are for debugging/analysis
-    // but shouldn't break the app
-  }
+  // Server logging endpoint is not configured - clear the queue without sending
+  // Logs remain available client-side via window.lithiumLogs
+  _syncQueue.length = 0;
 }
 
 // Set up periodic flush

@@ -1,4 +1,4 @@
-/**
+nsh/**
  * Main Menu Manager
  * 
  * Handles the main application layout: resizable sidebar + manager area.
@@ -206,28 +206,10 @@ export default class MainManager {
     // Wire close button (stub)
     const closeBtn = slotEl.querySelector('.slot-close-btn');
     closeBtn?.addEventListener('click', () => {
-      console.log(`[MainManager] Close button clicked for slot ${slotId}`);
+      // TODO: Implement slot close functionality
     });
 
-    // Wire footer placeholder buttons (stubs)
-    slotEl.querySelector('.slot-reports-btn')?.addEventListener('click', () => {
-      console.log(`[MainManager] Reports placeholder clicked for slot ${slotId}`);
-    });
-    slotEl.querySelector('.slot-notifications-btn')?.addEventListener('click', () => {
-      console.log(`[MainManager] Notifications clicked for slot ${slotId}`);
-    });
-    slotEl.querySelector('.slot-tickets-btn')?.addEventListener('click', () => {
-      console.log(`[MainManager] Support Tickets clicked for slot ${slotId}`);
-    });
-    slotEl.querySelector('.slot-annotations-btn')?.addEventListener('click', () => {
-      console.log(`[MainManager] Annotations clicked for slot ${slotId}`);
-    });
-    slotEl.querySelector('.slot-tours-btn')?.addEventListener('click', () => {
-      console.log(`[MainManager] Tours clicked for slot ${slotId}`);
-    });
-    slotEl.querySelector('.slot-lms-btn')?.addEventListener('click', () => {
-      console.log(`[MainManager] LMS clicked for slot ${slotId}`);
-    });
+    // Footer button handlers are set up by individual managers
 
     return {
       slotEl,
@@ -357,8 +339,6 @@ export default class MainManager {
    * @param {boolean} options.skipShowAnimation - If true, skip the show animation (used during crossfade)
    */
   async init(options = {}) {
-    console.log('[MainManager] Initializing...');
-    
     try {
       await this.render();
       this.setupEventListeners();
@@ -466,20 +446,17 @@ export default class MainManager {
 
     // Sidebar footer icon buttons
     this.elements.sidebarThemeBtn?.addEventListener('click', () => {
-      console.log('[MainManager] Theme button clicked');
       if (canAccessManager(1)) {
         this.loadManager(1);
       }
     });
 
     this.elements.sidebarProfileBtn?.addEventListener('click', () => {
-      console.log('[MainManager] Profile button clicked');
       this.setActiveUtilityButton('user-profile');
       this.app.loadUtilityManager('user-profile');
     });
 
     this.elements.sidebarLogsBtn?.addEventListener('click', () => {
-      console.log('[MainManager] Session Log button clicked');
       this.setActiveUtilityButton('session-log');
       this.app.loadUtilityManager('session-log');
     });

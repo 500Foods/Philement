@@ -320,7 +320,7 @@ export function processIcons(container = document) {
     try {
       processIconElement(element);
     } catch (error) {
-      console.warn('[Icons] Failed to process icon element:', error);
+      // Silently ignore icon processing errors
     }
   });
 
@@ -391,7 +391,6 @@ export function getIconConfiguration() {
  */
 export function setIcon(element, iconName, options = {}) {
   if (!element) {
-    console.warn('[Icons] Cannot set icon on null element');
     return;
   }
 
@@ -469,7 +468,6 @@ export function init(options = {}) {
   });
 
   isInitialized = true;
-  console.log('[Icons] Icon system initialized');
 }
 
 /**
