@@ -64,6 +64,7 @@ export const Subsystems = {
   PERMS: 'Permissions',
   THEME: 'Theme',
   LOGIN: 'Login',
+  SESSIONLOG: 'SessionLog',
 };
 
 // Status constants

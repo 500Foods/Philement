@@ -1,0 +1,71 @@
+/**
+ * Session Log Manager Styles
+ *
+ * Utility manager — renders in the workspace after login.
+ * Full-height CodeMirror viewer with a header bar matching the
+ * login panel's subpanel design.
+ */
+
+/* Full-height page container */
+#session-log-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Header bar — mirrors login subpanel header layout */
+.session-log-header {
+  flex: 0 0 auto;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-standard);
+  background: var(--bg-secondary);
+}
+
+/* Viewer takes all remaining vertical space */
+.session-log-viewer {
+  flex: 1 1 auto;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Placeholder shown before CodeMirror initializes */
+.session-log-viewer .log-placeholder {
+  padding: var(--space-5);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+/* Force CodeMirror to fill the viewer */
+.session-log-viewer .cm-editor {
+  height: 100%;
+}
+
+/* Force Vanadium Mono across all CodeMirror elements.
+   The oneDark theme injects its own font-family; this wins. */
+#session-log-viewer .cm-editor,
+#session-log-viewer .cm-editor .cm-scroller,
+#session-log-viewer .cm-editor .cm-content,
+#session-log-viewer .cm-editor .cm-line,
+#session-log-viewer .cm-editor .cm-gutters,
+#session-log-viewer .cm-editor .cm-lineNumbers {
+  font-family: var(--font-mono) !important;
+}
+
+/* Fade-in on show */
+#session-log-page {
+  opacity: 0;
+  transition: opacity var(--transition-normal) ease;
+}
+
+#session-log-page.visible {
+  opacity: 1;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #session-log-page {
+    transition: none;
+  }
+}
