@@ -120,6 +120,8 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
     if (NULL == con_info) {
         con_info = calloc(1, sizeof(struct ConnectionInfo));
         if (NULL == con_info) return MHD_NO;
+
+        http_metrics_upload_context_allocated();
         
         // Set magic number for type identification in request_completed()
         con_info->magic = CONNECTION_INFO_MAGIC;
@@ -128,6 +130,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             app_config ? app_config->resources.post_processor_buffer_size : DEFAULT_POST_PROCESSOR_BUFFER_SIZE,
             handle_upload_data, con_info);
         if (NULL == con_info->postprocessor) {
+            http_metrics_upload_context_freed();
             free(con_info);
             return MHD_NO;
         }

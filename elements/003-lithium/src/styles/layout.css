@@ -537,7 +537,7 @@ body.hide-password-manager-ui [class*="password-icon"] {
 }
 
 .input-with-icon input {
-  padding-right: 40px;
+  padding-right: 40px !important;
 }
 
 /* Icon button positioned outside the input field */

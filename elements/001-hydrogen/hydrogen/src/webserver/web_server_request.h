@@ -57,6 +57,9 @@ enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_p
 // File serving function with method support for HEAD requests
 enum MHD_Result serve_file_for_method(struct MHD_Connection *connection, const char *file_path, const char *method);
 
+// Static path resolution helpers
+bool resolve_static_file_path(const char *url, char *resolved_path, size_t resolved_path_size);
+
 // Custom headers functions
 bool matches_pattern(const char* path, const char* pattern);
 void add_custom_headers(struct MHD_Response *response, const char* file_path, const WebServerConfig* web_config);

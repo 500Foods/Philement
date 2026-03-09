@@ -54,9 +54,18 @@ typedef struct {
                              const char *method,
                              const char *version,
                              const char *upload_data,
-                             size_t *upload_data_size,
-                             void **con_cls);   // Request handler function
+                              size_t *upload_data_size,
+                              void **con_cls);   // Request handler function
 } WebServerEndpoint;
+
+// Runtime HTTP metrics for diagnostics and Prometheus export
+typedef struct {
+    size_t requests_in_flight;
+    size_t requests_total;
+    size_t current_connections;
+    size_t api_post_contexts_current;
+    size_t upload_contexts_current;
+} HttpRuntimeMetrics;
 
 // Core server functions
 bool init_web_server(WebServerConfig *web_config);
@@ -72,6 +81,15 @@ const WebServerEndpoint* get_endpoint_for_url(const char* url);
 void add_cors_headers(struct MHD_Response *response);
 const char* get_upload_path(void);
 bool is_port_available(int port, bool check_ipv6);
+
+// Runtime HTTP metrics helpers
+void http_metrics_request_started(void);
+void http_metrics_request_completed(void);
+void http_metrics_api_post_context_allocated(void);
+void http_metrics_api_post_context_freed(void);
+void http_metrics_upload_context_allocated(void);
+void http_metrics_upload_context_freed(void);
+void get_http_runtime_metrics(HttpRuntimeMetrics *metrics);
 
 // WebRoot path resolution functions
 char* resolve_webroot_path(const char* webroot_spec, const PayloadData* payload,

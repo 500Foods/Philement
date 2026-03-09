@@ -179,6 +179,12 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
                           json_integer((json_int_t)metrics->webserver.specific.webserver.active_requests));
         json_object_set_new(webserver_status, "totalRequests", 
                           json_integer((json_int_t)metrics->webserver.specific.webserver.total_requests));
+        json_object_set_new(webserver_status, "currentConnections",
+                          json_integer((json_int_t)metrics->webserver.specific.webserver.current_connections));
+        json_object_set_new(webserver_status, "apiPostContextsCurrent",
+                          json_integer((json_int_t)metrics->webserver.specific.webserver.api_post_contexts_current));
+        json_object_set_new(webserver_status, "uploadContextsCurrent",
+                          json_integer((json_int_t)metrics->webserver.specific.webserver.upload_contexts_current));
         json_object_set_new(webserver_status, "threads", 
                           json_integer(metrics->webserver.threads.thread_count));
         json_object_set_new(webserver_status, "virtualMemoryBytes", 
@@ -311,6 +317,15 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
                                metrics->memory.ram_used_percent);
     APPEND("%s\n", cpu_buffer);
 
+    APPEND("# HELP hydrogen_process_resident_memory_bytes Resident memory used by the Hydrogen process in bytes\n"
+           "# TYPE hydrogen_process_resident_memory_bytes gauge\n"
+           "hydrogen_process_resident_memory_bytes %zu\n"
+           "# HELP hydrogen_process_open_fds Number of open file descriptors in the Hydrogen process\n"
+           "# TYPE hydrogen_process_open_fds gauge\n"
+           "hydrogen_process_open_fds %d\n",
+           metrics->total_resident_memory,
+           metrics->fd_count);
+
     if (metrics->memory.total_swap > 0) {
         APPEND("# HELP hydrogen_swap_total_bytes Total swap space in bytes\n"
                "# TYPE hydrogen_swap_total_bytes gauge\n"
@@ -377,12 +392,26 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
                "hydrogen_webserver_active_requests %d\n"
                "# HELP hydrogen_webserver_requests_total Total number of webserver requests\n"
                "# TYPE hydrogen_webserver_requests_total counter\n"
-               "hydrogen_webserver_requests_total %d\n",
+               "hydrogen_webserver_requests_total %d\n"
+               "# HELP hydrogen_webserver_connections_current Current number of libmicrohttpd connections\n"
+               "# TYPE hydrogen_webserver_connections_current gauge\n"
+               "hydrogen_webserver_connections_current %d\n"
+               "# HELP hydrogen_http_requests_in_flight Current number of HTTP requests in flight\n"
+               "# TYPE hydrogen_http_requests_in_flight gauge\n"
+               "hydrogen_http_requests_in_flight %d\n"
+               "# HELP hydrogen_http_contexts_current Current number of allocated HTTP request contexts by type\n"
+               "# TYPE hydrogen_http_contexts_current gauge\n"
+               "hydrogen_http_contexts_current{type=\"api_post_buffer\"} %d\n"
+               "hydrogen_http_contexts_current{type=\"upload\"} %d\n",
                metrics->webserver.threads.thread_count,
                metrics->webserver.threads.virtual_memory,
                metrics->webserver.threads.resident_memory,
                metrics->webserver.specific.webserver.active_requests,
-               metrics->webserver.specific.webserver.total_requests);
+               metrics->webserver.specific.webserver.total_requests,
+               metrics->webserver.specific.webserver.current_connections,
+               metrics->webserver.specific.webserver.active_requests,
+               metrics->webserver.specific.webserver.api_post_contexts_current,
+               metrics->webserver.specific.webserver.upload_contexts_current);
     }
 
     if (metrics->websocket.enabled) {
