@@ -12,6 +12,16 @@ import { getConfig, getConfigValue } from '../../core/config.js';
 import { getTransitionDuration, waitForTransition } from '../../core/transitions.js';
 import { hasLookup } from '../../shared/lookups.js';
 import { log, logGroup, getRawLog, Subsystems, Status } from '../../core/log.js';
+import {
+  getBestGuessLocale,
+  getLanguageData,
+  getCountryCode,
+  saveLocalePreference,
+  getSavedLocale,
+  supportedLocales,
+} from '../../shared/languages.js';
+import * as Flags from 'country-flag-icons/string/3x2';
+import 'tabulator-tables/dist/css/tabulator_midnight.min.css';
 import './login.css';
 
 // Convenience alias for this module's subsystem
@@ -33,6 +43,12 @@ export default class LoginManager {
     this.lookupListeners = [];
     this._startupComplete = false; // Tracks whether background startup has finished
     this._loginFocusTimer = null; // Timer ID for the post-return-to-login focus delay
+    
+    // Language panel state
+    this._languageTable = null;
+    this._languageData = [];
+    this._currentLocale = null;
+    this._bestGuessLocale = null;
   }
 
   /**
@@ -305,6 +321,12 @@ export default class LoginManager {
       versionTime: this.container.querySelector('#login-version-time'),
       helpAppVersion: this.container.querySelector('#help-app-version'),
       helpBuildDate: this.container.querySelector('#help-build-date'),
+      languageFilter: this.container.querySelector('#language-filter'),
+      languageClearFilter: this.container.querySelector('#language-clear-filter'),
+      languageTable: this.container.querySelector('#language-table'),
+      languageCurrentBtn: this.container.querySelector('#language-current-btn'),
+      languageCurrentFlag: this.container.querySelector('#language-current-flag'),
+      languageCurrentCode: this.container.querySelector('#language-current-code'),
     };
 
     // Cache panels for transition management
@@ -357,7 +379,7 @@ export default class LoginManager {
             </div>
             <div class="login-btn-group">
               <button type="button" class="login-btn-icon tooltip" id="login-language-btn" data-tooltip="Select language">
-                <fa fa-globe></fa>
+                <fa fa-earth-americas></fa>
               </button>
               <button type="button" class="login-btn-icon tooltip" id="login-theme-btn" data-tooltip="Select theme">
                 <fa fa-palette></fa>
@@ -370,7 +392,7 @@ export default class LoginManager {
                 <fa fa-scroll></fa>
               </button>
               <button type="button" class="login-btn-icon tooltip" id="login-help-btn" data-tooltip="Help">
-                <fa fa-circle-question></fa>
+                <fa circle-question></fa>
               </button>
             </div>
           </form>
@@ -425,6 +447,20 @@ export default class LoginManager {
     this.elements.helpBtn?.addEventListener('click', () => {
       log(LOGIN, Status.INFO, 'Button clicked: Help');
       this.switchPanel('help');
+    });
+
+    // Language filter input
+    this.elements.languageFilter?.addEventListener('input', (e) => {
+      this.filterLanguageTable(e.target.value);
+    });
+
+    // Language clear filter button
+    this.elements.languageClearFilter?.addEventListener('click', () => {
+      if (this.elements.languageFilter) {
+        this.elements.languageFilter.value = '';
+        this.filterLanguageTable('');
+        this.elements.languageFilter.focus();
+      }
     });
 
     // Close buttons
@@ -759,6 +795,24 @@ export default class LoginManager {
       this.populateLogsPanel();
     }
 
+    // If switching to language panel, initialize the language table
+    if (targetPanel === 'language') {
+      this.initializeLanguagePanel();
+      // Add keyboard navigation listener
+      this._languageKeydownHandler = (e) => this._handleLanguageTableKeydown(e);
+      document.addEventListener('keydown', this._languageKeydownHandler);
+    } else {
+      // Reset language filter when leaving language panel
+      if (this.elements.languageFilter) {
+        this.elements.languageFilter.value = '';
+      }
+      // Remove keyboard navigation listener
+      if (this._languageKeydownHandler) {
+        document.removeEventListener('keydown', this._languageKeydownHandler);
+        this._languageKeydownHandler = null;
+      }
+    }
+
     // Perform crossfade transition
     await this.performPanelTransition(fromPanel, toPanel);
 
@@ -942,6 +996,447 @@ export default class LoginManager {
   }
 
   /**
+   * Get SVG flag HTML for a country code
+   * @param {string} countryCode - ISO 3166-1 alpha-2 country code
+   * @returns {string} SVG HTML string
+   */
+  _getFlagSvg(countryCode) {
+    try {
+      // Check if flag exists, fallback to US if not found
+      const flagSvg = Flags[countryCode] || Flags.US;
+      // Adjust the SVG dimensions and styling
+      return flagSvg.replace(
+        /<svg /,
+        '<svg width="28" height="20" style="border-radius: 3px; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.3);" '
+      );
+    } catch (e) {
+      // Fallback to text
+      return `<span style="display: inline-block; width: 28px; height: 20px; background: var(--bg-tertiary); border-radius: 3px; text-align: center; line-height: 20px; font-size: 10px; font-weight: 600;">${countryCode}</span>`;
+    }
+  }
+
+  /**
+   * Initialize the language panel with Tabulator table
+   */
+  async initializeLanguagePanel() {
+    // If table already exists, just refresh the data and selection
+    if (this._languageTable) {
+      this._refreshLanguageTableSelection();
+      // Focus the table for keyboard navigation
+      this._focusLanguageTable();
+      return;
+    }
+
+    const tableContainer = this.elements.languageTable;
+    if (!tableContainer) {
+      console.warn('[LoginManager] Language table container not found');
+      return;
+    }
+
+    try {
+      // Get language data first — it's synchronous
+      this._languageData = getLanguageData();
+
+      // Set _currentLocale BEFORE creating the table so dataLoaded can select it
+      // Priority: 1) Saved locale, 2) Best guess (sync parts first)
+      const savedLocale = getSavedLocale();
+      if (savedLocale && supportedLocales.includes(savedLocale)) {
+        this._currentLocale = savedLocale;
+        this._bestGuessLocale = savedLocale;
+      } else {
+        // No saved locale - get best guess asynchronously
+        const ipinfoToken = getConfigValue('services.ipinfo_token', null);
+        this._bestGuessLocale = await getBestGuessLocale({ ipinfoToken });
+        this._currentLocale = this._bestGuessLocale;
+      }
+
+      // Populate the current-locale indicator button in the header
+      this._updateCurrentLocaleButton();
+
+      // Dynamically import Tabulator — use TabulatorFull which bundles all
+      // built-in modules (Sort, Format, SelectRow, Interaction, etc.).
+      // The bare `Tabulator` export is the stripped-down base without modules.
+      const TabulatorModule = await import('tabulator-tables');
+      const Tabulator = TabulatorModule.TabulatorFull;
+      
+      // Verify we have a constructor
+      if (typeof Tabulator !== 'function') {
+        console.error('[LoginManager] Tabulator import failed. Module structure:', Object.keys(TabulatorModule));
+        throw new Error(`Tabulator is not a constructor. Type: ${typeof Tabulator}`);
+      }
+
+      // Custom dual-arrow sort indicator (▲/▼ with active direction highlighted)
+      const sortElement = '<span class="lang-sort-icons"><span class="lang-sort-asc">▲</span><span class="lang-sort-desc">▼</span></span>';
+
+      // Initialize Tabulator table
+      this._languageTable = new Tabulator(tableContainer, {
+        data: this._languageData,
+        layout: 'fitColumns',
+        height: '100%',
+        selectable: 1,
+        resizableColumns: false,
+        headerSortElement: sortElement,
+        // Sort by Language name then Country name
+        initialSort: [
+          { column: 'language', dir: 'asc' },
+          { column: 'country', dir: 'asc' },
+        ],
+        // No dataLoaded callback - we'll trigger selection after table creation
+        columns: [
+          {
+            title: '',
+            field: 'countryCode',
+            width: 50,
+            hozAlign: 'center',
+            vertAlign: 'middle',
+            cssClass: 'language-flag-cell',
+            headerSort: false,
+            resizable: false,
+            formatter: (cell) => {
+              const countryCode = cell.getValue();
+              return this._getFlagSvg(countryCode);
+            },
+          },
+          {
+            title: 'Language',
+            field: 'language',
+            widthGrow: 2,
+            hozAlign: 'left',
+            vertAlign: 'middle',
+            headerSort: true,
+            resizable: false,
+          },
+          {
+            title: 'Country',
+            field: 'country',
+            widthGrow: 2,
+            hozAlign: 'left',
+            vertAlign: 'middle',
+            headerSort: true,
+            resizable: false,
+          },
+          {
+            title: 'Locale',
+            field: 'locale',
+            width: 80,
+            hozAlign: 'left',
+            vertAlign: 'middle',
+            headerSort: true,
+            resizable: false,
+          },
+        ],
+      });
+
+      // Handle row selection (click)
+      this._languageTable.on('rowClick', (e, row) => {
+        const data = row.getData();
+        this.selectLanguage(data.locale);
+      });
+
+      // Handle keyboard selection (Enter/Space)
+      this._languageTable.on('rowSelected', (row) => {
+        const data = row.getData();
+        this._currentLocale = data.locale;
+      });
+
+      // Trigger selection after table is fully rendered
+      // Use setTimeout to ensure the table has finished initial rendering
+      setTimeout(() => {
+        this._refreshLanguageTableSelection();
+        this._focusLanguageTable();
+      }, 100);
+
+      log(LOGIN, Status.INFO, `Language panel initialized. Best guess: ${this._bestGuessLocale}, Current: ${this._currentLocale}`);
+    } catch (error) {
+      console.error('[LoginManager] Failed to initialize language table:', error);
+      log(LOGIN, Status.ERROR, `Failed to initialize language table: ${error.message}`);
+
+      // Fallback: show simple list
+      tableContainer.innerHTML = this._languageData.map(lang => `
+        <div class="language-item-fallback" data-locale="${lang.locale}" style="
+          padding: var(--space-3);
+          border-bottom: var(--border-standard);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          ${lang.locale === this._currentLocale ? 'background: var(--accent-primary); color: white;' : ''}
+        ">
+          ${this._getFlagSvg(lang.countryCode)}
+          <span style="flex: 1;">${lang.language}</span>
+          <span style="color: ${lang.locale === this._currentLocale ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)'};">${lang.country}</span>
+          <span style="color: ${lang.locale === this._currentLocale ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)'};">${lang.locale}</span>
+        </div>
+      `).join('');
+
+      // Add click handlers for fallback
+      tableContainer.querySelectorAll('.language-item-fallback').forEach(item => {
+        item.addEventListener('click', () => {
+          this.selectLanguage(item.dataset.locale);
+        });
+      });
+    }
+  }
+
+  /**
+   * Update the current-locale indicator button in the language panel header
+   * Shows the flag SVG and locale code for the currently selected locale
+   */
+  _updateCurrentLocaleButton() {
+    if (!this._currentLocale) return;
+
+    const countryCode = getCountryCode(this._currentLocale);
+
+    if (this.elements.languageCurrentFlag) {
+      try {
+        const flagSvg = Flags[countryCode] || Flags.US;
+        this.elements.languageCurrentFlag.innerHTML = flagSvg.replace(
+          /<svg /,
+          '<svg width="22" height="16" style="border-radius: 2px; display: block; box-shadow: 0 1px 2px rgba(0,0,0,0.3);" '
+        );
+      } catch (e) {
+        this.elements.languageCurrentFlag.textContent = countryCode;
+      }
+    }
+
+    if (this.elements.languageCurrentCode) {
+      this.elements.languageCurrentCode.textContent = this._currentLocale;
+    }
+  }
+
+  /**
+   * Refresh the language table selection and scroll to selected row
+   * @param {number} retryCount - Number of retries attempted (internal use)
+   */
+  _refreshLanguageTableSelection(retryCount = 0) {
+    if (!this._languageTable || !this._currentLocale) return;
+
+    // Find and select the row for current locale
+    // Use getRows() to get all rows
+    const rows = this._languageTable.getRows();
+    const targetRow = rows.find(r => r.getData().locale === this._currentLocale);
+
+    if (targetRow) {
+      // Deselect all other rows first
+      this._languageTable.deselectRow();
+      // Select the target row
+      targetRow.select();
+      // Scroll to row in the middle of the viewport
+      this._languageTable.scrollToRow(targetRow, 'middle', false);
+    } else if (retryCount < 3) {
+      // Row not found yet, retry after a short delay
+      setTimeout(() => {
+        this._refreshLanguageTableSelection(retryCount + 1);
+      }, 100);
+    }
+  }
+
+  /**
+   * Focus the language table for keyboard navigation
+   */
+  _focusLanguageTable() {
+    // Use setTimeout to ensure the table is fully rendered
+    setTimeout(() => {
+      const tableElement = this.elements.languageTable;
+      if (tableElement) {
+        tableElement.setAttribute('tabindex', '-1');
+        tableElement.focus();
+      }
+    }, 100);
+  }
+
+  /**
+   * Handle keyboard navigation in the language table
+   * @param {KeyboardEvent} event - The keyboard event
+   */
+  _handleLanguageTableKeydown(event) {
+    if (!this._languageTable || this.currentPanel !== 'language') return;
+
+    const key = event.key;
+    let handled = false;
+
+    switch (key) {
+      case 'ArrowDown':
+        this._moveLanguageSelection(1);
+        handled = true;
+        break;
+      case 'ArrowUp':
+        this._moveLanguageSelection(-1);
+        handled = true;
+        break;
+      case 'PageDown':
+        this._moveLanguageSelection(10);
+        handled = true;
+        break;
+      case 'PageUp':
+        this._moveLanguageSelection(-10);
+        handled = true;
+        break;
+      case 'Enter':
+        this._selectCurrentLanguageRow();
+        handled = true;
+        break;
+      case 'Home':
+        this._moveLanguageSelectionTo(0);
+        handled = true;
+        break;
+      case 'End':
+        this._moveLanguageSelectionTo(-1);
+        handled = true;
+        break;
+    }
+
+    if (handled) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
+  /**
+   * Move the language selection by a number of rows
+   * @param {number} delta - Number of rows to move (positive = down, negative = up)
+   */
+  _moveLanguageSelection(delta) {
+    if (!this._languageTable) return;
+
+    // Use getRows("active") to get rows in their displayed (sorted/filtered) order
+    const rows = this._languageTable.getRows('active');
+    if (rows.length === 0) return;
+
+    // Find currently selected row index in the displayed order
+    let currentIndex = -1;
+    const selectedRows = this._languageTable.getSelectedRows();
+    if (selectedRows.length > 0) {
+      currentIndex = rows.findIndex(r => r.getData().locale === selectedRows[0].getData().locale);
+    }
+
+    // Calculate new index
+    let newIndex = currentIndex + delta;
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= rows.length) newIndex = rows.length - 1;
+
+    this._selectRowAtIndex(newIndex);
+  }
+
+  /**
+   * Move selection to a specific row index
+   * @param {number} index - Row index (0 = first, -1 = last)
+   */
+  _moveLanguageSelectionTo(index) {
+    if (!this._languageTable) return;
+
+    // Use getRows("active") to get rows in their displayed (sorted/filtered) order
+    const rows = this._languageTable.getRows('active');
+    if (rows.length === 0) return;
+
+    let newIndex = index;
+    if (newIndex < 0) newIndex = rows.length + newIndex;
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= rows.length) newIndex = rows.length - 1;
+
+    this._selectRowAtIndex(newIndex);
+  }
+
+  /**
+   * Select a row at a specific index and scroll it into view
+   * @param {number} index - The row index to select
+   */
+  _selectRowAtIndex(index) {
+    if (!this._languageTable) return;
+
+    // Use getRows("active") to get rows in their displayed (sorted/filtered) order
+    const rows = this._languageTable.getRows('active');
+    if (index < 0 || index >= rows.length) return;
+
+    const targetRow = rows[index];
+
+    // Deselect all and select target
+    this._languageTable.deselectRow();
+    targetRow.select();
+
+    // Scroll to row in the middle of the viewport
+    this._languageTable.scrollToRow(targetRow, 'middle', false);
+  }
+
+  /**
+   * Select the currently selected language row (Enter key action)
+   */
+  _selectCurrentLanguageRow() {
+    if (!this._languageTable) return;
+
+    const selectedRows = this._languageTable.getSelectedRows();
+    if (selectedRows.length > 0) {
+      const data = selectedRows[0].getData();
+      this.selectLanguage(data.locale);
+    }
+  }
+
+  /**
+   * Filter the language table based on search input
+   * Case-insensitive search on language, country, or locale
+   * @param {string} filterText - Text to filter by
+   */
+  filterLanguageTable(filterText) {
+    if (!this._languageTable) return;
+
+    const searchLower = filterText.toLowerCase().trim();
+
+    if (!searchLower) {
+      this._languageTable.clearFilter();
+      return;
+    }
+
+    // Custom filter function - case insensitive search on multiple fields
+    this._languageTable.setFilter((data) => {
+      const localeMatch = data.locale.toLowerCase().includes(searchLower);
+      const languageMatch = data.language && data.language.toLowerCase().includes(searchLower);
+      const countryMatch = data.country && data.country.toLowerCase().includes(searchLower);
+      const nativeMatch = data.nativeName && data.nativeName.toLowerCase().includes(searchLower);
+
+      return localeMatch || languageMatch || countryMatch || nativeMatch;
+    });
+  }
+
+  /**
+   * Select a language and save preference
+   * @param {string} locale - The selected locale
+   */
+  selectLanguage(locale) {
+    if (!supportedLocales.includes(locale)) {
+      console.warn(`[LoginManager] Unsupported locale: ${locale}`);
+      return;
+    }
+
+    const previousLocale = this._currentLocale;
+    this._currentLocale = locale;
+    saveLocalePreference(locale);
+
+    // Update the current-locale indicator in the header
+    this._updateCurrentLocaleButton();
+
+    // Update row selection in table and scroll to it
+    if (this._languageTable) {
+      this._languageTable.deselectRow();
+      const row = this._languageTable.getRows().find(r => r.getData().locale === locale);
+      if (row) {
+        row.select();
+        this._languageTable.scrollToRow(row, 'middle', false);
+      }
+    }
+
+    // Log the selection
+    const langData = this._languageData.find(l => l.locale === locale);
+    const langName = langData ? `${langData.language} (${langData.country})` : locale;
+    log(LOGIN, Status.SUCCESS, `Language selected: ${langName} (${locale})`);
+
+    // Emit locale changed event
+    eventBus.emit(Events.LOCALE_CHANGED, {
+      lang: locale,
+      previousLang: previousLocale,
+    });
+  }
+
+  /**
    * Perform the actual panel transition animation with crossfade
    */
   async performPanelTransition(fromElement, toElement) {
@@ -981,9 +1476,18 @@ export default class LoginManager {
       `;
       
       // Prepare target element - also absolutely positioned in center
+      // Use the element's CSS-defined width based on panel type
+      let toCssWidth;
+      if (toElement === this.elements.loginPanel) {
+        toCssWidth = '360px';
+      } else if (toElement === this.elements.languagePanel) {
+        toCssWidth = '484px'; // Language panel is wider
+      } else {
+        toCssWidth = '384px'; // Default subpanel width
+      }
       toElement.style.cssText = `
         ${centerStyles}
-        width: ${toElement === this.elements.loginPanel ? '360px' : '480px'};
+        width: ${toCssWidth};
         display: ${targetDisplay};
         opacity: 0;
         transition: opacity ${duration}ms ease-in-out;
@@ -1376,6 +1880,18 @@ export default class LoginManager {
       this._logEditor = null;
     }
 
+    // Clean up Tabulator table if present
+    if (this._languageTable) {
+      this._languageTable.destroy();
+      this._languageTable = null;
+    }
+
+    // Clean up language panel keyboard handler
+    if (this._languageKeydownHandler) {
+      document.removeEventListener('keydown', this._languageKeydownHandler);
+      this._languageKeydownHandler = null;
+    }
+
     // Cancel any pending post-login-return focus timer
     if (this._loginFocusTimer !== null) {
       clearTimeout(this._loginFocusTimer);
@@ -1401,5 +1917,8 @@ export default class LoginManager {
     this.isPasswordVisible = false;
     this.isCapsLockOn = false;
     this.currentPanel = 'login';
+    this._languageData = [];
+    this._currentLocale = null;
+    this._bestGuessLocale = null;
   }
 }

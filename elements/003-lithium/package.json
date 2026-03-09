@@ -29,6 +29,7 @@
     "deploy:postbuild": "html-minifier-terser --input-dir \"$LITHIUM_DEPLOY\" --output-dir \"$LITHIUM_DEPLOY\" --file-ext html --collapse-whitespace --remove-comments --minify-js --minify-css && terser \"$LITHIUM_DEPLOY/service-worker.js\" -o \"$LITHIUM_DEPLOY/service-worker.js\" --compress --mangle"
   },
   "dependencies": {
+    "country-flag-icons": "^1.6.15",
     "dompurify": "^3.3.2",
     "tabulator-tables": "^6.2.3",
     "vite": "^7.3.0"

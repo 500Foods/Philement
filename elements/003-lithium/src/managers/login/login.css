@@ -211,3 +211,261 @@
     transition: none;
   }
 }
+
+/* ── Language Selector Panel ──────────────────────────────────────────────── */
+
+/* Language panel specific sizing - fixed height for proper table scrolling */
+#language-panel.login-subpanel {
+  height: 80vh;
+  max-height: 80vh;
+  width: 484px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#language-panel .language-panel-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  gap: var(--space-3);
+  overflow: hidden; /* Prevent popup-level scrolling */
+}
+
+.language-filter-container {
+  padding: var(--space-4);
+  background: var(--bg-tertiary);
+  flex-shrink: 0;
+  margin: 0 var(--space-5); 
+  border-radius: var(--border-radius-md);
+  border: var(--border-standard);
+}
+
+.language-filter-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.language-filter-input fa {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  pointer-events: none;
+}
+
+.language-filter-input input {
+  width: 100%;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.language-filter-input input::placeholder {
+  color: var(--text-muted);
+}
+
+.language-filter-input input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.3);
+}
+
+.language-filter-input .input-icon-btn {
+  position: absolute;
+  right: var(--space-2);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--border-radius-sm);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.language-filter-input .input-icon-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.language-table-container {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+  margin: var(--space-1) var(--space-5) var(--space-5);
+  border-radius: var(--border-radius-md);
+  border: var(--border-standard);
+  /* Isolate table scroll from popup scroll */
+  overscroll-behavior: contain;
+}
+
+/* Tabulator dark theme overrides for language table */
+#language-table {
+  height: 100%;
+  background: var(--bg-secondary);
+  border: none;
+  font-size: var(--font-size-sm);
+}
+
+#language-table .tabulator-header {
+  background: var(--bg-tertiary);
+  border-bottom: var(--border-standard);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+#language-table .tabulator-header .tabulator-col {
+  background: var(--bg-tertiary);
+  border-right: var(--border-standard);
+}
+
+#language-table .tabulator-header .tabulator-col:last-child {
+  border-right: none;
+}
+
+#language-table .tabulator-tableholder {
+  background: var(--bg-secondary);
+}
+
+#language-table .tabulator-row {
+  background: var(--bg-secondary);
+  border-bottom: var(--border-standard);
+  border-left: none;
+  border-right: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+/* Increase cell padding */
+#language-table .tabulator-cell {
+  padding: var(--space-3) var(--space-3);
+  border-left: none;
+  border-right: none;
+}
+
+#language-table .tabulator-header .tabulator-col .tabulator-col-content {
+  padding: var(--space-3) var(--space-3);
+}
+
+#language-table .tabulator-row:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Flag column — vertically center the SVG */
+.language-flag-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Selected row styling — current locale */
+#language-table .tabulator-row.tabulator-selected {
+  background: var(--accent-primary) !important;
+  color: white !important;
+}
+
+#language-table .tabulator-row.tabulator-selected:hover {
+  background: var(--accent-hover) !important;
+}
+
+/* Tabulator scroll isolation — prevent table scroll from propagating to popup */
+#language-table .tabulator-tableholder {
+  overscroll-behavior: contain;
+}
+
+/* Tabulator scrollbar styling */
+#language-table .tabulator-tableholder::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+#language-table .tabulator-tableholder::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+#language-table .tabulator-tableholder::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--border-radius-full);
+}
+
+#language-table .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ── Current Locale Button (header indicator) ─────────────────────────────── */
+
+.language-current-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--accent-primary);
+  border: none;
+  color: white;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.language-current-flag {
+  display: flex;
+  align-items: center;
+}
+
+.language-current-code {
+  font-size: var(--font-size-sm);
+}
+
+/* ── Custom Sort Icons (dual ▲▼ arrows) ────────────────────────────────── */
+
+/* Sort icon container */
+#language-table .lang-sort-icons {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1;
+  font-size: 7px;
+  margin-left: var(--space-1);
+  vertical-align: middle;
+  gap: 0;
+}
+
+/* Both arrows dimmed by default */
+#language-table .lang-sort-asc,
+#language-table .lang-sort-desc {
+  color: var(--text-muted);
+  opacity: 0.35;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+
+/* Highlight active sort direction */
+#language-table .tabulator-col[aria-sort="ascending"] .lang-sort-asc {
+  color: white;
+  opacity: 1;
+}
+
+#language-table .tabulator-col[aria-sort="descending"] .lang-sort-desc {
+  color: white;
+  opacity: 1;
+}
+
+/* Hide default Tabulator sort arrows — we use our own */
+#language-table .tabulator-col .tabulator-col-sorter .tabulator-arrow {
+  display: none;
+}
+
+/* Disable column resize handles */
+#language-table .tabulator-col-resize-handle {
+  display: none;
+}
