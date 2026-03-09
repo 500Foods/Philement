@@ -391,6 +391,8 @@ ApiBufferResult api_buffer_post_data(
             log_this(SR_API, "Failed to allocate API POST buffer", LOG_LEVEL_ERROR, 0);
             return API_BUFFER_ERROR;
         }
+
+        http_metrics_api_post_context_allocated();
         
         // Set magic number for type identification in request_completed()
         buffer->magic = API_POST_BUFFER_MAGIC;
@@ -404,6 +406,7 @@ ApiBufferResult api_buffer_post_data(
             buffer->http_method = 'O';
         } else {
             // Unsupported method
+            http_metrics_api_post_context_freed();
             free(buffer);
             log_this(SR_API, "Unsupported HTTP method: %s", LOG_LEVEL_ERROR, 1, method ? method : "NULL");
             return API_BUFFER_METHOD_ERROR;
@@ -433,6 +436,7 @@ ApiBufferResult api_buffer_post_data(
         buffer->data = malloc(API_INITIAL_BUFFER_CAPACITY);
         if (!buffer->data) {
             log_this(SR_API, "Failed to allocate API POST buffer data", LOG_LEVEL_ERROR, 0);
+            http_metrics_api_post_context_freed();
             free(buffer);
             return API_BUFFER_ERROR;
         }
@@ -506,6 +510,7 @@ void api_free_post_buffer(void **con_cls) {
         free(buffer->data);
     }
     free(buffer);
+    http_metrics_api_post_context_freed();
     *con_cls = NULL;
 }
 

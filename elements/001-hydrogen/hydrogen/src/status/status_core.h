@@ -106,6 +106,9 @@ typedef struct {
         struct {
             int active_requests;
             int total_requests;
+            int current_connections;
+            int api_post_contexts_current;
+            int upload_contexts_current;
         } webserver;
         struct {
             time_t uptime;

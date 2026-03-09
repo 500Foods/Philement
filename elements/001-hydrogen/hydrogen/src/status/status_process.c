@@ -7,6 +7,7 @@
 
 // Local includes
 #include "status_process.h"
+#include <src/webserver/web_server_core.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -65,6 +66,9 @@ static bool collect_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap
     }
     
     fclose(status);
+    *vmsize *= 1024;
+    *vmrss *= 1024;
+    *vmswap *= 1024;
     return true;
 }
 
@@ -289,12 +293,16 @@ void convert_thread_metrics(const ServiceThreads *src, ServiceThreadMetrics *des
 
 // Collect metrics for all services
 bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_metrics) {
+    HttpRuntimeMetrics http_metrics = {0};
+
     // Update all thread metrics first
     update_service_thread_metrics(&logging_threads);
     update_service_thread_metrics(&webserver_threads);
     update_service_thread_metrics(&websocket_threads);
     update_service_thread_metrics(&mdns_server_threads);
     update_service_thread_metrics(&print_threads);
+
+    get_http_runtime_metrics(&http_metrics);
 
     // Logging service
     metrics->logging.enabled = true;
@@ -304,8 +312,11 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     // Web service
     metrics->webserver.enabled = (app_config->webserver.enable_ipv4 || app_config->webserver.enable_ipv6);
     convert_thread_metrics(&webserver_threads, &metrics->webserver.threads);
-    metrics->webserver.specific.webserver.active_requests = (int)webserver_queue_memory.entry_count;
-    metrics->webserver.specific.webserver.total_requests = (int)webserver_queue_memory.entry_count;
+    metrics->webserver.specific.webserver.active_requests = (int)http_metrics.requests_in_flight;
+    metrics->webserver.specific.webserver.total_requests = (int)http_metrics.requests_total;
+    metrics->webserver.specific.webserver.current_connections = (int)http_metrics.current_connections;
+    metrics->webserver.specific.webserver.api_post_contexts_current = (int)http_metrics.api_post_contexts_current;
+    metrics->webserver.specific.webserver.upload_contexts_current = (int)http_metrics.upload_contexts_current;
 
     // WebSocket service
     metrics->websocket.enabled = (app_config->websocket.enable_ipv4 || app_config->websocket.enable_ipv6);

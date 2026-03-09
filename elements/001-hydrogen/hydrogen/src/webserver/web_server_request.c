@@ -38,6 +38,109 @@ bool matches_pattern(const char* path, const char* pattern) {
     return strstr(path, pattern) != NULL;
 }
 
+// Runtime HTTP metrics
+static volatile size_t http_requests_in_flight = 0;
+static volatile size_t http_requests_total = 0;
+static volatile size_t http_api_post_contexts_current = 0;
+static volatile size_t http_upload_contexts_current = 0;
+
+bool resolve_static_file_path(const char *url, char *resolved_path, size_t resolved_path_size) {
+    struct stat path_stat;
+
+    if (!url || !resolved_path || resolved_path_size == 0 || !app_config ||
+        !app_config->webserver.web_root) {
+        return false;
+    }
+
+    if (snprintf(resolved_path, resolved_path_size, "%s%s",
+                 app_config->webserver.web_root, url) >= (int)resolved_path_size) {
+        return false;
+    }
+
+    if (stat(resolved_path, &path_stat) == 0 && S_ISREG(path_stat.st_mode)) {
+        return true;
+    }
+
+    if (url[strlen(url) - 1] == '/' ||
+        (stat(resolved_path, &path_stat) == 0 && S_ISDIR(path_stat.st_mode))) {
+        char directory_path[PATH_MAX];
+        const char *default_files[] = { "index.html", "Project1.html" };
+
+        if (snprintf(directory_path, sizeof(directory_path), "%s", resolved_path) >= (int)sizeof(directory_path)) {
+            return false;
+        }
+
+        for (size_t i = 0; i < sizeof(default_files) / sizeof(default_files[0]); i++) {
+            if (snprintf(resolved_path, resolved_path_size, "%s%s%s",
+                         directory_path,
+                         directory_path[strlen(directory_path) - 1] == '/' ? "" : "/",
+                         default_files[i]) >= (int)resolved_path_size) {
+                return false;
+            }
+
+            if (stat(resolved_path, &path_stat) == 0 && S_ISREG(path_stat.st_mode)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+void http_metrics_request_started(void) {
+    __sync_add_and_fetch(&http_requests_in_flight, 1);
+    __sync_add_and_fetch(&http_requests_total, 1);
+}
+
+void http_metrics_request_completed(void) {
+    size_t current = (size_t)__sync_fetch_and_add(&http_requests_in_flight, 0);
+    if (current > 0) {
+        __sync_sub_and_fetch(&http_requests_in_flight, 1);
+    }
+}
+
+void http_metrics_api_post_context_allocated(void) {
+    __sync_add_and_fetch(&http_api_post_contexts_current, 1);
+}
+
+void http_metrics_api_post_context_freed(void) {
+    size_t current = (size_t)__sync_fetch_and_add(&http_api_post_contexts_current, 0);
+    if (current > 0) {
+        __sync_sub_and_fetch(&http_api_post_contexts_current, 1);
+    }
+}
+
+void http_metrics_upload_context_allocated(void) {
+    __sync_add_and_fetch(&http_upload_contexts_current, 1);
+}
+
+void http_metrics_upload_context_freed(void) {
+    size_t current = (size_t)__sync_fetch_and_add(&http_upload_contexts_current, 0);
+    if (current > 0) {
+        __sync_sub_and_fetch(&http_upload_contexts_current, 1);
+    }
+}
+
+void get_http_runtime_metrics(HttpRuntimeMetrics *metrics) {
+    if (!metrics) {
+        return;
+    }
+
+    metrics->requests_in_flight = (size_t)__sync_fetch_and_add(&http_requests_in_flight, 0);
+    metrics->requests_total = (size_t)__sync_fetch_and_add(&http_requests_total, 0);
+    metrics->api_post_contexts_current = (size_t)__sync_fetch_and_add(&http_api_post_contexts_current, 0);
+    metrics->upload_contexts_current = (size_t)__sync_fetch_and_add(&http_upload_contexts_current, 0);
+    metrics->current_connections = 0;
+
+    if (webserver_daemon) {
+        const union MHD_DaemonInfo *conn_info =
+            MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_CURRENT_CONNECTIONS);
+        if (conn_info) {
+            metrics->current_connections = conn_info->num_connections;
+        }
+    }
+}
+
 // Function to add custom headers to a response based on file path
 void add_custom_headers(struct MHD_Response *response, const char* file_path, const WebServerConfig* web_config) {
     if (!response || !file_path || !web_config || !web_config->headers) {
@@ -213,6 +316,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
 
     // Register connection thread if this is a new request
     if (*con_cls == NULL) {
+        http_metrics_request_started();
         add_service_thread(&webserver_threads, pthread_self());
         char msg[128];
         snprintf(msg, sizeof(msg), "New connection thread for %s %s", method, url);
@@ -284,15 +388,10 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
 
         // Try to serve a static file
         char file_path[PATH_MAX];
-        snprintf(file_path, sizeof(file_path), "%s%s", app_config->webserver.web_root, url);
 
-        // If the URL ends with a /, append index.html
-        if (url[strlen(url) - 1] == '/') {
-            strcat(file_path, "index.html");
-        }
-
-        // Serve up the requested file
-        if (access(file_path, F_OK) != -1) {
+        // Serve exact files directly, or for directory requests only resolve index.html
+        // and Project1.html as fallbacks.
+        if (resolve_static_file_path(url, file_path, sizeof(file_path))) {
             log_this(SR_WEBSERVER, "Served File: %s", LOG_LEVEL_DEBUG, 1, file_path);
             return serve_file_for_method(connection, file_path, method);
         }
@@ -338,6 +437,7 @@ void request_completed(void *cls, struct MHD_Connection *connection,
     // that we can use to determine the proper cleanup procedure
     if (NULL == con_cls || NULL == *con_cls) {
         // No context to clean up - just unregister thread
+        http_metrics_request_completed();
         remove_service_thread(&webserver_threads, pthread_self());
         log_this(SR_WEBSERVER, "Connection thread completed (no context)", LOG_LEVEL_TRACE, 0);
         return;
@@ -360,6 +460,7 @@ void request_completed(void *cls, struct MHD_Connection *connection,
         free(con_info->original_filename);
         free(con_info->new_filename);
         free(con_info);
+        http_metrics_upload_context_freed();
         log_this(SR_WEBSERVER, "Cleaned up ConnectionInfo (file upload)", LOG_LEVEL_TRACE, 0);
     }
     else if (magic == API_POST_BUFFER_MAGIC) {
@@ -378,6 +479,7 @@ void request_completed(void *cls, struct MHD_Connection *connection,
     *con_cls = NULL;
 
     // Remove connection thread from tracking after cleanup
+    http_metrics_request_completed();
     remove_service_thread(&webserver_threads, pthread_self());
     log_this(SR_WEBSERVER, "Connection thread completed", LOG_LEVEL_TRACE, 0);
 }
