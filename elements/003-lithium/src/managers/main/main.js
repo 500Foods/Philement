@@ -119,6 +119,7 @@ export default class MainManager {
     this.permittedManagers = permittedManagers || [];
     this.elements = {};
     this.currentManagerId = null;
+    this.currentUtilityKey = null;
     this.user = null;
     this.isLogoutPanelVisible = false;
     this.isSidebarCollapsed = false;
@@ -434,13 +435,13 @@ export default class MainManager {
 
     this.elements.sidebarProfileBtn?.addEventListener('click', () => {
       console.log('[MainManager] Profile button clicked');
-      if (canAccessManager(2)) {
-        this.loadManager(2);
-      }
+      this.setActiveUtilityButton('user-profile');
+      this.app.loadUtilityManager('user-profile');
     });
 
     this.elements.sidebarLogsBtn?.addEventListener('click', () => {
       console.log('[MainManager] Session Log button clicked');
+      this.setActiveUtilityButton('session-log');
       this.app.loadUtilityManager('session-log');
     });
 
@@ -945,6 +946,11 @@ export default class MainManager {
   async loadManager(managerId) {
     if (this.currentManagerId === managerId) return;
 
+    // Clear any active utility button (menu managers take precedence)
+    this.clearActiveUtilityButtons();
+    // Reset utility key so clicking a utility button will work
+    this.currentUtilityKey = null;
+
     // Update active state in sidebar
     this.updateActiveMenuItem(managerId);
 
@@ -964,6 +970,52 @@ export default class MainManager {
       } else {
         item.classList.remove('active');
       }
+    });
+  }
+
+  /**
+   * Set active utility manager button and clear menu selection
+   * @param {string} utilityKey - The utility manager key (e.g., 'user-profile', 'session-log')
+   */
+  setActiveUtilityButton(utilityKey) {
+    // Clear any active menu item
+    this.clearActiveMenuItem();
+
+    // Clear any other active utility buttons
+    this.clearActiveUtilityButtons();
+
+    // Set the active button
+    const buttonMap = {
+      'user-profile': this.elements.sidebarProfileBtn,
+      'session-log': this.elements.sidebarLogsBtn,
+    };
+
+    const button = buttonMap[utilityKey];
+    if (button) {
+      button.classList.add('active');
+    }
+
+    this.currentUtilityKey = utilityKey;
+    // Reset currentManagerId so that clicking a menu item will always show it
+    this.currentManagerId = null;
+  }
+
+  /**
+   * Clear active utility manager buttons
+   */
+  clearActiveUtilityButtons() {
+    this.elements.sidebarProfileBtn?.classList.remove('active');
+    this.elements.sidebarLogsBtn?.classList.remove('active');
+    this.currentUtilityKey = null;
+  }
+
+  /**
+   * Clear active menu item
+   */
+  clearActiveMenuItem() {
+    const items = this.elements.sidebarMenu?.querySelectorAll('.menu-item');
+    items?.forEach((item) => {
+      item.classList.remove('active');
     });
   }
 

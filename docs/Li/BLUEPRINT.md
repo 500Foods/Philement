@@ -72,13 +72,15 @@ button lazy-loads the manager into the workspace. State is preserved on switch
 
 Current menu managers registered in `app.js` `managerRegistry`:
 
-| ID | Name | Status |
-|----|------|--------|
-| 1 | Style Manager | ✅ Implemented |
-| 2 | Profile Manager | ⬜ Placeholder |
-| 3 | Dashboard | ⬜ Placeholder |
-| 4 | Lookups | ⬜ Placeholder |
-| 5 | Queries | ⬜ Placeholder |
+| ID | Name | Status | Notes |
+|----|------|--------|-------|
+| 1 | Style Manager | ✅ Implemented | |
+| 3 | Dashboard | ⬜ Placeholder | |
+| 4 | Lookups | ⬜ Placeholder | |
+| 5 | Queries | ⬜ Placeholder | |
+
+**Note:** Profile Manager (ID 2) was converted to a utility manager and removed from
+the menu. It is now accessed via the sidebar footer profile button.
 
 ### Utility Managers (always-present, sidebar footer)
 
@@ -86,14 +88,20 @@ Utility managers are bound to specific icon buttons in the sidebar footer row.
 They are **not** Punchcard-gated and **do not** appear in the sidebar menu.
 They are loaded on demand (click or keyboard shortcut) and rendered in the
 workspace the same way menu managers are. They are registered in a separate
-`utilityManagerRegistry` in `app.js` (TBD) to keep Punchcard IDs separate.
+`utilityManagerRegistry` in `app.js` to keep Punchcard IDs separate.
 
-Planned utility managers and their sidebar footer bindings:
+Current utility managers and their sidebar footer bindings:
 
-| Footer Button | Icon | Manager | Status |
-|--------------|------|---------|--------|
-| Session Log | `fa-scroll` | `session-log/` | ✅ Implemented |
-| User Profile | `fa-user-cog` | `user-profile/` | ⬜ Placeholder |
+| Footer Button | Icon | Manager Key | Status |
+|--------------|------|-------------|--------|
+| Session Log | `fa-scroll` | `session-log` | ✅ Implemented |
+| User Profile | `fa-user-cog` | `user-profile` | ✅ Implemented |
+
+Utility managers display active state in the sidebar footer when loaded:
+
+- Button highlights with accent-secondary background
+- Clears any active menu manager selection
+- Clicking another manager deselects the utility button
 
 > **Note:** The current sidebar footer contains a **Help** button (`fa-circle-question`).
 > This will be **replaced** by the Session Log button. Help content will move
@@ -405,31 +413,36 @@ Implemented in `src/managers/main/`. Sidebar + header + workspace layout.
 - Sidebar collapsible (desktop) and overlay-based (mobile)
 - Logout: four-option panel (Quick / Normal / Public / Global) with keyboard shortcuts
 
-### Sidebar Footer Buttons (current)
+### Sidebar Footer Buttons (Current)
 
-| Position | ID | Icon | Action |
-|----------|----|------|--------|
-| 0 | `sidebar-collapse-btn` | `fa-angles-left` | Collapse/expand sidebar |
-| 1 | `sidebar-theme-btn` | `fa-palette` | Open Style Manager (stub) |
-| 2 | `sidebar-profile-btn` | `fa-user-cog` | Open Profile Manager (loads manager 2) |
-| 3 | `sidebar-help-btn` | `fa-circle-question` | Help (stub — **to be replaced**) |
-| 4 | `sidebar-logout-btn` | `fa-sign-out-alt` | Open logout panel |
+| Position | ID | Icon | Action | Active State |
+|----------|----|------|--------|--------------|
+| 0 | `sidebar-collapse-btn` | `fa-angles-left` | Collapse/expand sidebar | N/A |
+| 1 | `sidebar-profile-btn` | `fa-user-cog` | Open User Profile utility manager | ✅ Highlights when profile loaded |
+| 2 | `sidebar-theme-btn` | `fa-palette` | Open Style Manager | N/A (popup) |
+| 3 | `sidebar-logs-btn` | `fa-scroll` | Open Session Log utility manager | ✅ Highlights when session log loaded |
+| 4 | `sidebar-logout-btn` | `fa-sign-out-alt` | Open logout panel | N/A (popup) |
 
-### Planned Sidebar Footer Changes
+### Utility Manager Active State
 
-The **Help** button (position 3) will be replaced by the **Session Log** utility
-manager button. Help will be surfaced as a panel within the Session Log manager
-or as a separate lightweight popup.
+Utility manager buttons (profile, session-log) display an active state when their
+manager is currently visible in the workspace:
 
-When utility managers are implemented the footer will become:
+- **Visual indication**: Button uses accent-secondary background with inset shadow
+- **Deselection behavior**: When a utility manager is selected, any active menu
+  manager item is deselected in the sidebar
+- **Mutual exclusion**: Only one utility manager button can be active at a time
+- **State reset**: When a menu manager is selected, utility buttons are cleared
 
-| Position | ID | Icon | Action |
-|----------|----|------|--------|
-| 0 | `sidebar-collapse-btn` | `fa-angles-left` | Collapse/expand sidebar |
-| 1 | `sidebar-theme-btn` | `fa-palette` | Open Style Manager (stub) |
-| 2 | `sidebar-profile-btn` | `fa-user-cog` | Open User Profile utility manager |
-| 3 | `sidebar-logs-btn` | `fa-scroll` | Open Session Log utility manager |
-| 4 | `sidebar-logout-btn` | `fa-sign-out-alt` | Open logout panel |
+### Transition Overlay
+
+A full-viewport overlay blocks all clicks during manager crossfade transitions:
+
+- **Purpose**: Prevents users from clicking another manager while transition is in progress
+- **Implementation**: Fixed-position overlay appended to `document.body` with `pointer-events: auto`
+- **Duration**: Active for the full transition (~2.5s based on CSS transition-duration)
+- **Coverage**: Blocks clicks on both sidebar and workspace areas
+- **CSS class**: `.manager-transition-overlay` toggled via `.active` class
 
 ---
 
@@ -568,9 +581,10 @@ Theme management: list, apply, edit, share themes. Fully implemented in
 
 ---
 
-## 14. Profile Manager ⬜
+## 14. Profile Manager ✅ UTILITY MANAGER
 
-User preferences. Currently a placeholder stub.
+User preferences. Implemented as a utility manager accessible from the sidebar
+footer (profile button), not the main menu.
 
 ### Settings
 
@@ -594,12 +608,22 @@ User preferences. Currently a placeholder stub.
 
 ### Profile Checklist
 
-- [ ] Create `profile-manager/index.js` with init/render/teardown
-- [ ] Create `profile-manager/profile-manager.html` and `.css`
-- [ ] Language, date, time, number format selectors
-- [ ] Active theme quick-apply dropdown
-- [ ] Save → API call → JWT refresh if needed
-- [ ] `locale:changed` event on save
+- [x] Create `profile-manager/index.js` with init/render/teardown
+- [x] Create `profile-manager/profile-manager.html` and `.css`
+- [x] Language, date, time, number format selectors
+- [x] Active theme quick-apply dropdown
+- [ ] Save → API call → JWT refresh if needed (pending Hydrogen endpoint)
+- [x] `locale:changed` event on save
+
+### Implementation Notes
+
+Profile Manager is registered as a **utility manager** (`user-profile`) in
+`utilityManagerRegistry`, not a menu manager. This means:
+
+- Accessed via sidebar footer profile button (`fa-user-cog`)
+- Always available regardless of Punchcard permissions
+- Button shows active state when profile manager is visible
+- Loading profile manager deselects any active menu manager item
 
 ---
 
@@ -869,12 +893,16 @@ Sidebar + header + workspace, manager lazy loading, responsive.
 
 ### Phase 4a: Utility Managers & Sidebar Footer ✅ COMPLETE
 
-Introduced the utility manager concept and delivered the first utility manager.
+Introduced the utility manager concept and delivered utility managers with active state management.
 
 - [x] Add `utilityManagerRegistry` to `app.js` (separate from Punchcard `managerRegistry`)
 - [x] Replace Help button with Session Log button in `main.html` sidebar footer
 - [x] Implement `session-log/` utility manager (see Section 14a)
 - [x] Wire footer button → load utility manager into workspace
+- [x] **Profile Manager converted to utility manager** - sidebar footer profile button loads user-profile
+- [x] **Active state styling** - utility manager buttons (profile, session-log) highlight when selected
+- [x] **Deselection logic** - menu items deselect when utility manager loads, and vice versa
+- [x] **Transition overlay** - fixed to block clicks across entire viewport (sidebar + workspace)
 - [ ] Document standalone manager URL mode in `app.js` (groundwork only, not full impl)
 
 ### Phase 5: Profile Manager ⬜

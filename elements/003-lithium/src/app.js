@@ -19,8 +19,8 @@ import { init as initIcons } from './core/icons.js';
 import { getTransitionDuration } from './core/transitions.js';
 import { log, logGroup, logStartup, logAuth, logManager, Subsystems, Status, flush, getSessionId, getRecentLogs, getRawLog, getDisplayLog, getCounter, setConsoleLogging, getArchivedSessions, removeArchivedSession } from './core/log.js';
 
-// Manager crossfade duration (ms) — shorter than main login crossfade
-const MANAGER_CROSSFADE_MS = 200;
+// Manager crossfade duration will be read from CSS --transition-duration
+let MANAGER_CROSSFADE_MS = 2500; // Default fallback, updated at runtime
 
 /**
  * Main Lithium Application Class
@@ -49,7 +49,67 @@ class LithiumApp {
     // Utility manager definitions — key -> name only (module loaded via _importUtilityManager)
     this.utilityManagerRegistry = {
       'session-log': { key: 'session-log', name: 'Session Log' },
+      'user-profile': { key: 'user-profile', name: 'User Profile' },
     };
+
+    // Transition overlay element (created lazily)
+    this.transitionOverlay = null;
+  }
+
+  /**
+   * Get the CSS transition duration from the root element.
+   * Updates MANAGER_CROSSFADE_MS global for use by _crossfadeSlots.
+   * @returns {number} Duration in milliseconds
+   */
+  getTransitionDurationFromCSS() {
+    const duration = getComputedStyle(document.documentElement)
+      .getPropertyValue('--transition-duration')
+      .trim();
+    
+    if (duration.includes('ms')) {
+      MANAGER_CROSSFADE_MS = parseInt(duration, 10);
+    } else if (duration.includes('s')) {
+      MANAGER_CROSSFADE_MS = parseFloat(duration) * 1000;
+    }
+    return MANAGER_CROSSFADE_MS;
+  }
+
+  /**
+   * Get or create the transition overlay element.
+   * The overlay blocks mouse clicks during manager crossfades.
+   * Appended to document.body to cover the entire viewport including sidebar.
+   * @returns {HTMLElement} The overlay element
+   */
+  getTransitionOverlay() {
+    if (this.transitionOverlay) {
+      return this.transitionOverlay;
+    }
+
+    this.transitionOverlay = document.createElement('div');
+    this.transitionOverlay.className = 'manager-transition-overlay';
+    document.body.appendChild(this.transitionOverlay);
+
+    return this.transitionOverlay;
+  }
+
+  /**
+   * Show the transition overlay to block clicks during crossfade.
+   */
+  showTransitionOverlay() {
+    const overlay = this.getTransitionOverlay();
+    if (overlay) {
+      overlay.classList.add('active');
+    }
+  }
+
+  /**
+   * Hide the transition overlay after crossfade completes.
+   */
+  hideTransitionOverlay() {
+    const overlay = this.getTransitionOverlay();
+    if (overlay) {
+      overlay.classList.remove('active');
+    }
   }
 
   /**
@@ -408,6 +468,7 @@ class LithiumApp {
   async _importUtilityManager(managerKey) {
     switch (managerKey) {
       case 'session-log': return import('./managers/session-log/index.js');
+      case 'user-profile': return import('./managers/profile-manager/index.js');
       default: throw new Error(`No import mapping for utility manager key: ${managerKey}`);
     }
   }
@@ -554,6 +615,13 @@ class LithiumApp {
 
     await this._crossfadeSlots(loadedKey);
     this.currentManager = { id: loadedKey, instance: incoming.instance };
+
+    // Notify main manager to update sidebar active state
+    const mainMgr = this._getMainManager();
+    if (mainMgr) {
+      const utilityKey = loadedKey.replace('utility:', '');
+      mainMgr.setActiveUtilityButton(utilityKey);
+    }
   }
 
   /**
@@ -566,6 +634,12 @@ class LithiumApp {
 
     await this._crossfadeSlots(managerId);
     this.currentManager = { id: managerId, instance: incoming.instance };
+
+    // Notify main manager to clear utility button state
+    const mainMgr = this._getMainManager();
+    if (mainMgr) {
+      mainMgr.clearActiveUtilityButtons();
+    }
   }
 
   /**
@@ -594,6 +668,12 @@ class LithiumApp {
       return;
     }
 
+    // Get the current transition duration from CSS
+    const duration = this.getTransitionDurationFromCSS();
+
+    // Show overlay to block clicks during transition
+    this.showTransitionOverlay();
+
     // Both slots visible simultaneously during crossfade (absolute positioning handles overlap)
     // Step 1: Show incoming (initially opacity 0 per CSS), make it active
     incomingSlot.classList.remove('slot-hidden');
@@ -606,10 +686,13 @@ class LithiumApp {
     outgoingSlot.classList.remove('slot-visible');  // opacity → 0
 
     // Step 3: Wait for CSS transitions to complete
-    await new Promise(resolve => setTimeout(resolve, MANAGER_CROSSFADE_MS + 20));
+    await new Promise(resolve => setTimeout(resolve, duration + 50));
 
-    // Step 4: Fully hide outgoing
+    // Step 4: Fully hide outgoing (visibility:hidden after opacity transition)
     outgoingSlot.classList.add('slot-hidden');
+
+    // Step 5: Hide overlay
+    this.hideTransitionOverlay();
   }
 
   /**

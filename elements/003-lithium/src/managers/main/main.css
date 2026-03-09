@@ -264,6 +264,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  transition: opacity calc(var(--transition-duration) / 2) ease;
 }
 
 .sidebar-title {
@@ -272,12 +275,11 @@
   color: white;
   white-space: nowrap;
   overflow: hidden;
-  transition: opacity calc(var(--transition-duration) / 2) ease, width calc(var(--transition-duration) / 2) ease;
 }
 
-/* Hide title when collapsed */
+/* Fade out title when collapsed - opacity transition for smooth fade */
 .main-sidebar.collapsed .sidebar-header-text {
-  display: none;
+  opacity: 0;
 }
 
 /* ========================================
@@ -505,6 +507,16 @@
   background-color: var(--accent-danger);
 }
 
+/* Active state for utility manager buttons (profile, session-log) */
+.sidebar-icon-btn.active {
+  background-color: var(--accent-secondary);
+  box-shadow: inset 0 0 0 2px var(--accent-primary);
+}
+
+.sidebar-icon-btn.active:hover {
+  background-color: var(--accent-secondary);
+}
+
 /* ---- Collapse icon (arrow) rotation ---- */
 /* JS drives the rotation value; broader selector ensures
    the transition survives Font Awesome SVG replacement. */
@@ -643,7 +655,7 @@ body.resizing * {
   display: flex;
   flex-direction: column;
   opacity: 0;
-  transition: opacity 200ms ease-in-out;
+  transition: opacity var(--transition-duration) ease-in-out;
   pointer-events: none;
   overflow: hidden;
 }
@@ -654,7 +666,29 @@ body.resizing * {
 }
 
 .manager-slot.slot-hidden {
-  display: none;
+  opacity: 0;
+  pointer-events: none;
+  /* Use visibility to truly hide after transition, but allow opacity to animate */
+  visibility: hidden;
+  transition: opacity var(--transition-duration) ease-in-out, visibility 0s linear var(--transition-duration);
+}
+
+/* ========================================
+   Manager Transition Overlay
+   Blocks mouse clicks during manager crossfade transitions.
+   ======================================== */
+
+.manager-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  /* Invisible but captures all clicks when active */
+  background: transparent;
+  pointer-events: none;
+}
+
+.manager-transition-overlay.active {
+  pointer-events: auto;
 }
 
 /* ========================================
@@ -877,6 +911,7 @@ body.resizing * {
   .sidebar-icon-group,
   .header-btn,
   .manager-slot,
+  .manager-slot.slot-hidden,
   .logout-overlay,
   .logout-panel,
   .logout-option,
@@ -895,7 +930,8 @@ body.resizing * {
     transition: opacity 0.01ms ease, visibility 0.01ms ease !important;
   }
 
-  .manager-slot {
-    transition: opacity 0.01ms ease !important;
+  .manager-slot,
+  .manager-slot.slot-hidden {
+    transition: opacity 0.01ms ease, visibility 0.01ms ease !important;
   }
 }

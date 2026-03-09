@@ -104,7 +104,8 @@ describe('Permissions', () => {
   describe('getPermittedManagers', () => {
     it('should return default managers when no punchcard provided', () => {
       const managers = getPermittedManagers();
-      expect(managers).toEqual([1, 2, 3, 4, 5]);
+      // Profile Manager (ID 2) is a utility manager, not in the menu
+      expect(managers).toEqual([1, 3, 4, 5]);
     });
 
     it('should return managers from punchcard', () => {
@@ -174,7 +175,8 @@ describe('Permissions', () => {
       const perms = parsePermissions(claims);
       
       expect(perms.hasPunchcard).toBe(false);
-      expect(perms.managers).toEqual([1, 2, 3, 4, 5]);
+      // Profile Manager (ID 2) is a utility manager, not in the menu
+      expect(perms.managers).toEqual([1, 3, 4, 5]);
       expect(perms.features).toEqual({});
     });
 
@@ -182,7 +184,8 @@ describe('Permissions', () => {
       const perms = parsePermissions(null);
       
       expect(perms.hasPunchcard).toBe(false);
-      expect(perms.managers).toEqual([1, 2, 3, 4, 5]);
+      // Profile Manager (ID 2) is a utility manager, not in the menu
+      expect(perms.managers).toEqual([1, 3, 4, 5]);
     });
 
     it('should handle punchcard with empty arrays', () => {
