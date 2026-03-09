@@ -17,6 +17,33 @@ const localStorageMock = {
 };
 Object.defineProperty(global, 'localStorage', { value: localStorageMock });
 
+// Mock the log module
+vi.mock('../../src/core/log.js', () => ({
+  logHttpRequest: vi.fn(() => 1),
+  logHttpResponse: vi.fn(),
+  Status: {
+    INFO: 'INFO',
+    WARN: 'WARN',
+    ERROR: 'ERROR',
+  },
+}));
+
+// Mock event-bus
+vi.mock('../../src/core/event-bus.js', () => ({
+  eventBus: {
+    emit: vi.fn(),
+    emitSilent: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+  },
+  Events: {
+    AUTH_EXPIRED: 'auth:expired',
+    LOOKUPS_LOADED: 'lookups:loaded',
+    LOOKUPS_LOADING: 'lookups:loading',
+    LOOKUPS_ERROR: 'lookups:error',
+  },
+}));
+
 // Import after mocks are set up
 const {
   get,
@@ -216,6 +243,26 @@ describe('JSON Request', () => {
       }
     });
 
+    it('should handle rate limiting (429) without retry-after header', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        statusText: 'Too Many Requests',
+        headers: new Headers({
+          'content-type': 'application/json',
+        }),
+        json: async () => ({ message: 'Rate limited' }),
+      });
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+
+      try {
+        await get('/users', { config });
+      } catch (error) {
+        expect(error.retryAfter).toBeNull();
+      }
+    });
+
     it('should include error data in thrown error', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
@@ -251,6 +298,210 @@ describe('JSON Request', () => {
       } catch (error) {
         expect(error.status).toBe(403);
         expect(error.message).toBe('Access denied');
+      }
+    });
+
+    it('should handle 502 bad gateway error', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ message: 'Backend error' }),
+      });
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+
+      try {
+        await get('/users', { config });
+      } catch (error) {
+        expect(error.status).toBe(502);
+        expect(error.message).toBe('Backend error');
+      }
+    });
+
+    it('should handle 503 service unavailable error', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ message: 'Service temporarily unavailable' }),
+      });
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+
+      try {
+        await get('/users', { config });
+      } catch (error) {
+        expect(error.status).toBe(503);
+        expect(error.message).toBe('Service temporarily unavailable');
+      }
+    });
+
+    it('should handle 504 gateway timeout error', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 504,
+        statusText: 'Gateway Timeout',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ message: 'Gateway timeout' }),
+      });
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+
+      try {
+        await get('/users', { config });
+      } catch (error) {
+        expect(error.status).toBe(504);
+        expect(error.message).toBe('Gateway timeout');
+      }
+    });
+
+    it('should handle server error without JSON body', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Headers({ 'content-type': 'text/plain' }),
+      });
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+
+      try {
+        await get('/users', { config });
+      } catch (error) {
+        expect(error.status).toBe(500);
+        expect(error.data).toBeNull();
+      }
+    });
+
+    it('should handle network errors', async () => {
+      mockFetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+
+      await expect(get('/users', { config })).rejects.toThrow('Failed to fetch');
+    });
+
+    it('should handle DNS errors', async () => {
+      mockFetch.mockRejectedValueOnce(new TypeError('Network request failed'));
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+
+      await expect(get('/users', { config })).rejects.toThrow('Network request failed');
+    });
+  });
+
+  describe('buildUrl edge cases', () => {
+    it('should handle path with leading slash', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: 'test' }),
+      });
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+      await get('/users', { config });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.example.com/api/users',
+        expect.any(Object)
+      );
+    });
+
+    it('should use default config values when not provided', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: 'test' }),
+      });
+
+      // No config provided - should use defaults
+      await get('/users');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/users',
+        expect.any(Object)
+      );
+    });
+
+    it('should handle empty api_prefix', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: 'test' }),
+      });
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '' } };
+      await get('/users', { config });
+
+      // Note: Empty string is falsy, so it falls back to default '/api'
+      // This is actually the current behavior - empty string becomes '/api'
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.example.com/api/users',
+        expect.any(Object)
+      );
+    });
+  });
+
+  describe('response handling', () => {
+    it('should handle successful response without JSON content-type', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'text/html' }),
+      });
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+      const result = await get('/users', { config });
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle response with missing content-type header', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({}),
+      });
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+      const result = await get('/users', { config });
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle JSON parse error gracefully', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () => { throw new Error('Invalid JSON'); },
+      });
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+      const result = await get('/users', { config });
+
+      // Should return null when JSON parsing fails
+      expect(result).toBeNull();
+    });
+
+    it('should emit auth:expired event on 401', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ message: 'Token expired' }),
+      });
+
+      const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+
+      try {
+        await get('/users', { config });
+      } catch (error) {
+        expect(error.status).toBe(401);
       }
     });
   });

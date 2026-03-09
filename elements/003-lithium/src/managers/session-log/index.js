@@ -13,6 +13,7 @@
  */
 
 import { log, getRawLog, getArchivedSessions, removeArchivedSession, Subsystems, Status } from '../../core/log.js';
+import { formatLogText } from '../../shared/log-formatter.js';
 import './session-log.css';
 
 // Convenience alias for this module's subsystem
@@ -184,46 +185,7 @@ export default class SessionLogManager {
    */
   _buildLogText() {
     const entries = getRawLog();
-
-    if (entries.length === 0) {
-      return '(No log entries yet)';
-    }
-
-    // Determine max subsystem width for fixed-width column alignment.
-    // Bracketed entries (EventBus) are excluded from this calculation because their
-    // brackets already account for the two-space column separator.
-    const maxSubsystemLen = entries.reduce((max, e) => {
-      const s = e.subsystem || '';
-      return s.startsWith('[') ? max : Math.max(max, s.length);
-    }, 0);
-
-    // Build display lines, expanding grouped entries ({ title, items }) to multiple lines.
-    const lines = [];
-    for (const entry of entries) {
-      const date = new Date(entry.timestamp);
-      const time = String(date.getHours()).padStart(2, '0') + ':' +
-        String(date.getMinutes()).padStart(2, '0') + ':' +
-        String(date.getSeconds()).padStart(2, '0') + '.' +
-        String(date.getMilliseconds()).padStart(3, '0');
-      const raw = entry.subsystem || '';
-      const isBracketed = raw.startsWith('[');
-      const subsystem = isBracketed ? raw : raw.padEnd(maxSubsystemLen);
-      const pre = isBracketed ? ' ' : '  ';
-      const sep = isBracketed ? ' ' : '  ';
-      const desc = entry.description;
-
-      if (desc && typeof desc === 'object' && desc.title !== undefined && Array.isArray(desc.items)) {
-        // Grouped entry: render title + ― continuation lines
-        lines.push(`${time}${pre}${subsystem}${sep}${desc.title}`);
-        for (const item of desc.items) {
-          lines.push(`${time}${pre}${subsystem}${sep}― ${item}`);
-        }
-      } else {
-        lines.push(`${time}${pre}${subsystem}${sep}${desc}`);
-      }
-    }
-
-    return lines.join('\n');
+    return formatLogText(entries);
   }
 
   /**

@@ -12,6 +12,7 @@ import { getConfig, getConfigValue } from '../../core/config.js';
 import { getTransitionDuration, waitForTransition } from '../../core/transitions.js';
 import { hasLookup } from '../../shared/lookups.js';
 import { log, logGroup, getRawLog, Subsystems, Status } from '../../core/log.js';
+import { formatLogText, getFlagSvg, getPasswordManagerSelectors } from '../../shared/log-formatter.js';
 import {
   getBestGuessLocale,
   getLanguageData,
@@ -662,20 +663,9 @@ export default class LoginManager {
    */
   togglePasswordManagerUI(hide) {
     const body = document.body;
+    const selectors = getPasswordManagerSelectors();
     
     if (hide) {
-      body.classList.add('hide-password-manager-ui');
-      
-      // Selectors for password manager injected elements.
-      const selectors = [
-        'com-1password-button',
-        '[id*="1p-"]',
-        '[class*="lastpass"]',
-        '[class*="bitwarden"]',
-        '[data-bitwarden]',
-        '[class*="dashlane"]',
-        '[data-dashlane]',
-      ];
 
       const suppressElements = () => {
         // Temporarily disconnect the observer while we mutate styles so that our
@@ -732,15 +722,7 @@ export default class LoginManager {
    * entirely, not just hidden, so they do not linger in the post-login view.
    */
   removePasswordManagerElements() {
-    const selectors = [
-      'com-1password-button',
-      '[id*="1p-"]',
-      '[class*="lastpass"]',
-      '[class*="bitwarden"]',
-      '[data-bitwarden]',
-      '[class*="dashlane"]',
-      '[data-dashlane]',
-    ];
+    const selectors = getPasswordManagerSelectors();
     for (const selector of selectors) {
       try {
         document.querySelectorAll(selector).forEach(el => el.remove());
@@ -851,54 +833,7 @@ export default class LoginManager {
     }
 
     const entries = getRawLog();
-
-    let logText;
-    if (entries.length === 0) {
-      logText = '(No log entries yet)';
-    } else {
-      // Determine max subsystem width for fixed-width column alignment.
-      // Bracketed entries (EventBus) are excluded from this calculation because their
-      // brackets already account for the two-space column separator.
-      const maxSubsystemLen = entries.reduce((max, e) => {
-        const s = e.subsystem || '';
-        return s.startsWith('[') ? max : Math.max(max, s.length);
-      }, 0);
-
-      // Build display lines, expanding grouped entries ({ title, items }) to multiple lines.
-      // Subsystems stored with bracket notation (e.g. "[Lookups]") are EventBus entries:
-      // they are rendered without extra padding because the brackets consume the two
-      // separator spaces, keeping columns visually aligned with plain subsystem names.
-      const lines = [];
-      for (const entry of entries) {
-        const date = new Date(entry.timestamp);
-        const time = String(date.getHours()).padStart(2, '0') + ':' +
-          String(date.getMinutes()).padStart(2, '0') + ':' +
-          String(date.getSeconds()).padStart(2, '0') + '.' +
-          String(date.getMilliseconds()).padStart(3, '0');
-        const raw = entry.subsystem || '';
-        const isBracketed = raw.startsWith('[');
-        // Bracketed entries (EventBus) use a single space before and after the label.
-        // The two bracket characters replace the two padding spaces from plain entries,
-        // keeping columns visually aligned:
-        //   time  Lookups  desc  →  pre(2) + name(7) + sep(2) = 11 chars before desc
-        //   time [Lookups] desc  →  pre(1) + name(9) + sep(1) = 11 chars before desc ✓
-        const subsystem = isBracketed ? raw : raw.padEnd(maxSubsystemLen);
-        const pre = isBracketed ? ' ' : '  ';
-        const sep = isBracketed ? ' ' : '  ';
-        const desc = entry.description;
-
-        if (desc && typeof desc === 'object' && desc.title !== undefined && Array.isArray(desc.items)) {
-          // Grouped entry: render title + ― continuation lines
-          lines.push(`${time}${pre}${subsystem}${sep}${desc.title}`);
-          for (const item of desc.items) {
-            lines.push(`${time}${pre}${subsystem}${sep}― ${item}`);
-          }
-        } else {
-          lines.push(`${time}${pre}${subsystem}${sep}${desc}`);
-        }
-      }
-      logText = lines.join('\n');
-    }
+    const logText = formatLogText(entries);
 
     // If CodeMirror is already initialized, just update the content
     if (this._logEditor) {
@@ -1001,18 +936,7 @@ export default class LoginManager {
    * @returns {string} SVG HTML string
    */
   _getFlagSvg(countryCode) {
-    try {
-      // Check if flag exists, fallback to US if not found
-      const flagSvg = Flags[countryCode] || Flags.US;
-      // Adjust the SVG dimensions and styling
-      return flagSvg.replace(
-        /<svg /,
-        '<svg width="28" height="20" style="border-radius: 3px; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.3);" '
-      );
-    } catch (e) {
-      // Fallback to text
-      return `<span style="display: inline-block; width: 28px; height: 20px; background: var(--bg-tertiary); border-radius: 3px; text-align: center; line-height: 20px; font-size: 10px; font-weight: 600;">${countryCode}</span>`;
-    }
+    return getFlagSvg(countryCode);
   }
 
   /**
@@ -1189,11 +1113,8 @@ export default class LoginManager {
 
     if (this.elements.languageCurrentFlag) {
       try {
-        const flagSvg = Flags[countryCode] || Flags.US;
-        this.elements.languageCurrentFlag.innerHTML = flagSvg.replace(
-          /<svg /,
-          '<svg width="22" height="16" style="border-radius: 2px; display: block; box-shadow: 0 1px 2px rgba(0,0,0,0.3);" '
-        );
+        const flagSvg = getFlagSvg(countryCode, { width: 22, height: 16 });
+        this.elements.languageCurrentFlag.innerHTML = flagSvg;
       } catch (e) {
         this.elements.languageCurrentFlag.textContent = countryCode;
       }
