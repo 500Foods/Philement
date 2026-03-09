@@ -68,7 +68,6 @@ export async function loadConfig() {
     const response = await fetch('/config/lithium.json');
     
     if (!response.ok) {
-      console.warn('Config file not found, using defaults');
       cachedConfig = DEFAULT_CONFIG;
       return cachedConfig;
     }
@@ -78,10 +77,8 @@ export async function loadConfig() {
     // Merge with defaults
     cachedConfig = deepMerge(DEFAULT_CONFIG, config);
     
-    console.log('Configuration loaded successfully');
     return cachedConfig;
   } catch (error) {
-    console.warn('Failed to load config, using defaults:', error.message);
     cachedConfig = DEFAULT_CONFIG;
     return cachedConfig;
   }
@@ -93,7 +90,6 @@ export async function loadConfig() {
  */
 export function getConfig() {
   if (!cachedConfig) {
-    console.warn('Config not loaded yet, returning defaults');
     return DEFAULT_CONFIG;
   }
   return cachedConfig;

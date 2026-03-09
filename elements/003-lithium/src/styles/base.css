@@ -25,7 +25,13 @@ html, body {
 body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+/* macOS-specific font smoothing */
+@supports (-moz-osx-font-smoothing: grayscale) {
+  body {
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 img, picture, video, canvas, svg {
