@@ -244,10 +244,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-4);
+  padding: var(--space-3);
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   color: white;
-  min-height: 64px;
+  min-height: 44px;     
+  max-height: 44px;
+  height: 44px;
   flex-shrink: 0;
 }
 
@@ -255,6 +257,7 @@
   width: 32px;
   height: 32px;
   flex-shrink: 0;
+  margin-left: 3px;
 }
 
 .sidebar-header-text {
@@ -598,195 +601,26 @@ body.resizing * {
 }
 
 /* ========================================
-   Main Content Area
+   Manager Area (right side)
+   The manager-area is position:relative so manager slots can be absolute.
    ======================================== */
 
-.main-content {
+.manager-area {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+  position: relative;
 }
 
-/* Header bar */
-.main-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 64px;
-  padding: 0 var(--space-5);
-  background: var(--bg-secondary);
-  border-bottom: var(--border-standard);
-  flex-shrink: 0;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.header-title {
-  font-size: var(--font-size-lg);
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-/* Version info box - square inset on the right side */
-.version-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 4px;
-  background: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-sm);
-  flex-shrink: 0;
-}
-
-.version-row {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  line-height: 1;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.version-row:first-child {
-  color: var(--accent-primary);
-  font-weight: 600;
-}
-
-/* Hide version box on mobile */
-@media (max-width: 640px) {
-  .version-box {
-    display: none;
-  }
-}
-
-/* Header buttons */
-.header-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-md);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.header-btn:hover {
-  background: var(--bg-input);
-  color: var(--text-primary);
-}
-
-.header-btn i,
-.header-btn fa-icon {
-  font-size: var(--font-size-sm);
-}
-
-/* User profile button */
-.profile-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
-  background: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-}
-
-.profile-btn:hover {
-  background: var(--bg-input);
-}
-
-.profile-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--accent-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: var(--font-size-sm);
-}
-
-.profile-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.profile-name {
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.profile-role {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-}
-
-/* Workspace */
-.workspace {
-  flex: 1;
-  overflow: auto;
-  padding: var(--space-4);
-  background: var(--bg-primary);
-}
-
-/* Manager container (for loaded managers) */
-.manager-container {
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  transition: opacity var(--transition-std);
-}
-
-.manager-container.manager-visible {
-  opacity: 1;
-}
-
-.manager-container.manager-hidden {
-  display: none;
-}
-
-/* Offline indicator */
-.offline-indicator {
-  display: none;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--accent-warning);
-  color: var(--bg-primary);
-  font-size: var(--font-size-sm);
-  border-radius: var(--border-radius-md);
-}
-
-.offline-indicator.visible {
-  display: flex;
-}
-
-/* Mobile menu button (hidden on desktop) */
+/* Mobile menu button (hidden on desktop, floats above slots) */
 .mobile-menu-btn {
   display: none;
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 20;
   align-items: center;
   justify-content: center;
   width: 40px;
@@ -795,6 +629,145 @@ body.resizing * {
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
+}
+
+/* ========================================
+   Manager Slot — the crossfade unit (header + workspace + footer)
+   Each loaded manager gets its own slot.
+   Slots are absolutely positioned within manager-area for crossfade.
+   ======================================== */
+
+.manager-slot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 200ms ease-in-out;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.manager-slot.slot-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.manager-slot.slot-hidden {
+  display: none;
+}
+
+/* ========================================
+   Manager Slot Header
+   One unified subpanel-header-group spanning the full width.
+   Left: icon + name (flex:1).  Right: close button (fixed).
+   ======================================== */
+
+.manager-slot-header {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  border-bottom: var(--border-standard);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Full-width header button group */
+.manager-slot-header .subpanel-header-group {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Title button (icon + name) takes all remaining space */
+.manager-slot-header .subpanel-header-primary {
+  flex: 1;
+  min-width: 0;
+}
+
+.manager-slot-header .subpanel-header-primary span {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ========================================
+   Manager Slot Workspace
+   Flex:1, holds the manager content.
+   No padding here — managers control their own padding/layout.
+   ======================================== */
+
+.manager-slot-workspace {
+  flex: 1;
+  overflow: hidden;
+  background: var(--bg-primary);
+  min-height: 0;
+  position: relative;
+}
+
+/* ========================================
+   Manager Slot Footer
+   Single unified subpanel-header-group spanning the full width.
+   Reports btn (left, flex:1) → manager-injected extras → fixed action icons.
+   Managers add buttons via mainManager.addFooterButtons(slotId, 'left'|'right', [...]).
+   ======================================== */
+
+.manager-slot-footer {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  border-top: var(--border-standard);
+  display: flex;
+  align-items: center;
+}
+
+/* Footer: single full-width button group */
+.manager-slot-footer .subpanel-header-group {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Reports / title button takes all remaining space */
+.manager-slot-footer .slot-reports-btn {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.manager-slot-footer .slot-reports-btn span {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Insertion-point containers use display:contents so their children
+   appear directly as flex items inside the subpanel-header-group */
+.slot-header-extras,
+.slot-footer-left-extras,
+.slot-footer-right-extras {
+  display: contents;
+}
+
+/* Offline indicator (inside slot header, right side) */
+.offline-indicator {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--accent-warning);
+  color: var(--bg-primary);
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-md);
+  flex-shrink: 0;
+}
+
+.offline-indicator.visible {
+  display: flex;
+}
+
+/* Legacy: manager-container is now .manager-slot-workspace
+   Keep for backward compatibility with existing managers that use it */
+.manager-container {
+  width: 100%;
+  height: 100%;
 }
 
 /* ========================================
@@ -876,6 +849,22 @@ body.resizing * {
   #collapse-icon {
     transform: none !important;
   }
+
+  /* On mobile, show mobile menu button (override absolute positioning) */
+  .mobile-menu-btn {
+    display: flex;
+    position: static;
+  }
+
+  /* On mobile, footer reports text abbreviated */
+  .manager-slot-footer .slot-reports-btn span {
+    display: none;
+  }
+
+  /* On mobile, manager-area slot headers need room for the menu btn */
+  .manager-slot-header {
+    padding-left: calc(40px + var(--space-3) * 2);
+  }
 }
 
 /* Reduced motion */
@@ -887,7 +876,7 @@ body.resizing * {
   .sidebar-icon-wrapper,
   .sidebar-icon-group,
   .header-btn,
-  .manager-container,
+  .manager-slot,
   .logout-overlay,
   .logout-panel,
   .logout-option,
@@ -904,5 +893,9 @@ body.resizing * {
   .logout-overlay,
   .logout-panel {
     transition: opacity 0.01ms ease, visibility 0.01ms ease !important;
+  }
+
+  .manager-slot {
+    transition: opacity 0.01ms ease !important;
   }
 }

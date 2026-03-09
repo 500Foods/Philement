@@ -1,1 +1,177 @@
-const CACHE_VERSION=1066,STATIC_CACHE="lithium-static-v1066",API_CACHE="lithium-api-v1066",STATIC_ASSETS=["/","/index.html","/manifest.json","/favicon.ico","/assets/images/logo-li.svg","/assets/images/logo-192x192.png","/assets/images/logo-512x512.png","/assets/fonts/VanadiumSans-SemiExtended.woff2","/assets/fonts/VanadiumMono-SemiExtended.woff2"];async function cacheFirst(t,e){const n=await caches.match(t);if(n)return n;try{const n=await fetch(t);if(n&&200===n.status&&"basic"===n.type){(await caches.open(e)).put(t,n.clone())}return n}catch(e){if("document"===t.destination)return caches.match("/index.html");throw e}}async function staleWhileRevalidate(t,e){const n=await caches.open(e),s=await n.match(t),i=fetch(t).then(e=>(e&&200===e.status&&n.put(t,e.clone()),e)).catch(()=>s);return s||i}self.addEventListener("install",t=>{t.waitUntil(caches.open(STATIC_CACHE).then(t=>(console.log("[SW] Pre-caching static assets"),t.addAll(STATIC_ASSETS))).then(()=>self.skipWaiting()).catch(t=>{console.error("[SW] Failed to pre-cache:",t)}))}),self.addEventListener("activate",t=>{const e=[STATIC_CACHE,API_CACHE];t.waitUntil(caches.keys().then(t=>Promise.all(t.filter(t=>!e.includes(t)).map(t=>(console.log("[SW] Deleting old cache:",t),caches.delete(t))))).then(()=>(console.log("[SW] Activated, controlling all clients"),self.clients.claim())))}),self.addEventListener("fetch",t=>{const e=new URL(t.request.url);"GET"===t.request.method&&(e.pathname.startsWith("/api/")||e.pathname.endsWith("/lithium.json")||e.pathname.endsWith("/version.json")?t.respondWith(staleWhileRevalidate(t.request,API_CACHE)):t.respondWith(cacheFirst(t.request,STATIC_CACHE)))}),self.addEventListener("push",t=>{if(t.data)try{const e=t.data.json(),n={body:e.body,icon:"/assets/images/logo-192x192.png",badge:"/assets/images/logo-192x192.png",data:{url:e.url||"/"}};t.waitUntil(self.registration.showNotification(e.title||"Lithium",n))}catch(t){console.error("[SW] Push notification error:",t)}}),self.addEventListener("notificationclick",t=>{t.notification.close();const e=t.notification.data?.url||"/";t.waitUntil(clients.matchAll({type:"window",includeUncontrolled:!0}).then(t=>{for(const n of t)if(n.url===e&&"focus"in n)return n.focus();if(clients.openWindow)return clients.openWindow(e)}))});
+// Lithium PWA Service Worker
+// Cache strategy: cache-first for statics, stale-while-revalidate for API data
+
+const CACHE_VERSION = 1100;
+const STATIC_CACHE = `lithium-static-v${CACHE_VERSION}`;
+const API_CACHE = `lithium-api-v${CACHE_VERSION}`;
+
+// Core static assets — cache-first strategy
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/favicon.ico',
+  '/assets/images/logo-li.svg',
+  '/assets/images/logo-192x192.png',
+  '/assets/images/logo-512x512.png',
+  '/assets/fonts/VanadiumSans-SemiExtended.woff2',
+  '/assets/fonts/VanadiumMono-SemiExtended.woff2'
+];
+
+// Install event — pre-cache static assets
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(STATIC_CACHE)
+      .then((cache) => {
+        console.log('[SW] Pre-caching static assets');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .then(() => self.skipWaiting())
+      .catch((error) => {
+        console.error('[SW] Failed to pre-cache:', error);
+      })
+  );
+});
+
+// Activate event — clean up old cache versions
+self.addEventListener('activate', (event) => {
+  const currentCaches = [STATIC_CACHE, API_CACHE];
+
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((name) => !currentCaches.includes(name))
+            .map((name) => {
+              console.log('[SW] Deleting old cache:', name);
+              return caches.delete(name);
+            })
+        );
+      })
+      .then(() => {
+        console.log('[SW] Activated, controlling all clients');
+        return self.clients.claim();
+      })
+  );
+});
+
+// Fetch event — route requests to appropriate strategy
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // API requests — stale-while-revalidate
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(staleWhileRevalidate(event.request, API_CACHE));
+    return;
+  }
+
+  // Config and version files — stale-while-revalidate (allows runtime updates)
+  if (url.pathname.endsWith('/lithium.json') || url.pathname.endsWith('/version.json')) {
+    event.respondWith(staleWhileRevalidate(event.request, API_CACHE));
+    return;
+  }
+
+  // Static assets and app code — cache-first
+  event.respondWith(cacheFirst(event.request, STATIC_CACHE));
+});
+
+/**
+ * Cache-first strategy: serve from cache, fall back to network.
+ * Caches new network responses for future use.
+ */
+async function cacheFirst(request, cacheName) {
+  const cached = await caches.match(request);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const response = await fetch(request);
+
+    // Cache successful same-origin responses
+    if (response && response.status === 200 && response.type === 'basic') {
+      const cache = await caches.open(cacheName);
+      cache.put(request, response.clone());
+    }
+
+    return response;
+  } catch (error) {
+    // Offline fallback for navigation requests
+    if (request.destination === 'document') {
+      return caches.match('/index.html');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Stale-while-revalidate: serve cached version immediately,
+ * update cache in the background from network.
+ */
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+
+  // Fetch fresh copy in the background
+  const fetchPromise = fetch(request)
+    .then((response) => {
+      if (response && response.status === 200) {
+        cache.put(request, response.clone());
+      }
+      return response;
+    })
+    .catch(() => cached);
+
+  // Return cached immediately if available, otherwise wait for network
+  return cached || fetchPromise;
+}
+
+// Push notification support
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const options = {
+      body: data.body,
+      icon: '/assets/images/logo-192x192.png',
+      badge: '/assets/images/logo-192x192.png',
+      data: { url: data.url || '/' }
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'Lithium', options)
+    );
+  } catch (error) {
+    console.error('[SW] Push notification error:', error);
+  }
+});
+
+// Notification click handler
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Focus existing window if found
+        for (const client of clientList) {
+          if (client.url === targetUrl && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Open new window
+        if (clients.openWindow) {
+          return clients.openWindow(targetUrl);
+        }
+      })
+  );
+});

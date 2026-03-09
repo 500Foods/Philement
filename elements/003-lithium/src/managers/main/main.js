@@ -1,20 +1,27 @@
 /**
  * Main Menu Manager
  * 
- * Handles the main application layout: resizable sidebar, header bar, workspace.
- * Loads permitted managers into the workspace on demand.
+ * Handles the main application layout: resizable sidebar + manager area.
+ * The manager area uses "slots" — each loaded manager gets its own slot
+ * (header + workspace + footer) that crossfades as a unit when switching.
+ *
  * Sidebar features:
  *   - Gradient header matching login panel
  *   - Scrollable menu
  *   - Icon-only footer with collapse/expand button
  *   - Resizable width (220px-400px) with splitter
  *   - Width persisted to localStorage
+ *
+ * Manager slot:
+ *   - Header: unified subpanel-header-group (icon+name on left, xmark close on right)
+ *   - Workspace: manager content (padding, scrollable)
+ *   - Footer: reports placeholder (left) + action icons: Annotations, Tours, LMS (right)
  */
 
 import { eventBus, Events } from '../../core/event-bus.js';
 import { getClaims } from '../../core/jwt.js';
 import { getPermittedManagers, canAccessManager } from '../../core/permissions.js';
-import { setIcon } from '../../core/icons.js';
+import { setIcon, processIcons } from '../../core/icons.js';
 import './main.css';
 
 // localStorage keys for sidebar state
@@ -25,7 +32,6 @@ const SIDEBAR_COLLAPSED_KEY = 'lithium_sidebar_collapsed';
 const MIN_SIDEBAR_WIDTH = 220;
 const MAX_SIDEBAR_WIDTH = 400;
 const DEFAULT_SIDEBAR_WIDTH = 260;
-const COLLAPSED_WIDTH = 56;
 
 // Icon group sizing (matches CSS --icon-w, --icon-h, --icon-gap)
 const ICON_W = 40;
@@ -33,6 +39,75 @@ const ICON_H = 35;
 const ICON_GAP = 2;
 const STEP_X = ICON_W + ICON_GAP;   // 42px — horizontal step
 const STEP_Y = ICON_H + ICON_GAP;   // 37px — vertical step
+
+/**
+ * Build the HTML for a manager slot.
+ *
+ * Header and footer each use a single unified subpanel-header-group so that
+ * any buttons added by the manager via addHeaderButtons() / addFooterButtons()
+ * merge seamlessly into the same visually connected button strip — no breaks.
+ *
+ * Named insertion points (data-slot-* containers) sit between the fixed
+ * buttons so injected buttons appear in a predictable position.
+ *
+ * @param {string} slotId - The slot's DOM id
+ * @param {string} icon - FA icon class e.g. 'fa-palette'
+ * @param {string} name - Manager display name
+ * @returns {string} HTML string
+ */
+function buildSlotHTML(slotId, icon, name) {
+  return `
+<div class="manager-slot" id="${slotId}">
+
+  <!-- Slot Header: one unified button group spanning full width.
+       Title btn (left, flex:1) → header-extras insertion point → close btn (right).
+       Managers inject buttons by calling mainManager.addHeaderButtons(slotId, [...]).  -->
+  <div class="manager-slot-header">
+    <div class="subpanel-header-group" style="flex:1;min-width:0;">
+      <button type="button" class="subpanel-header-btn subpanel-header-primary slot-title-btn" style="flex:1;min-width:0;overflow:hidden;">
+        <fa ${icon} class="slot-icon"></fa>
+        <span class="slot-name" style="white-space:nowrap;text-overflow:ellipsis;">${name}</span>
+      </button>
+      <!-- [header-extras] manager-injected header buttons land here -->
+      <div class="slot-header-extras" data-slot-extras="header" style="display:contents;"></div>
+      <button type="button" class="subpanel-header-btn subpanel-header-close slot-close-btn" title="Close">
+        <fa fa-xmark></fa>
+      </button>
+    </div>
+  </div>
+
+  <!-- Slot Workspace: manager content renders here -->
+  <div class="manager-slot-workspace" id="${slotId}-workspace">
+  </div>
+
+  <!-- Slot Footer: single unified button group spanning full width.
+       Reports btn (left, flex:1) → footer-left-extras → footer-right-extras → fixed action icons.
+       Managers inject buttons by calling mainManager.addFooterButtons(slotId, 'left'|'right', [...]).  -->
+  <div class="manager-slot-footer">
+    <div class="subpanel-header-group" style="flex:1;min-width:0;">
+      <button type="button" class="subpanel-header-btn subpanel-header-primary slot-reports-btn" style="flex:1;min-width:0;overflow:hidden;">
+        <fa fa-chart-bar></fa>
+        <span style="white-space:nowrap;text-overflow:ellipsis;">Reports Placeholder</span>
+      </button>
+      <!-- [footer-left-extras] manager-injected left-footer buttons land here -->
+      <div class="slot-footer-left-extras" data-slot-extras="footer-left" style="display:contents;"></div>
+      <!-- [footer-right-extras] manager-injected right-footer buttons land here -->
+      <div class="slot-footer-right-extras" data-slot-extras="footer-right" style="display:contents;"></div>
+      <button type="button" class="subpanel-header-btn subpanel-header-close slot-annotations-btn" title="Annotations">
+        <fa fa-tags></fa>
+      </button>
+      <button type="button" class="subpanel-header-btn subpanel-header-close slot-tours-btn" title="Tours">
+        <fa fa-signs-post></fa>
+      </button>
+      <button type="button" class="subpanel-header-btn subpanel-header-close slot-lms-btn" title="LMS">
+        <fa fa-graduation-cap></fa>
+      </button>
+    </div>
+  </div>
+
+</div>
+`.trim();
+}
 
 /**
  * Main Menu Manager Class
@@ -62,7 +137,7 @@ export default class MainManager {
     this.handleSplitterTouchMove = this.handleSplitterTouchMove.bind(this);
     this.handleSplitterTouchEnd = this.handleSplitterTouchEnd.bind(this);
 
-    // Manager registry with icons
+    // Manager registry with icons (for sidebar menu + slot headers)
     this.managerIcons = {
       1: { icon: 'fa-palette', name: 'Style Manager' },
       2: { icon: 'fa-user-cog', name: 'Profile Manager' },
@@ -70,6 +145,170 @@ export default class MainManager {
       4: { icon: 'fa-list', name: 'Lookups' },
       5: { icon: 'fa-search', name: 'Queries' },
     };
+
+    // Utility manager registry with icons
+    this.utilityManagerIcons = {
+      'session-log': { icon: 'fa-scroll', name: 'Session Log' },
+      'user-profile': { icon: 'fa-user-cog', name: 'User Profile' },
+    };
+  }
+
+  /**
+   * Build the slot id for a menu manager
+   */
+  _slotId(managerId) {
+    return `manager-slot-${managerId}`;
+  }
+
+  /**
+   * Build the slot id for a utility manager
+   */
+  _utilitySlotId(managerKey) {
+    return `utility-slot-${managerKey}`;
+  }
+
+  /**
+   * Create a manager slot in the manager-area and return its workspace element.
+   * The slot starts hidden.
+   * @param {string} slotId
+   * @param {string} icon
+   * @param {string} name
+   * @returns {{ slotEl: HTMLElement, workspaceEl: HTMLElement }}
+   */
+  createSlot(slotId, icon, name) {
+    const area = this.elements.managerArea;
+    if (!area) return null;
+
+    // Only create if not already existing
+    if (area.querySelector(`#${slotId}`)) {
+      return {
+        slotEl: area.querySelector(`#${slotId}`),
+        workspaceEl: area.querySelector(`#${slotId}-workspace`),
+      };
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = buildSlotHTML(slotId, icon, name);
+    const slotEl = wrapper.firstElementChild;
+    area.appendChild(slotEl);
+
+    // Process FA icons inside the new slot
+    processIcons(slotEl);
+
+    // Wire close button (stub)
+    const closeBtn = slotEl.querySelector('.slot-close-btn');
+    closeBtn?.addEventListener('click', () => {
+      console.log(`[MainManager] Close button clicked for slot ${slotId}`);
+    });
+
+    // Wire footer placeholder buttons (stubs)
+    slotEl.querySelector('.slot-reports-btn')?.addEventListener('click', () => {
+      console.log(`[MainManager] Reports placeholder clicked for slot ${slotId}`);
+    });
+    slotEl.querySelector('.slot-annotations-btn')?.addEventListener('click', () => {
+      console.log(`[MainManager] Annotations clicked for slot ${slotId}`);
+    });
+    slotEl.querySelector('.slot-tours-btn')?.addEventListener('click', () => {
+      console.log(`[MainManager] Tours clicked for slot ${slotId}`);
+    });
+    slotEl.querySelector('.slot-lms-btn')?.addEventListener('click', () => {
+      console.log(`[MainManager] LMS clicked for slot ${slotId}`);
+    });
+
+    return {
+      slotEl,
+      workspaceEl: slotEl.querySelector(`#${slotId}-workspace`),
+    };
+  }
+
+  /**
+   * Inject buttons into the header of a manager slot.
+   *
+   * Buttons are inserted into the `.slot-header-extras` container which sits
+   * between the title button and the close button inside the single unified
+   * subpanel-header-group.  All injected buttons therefore share the same
+   * connected button-group appearance — no visual break.
+   *
+   * Each button object must have:
+   *   { el: HTMLButtonElement }
+   *
+   * OR the shorthand form:
+   *   { icon: 'fa-rotate', title: 'Refresh', onClick: fn, id: 'optional-id' }
+   *
+   * @param {string} slotId        - The slot id (from _slotId() or _utilitySlotId())
+   * @param {Array}  buttonDefs    - Array of button descriptors (see above)
+   */
+  addHeaderButtons(slotId, buttonDefs) {
+    const area = this.elements.managerArea;
+    if (!area) return;
+    const slot = area.querySelector(`#${slotId}`);
+    if (!slot) return;
+    const container = slot.querySelector('.slot-header-extras');
+    if (!container) return;
+
+    for (const def of buttonDefs) {
+      if (def.el) {
+        container.appendChild(def.el);
+      } else {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'subpanel-header-btn subpanel-header-close';
+        if (def.id)    btn.id = def.id;
+        if (def.title) btn.title = def.title;
+        if (def.tooltip) btn.dataset.tooltip = def.tooltip;
+        btn.innerHTML = `<fa ${def.icon}></fa>`;
+        if (def.onClick) btn.addEventListener('click', def.onClick);
+        container.appendChild(btn);
+      }
+    }
+
+    // Process any newly injected <fa> tags
+    processIcons(container);
+  }
+
+  /**
+   * Inject buttons into the footer of a manager slot.
+   *
+   * The footer uses a single unified subpanel-header-group.  Two named
+   * insertion points are provided so managers can add buttons on either side
+   * of the fixed action icons:
+   *
+   *   'left'  → .slot-footer-left-extras  (between Reports btn and right extras)
+   *   'right' → .slot-footer-right-extras (between left extras and fixed icons)
+   *
+   * Button descriptor format is identical to addHeaderButtons().
+   *
+   * @param {string} slotId     - The slot id
+   * @param {string} side       - 'left' or 'right'
+   * @param {Array}  buttonDefs - Array of button descriptors
+   */
+  addFooterButtons(slotId, side, buttonDefs) {
+    const area = this.elements.managerArea;
+    if (!area) return;
+    const slot = area.querySelector(`#${slotId}`);
+    if (!slot) return;
+    const selector = side === 'left' ? '.slot-footer-left-extras' : '.slot-footer-right-extras';
+    const container = slot.querySelector(selector);
+    if (!container) return;
+
+    for (const def of buttonDefs) {
+      if (def.el) {
+        container.appendChild(def.el);
+      } else {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'subpanel-header-btn subpanel-header-close';
+        if (def.id)    btn.id = def.id;
+        if (def.title) btn.title = def.title;
+        if (def.tooltip) btn.dataset.tooltip = def.tooltip;
+        btn.innerHTML = `<fa ${def.icon}></fa>`;
+        if (def.onClick) btn.addEventListener('click', def.onClick);
+        container.appendChild(btn);
+      }
+    }
+
+    // Process any newly injected <fa> tags
+    processIcons(container);
   }
 
   /**
@@ -88,7 +327,6 @@ export default class MainManager {
       this.loadUserInfo();
       this.buildSidebar();
       this.loadSidebarState();
-      this.updateVersionBox();
       
       // Only run show animation if not skipping (e.g., during crossfade transition)
       if (!options.skipShowAnimation) {
@@ -140,20 +378,7 @@ export default class MainManager {
       sidebarLogoutBtn: this.container.querySelector('#sidebar-logout-btn'),
       sidebarOverlay: this.container.querySelector('#sidebar-overlay'),
       mobileMenuBtn: this.container.querySelector('#mobile-menu-btn'),
-      headerTitle: this.container.querySelector('#header-title'),
-      versionBox: this.container.querySelector('#version-box'),
-      versionBuild: this.container.querySelector('#version-build'),
-      versionYear: this.container.querySelector('#version-year'),
-      versionDate: this.container.querySelector('#version-date'),
-      versionTime: this.container.querySelector('#version-time'),
-      workspace: this.container.querySelector('#workspace'),
-      logoutBtn: this.container.querySelector('#logout-btn'),
-      profileBtn: this.container.querySelector('#profile-btn'),
-      profileAvatar: this.container.querySelector('#profile-avatar'),
-      profileName: this.container.querySelector('#profile-name'),
-      profileRole: this.container.querySelector('#profile-role'),
-      themeBtn: this.container.querySelector('#theme-btn'),
-      offlineIndicator: this.container.querySelector('#offline-indicator'),
+      managerArea: this.container.querySelector('#manager-area'),
       logoutPanel: this.container.querySelector('#logout-panel'),
       logoutOverlay: this.container.querySelector('#logout-overlay'),
       logoutCloseBtn: this.container.querySelector('#logout-close-btn'),
@@ -183,11 +408,8 @@ export default class MainManager {
             <button class="logout-btn" id="logout-btn">Logout</button>
           </div>
         </aside>
-        <div class="main-content">
-          <header class="main-header">
-            <h2 class="header-title" id="header-title">Dashboard</h2>
-          </header>
-          <main class="workspace" id="workspace"></main>
+        <div class="manager-area" id="manager-area">
+          <!-- Manager slots will be injected here -->
         </div>
       </div>
     `;
@@ -202,14 +424,16 @@ export default class MainManager {
       this.toggleSidebarCollapse();
     });
 
-    // Footer icon buttons
+    // Sidebar footer icon buttons
     this.elements.sidebarThemeBtn?.addEventListener('click', () => {
-      console.log('[MainManager] Theme button clicked (stub)');
+      console.log('[MainManager] Theme button clicked');
+      if (canAccessManager(1)) {
+        this.loadManager(1);
+      }
     });
 
     this.elements.sidebarProfileBtn?.addEventListener('click', () => {
-      console.log('[MainManager] Profile button clicked (stub)');
-      // Load profile manager if accessible
+      console.log('[MainManager] Profile button clicked');
       if (canAccessManager(2)) {
         this.loadManager(2);
       }
@@ -226,7 +450,7 @@ export default class MainManager {
     });
 
     // Legacy logout button (if still in template)
-    this.elements.logoutBtn?.addEventListener('click', () => {
+    this.container.querySelector('#logout-btn')?.addEventListener('click', () => {
       this.showLogoutPanel();
     });
 
@@ -258,29 +482,29 @@ export default class MainManager {
       this.closeMobileSidebar();
     });
 
-    // Theme button in header (stub)
-    this.elements.themeBtn?.addEventListener('click', () => {
-      console.log('[MainManager] Theme toggle clicked (stub)');
-    });
-
-    // Profile button in header (stub)
-    this.elements.profileBtn?.addEventListener('click', () => {
-      console.log('[MainManager] Profile button clicked (stub)');
-      // In the future, this could open a dropdown or navigate to profile
-    });
-
     // Network status events
     eventBus.on(Events.NETWORK_ONLINE, () => {
-      this.elements.offlineIndicator?.classList.remove('visible');
+      this._setOfflineIndicators(false);
     });
 
     eventBus.on(Events.NETWORK_OFFLINE, () => {
-      this.elements.offlineIndicator?.classList.add('visible');
+      this._setOfflineIndicators(true);
     });
 
     // Handle window resize to reset sidebar on mobile/desktop transition
     window.addEventListener('resize', () => {
       this.handleWindowResize();
+    });
+  }
+
+  /**
+   * Update offline indicator on all visible slots
+   */
+  _setOfflineIndicators(isOffline) {
+    const area = this.elements.managerArea;
+    if (!area) return;
+    area.querySelectorAll('.offline-indicator').forEach(el => {
+      el.classList.toggle('visible', isOffline);
     });
   }
 
@@ -429,10 +653,6 @@ export default class MainManager {
       this.expandedWidth = sidebar.offsetWidth;
 
       // Stage 1: sidebar narrows, icons stack horizontally
-      //
-      // Snap icon group to content width (removing flex-grow spacing)
-      // so the width delta matches the icon translateX delta exactly.
-      // This keeps the outline/background in sync with the sliding icons.
       iconGroup.style.transition = 'none';
       this._setWrapperTransitions(wrappers, 'none');
       wrappers.forEach(w => { w.style.flex = `0 0 ${ICON_W}px`; });
@@ -612,32 +832,6 @@ export default class MainManager {
   }
 
   /**
-   * Update the version info box with build and timestamp data
-   * Displays: build, YYYY, MMDD, HHMM
-   */
-  updateVersionBox() {
-    if (!this.elements.versionBuild || !this.app?.build) return;
-
-    const build = this.app.build;
-    const timestamp = this.app.timestamp || new Date().toISOString();
-
-    // Parse the timestamp
-    const date = new Date(timestamp);
-    const year = date.getFullYear();
-    // Month is 0-indexed, so add 1 and pad with leading zero
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-
-    // Update the version box elements
-    this.elements.versionBuild.textContent = build;
-    this.elements.versionYear.textContent = year;
-    this.elements.versionDate.textContent = month + day;
-    this.elements.versionTime.textContent = hours + minutes;
-  }
-
-  /**
    * Handle window resize — reset icon group state on mobile/desktop transitions
    */
   handleWindowResize() {
@@ -711,20 +905,6 @@ export default class MainManager {
         email: claims.email,
         roles: claims.roles || [],
       };
-
-      // Update profile display
-      if (this.elements.profileName) {
-        this.elements.profileName.textContent = this.user.username;
-      }
-      if (this.elements.profileAvatar) {
-        this.elements.profileAvatar.textContent = this.user.username.charAt(0).toUpperCase();
-      }
-      if (this.elements.profileRole) {
-        const role = Array.isArray(this.user.roles) && this.user.roles.length > 0
-          ? this.user.roles[0]
-          : 'User';
-        this.elements.profileRole.textContent = role;
-      }
     }
   }
 
@@ -760,7 +940,7 @@ export default class MainManager {
   }
 
   /**
-   * Load a manager into the workspace
+   * Load a manager into the workspace (creates a slot if needed)
    */
   async loadManager(managerId) {
     if (this.currentManagerId === managerId) return;
@@ -768,13 +948,7 @@ export default class MainManager {
     // Update active state in sidebar
     this.updateActiveMenuItem(managerId);
 
-    // Update header title
-    const managerInfo = this.managerIcons[managerId];
-    if (managerInfo && this.elements.headerTitle) {
-      this.elements.headerTitle.textContent = managerInfo.name;
-    }
-
-    // Delegate to app to load the manager
+    // Delegate to app to load the manager (app will create/show the slot)
     await this.app.loadManager(managerId);
     this.currentManagerId = managerId;
   }

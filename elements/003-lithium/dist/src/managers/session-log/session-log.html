@@ -1,0 +1,35 @@
+<!--
+  Session Log Manager Template
+  Utility Manager — always available from sidebar footer (fa-scroll button)
+  Full-width workspace viewer for the current session's client-side action log.
+
+  Note: The header (Session Log title + action buttons) is rendered in the
+  manager-slot header by MainManager. This template only contains the log viewer.
+  The Refresh, Coverage, and Clear buttons are wired via the index.js via the
+  slot header's close button area — for now they're exposed via slot workspace.
+-->
+<div id="session-log-page">
+
+  <!-- Action buttons bar (inside workspace, below slot header) -->
+  <div class="session-log-toolbar">
+    <div class="subpanel-header-group">
+      <button type="button" class="subpanel-header-btn subpanel-header-close" id="session-log-refresh-btn" data-tooltip="Refresh" title="Refresh log">
+        <fa fa-rotate></fa>
+      </button>
+      <button type="button" class="subpanel-header-btn subpanel-header-close" id="session-log-coverage-btn" data-tooltip="View coverage" title="View coverage report">
+        <fa fa-chart-simple-horizontal></fa>
+      </button>
+      <button type="button" class="subpanel-header-btn subpanel-header-close" id="session-log-clear-btn" data-tooltip="Clear archived" title="Clear archived sessions">
+        <fa fa-trash-can></fa>
+      </button>
+    </div>
+  </div>
+
+  <!-- Log viewer (CodeMirror will be initialized here) -->
+  <div class="session-log-viewer" id="session-log-viewer">
+    <div class="log-placeholder">
+      <p>Loading session log...</p>
+    </div>
+  </div>
+
+</div>

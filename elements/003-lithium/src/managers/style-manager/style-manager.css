@@ -5,13 +5,15 @@
  * modals for create/edit/delete.
  */
 
-/* Main page container */
+/* Main page container — fills the manager-slot-workspace absolutely */
 #style-manager-page {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
   padding: var(--space-4);
   gap: var(--space-4);
+  overflow: hidden;
 }
 
 /* Tab navigation */
@@ -276,8 +278,10 @@
   background: #dc3545;
 }
 
-/* Modal */
-.modal {
+/* Modals — scoped to style-manager IDs to avoid conflicts with components.css */
+
+#theme-modal,
+#delete-modal {
   position: fixed;
   inset: 0;
   display: none;
@@ -286,14 +290,22 @@
   z-index: 1000;
 }
 
-.modal.visible {
+#theme-modal.visible,
+#delete-modal.visible {
   display: flex;
 }
 
-.modal-overlay {
+/* The .modal-overlay inside these modals is a backdrop, NOT the fixed overlay from components.css */
+#theme-modal > .modal-overlay,
+#delete-modal > .modal-overlay {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
+  /* Override any fixed positioning from components.css */
+  display: block !important;
+  align-items: unset;
+  justify-content: unset;
+  padding: 0;
 }
 
 .modal-content {
