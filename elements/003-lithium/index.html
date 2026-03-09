@@ -65,53 +65,113 @@
       <!-- Content loaded dynamically by app.js -->
     </div>
 
-    <!-- Early Version Check - Non-blocking, prevents UI flash on update -->
+    <!-- Early bootstrap gate - checks version and starts SW update detection before UI renders -->
     <script>
       (function() {
-        // Store version promise globally so app.js can use it without re-fetching
-        window.__lithiumVersionPromise = fetch('/version.json', { cache: 'no-store' })
-          .then(r => r.json())
-          .then(data => {
-            const stored = sessionStorage.getItem('lithium_build');
-            const current = String(data.build);
-            
-            // Store for app.js to use later
-            window.__lithiumVersionData = data;
-            
+        function blockAppInitForever() {
+          return new Promise(function() {});
+        }
+
+        function startServiceWorkerBootGate() {
+          if (!('serviceWorker' in navigator)) {
+            return Promise.resolve();
+          }
+
+          return (async function() {
+            var reloadPending = false;
+
+            navigator.serviceWorker.addEventListener('controllerchange', function() {
+              if (reloadPending) {
+                return;
+              }
+
+              reloadPending = true;
+              window.location.reload();
+            });
+
+            var registration = await navigator.serviceWorker.register('/service-worker.js', {
+              updateViaCache: 'none'
+            });
+
+            window.__lithiumServiceWorkerRegistration = registration;
+
+            try {
+              await registration.update();
+            } catch (error) {
+              // Ignore update failures — the app can continue normally.
+            }
+
+            var candidate = registration.installing || registration.waiting;
+
+            // No existing controller means there is no old SW-controlled app to replace,
+            // so there is nothing to block on here.
+            if (!navigator.serviceWorker.controller || !candidate) {
+              return;
+            }
+
+            // Ask any waiting worker to activate immediately.
+            if (registration.waiting) {
+              try {
+                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+              } catch (error) {
+                // Ignore — install() already calls skipWaiting() as the primary path.
+              }
+            }
+
+            // Briefly wait for activation when an update is already in flight so the
+            // app does not reveal the old UI and then refresh moments later.
+            await Promise.race([
+              new Promise(function(resolve) {
+                candidate.addEventListener('statechange', function() {
+                  if (candidate.state === 'activated' || candidate.state === 'redundant') {
+                    resolve();
+                  }
+                });
+              }),
+              new Promise(function(resolve) {
+                setTimeout(resolve, 1500);
+              })
+            ]);
+
+            if (reloadPending) {
+              await blockAppInitForever();
+            }
+          })().catch(function() {
+            // Ignore registration/update failures — the app can continue normally.
+          });
+        }
+
+        // Store version promise globally so app.js can await it in loadVersion().
+        // If a reload is needed, the promise NEVER resolves — app.js hangs at
+        // loadVersion() and never reveals the page, preventing any UI flash.
+        window.__lithiumVersionPromise = (async function() {
+          var swBootGate = startServiceWorkerBootGate();
+
+          try {
+            var response = await fetch('/version.json', { cache: 'no-store' });
+            var data = await response.json();
+            var stored = sessionStorage.getItem('lithium_build');
+            var current = String(data.build);
+
             if (stored && stored !== current) {
-              // Version changed - update stored build and reload immediately
               sessionStorage.setItem('lithium_build', current);
               window.location.reload();
-              return null; // Prevent further execution
+              await blockAppInitForever();
             }
-            
-            // First visit or same version - store and continue
+
             sessionStorage.setItem('lithium_build', current);
+            window.__lithiumVersionData = data;
+            await swBootGate;
             return data;
-          })
-          .catch(() => {
-            // If fetch fails, continue with app load
+          } catch (error) {
+            await swBootGate;
             return null;
-          });
+          }
+        })();
       })();
     </script>
 
-    <!-- PWA Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
-            .catch(() => {
-              // Silently ignore - service worker is optional
-            });
-        });
-
-        // Check for updates (fallback for browsers that don't trigger the early check)
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          window.location.reload();
-        });
-      }
-    </script>
+    <!-- Service worker registration/update detection is handled by the early bootstrap gate above -->
 
     <!-- Main App Script -->
     <script type="module" src="/src/app.js"></script>

@@ -905,11 +905,14 @@ Lithium automatically detects and applies updates without user intervention:
 
 **How It Works:**
 
-1. On every page load, an early version check runs in [`index.html`](elements/003-lithium/index.html:68-87) **before** the app loads
-2. It fetches `/version.json` with `cache: 'no-store'` to bypass any caching
-3. Compares the build number with the version stored in `sessionStorage`
-4. If different, updates the stored version and reloads the page immediately
-5. This happens before any UI renders, preventing the login form from appearing briefly
+1. On every page load, an early bootstrap gate runs in [`index.html`](elements/003-lithium/index.html:68) **before** the app loads
+2. It starts service worker registration immediately with `updateViaCache: 'none'` and calls `registration.update()` right away instead of waiting for `window.load`
+3. In parallel, it fetches `/version.json` with `cache: 'no-store'` to bypass browser caching
+4. The service worker uses a **network-first** strategy for `version.json` to ensure the response is fresh (falls back to cache only if offline)
+5. The build number is compared with the version stored in `sessionStorage`
+6. If different, it updates the stored version and calls `location.reload()`
+7. If an updated service worker is already `installing` or `waiting` while an older controller still owns the page, the bootstrap gate briefly waits for activation so the old UI is not revealed and then refreshed moments later
+8. The version promise returns a **never-resolving promise** on reload, which blocks `app.js` at `loadVersion()` — the page stays `visibility: hidden` and no UI ever renders before the reload completes
 
 **Version Data Caching:**
 
@@ -924,11 +927,19 @@ if (window.__lithiumVersionData) {
 }
 ```
 
+**Key Design: Four-Layer Update Detection:**
+
+1. **Immediate service worker update check** — registration now starts during bootstrap, not on `window.load`, so update detection begins before the UI can render
+2. **Service worker network-first** — `version.json` is always fetched from the network (not stale cache), so the build number comparison is accurate
+3. **Never-resolving promise** — When a reload is triggered, `window.__lithiumVersionPromise` never resolves, blocking `app.js` `init()` at `loadVersion()` before `revealPage()` is reached
+4. **`controllerchange` fallback** — If the service worker itself is replaced (new SW takes control), `controllerchange` fires a backup reload
+
 **Benefits:**
 
-- **No UI flash:** Update happens before login UI renders
-- **Single fetch:** version.json is fetched once and reused
-- **Non-blocking:** App modules load in parallel with the version check
+- **No UI flash:** App init is blocked before page reveal when update is detected
+- **Earlier service worker takeover:** Update checks begin before the old login or main UI can finish rendering
+- **Single fetch:** version.json is fetched once and reused across all modules
+- **Network-first freshness:** Service worker ensures version.json is never stale
 - **Fallback safe:** If the fetch fails, the app continues loading normally
 
 ### Manifest
