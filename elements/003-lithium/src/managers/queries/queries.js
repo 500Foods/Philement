@@ -7,6 +7,7 @@
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import 'tabulator-tables/dist/css/tabulator.min.css';
 import { authQuery } from '../../shared/conduit.js';
+import { toast } from '../../shared/toast.js';
 import './queries.css';
 
 export default class QueriesManager {
@@ -164,6 +165,7 @@ export default class QueriesManager {
       this.table.setData(rows);
     } catch (error) {
       console.error('[QueriesManager] Failed to load queries:', error);
+      toast.error('Failed to load queries. Please try again.');
     }
   }
 
