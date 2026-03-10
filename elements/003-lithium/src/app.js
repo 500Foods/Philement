@@ -480,11 +480,11 @@ class LithiumApp {
    */
   async _importManager(managerId) {
     switch (managerId) {
-      case 1: return import('./managers/style-manager/index.js');
-      case 2: return import('./managers/profile-manager/index.js');
-      case 3: return import('./managers/dashboard/index.js');
-      case 4: return import('./managers/lookups/index.js');
-      case 5: return import('./managers/queries/index.js');
+      case 1: return import('./managers/style-manager/style-manager.js');
+      case 2: return import('./managers/profile-manager/profile-manager.js');
+      case 3: return import('./managers/dashboard/dashboard.js');
+      case 4: return import('./managers/lookups/lookups.js');
+      case 5: return import('./managers/queries/queries.js');
       default: throw new Error(`No import mapping for manager ID: ${managerId}`);
     }
   }
@@ -497,8 +497,8 @@ class LithiumApp {
    */
   async _importUtilityManager(managerKey) {
     switch (managerKey) {
-      case 'session-log': return import('./managers/session-log/index.js');
-      case 'user-profile': return import('./managers/profile-manager/index.js');
+      case 'session-log': return import('./managers/session-log/session-log.js');
+      case 'user-profile': return import('./managers/profile-manager/profile-manager.js');
       default: throw new Error(`No import mapping for utility manager key: ${managerKey}`);
     }
   }

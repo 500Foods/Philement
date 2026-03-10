@@ -567,7 +567,7 @@ Theme management: list, apply, edit, share themes. Fully implemented in
 
 ### Implementation Status ✅
 
-- [x] Create `style-manager/index.js` with init/render/teardown
+- [x] Create `style-manager/style-manager.js` with init/render/teardown
 - [x] Create `style-manager/style-manager.html` and `.css`
 - [x] **List View:** Tabulator table, New/Apply/Edit/Delete actions
 - [x] **Theme Application:** `applyTheme()`, DOMPurify, dynamic style injection
@@ -606,7 +606,7 @@ footer (profile button), not the main menu.
 
 ### Profile Checklist
 
-- [x] Create `profile-manager/index.js` with init/render/teardown
+- [x] Create `profile-manager/profile-manager.js` with init/render/teardown
 - [x] Create `profile-manager/profile-manager.html` and `.css`
 - [x] Language, date, time, number format selectors
 - [x] Active theme quick-apply dropdown
@@ -668,7 +668,7 @@ Header bar:
 
 ### Implementation Checklist
 
-- [x] Create `src/managers/session-log/index.js` with init/render/teardown
+- [x] Create `src/managers/session-log/session-log.js` with init/render/teardown
 - [x] Create `src/managers/session-log/session-log.html` and `.css`
 - [x] Replace Help button in `main.html` sidebar footer with Session Log button
 - [x] Wire `sidebar-logs-btn` click to load Session Log utility manager

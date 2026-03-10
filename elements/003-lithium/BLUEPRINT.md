@@ -307,7 +307,7 @@ Theme management: list, apply, edit, share themes. Fully implemented in
 
 ### Implementation Status ✅
 
-- [x] Create `style-manager/index.js` with init/render/teardown
+- [x] Create `style-manager/style-manager.js` with init/render/teardown
 - [x] Create `style-manager/style-manager.html` and `.css`
 - [x] **List View:** Tabulator table, New/Apply/Edit/Delete actions
 - [x] **Theme Application:** `applyTheme()`, DOMPurify, dynamic style injection
@@ -345,7 +345,7 @@ User preferences. Currently a placeholder stub.
 
 ### Profile Checklist
 
-- [ ] Create `profile-manager/index.js` with init/render/teardown
+- [ ] Create `profile-manager/profile-manager.js` with init/render/teardown
 - [ ] Create `profile-manager/profile-manager.html` and `.css`
 - [ ] Language, date, time, number format selectors
 - [ ] Active theme quick-apply dropdown
