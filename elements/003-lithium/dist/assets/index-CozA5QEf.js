@@ -1,2 +1,0 @@
-class n{constructor(n,t){this.app=n,this.container=t}async init(){this.container.innerHTML='\n      <div style="\n        display: flex;\n        flex-direction: column;\n        align-items: center;\n        justify-content: center;\n        height: 100%;\n        color: var(--text-secondary);\n      ">\n        <fa fa-search style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></fa>\n        <h2>Queries</h2>\n        <p>Query builder coming soon</p>\n      </div>\n    '}teardown(){}}export{n as default};
-//# sourceMappingURL=index-CozA5QEf.js.map

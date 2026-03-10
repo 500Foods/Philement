@@ -252,6 +252,8 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
         }
         free(param_values);
     }
+    // Note: ordered_params contains pointers to TypedParameter structs owned by params,
+    // so we only free the array itself, not the individual elements
     if (ordered_params) {
         free(ordered_params);
     }
