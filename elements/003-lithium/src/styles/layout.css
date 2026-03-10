@@ -419,63 +419,6 @@ body.hide-password-manager-ui [class*="password-icon"] {
   word-break: break-all;
 }
 
-.login-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-5);
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  color: white;
-  margin: var(--space-5);
-  border-radius: var(--border-radius-md);
-}
-
-.login-logo {
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-}
-
-.login-header-text h1 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  margin: 0;
-}
-
-.login-header-text p {
-  font-size: var(--font-size-sm);
-  opacity: 0.9;
-  margin: var(--space-1) 0 0;
-}
-
-.login-version {
-  font-size: var(--font-size-xs);
-  opacity: 0.6;
-  margin: var(--space-1) 0 0;
-  font-family: var(--font-mono);
-  letter-spacing: 0.02em;
-}
-
-/* Version info under title - "ver X.X.XXXXX rel YYYY-Mon-DD HH:MM UTC" */
-.login-version-info {
-  font-size: var(--font-size-us) !important;
-  font-family: var(--font-mono);
-  margin: var(--space-1) 0 0;
-}
-
-.login-version-info .ver {
-  color: var(--accent-primary);
-}
-
-.login-version-info .rel {
-  color: var(--accent-primary);
-}
-
-.login-version-info .version-number,
-.login-version-info .release-date {
-  color: var(--text-muted);
-}
-
 .login-form {
   padding: var(--space-5);
   margin-top: calc(-1 * var(--space-5));

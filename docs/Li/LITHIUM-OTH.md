@@ -283,6 +283,49 @@ eventBus.off(Events.AUTH_LOGIN, handler);
 
 **Location:** `src/shared/`
 
+### conduit.js
+
+Reusable helper functions for Hydrogen Conduit API queries. Provides both pure payload-building functions (testable without network) and thin API wrappers.
+
+#### Pure Functions
+
+| Function | Purpose |
+|----------|---------|
+| `buildQueryPayload(queryRef, params)` | Build a single-query payload with typed params |
+| `buildBatchPayload(queries, database?)` | Build a batch payload for multi-query endpoints |
+| `extractRows(response)` | Extract rows array from a single-query response |
+| `extractBatchRows(response)` | Extract a Map of queryRef → rows from batch response |
+
+#### API Wrappers
+
+| Function | Purpose |
+|----------|---------|
+| `authQuery(api, queryRef, params?)` | Execute a single authenticated query (JWT required) |
+| `authQueries(api, queries)` | Execute multiple authenticated queries in one request |
+| `query(api, queryRef, params?, database?)` | Execute a single public query |
+| `queries(api, queryList, database?)` | Execute multiple public queries in one request |
+
+#### Conduit Usage
+
+```javascript
+import { authQuery, authQueries } from '../../shared/conduit.js';
+
+// Single authenticated query (returns rows array directly)
+const rows = await authQuery(app.api, 25);
+
+// With typed parameters
+const searchRows = await authQuery(app.api, 32, {
+  STRING: { SEARCH: 'USERS' },
+});
+
+// Batch authenticated queries (returns Map<queryRef, rows>)
+const results = await authQueries(app.api, [
+  { queryRef: 25 },
+  { queryRef: 32, params: { STRING: { SEARCH: 'X' } } },
+]);
+const queryList = results.get(25);
+```
+
 ### lookups.js
 
 Manages lookup data from the server.

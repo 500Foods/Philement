@@ -328,7 +328,7 @@ table.insert(queries,{sql=[[
                 query_dialect_a30       ${INTEGER}          NOT NULL,
                 query_queue_a58         ${INTEGER}          NOT NULL,
                 query_timeout           ${INTEGER}          NOT NULL,
-                query_code              ${TEXT_BIG}         NOT NULL,
+                code                    ${TEXT_BIG}         NOT NULL,
                 name                    ${VARCHAR_100}      NOT NULL,
                 summary                 ${TEXT_BIG}                 ,
                 collection              ${JSON}                     ,
@@ -526,7 +526,7 @@ table.insert(queries,{sql=[[
                                 "lookup": false
                             },
                             {
-                                "name": "query_code",
+                                "name": "code",
                                 "datatype": "${TEXT_BIG}",
                                 "nullable": false,
                                 "primary_key": false,

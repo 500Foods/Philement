@@ -48,19 +48,33 @@ setIcon(element, 'palette', { classes: ['fa-fw'] });
 
 ## How It Works
 
-### 1. Custom Element Processing
+### 1. The Icon Rendering Pipeline
 
-The system uses a MutationObserver to watch for new `<fa>` elements:
+Icons go through a **three-stage replacement pipeline**:
 
-```javascript
-// Input
-<fa fa-palette></fa>
-
-// Output
-<i class="fas fa-palette"></i>
+```text
+Stage 1: HTML Template       →  <fa fa-palette></fa>
+Stage 2: Lithium processIcons →  <i class="fa-duotone fa-thin fa-palette"></i>
+Stage 3: Font Awesome SVG+JS  →  <svg class="svg-inline--fa fa-palette" ...>...</svg>
 ```
 
-### 2. Configuration
+**Stage 1 — HTML authoring:** You write `<fa>` tags in HTML templates. These are custom pseudo-elements that Font Awesome does not recognise.
+
+**Stage 2 — Lithium processing:** The `processIcons()` function (triggered by a MutationObserver on `document.body`) finds all `<fa>` elements and replaces each one with an `<i>` element. The `<i>` receives the correct Font Awesome CSS classes based on the configured icon set (e.g., `fa-duotone fa-thin`). Element attributes like `id`, `data-*`, `aria-*`, `title`, and inline styles are preserved on the new `<i>`.
+
+**Stage 3 — Font Awesome SVG+JS:** Because Lithium uses the Font Awesome **SVG+JS kit** (not the CSS webfont), Font Awesome's own MutationObserver detects the new `<i class="fa-...">` elements and replaces them with inline `<svg>` elements. The `<i>` is removed from the DOM entirely.
+
+> **Important:** After Stage 3, any cached JavaScript reference to the original `<fa>` or `<i>` element is **stale** — it points to a detached DOM node. See [Icon Rotation Pattern](#icon-rotation-pattern) below for the correct way to handle animated icons.
+
+### 2. Why Three Stages?
+
+| Stage | Who | What | Why |
+|-------|-----|------|-----|
+| 1 | Developer | `<fa fa-user>` | Clean, readable HTML that doesn't depend on a specific FA set or weight |
+| 2 | Lithium `icons.js` | `<i class="fa-duotone fa-thin fa-user">` | Applies the project's configured icon set/weight; resolves lookup-based icons |
+| 3 | Font Awesome Kit | `<svg ...>` | Renders the actual vector glyph as an inline SVG |
+
+### 3. Configuration
 
 Icons are configured in `config/lithium.json`:
 
@@ -74,7 +88,7 @@ Icons are configured in `config/lithium.json`:
 }
 ```
 
-### 3. Lookup Integration
+### 4. Lookup Integration
 
 Icons can be dynamically overridden from server lookups:
 
@@ -318,6 +332,63 @@ processIcons(container);
 const config = getIconConfiguration();
 console.log('Icon set:', config.set);
 ```
+
+---
+
+## Icon Rotation Pattern
+
+Because the three-stage pipeline replaces DOM elements, any cached reference to a `<fa>` or `<i>` tag becomes **stale** once Font Awesome finishes. This means you **cannot** cache an icon element during `render()` or `init()` and then manipulate it later.
+
+### The Problem
+
+```javascript
+// ❌ BAD — element reference goes stale after FA replaces <i> → <svg>
+this.elements.myIcon = container.querySelector('#my-icon');
+
+// Later, user clicks a button...
+this.elements.myIcon.style.transform = 'rotate(180deg)';
+// Nothing happens — the element is no longer in the DOM!
+```
+
+### The Solution: Fresh DOM Query
+
+Always query the DOM at the moment you need the icon element. This is the pattern used by the sidebar collapse arrow (`main.js`) and the queries collapse button (`queries.js`):
+
+```javascript
+// ✅ GOOD — fresh query each time, works regardless of FA stage
+_getMyIconEl() {
+  return document.querySelector('#my-icon') ||
+         document.querySelector('#my-button')?.firstElementChild;
+}
+
+// On click handler
+toggleSomething() {
+  const iconEl = this._getMyIconEl();
+  if (iconEl) {
+    this._rotation += 180;
+    iconEl.style.transform = `rotate(${this._rotation}deg)`;
+  }
+}
+```
+
+### CSS Setup
+
+For smooth rotation, add a CSS transition targeting the icon by ID **and** by possible tag types (to cover whichever stage the pipeline has reached):
+
+```css
+#my-icon,
+#my-button > i,
+#my-button > svg {
+  transition: transform 0.3s ease;
+}
+```
+
+### Existing Examples
+
+| Location | Element | Pattern |
+|----------|---------|---------|
+| `main.js` | Sidebar collapse arrow | `_getArrowEl()` — queries `#collapse-icon` or button's `firstElementChild` |
+| `queries.js` | Table collapse arrow | `_getCollapseIconEl()` — queries `#queries-collapse-icon` or button's `firstElementChild` |
 
 ---
 

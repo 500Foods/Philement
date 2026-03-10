@@ -50,7 +50,7 @@ table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     SELECT
-                        query_code,
+                        code,
                         summary,
                         collection
                     FROM
@@ -72,7 +72,7 @@ table.insert(queries,{sql=[[
 
                     ## Returns
 
-                    - `query_code` (text): The SQL code of the system query.
+                    - `code` (text): The SQL code of the system query.
                     - `summary` (text): A summary description of the system query.
                     - `collection` (JSON): Additional collection data associated with the system query.
 

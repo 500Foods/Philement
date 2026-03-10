@@ -52,7 +52,7 @@ table.insert(queries,{sql=[[
                     UPDATE
                         ${SCHEMA}queries
                     SET
-                        query_code = :QUERYCODE,
+                        code = :QUERYCODE,
                         name = :QUERYNAME,
                         summary = :QUERYSUMMARY,
                         query_type_a28 = :QUERYTYPE,

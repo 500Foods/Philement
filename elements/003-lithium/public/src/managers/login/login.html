@@ -8,18 +8,19 @@ l!--
 
   <!-- Main Login Panel -->
   <div class="login-container" id="login-panel" style="display: none;">
-    <!-- Header with logo and title -->
+    <!-- Header with logo and title as button group -->
     <div class="login-header">
-      <img src="/assets/images/logo-li.svg" alt="" class="login-logo" width="48" height="48">
-      <div class="login-header-text">
-        <h1>Lithium</h1>
-      </div>
-      <!-- Version info box -->
-      <div class="version-box" id="login-version-box">
-        <div class="version-row" id="login-version-build">1000</div>
-        <div class="version-row" id="login-version-year">2026</div>
-        <div class="version-row" id="login-version-date">0101</div>
-        <div class="version-row" id="login-version-time">0000</div>
+      <div class="login-header-group">
+        <button type="button" class="login-header-btn login-header-primary">
+          <img src="/assets/images/logo-li.svg" alt="" class="login-logo" width="48" height="48">
+          <span>Lithium</span>
+        </button>
+        <button type="button" class="login-header-btn login-header-version" id="login-version-btn">
+          <div class="version-row" id="login-version-build">1000</div>
+          <div class="version-row" id="login-version-year">2026</div>
+          <div class="version-row" id="login-version-date">0101</div>
+          <div class="version-row" id="login-version-time">0000</div>
+        </button>
       </div>
     </div>
 
