@@ -270,16 +270,15 @@ void cleanup_alt_query_resources(
 {
     if (database) free(database);
     if (query_id) free(query_id);
-    if (param_list) free_parameter_list(param_list);
-    if (converted_sql) free(converted_sql);
+    // CRITICAL: ordered_params contains pointers to TypedParameters owned by param_list.
+    // We must free ordered_params (array only) BEFORE param_list to avoid double-free.
+    // Do NOT call free_typed_parameter on ordered_params elements - they belong to param_list.
+    (void)param_count;  // param_count not needed since we don't free individual elements
     if (ordered_params) {
-        for (size_t i = 0; i < param_count; i++) {
-            if (ordered_params[i]) {
-                free_typed_parameter(ordered_params[i]);
-            }
-        }
         free(ordered_params);
     }
+    if (param_list) free_parameter_list(param_list);
+    if (converted_sql) free(converted_sql);
     if (message) free(message);
 }
 

@@ -56,7 +56,6 @@ table.insert(queries,{sql=[[
                         query_dialect_a30,
                         query_status_a27,
                         name,
-                        summary,
                         valid_after,
                         valid_until,
                         created_id,

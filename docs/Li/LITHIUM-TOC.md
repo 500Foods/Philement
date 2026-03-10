@@ -4,6 +4,18 @@ This directory contains the canonical documentation for the Lithium web applicat
 
 ---
 
+## Key Project Notes
+
+> **Important:** When working on Lithium, do NOT attempt to run the development server (`npm run dev`) to test changes. The project requires a running Hydrogen backend and specific environment configuration. Instead, ensure code correctness through:
+>
+> - Static analysis and code review
+> - ESLint validation when available
+> - Build verification (`npm run build`)
+>
+> Testing is performed in the CI/CD pipeline or manually in a properly configured environment.
+
+---
+
 ## Documentation Index
 
 | Document | Purpose |

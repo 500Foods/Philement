@@ -30,12 +30,29 @@
           <fa fa-pen-to-square></fa>
           <span>Rich Text</span>
         </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary" style="flex:1; cursor:default;"></button>
+        <div class="queries-toolbar-spacer"></div>
+        <div class="queries-toolbar">
+          <button type="button" class="queries-toolbar-btn" id="queries-undo-btn" title="Undo (Ctrl+Z)" disabled>
+            <fa fa-rotate-left></fa>
+          </button>
+          <button type="button" class="queries-toolbar-btn" id="queries-redo-btn" title="Redo (Ctrl+Y)" disabled>
+            <fa fa-rotate-right></fa>
+          </button>
+          <button type="button" class="queries-toolbar-btn" id="queries-font-decrease-btn" title="Decrease Font Size">
+            <fa fa-font></fa>
+          </button>
+          <button type="button" class="queries-toolbar-btn" id="queries-font-increase-btn" title="Increase Font Size">
+            <fa fa-font></fa>
+          </button>
+          <button type="button" class="queries-toolbar-btn" id="queries-prettify-btn" title="Pretty Print SQL">
+            <fa fa-spa></fa>
+          </button>
+        </div>
       </div>
     </div>
     <div class="queries-tabs-content">
       <div class="queries-tab-pane active" id="queries-tab-sql">
-        <!-- SQL Editor (CodeMirror) -->
+        <div class="queries-sql-editor" id="queries-sql-editor"></div>
       </div>
       <div class="queries-tab-pane" id="queries-tab-json">
         <!-- JSON Editor -->
