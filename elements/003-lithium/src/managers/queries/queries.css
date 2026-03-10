@@ -1,0 +1,147 @@
+.queries-manager-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.queries-left-panel {
+  display: flex;
+  flex-direction: column;
+  width: 300px; /* Initial width */
+  min-width: 200px;
+  max-width: 600px;
+  border-right: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  transition: width 0.3s ease, min-width 0.3s ease;
+}
+
+.queries-left-panel.collapsed {
+  width: 0 !important;
+  min-width: 0;
+  border-right: none;
+  overflow: hidden;
+}
+
+.queries-table-container {
+  flex: 1;
+  overflow: auto;
+  /* Tabulator styles will apply here */
+}
+
+.queries-navigator-container {
+  height: 40px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  background-color: var(--bg-tertiary);
+}
+
+.queries-search-box {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.queries-search-box input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin-right: 4px;
+}
+
+.queries-search-box button {
+  padding: 4px 8px;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.queries-search-box button:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.queries-splitter {
+  width: 4px;
+  cursor: col-resize;
+  background-color: var(--border-color);
+  transition: background-color 0.2s;
+}
+
+.queries-splitter.collapsed {
+  display: none;
+}
+
+.queries-splitter:hover,
+.queries-splitter.resizing {
+  background-color: var(--accent-color);
+}
+
+.queries-right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  overflow: hidden;
+}
+
+.queries-tabs-header {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  padding: 4px;
+}
+
+.queries-tab-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.queries-tab-btn.active {
+  background-color: var(--bg-tertiary);
+}
+
+.queries-collapse-btn {
+  flex: 0 0 auto;
+  margin-right: 8px;
+}
+
+/* Collapse icon rotation — target by ID regardless of what tag FA renders
+   (<fa> → <i> → possibly <svg>). Also target the button's first child
+   as a fallback for when the ID is lost during FA processing. */
+#queries-collapse-icon,
+#queries-collapse-btn > i,
+#queries-collapse-btn > svg {
+  transition: transform 0.3s ease;
+  transform: rotate(0deg); /* Pointing left initially (collapse) */
+}
+
+.queries-tabs-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.queries-tab-pane {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  padding: 16px;
+  overflow: auto;
+}
+
+.queries-tab-pane.active {
+  display: block;
+}

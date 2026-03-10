@@ -315,7 +315,7 @@ export default class LoginManager {
       helpCloseBtn: this.container.querySelector('#help-close-btn'),
       error: this.container.querySelector('#login-error'),
       errorText: this.container.querySelector('#login-error-text'),
-      versionBox: this.container.querySelector('#login-version-box'),
+      versionBox: this.container.querySelector('#login-version-btn'),
       versionBuild: this.container.querySelector('#login-version-build'),
       versionYear: this.container.querySelector('#login-version-year'),
       versionDate: this.container.querySelector('#login-version-date'),

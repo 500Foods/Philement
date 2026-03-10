@@ -1082,7 +1082,7 @@
     "/conduit/auth_queries": {
       "post": {
         "summary": "Execute multiple authenticated database queries in parallel",
-        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel with JWT authentication. The database name is extracted from the JWT token claims, ensuring secure routing. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Subject to rate limiting based on MaxQueriesPerRequest configuration (default: 10).",
+        "description": "Executes multiple pre-defined queries from the Query Table Cache in parallel with JWT authentication. The database name is extracted from the JWT token claims via the Authorization header, ensuring secure routing. Supports typed parameters (INTEGER, STRING, BOOLEAN, FLOAT) for each query. Returns an array of query results in JSON format with execution metadata. Subject to rate limiting based on MaxQueriesPerRequest configuration (default: 10).",
         "operationId": "executeAuthenticatedQueriesByReferencePost",
         "tags": [
           "Conduit Service"
@@ -1093,96 +1093,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "success",
-                    "results"
-                  ],
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Indicates all queries executed successfully",
-                      "example": true
-                    },
-                    "results": {
-                      "type": "array",
-                      "description": "Array of query results",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "success",
-                          "query_ref"
-                        ],
-                        "properties": {
-                          "success": {
-                            "type": "boolean",
-                            "description": "Indicates successful query execution",
-                            "example": true
-                          },
-                          "query_ref": {
-                            "type": "integer",
-                            "description": "The query reference ID that was executed",
-                            "example": 1234
-                          },
-                          "description": {
-                            "type": "string",
-                            "description": "Human-readable description of the query",
-                            "example": "Fetch user profile by ID"
-                          },
-                          "rows": {
-                            "type": "array",
-                            "description": "Array of result rows as JSON objects",
-                            "items": {
-                              "type": "object"
-                            },
-                            "example": [
-                              {
-                                "user_id": 123,
-                                "username": "johndoe",
-                                "email": "john@example.com",
-                                "is_active": true
-                              }
-                            ]
-                          },
-                          "row_count": {
-                            "type": "integer",
-                            "description": "Number of rows returned",
-                            "example": 1
-                          },
-                          "column_count": {
-                            "type": "integer",
-                            "description": "Number of columns in result",
-                            "example": 4
-                          },
-                          "execution_time_ms": {
-                            "type": "integer",
-                            "description": "Query execution time in milliseconds",
-                            "example": 45
-                          },
-                          "queue_used": {
-                            "type": "string",
-                            "description": "Database queue that handled the request",
-                            "example": "fast"
-                          },
-                          "error": {
-                            "type": "string",
-                            "description": "Error message if query failed",
-                            "example": "Query not found"
-                          }
-                        }
-                      }
-                    },
-                    "database": {
-                      "type": "string",
-                      "description": "Database extracted from JWT token",
-                      "example": "Acuranzo"
-                    },
-                    "total_execution_time_ms": {
-                      "type": "integer",
-                      "description": "Total time for all queries in milliseconds",
-                      "example": 145
-                    }
-                  }
+                  "type": "object"
                 }
               }
             }
@@ -1201,7 +1112,7 @@
                     "error": {
                       "type": "string",
                       "description": "Error message",
-                      "example": "Missing required parameter: token"
+                      "example": "Missing required parameter: queries"
                     }
                   }
                 }
@@ -1278,15 +1189,9 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "token",
                   "queries"
                 ],
                 "properties": {
-                  "token": {
-                    "type": "string",
-                    "description": "JWT bearer token (required)",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                  },
                   "queries": {
                     "type": "array",
                     "description": "Array of queries to execute in parallel (required)",

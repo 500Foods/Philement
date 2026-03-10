@@ -27,15 +27,22 @@ Lithium uses **Vitest** as the test runner with **happy-dom** for DOM testing. T
 
 ```structure
 tests/
-└── unit/                    # Unit tests
-    ├── event-bus.test.js    # 6 tests
-    ├── jwt.test.js          # 25 tests
-    ├── permissions.test.js   # 23 tests
-    ├── config.test.js       # 13 tests
-    ├── utils.test.js        # 38 tests
-    ├── json-request.test.js # 14 tests
-    ├── lookups.test.js      # 8 tests
-    ├── icons.test.js        # 26 tests
+├── unit/                        # Unit tests
+│   ├── conduit.test.js          # 34 tests
+│   ├── config.test.js           # 13 tests
+│   ├── event-bus.test.js        # 6 tests
+│   ├── icons.test.js            # 26 tests
+│   ├── json-request.test.js     # 28 tests
+│   ├── jwt.test.js              # 25 tests
+│   ├── languages.test.js        # 26 tests
+│   ├── log-formatter.test.js    # 18 tests
+│   ├── log.test.js              # 47 tests
+│   ├── lookups.test.js          # 26 tests
+│   ├── permissions.test.js      # 23 tests
+│   ├── transitions.test.js      # 32 tests
+│   └── utils.test.js            # 38 tests
+└── integration/                 # Integration tests
+    ├── app-imports.test.js      # 3 tests
     └── auth.integration.test.js # 12 tests
 ```
 

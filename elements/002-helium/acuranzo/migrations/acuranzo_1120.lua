@@ -54,7 +54,7 @@ table.insert(queries,{sql=[[
                         query_ref,
                         name,
                         summary,
-                        query_code,
+                        code,
                         query_status_a27,
                         query_type_a28,
                         query_dialect_a30,

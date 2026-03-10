@@ -36,50 +36,93 @@
   display: flex;
   position: relative;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  justify-content: center;
+  margin: var(--space-5);
   color: white;
+  border-radius: var(--border-radius-md);
 }
 
-.login-logo {
-  width: 48px;
-  height: 48px;
+/* Header button group - matches footer button group styling */
+.login-header-group {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+  outline: 10px solid var(--accent-primary);
+  outline-offset: -20px;
+  line-height: 1;
+}
+
+.login-header-group > .login-header-btn {
+  margin: 0;
+  border-radius: 0;
+  z-index: 1;
+}
+
+/* Left button (logo + title) - rounded left corners */
+.login-header-group > .login-header-btn:first-child {
+  border-top-left-radius: var(--border-radius-md);
+  border-bottom-left-radius: var(--border-radius-md);
+  padding: var(--space-5);
+  flex: 1;
+}
+
+/* Right button (version) - rounded right corners */
+.login-header-group > .login-header-btn:last-child {
+  border-top-right-radius: var(--border-radius-md);
+  border-bottom-right-radius: var(--border-radius-md);
+  width: 37px;
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+}
+
+/* Primary header button with logo and title */
+.login-header-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--accent-primary);
+  border: none;
+  color: white;
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  cursor: default;
+  transition: background-color var(--transition-fast);
+}
+
+.login-header-primary .login-logo {
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
 }
 
-.login-logo svg {
+.login-header-primary .login-logo svg {
   width: 100%;
   height: 100%;
   fill: currentColor;
 }
 
-.login-header-text h1 {
-  font-size: var(--font-size-2xl);
-  font-weight: 600;
-  margin: 0;
+.login-header-primary span {
+  font-size: var(--font-size-xl);
+}
+
+/* Version button in header */
+.login-header-version {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px var(--space-3);
+  background-color: var(--accent-primary);
+  border: none;
   color: white;
+  cursor: default;
+  transition: background-color var(--transition-fast);
 }
 
-.login-header-text p {
-  font-size: var(--font-size-sm);
-  margin: var(--space-1) 0 0;
-  opacity: 0.9;
-  color: white;
-}
-
-/* Login header version info box */
-.login-header .version-box {
-  display: block;
-  padding: 6px 5px 4px 5px;
-  background: #00000040;
-  border: 1px solid rgba(255,255,255,.15);
-  border-radius: var(--border-radius-sm);
-  position: absolute;
-  right: var(--space-5);
-}
-
-.login-header .version-row {
+.login-header-version .version-row {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   font-weight: 500;

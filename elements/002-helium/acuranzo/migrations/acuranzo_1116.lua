@@ -65,9 +65,9 @@ table.insert(queries,{sql=[[
                         updated_at,
                         (${SIZE_INTEGER} * 7)
                         + (${SIZE_TIMESTAMP} * 4)
-                        + COALESCE(LENGTHh(name),0)
+                        + COALESCE(LENGTH(name),0)
                         + COALESCE(LENGTH(summary),0)
-                        + COALESCE(LENGTH(query_code),0)
+                        + COALESCE(LENGTH(code),0)
                         + ${SIZE_COLLECTION}
                         record_size
                     FROM

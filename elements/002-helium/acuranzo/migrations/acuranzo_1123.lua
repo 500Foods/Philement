@@ -66,14 +66,14 @@ table.insert(queries,{sql=[[
                         + (${SIZE_TIMESTAMP} * 4)
                         + COALESCE(LENGTH(name), 0)
                         + COALESCE(LENGTH(summary), 0)
-                        + COALESCE(LENGTH(query_code), 0)
+                        + COALESCE(LENGTH(code), 0)
                         + ${SIZE_COLLECTION}
                         record_size
                     FROM
                         ${SCHEMA}queries
                     WHERE
                         (UPPER(name) LIKE '%' || :SEARCH || '%')
-                        OR (UPPER(query_code) LIKE '%' || :SEARCH || '%')
+                        OR (UPPER(code) LIKE '%' || :SEARCH || '%')
                         OR (UPPER(summary) LIKE '%' || :SEARCH || '%')
                         OR (UPPER(collection) LIKE '%' || :SEARCH || '%')
                     ORDER BY
