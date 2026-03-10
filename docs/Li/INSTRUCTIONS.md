@@ -134,7 +134,7 @@ A **manager** is a user-facing feature set with UI. Each manager:
 ### Manager Class Structure
 
 ```javascript
-// src/managers/example-manager/index.js
+// src/managers/example-manager/example-manager.js
 export default class ExampleManager {
   constructor(app, container) {
     this.app = app;
@@ -193,10 +193,10 @@ Menu managers are registered in [`app.js`](elements/003-lithium/src/app.js:32) w
 
 ```javascript
 this.managerRegistry = {
-  1: { id: 1, name: 'Style Manager', path: '/src/managers/style-manager/index.js' },
-  3: { id: 3, name: 'Dashboard', path: '/src/managers/dashboard/index.js' },
-  4: { id: 4, name: 'Lookups', path: '/src/managers/lookups/index.js' },
-  5: { id: 5, name: 'Queries', path: '/src/managers/queries/index.js' },
+  1: { id: 1, name: 'Style Manager', path: '/src/managers/style-manager/style-manager.js' },
+  3: { id: 3, name: 'Dashboard', path: '/src/managers/dashboard/dashboard.js' },
+  4: { id: 4, name: 'Lookups', path: '/src/managers/lookups/lookups.js' },
+  5: { id: 5, name: 'Queries', path: '/src/managers/queries/queries.js' },
 };
 ```
 
@@ -226,7 +226,7 @@ Utility managers:
 #### Menu Manager (sidebar navigation)
 
 1. Create directory: `src/managers/new-manager/`
-2. Create `index.js` with manager class
+2. Create `new-manager.js` with manager class
 3. Create `new-manager.html` template
 4. Create `new-manager.css` styles
 5. Register in `app.js` `managerRegistry` with numeric ID
@@ -236,7 +236,7 @@ Utility managers:
 #### Utility Manager (sidebar footer)
 
 1. Create directory: `src/managers/new-manager/`
-2. Create `index.js` with manager class
+2. Create `new-manager.js` with manager class
 3. Create `new-manager.html` template
 4. Create `new-manager.css` styles
 5. Register in `app.js`:
@@ -1020,7 +1020,7 @@ This gives a small rollback window without leaving hundreds of obsolete hashed a
 
 ### Adding a New Menu Manager
 
-1. Create `src/managers/new-manager/index.js`
+1. Create `src/managers/new-manager/new-manager.js`
 2. Create `src/managers/new-manager/new-manager.html`
 3. Create `src/managers/new-manager/new-manager.css`
 4. Register in `app.js` `managerRegistry` with numeric ID
@@ -1028,7 +1028,7 @@ This gives a small rollback window without leaving hundreds of obsolete hashed a
 
 ### Adding a New Utility Manager
 
-1. Create `src/managers/new-manager/index.js`
+1. Create `src/managers/new-manager/new-manager.js`
 2. Create `src/managers/new-manager/new-manager.html`
 3. Create `src/managers/new-manager/new-manager.css`
 4. Register in `app.js`:
