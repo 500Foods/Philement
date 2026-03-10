@@ -7,17 +7,19 @@
 
 ---
 
-## 📚 Documentation Index
+## Documentation Index
 
-### Core Documentation
+### New Split Documentation (Recommended)
 
 | Document | Purpose |
 |----------|---------|
-| [🏗️ BLUEPRINT.md](BLUEPRINT.md) | **Architecture blueprint** - Technical specification, implementation phases, deployment details |
-| [📖 INSTRUCTIONS.md](INSTRUCTIONS.md) | **Developer guide** - How to work with the codebase, manager system, event bus, testing |
-| [🔧 BUILD.md](BUILD.md) | Build configuration, deployment scripts, CI/CD setup |
-| [🧪 TESTING.md](TESTING.md) | Testing framework, coverage reports, test writing guide |
-| [📋 LICENSE.md](LICENSE.md) | MIT License |
+| [LITHIUM-TOC.md](LITHIUM-TOC.md) | Table of contents and overview |
+| [LITHIUM-DEV.md](LITHIUM-DEV.md) | Development environment and build tools |
+| [LITHIUM-TST.md](LITHIUM-TST.md) | Testing framework and coverage |
+| [LITHIUM-LIB.md](LITHIUM-LIB.md) | JavaScript libraries |
+| [LITHIUM-MGR.md](LITHIUM-MGR.md) | Manager system (implemented and planned) |
+| [LITHIUM-FAQ.md](LITHIUM-FAQ.md) | Lessons learned and troubleshooting |
+| [LITHIUM-WEB.md](LITHIUM-WEB.md) | Deployment process |
 
 ---
 
@@ -44,55 +46,20 @@ npm run deploy
 
 ---
 
-## 📁 Documentation Guide
+## Documentation Guide
 
-### For New Developers
+### For Developers Working on
 
-Start here to understand the codebase:
-
-1. **[INSTRUCTIONS.md](INSTRUCTIONS.md)** - Comprehensive developer guide
-   - Project structure
-   - Manager system architecture
-   - Event bus usage
-   - CSS architecture and variables
-   - Authentication (JWT)
-   - Permissions (Punchcard)
-   - Testing guide
-   - Troubleshooting
-
-### For Architects
-
-Deep technical details:
-
-1. **[BLUEPRINT.md](BLUEPRINT.md)** - Technical specification
-   - Project goals and tech stack
-   - Bootstrap flow
-   - JWT claims and handling
-   - Event bus standard events
-   - CSS architecture
-   - Implementation phases
-   - Deployment process
-   - Known limitations
-
-### For DevOps
-
-Build and deployment:
-
-1. **[BUILD.md](BUILD.md)** - Build system
-   - Vite configuration
-   - Production builds
-   - Environment variables
-   - Deployment scripts
-
-2. **[TESTING.md](TESTING.md)** - Testing infrastructure
-   - Vitest configuration
-   - Test organization
-   - Coverage reports
-   - CI/CD integration
+- **Getting started:** [LITHIUM-DEV.md](LITHIUM-DEV.md)
+- **Adding features/managers:** [LITHIUM-MGR.md](LITHIUM-MGR.md)
+- **Using libraries:** [LITHIUM-LIB.md](LITHIUM-LIB.md)
+- **Testing:** [LITHIUM-TST.md](LITHIUM-TST.md)
+- **Deployment:** [LITHIUM-WEB.md](LITHIUM-WEB.md)
+- **Troubleshooting:** [LITHIUM-FAQ.md](LITHIUM-FAQ.md)
 
 ---
 
-## 🏗 Architecture Overview
+## Architecture Overview
 
 ### Tech Stack
 
@@ -125,14 +92,15 @@ class ExampleManager {
 - ✅ Login Manager - JWT authentication
 - ✅ Main Manager - Sidebar + header + workspace
 - ✅ Style Manager - Theme management with Tabulator/CodeMirror
-- ⬜ Profile Manager - User preferences
+- ✅ Session Log - Utility manager for session logs
+- ✅ User Profile - Utility manager for preferences
 - ⬜ Dashboard - (placeholder)
 - ⬜ Lookups - (placeholder)
 - ⬜ Queries - (placeholder)
 
 ---
 
-## 📊 Current Status
+## Current Status
 
 ### Implementation Phases
 
@@ -148,17 +116,16 @@ class ExampleManager {
 
 ### Test Coverage
 
-#### 127 tests, 0 failures
+#### 171 tests, 0 failures
 
-| Module | Statements | Branch | Functions | Lines |
-|--------|-----------|--------|-----------|-------|
-| event-bus.js | 100% | 100% | 100% | 100% |
-| config.js | 100% | 90% | 100% | 100% |
-| permissions.js | 96% | 95% | 100% | 96% |
-| utils.js | 88% | 86% | 92% | 88% |
-| jwt.js | 75% | 73% | 75% | 75% |
-| json-request.js | 40% | 31% | 50% | 40% |
-| lookups.js | 37% | 18% | 50% | 37% |
+| Module | Coverage |
+|--------|----------|
+| event-bus.js | 100% |
+| config.js | 100% |
+| permissions.js | 96% |
+| utils.js | 88% |
+| icons.js | 85% |
+| jwt.js | 75% |
 
 ---
 
@@ -175,7 +142,7 @@ class ExampleManager {
 
 ```structure
 elements/003-lithium/
-├── README.md              # ⬅️ Project overview (TOC)
+├── README.md              # ⬅️ Project overview
 ├── package.json           # Dependencies and scripts
 ├── vite.config.js         # Vite configuration
 ├── vitest.config.js       # Vitest configuration
@@ -185,21 +152,30 @@ elements/003-lithium/
 ├── src/
 │   ├── app.js             # Main application bootstrap
 │   ├── core/              # Core modules
-│   │   ├── event-bus.js   # Event system
-│   │   ├── jwt.js         # JWT handling
-│   │   ├── config.js      # Configuration loader
-│   │   ├── permissions.js # Permission system
+│   │   ├── event-bus.js  # Event system
+│   │   ├── jwt.js        # JWT handling
+│   │   ├── config.js     # Configuration loader
+│   │   ├── permissions.js# Permission system
 │   │   ├── json-request.js# HTTP client
-│   │   └── utils.js       # Utilities
+│   │   └── utils.js     # Utilities
 │   ├── managers/          # Feature modules
-│   │   ├── login/         # Login manager
-│   │   ├── main/          # Main layout
-│   │   └── style-manager/ # Theme management
-│   ├── shared/            # Shared utilities
-│   └── styles/            # CSS files
-├── tests/unit/            # Unit tests
-└── public/                # Static assets
+│   │   ├── login/        # Login manager
+│   │   ├── main/         # Main layout
+│   │   ├── style-manager/# Theme management
+│   │   └── ...
+│   ├── shared/           # Shared utilities
+│   └── styles/           # CSS files
+├── tests/unit/           # Vitest tests
+└── public/               # Static assets
 ```
+
+---
+
+## Other Files
+
+| Document | Purpose |
+|----------|---------|
+| [LICENSE.md](LICENSE.md) | MIT License |
 
 ---
 
