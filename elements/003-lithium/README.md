@@ -13,11 +13,13 @@
 
 | Document | Description |
 |----------|-------------|
-| [📋 BLUEPRINT.md](/docs/Li/BLUEPRINT.md) | **Architecture blueprint** - Start here for technical details |
-| [📖 INSTRUCTIONS.md](/docs/Li/INSTRUCTIONS.md) | **Developer guide** - How to work with the codebase |
-| [🔧 BUILD.md](/docs/Li/BUILD.md) | Build process and deployment |
-| [🧪 TESTING.md](/docs/Li/TESTING.md) | Testing framework and coverage |
-| [📄 README.md](/docs/Li/README.md) | Full documentation index |
+| [LITHIUM-TOC.md](/docs/Li/LITHIUM-TOC.md) | **Table of contents** - Start here |
+| [LITHIUM-DEV.md](/docs/Li/LITHIUM-DEV.md) | **Development guide** - Environment, npm scripts, Vite/Vitest |
+| [LITHIUM-TST.md](/docs/Li/LITHIUM-TST.md) | **Testing** - Vitest, coverage, best practices |
+| [LITHIUM-LIB.md](/docs/Li/LITHIUM-LIB.md) | **Libraries** - Tabulator, CodeMirror, DOMPurify |
+| [LITHIUM-MGR.md](/docs/Li/LITHIUM-MGR.md) | **Managers** - Implemented and planned features |
+| [LITHIUM-FAQ.md](/docs/Li/LITHIUM-FAQ.md) | **FAQ** - Lessons learned, troubleshooting |
+| [LITHIUM-WEB.md](/docs/Li/LITHIUM-WEB.md) | **Deployment** - Process, configuration |
 
 ### 🚀 Quick Start
 
@@ -38,7 +40,9 @@ npm run test:coverage
 npm run deploy
 ```
 
-### 📁 Project Structure
+---
+
+## Project Structure
 
 ```structure
 elements/003-lithium/
@@ -48,13 +52,13 @@ elements/003-lithium/
 │   ├── managers/           # Feature modules (login, main, style-manager)
 │   ├── shared/             # Shared utilities
 │   └── styles/             # CSS architecture
-├── public/                 # Static assets
+├── public/                  # Static assets
 │   ├── assets/             # Fonts, images
 │   ├── coverage/           # Test coverage report
 │   └── src/managers/       # HTML templates for production
 ├── tests/unit/             # Vitest unit tests
-├── config/                 # Runtime configuration
-└── docs/Li/                # 📚 Full documentation
+├── config/                  # Runtime configuration
+└── docs/Li/                 # 📚 Full documentation
 ```
 
 ---
@@ -63,10 +67,10 @@ elements/003-lithium/
 
 ✅ **Phase 0-3 Complete:** Foundation, Login, Main Layout  
 ✅ **Phase 4 Complete:** Style Manager (Tabulator, CodeMirror, DOMPurify)  
-⬜ **Phase 5:** Profile Manager  
-⬜ **Phase 6:** Integration tests and polish
+✅ **Utility Managers:** Session Log, User Profile  
+⬜ **Phase 5:** Dashboard, Lookups, Queries placeholders  
 
-**Test Coverage:** 127 tests, 0 failures  
+**Test Coverage:** 171 tests, 0 failures  
 
 | Module | Coverage |
 |--------|----------|
@@ -74,7 +78,6 @@ elements/003-lithium/
 | config.js | 100% |
 | permissions.js | 96% |
 | utils.js | 88% |
-| jwt.js | 75% |
 
 ---
 
@@ -110,25 +113,14 @@ npm run deploy
 
 ### For Developers
 
-1. Start with [**INSTRUCTIONS.md**](/docs/Li/INSTRUCTIONS.md) for:
-   - Project structure
-   - Manager system architecture
-   - Event bus usage
-   - CSS architecture
-   - Testing guide
-   - Troubleshooting
-
-2. Reference [**BLUEPRINT.md**](/docs/Li/BLUEPRINT.md) for:
-   - Technical architecture
-   - Bootstrap flow
-   - JWT handling
-   - Permissions (Punchcard)
-   - Implementation phases
+1. Start with [**LITHIUM-TOC.md**](/docs/Li/LITHIUM-TOC.md) for the index
+2. Reference [**LITHIUM-DEV.md**](/docs/Li/LITHIUM-DEV.md) for development setup
+3. Check [**LITHIUM-MGR.md**](/docs/Li/LITHIUM-MGR.md) for manager patterns
 
 ### For DevOps
 
-1. [**BUILD.md**](/docs/Li/BUILD.md) - Build configuration and scripts
-2. [**TESTING.md**](/docs/Li/TESTING.md) - Testing infrastructure and coverage
+- [**LITHIUM-WEB.md**](/docs/Li/LITHIUM-WEB.md) - Deployment configuration
+- [**LITHIUM-TST.md**](/docs/Li/LITHIUM-TST.md) - Testing infrastructure
 
 ---
 
