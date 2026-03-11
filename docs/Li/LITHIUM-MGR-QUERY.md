@@ -64,3 +64,25 @@ A tabbed interface displaying the details of the selected query.
 - [ ] Ensure responsive design (handling the split pane on smaller screens).
 - [ ] Add necessary event bus communication.
 - [ ] Final testing and refinement.
+
+---
+
+## Implementation Notes
+
+### QueryRef 27 - Get System Query
+
+When fetching full query details (QueryRef 27), pass `QUERYID` (the query's unique database identifier) rather than `QUERY_REF` (the display reference number):
+
+```javascript
+// CORRECT - uses query_id from the selected row
+const queryDetails = await authQuery(api, 27, {
+  INTEGER: { QUERYID: queryData.query_id },
+});
+
+// INCORRECT - was previously using query_ref (the display reference number)
+const queryDetails = await authQuery(api, 27, {
+  INTEGER: { QUERY_REF: queryData.query_ref },
+});
+```
+
+The table displays `query_ref` (the human-readable reference like "001"), but the API requires `query_id` (the database primary key) to fetch the full query details.

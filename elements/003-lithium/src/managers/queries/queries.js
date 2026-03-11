@@ -5,7 +5,7 @@
  */
 
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
-import 'tabulator-tables/dist/css/tabulator.min.css';
+import 'tabulator-tables/dist/css/tabulator_midnight.min.css';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import './queries.css';
@@ -30,6 +30,8 @@ export default class QueriesManager {
     
     // CodeMirror editor instance
     this.sqlEditor = null;
+    this.summaryEditor = null;
+    this.collectionEditor = null;
     this.currentQuery = null;
     
     // Font size state
@@ -69,6 +71,10 @@ export default class QueriesManager {
       collapseBtn: this.container.querySelector('#queries-collapse-btn'),
       collapseIcon: this.container.querySelector('#queries-collapse-icon'),
       sqlEditorContainer: this.container.querySelector('#queries-sql-editor'),
+      summaryEditorContainer: this.container.querySelector('#queries-tab-summary'),
+      collectionEditorContainer: this.container.querySelector('#queries-tab-collection'),
+      previewContainer: this.container.querySelector('#queries-tab-preview'),
+      testContainer: this.container.querySelector('#queries-tab-test'),
       // Toolbar buttons
       undoBtn: this.container.querySelector('#queries-undo-btn'),
       redoBtn: this.container.querySelector('#queries-redo-btn'),
@@ -159,22 +165,45 @@ export default class QueriesManager {
     
     // Enable/disable toolbar buttons based on tab
     const isSqlTab = tabId === 'sql';
-    const buttons = [this.elements.undoBtn, this.elements.redoBtn, this.elements.fontDecreaseBtn, this.elements.fontIncreaseBtn, this.elements.prettifyBtn];
+    const buttons = [this.elements.undoBtn, this.elements.redoBtn, this.elements.fontDecreaseBtn, this.elements.fontIncreaseBtn];
     buttons.forEach(btn => {
       if (btn) {
-        // Only disable undo/redo based on actual state, keep font buttons enabled if on SQL tab
-        if (!isSqlTab) {
-          btn.disabled = true;
-        } else if (btn === this.elements.undoBtn || btn === this.elements.redoBtn) {
-          // Keep undo/redo enabled - state will be updated by updateToolbarState
-          btn.disabled = false;
-        }
+        btn.disabled = !isSqlTab;
       }
     });
     
-    // Initialize SQL editor when switching to SQL tab
-    if (tabId === 'sql' && !this.sqlEditor) {
-      this.initSqlEditor(this.currentQuery?.query_text || this.currentQuery?.sql || '');
+    // Prettify button should be enabled when SQL tab is visible
+    if (this.elements.prettifyBtn) {
+      this.elements.prettifyBtn.disabled = !isSqlTab;
+    }
+    
+    // Initialize editors when switching to their tabs
+    if (tabId === 'sql') {
+      const sqlContent = this._pendingSqlContent || this.currentQuery?.code || this.currentQuery?.query_text || this.currentQuery?.sql || '';
+      if (!this.sqlEditor) {
+        this.initSqlEditor(sqlContent);
+      }
+    }
+    
+    // Initialize summary editor if needed
+    if (tabId === 'summary') {
+      const summaryContent = this._pendingSummaryContent || this.currentQuery?.summary || this.currentQuery?.markdown || '';
+      if (!this.summaryEditor) {
+        this.initSummaryEditor(summaryContent);
+      }
+    }
+    
+    // Initialize collection editor if needed
+    if (tabId === 'collection') {
+      let collectionContent = this._pendingCollectionContent || this.currentQuery?.collection || this.currentQuery?.json || {};
+      if (!this.collectionEditor) {
+        this.initCollectionEditor(collectionContent);
+      }
+    }
+    
+    // Render preview if needed
+    if (tabId === 'preview') {
+      this.renderMarkdownPreview();
     }
   }
 
@@ -184,9 +213,12 @@ export default class QueriesManager {
       layout: "fitColumns",
       responsiveLayout: "collapse",
       selectableRows: 1,
+      resizableColumns: false,
+      // Custom dual-arrow sort indicator (▲/▼ with active direction highlighted)
+      headerSortElement: '<span class="queries-sort-icons"><span class="queries-sort-asc">▲</span><span class="queries-sort-desc">▼</span></span>',
       columns: [
-        { title: "Ref", field: "query_ref", width: 80 },
-        { title: "Name", field: "name" },
+        { title: "Ref", field: "query_ref", width: 80, headerSort: true },
+        { title: "Name", field: "name", headerSort: true },
       ],
     });
 
@@ -232,17 +264,17 @@ export default class QueriesManager {
     this.currentQuery = queryData;
     
     // Fetch full query details using QueryRef 27
-    this.fetchQueryDetails(queryData.query_ref);
+    this.fetchQueryDetails(queryData.query_id);
   }
 
   /**
    * Fetch full query details from the API
    */
-  async fetchQueryDetails(queryRef) {
+  async fetchQueryDetails(queryId) {
     try {
       // QueryRef 27: Get System Query - returns full query details
       const queryDetails = await authQuery(this.app.api, 27, {
-        INTEGER: { QUERY_REF: queryRef },
+        INTEGER: { QUERYID: queryId },
       });
       
       if (queryDetails && queryDetails.length > 0) {
@@ -251,13 +283,55 @@ export default class QueriesManager {
         // Update current query with full details
         this.currentQuery = fullQuery;
         
-        // Get SQL content from query
-        const sqlContent = fullQuery.query_text || fullQuery.sql || '';
+        // Get content from API response - using correct field names from QueryRef 27
+        const sqlContent = fullQuery.code || fullQuery.query_text || fullQuery.sql || '';
+        const summaryContent = fullQuery.summary || fullQuery.markdown || '';
+        const collectionContent = fullQuery.collection || fullQuery.json || {};
         
         // Initialize or update the SQL editor with the query content
-        this.initSqlEditor(sqlContent);
+        // Only initialize if we're on the SQL tab or if editor doesn't exist
+        if (this.sqlEditor) {
+          this.sqlEditor.dispatch({
+            changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: sqlContent },
+          });
+        }
         
-        console.log('Loaded query details:', fullQuery);
+        // Update summary content if editor exists
+        if (this.summaryEditor) {
+          this.summaryEditor.dispatch({
+            changes: { from: 0, to: this.summaryEditor.state.doc.length, insert: summaryContent },
+          });
+        }
+        
+        // Update collection content if editor exists
+        if (this.collectionEditor) {
+          const collectionStr = typeof collectionContent === 'object' 
+            ? JSON.stringify(collectionContent, null, 2) 
+            : collectionContent;
+          this.collectionEditor.dispatch({
+            changes: { from: 0, to: this.collectionEditor.state.doc.length, insert: collectionStr },
+          });
+        }
+        
+        // Store data for lazy initialization
+        this._pendingSqlContent = sqlContent;
+        this._pendingSummaryContent = summaryContent;
+        this._pendingCollectionContent = collectionContent;
+        
+        // If SQL tab is currently active, initialize the editor immediately
+        const sqlTabBtn = document.querySelector('.queries-tab-btn[data-tab="sql"]');
+        const isSqlTabActive = sqlTabBtn?.classList.contains('active');
+        
+        if (isSqlTabActive && !this.sqlEditor) {
+          this.initSqlEditor(sqlContent);
+        } else if (this.sqlEditor && sqlContent) {
+          // Editor exists, update content
+          this.sqlEditor.dispatch({
+            changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: sqlContent },
+          });
+        }
+        
+//        console.log('Loaded query details:', fullQuery);
       }
     } catch (error) {
       // Show detailed error toast - title comes from serverError.error, description from serverError.message
@@ -396,6 +470,203 @@ export default class QueriesManager {
   }
 
   /**
+   * Initialize CodeMirror Summary editor (Markdown)
+   */
+  async initSummaryEditor(initialContent = '') {
+    if (!this.elements.summaryEditorContainer) return;
+    
+    // Use pending content if available
+    if (!initialContent && this._pendingSummaryContent) {
+      initialContent = this._pendingSummaryContent;
+    }
+    
+    // If editor already exists, just update content
+    if (this.summaryEditor) {
+      this.summaryEditor.dispatch({
+        changes: { from: 0, to: this.summaryEditor.state.doc.length, insert: initialContent },
+      });
+      return;
+    }
+
+    try {
+      // Dynamic import CodeMirror packages
+      const [
+        { EditorState },
+        { EditorView, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, highlightActiveLine, keymap },
+        { defaultKeymap, history, historyKeymap },
+        { markdown },
+        { oneDark },
+      ] = await Promise.all([
+        import('@codemirror/state'),
+        import('@codemirror/view'),
+        import('@codemirror/commands'),
+        import('@codemirror/lang-markdown'),
+        import('@codemirror/theme-one-dark'),
+      ]);
+
+      // Create editor state with Markdown support
+      const startState = EditorState.create({
+        doc: initialContent,
+        extensions: [
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightSpecialChars(),
+          history(),
+          drawSelection(),
+          highlightActiveLine(),
+          keymap.of([...defaultKeymap, ...historyKeymap]),
+          markdown(),
+          oneDark,
+          EditorView.theme({
+            '&': { height: '100%', fontSize: '14px' },
+            '.cm-scroller': { overflow: 'auto' },
+            '.cm-content': { fontFamily: 'var(--font-mono, monospace)' },
+          }),
+        ],
+      });
+
+      this.summaryEditor = new EditorView({
+        state: startState,
+        parent: this.elements.summaryEditorContainer,
+      });
+    } catch (error) {
+      console.error('[QueriesManager] Failed to initialize Summary editor:', error);
+      // Fallback to textarea
+      this.elements.summaryEditorContainer.innerHTML = `
+        <textarea id="queries-summary-editor-fallback" 
+          style="width:100%;height:100%;background:var(--bg-secondary);color:var(--text-primary);border:none;padding:16px;font-family:var(--font-mono);font-size:14px;">
+          ${initialContent}
+        </textarea>`;
+    }
+  }
+
+  /**
+   * Initialize CodeMirror Collection editor (JSON)
+   */
+  async initCollectionEditor(initialContent = {}) {
+    if (!this.elements.collectionEditorContainer) return;
+    
+    // Use pending content if available
+    let content = initialContent;
+    if (!initialContent && this._pendingCollectionContent) {
+      content = this._pendingCollectionContent;
+    }
+    
+    // Convert object to JSON string if needed
+    const jsonContent = typeof content === 'object' 
+      ? JSON.stringify(content, null, 2) 
+      : content;
+    
+    // If editor already exists, just update content
+    if (this.collectionEditor) {
+      this.collectionEditor.dispatch({
+        changes: { from: 0, to: this.collectionEditor.state.doc.length, insert: jsonContent },
+      });
+      return;
+    }
+
+    try {
+      // Dynamic import CodeMirror packages
+      const [
+        { EditorState },
+        { EditorView, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, highlightActiveLine, keymap },
+        { defaultKeymap, history, historyKeymap },
+        { json },
+        { oneDark },
+      ] = await Promise.all([
+        import('@codemirror/state'),
+        import('@codemirror/view'),
+        import('@codemirror/commands'),
+        import('@codemirror/lang-json'),
+        import('@codemirror/theme-one-dark'),
+      ]);
+
+      // Create editor state with JSON support
+      const startState = EditorState.create({
+        doc: jsonContent,
+        extensions: [
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightSpecialChars(),
+          history(),
+          drawSelection(),
+          highlightActiveLine(),
+          keymap.of([...defaultKeymap, ...historyKeymap]),
+          json(),
+          oneDark,
+          EditorView.theme({
+            '&': { height: '100%', fontSize: '14px' },
+            '.cm-scroller': { overflow: 'auto' },
+            '.cm-content': { fontFamily: 'var(--font-mono, monospace)' },
+          }),
+        ],
+      });
+
+      this.collectionEditor = new EditorView({
+        state: startState,
+        parent: this.elements.collectionEditorContainer,
+      });
+    } catch (error) {
+      console.error('[QueriesManager] Failed to initialize Collection editor:', error);
+      // Fallback to textarea
+      this.elements.collectionEditorContainer.innerHTML = `
+        <textarea id="queries-collection-editor-fallback" 
+          style="width:100%;height:100%;background:var(--bg-secondary);color:var(--text-primary);border:none;padding:16px;font-family:var(--font-mono);font-size:14px;">
+          ${jsonContent}
+        </textarea>`;
+    }
+  }
+
+  /**
+   * Render Markdown as HTML in Preview tab
+   */
+  async renderMarkdownPreview() {
+    if (!this.elements.previewContainer) return;
+    
+    // Get content from summary editor or pending content
+    let markdownContent = '';
+    if (this.summaryEditor) {
+      markdownContent = this.summaryEditor.state.doc.toString();
+    } else if (this._pendingSummaryContent) {
+      markdownContent = this._pendingSummaryContent;
+    } else if (this.currentQuery?.summary) {
+      markdownContent = this.currentQuery.summary;
+    }
+    
+    if (!markdownContent.trim()) {
+      this.elements.previewContainer.innerHTML = '<p class="text-muted">No summary content to preview.</p>';
+      return;
+    }
+    
+    try {
+      // Dynamic import marked for markdown parsing
+      const { marked } = await import('marked');
+      
+      // Parse markdown to HTML
+      const htmlContent = await marked.parse(markdownContent);
+      
+      // Render in preview container with styling
+      this.elements.previewContainer.innerHTML = `
+        <div class="queries-preview-content">
+          ${htmlContent}
+        </div>
+      `;
+    } catch (error) {
+      console.error('[QueriesManager] Failed to render markdown preview:', error);
+      // Fallback: Show raw content
+      const escapedContent = markdownContent
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      this.elements.previewContainer.innerHTML = `
+        <div class="queries-preview-content">
+          <pre><code>${escapedContent}</code></pre>
+        </div>
+      `;
+    }
+  }
+
+  /**
    * Update toolbar button states based on editor state
    */
   updateToolbarState() {
@@ -517,10 +788,18 @@ export default class QueriesManager {
     document.removeEventListener('mousemove', this.handleSplitterMouseMove);
     document.removeEventListener('mouseup', this.handleSplitterMouseUp);
     
-    // Destroy CodeMirror editor
+    // Destroy CodeMirror editors
     if (this.sqlEditor) {
       this.sqlEditor.destroy();
       this.sqlEditor = null;
+    }
+    if (this.summaryEditor) {
+      this.summaryEditor.destroy();
+      this.summaryEditor = null;
+    }
+    if (this.collectionEditor) {
+      this.collectionEditor.destroy();
+      this.collectionEditor = null;
     }
   }
 }
