@@ -272,19 +272,18 @@
 /* ─── Toast Content (description + details) ───
    Hidden by default, shown when expanded */
 .toast-content {
-  display: none;
-  padding: 0.5rem 1rem 0.75rem;
+  height: 0;
+  overflow: hidden;
+  padding: 0 1rem;
   margin-left: 1rem;
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity var(--transition-delay) ease,
-              transform var(--transition-delay) ease;
+  transition: height var(--transition-delay) ease;
 }
 
-.toast-content-visible {
-  display: block;
-  opacity: 1;
-  transform: translateY(0);
+/* When expanded via JS, height becomes auto */
+.toast-content[style*="height: auto"] {
+  height: auto !important;
+  overflow: visible;
+  padding: 0.5rem 1rem 0.75rem;
 }
 
 /* ─── Toast Description ─── */
@@ -296,41 +295,8 @@
   margin-bottom: 0.5rem;
 }
 
-/* ─── Details Toggle Button ─── */
-.toast-details-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.5rem;
-  margin-top: 0.25rem;
-  background: transparent;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-  border-radius: 4px;
-  color: var(--text-secondary, #9aa0a6);
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: background var(--transition-delay) ease, color var(--transition-delay) ease, border-color var(--transition-delay) ease;
-}
-
-.toast-details-toggle:hover {
-  background: var(--bg-hover, rgba(255, 255, 255, 0.1));
-  color: var(--text-primary, #e8eaed);
-  border-color: var(--border-hover, rgba(255, 255, 255, 0.2));
-}
-
-.toast-details-toggle i {
-  font-size: 0.625rem;
-  transition: transform var(--transition-delay) ease;
-}
-
-.toast-details-visible + .toast-details-toggle i,
-.toast-details-toggle[aria-expanded="true"] i {
-  transform: rotate(180deg);
-}
-
-/* ─── Details Section ─── */
+/* ─── Details Section (shown directly after description when content expanded) ─── */
 .toast-details {
-  display: none;
   margin-top: 0.5rem;
   padding: 0.5rem;
   background: var(--bg-secondary, rgba(0, 0, 0, 0.2));
@@ -339,8 +305,10 @@
   color: var(--text-secondary, #9aa0a6);
 }
 
-.toast-details-visible {
-  display: block;
+.toast-details-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
 }
 
 .toast-details-content {

@@ -141,6 +141,7 @@ p, h1, h2, h3, h4, h5, h6 {
   --transition-fast: calc(var(--transition-duration) * 0.3) ease;
   --transition-std: var(--transition-duration) ease;
   --transition-slow: calc(var(--transition-duration) * 2) ease;
+  --transition-delay: calc(var(--transition-duration) / 2); /* For icon rotations, expand/collapse */
 
   /* Scrollbar - explicit size for WebKit, Firefox uses scrollbar-width property */
   --scrollbar-size: 10px;

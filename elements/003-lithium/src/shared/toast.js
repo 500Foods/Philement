@@ -127,28 +127,18 @@ class ToastManager {
     html += '</div>'; // .toast-header-group
     html += '</div>'; // .toast-header
 
-    // Content area (description + details)
+    // Content area (description + details combined into single section)
     if (hasExpandableContent) {
-      const contentVisible = options.showDetails ? 'toast-content-visible' : '';
-      html += `<div class="toast-content ${contentVisible}">`;
+      html += '<div class="toast-content">';
 
-      // Description
+      // Build combined content: description followed by details (if present)
       if (hasDescription) {
         html += `<div class="toast-description">${this._escapeHtml(description)}</div>`;
       }
 
-      // Details section (collapsible)
+      // Add details directly after description (no separate toggle needed)
       if (hasDetails) {
-        const detailsVisible = options.showDetails ? 'toast-details-visible' : '';
-        html += `
-          <button class="toast-details-toggle" aria-expanded="${options.showDetails}">
-            ${options.detailsTitle}
-            <i class="fa fa-chevron-down"></i>
-          </button>
-          <div class="toast-details ${detailsVisible}">
-            <div class="toast-details-content">${options.details}</div>
-          </div>
-        `;
+        html += `<div class="toast-details"><div class="toast-details-content">${options.details}</div></div>`;
       }
 
       html += '</div>'; // .toast-content
@@ -173,29 +163,49 @@ class ToastManager {
       closeBtn?.addEventListener('click', () => this.dismiss(id));
     }
 
-    // Expand button - toggles content visibility AND keeps the toast
+    // Expand button - toggles content visibility with smooth height animation AND keeps the toast
     const expandBtn = toast.querySelector('.toast-header-expand');
-    if (expandBtn) {
+    const content = toast.querySelector('.toast-content');
+    if (expandBtn && content) {
+      // Initialize height for animation
+      content.style.height = '0px';
+      content.style.overflow = 'hidden';
+
       expandBtn.addEventListener('click', () => {
-        const content = toast.querySelector('.toast-content');
-        const isExpanded = content.classList.toggle('toast-content-visible');
-        expandBtn.classList.toggle('toast-header-expand-active', isExpanded);
-        expandBtn.setAttribute('aria-expanded', isExpanded);
+        const isExpanded = expandBtn.classList.contains('toast-header-expand-active');
+
+        if (isExpanded) {
+          // Collapsing - set explicit height first, then animate to 0
+          const targetHeight = content.scrollHeight;
+          content.style.height = targetHeight + 'px';
+          // Force reflow to ensure the browser registers the height change
+          content.offsetHeight;
+          requestAnimationFrame(() => {
+            content.style.height = '0px';
+          });
+          expandBtn.classList.remove('toast-header-expand-active');
+          expandBtn.setAttribute('aria-expanded', 'false');
+        } else {
+          // Expanding - animate to full height
+          expandBtn.classList.add('toast-header-expand-active');
+          expandBtn.setAttribute('aria-expanded', 'true');
+          content.style.height = content.scrollHeight + 'px';
+        }
 
         // Also keep the toast when expanded
-        if (isExpanded) {
+        if (!isExpanded) {
           this.keep(id);
         }
       });
-    }
 
-    // Details toggle
-    if (hasDetails) {
-      const detailsToggle = toast.querySelector('.toast-details-toggle');
-      const detailsSection = toast.querySelector('.toast-details');
-      detailsToggle?.addEventListener('click', () => {
-        const isExpanded = detailsSection.classList.toggle('toast-details-visible');
-        detailsToggle.setAttribute('aria-expanded', isExpanded);
+      // Listen for transition end to reset overflow
+      content.addEventListener('transitionend', () => {
+        if (content.style.height === '0px') {
+          content.style.overflow = 'hidden';
+        } else {
+          content.style.height = 'auto';
+          content.style.overflow = 'visible';
+        }
       });
     }
 
