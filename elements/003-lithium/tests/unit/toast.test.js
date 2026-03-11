@@ -407,16 +407,18 @@ describe('Toast System', () => {
       const expandBtn = container.querySelector('.toast-header-expand');
       const contentEl = container.querySelector('.toast-content');
 
-      // Initially hidden
-      expect(contentEl.classList.contains('toast-content-visible')).toBe(false);
+      // Initially hidden (height = 0)
+      expect(contentEl.style.height).toBe('0px');
 
-      // Click to expand
+      // Click to expand - sets height to scrollHeight then auto
       expandBtn.click();
-      expect(contentEl.classList.contains('toast-content-visible')).toBe(true);
+      // After animation, height should be 'auto'
+      expect(expandBtn.classList.contains('toast-header-expand-active')).toBe(true);
 
       // Click to collapse
       expandBtn.click();
-      expect(contentEl.classList.contains('toast-content-visible')).toBe(false);
+      // Height should go back to 0
+      expect(contentEl.style.height).toBe('0px');
     });
 
     it('should cancel auto-dismiss when expand is clicked', () => {
@@ -496,45 +498,21 @@ describe('Toast System', () => {
   });
 
   describe('Details Section', () => {
-    it('should create collapsible details section', () => {
+    it('should render details directly after description when provided', () => {
       toast.show('Test', { details: 'Hidden details' });
 
-      const toggle = container.querySelector('.toast-details-toggle');
       const details = container.querySelector('.toast-details');
 
-      expect(toggle).not.toBeNull();
+      // Details should be present in the DOM
       expect(details).not.toBeNull();
-      // Details should not be visible by default
-      expect(details.classList.contains('toast-details-visible')).toBe(false);
-    });
-
-    it('should toggle details on button click', () => {
-      toast.show('Test', { details: 'Details content' });
-
-      const toggle = container.querySelector('.toast-details-toggle');
-      const details = container.querySelector('.toast-details');
-
-      toggle.click();
-
-      expect(details.classList.contains('toast-details-visible')).toBe(true);
-
-      toggle.click();
-
-      expect(details.classList.contains('toast-details-visible')).toBe(false);
-    });
-
-    it('should show details expanded by default when showDetails is true', () => {
-      toast.show('Test', { details: 'Details', showDetails: true });
-
-      const details = container.querySelector('.toast-details-visible');
-      expect(details).not.toBeNull();
+      expect(details.textContent).toBe('Hidden details');
     });
 
     it('should not render details section when no details provided', () => {
       toast.show('Test');
 
-      const toggle = container.querySelector('.toast-details-toggle');
-      expect(toggle).toBeNull();
+      const details = container.querySelector('.toast-details');
+      expect(details).toBeNull();
     });
   });
 
@@ -614,3 +592,4 @@ describe('Toast System', () => {
     });
   });
 });
+

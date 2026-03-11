@@ -261,11 +261,11 @@
    ======================================== */
 
 .toast-enter {
-  animation: toastEnter 400ms ease forwards;
+  animation: toastEnter var(--transition-delay) ease forwards;
 }
 
 .toast-exit {
-  animation: toastExit 300ms ease forwards;
+  animation: toastExit var(--transition-delay) ease forwards;
 }
 
 @keyframes toastEnter {

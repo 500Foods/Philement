@@ -15,7 +15,7 @@
   max-width: 600px;
   border-right: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
-  transition: width 0.3s ease, min-width 0.3s ease;
+  transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
 }
 
 .queries-left-panel.collapsed {
@@ -164,7 +164,7 @@
 #queries-collapse-icon,
 #queries-collapse-btn > i,
 #queries-collapse-btn > svg {
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-delay) ease;
   transform: rotate(0deg); /* Pointing left initially (collapse) */
 }
 
