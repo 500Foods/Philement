@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for shared/toast.js</title><meta charset="utf-8"><link rel="stylesheet" href="../prettify.css"><link rel="stylesheet" href="../base.css"><link rel="shortcut icon" type="image/x-icon" href="../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../index.html">All files</a> / <a href="index.html">shared</a> toast.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/53</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/17</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/17</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/49</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for shared/toast.js</title><meta charset="utf-8"><link rel="stylesheet" href="../prettify.css"><link rel="stylesheet" href="../base.css"><link rel="shortcut icon" type="image/x-icon" href="../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../index.html">All files</a> / <a href="index.html">shared</a> toast.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">86.58% </span><span class="quiet">Statements</span> <span class="fraction">142/164</span></div><div class="fl pad1y space-right2"><span class="strong">69.23% </span><span class="quiet">Branches</span> <span class="fraction">72/104</span></div><div class="fl pad1y space-right2"><span class="strong">86.95% </span><span class="quiet">Functions</span> <span class="fraction">20/23</span></div><div class="fl pad1y space-right2"><span class="strong">89.03% </span><span class="quiet">Lines</span> <span class="fraction">138/155</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line high"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -204,12 +204,528 @@
 <a name="L203"></a><a href="#L203">203</a>
 <a name="L204"></a><a href="#L204">204</a>
 <a name="L205"></a><a href="#L205">205</a>
-<a name="L206"></a><a href="#L206">206</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L206"></a><a href="#L206">206</a>
+<a name="L207"></a><a href="#L207">207</a>
+<a name="L208"></a><a href="#L208">208</a>
+<a name="L209"></a><a href="#L209">209</a>
+<a name="L210"></a><a href="#L210">210</a>
+<a name="L211"></a><a href="#L211">211</a>
+<a name="L212"></a><a href="#L212">212</a>
+<a name="L213"></a><a href="#L213">213</a>
+<a name="L214"></a><a href="#L214">214</a>
+<a name="L215"></a><a href="#L215">215</a>
+<a name="L216"></a><a href="#L216">216</a>
+<a name="L217"></a><a href="#L217">217</a>
+<a name="L218"></a><a href="#L218">218</a>
+<a name="L219"></a><a href="#L219">219</a>
+<a name="L220"></a><a href="#L220">220</a>
+<a name="L221"></a><a href="#L221">221</a>
+<a name="L222"></a><a href="#L222">222</a>
+<a name="L223"></a><a href="#L223">223</a>
+<a name="L224"></a><a href="#L224">224</a>
+<a name="L225"></a><a href="#L225">225</a>
+<a name="L226"></a><a href="#L226">226</a>
+<a name="L227"></a><a href="#L227">227</a>
+<a name="L228"></a><a href="#L228">228</a>
+<a name="L229"></a><a href="#L229">229</a>
+<a name="L230"></a><a href="#L230">230</a>
+<a name="L231"></a><a href="#L231">231</a>
+<a name="L232"></a><a href="#L232">232</a>
+<a name="L233"></a><a href="#L233">233</a>
+<a name="L234"></a><a href="#L234">234</a>
+<a name="L235"></a><a href="#L235">235</a>
+<a name="L236"></a><a href="#L236">236</a>
+<a name="L237"></a><a href="#L237">237</a>
+<a name="L238"></a><a href="#L238">238</a>
+<a name="L239"></a><a href="#L239">239</a>
+<a name="L240"></a><a href="#L240">240</a>
+<a name="L241"></a><a href="#L241">241</a>
+<a name="L242"></a><a href="#L242">242</a>
+<a name="L243"></a><a href="#L243">243</a>
+<a name="L244"></a><a href="#L244">244</a>
+<a name="L245"></a><a href="#L245">245</a>
+<a name="L246"></a><a href="#L246">246</a>
+<a name="L247"></a><a href="#L247">247</a>
+<a name="L248"></a><a href="#L248">248</a>
+<a name="L249"></a><a href="#L249">249</a>
+<a name="L250"></a><a href="#L250">250</a>
+<a name="L251"></a><a href="#L251">251</a>
+<a name="L252"></a><a href="#L252">252</a>
+<a name="L253"></a><a href="#L253">253</a>
+<a name="L254"></a><a href="#L254">254</a>
+<a name="L255"></a><a href="#L255">255</a>
+<a name="L256"></a><a href="#L256">256</a>
+<a name="L257"></a><a href="#L257">257</a>
+<a name="L258"></a><a href="#L258">258</a>
+<a name="L259"></a><a href="#L259">259</a>
+<a name="L260"></a><a href="#L260">260</a>
+<a name="L261"></a><a href="#L261">261</a>
+<a name="L262"></a><a href="#L262">262</a>
+<a name="L263"></a><a href="#L263">263</a>
+<a name="L264"></a><a href="#L264">264</a>
+<a name="L265"></a><a href="#L265">265</a>
+<a name="L266"></a><a href="#L266">266</a>
+<a name="L267"></a><a href="#L267">267</a>
+<a name="L268"></a><a href="#L268">268</a>
+<a name="L269"></a><a href="#L269">269</a>
+<a name="L270"></a><a href="#L270">270</a>
+<a name="L271"></a><a href="#L271">271</a>
+<a name="L272"></a><a href="#L272">272</a>
+<a name="L273"></a><a href="#L273">273</a>
+<a name="L274"></a><a href="#L274">274</a>
+<a name="L275"></a><a href="#L275">275</a>
+<a name="L276"></a><a href="#L276">276</a>
+<a name="L277"></a><a href="#L277">277</a>
+<a name="L278"></a><a href="#L278">278</a>
+<a name="L279"></a><a href="#L279">279</a>
+<a name="L280"></a><a href="#L280">280</a>
+<a name="L281"></a><a href="#L281">281</a>
+<a name="L282"></a><a href="#L282">282</a>
+<a name="L283"></a><a href="#L283">283</a>
+<a name="L284"></a><a href="#L284">284</a>
+<a name="L285"></a><a href="#L285">285</a>
+<a name="L286"></a><a href="#L286">286</a>
+<a name="L287"></a><a href="#L287">287</a>
+<a name="L288"></a><a href="#L288">288</a>
+<a name="L289"></a><a href="#L289">289</a>
+<a name="L290"></a><a href="#L290">290</a>
+<a name="L291"></a><a href="#L291">291</a>
+<a name="L292"></a><a href="#L292">292</a>
+<a name="L293"></a><a href="#L293">293</a>
+<a name="L294"></a><a href="#L294">294</a>
+<a name="L295"></a><a href="#L295">295</a>
+<a name="L296"></a><a href="#L296">296</a>
+<a name="L297"></a><a href="#L297">297</a>
+<a name="L298"></a><a href="#L298">298</a>
+<a name="L299"></a><a href="#L299">299</a>
+<a name="L300"></a><a href="#L300">300</a>
+<a name="L301"></a><a href="#L301">301</a>
+<a name="L302"></a><a href="#L302">302</a>
+<a name="L303"></a><a href="#L303">303</a>
+<a name="L304"></a><a href="#L304">304</a>
+<a name="L305"></a><a href="#L305">305</a>
+<a name="L306"></a><a href="#L306">306</a>
+<a name="L307"></a><a href="#L307">307</a>
+<a name="L308"></a><a href="#L308">308</a>
+<a name="L309"></a><a href="#L309">309</a>
+<a name="L310"></a><a href="#L310">310</a>
+<a name="L311"></a><a href="#L311">311</a>
+<a name="L312"></a><a href="#L312">312</a>
+<a name="L313"></a><a href="#L313">313</a>
+<a name="L314"></a><a href="#L314">314</a>
+<a name="L315"></a><a href="#L315">315</a>
+<a name="L316"></a><a href="#L316">316</a>
+<a name="L317"></a><a href="#L317">317</a>
+<a name="L318"></a><a href="#L318">318</a>
+<a name="L319"></a><a href="#L319">319</a>
+<a name="L320"></a><a href="#L320">320</a>
+<a name="L321"></a><a href="#L321">321</a>
+<a name="L322"></a><a href="#L322">322</a>
+<a name="L323"></a><a href="#L323">323</a>
+<a name="L324"></a><a href="#L324">324</a>
+<a name="L325"></a><a href="#L325">325</a>
+<a name="L326"></a><a href="#L326">326</a>
+<a name="L327"></a><a href="#L327">327</a>
+<a name="L328"></a><a href="#L328">328</a>
+<a name="L329"></a><a href="#L329">329</a>
+<a name="L330"></a><a href="#L330">330</a>
+<a name="L331"></a><a href="#L331">331</a>
+<a name="L332"></a><a href="#L332">332</a>
+<a name="L333"></a><a href="#L333">333</a>
+<a name="L334"></a><a href="#L334">334</a>
+<a name="L335"></a><a href="#L335">335</a>
+<a name="L336"></a><a href="#L336">336</a>
+<a name="L337"></a><a href="#L337">337</a>
+<a name="L338"></a><a href="#L338">338</a>
+<a name="L339"></a><a href="#L339">339</a>
+<a name="L340"></a><a href="#L340">340</a>
+<a name="L341"></a><a href="#L341">341</a>
+<a name="L342"></a><a href="#L342">342</a>
+<a name="L343"></a><a href="#L343">343</a>
+<a name="L344"></a><a href="#L344">344</a>
+<a name="L345"></a><a href="#L345">345</a>
+<a name="L346"></a><a href="#L346">346</a>
+<a name="L347"></a><a href="#L347">347</a>
+<a name="L348"></a><a href="#L348">348</a>
+<a name="L349"></a><a href="#L349">349</a>
+<a name="L350"></a><a href="#L350">350</a>
+<a name="L351"></a><a href="#L351">351</a>
+<a name="L352"></a><a href="#L352">352</a>
+<a name="L353"></a><a href="#L353">353</a>
+<a name="L354"></a><a href="#L354">354</a>
+<a name="L355"></a><a href="#L355">355</a>
+<a name="L356"></a><a href="#L356">356</a>
+<a name="L357"></a><a href="#L357">357</a>
+<a name="L358"></a><a href="#L358">358</a>
+<a name="L359"></a><a href="#L359">359</a>
+<a name="L360"></a><a href="#L360">360</a>
+<a name="L361"></a><a href="#L361">361</a>
+<a name="L362"></a><a href="#L362">362</a>
+<a name="L363"></a><a href="#L363">363</a>
+<a name="L364"></a><a href="#L364">364</a>
+<a name="L365"></a><a href="#L365">365</a>
+<a name="L366"></a><a href="#L366">366</a>
+<a name="L367"></a><a href="#L367">367</a>
+<a name="L368"></a><a href="#L368">368</a>
+<a name="L369"></a><a href="#L369">369</a>
+<a name="L370"></a><a href="#L370">370</a>
+<a name="L371"></a><a href="#L371">371</a>
+<a name="L372"></a><a href="#L372">372</a>
+<a name="L373"></a><a href="#L373">373</a>
+<a name="L374"></a><a href="#L374">374</a>
+<a name="L375"></a><a href="#L375">375</a>
+<a name="L376"></a><a href="#L376">376</a>
+<a name="L377"></a><a href="#L377">377</a>
+<a name="L378"></a><a href="#L378">378</a>
+<a name="L379"></a><a href="#L379">379</a>
+<a name="L380"></a><a href="#L380">380</a>
+<a name="L381"></a><a href="#L381">381</a>
+<a name="L382"></a><a href="#L382">382</a>
+<a name="L383"></a><a href="#L383">383</a>
+<a name="L384"></a><a href="#L384">384</a>
+<a name="L385"></a><a href="#L385">385</a>
+<a name="L386"></a><a href="#L386">386</a>
+<a name="L387"></a><a href="#L387">387</a>
+<a name="L388"></a><a href="#L388">388</a>
+<a name="L389"></a><a href="#L389">389</a>
+<a name="L390"></a><a href="#L390">390</a>
+<a name="L391"></a><a href="#L391">391</a>
+<a name="L392"></a><a href="#L392">392</a>
+<a name="L393"></a><a href="#L393">393</a>
+<a name="L394"></a><a href="#L394">394</a>
+<a name="L395"></a><a href="#L395">395</a>
+<a name="L396"></a><a href="#L396">396</a>
+<a name="L397"></a><a href="#L397">397</a>
+<a name="L398"></a><a href="#L398">398</a>
+<a name="L399"></a><a href="#L399">399</a>
+<a name="L400"></a><a href="#L400">400</a>
+<a name="L401"></a><a href="#L401">401</a>
+<a name="L402"></a><a href="#L402">402</a>
+<a name="L403"></a><a href="#L403">403</a>
+<a name="L404"></a><a href="#L404">404</a>
+<a name="L405"></a><a href="#L405">405</a>
+<a name="L406"></a><a href="#L406">406</a>
+<a name="L407"></a><a href="#L407">407</a>
+<a name="L408"></a><a href="#L408">408</a>
+<a name="L409"></a><a href="#L409">409</a>
+<a name="L410"></a><a href="#L410">410</a>
+<a name="L411"></a><a href="#L411">411</a>
+<a name="L412"></a><a href="#L412">412</a>
+<a name="L413"></a><a href="#L413">413</a>
+<a name="L414"></a><a href="#L414">414</a>
+<a name="L415"></a><a href="#L415">415</a>
+<a name="L416"></a><a href="#L416">416</a>
+<a name="L417"></a><a href="#L417">417</a>
+<a name="L418"></a><a href="#L418">418</a>
+<a name="L419"></a><a href="#L419">419</a>
+<a name="L420"></a><a href="#L420">420</a>
+<a name="L421"></a><a href="#L421">421</a>
+<a name="L422"></a><a href="#L422">422</a>
+<a name="L423"></a><a href="#L423">423</a>
+<a name="L424"></a><a href="#L424">424</a>
+<a name="L425"></a><a href="#L425">425</a>
+<a name="L426"></a><a href="#L426">426</a>
+<a name="L427"></a><a href="#L427">427</a>
+<a name="L428"></a><a href="#L428">428</a>
+<a name="L429"></a><a href="#L429">429</a>
+<a name="L430"></a><a href="#L430">430</a>
+<a name="L431"></a><a href="#L431">431</a>
+<a name="L432"></a><a href="#L432">432</a>
+<a name="L433"></a><a href="#L433">433</a>
+<a name="L434"></a><a href="#L434">434</a>
+<a name="L435"></a><a href="#L435">435</a>
+<a name="L436"></a><a href="#L436">436</a>
+<a name="L437"></a><a href="#L437">437</a>
+<a name="L438"></a><a href="#L438">438</a>
+<a name="L439"></a><a href="#L439">439</a>
+<a name="L440"></a><a href="#L440">440</a>
+<a name="L441"></a><a href="#L441">441</a>
+<a name="L442"></a><a href="#L442">442</a>
+<a name="L443"></a><a href="#L443">443</a>
+<a name="L444"></a><a href="#L444">444</a>
+<a name="L445"></a><a href="#L445">445</a>
+<a name="L446"></a><a href="#L446">446</a>
+<a name="L447"></a><a href="#L447">447</a>
+<a name="L448"></a><a href="#L448">448</a>
+<a name="L449"></a><a href="#L449">449</a>
+<a name="L450"></a><a href="#L450">450</a>
+<a name="L451"></a><a href="#L451">451</a>
+<a name="L452"></a><a href="#L452">452</a>
+<a name="L453"></a><a href="#L453">453</a>
+<a name="L454"></a><a href="#L454">454</a>
+<a name="L455"></a><a href="#L455">455</a>
+<a name="L456"></a><a href="#L456">456</a>
+<a name="L457"></a><a href="#L457">457</a>
+<a name="L458"></a><a href="#L458">458</a>
+<a name="L459"></a><a href="#L459">459</a>
+<a name="L460"></a><a href="#L460">460</a>
+<a name="L461"></a><a href="#L461">461</a>
+<a name="L462"></a><a href="#L462">462</a>
+<a name="L463"></a><a href="#L463">463</a>
+<a name="L464"></a><a href="#L464">464</a>
+<a name="L465"></a><a href="#L465">465</a>
+<a name="L466"></a><a href="#L466">466</a>
+<a name="L467"></a><a href="#L467">467</a>
+<a name="L468"></a><a href="#L468">468</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">36x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">49x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">49x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">49x</span>
+<span class="cline-any cline-yes">49x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">49x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">49x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">112x</span>
+<span class="cline-any cline-yes">112x</span>
+<span class="cline-any cline-yes">112x</span>
+<span class="cline-any cline-yes">112x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">51x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">51x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -218,7 +734,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -226,10 +741,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -238,132 +749,146 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">52x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
+<span class="cline-any cline-yes">49x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -371,85 +896,104 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1167x</span>
+<span class="cline-any cline-yes">1167x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1166x</span>
+<span class="cline-any cline-yes">42x</span>
+<span class="cline-any cline-yes">42x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1166x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1166x</span>
+<span class="cline-any cline-yes">1166x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1166x</span>
+<span class="cline-any cline-yes">400x</span>
+<span class="cline-any cline-yes">400x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">99x</span>
+<span class="cline-any cline-yes">1163x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * Toast Notification System
  *
- * A lightweight toast notification system for displaying
+ * A toast notification system for displaying
  * error, success, warning, and info messages to users.
+ *
+ * Features:
+ * - Unified header button group with icon, title, subsystem, expand, close
+ * - Expand button shows/hides description and keeps the toast
+ * - Countdown progress bar showing time remaining before auto-dismiss
+ * - Font Awesome icons (customizable per toast)
+ * - Collapsible detail section for extended information
+ * - Automatic error logging via the logging system
  */
 &nbsp;
-const TOAST_TYPES = <span class="cstat-no" title="statement not covered">{</span>
+import { log, logGroup, Subsystems, Status } from '../core/log.js';
+&nbsp;
+const TOAST_TYPES = {
   ERROR: 'error',
   SUCCESS: 'success',
   WARNING: 'warning',
   INFO: 'info',
 };
 &nbsp;
-const TOAST_DEFAULTS = <span class="cstat-no" title="statement not covered">{</span>
+const TOAST_DEFAULTS = {
   duration: 5000,
   dismissible: true,
   type: TOAST_TYPES.INFO,
+  icon: null,            // Custom icon (Font Awesome HTML), null = use default for type
+  title: null,           // Title text (if not set, uses message)
+  description: null,     // Description text shown when expanded
+  subsystem: null,       // Subsystem label (e.g., 'Conduit', 'Auth')
+  details: null,         // Optional details text/HTML for collapsible section
+  detailsTitle: 'Details', // Label for the details toggle
+  showDetails: false,    // Whether details section is expanded by default
+  forceDescription: true, // Always show description (defaults to "No additional information provided")
 };
 &nbsp;
+const DEFAULT_DESCRIPTION = 'No additional information provided';
+&nbsp;
 class ToastManager {
-<span class="fstat-no" title="function not covered">  constructor(</span>) {
-<span class="cstat-no" title="statement not covered">    this.container = null;</span>
-<span class="cstat-no" title="statement not covered">    this.toasts = new Map();</span>
-<span class="cstat-no" title="statement not covered">    this._idCounter = 0;</span>
-<span class="cstat-no" title="statement not covered">    this._initContainer();</span>
+  constructor() {
+    this.container = null;
+    this.toasts = new Map();
+    this._idCounter = 0;
+    this._initContainer();
   }
 &nbsp;
   /**
    * Initialize the toast container in the DOM
    * @private
    */
-<span class="fstat-no" title="function not covered">  _initContainer(</span>) {
+  _initContainer() {
     // Check if container already exists
-<span class="cstat-no" title="statement not covered">    this.container = document.getElementById('toast-container');</span>
+    this.container = document.getElementById('toast-container');
 &nbsp;
-<span class="cstat-no" title="statement not covered">    if (!this.container) {</span>
-<span class="cstat-no" title="statement not covered">      this.container = document.createElement('div');</span>
-<span class="cstat-no" title="statement not covered">      this.container.id = 'toast-container';</span>
-<span class="cstat-no" title="statement not covered">      this.container.className = 'toast-container';</span>
-<span class="cstat-no" title="statement not covered">      document.body.appendChild(this.container);</span>
+    <span class="missing-if-branch" title="else path not taken">E</span>if (!this.container) {
+      this.container = document.createElement('div');
+      this.container.id = 'toast-container';
+      this.container.className = 'toast-container';
+      document.body.appendChild(this.container);
     }
   }
 &nbsp;
@@ -457,50 +1001,201 @@ class ToastManager {
    * Generate a unique ID for each toast
    * @private
    */
-<span class="fstat-no" title="function not covered">  _generateId(</span>) {
-<span class="cstat-no" title="statement not covered">    return `toast-${++this._idCounter}`;</span>
+  _generateId() {
+    return `toast-${++this._idCounter}`;
   }
 &nbsp;
   /**
    * Create a toast element
    * @private
    */
-<span class="fstat-no" title="function not covered">  _createToastElement(</span>id, message, options) {
-    const toast = <span class="cstat-no" title="statement not covered">document.createElement('div');</span>
-<span class="cstat-no" title="statement not covered">    toast.className = `toast toast-${options.type}`;</span>
-<span class="cstat-no" title="statement not covered">    toast.dataset.id = id;</span>
+  _createToastElement(id, message, options) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${options.type}`;
+    toast.dataset.id = id;
 &nbsp;
-    // Icon based on type
-    const icon = <span class="cstat-no" title="statement not covered">this._getIcon(options.type);</span>
+    // Icon: use custom if provided, otherwise use default for type
+    const icon = options.icon || this._getIcon(options.type);
 &nbsp;
-    // Content HTML
-<span class="cstat-no" title="statement not covered">    toast.innerHTML = `</span>
-      &lt;span class="toast-icon"&gt;${icon}&lt;/span&gt;
-      &lt;span class="toast-message"&gt;${message}&lt;/span&gt;
-      ${options.dismissible ? '&lt;button class="toast-dismiss" aria-label="Dismiss"&gt;&amp;times;&lt;/button&gt;' : ''}
-    `;
+    // Title: use explicit title or extract from message
+    const title = options.title || message;
 &nbsp;
-    // Add dismiss handler
-<span class="cstat-no" title="statement not covered">    if (options.dismissible) {</span>
-      const dismissBtn = <span class="cstat-no" title="statement not covered">toast.querySelector('.toast-dismiss');</span>
-<span class="cstat-no" title="statement not covered">      dismissBtn?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.dismiss(id))</span>;</span>
+    // Description: use provided or default if forceDescription is enabled
+    let description = options.description;
+    if (options.forceDescription &amp;&amp; (!description || description.length === 0)) {
+      description = DEFAULT_DESCRIPTION;
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered">    return toast;</span>
+    // Content flags
+    const hasDetails = options.details &amp;&amp; options.details.length &gt; 0;
+    const hasDescription = description &amp;&amp; description.length &gt; 0;
+    const hasExpandableContent = hasDescription || <span class="branch-1 cbranch-no" title="branch not covered">hasDetails;</span>
+&nbsp;
+    // ─── Build HTML structure ───
+    let html = '';
+&nbsp;
+    // Header row: unified button group style
+    html += '&lt;div class="toast-header"&gt;';
+    html += '&lt;div class="toast-header-group"&gt;';
+&nbsp;
+    // Icon button (leftmost, non-clickable)
+    html += `&lt;button class="toast-header-icon" aria-label="${options.type}" tabindex="-1"&gt;${icon}&lt;/button&gt;`;
+&nbsp;
+    // Title button (flex: 1, takes remaining space)
+    html += `&lt;button class="toast-header-title" tabindex="-1"&gt;${this._escapeHtml(title)}&lt;/button&gt;`;
+&nbsp;
+    // Subsystem badge (if provided)
+    if (options.subsystem) {
+      html += `&lt;button class="toast-header-subsystem" tabindex="-1"&gt;${this._escapeHtml(options.subsystem)}&lt;/button&gt;`;
+    }
+&nbsp;
+    // Expand button (if there's content to expand)
+    if (hasExpandableContent &amp;&amp; options.duration &gt; 0) {
+      html += '&lt;button class="toast-header-expand" aria-label="Expand" title="Expand to keep"&gt;&lt;i class="fas fa-chevron-down"&gt;&lt;/i&gt;&lt;/button&gt;';
+    }
+&nbsp;
+    // Close button (rightmost)
+    <span class="missing-if-branch" title="else path not taken">E</span>if (options.dismissible) {
+      html += '&lt;button class="toast-header-close" aria-label="Dismiss" title="Dismiss"&gt;&lt;i class="fas fa-times"&gt;&lt;/i&gt;&lt;/button&gt;';
+    }
+&nbsp;
+    html += '&lt;/div&gt;'; // .toast-header-group
+    html += '&lt;/div&gt;'; // .toast-header
+&nbsp;
+    // Content area (description + details combined into single section)
+    <span class="missing-if-branch" title="else path not taken">E</span>if (hasExpandableContent) {
+      html += '&lt;div class="toast-content"&gt;';
+&nbsp;
+      // Build combined content: description followed by details (if present)
+      <span class="missing-if-branch" title="else path not taken">E</span>if (hasDescription) {
+        html += `&lt;div class="toast-description"&gt;${this._escapeHtml(description)}&lt;/div&gt;`;
+      }
+&nbsp;
+      // Add details directly after description (no separate toggle needed)
+      if (hasDetails) {
+        html += `&lt;div class="toast-details"&gt;&lt;div class="toast-details-content"&gt;${options.details}&lt;/div&gt;&lt;/div&gt;`;
+      }
+&nbsp;
+      html += '&lt;/div&gt;'; // .toast-content
+    }
+&nbsp;
+    // Countdown progress bar (only when auto-dismissing)
+    if (options.duration &gt; 0) {
+      html += `
+        &lt;div class="toast-progress"&gt;
+          &lt;div class="toast-progress-bar" style="animation-duration: ${options.duration}ms"&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      `;
+    }
+&nbsp;
+    toast.innerHTML = html;
+&nbsp;
+    // ─── Event handlers ───
+&nbsp;
+    // Close button
+    <span class="missing-if-branch" title="else path not taken">E</span>if (options.dismissible) {
+      const closeBtn = toast.querySelector('.toast-header-close');
+      closeBtn?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.dismiss(id))</span>;
+    }
+&nbsp;
+    // Expand button - toggles content visibility with smooth height animation AND keeps the toast
+    const expandBtn = toast.querySelector('.toast-header-expand');
+    const content = toast.querySelector('.toast-content');
+    if (expandBtn &amp;&amp; content) {
+      // Initialize height for animation
+      content.style.height = '0px';
+      content.style.overflow = 'hidden';
+&nbsp;
+      expandBtn.addEventListener('click', () =&gt; {
+        const isExpanded = expandBtn.classList.contains('toast-header-expand-active');
+&nbsp;
+        if (isExpanded) {
+          // Collapsing - set explicit height first, then animate to 0
+          const targetHeight = content.scrollHeight;
+          content.style.height = targetHeight + 'px';
+          // Force reflow to ensure the browser registers the height change
+          content.offsetHeight;
+          requestAnimationFrame(() =&gt; {
+            content.style.height = '0px';
+          });
+          expandBtn.classList.remove('toast-header-expand-active');
+          expandBtn.setAttribute('aria-expanded', 'false');
+        } else {
+          // Expanding - animate to full height
+          expandBtn.classList.add('toast-header-expand-active');
+          expandBtn.setAttribute('aria-expanded', 'true');
+          content.style.height = content.scrollHeight + 'px';
+        }
+&nbsp;
+        // Also keep the toast when expanded
+        if (!isExpanded) {
+          this.keep(id);
+        }
+      });
+&nbsp;
+      // Listen for transition end to reset overflow
+      content.addEventListener('transitionend', <span class="fstat-no" title="function not covered">()</span> =&gt; {
+<span class="cstat-no" title="statement not covered">        if (content.style.height === '0px') {</span>
+<span class="cstat-no" title="statement not covered">          content.style.overflow = 'hidden';</span>
+        } else {
+<span class="cstat-no" title="statement not covered">          content.style.height = 'auto';</span>
+<span class="cstat-no" title="statement not covered">          content.style.overflow = 'visible';</span>
+        }
+      });
+    }
+&nbsp;
+    return toast;
+  }
+&nbsp;
+  /**
+   * Escape HTML special characters for safe insertion
+   * @private
+   */
+  _escapeHtml(text) {
+    <span class="missing-if-branch" title="if path not taken">I</span>if (typeof text !== 'string') <span class="cstat-no" title="statement not covered">return text;</span>
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 &nbsp;
   /**
    * Get icon HTML for toast type
    * @private
    */
-<span class="fstat-no" title="function not covered">  _getIcon(</span>type) {
-    const icons = <span class="cstat-no" title="statement not covered">{</span>
+  _getIcon(type) {
+    const icons = {
       [TOAST_TYPES.ERROR]: '&lt;i class="fas fa-times-circle"&gt;&lt;/i&gt;',
       [TOAST_TYPES.SUCCESS]: '&lt;i class="fas fa-check-circle"&gt;&lt;/i&gt;',
       [TOAST_TYPES.WARNING]: '&lt;i class="fas fa-exclamation-triangle"&gt;&lt;/i&gt;',
       [TOAST_TYPES.INFO]: '&lt;i class="fas fa-info-circle"&gt;&lt;/i&gt;',
     };
-<span class="cstat-no" title="statement not covered">    return icons[type] || icons[TOAST_TYPES.INFO];</span>
+    return icons[type] || <span class="branch-1 cbranch-no" title="branch not covered">icons[TOAST_TYPES.INFO];</span>
+  }
+&nbsp;
+  /**
+   * Log a server error through the logging system
+   * @private
+   */
+<span class="fstat-no" title="function not covered">  _logServerError(</span>message, serverError, subsystem) {
+    const logSub = <span class="cstat-no" title="statement not covered">subsystem || Subsystems.CONDUIT;</span>
+    const items = <span class="cstat-no" title="statement not covered">[];</span>
+    // Support both snake_case (server) and camelCase (JS convention)
+    const queryRef = <span class="cstat-no" title="statement not covered">serverError.query_ref ?? serverError.queryRef;</span>
+    const database = <span class="cstat-no" title="statement not covered">serverError.database;</span>
+    const errorMsg = <span class="cstat-no" title="statement not covered">serverError.error;</span>
+    
+<span class="cstat-no" title="statement not covered">    if (queryRef != null) <span class="cstat-no" title="statement not covered">items.push(`Query Ref: ${queryRef}`);</span></span>
+<span class="cstat-no" title="statement not covered">    if (database) <span class="cstat-no" title="statement not covered">items.push(`Database: ${database}`);</span></span>
+<span class="cstat-no" title="statement not covered">    if (errorMsg) <span class="cstat-no" title="statement not covered">items.push(`Error: ${errorMsg}`);</span></span>
+<span class="cstat-no" title="statement not covered">    if (serverError.message &amp;&amp; serverError.message !== message) {</span>
+<span class="cstat-no" title="statement not covered">      items.push(`Message: ${serverError.message}`);</span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (items.length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered">      logGroup(logSub, Status.ERROR, message, items);</span>
+    } else {
+<span class="cstat-no" title="statement not covered">      log(logSub, Status.ERROR, message);</span>
+    }
   }
 &nbsp;
   /**
@@ -510,43 +1205,101 @@ class ToastManager {
    * @param {string} [options.type='info'] - Toast type: error, success, warning, info
    * @param {number} [options.duration=5000] - Duration in ms (0 = persistent)
    * @param {boolean} [options.dismissible=true] - Whether the toast can be dismissed
+   * @param {string} [options.icon=null] - Custom Font Awesome icon HTML
+   * @param {string} [options.title=null] - Optional title (if not set, uses message)
+   * @param {string} [options.description=null] - Description text shown when expanded
+   * @param {string} [options.subsystem=null] - Subsystem label (e.g., 'Conduit')
+   * @param {string} [options.details=null] - Optional details text/HTML for collapsible section
+   * @param {string} [options.detailsTitle='Details'] - Label for the details toggle button
+   * @param {boolean} [options.showDetails=false] - Whether to show details expanded by default
+   * @param {boolean} [options.forceDescription=true] - Always show description section (defaults to "No additional information provided")
    * @returns {string} Toast ID
    */
-<span class="fstat-no" title="function not covered">  show(</span>message, options = <span class="branch-0 cbranch-no" title="branch not covered">{})</span> {
-    const id = <span class="cstat-no" title="statement not covered">this._generateId();</span>
-    const config = <span class="cstat-no" title="statement not covered">{ ...TOAST_DEFAULTS, ...options };</span>
+  show(message, options = {}) {
+    const id = this._generateId();
+    const config = { ...TOAST_DEFAULTS, ...options };
 &nbsp;
     // Create and append toast element
-    const toastEl = <span class="cstat-no" title="statement not covered">this._createToastElement(id, message, config);</span>
-<span class="cstat-no" title="statement not covered">    this.container.appendChild(toastEl);</span>
+    const toastEl = this._createToastElement(id, message, config);
+    this.container.appendChild(toastEl);
 &nbsp;
-    // Trigger animation
-<span class="cstat-no" title="statement not covered">    requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      toastEl.classList.add('toast-visible');</span>
+    // Trigger entrance animation
+    requestAnimationFrame(() =&gt; {
+      toastEl.classList.add('toast-visible');
     });
 &nbsp;
-    // Store toast info
-<span class="cstat-no" title="statement not covered">    this.toasts.set(id, {</span>
+    // Store toast info (register before starting timer so keep() can find it)
+    const toastInfo = {
       element: toastEl,
       config,
-    });
+      timerId: null,
+    };
+    this.toasts.set(id, toastInfo);
 &nbsp;
     // Auto-dismiss if duration is set
-<span class="cstat-no" title="statement not covered">    if (config.duration &gt; 0) {</span>
-<span class="cstat-no" title="statement not covered">      setTimeout(<span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.dismiss(id),</span> config.duration);</span>
+    if (config.duration &gt; 0) {
+      toastInfo.timerId = setTimeout(() =&gt; this.dismiss(id), config.duration);
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered">    return id;</span>
+    return id;
   }
 &nbsp;
   /**
-   * Show an error toast
+   * Show an error toast with optional details and automatic logging
    * @param {string} message - The error message
    * @param {Object} options - Toast options
+   * @param {string} [options.icon] - Custom icon (defaults to error icon)
+   * @param {string} [options.description] - Description text shown when expanded
+   * @param {string} [options.details] - Optional details to show in collapsible section
+   * @param {Object} [options.serverError] - Server error object with query_ref, database, etc.
+   * @param {string} [options.subsystem] - Subsystem label for badge and logging
    * @returns {string} Toast ID
    */
-<span class="fstat-no" title="function not covered">  error(</span>message, options = <span class="branch-0 cbranch-no" title="branch not covered">{})</span> {
-<span class="cstat-no" title="statement not covered">    return this.show(message, { ...options, type: TOAST_TYPES.ERROR });</span>
+  error(message, options = {}) {
+    // Auto-build details from server error object if provided
+    let details = options.details;
+    let description = options.description;
+    let title = options.title ?? message;
+&nbsp;
+    if (options.serverError) {
+      const { serverError } = options;
+&nbsp;
+      // Use serverError.error as title (e.g., "Missing Required Parameters")
+      <span class="missing-if-branch" title="else path not taken">E</span>if (serverError.error) {
+        title = serverError.error;
+      }
+&nbsp;
+      // Auto-build description from serverError.message if not provided
+      // Use serverError.message as description (e.g., "Required: QUERYID...")
+      <span class="missing-if-branch" title="else path not taken">E</span>if (!description &amp;&amp; serverError.message) {
+        description = serverError.message;
+      }
+&nbsp;
+      // Auto-build details (support both snake_case and camelCase property names)
+      <span class="missing-if-branch" title="else path not taken">E</span>if (!details) {
+        const detailParts = [];
+        const queryRef = serverError.query_ref ?? serverError.queryRef;
+        const database = serverError.database;
+        
+        if (queryRef != null) {
+          detailParts.push(`Query Ref: ${queryRef}`);
+        }
+        if (database) {
+          detailParts.push(`Database: ${database}`);
+        }
+        if (detailParts.length &gt; 0) {
+          details = detailParts.join('\n');
+        }
+      }
+}
+&nbsp;
+&nbsp;
+    return this.show(title, {
+      ...options,
+      type: TOAST_TYPES.ERROR,
+      details,
+      description,
+    });
   }
 &nbsp;
   /**
@@ -555,8 +1308,8 @@ class ToastManager {
    * @param {Object} options - Toast options
    * @returns {string} Toast ID
    */
-<span class="fstat-no" title="function not covered">  success(</span>message, options = <span class="branch-0 cbranch-no" title="branch not covered">{})</span> {
-<span class="cstat-no" title="statement not covered">    return this.show(message, { ...options, type: TOAST_TYPES.SUCCESS });</span>
+  success(message, options = {}) {
+    return this.show(message, { ...options, type: TOAST_TYPES.SUCCESS });
   }
 &nbsp;
   /**
@@ -565,8 +1318,8 @@ class ToastManager {
    * @param {Object} options - Toast options
    * @returns {string} Toast ID
    */
-<span class="fstat-no" title="function not covered">  warning(</span>message, options = <span class="branch-0 cbranch-no" title="branch not covered">{})</span> {
-<span class="cstat-no" title="statement not covered">    return this.show(message, { ...options, type: TOAST_TYPES.WARNING });</span>
+  warning(message, options = {}) {
+    return this.show(message, { ...options, type: TOAST_TYPES.WARNING });
   }
 &nbsp;
   /**
@@ -575,43 +1328,76 @@ class ToastManager {
    * @param {Object} options - Toast options
    * @returns {string} Toast ID
    */
-<span class="fstat-no" title="function not covered">  info(</span>message, options = <span class="branch-0 cbranch-no" title="branch not covered">{})</span> {
-<span class="cstat-no" title="statement not covered">    return this.show(message, { ...options, type: TOAST_TYPES.INFO });</span>
+  info(message, options = {}) {
+    return this.show(message, { ...options, type: TOAST_TYPES.INFO });
+  }
+&nbsp;
+  /**
+   * Keep (pin) a toast — cancel auto-dismiss and freeze the countdown bar
+   * @param {string} id - The toast ID
+   */
+  keep(id) {
+    const toastInfo = this.toasts.get(id);
+    if (!toastInfo) return;
+&nbsp;
+    // Cancel auto-dismiss timer
+    <span class="missing-if-branch" title="else path not taken">E</span>if (toastInfo.timerId) {
+      clearTimeout(toastInfo.timerId);
+      toastInfo.timerId = null;
+    }
+&nbsp;
+    // Stop and fade out progress bar
+    const progress = toastInfo.element.querySelector('.toast-progress');
+    <span class="missing-if-branch" title="else path not taken">E</span>if (progress) {
+      progress.classList.add('toast-progress-kept');
+    }
+&nbsp;
+    // Mark expand button as active (kept)
+    const expandBtn = toastInfo.element.querySelector('.toast-header-expand');
+    <span class="missing-if-branch" title="else path not taken">E</span>if (expandBtn) {
+      expandBtn.classList.add('toast-header-expand-active');
+    }
   }
 &nbsp;
   /**
    * Dismiss a toast by ID
    * @param {string} id - The toast ID
    */
-<span class="fstat-no" title="function not covered">  dismiss(</span>id) {
-    const toastInfo = <span class="cstat-no" title="statement not covered">this.toasts.get(id);</span>
-<span class="cstat-no" title="statement not covered">    if (!toastInfo) <span class="cstat-no" title="statement not covered">return;</span></span>
+  dismiss(id) {
+    const toastInfo = this.toasts.get(id);
+    if (!toastInfo) return;
 &nbsp;
-    const { element } = <span class="cstat-no" title="statement not covered">toastInfo;</span>
+    // Clear auto-dismiss timer
+    if (toastInfo.timerId) {
+      clearTimeout(toastInfo.timerId);
+      toastInfo.timerId = null;
+    }
+&nbsp;
+    const { element } = toastInfo;
 &nbsp;
     // Trigger exit animation
-<span class="cstat-no" title="statement not covered">    element.classList.remove('toast-visible');</span>
-<span class="cstat-no" title="statement not covered">    element.classList.add('toast-exit');</span>
+    element.classList.remove('toast-visible');
+    element.classList.add('toast-exit');
 &nbsp;
     // Remove from DOM after animation
-<span class="cstat-no" title="statement not covered">    setTimeout(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      element.remove();</span>
-<span class="cstat-no" title="statement not covered">      this.toasts.delete(id);</span>
+    setTimeout(() =&gt; {
+      element.remove();
+      this.toasts.delete(id);
     }, 300);
   }
 &nbsp;
   /**
    * Dismiss all toasts
    */
-<span class="fstat-no" title="function not covered">  dismissAll(</span>) {
-    const ids = <span class="cstat-no" title="statement not covered">Array.from(this.toasts.keys());</span>
-<span class="cstat-no" title="statement not covered">    ids.forEach(<span class="fstat-no" title="function not covered">id </span>=&gt; <span class="cstat-no" title="statement not covered">this.dismiss(id))</span>;</span>
+  dismissAll() {
+    const ids = Array.from(this.toasts.keys());
+    ids.forEach(id =&gt; this.dismiss(id));
   }
 }
 &nbsp;
 // Create a singleton instance
-const toast = <span class="cstat-no" title="statement not covered">new ToastManager();</span>
+const toast = new ToastManager();
 &nbsp;
 export { toast, TOAST_TYPES };
 export default toast;
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-11T03:56:36.016Z</div><script src="../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../sorter.js"></script><script src="../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-11T23:03:11.290Z</div><script src="../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../sorter.js"></script><script src="../block-navigation.js"></script></body></html>

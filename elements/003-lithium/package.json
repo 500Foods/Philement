@@ -31,8 +31,10 @@
     "deploy:brotli": "node scripts/generate-brotli.js \"$LITHIUM_DEPLOY\""
   },
   "dependencies": {
+    "@codemirror/lang-markdown": "^6.5.0",
     "country-flag-icons": "^1.6.15",
     "dompurify": "^3.3.2",
+    "marked": "^17.0.4",
     "sql-formatter": "^15.3.0",
     "tabulator-tables": "^6.2.3",
     "vite": "^7.3.0"

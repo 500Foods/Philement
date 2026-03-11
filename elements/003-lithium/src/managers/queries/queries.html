@@ -18,19 +18,24 @@
           <fa fa-database></fa>
           <span>SQL</span>
         </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="json">
-          <fa fa-code></fa>
-          <span>JSON</span>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="markdown">
+        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="summary">
           <fa fa-file-lines></fa>
-          <span>Markdown</span>
+          <span>Summary</span>
         </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="richtext">
-          <fa fa-pen-to-square></fa>
-          <span>Rich Text</span>
+        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="collection">
+          <fa fa-code></fa>
+          <span>Collection</span>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="preview">
+          <fa fa-eye></fa>
+          <span>Preview</span>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="test">
+          <fa fa-flask></fa>
+          <span>Test</span>
         </button>
         <div class="queries-toolbar-spacer"></div>
+        <div class="queries-toolbar-placeholder"></div>
         <div class="queries-toolbar">
           <button type="button" class="queries-toolbar-btn" id="queries-undo-btn" title="Undo (Ctrl+Z)" disabled>
             <fa fa-rotate-left></fa>
@@ -45,7 +50,7 @@
             <fa fa-font></fa>
           </button>
           <button type="button" class="queries-toolbar-btn" id="queries-prettify-btn" title="Pretty Print SQL">
-            <fa fa-spa></fa>
+            <fa fa-flower-tulip></fa>
           </button>
         </div>
       </div>
@@ -54,14 +59,17 @@
       <div class="queries-tab-pane active" id="queries-tab-sql">
         <div class="queries-sql-editor" id="queries-sql-editor"></div>
       </div>
-      <div class="queries-tab-pane" id="queries-tab-json">
-        <!-- JSON Editor -->
+      <div class="queries-tab-pane" id="queries-tab-summary">
+        <!-- Summary Editor (CodeMirror with Markdown) -->
       </div>
-      <div class="queries-tab-pane" id="queries-tab-markdown">
-        <!-- Markdown Editor (CodeMirror) -->
+      <div class="queries-tab-pane" id="queries-tab-collection">
+        <!-- Collection Editor (JSON) -->
       </div>
-      <div class="queries-tab-pane" id="queries-tab-richtext">
-        <!-- Rich Text Editor (SunEditor) -->
+      <div class="queries-tab-pane" id="queries-tab-preview">
+        <!-- Preview (rendered Markdown HTML) -->
+      </div>
+      <div class="queries-tab-pane" id="queries-tab-test">
+        <!-- Test Tab (run query) -->
       </div>
     </div>
   </div>

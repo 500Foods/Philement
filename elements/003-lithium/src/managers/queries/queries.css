@@ -71,10 +71,37 @@
 }
 
 .queries-splitter {
-  width: 4px;
+  width: 6px;
+  background: transparent;
   cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background-color 0.2s ease;
+}
+
+.queries-splitter:hover,
+.queries-splitter.resizing {
+  background-color: var(--accent-primary);
+}
+
+/* Visual indicator line in the splitter */
+.queries-splitter::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 40px;
   background-color: var(--border-color);
-  transition: background-color 0.2s;
+  border-radius: 1px;
+  transition: background-color 0.2s ease;
+}
+
+.queries-splitter:hover::after,
+.queries-splitter.resizing::after {
+  background-color: white;
 }
 
 .queries-splitter.collapsed {
@@ -115,6 +142,15 @@
   min-width: 8px;
 }
 
+.queries-toolbar-placeholder {
+  flex: 0 0 28px;
+  height: 28px;
+  margin: 0 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-tertiary);
+}
+
 .queries-toolbar {
   display: flex;
   align-items: center;
@@ -123,15 +159,16 @@
 }
 
 .queries-toolbar-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
   padding: 0;
+  margin: 0 2px;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -140,7 +177,6 @@
 .queries-toolbar-btn:hover:not(:disabled) {
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
-  border-color: var(--border-color);
 }
 
 .queries-toolbar-btn:disabled {
@@ -151,6 +187,21 @@
 .queries-toolbar-btn:active:not(:disabled) {
   background-color: var(--accent-color);
   color: var(--bg-primary);
+}
+
+/* Last toolbar button - no margin */
+.queries-toolbar-btn:last-child {
+  margin-right: 0;
+}
+
+/* Toolbar placeholder */
+.queries-toolbar-placeholder {
+  flex: 0 0 28px;
+  height: 28px;
+  margin: 0 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-tertiary);
 }
 
 .queries-collapse-btn {
@@ -183,10 +234,14 @@
   display: none;
   padding: 16px;
   overflow: auto;
+  opacity: 0;
+  transition: opacity var(--transition-duration) ease-in-out;
 }
 
 .queries-tab-pane.active {
   display: block;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .queries-sql-editor {
@@ -200,5 +255,239 @@
 }
 
 .queries-sql-editor .cm-scroller {
+  overflow: auto;
+}
+
+/* ── Tabulator Theme Overrides (matching Login language panel) ───────────── */
+
+/* Table container with rounded corners and border */
+#queries-table-container {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  margin: var(--space-3);
+  border-radius: var(--border-radius-md);
+  border: var(--border-standard);
+  background: var(--bg-secondary);
+}
+
+/* Tabulator base styling */
+#queries-table-container .tabulator {
+  height: 100%;
+  background: var(--bg-secondary);
+  border: none;
+  font-size: var(--font-size-sm);
+}
+
+/* Header styling */
+#queries-table-container .tabulator-header {
+  background: var(--bg-tertiary);
+  border-bottom: var(--border-standard);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+#queries-table-container .tabulator-header .tabulator-col {
+  background: var(--bg-tertiary);
+  border-right: var(--border-standard);
+}
+
+#queries-table-container .tabulator-header .tabulator-col:last-child {
+  border-right: none;
+}
+
+/* Table body */
+#queries-table-container .tabulator-tableholder {
+  background: var(--bg-secondary);
+}
+
+/* Row styling - no left/right borders */
+#queries-table-container .tabulator-row {
+  background: var(--bg-secondary);
+  border-bottom: var(--border-standard);
+  border-left: none;
+  border-right: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+/* Cell padding */
+#queries-table-container .tabulator-cell {
+  padding: var(--space-3) var(--space-3);
+  border-left: none;
+  border-right: none;
+}
+
+#queries-table-container .tabulator-header .tabulator-col .tabulator-col-content {
+  padding: var(--space-3) var(--space-3);
+}
+
+/* Row hover */
+#queries-table-container .tabulator-row:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Selected row styling */
+#queries-table-container .tabulator-row.tabulator-selected {
+  background: var(--accent-primary) !important;
+  color: white !important;
+}
+
+#queries-table-container .tabulator-row.tabulator-selected:hover {
+  background: var(--accent-hover) !important;
+}
+
+/* Scrollbar styling */
+#queries-table-container .tabulator-tableholder::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+#queries-table-container .tabulator-tableholder::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+#queries-table-container .tabulator-tableholder::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--border-radius-full);
+}
+
+#queries-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ── Custom Sort Icons (dual ▲▼ arrows) ─────────────────────────────────── */
+
+/* Sort icon container */
+#queries-table-container .queries-sort-icons {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1;
+  font-size: 7px;
+  margin-left: var(--space-1);
+  vertical-align: middle;
+  gap: 0;
+}
+
+/* Both arrows dimmed by default */
+#queries-table-container .queries-sort-asc,
+#queries-table-container .queries-sort-desc {
+  color: var(--text-muted);
+  opacity: 0.35;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+
+/* Highlight active sort direction */
+#queries-table-container .tabulator-col[aria-sort="ascending"] .queries-sort-asc {
+  color: white;
+  opacity: 1;
+}
+
+#queries-table-container .tabulator-col[aria-sort="descending"] .queries-sort-desc {
+  color: white;
+  opacity: 1;
+}
+
+/* Hide default Tabulator sort arrows — we use our own */
+#queries-table-container .tabulator-col .tabulator-col-sorter .tabulator-arrow {
+  display: none;
+}
+
+/* Disable column resize handles */
+#queries-table-container .tabulator-col-resize-handle {
+  display: none;
+}
+
+/* ── Preview Tab Styles ─────────────────────────────────────────────────── */
+
+.queries-preview-content {
+  padding: var(--space-4);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.queries-preview-content h1,
+.queries-preview-content h2,
+.queries-preview-content h3,
+.queries-preview-content h4,
+.queries-preview-content h5,
+.queries-preview-content h6 {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.queries-preview-content h1 { font-size: var(--font-size-2xl); }
+.queries-preview-content h2 { font-size: var(--font-size-xl); }
+.queries-preview-content h3 { font-size: var(--font-size-lg); }
+
+.queries-preview-content p {
+  margin-bottom: var(--space-3);
+}
+
+.queries-preview-content code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.queries-preview-content pre {
+  background: var(--bg-secondary);
+  padding: var(--space-3);
+  border-radius: var(--border-radius-md);
+  overflow-x: auto;
+}
+
+.queries-preview-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.queries-preview-content ul,
+.queries-preview-content ol {
+  margin-bottom: var(--space-3);
+  padding-left: var(--space-5);
+}
+
+.queries-preview-content li {
+  margin-bottom: var(--space-1);
+}
+
+.queries-preview-content blockquote {
+  border-left: 4px solid var(--accent-primary);
+  margin: var(--space-3) 0;
+  padding-left: var(--space-3);
+  color: var(--text-secondary);
+}
+
+/* ── Test Tab Styles ────────────────────────────────────────────────────── */
+
+.queries-test-content {
+  padding: var(--space-4);
+}
+
+.queries-test-run-btn {
+  padding: var(--space-2) var(--space-4);
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+}
+
+.queries-test-run-btn:hover {
+  background: var(--accent-hover);
+}
+
+.queries-test-results {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  max-height: 400px;
   overflow: auto;
 }
