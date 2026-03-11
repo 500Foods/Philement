@@ -39,6 +39,7 @@ tests/
 │   ├── log.test.js              # 47 tests
 │   ├── lookups.test.js          # 26 tests
 │   ├── permissions.test.js      # 23 tests
+│   ├── toast.test.js            # 47 tests
 │   ├── transitions.test.js      # 32 tests
 │   └── utils.test.js            # 38 tests
 └── integration/                 # Integration tests

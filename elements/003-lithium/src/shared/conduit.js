@@ -180,9 +180,20 @@ export function extractError(response) {
  */
 export async function authQuery(api, queryRef, params = {}) {
   const payload = buildQueryPayload(queryRef, params);
-  const response = await api.post('conduit/auth_query', payload);
 
-  // Check for error response before extracting rows
+  let response;
+  try {
+    response = await api.post('conduit/auth_query', payload);
+  } catch (httpError) {
+    // HTTP error (non-2xx response) — enrich with serverError from response body
+    const serverErr = extractError(httpError.data);
+    if (serverErr) {
+      httpError.serverError = serverErr;
+    }
+    throw httpError;
+  }
+
+  // 2xx response but success: false — extract error info
   const error = extractError(response);
   if (error) {
     const err = new Error(error.message);

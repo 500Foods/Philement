@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">91.07% </span>
+                <span class="strong">91.8% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>51/56</span>
+                <span class='fraction'>56/61</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">82.69% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>43/52</span>
+                <span class='fraction'>45/54</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">91.66% </span>
+                <span class="strong">90.56% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>44/48</span>
+                <span class='fraction'>48/53</span>
             </div>
         
             
@@ -324,7 +324,18 @@
 <a name='L259'></a><a href='#L259'>259</a>
 <a name='L260'></a><a href='#L260'>260</a>
 <a name='L261'></a><a href='#L261'>261</a>
-<a name='L262'></a><a href='#L262'>262</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a>
+<a name='L265'></a><a href='#L265'>265</a>
+<a name='L266'></a><a href='#L266'>266</a>
+<a name='L267'></a><a href='#L267'>267</a>
+<a name='L268'></a><a href='#L268'>268</a>
+<a name='L269'></a><a href='#L269'>269</a>
+<a name='L270'></a><a href='#L270'>270</a>
+<a name='L271'></a><a href='#L271'>271</a>
+<a name='L272'></a><a href='#L272'>272</a>
+<a name='L273'></a><a href='#L273'>273</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -472,7 +483,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
@@ -506,7 +517,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
@@ -733,7 +755,7 @@ export function extractBatchRows(response) {
  * @returns {Object|null} Error object with message, error, query_ref, database or null
  */
 export function extractError(response) {
-  <span class="missing-if-branch" title="if path not taken" >I</span>if (!response) <span class="cstat-no" title="statement not covered" >return null;</span>
+  if (!response) return null;
 &nbsp;
   // Check for explicit success flag
   <span class="missing-if-branch" title="if path not taken" >I</span>if (response.success === false) {
@@ -767,9 +789,20 @@ export function extractError(response) {
  */
 export async function authQuery(api, queryRef, params = {}) {
   const payload = buildQueryPayload(queryRef, params);
-  const response = await api.post('conduit/auth_query', payload);
 &nbsp;
-  // Check for error response before extracting rows
+  let response;
+  try {
+    response = await api.post('conduit/auth_query', payload);
+  } catch (httpError) {
+    // HTTP error (non-2xx response) — enrich with serverError from response body
+    const serverErr = extractError(httpError.data);
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (serverErr) {
+<span class="cstat-no" title="statement not covered" >      httpError.serverError = serverErr;</span>
+    }
+    throw httpError;
+  }
+&nbsp;
+  // 2xx response but success: false — extract error info
   const error = extractError(response);
   <span class="missing-if-branch" title="if path not taken" >I</span>if (error) {
     const err = <span class="cstat-no" title="statement not covered" >new Error(error.message);</span>
@@ -853,7 +886,7 @@ export default {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-11T03:56:36.016Z
+                at 2026-03-11T18:21:16.304Z
             </div>
         <script src="../prettify.js"></script>
         <script>

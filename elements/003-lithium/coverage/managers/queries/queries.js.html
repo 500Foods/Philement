@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/189</span>
+                <span class='fraction'>0/185</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/73</span>
+                <span class='fraction'>0/70</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/173</span>
+                <span class='fraction'>0/169</span>
             </div>
         
             
@@ -578,7 +578,18 @@
 <a name='L513'></a><a href='#L513'>513</a>
 <a name='L514'></a><a href='#L514'>514</a>
 <a name='L515'></a><a href='#L515'>515</a>
-<a name='L516'></a><a href='#L516'>516</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L516'></a><a href='#L516'>516</a>
+<a name='L517'></a><a href='#L517'>517</a>
+<a name='L518'></a><a href='#L518'>518</a>
+<a name='L519'></a><a href='#L519'>519</a>
+<a name='L520'></a><a href='#L520'>520</a>
+<a name='L521'></a><a href='#L521'>521</a>
+<a name='L522'></a><a href='#L522'>522</a>
+<a name='L523'></a><a href='#L523'>523</a>
+<a name='L524'></a><a href='#L524'>524</a>
+<a name='L525'></a><a href='#L525'>525</a>
+<a name='L526'></a><a href='#L526'>526</a>
+<a name='L527'></a><a href='#L527'>527</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -797,15 +808,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -837,8 +851,13 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1074,7 +1093,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1312,10 +1334,13 @@ export default class QueriesManager {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      this.table.setData(rows);</span>
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      console.error('[QueriesManager] Failed to load queries:', error);</span>
-      // Show detailed error message from server if available
-      const errorMessage = <span class="cstat-no" title="statement not covered" >error.serverError?.message || error.message || 'Failed to load queries. Please try again.';</span>
-<span class="cstat-no" title="statement not covered" >      toast.error(errorMessage);</span>
+      // Show detailed error toast with subsystem badge
+      // (toast.error auto-logs server error details via _logServerError)
+<span class="cstat-no" title="statement not covered" >      toast.error('Query Load Failed', {</span>
+        serverError: error.serverError,
+        subsystem: 'Conduit',
+        duration: 8000,
+      });
     }
   }
 &nbsp;
@@ -1352,8 +1377,13 @@ export default class QueriesManager {
 <span class="cstat-no" title="statement not covered" >        console.log('Loaded query details:', fullQuery);</span>
       }
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      console.error('[QueriesManager] Failed to fetch query details:', error);</span>
-<span class="cstat-no" title="statement not covered" >      toast.error('Failed to load query details. Please try again.');</span>
+      // Show detailed error toast - title comes from serverError.error, description from serverError.message
+      // (toast.error auto-logs server error details via _logServerError)
+<span class="cstat-no" title="statement not covered" >      toast.error('Query Details Failed', {</span>
+        serverError: error.serverError,
+        subsystem: 'Conduit',
+        duration: 8000,
+      });
     }
   }
 &nbsp;
@@ -1588,8 +1618,11 @@ export default class QueriesManager {
         changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: formatted },
       });
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      console.error('[QueriesManager] Failed to prettify SQL:', error);</span>
-<span class="cstat-no" title="statement not covered" >      toast.error('Failed to format SQL. Please try again.');</span>
+<span class="cstat-no" title="statement not covered" >      toast.error('SQL Format Failed', {</span>
+        serverError: error.serverError,
+        subsystem: 'Query',
+        duration: 8000,
+      });
     }
   }
 &nbsp;
@@ -1615,7 +1648,7 @@ export default class QueriesManager {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-11T03:56:36.016Z
+                at 2026-03-11T18:21:16.304Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

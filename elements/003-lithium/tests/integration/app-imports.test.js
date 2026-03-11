@@ -73,9 +73,9 @@ describe('App Import Verification', () => {
     expect(typeof logModule.removeArchivedSession).toBe('function');
   });
 
-  it('should have RESTAPI subsystem defined', async () => {
+  it('should have RESTAPI subsystem defined (mapped to Conduit)', async () => {
     const logModule = await import('../../src/core/log.js');
-    expect(logModule.Subsystems.RESTAPI).toBe('RESTAPI');
+    expect(logModule.Subsystems.RESTAPI).toBe('Conduit');
   });
 
   it('should have HTTP request counter functions', async () => {
