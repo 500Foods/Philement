@@ -344,9 +344,10 @@ enum MHD_Result handle_query_id_generation(struct MHD_Connection *connection, co
         if (ordered_params) free(ordered_params);
         json_t *error_response = create_processing_error_response("Failed to generate query ID", database, query_ref);
 
+        // api_send_json_response takes ownership of error_response (calls json_decref internally)
+        // Return MHD_YES so MHD sends the queued error response instead of closing the connection
         api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
-        json_decref(error_response);
-        return MHD_NO; // Response sent - processing complete
+        return MHD_NO; // Signal caller to stop processing
     }
     return MHD_YES; // Continue processing
 }
@@ -364,9 +365,9 @@ enum MHD_Result handle_pending_registration(struct MHD_Connection *connection, c
         if (ordered_params) free(ordered_params);
         json_t *error_response = create_processing_error_response("Failed to register pending result", database, query_ref);
 
+        // api_send_json_response takes ownership of error_response (calls json_decref internally)
         api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
-        json_decref(error_response);
-        return MHD_NO; // Response sent - processing complete
+        return MHD_NO; // Signal caller to stop processing
     }
     return MHD_YES; // Continue processing
 }
@@ -386,9 +387,9 @@ enum MHD_Result handle_query_submission(struct MHD_Connection *connection, const
 
         json_t *error_response = create_processing_error_response("Failed to submit query", database, query_ref);
 
+        // api_send_json_response takes ownership of error_response (calls json_decref internally)
         api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
-        json_decref(error_response);
-        return MHD_NO; // Response sent - processing complete
+        return MHD_NO; // Signal caller to stop processing
     }
     return MHD_YES; // Continue processing
 }
@@ -410,7 +411,6 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
                                 MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
 
     enum MHD_Result http_result = api_send_json_response(connection, response, http_status);
-    json_decref(response);
 
     return http_result;
 }

@@ -560,10 +560,10 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
     // Check for NULL db_queue
     if (!db_queue) {
         json_t *error_response = create_processing_error_response("Database queue not available", database, query_ref);
-        api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
-        json_decref(error_response);
+        // api_send_json_response takes ownership of error_response (calls json_decref internally)
+        enum MHD_Result send_result = api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
         *converted_sql = NULL;
-        return MHD_NO;
+        return send_result;
     }
 
     // (B) Validate Params: Check type mismatches
@@ -571,11 +571,10 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
     if (type_error) {
         json_t *error_response = create_processing_error_response("Parameter type mismatch", database, query_ref);
         json_object_set_new(error_response, "message", json_string(type_error));
-        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
+        enum MHD_Result send_result = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
         free(type_error);
         *converted_sql = NULL;
-        return MHD_YES;
+        return send_result;
     }
 
     // (C) Check for missing required parameters BEFORE processing
@@ -594,53 +593,63 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
 
     char* missing_error = check_missing_parameters_simple(cache_entry->sql_template, temp_param_list);
     if (missing_error) {
-        // Clean up temp list
-        if (temp_param_list) {
-            if (temp_param_list->params) {
-                for (size_t i = 0; i < temp_param_list->count; i++) {
-                    if (temp_param_list->params[i]) {
-                        free(temp_param_list->params[i]->name);
-                        free(temp_param_list->params[i]);
-                    }
-                }
-                free(temp_param_list->params);
-            }
-            free(temp_param_list);
-        }
+        // Also check for unused parameters to give a complete picture
+        char* unused_info = check_unused_parameters_simple(cache_entry->sql_template, temp_param_list);
 
-        json_t *error_response = create_processing_error_response("Missing parameters", database, query_ref);
-        json_object_set_new(error_response, "message", json_string(missing_error));
-        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
+        // Use the standard function to free the parameter list
+        free_parameter_list(temp_param_list);
+
+        // Build a descriptive message: "Required: PARAM1, PARAM2. Unused: EXTRA1"
+        json_t *error_response = create_processing_error_response("Missing required parameters", database, query_ref);
+        if (unused_info) {
+            // Combine missing and unused info into one message
+            size_t combined_len = strlen("Required: ") + strlen(missing_error) + strlen(". ") + strlen(unused_info) + 1;
+            char* combined_msg = malloc(combined_len);
+            if (combined_msg) {
+                snprintf(combined_msg, combined_len, "Required: %s. %s", missing_error, unused_info);
+                json_object_set_new(error_response, "message", json_string(combined_msg));
+                free(combined_msg);
+            } else {
+                // Fallback to just missing params
+                char* prefixed = malloc(strlen("Required: ") + strlen(missing_error) + 1);
+                if (prefixed) {
+                    snprintf(prefixed, strlen("Required: ") + strlen(missing_error) + 1, "Required: %s", missing_error);
+                    json_object_set_new(error_response, "message", json_string(prefixed));
+                    free(prefixed);
+                } else {
+                    json_object_set_new(error_response, "message", json_string(missing_error));
+                }
+            }
+            free(unused_info);
+        } else {
+            // Only missing params, no unused
+            char* prefixed = malloc(strlen("Required: ") + strlen(missing_error) + 1);
+            if (prefixed) {
+                snprintf(prefixed, strlen("Required: ") + strlen(missing_error) + 1, "Required: %s", missing_error);
+                json_object_set_new(error_response, "message", json_string(prefixed));
+                free(prefixed);
+            } else {
+                json_object_set_new(error_response, "message", json_string(missing_error));
+            }
+        }
+        enum MHD_Result send_result = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
         free(missing_error);
         *converted_sql = NULL;
-        return MHD_NO;  // Error response sent, stop processing
+        return send_result;
     }
 
     // (D) Assign Parameters: Parse and convert now that we know parameters are complete
     bool processing_success = process_parameters(params_json, param_list, cache_entry->sql_template, db_queue->engine_type, converted_sql, ordered_params, param_count);
 
     if (!processing_success) {
-        // Clean up temp list
-        if (temp_param_list) {
-            if (temp_param_list->params) {
-                for (size_t i = 0; i < temp_param_list->count; i++) {
-                    if (temp_param_list->params[i]) {
-                        free(temp_param_list->params[i]->name);
-                        free(temp_param_list->params[i]);
-                    }
-                }
-                free(temp_param_list->params);
-            }
-            free(temp_param_list);
-        }
+        // Use the standard function to free the parameter list
+        free_parameter_list(temp_param_list);
 
         json_t *error_response = create_processing_error_response("Parameter processing failed", database, query_ref);
         json_object_set_new(error_response, "message", json_string("Failed to convert named parameters to positional format - check that all required parameters are provided and SQL template syntax is correct"));
-        api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
+        enum MHD_Result send_result = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
         *converted_sql = NULL;
-        return MHD_NO;  // Error response sent, stop processing
+        return send_result;
     }
 
     // Check for unused parameters (warning only) - now using the final param_list
@@ -651,19 +660,8 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
         *message = unused_warning;
     }
 
-    // Clean up temp list
-    if (temp_param_list) {
-        if (temp_param_list->params) {
-            for (size_t i = 0; i < temp_param_list->count; i++) {
-                if (temp_param_list->params[i]) {
-                    free(temp_param_list->params[i]->name);
-                    free(temp_param_list->params[i]);
-                }
-            }
-            free(temp_param_list->params);
-        }
-        free(temp_param_list);
-    }
+    // Use the standard function to free the parameter list
+    free_parameter_list(temp_param_list);
 
     return MHD_YES; // Continue processing
 }

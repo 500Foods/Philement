@@ -112,7 +112,7 @@ enum MHD_Result handle_conduit_query_request(
     enum MHD_Result result = handle_method_validation(connection, method);
     if (result != MHD_YES) {
         api_free_post_buffer(con_cls);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Step 2: Parse request data from buffer (handles GET query params and POST JSON body)
@@ -122,7 +122,7 @@ enum MHD_Result handle_conduit_query_request(
     // Free the buffer now that we've parsed the data
     api_free_post_buffer(con_cls);
     
-    if (result != MHD_YES) return result;
+    if (result != MHD_YES) return MHD_YES; // Error response was already sent by helper
 
     log_this(SR_API, "%s: Request data parsed successfully", LOG_LEVEL_TRACE, 1, conduit_service_name());
 
@@ -133,7 +133,7 @@ enum MHD_Result handle_conduit_query_request(
     result = handle_field_extraction(connection, request_json, &query_ref, &database, &params_json);
     if (result != MHD_YES) {
         json_decref(request_json);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     log_this(SR_API, "%s: Request fields extracted: query_ref=%d, database=%s", LOG_LEVEL_TRACE, 3, conduit_service_name(), query_ref, database);
@@ -145,7 +145,7 @@ enum MHD_Result handle_conduit_query_request(
     result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found, true);
     if (result != MHD_YES) {
         json_decref(request_json);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Check if database lookup failed (error response already sent)
@@ -158,7 +158,6 @@ enum MHD_Result handle_conduit_query_request(
     if (query_not_found) {
         json_t* response = build_invalid_queryref_response(query_ref, database, NULL);
         enum MHD_Result http_result = api_send_json_response(connection, response, MHD_HTTP_OK);
-        json_decref(response);
         json_decref(request_json);
         return http_result;
     }
@@ -176,7 +175,7 @@ enum MHD_Result handle_conduit_query_request(
                                         &ordered_params, &param_count, &message);
     if (result != MHD_YES || !converted_sql) {
         json_decref(request_json);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Generate parameter validation messages
@@ -188,7 +187,7 @@ enum MHD_Result handle_conduit_query_request(
                                     param_list, converted_sql, ordered_params, &selected_queue);
     if (result != MHD_YES) {
         json_decref(request_json);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Step 7: Generate unique query ID
@@ -197,7 +196,7 @@ enum MHD_Result handle_conduit_query_request(
                                         converted_sql, ordered_params, &query_id);
     if (result != MHD_YES) {
         json_decref(request_json);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Step 8: Register pending result
@@ -207,7 +206,7 @@ enum MHD_Result handle_conduit_query_request(
                                         cache_entry, &pending);
     if (result != MHD_YES) {
         json_decref(request_json);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Step 9: Prepare and submit query
@@ -215,7 +214,7 @@ enum MHD_Result handle_conduit_query_request(
                                     converted_sql, param_list, ordered_params, param_count, cache_entry);
     if (result != MHD_YES) {
         json_decref(request_json);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Step 10: Wait for result and build response

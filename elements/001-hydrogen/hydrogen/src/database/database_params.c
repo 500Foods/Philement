@@ -201,18 +201,29 @@ char* convert_named_to_positional(
     const char* dqm_label
 ) {
     if (!sql_template || !params) {
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "convert_named_to_positional: NULL sql_template or params", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
+    log_this(dqm_label ? dqm_label : SR_DATABASE, "convert_named_to_positional: Starting conversion for %zu params", LOG_LEVEL_DEBUG, 1, params->count);
+
     // First, build the ordered parameter array
     if (!build_parameter_array(sql_template, params, ordered_params, param_count, dqm_label)) {
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "convert_named_to_positional: build_parameter_array failed", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
+
+    log_this(dqm_label ? dqm_label : SR_DATABASE, "convert_named_to_positional: Built parameter array with %zu params", LOG_LEVEL_DEBUG, 1, *param_count);
 
     // Create a copy of the SQL template to modify
     char* modified_sql = strdup(sql_template);
     if (!modified_sql) {
         log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to duplicate SQL template", LOG_LEVEL_ERROR, 0);
+        if (*ordered_params) {
+            free(*ordered_params);
+            *ordered_params = NULL;
+        }
+        *param_count = 0;
         return NULL;
     }
 

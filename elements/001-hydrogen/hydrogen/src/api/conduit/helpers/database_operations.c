@@ -121,8 +121,8 @@ enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const 
 
             json_t *error_response = create_lookup_error_response(error_msg, database, query_ref, true, message);
 
+            // api_send_json_response takes ownership of error_response (calls json_decref internally)
             api_send_json_response(connection, error_response, http_status);
-            json_decref(error_response);
             return MHD_YES; // Error response sent - main function will check db_queue
         } else {
             // Query not found - continue processing but mark as not found
@@ -147,8 +147,8 @@ enum MHD_Result handle_queue_selection(struct MHD_Connection *connection, const 
         if (ordered_params) free(ordered_params);
         json_t *error_response = create_processing_error_response("No suitable queue available", database, query_ref);
 
+        // api_send_json_response takes ownership of error_response (calls json_decref internally)
         api_send_json_response(connection, error_response, MHD_HTTP_SERVICE_UNAVAILABLE);
-        json_decref(error_response);
         return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
