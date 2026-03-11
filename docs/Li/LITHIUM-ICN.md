@@ -389,6 +389,16 @@ For smooth rotation, add a CSS transition targeting the icon by ID **and** by po
 |----------|---------|---------|
 | `main.js` | Sidebar collapse arrow | `_getArrowEl()` — queries `#collapse-icon` or button's `firstElementChild` |
 | `queries.js` | Table collapse arrow | `_getCollapseIconEl()` — queries `#queries-collapse-icon` or button's `firstElementChild` |
+| `toast.css` | Expand chevron rotation | CSS targets both `i` and `svg` for smooth 180° rotation |
+
+> **Note:** For simple CSS transitions/animations (like the toast expand chevron), you can target both `i` and `svg` elements directly in CSS instead of using JavaScript DOM queries:
+>
+> ```css
+> .toast-header-expand i,
+> .toast-header-expand svg {
+>   transition: transform 0.2s ease;
+> }
+> ```
 
 ---
 

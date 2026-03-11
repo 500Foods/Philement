@@ -7,7 +7,7 @@
 
 import { retrieveJWT } from './jwt.js';
 import { eventBus, Events } from './event-bus.js';
-import { logHttpRequest, logHttpResponse, Status } from './log.js';
+import { logHttpRequest, logHttpResponse, logGroup, Subsystems, Status } from './log.js';
 
 /**
  * Build full URL from path
@@ -57,7 +57,7 @@ function getHeaders(includeAuth = true) {
  * @param {Response} response - Fetch response
  * @returns {Promise} Resolved with data or rejected with error
  */
-async function handleResponse(response) {
+async function handleResponse(response, requestNum) {
   // Parse JSON body if present
   let data = null;
   const contentType = response.headers.get('content-type');
@@ -67,6 +67,14 @@ async function handleResponse(response) {
       data = await response.json();
     } catch (e) {
       // JSON parse error, continue with null data
+    }
+  }
+
+  // Log error response body as RESTAPI grouped entry when available
+  if (!response.ok && data && typeof data === 'object' && requestNum) {
+    const items = Object.entries(data).map(([key, value]) => `${key}: ${value}`);
+    if (items.length > 0) {
+      logGroup(Subsystems.RESTAPI, Status.ERROR, `Response ${requestNum}: Body`, items);
     }
   }
 
@@ -133,7 +141,7 @@ export async function get(path, options = {}) {
     logHttpResponse(requestNum, 'GET', path, response.status, null, duration);
   }
   
-  return handleResponse(response);
+  return handleResponse(response, requestNum);
 }
 
 /**
@@ -166,7 +174,7 @@ export async function post(path, body, options = {}) {
     logHttpResponse(requestNum, 'POST', path, response.status, null, duration);
   }
   
-  return handleResponse(response);
+  return handleResponse(response, requestNum);
 }
 
 /**
@@ -199,7 +207,7 @@ export async function put(path, body, options = {}) {
     logHttpResponse(requestNum, 'PUT', path, response.status, null, duration);
   }
   
-  return handleResponse(response);
+  return handleResponse(response, requestNum);
 }
 
 /**
@@ -230,7 +238,7 @@ export async function del(path, options = {}) {
     logHttpResponse(requestNum, 'DELETE', path, response.status, null, duration);
   }
   
-  return handleResponse(response);
+  return handleResponse(response, requestNum);
 }
 
 /**
@@ -263,7 +271,7 @@ export async function patch(path, body, options = {}) {
     logHttpResponse(requestNum, 'PATCH', path, response.status, null, duration);
   }
   
-  return handleResponse(response);
+  return handleResponse(response, requestNum);
 }
 
 /**

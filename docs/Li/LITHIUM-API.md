@@ -163,6 +163,7 @@ All conduit API calls should use the shared conduit module rather than hand-craf
 | `buildBatchPayload(queries, database?)` | Build a multi-query batch payload |
 | `extractRows(response)` | Normalise response → plain rows array |
 | `extractBatchRows(response)` | Normalise batch response → `Map<queryRef, rows>` |
+| `extractError(response)` | Extract error info from `success: false` response (returns `null` if no error) |
 
 ### API Wrappers
 
@@ -172,6 +173,15 @@ All conduit API calls should use the shared conduit module rather than hand-craf
 | `authQueries(api, queries)` | `conduit/auth_queries` | `Promise<Map>` — queryRef → rows |
 | `query(api, queryRef, params?, db?)` | `conduit/query` | `Promise<Array>` — rows |
 | `queries(api, queryList, db?)` | `conduit/queries` | `Promise<Map>` — queryRef → rows |
+
+### Error Handling
+
+`authQuery()` handles errors from two paths and always enriches them with `error.serverError`:
+
+1. **HTTP error (4xx/5xx):** `json-request.js` throws with `error.data` containing the JSON body. `authQuery()` catches this, calls `extractError(error.data)`, and attaches the result as `error.serverError`.
+2. **200 OK with `success: false`:** `authQuery()` calls `extractError(response)` directly and throws a new error with `serverError` attached.
+
+In both cases, callers can rely on `error.serverError` containing `{ message, error, queryRef, database }`.
 
 ### Usage Examples
 

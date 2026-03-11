@@ -217,10 +217,13 @@ export default class QueriesManager {
 
       this.table.setData(rows);
     } catch (error) {
-      console.error('[QueriesManager] Failed to load queries:', error);
-      // Show detailed error message from server if available
-      const errorMessage = error.serverError?.message || error.message || 'Failed to load queries. Please try again.';
-      toast.error(errorMessage);
+      // Show detailed error toast with subsystem badge
+      // (toast.error auto-logs server error details via _logServerError)
+      toast.error('Query Load Failed', {
+        serverError: error.serverError,
+        subsystem: 'Conduit',
+        duration: 8000,
+      });
     }
   }
 
@@ -257,8 +260,13 @@ export default class QueriesManager {
         console.log('Loaded query details:', fullQuery);
       }
     } catch (error) {
-      console.error('[QueriesManager] Failed to fetch query details:', error);
-      toast.error('Failed to load query details. Please try again.');
+      // Show detailed error toast - title comes from serverError.error, description from serverError.message
+      // (toast.error auto-logs server error details via _logServerError)
+      toast.error('Query Details Failed', {
+        serverError: error.serverError,
+        subsystem: 'Conduit',
+        duration: 8000,
+      });
     }
   }
 
@@ -493,8 +501,11 @@ export default class QueriesManager {
         changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: formatted },
       });
     } catch (error) {
-      console.error('[QueriesManager] Failed to prettify SQL:', error);
-      toast.error('Failed to format SQL. Please try again.');
+      toast.error('SQL Format Failed', {
+        serverError: error.serverError,
+        subsystem: 'Query',
+        duration: 8000,
+      });
     }
   }
 
