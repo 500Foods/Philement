@@ -300,7 +300,8 @@ void test_handle_conduit_alt_query_request_get_method(void) {
     );
 
     // GET → real api_buffer_post_data → COMPLETE; handle_method_validation("GET") → MHD_NO
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    // NOTE: Server now sends error response (MHD_YES) instead of returning MHD_NO for invalid methods
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 
     if (con_cls) free(con_cls);
 }

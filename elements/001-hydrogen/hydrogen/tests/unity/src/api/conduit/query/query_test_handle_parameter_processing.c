@@ -135,7 +135,8 @@ void test_handle_parameter_processing_failure(void) {
                                                         NULL, &cache_entry, "test_db", 123,
                                                         &param_list, &converted_sql, &ordered_params, &param_count, &message);
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    // Server now sends error response (MHD_YES) for NULL db_queue instead of returning MHD_NO
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 
     // Cleanup
     json_decref(params_json);
