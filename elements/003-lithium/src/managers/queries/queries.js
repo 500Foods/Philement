@@ -218,7 +218,9 @@ export default class QueriesManager {
       this.table.setData(rows);
     } catch (error) {
       console.error('[QueriesManager] Failed to load queries:', error);
-      toast.error('Failed to load queries. Please try again.');
+      // Show detailed error message from server if available
+      const errorMessage = error.serverError?.message || error.message || 'Failed to load queries. Please try again.';
+      toast.error(errorMessage);
     }
   }
 

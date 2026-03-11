@@ -234,15 +234,22 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
     time_t query_start_time = time(NULL);
     void* pg_result = NULL;
     
-    if (positional_sql && PQexecParams_ptr) {
-        // Use parameterized execution (even with 0 parameters)
+    // Use the converted SQL if available, otherwise fall back to original
+    const char* sql_to_execute = positional_sql ? positional_sql : request->sql_template;
+    
+    if (positional_sql && ordered_params && ordered_param_count > 0 && PQexecParams_ptr) {
+        // Use parameterized execution with converted positional parameters
         log_this(designator, "PostgreSQL execute_query: Executing with %zu parameters", LOG_LEVEL_TRACE, 1, ordered_param_count);
         pg_result = PQexecParams_ptr(pg_conn->connection, positional_sql, (int)ordered_param_count,
                                       NULL, (const char* const*)param_values, NULL, NULL, 0);
     } else {
-        // Fall back to direct execution
-        log_this(designator, "PostgreSQL execute_query: Executing without parameters", LOG_LEVEL_TRACE, 0);
-        pg_result = PQexec_ptr(pg_conn->connection, request->sql_template);
+        // Fall back to direct execution using converted SQL (or original if conversion failed)
+        if (positional_sql) {
+            log_this(designator, "PostgreSQL execute_query: Executing converted SQL without parameters (PQexecParams not available)", LOG_LEVEL_TRACE, 0);
+        } else {
+            log_this(designator, "PostgreSQL execute_query: Executing original SQL without parameters (parameter conversion failed)", LOG_LEVEL_TRACE, 0);
+        }
+        pg_result = PQexec_ptr(pg_conn->connection, sql_to_execute);
     }
     
     // Cleanup parameter resources
