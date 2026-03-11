@@ -138,6 +138,29 @@ export function extractBatchRows(response) {
   return map;
 }
 
+/**
+ * Extract error information from a conduit response.
+ * Returns null if no error, or an object with error details.
+ *
+ * @param {Object} response - The parsed JSON response from the conduit endpoint
+ * @returns {Object|null} Error object with message, error, query_ref, database or null
+ */
+export function extractError(response) {
+  if (!response) return null;
+
+  // Check for explicit success flag
+  if (response.success === false) {
+    return {
+      message: response.message || response.error || 'Unknown error',
+      error: response.error || 'Unknown error',
+      queryRef: response.query_ref,
+      database: response.database,
+    };
+  }
+
+  return null;
+}
+
 
 // ─── API Functions (thin wrappers using the api client) ──────────────────
 
@@ -149,6 +172,7 @@ export function extractBatchRows(response) {
  * @param {number} queryRef - The QueryRef number
  * @param {Object} [params={}] - Typed parameters
  * @returns {Promise<Array>} The rows from the query result
+ * @throws {Error} If the query fails, contains the server error message
  *
  * @example
  *   const rows = await authQuery(app.api, 25);
@@ -157,6 +181,15 @@ export function extractBatchRows(response) {
 export async function authQuery(api, queryRef, params = {}) {
   const payload = buildQueryPayload(queryRef, params);
   const response = await api.post('conduit/auth_query', payload);
+
+  // Check for error response before extracting rows
+  const error = extractError(response);
+  if (error) {
+    const err = new Error(error.message);
+    err.serverError = error;
+    throw err;
+  }
+
   return extractRows(response);
 }
 
@@ -219,6 +252,7 @@ export default {
   buildBatchPayload,
   extractRows,
   extractBatchRows,
+  extractError,
   // API wrappers
   authQuery,
   authQueries,

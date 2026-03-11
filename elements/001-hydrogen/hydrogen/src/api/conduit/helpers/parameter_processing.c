@@ -614,7 +614,7 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
         json_decref(error_response);
         free(missing_error);
         *converted_sql = NULL;
-        return MHD_YES;
+        return MHD_NO;  // Error response sent, stop processing
     }
 
     // (D) Assign Parameters: Parse and convert now that we know parameters are complete
@@ -640,7 +640,7 @@ enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, j
         api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
         json_decref(error_response);
         *converted_sql = NULL;
-        return MHD_YES;
+        return MHD_NO;  // Error response sent, stop processing
     }
 
     // Check for unused parameters (warning only) - now using the final param_list

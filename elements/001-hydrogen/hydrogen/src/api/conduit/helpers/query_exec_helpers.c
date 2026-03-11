@@ -291,19 +291,19 @@ void cleanup_query_execution_resources(ParameterList* param_list, char* converte
 /**
  * @brief Cleanup ordered parameters array
  *
- * Frees an array of typed parameters and the array itself.
+ * Frees only the array of typed parameters, NOT the individual elements.
+ * The individual TypedParameter objects are owned by param_list and will
+ * be freed when free_parameter_list() is called.
  *
  * @param ordered_params Array of typed parameters
- * @param param_count Number of parameters in array
+ * @param param_count Number of parameters in array (unused, kept for API compatibility)
  */
 void cleanup_ordered_params(TypedParameter** ordered_params, size_t param_count) {
+    (void)param_count;  // Not needed since we don't free individual elements
     if (!ordered_params) {
         return;
     }
-    for (size_t i = 0; i < param_count; i++) {
-        if (ordered_params[i]) {
-            free_typed_parameter(ordered_params[i]);
-        }
-    }
+    // Do NOT free individual ordered_params[i] - they point to TypedParameters
+    // owned by param_list. Just free the array itself.
     free(ordered_params);
 }
