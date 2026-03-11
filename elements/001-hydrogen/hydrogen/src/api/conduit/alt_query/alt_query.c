@@ -322,7 +322,7 @@ enum MHD_Result handle_conduit_alt_query_request(
     enum MHD_Result result = handle_method_validation(connection, method);
     if (result != MHD_YES) {
         api_free_post_buffer(con_cls);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Step 3: Parse request and extract token, database, query_ref, params
@@ -363,14 +363,13 @@ enum MHD_Result handle_conduit_alt_query_request(
         if (params_json) {
             json_decref(params_json);
         }
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Handle invalid queryref case
     if (query_not_found) {
         json_t* response = build_invalid_queryref_response(query_ref, database, NULL);
         enum MHD_Result http_result = api_send_json_response(connection, response, MHD_HTTP_OK);
-        json_decref(response);
         free(database);
         if (params_json) {
             json_decref(params_json);
@@ -393,9 +392,9 @@ enum MHD_Result handle_conduit_alt_query_request(
         params_json = NULL;
     }
 
-    if (result != MHD_YES) {
+    if (result != MHD_YES || !converted_sql) {
         cleanup_alt_query_resources(database, NULL, param_list, converted_sql, ordered_params, param_count, message);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Step 7: Select appropriate queue
@@ -404,7 +403,7 @@ enum MHD_Result handle_conduit_alt_query_request(
                                    param_list, converted_sql, ordered_params, &selected_queue);
     if (result != MHD_YES) {
         cleanup_alt_query_resources(database, NULL, param_list, converted_sql, ordered_params, param_count, message);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Step 8: Generate query ID
@@ -413,7 +412,7 @@ enum MHD_Result handle_conduit_alt_query_request(
                                        converted_sql, ordered_params, &query_id);
     if (result != MHD_YES) {
         cleanup_alt_query_resources(database, NULL, param_list, converted_sql, ordered_params, param_count, message);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Step 9: Register pending query
@@ -423,7 +422,7 @@ enum MHD_Result handle_conduit_alt_query_request(
                                        cache_entry, &pending);
     if (result != MHD_YES) {
         cleanup_alt_query_resources(database, query_id, param_list, converted_sql, ordered_params, param_count, message);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Step 10: Submit query to database queue
@@ -432,7 +431,7 @@ enum MHD_Result handle_conduit_alt_query_request(
                                    param_count, cache_entry);
     if (result != MHD_YES) {
         cleanup_alt_query_resources(database, query_id, param_list, converted_sql, ordered_params, param_count, message);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Step 11: Suspend webserver connection for long-running queries

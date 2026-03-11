@@ -62,38 +62,16 @@ char* process_query_parameters(json_t* params, const QueryCacheEntry* cache_entr
 
     char* missing_error = check_missing_parameters_simple(cache_entry->sql_template, temp_param_list);
     if (missing_error) {
-        // Clean up temp list
-        if (temp_param_list) {
-            if (temp_param_list->params) {
-                for (size_t i = 0; i < temp_param_list->count; i++) {
-                    if (temp_param_list->params[i]) {
-                        free(temp_param_list->params[i]->name);
-                        free(temp_param_list->params[i]);
-                    }
-                }
-                free(temp_param_list->params);
-            }
-            free(temp_param_list);
-        }
+        // Use the standard function to free the parameter list
+        free_parameter_list(temp_param_list);
         return missing_error;  // Return error directly
     }
 
     // (3) Process parameters
     if (!process_parameters(params, param_list, cache_entry->sql_template,
                             db_queue->engine_type, converted_sql, ordered_params, param_count)) {
-        // Clean up temp list
-        if (temp_param_list) {
-            if (temp_param_list->params) {
-                for (size_t i = 0; i < temp_param_list->count; i++) {
-                    if (temp_param_list->params[i]) {
-                        free(temp_param_list->params[i]->name);
-                        free(temp_param_list->params[i]);
-                    }
-                }
-                free(temp_param_list->params);
-            }
-            free(temp_param_list);
-        }
+        // Use the standard function to free the parameter list
+        free_parameter_list(temp_param_list);
         return strdup("Parameter processing failed");
     }
 
@@ -105,19 +83,8 @@ char* process_query_parameters(json_t* params, const QueryCacheEntry* cache_entr
         message = unused_warning;
     }
 
-    // Clean up temp list
-    if (temp_param_list) {
-        if (temp_param_list->params) {
-            for (size_t i = 0; i < temp_param_list->count; i++) {
-                if (temp_param_list->params[i]) {
-                    free(temp_param_list->params[i]->name);
-                    free(temp_param_list->params[i]);
-                }
-            }
-            free(temp_param_list->params);
-        }
-        free(temp_param_list);
-    }
+    // Clean up temp list using standard function
+    free_parameter_list(temp_param_list);
 
     // Generate parameter validation messages
     char* validation_message = generate_parameter_messages(cache_entry->sql_template, params);

@@ -39,22 +39,19 @@
       #Loading {
         position: fixed;
         inset: 0;
-        display: grid;
+        display: grid;  
+        font-family: 'Vanadium Sans Semi-Condensed';
+        color: #666;
         place-items: center;
-        font-size: 4.5rem;
+        font-size: 18px;
         font-weight: 700;
-        letter-spacing: -2px;
         opacity: 0;  
-        animation: fadeIn 200ms forwards; 
-        transition: opacity 200ms;
-        /* animation-delay: 50ms;  /* tiny delay often looks smoother, optional */
+        animation: 
+          fadeIn 1000ms forwards,
+          fadeOut 1000ms forwards 15s; 
       }
-
-      @keyframes fadeIn {
-        to {
-          opacity: 1;
-        }
-      }        
+      @keyframes fadeIn { to { opacity: 1; } }
+      @keyframes fadeOut { to { opacity: 0; } }    
       
       /* Critical dark theme variables for FOUC prevention */
       :root {
@@ -83,7 +80,7 @@
   <body>
 
     <div id="Loading"> 
-      Lithium.
+      Welcome to Lithium
     </div>
 
     <!-- Main App Container -->

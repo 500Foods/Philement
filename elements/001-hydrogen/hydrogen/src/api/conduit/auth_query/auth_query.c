@@ -248,7 +248,7 @@ enum MHD_Result handle_conduit_auth_query_request(
     if (result != MHD_YES) {
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Method validation failed", LOG_LEVEL_TRACE, 0);
         api_free_post_buffer(con_cls);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: HTTP method validation passed", LOG_LEVEL_TRACE, 0);
 
@@ -271,7 +271,7 @@ enum MHD_Result handle_conduit_auth_query_request(
     if (result != MHD_YES) {
         // Error response already sent by helper
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Request parsing failed", LOG_LEVEL_TRACE, 0);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Request parsing succeeded", LOG_LEVEL_TRACE, 0);
 
@@ -321,7 +321,7 @@ enum MHD_Result handle_conduit_auth_query_request(
         // Error response already sent by helper
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Database lookup returned error", LOG_LEVEL_TRACE, 0);
         cleanup_auth_query_resources(request_json, jwt_result, NULL, NULL, NULL, NULL, 0, NULL);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
 
     // Handle invalid queryref case
@@ -330,7 +330,6 @@ enum MHD_Result handle_conduit_auth_query_request(
         json_t* response = build_invalid_queryref_response(query_ref, jwt_database, NULL);
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Sending invalid queryref response", LOG_LEVEL_TRACE, 0);
         enum MHD_Result http_result = api_send_json_response(connection, response, MHD_HTTP_OK);
-        json_decref(response);
         json_decref(request_json);
         free_jwt_validation_result(jwt_result);
         free(jwt_result);
@@ -361,12 +360,12 @@ enum MHD_Result handle_conduit_auth_query_request(
                                         jwt_database, query_ref, &param_list, &converted_sql,
                                         &ordered_params, &param_count, &message);
     
-    if (result != MHD_YES) {
+    if (result != MHD_YES || !converted_sql) {
         // Error response already sent by helper, or parameter error - cleanup and return
-        log_this(SR_AUTH, "handle_conduit_auth_query_request: Parameter processing failed (result=%d, converted_sql=%p)", 
+        log_this(SR_AUTH, "handle_conduit_auth_query_request: Parameter processing failed (result=%d, converted_sql=%p)",
                  LOG_LEVEL_TRACE, 2, result, (void*)converted_sql);
         cleanup_auth_query_resources(request_json, jwt_result, NULL, param_list, converted_sql, ordered_params, param_count, message);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Parameter processing succeeded", LOG_LEVEL_TRACE, 0);
 
@@ -379,7 +378,7 @@ enum MHD_Result handle_conduit_auth_query_request(
         // Error response already sent by helper
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Queue selection failed", LOG_LEVEL_TRACE, 0);
         cleanup_auth_query_resources(request_json, jwt_result, NULL, param_list, converted_sql, ordered_params, param_count, message);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Queue selection succeeded (selected_queue=%p)", LOG_LEVEL_TRACE, 1, (void*)selected_queue);
 
@@ -392,7 +391,7 @@ enum MHD_Result handle_conduit_auth_query_request(
         // Error response already sent by helper
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Query ID generation failed", LOG_LEVEL_TRACE, 0);
         cleanup_auth_query_resources(request_json, jwt_result, NULL, param_list, converted_sql, ordered_params, param_count, message);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Query ID generated: %s", LOG_LEVEL_TRACE, 1, query_id ? query_id : "(null)");
 
@@ -406,7 +405,7 @@ enum MHD_Result handle_conduit_auth_query_request(
         // Error response already sent by helper
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Pending registration failed", LOG_LEVEL_TRACE, 0);
         cleanup_auth_query_resources(request_json, jwt_result, query_id, param_list, converted_sql, ordered_params, param_count, message);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Pending registration succeeded", LOG_LEVEL_TRACE, 0);
 
@@ -418,7 +417,7 @@ enum MHD_Result handle_conduit_auth_query_request(
         // Error response already sent by helper
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Query submission failed", LOG_LEVEL_TRACE, 0);
         cleanup_auth_query_resources(request_json, jwt_result, query_id, param_list, converted_sql, ordered_params, param_count, message);
-        return result;
+        return MHD_YES; // Error response was already sent by helper
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Query submission succeeded", LOG_LEVEL_TRACE, 0);
 
@@ -433,6 +432,13 @@ enum MHD_Result handle_conduit_auth_query_request(
     // Clean up
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Cleaning up resources", LOG_LEVEL_TRACE, 0);
     cleanup_auth_query_resources(request_json, jwt_result, query_id, param_list, converted_sql, ordered_params, param_count, message);
+
+    // CRITICAL: Always return MHD_YES when a response was queued (even error responses).
+    // Returning MHD_NO tells libmicrohttpd to close the connection without sending the response.
+    if (result != MHD_YES) {
+        log_this(SR_AUTH, "handle_conduit_auth_query_request: Response building returned MHD_NO, converting to MHD_YES", LOG_LEVEL_ALERT, 0);
+        result = MHD_YES;
+    }
 
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Request completed with result=%d", LOG_LEVEL_DEBUG, 1, result);
     return result;

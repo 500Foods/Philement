@@ -105,8 +105,8 @@ enum MHD_Result handle_method_validation(struct MHD_Connection *connection, cons
             "Only POST requests are supported"
         );
 
+        // api_send_json_response takes ownership of error_response (calls json_decref internally)
         api_send_json_response(connection, error_response, MHD_HTTP_METHOD_NOT_ALLOWED);
-        json_decref(error_response);
         return MHD_NO; // Method invalid - response sent
     }
     return MHD_YES; // Method valid - continue processing
@@ -128,8 +128,8 @@ enum MHD_Result handle_request_parsing_with_buffer(struct MHD_Connection *connec
 
         json_t *error_response = create_validation_error_response(error_msg, error_detail);
 
+        // api_send_json_response takes ownership of error_response (calls json_decref internally)
         api_send_json_response(connection, error_response, http_status);
-        json_decref(error_response);
         return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
@@ -152,8 +152,8 @@ enum MHD_Result handle_request_parsing(struct MHD_Connection *connection, const 
 
         json_t *error_response = create_validation_error_response(error_msg, error_detail);
 
+        // api_send_json_response takes ownership of error_response (calls json_decref internally)
         api_send_json_response(connection, error_response, http_status);
-        json_decref(error_response);
         return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
@@ -169,8 +169,8 @@ enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_
 
         json_t *error_response = create_validation_error_response(error_msg, error_detail);
 
+        // api_send_json_response takes ownership of error_response (calls json_decref internally)
         api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
         return MHD_NO; // Response sent - processing complete
     }
     return MHD_YES; // Continue processing
@@ -186,8 +186,8 @@ enum MHD_Result handle_auth_query_field_extraction(struct MHD_Connection *connec
         const char* error_detail = "query_ref must be an integer";
 
         json_t *error_response = create_validation_error_response(error_msg, error_detail);
+        // api_send_json_response takes ownership of error_response (calls json_decref internally)
         api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
         return MHD_NO; // Response sent - processing complete
     }
 
@@ -200,7 +200,7 @@ enum MHD_Result handle_buffer_null_case(struct MHD_Connection *connection) {
     const char* error_detail = "Missing or invalid request data";
 
     json_t *error_response = create_validation_error_response(error_msg, error_detail);
+    // api_send_json_response takes ownership of error_response (calls json_decref internally)
     api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-    json_decref(error_response);
     return MHD_YES; // Response sent - processing complete
 }
