@@ -267,7 +267,8 @@ void test_handle_conduit_auth_query_request_get_method(void) {
         mock_connection, url, method, upload_data, &upload_data_size, &con_cls
     );
 
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    // GET method returns MHD_YES because server now sends error response
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
 // Test handle_conduit_auth_query_request with memory allocation failure

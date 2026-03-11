@@ -158,8 +158,9 @@ void test_alt_query_get_method_returns_no(void) {
     );
 
     // REAL api_buffer_post_data: GET → COMPLETE immediately
-    // handle_method_validation("GET") → not POST → returns MHD_NO → handler returns MHD_NO
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    // handle_method_validation("GET") → not POST → returns MHD_NO
+    // NOTE: Server now sends error response (MHD_YES) instead of returning MHD_NO for invalid methods
+    TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
 // Test: POST with data upload - first call returns CONTINUE
