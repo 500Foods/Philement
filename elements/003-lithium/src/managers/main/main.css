@@ -705,7 +705,7 @@ body.resizing * {
   flex: 1;
   overflow: hidden;
   background: var(--bg-primary);
-  min-height: 0;
+  min-height: 0px;
   position: relative;
 }
 

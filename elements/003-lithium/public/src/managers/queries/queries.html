@@ -18,58 +18,52 @@
           <fa fa-database></fa>
           <span>SQL</span>
         </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="test">
+          <fa fa-flask></fa>
+          <span>Test</span>
+        </button>
         <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="summary">
           <fa fa-file-lines></fa>
           <span>Summary</span>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="collection">
-          <fa fa-code></fa>
-          <span>Collection</span>
         </button>
         <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="preview">
           <fa fa-eye></fa>
           <span>Preview</span>
         </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="test">
-          <fa fa-flask></fa>
-          <span>Test</span>
+        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="collection">
+          <fa fa-code></fa>
+          <span>Collection</span>
         </button>
-        <div class="queries-toolbar-spacer"></div>
-        <div class="queries-toolbar-placeholder"></div>
-        <div class="queries-toolbar">
-          <button type="button" class="queries-toolbar-btn" id="queries-undo-btn" title="Undo (Ctrl+Z)" disabled>
-            <fa fa-rotate-left></fa>
-          </button>
-          <button type="button" class="queries-toolbar-btn" id="queries-redo-btn" title="Redo (Ctrl+Y)" disabled>
-            <fa fa-rotate-right></fa>
-          </button>
-          <button type="button" class="queries-toolbar-btn" id="queries-font-decrease-btn" title="Decrease Font Size">
-            <fa fa-font></fa>
-          </button>
-          <button type="button" class="queries-toolbar-btn" id="queries-font-increase-btn" title="Increase Font Size">
-            <fa fa-font></fa>
-          </button>
-          <button type="button" class="queries-toolbar-btn" id="queries-prettify-btn" title="Pretty Print SQL">
-            <fa fa-flower-tulip></fa>
-          </button>
-        </div>
+        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-toolbar-placeholder" tabindex="-1" aria-hidden="true"></button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close queries-toolbar-btn" id="queries-undo-btn" title="Undo (Ctrl+Z)" disabled>
+          <fa fa-rotate-left></fa>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close queries-toolbar-btn" id="queries-redo-btn" title="Redo (Ctrl+Y)" disabled>
+          <fa fa-rotate-right></fa>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close queries-toolbar-btn" id="queries-font-btn" title="Font Settings">
+          <fa fa-font-case></fa>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close queries-toolbar-btn" id="queries-prettify-btn" title="Pretty Print SQL">
+          <fa fa-flower-tulip></fa>
+        </button>
       </div>
     </div>
     <div class="queries-tabs-content">
       <div class="queries-tab-pane active" id="queries-tab-sql">
         <div class="queries-sql-editor" id="queries-sql-editor"></div>
       </div>
+      <div class="queries-tab-pane" id="queries-tab-test">
+        <!-- Test Tab (run query) -->
+      </div>
       <div class="queries-tab-pane" id="queries-tab-summary">
         <!-- Summary Editor (CodeMirror with Markdown) -->
-      </div>
-      <div class="queries-tab-pane" id="queries-tab-collection">
-        <!-- Collection Editor (JSON) -->
       </div>
       <div class="queries-tab-pane" id="queries-tab-preview">
         <!-- Preview (rendered Markdown HTML) -->
       </div>
-      <div class="queries-tab-pane" id="queries-tab-test">
-        <!-- Test Tab (run query) -->
+      <div class="queries-tab-pane" id="queries-tab-collection">
+        <!-- Collection Editor (JSON) -->
       </div>
     </div>
   </div>

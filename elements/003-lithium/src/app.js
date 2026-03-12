@@ -11,12 +11,13 @@
 
 import { loadConfig, getConfig, getConfigValue } from './core/config.js';
 import { eventBus, Events } from './core/event-bus.js';
-import { validateJWT, retrieveJWT, getClaims, getRenewalTime, storeJWT, clearJWT } from './core/jwt.js';
+import { validateJWT, retrieveJWT, getClaims, getRenewalTime, getTimeUntilExpiry, storeJWT, clearJWT } from './core/jwt.js';
 import { getPermittedManagers } from './core/permissions.js';
 import { createRequest } from './core/json-request.js';
 import { fetchLookups, init as initLookups } from './shared/lookups.js';
 import { init as initIcons } from './core/icons.js';
 import { getTransitionDuration } from './core/transitions.js';
+import { toast } from './shared/toast.js';
 import { log, logGroup, logStartup, logAuth, logManager, Subsystems, Status, flush, getSessionId, getRecentLogs, getRawLog, getDisplayLog, getCounter, setConsoleLogging, getArchivedSessions, removeArchivedSession } from './core/log.js';
 
 // Manager crossfade duration will be read from CSS --transition-duration
@@ -54,6 +55,12 @@ class LithiumApp {
 
     // Transition overlay element (created lazily)
     this.transitionOverlay = null;
+
+    // JWT expiration warning
+    this._expirationWarningTimer = null;
+    this._expirationCountdownInterval = null;
+    this._expirationWarningToastId = null;
+    this._expirationWarningActive = false;
   }
 
   /**
@@ -380,10 +387,25 @@ class LithiumApp {
   }
 
   /**
-   * Schedule automatic token renewal
+   * Schedule automatic token renewal and expiration warning
    */
   scheduleTokenRenewal(token) {
     const renewalTime = getRenewalTime(token);
+    const timeUntilExpiry = getTimeUntilExpiry(token);
+
+    // Schedule expiration warning (90 seconds before expiry)
+    const WARNING_LEAD_TIME = 90000; // 90 seconds
+    if (timeUntilExpiry > WARNING_LEAD_TIME) {
+      const warningTime = timeUntilExpiry - WARNING_LEAD_TIME;
+      logAuth(Status.INFO, `Token expiration warning scheduled in ${Math.round(warningTime / 1000)}s`);
+
+      this._expirationWarningTimer = setTimeout(() => {
+        this.showExpirationWarning();
+      }, warningTime);
+    } else if (timeUntilExpiry > 0) {
+      // Less than 90s remaining, show warning immediately
+      this.showExpirationWarning(Math.floor(timeUntilExpiry / 1000));
+    }
 
     if (renewalTime > 0 && renewalTime !== Infinity) {
       logAuth(Status.INFO, `Token renewal scheduled in ${Math.round(renewalTime / 1000)}s`);
@@ -400,6 +422,100 @@ class LithiumApp {
   }
 
   /**
+   * Show JWT expiration warning toast with countdown
+   * @param {number} initialSeconds - Initial countdown seconds (defaults to 90)
+   */
+  showExpirationWarning(initialSeconds = 90) {
+    if (this._expirationWarningActive) return;
+    this._expirationWarningActive = true;
+
+    let secondsRemaining = initialSeconds;
+
+    // Create warning message with countdown
+    const getMessage = () => `Session expires in ${secondsRemaining}s`;
+
+    // Show initial warning toast
+    this._expirationWarningToastId = toast.warning(getMessage(), {
+      title: 'Session Expiring',
+      description: 'Your session will expire soon. Please save your work.',
+      duration: 0, // Persistent until dismissed or expired
+      dismissible: true,
+      subsystem: 'Auth',
+    });
+
+    logAuth(Status.WARN, `Token expires in ${secondsRemaining}s`);
+
+    // Update countdown every second
+    this._expirationCountdownInterval = setInterval(() => {
+      secondsRemaining--;
+
+      // Update toast message if still showing
+      if (this._expirationWarningToastId && secondsRemaining > 0) {
+        const toastEl = document.querySelector(`[data-id="${this._expirationWarningToastId}"]`);
+        if (toastEl) {
+          const titleBtn = toastEl.querySelector('.toast-header-title');
+          if (titleBtn) {
+            titleBtn.textContent = getMessage();
+          }
+        }
+      }
+
+      // Log at 60s, 30s, and 10s remaining
+      if ([60, 30, 10].includes(secondsRemaining)) {
+        logAuth(Status.WARN, `Token expires in ${secondsRemaining}s`);
+      }
+
+      // When countdown reaches 0, perform quick logout
+      if (secondsRemaining <= 0) {
+        this.clearExpirationTimers();
+        this.performQuickLogout();
+      }
+    }, 1000);
+  }
+
+  /**
+   * Clear all expiration warning timers
+   */
+  clearExpirationTimers() {
+    if (this._expirationWarningTimer) {
+      clearTimeout(this._expirationWarningTimer);
+      this._expirationWarningTimer = null;
+    }
+    if (this._expirationCountdownInterval) {
+      clearInterval(this._expirationCountdownInterval);
+      this._expirationCountdownInterval = null;
+    }
+    this._expirationWarningActive = false;
+  }
+
+  /**
+   * Perform quick logout when session expires
+   */
+  async performQuickLogout() {
+    logAuth(Status.WARN, 'Session expired - performing quick logout');
+
+    // Dismiss the warning toast
+    if (this._expirationWarningToastId) {
+      toast.dismiss(this._expirationWarningToastId);
+      this._expirationWarningToastId = null;
+    }
+
+    // Show expired toast
+    toast.error('Session Expired', {
+      title: 'Session Expired',
+      description: 'Your session has expired. You have been logged out.',
+      duration: 5000,
+      subsystem: 'Auth',
+    });
+
+    // Perform quick logout
+    await this.performLogoutActions('quick');
+
+    // Reload page to return to login
+    window.location.reload();
+  }
+
+  /**
    * Renew the JWT token
    */
   async renewToken() {
@@ -408,10 +524,27 @@ class LithiumApp {
     const response = await this.api.post('auth/renew');
 
     if (response.token) {
+      // Clear any existing expiration warning
+      this.clearExpirationTimers();
+
+      // Dismiss warning toast if showing
+      if (this._expirationWarningToastId) {
+        toast.dismiss(this._expirationWarningToastId);
+        this._expirationWarningToastId = null;
+      }
+
       storeJWT(response.token);
       this.scheduleTokenRenewal(response.token);
       eventBus.emit(Events.AUTH_RENEWED, { expiresAt: response.expires_at });
       logAuth(Status.SUCCESS, 'Token renewed successfully', Date.now() - start);
+
+      // Show success toast
+      toast.success('Session Renewed', {
+        title: 'Session Extended',
+        description: 'Your session has been successfully renewed.',
+        duration: 3000,
+        subsystem: 'Auth',
+      });
     }
   }
 
@@ -1013,7 +1146,7 @@ class LithiumApp {
     this.loadedManagers.clear();
 
     // Show expired message and redirect to login
-    alert('Your session has expired. Please log in again.');
+    // alert('Your session has expired. Please log in again.');
     await this.loadLoginManager();
   }
 

@@ -10,9 +10,8 @@
 .queries-left-panel {
   display: flex;
   flex-direction: column;
-  width: 300px; /* Initial width */
-  min-width: 200px;
-  max-width: 600px;
+  width: 313px; /* Initial width */
+  min-width: 157px;
   border-right: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
@@ -32,42 +31,170 @@
 }
 
 .queries-navigator-container {
-  height: 40px;
   border-top: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  padding: 0 8px;
   background-color: var(--bg-tertiary);
+  padding: var(--space-2);
 }
 
-.queries-search-box {
+/* ── Navigator Control Bar ───────────────────────────────────────────────── */
+
+/* Wrapper: blocks flow left-to-right, wrapping when narrow */
+.queries-nav-wrapper {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   align-items: center;
-  width: 100%;
 }
 
-.queries-search-box input {
+/* Each block is a nowrap row of buttons — half the size of the main toolbar */
+.queries-nav-block {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1px;
+  outline: 3px solid var(--accent-primary);
+  outline-offset: -5px;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  height: 24px;
+  line-height: 1;
+  min-width: 150px;
+}
+
+/* First and last button in a block get rounded corners */
+.queries-nav-block > *:first-child {
+  border-top-left-radius: var(--border-radius-sm);
+  border-bottom-left-radius: var(--border-radius-sm);
+}
+.queries-nav-block > *:last-child {
+  border-top-right-radius: var(--border-radius-sm);
+  border-bottom-right-radius: var(--border-radius-sm);
+}
+
+/* Navigator button — compact icon-only button */
+.queries-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--space-2);
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background-color: var(--accent-primary);
+  color: white;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  line-height: 1;
+  z-index: 1;
+}
+
+.queries-nav-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+.queries-nav-btn:active {
+  background-color: var(--accent-focus);
+}
+
+.queries-nav-btn:disabled {
+  background-color: var(--text-disabled);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* Danger variant (Delete) */
+.queries-nav-btn-danger:hover {
+  background-color: var(--accent-danger);
+}
+
+/* SVG icons inside nav buttons — scale to fit */
+.queries-nav-btn svg,
+.queries-nav-btn i {
+  font-size: 11px;
+  width: 11px;
+  height: 11px;
+}
+
+/* Search block — magnifying-glass, input, X clear button */
+.queries-nav-block-search {
   flex: 1;
-  padding: 4px 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  outline: none;
+  border: 2px solid var(--accent-primary);
+}
+.queries-nav-block-search .queries-nav-btn {
+  margin-top: -2px;
+}
+
+.queries-nav-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  padding: 0px var(--space-2) var(--space-2) var(--space-2);
+  border: none;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  margin-right: 4px;
+  font-size: var(--font-size-xs);
+  outline: none;
 }
 
-.queries-search-box button {
-  padding: 4px 8px;
-  background: none;
+.queries-nav-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.queries-nav-search-input:focus {
+  background-color: var(--bg-input);
+}
+
+/* ── Navigator Popup Menus ───────────────────────────────────────────────── */
+
+/* Popup container — positioned above the navigator, anchored to the button */
+.queries-nav-popup {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 4px;
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--text-secondary);
-  cursor: pointer;
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  min-width: 120px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
 }
 
-.queries-search-box button:hover {
-  background-color: var(--bg-secondary);
+.queries-nav-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Individual popup item */
+.queries-nav-popup-item {
+  display: block;
+  width: 100%;
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
   color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.queries-nav-popup-item:hover {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.queries-nav-popup-item:active {
+  background-color: var(--accent-focus);
 }
 
 .queries-splitter {
@@ -134,74 +261,113 @@
 }
 
 .queries-tab-btn.active {
-  background-color: var(--bg-tertiary);
+  background-color: var(--accent-focus);
+}
+.queries-tab-btn:hover {                
+  background-color: var(--accent-hover);
 }
 
-.queries-toolbar-spacer {
-  flex: 1;
-  min-width: 8px;
-}
-
+/* Placeholder button stretches to fill space between tabs and toolbar */
 .queries-toolbar-placeholder {
-  flex: 0 0 28px;
-  height: 28px;
-  margin: 0 4px;
+  flex: 1;
+  min-width: 16px;
+  /* Visible with normal button styling, just empty content */
+}
+
+/* Toolbar buttons styling */
+.queries-toolbar-btn:disabled {
+  cursor: not-allowed;
+  background-color: var(--accent-primary);
+  color: var(--text-disabled);
+  /* No opacity change - it reveals outline styling issues */
+}
+
+/* Font Popup */
+.queries-font-popup {
+  position: absolute;
+  top: 100%;
+  right: 8px;
+  margin-top: 4px;
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
-  background: var(--bg-tertiary);
+  padding: 12px;
+  min-width: 280px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+  z-index: 1;
 }
 
-.queries-toolbar {
+.queries-font-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.queries-font-popup-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 4px;
+  margin-bottom: 12px;
 }
 
-.queries-toolbar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  margin: 0 2px;
-  background: transparent;
+.queries-font-popup-row:last-child {
+  margin-bottom: 0;
+}
+
+.queries-font-popup-label {
+  width: 60px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.queries-font-popup-select,
+.queries-font-popup-input {
+  flex: 1;
+  padding: 6px 8px;
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+}
+
+.queries-font-popup-select:focus,
+.queries-font-popup-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.queries-font-popup-styles {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.queries-font-popup-style-btn {
+  flex: 1;
+  padding: 6px 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
   color: var(--text-secondary);
   cursor: pointer;
+  font-size: var(--font-size-sm);
   transition: all 0.2s ease;
 }
 
-.queries-toolbar-btn:hover:not(:disabled) {
-  background-color: var(--bg-tertiary);
+.queries-font-popup-style-btn:hover {
+  background: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
-.queries-toolbar-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.queries-toolbar-btn:active:not(:disabled) {
-  background-color: var(--accent-color);
-  color: var(--bg-primary);
-}
-
-/* Last toolbar button - no margin */
-.queries-toolbar-btn:last-child {
-  margin-right: 0;
-}
-
-/* Toolbar placeholder */
-.queries-toolbar-placeholder {
-  flex: 0 0 28px;
-  height: 28px;
-  margin: 0 4px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background: var(--bg-tertiary);
+.queries-font-popup-style-btn.active {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
 }
 
 .queries-collapse-btn {
@@ -231,17 +397,19 @@
   left: 0;
   width: 100%;
   height: 100%;
-  display: none;
   padding: 16px;
   overflow: auto;
   opacity: 0;
-  transition: opacity var(--transition-duration) ease-in-out;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--transition-duration) ease-in-out, visibility 0s linear var(--transition-duration);
 }
 
 .queries-tab-pane.active {
-  display: block;
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
+  transition: opacity var(--transition-duration) ease-in-out, visibility 0s linear 0s;
 }
 
 .queries-sql-editor {
@@ -258,13 +426,39 @@
   overflow: auto;
 }
 
+/* CodeMirror Gutter Styling */
+.queries-sql-editor .cm-gutters {
+  background-color: var(--bg-tertiary) !important;
+  border-right: 1px solid var(--border-color);
+  font-family: "Vanadium Mono", var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.queries-sql-editor .cm-lineNumbers {
+  font-family: "Vanadium Mono", var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.queries-sql-editor .cm-gutterElement {
+  font-family: "Vanadium Mono", var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* Ensure line numbers are at least 4 digits wide */
+.queries-sql-editor .cm-lineNumbers .cm-gutterElement {
+  min-width: 3.5ch;
+  padding-left: 4px;
+  padding-right: 8px;
+}
+
 /* ── Tabulator Theme Overrides (matching Login language panel) ───────────── */
 
 /* Table container with rounded corners and border */
 #queries-table-container {
   flex: 1;
   overflow: hidden;
-  min-height: 0;
+  min-height: 0px;
   margin: var(--space-3);
   border-radius: var(--border-radius-md);
   border: var(--border-standard);
@@ -399,6 +593,17 @@
   display: none;
 }
 
+/* Keyboard focus indicator for table container */
+#queries-table-container:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+}
+
+#queries-table-container:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+}
+
 /* ── Preview Tab Styles ─────────────────────────────────────────────────── */
 
 .queries-preview-content {
@@ -490,4 +695,363 @@
   border-radius: var(--border-radius-md);
   max-height: 400px;
   overflow: auto;
+}
+
+/* ── JSONEditor Dark Theme ───────────────────────────────────────────────── */
+
+/* Main editor container */
+.queries-tab-pane .jsoneditor {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+/* Menu bar */
+.queries-tab-pane .jsoneditor-menu {
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Navigation bar */
+.queries-tab-pane .jsoneditor-navigation-bar {
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+/* Status bar */
+.queries-tab-pane .jsoneditor-status-bar {
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+/* Tree view background */
+.queries-tab-pane .jsoneditor-tree {
+  background: var(--bg-secondary);
+}
+
+/* Field names */
+.queries-tab-pane .jsoneditor-field {
+  color: var(--text-primary);
+}
+
+/* Values */
+.queries-tab-pane .jsoneditor-value {
+  color: var(--accent-primary);
+}
+
+/* Strings */
+.queries-tab-pane .jsoneditor-string {
+  color: #a5d6a7;
+}
+
+/* Numbers */
+.queries-tab-pane .jsoneditor-number {
+  color: #81d4fa;
+}
+
+/* Booleans */
+.queries-tab-pane .jsoneditor-boolean {
+  color: #ffcc80;
+}
+
+/* Null */
+.queries-tab-pane .jsoneditor-null {
+  color: #ef9a9a;
+}
+
+/* Buttons */
+.queries-tab-pane .jsoneditor-button {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.queries-tab-pane .jsoneditor-button:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Search box */
+.queries-tab-pane .jsoneditor-search {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+.queries-tab-pane .jsoneditor-search input {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+/* Context menu */
+.queries-tab-pane .jsoneditor-context-menu {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.queries-tab-pane .jsoneditor-context-menu button {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.queries-tab-pane .jsoneditor-context-menu button:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Ensure JSONEditor fills the tab pane */
+.queries-tab-pane #queries-tab-collection {
+  padding: 0;
+}
+
+.queries-tab-pane #queries-tab-collection .jsoneditor {
+  height: 100%;
+}
+
+/* ── Selector Column ─────────────────────────────────────────────────────── */
+
+/* Narrow selector column cells — zero padding, centered */
+#queries-table-container .queries-selector-col {
+  padding: 0 !important;
+  text-align: center;
+  border-right: var(--border-standard) !important;
+}
+
+/* Selector column header — pointer cursor for column chooser */
+#queries-table-container .tabulator-col.queries-selector-col {
+  cursor: pointer;
+}
+
+/* FA icons inside the selector cells — size to fit the narrow column */
+#queries-table-container .queries-selector-col i,
+#queries-table-container .queries-selector-col svg {
+  font-size: 10px;
+  width: 10px;
+  height: 10px;
+}
+
+/* fa-caret-right for selected row */
+.queries-selector-active,
+.queries-selector-active.svg-inline--fa {
+  color: white;
+}
+
+/* fa-i-cursor for row being edited — blinking caret */
+.queries-selector-edit,
+.queries-selector-edit.svg-inline--fa {
+  color: var(--accent-success, #66BB6A);
+  animation: queries-caret-blink 1s step-end infinite;
+}
+
+@keyframes queries-caret-blink {
+  50% { opacity: 0; }
+}
+
+/* ── Column Chooser ──────────────────────────────────────────────────────── */
+
+/* Vertical-ellipsis button in the selector column header */
+.queries-col-chooser-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  color: var(--text-secondary);
+  line-height: 1;
+  user-select: none;
+  transition: color var(--transition-fast);
+}
+
+/* The FA icon inside the chooser button — slightly larger than cell icons */
+.queries-col-chooser-btn i,
+.queries-col-chooser-btn svg {
+  font-size: 12px !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.queries-col-chooser-btn:hover {
+  color: var(--text-primary);
+}
+
+/* Column chooser dropdown popup */
+.queries-col-chooser-popup {
+  position: absolute;
+  z-index: 200;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  min-width: 160px;
+  max-width: 280px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+}
+
+.queries-col-chooser-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* "Columns" title at the top of the popup */
+.queries-col-chooser-title {
+  padding: 8px 12px 6px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Scrollable list of column checkboxes */
+.queries-col-chooser-list {
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+/* Scrollbar for column list */
+.queries-col-chooser-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.queries-col-chooser-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.queries-col-chooser-list::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+/* Individual column item row */
+.queries-col-chooser-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  transition: background-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.queries-col-chooser-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Checkbox in the column chooser */
+.queries-col-chooser-checkbox {
+  accent-color: var(--accent-primary);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Column label text */
+.queries-col-chooser-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Header Filter Inputs ────────────────────────────────────────────────── */
+
+/* Filter row is hidden by default — toggled via Table Options > Column Filters */
+#queries-table-container .tabulator-header-filter {
+  display: none;
+}
+
+/* Show filter row when toggled on — give it enough vertical space */
+#queries-table-container.queries-filters-visible .tabulator-header-filter {
+  display: block;
+  padding: 4px 4px 6px 4px;
+  min-height: 28px;
+  box-sizing: border-box;
+}
+
+/* Style all header filter inputs (both custom and built-in) */
+#queries-table-container .tabulator-header-filter input {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 2px 6px;
+  font-size: var(--font-size-xs);
+  width: 100%;
+  height: 22px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+/* Custom filter inputs get extra right padding for the clear button */
+#queries-table-container .tabulator-header-filter input.queries-header-filter-input {
+  padding-right: 22px;
+}
+
+#queries-table-container .tabulator-header-filter input:focus {
+  border-color: var(--accent-primary);
+}
+
+#queries-table-container .tabulator-header-filter input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Clear (×) button — injected as a sibling of the <input> inside
+   .tabulator-header-filter, which gets position:relative in JS. */
+.queries-header-filter-clear {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+  user-select: none;
+  z-index: 5;
+}
+
+.queries-header-filter-clear:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+}
+
+/* ── Table Footer (bottom calc row) ──────────────────────────────────────── */
+
+/* Footer row — styled like the header */
+#queries-table-container .tabulator-calcs-bottom {
+  background: var(--bg-tertiary);
+  border-top: var(--border-standard);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+#queries-table-container .tabulator-calcs-bottom .tabulator-cell {
+  border-right: var(--border-standard);
+}
+
+#queries-table-container .tabulator-calcs-bottom .tabulator-cell:last-child {
+  border-right: none;
+}
+
+/* Right-justify the count in the Ref column */
+#queries-table-container .tabulator-calcs-bottom .tabulator-cell[tabulator-field="query_ref"] {
+  text-align: right;
 }
