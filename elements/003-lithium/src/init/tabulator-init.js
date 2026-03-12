@@ -95,7 +95,7 @@ class TabulatorInit {
             </button>
           </div>
           <div class="nav-right">
-            <div class="input-group input-group-sm" style="width: 200px;">
+            <div class="input-group input-group-sm" style="width: 313px;">
               <input type="text" class="form-control" placeholder="Search..." id="${elementId}-search">
               <button class="btn btn-outline-secondary" type="button" id="${elementId}-search-btn">
                 <fa fa-search></fa>

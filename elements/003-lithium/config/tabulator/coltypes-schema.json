@@ -1,0 +1,143 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "coltypes-schema.json",
+  "title": "Lithium Tabulator Column Types Schema",
+  "description": "Validates the coltypes.json file which defines display and editing behavior for each data type used in Tabulator tables.",
+  "type": "object",
+  "required": ["coltypes"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$version": { "type": "string" },
+    "$description": { "type": "string" },
+    "coltypes": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/coltype"
+      }
+    }
+  },
+  "definitions": {
+    "coltype": {
+      "type": "object",
+      "required": ["description", "align", "formatter", "editor", "sorter", "blank"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of this column type"
+        },
+        "align": {
+          "type": "string",
+          "enum": ["left", "center", "right"],
+          "description": "Horizontal text alignment in the cell"
+        },
+        "vertAlign": {
+          "type": "string",
+          "enum": ["top", "middle", "bottom"],
+          "description": "Vertical alignment in the cell"
+        },
+        "formatter": {
+          "description": "Tabulator formatter name or false for no formatting",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "boolean", "const": false }
+          ]
+        },
+        "formatterParams": {
+          "type": "object",
+          "description": "Parameters passed to the Tabulator formatter"
+        },
+        "editor": {
+          "description": "Tabulator editor name, false for non-editable, or null",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "boolean", "const": false },
+            { "type": "null" }
+          ]
+        },
+        "editorParams": {
+          "type": "object",
+          "description": "Parameters passed to the Tabulator editor"
+        },
+        "sorter": {
+          "type": "string",
+          "description": "Tabulator sorter function name"
+        },
+        "sorterParams": {
+          "type": "object",
+          "description": "Parameters passed to the Tabulator sorter"
+        },
+        "headerFilterFunc": {
+          "description": "Tabulator header filter comparison function",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "headerFilterPlaceholder": {
+          "description": "Placeholder text for header filter input",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "blank": {
+          "description": "What to display when the value is null/undefined/empty string. Empty string means show nothing.",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "zero": {
+          "description": "What to display when the value is zero. null = show '0', empty string = show blank, or a custom string.",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" },
+            { "type": "boolean" },
+            { "type": "null" }
+          ]
+        },
+        "cssClass": {
+          "type": "string",
+          "description": "CSS class applied to cells of this type"
+        },
+        "bottomCalc": {
+          "description": "Bottom calculation function (sum, avg, count, min, max) or null for none",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "bottomCalcFormatter": {
+          "type": "string",
+          "description": "Formatter for the bottom calc row"
+        },
+        "bottomCalcFormatterParams": {
+          "type": "object",
+          "description": "Parameters for the bottom calc formatter"
+        },
+        "accessorDownload": {
+          "description": "Custom accessor for download/export. null = use default.",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "width": {
+          "description": "Fixed column width in pixels, or null for auto",
+          "oneOf": [
+            { "type": "integer", "minimum": 20 },
+            { "type": "null" }
+          ]
+        },
+        "minWidth": {
+          "description": "Minimum column width in pixels",
+          "oneOf": [
+            { "type": "integer", "minimum": 20 },
+            { "type": "null" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

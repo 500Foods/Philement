@@ -53,7 +53,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 0;
+  min-height: 0px;
 }
 
 .style-manager-view.hidden {
@@ -84,7 +84,7 @@
 /* Theme table container */
 .theme-table-container {
   flex: 1;
-  min-height: 0;
+  min-height: 0px;
   overflow: auto;
 }
 

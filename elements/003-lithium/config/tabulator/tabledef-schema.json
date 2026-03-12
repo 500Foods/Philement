@@ -1,0 +1,161 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "tabledef-schema.json",
+  "title": "Lithium Tabulator Table Definition Schema",
+  "description": "Validates per-query/table column definition files. Each file defines how a specific query's result set maps to a Tabulator table, referencing coltypes for formatting.",
+  "type": "object",
+  "required": ["table", "title", "queryRef", "readonly", "columns"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$version": { "type": "string" },
+    "$description": { "type": "string" },
+
+    "table": {
+      "type": "string",
+      "description": "Unique identifier for this table definition (kebab-case)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Human-readable title displayed in the UI"
+    },
+    "queryRef": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Primary query reference number to fetch list data"
+    },
+    "searchQueryRef": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Query reference number for search/filter operations (optional — falls back to queryRef with params)"
+    },
+    "detailQueryRef": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Query reference number to fetch full row details on selection"
+    },
+    "readonly": {
+      "type": "boolean",
+      "description": "When true, the entire table is read-only regardless of individual column settings"
+    },
+    "selectableRows": {
+      "description": "Number of rows that can be selected simultaneously (1 for single, true for multi, false for none)",
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "boolean" }
+      ]
+    },
+    "layout": {
+      "type": "string",
+      "enum": ["fitData", "fitDataFill", "fitDataStretch", "fitDataTable", "fitColumns"],
+      "description": "Tabulator layout mode"
+    },
+    "responsiveLayout": {
+      "type": "string",
+      "enum": ["hide", "collapse"],
+      "description": "How columns respond to narrow widths"
+    },
+    "resizableColumns": {
+      "type": "boolean",
+      "description": "Whether users can resize columns by dragging"
+    },
+    "persistSort": {
+      "type": "boolean",
+      "description": "Remember sort state across data reloads"
+    },
+    "persistFilter": {
+      "type": "boolean",
+      "description": "Remember filter state across data reloads"
+    },
+    "initialSort": {
+      "type": "array",
+      "description": "Default sort order when data is first loaded",
+      "items": {
+        "type": "object",
+        "required": ["column", "dir"],
+        "properties": {
+          "column": { "type": "string" },
+          "dir": { "type": "string", "enum": ["asc", "desc"] }
+        }
+      }
+    },
+    "groupBy": {
+      "description": "Field name(s) to group rows by (string or array of strings)",
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    },
+
+    "columns": {
+      "type": "object",
+      "description": "Column definitions keyed by field name from the query result",
+      "additionalProperties": {
+        "$ref": "#/definitions/column"
+      }
+    }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+    "column": {
+      "type": "object",
+      "required": ["display", "field", "coltype", "visible", "editable"],
+      "properties": {
+        "display": {
+          "type": "string",
+          "description": "Column header title displayed to the user"
+        },
+        "field": {
+          "type": "string",
+          "description": "Field name in the query result data (must match JSON key from API)"
+        },
+        "coltype": {
+          "type": "string",
+          "description": "Reference to a coltype defined in coltypes.json (e.g., 'integer', 'string', 'lookup')"
+        },
+        "visible": {
+          "type": "boolean",
+          "description": "Whether the column is visible by default (can be toggled via column chooser)"
+        },
+        "sort": {
+          "type": "boolean",
+          "description": "Whether the column is sortable"
+        },
+        "filter": {
+          "type": "boolean",
+          "description": "Whether the column has a header filter"
+        },
+        "group": {
+          "type": "boolean",
+          "description": "Whether the column can be used as a grouping field"
+        },
+        "editable": {
+          "type": "boolean",
+          "description": "Whether the column is editable (subject to table-level readonly and permissions)"
+        },
+        "calculated": {
+          "type": "boolean",
+          "description": "Whether the value is server-calculated (computed columns, timestamps, etc.) — always non-editable"
+        },
+        "primaryKey": {
+          "type": "boolean",
+          "description": "Whether this field is the primary key (used for API update/delete operations)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Developer documentation for this column"
+        },
+        "lookupRef": {
+          "type": "string",
+          "description": "For lookup coltypes: the lookup table reference (e.g., 'a27', 'a28')"
+        },
+        "overrides": {
+          "type": "object",
+          "description": "Coltype property overrides for this specific column. Any coltype property can be overridden here.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

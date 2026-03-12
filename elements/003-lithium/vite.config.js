@@ -14,41 +14,48 @@ export default defineConfig(({ mode }) => {
     // Base public path when served in production
     base: './',
 
-    // Build options
-    build: {
-      // Output to $LITHIUM_DEPLOY when deploying, otherwise dist/ under root
-      outDir: isDeploy ? resolve(deployDir) : resolve(lithiumRoot, 'dist'),
+     // Build options
+     build: {
+       // Output to $LITHIUM_DEPLOY when deploying, otherwise dist/ under root
+       outDir: isDeploy ? resolve(deployDir) : resolve(lithiumRoot, 'dist'),
 
-      // Don't empty the deploy dir (config may live there); do empty dist/
-      emptyOutDir: !isDeploy,
+       // Don't empty the deploy dir (config may live there); do empty dist/
+       emptyOutDir: !isDeploy,
 
-      // Generate source maps for debugging
-      sourcemap: true,
+       // Generate source maps for debugging
+       sourcemap: true,
 
-      // Minify for production
-      minify: 'terser',
+       // Minify for production
+       minify: 'terser',
 
-      // Target modern browsers
-      target: 'esnext',
+       // Target modern browsers
+       target: 'esnext',
 
-      // Rollup options
-      rollupOptions: {
-        output: {
-          // Manual chunks for better caching
-          manualChunks(id) {
-            if (id.includes('node_modules/tabulator-tables')) {
-              return 'tabulator';
-            }
-            if (id.includes('node_modules/dompurify')) {
-              return 'dompurify';
-            }
-            if (id.includes('node_modules/@codemirror')) {
-              return 'codemirror';
+        // Chunk size warning limit (set to 0 to disable warning)
+        chunkSizeWarningLimit: 1100,
+
+       // Rollup options
+        rollupOptions: {
+          output: {
+            // Manual chunks for better caching
+            manualChunks(id) {
+              if (id.includes('node_modules/tabulator-tables')) {
+                return 'tabulator';
+              }
+              if (id.includes('node_modules/dompurify')) {
+                return 'dompurify';
+              }
+              if (id.includes('node_modules/@codemirror')) {
+                return 'codemirror';
+              }
+              // Include commonjs helpers in the codemirror chunk to avoid empty source map
+              if (id.includes('commonjsHelpers')) {
+                return 'codemirror';
+              }
             }
           }
         }
-      }
-    },
+     },
 
     // Development server options
     server: {

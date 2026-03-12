@@ -67,7 +67,8 @@ p, h1, h2, h3, h4, h5, h6 {
   --text-primary: #E0E0E0;
   --text-secondary: #B0B0B0;
   --text-muted: #707070;
-  --text-disabled: #505050;
+  /* --text-disabled: #505050; */
+  --text-disabled: black;
   
   --border-color: #3A3A3A;
   --border-color-hover: #505050;
