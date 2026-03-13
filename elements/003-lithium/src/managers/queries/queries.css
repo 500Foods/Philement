@@ -14,7 +14,6 @@
   flex-direction: column;
   width: 313px; /* Initial width */
   min-width: 157px;
-  border-right: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
 }
@@ -33,9 +32,7 @@
 }
 
 .queries-navigator-container {
-  border-top: 1px solid var(--border-color);
-  background-color: var(--bg-tertiary);
-  padding: var(--space-2);
+  padding: 0px var(--space-2) var(--space-2) var(--space-3);
 }
 
 /* ── Navigator Control Bar ───────────────────────────────────────────────── */
@@ -125,6 +122,7 @@
   outline: none;
   border: 2px solid var(--accent-primary);
   background: var(--accent-primary);
+  min-width: 149px;
 }
 .queries-nav-block-search .queries-nav-btn {
   margin-top: -2px;
@@ -254,7 +252,6 @@
 
 .queries-tabs-header {
   display: flex;
-  border-bottom: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
   padding: 4px;
 }
