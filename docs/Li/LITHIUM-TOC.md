@@ -29,6 +29,8 @@ This directory contains the canonical documentation for the Lithium web applicat
 | [LITHIUM-MGR-MAIN.md](LITHIUM-MGR-MAIN.md) | Main Manager — sidebar, slots, logout |
 | [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) | Query Manager — design and implementation plan |
 | [LITHIUM-TAB.md](LITHIUM-TAB.md) | Tabulator Component — table and navigator block |
+| [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md) | Tabulator implementation plan — gap analysis and phased roadmap |
+| [LITHIUM-LUT.md](LITHIUM-LUT.md) | Lookup Tables — schema, caching, accessor functions, Tabulator integration |
 | [LITHIUM-API.md](LITHIUM-API.md) | Hydrogen API endpoints and Conduit client library (`conduit.js`) |
 | [LITHIUM-CSS.md](LITHIUM-CSS.md) | CSS architecture, variables, theming |
 | [LITHIUM-ICN.md](LITHIUM-ICN.md) | Icon system, Font Awesome, config |

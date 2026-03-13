@@ -1,3 +1,5 @@
+@layer managers {
+
 .queries-manager-container {
   display: flex;
   width: 100%;
@@ -122,6 +124,7 @@
   flex: 1;
   outline: none;
   border: 2px solid var(--accent-primary);
+  background: var(--accent-primary);
 }
 .queries-nav-block-search .queries-nav-btn {
   margin-top: -2px;
@@ -130,8 +133,8 @@
 .queries-nav-search-input {
   flex: 1;
   min-width: 0;
-  height: 24px;
-  padding: 0px var(--space-2) var(--space-2) var(--space-2);
+  height: 20px;
+  padding: 0px var(--space-2) 0px var(--space-2);
   border: none;
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -372,7 +375,6 @@
 
 .queries-collapse-btn {
   flex: 0 0 auto;
-  margin-right: 8px;
 }
 
 /* Collapse icon rotation — target by ID regardless of what tag FA renders
@@ -452,6 +454,14 @@
   padding-right: 8px;
 }
 
+} /* end @layer managers — manager-specific styles above */
+
+/* ── Tabulator & JSONEditor Theme Overrides ─────────────────────────────── */
+/* These override vendor default styles, so they go in the vendor-fixes layer
+   which sits above the vendors layer in the cascade. */
+
+@layer vendor-fixes {
+
 /* ── Tabulator Theme Overrides (matching Login language panel) ───────────── */
 
 /* Table container with rounded corners and border */
@@ -508,13 +518,13 @@
 
 /* Cell padding */
 #queries-table-container .tabulator-cell {
-  padding: var(--space-3) var(--space-3);
+  padding: var(--space-1) var(--space-1);
   border-left: none;
   border-right: none;
 }
 
 #queries-table-container .tabulator-header .tabulator-col .tabulator-col-content {
-  padding: var(--space-3) var(--space-3);
+  padding: var(--space-1) var(--space-1);
 }
 
 /* Row hover */
@@ -1055,3 +1065,5 @@
 #queries-table-container .tabulator-calcs-bottom .tabulator-cell[tabulator-field="query_ref"] {
   text-align: right;
 }
+
+} /* end @layer vendor-fixes */

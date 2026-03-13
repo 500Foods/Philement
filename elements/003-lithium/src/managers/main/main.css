@@ -6,6 +6,8 @@
  * Splitter between sidebar and main content (220px-400px range)
  */
 
+@layer managers {
+
 /* ========================================
    Logout Overlay and Panel
    ======================================== */
@@ -926,3 +928,5 @@ body.resizing * {
     transition: opacity 0.01ms ease, visibility 0.01ms ease !important;
   }
 }
+
+} /* end @layer managers */

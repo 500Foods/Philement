@@ -8,6 +8,8 @@
  * This file only styles the CodeMirror log viewer inside the workspace.
  */
 
+@layer managers {
+
 /* Full-height page container — fills the slot-workspace absolutely */
 #session-log-page {
   position: absolute;
@@ -64,3 +66,5 @@
     transition: none;
   }
 }
+
+} /* end @layer managers */

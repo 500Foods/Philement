@@ -5,6 +5,8 @@
  * gradient header, clean inputs, fade transitions.
  */
 
+@layer managers {
+
 /* Login page full-screen container */
 #login-page {
   position: fixed;
@@ -351,6 +353,10 @@
   overscroll-behavior: contain;
 }
 
+} /* end @layer managers — login-specific styles above */
+
+@layer vendor-fixes {
+
 /* Tabulator dark theme overrides for language table */
 #language-table {
   height: 100%;
@@ -512,3 +518,5 @@
 #language-table .tabulator-col-resize-handle {
   display: none;
 }
+
+} /* end @layer vendor-fixes */

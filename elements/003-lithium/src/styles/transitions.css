@@ -4,6 +4,8 @@
  * Fade, crossfade, slide animations with reduced-motion support.
  */
 
+@layer states {
+
 /* ========================================
    Fade Transitions
    ======================================== */
@@ -417,3 +419,5 @@
 .transition-all {
   transition: all var(--transition-fast);
 }
+
+} /* end @layer states */

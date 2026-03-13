@@ -4,6 +4,8 @@
  * User preferences and profile settings
  */
 
+@layer managers {
+
 /* Page Container */
 #profile-manager-page {
   padding: var(--space-xl);
@@ -344,3 +346,5 @@
     transition: none;
   }
 }
+
+} /* end @layer managers */

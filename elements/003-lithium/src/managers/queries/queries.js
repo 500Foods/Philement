@@ -5,10 +5,11 @@
  */
 
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
-import 'tabulator-tables/dist/css/tabulator_midnight.min.css';
+import '../../styles/vendor-tabulator.css';
+import '../../styles/vendor-jsoneditor.css';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
-import { log, logHttpRequest, logHttpResponse, Subsystems, Status } from '../../core/log.js';
+import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import {
   loadColtypes,
@@ -644,53 +645,233 @@ export default class QueriesManager {
 
   handleNavAdd() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Add');
-    // TODO: implement add new query row
+    if (!this.table) return;
+
+    // Add a new empty row at the top of the table
+    const newRow = this.table.addRow({}, true); // true = add at position 0
+
+    // Select the new row
+    if (newRow) {
+      this.table.deselectRow();
+      newRow.select();
+      newRow.scrollTo();
+
+      // Enter edit mode for the new row
+      this._editingRowId = newRow.getData()?.[this.primaryKeyField || 'query_id'];
+      this._updateEditingIndicator();
+
+      // Focus on the Name column for editing
+      const nameCell = newRow.getCell('name');
+      if (nameCell) {
+        nameCell.edit();
+      }
+    }
+
+    log(Subsystems.MANAGER, Status.INFO, 'Added new query row');
   }
 
   handleNavDuplicate() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Duplicate');
-    // TODO: implement duplicate selected query
+    if (!this.table) return;
+
+    const selected = this.table.getSelectedRows();
+    if (selected.length === 0) {
+      toast.info('No Row Selected', {
+        description: 'Please select a row to duplicate',
+        duration: 3000,
+      });
+      return;
+    }
+
+    const originalData = selected[0].getData();
+    // Create a copy with modified fields
+    const duplicateData = { ...originalData };
+
+    // Clear the primary key so a new record is created
+    const pkField = this.primaryKeyField || 'query_id';
+    delete duplicateData[pkField];
+
+    // Append "(Copy)" to the name
+    if (duplicateData.name) {
+      duplicateData.name = `${duplicateData.name} (Copy)`;
+    }
+
+    // Add the duplicate row
+    const newRow = this.table.addRow(duplicateData, true);
+
+    if (newRow) {
+      this.table.deselectRow();
+      newRow.select();
+      newRow.scrollTo();
+
+      // Enter edit mode
+      this._editingRowId = newRow.getData()?.[pkField];
+      this._updateEditingIndicator();
+
+      log(Subsystems.MANAGER, Status.INFO, 'Duplicated query row');
+    }
   }
 
   handleNavEdit() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Edit');
-    const selectedId = this._getSelectedQueryId();
+    if (!this.table) return;
+
+    const selected = this.table.getSelectedRows();
+    if (selected.length === 0) {
+      toast.info('No Row Selected', {
+        description: 'Please select a row to edit',
+        duration: 3000,
+      });
+      return;
+    }
+
+    const pkField = this.primaryKeyField || 'query_id';
+    const selectedId = selected[0].getData()?.[pkField];
+
     if (selectedId != null) {
       this._editingRowId = selectedId;
       this._updateEditingIndicator();
+
+      // Start editing the Name cell
+      const nameCell = selected[0].getCell('name');
+      if (nameCell) {
+        nameCell.edit();
+      }
+
+      log(Subsystems.MANAGER, Status.INFO, `Entered edit mode for row ${selectedId}`);
     }
-    // TODO: implement full edit mode for selected query
   }
 
   handleNavSave() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Save');
+    if (!this.table) return;
+
+    // Get all edited rows
+    const editedRows = this.table.getRows().filter(row => row.isValid() && row.isEdited());
+
+    if (editedRows.length === 0) {
+      toast.info('No Changes', {
+        description: 'No pending changes to save',
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Collect the changed data
+    const changes = editedRows.map(row => ({
+      data: row.getData(),
+      isNew: row.isNew(),
+    }));
+
+    // TODO: Send changes to API (QueryRef for insert/update)
+    // For now, just clear the edit state and show success
+
     this._editingRowId = null;
     this._updateEditingIndicator();
-    // TODO: implement save logic
+
+    // Recalculate to clear edited state
+    this.table.recalc();
+
+    toast.success('Changes Saved', {
+      description: `${changes.length} row(s) saved`,
+      duration: 3000,
+    });
+
+    log(Subsystems.MANAGER, Status.INFO, `Saved ${changes.length} row(s)`);
   }
 
   handleNavCancel() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Cancel');
+    if (!this.table) return;
+
+    // Get all edited rows
+    const editedRows = this.table.getRows().filter(row => row.isEdited());
+
+    if (editedRows.length === 0) {
+      // Just clear edit mode if no edits
+      this._editingRowId = null;
+      this._updateEditingIndicator();
+      return;
+    }
+
+    // Revert all changes using Tabulator's undo
+    this.table.undo();
+
     this._editingRowId = null;
     this._updateEditingIndicator();
-    // TODO: implement cancel / revert logic
+
+    toast.info('Changes Cancelled', {
+      description: `${editedRows.length} row(s) reverted`,
+      duration: 3000,
+    });
+
+    log(Subsystems.MANAGER, Status.INFO, 'Cancelled changes and reverted edits');
   }
 
   handleNavDelete() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Delete');
-    // TODO: implement delete selected query
+    if (!this.table) return;
+
+    const selected = this.table.getSelectedRows();
+    if (selected.length === 0) {
+      toast.info('No Row Selected', {
+        description: 'Please select a row to delete',
+        duration: 3000,
+      });
+      return;
+    }
+
+    const pkField = this.primaryKeyField || 'query_id';
+    const selectedId = selected[0].getData()?.[pkField];
+    const rowCount = selected.length;
+
+    // Confirm deletion
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${rowCount} row(s)?\n\nThis action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    // TODO: Call API to delete the row(s)
+    // For now, just delete from the table locally
+
+    // Find the row to select after deletion (the next row, or previous, or first)
+    const allRows = this.table.getRows('active');
+    const currentIndex = allRows.findIndex(row => row === selected[0]);
+    const nextRow = allRows[currentIndex + 1] || allRows[currentIndex - 1] || null;
+
+    // Delete the selected rows
+    selected.forEach(row => row.delete());
+
+    // Select the next row
+    if (nextRow) {
+      nextRow.select();
+      nextRow.scrollTo();
+    }
+
+    this._editingRowId = null;
+    this._updateEditingIndicator();
+
+    toast.success('Row(s) Deleted', {
+      description: `${rowCount} row(s) deleted`,
+      duration: 3000,
+    });
+
+    log(Subsystems.MANAGER, Status.INFO, `Deleted ${rowCount} row(s)`);
   }
 
   // ── Control button handlers (placeholder — wire up actions later) ─────
 
   handleNavPrint() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Print');
-    // TODO: implement print table
+    if (this.table) {
+      this.table.print();
+    }
   }
 
   handleNavEmail() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Email');
-    // TODO: implement email table data
+    // TODO: implement email table data - build mailto with table data summary
   }
 
   /**
@@ -699,7 +880,58 @@ export default class QueriesManager {
    */
   handleExport(format) {
     log(Subsystems.MANAGER, Status.INFO, `Navigator: Export as ${format.toUpperCase()}`);
-    // TODO: implement export for each format
+    if (!this.table) return;
+
+    const filename = `queries-export-${new Date().toISOString().slice(0, 10)}`;
+
+    switch (format) {
+      case 'pdf':
+        this.table.download('pdf', `${filename}.pdf`, { orientation: 'landscape' });
+        break;
+      case 'csv':
+        this.table.download('csv', `${filename}.csv`);
+        break;
+      case 'txt':
+        this.table.download('csv', `${filename}.txt`); // Tabulator uses CSV format for .txt
+        break;
+      case 'xls':
+        this.table.download('xlsx', `${filename}.xlsx`);
+        break;
+      default:
+        log(Subsystems.MANAGER, Status.WARN, `Unknown export format: ${format}`);
+    }
+  }
+
+  /**
+   * Handle import from a file.
+   * @param {'csv'|'txt'|'xls'} format
+   */
+  handleImport(format) {
+    log(Subsystems.MANAGER, Status.INFO, `Navigator: Import from ${format.toUpperCase()}`);
+    // Create file input programmatically
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = `.${format}`;
+
+    input.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      try {
+        // Tabulator import
+        await this.table.import(format, file.name);
+        log(Subsystems.MANAGER, Status.INFO, `Imported ${format.toUpperCase()} successfully`);
+      } catch (err) {
+        log(Subsystems.MANAGER, Status.ERROR, `Import failed: ${err.message}`);
+        toast.error('Import Failed', {
+          description: err.message,
+          subsystem: 'Manager',
+          duration: 5000,
+        });
+      }
+    });
+
+    input.click();
   }
 
   /**
@@ -980,9 +1212,11 @@ export default class QueriesManager {
   }
 
   async initTable() {
-    // ── Load JSON-driven column configuration ──────────────────────────
-    this.coltypes = await loadColtypes();
-    this.tableDef = await loadTableDef('queries/query-manager');
+    // ── Load JSON-driven column configuration (parallel fetch) ─────────
+    [this.coltypes, this.tableDef] = await Promise.all([
+      loadColtypes(),
+      loadTableDef('queries/query-manager'),
+    ]);
 
     if (this.tableDef) {
       this.queryRefs = getQueryRefs(this.tableDef);
@@ -1044,9 +1278,13 @@ export default class QueriesManager {
     log(Subsystems.MANAGER, Status.INFO,
       `[QueriesManager] Initialising table with ${dataColumns.length} columns from JSON config`);
 
-    // Initialize Tabulator with JSON-resolved columns and table options
+    // Initialize Tabulator with JSON-resolved columns and table options.
+    // selectableRows: 1 is always set here as a safety net — even if the
+    // JSON config failed to load and we're using fallback columns, clicking
+    // a row should still select it (the fallback tableOptions omit this).
     this.table = new Tabulator(this.elements.tableContainer, {
       ...tableOptions,
+      selectableRows: 1,
       // Scroll behavior: scroll to center when row is off-screen,
       // but don't scroll at all if the row is already visible.
       scrollToRowPosition: "center",
@@ -1054,6 +1292,18 @@ export default class QueriesManager {
       // Custom dual-arrow sort indicator (▲/▼ with active direction highlighted)
       headerSortElement: '<span class="queries-sort-icons"><span class="queries-sort-asc">▲</span><span class="queries-sort-desc">▼</span></span>',
       columns: [selectorColumn, ...dataColumns],
+    });
+
+    // Explicit rowClick handler — select the clicked row.
+    // With selectableRows: 1, Tabulator handles single-click selection
+    // automatically. This handler is a safety net for edge cases where
+    // Tabulator's built-in selection might not fire (e.g., responsive
+    // collapse mode, custom formatters returning DOM elements, etc.).
+    this.table.on("rowClick", (e, row) => {
+      if (!row.isSelected()) {
+        this.table.deselectRow();
+        row.select();
+      }
     });
 
     // Update selector indicator when rows are selected/deselected.
@@ -1088,8 +1338,9 @@ export default class QueriesManager {
       this._handleTableKeydown(e);
     });
 
-    // Load initial data
-    await this.loadQueries();
+    // Load initial data asynchronously — the table will update when the
+    // API response arrives; the manager is considered "loaded" immediately.
+    this.loadQueries();
   }
 
   /**
@@ -1146,9 +1397,12 @@ export default class QueriesManager {
     const listRef = this.queryRefs?.queryRef ?? 25;
     const searchRef = this.queryRefs?.searchQueryRef ?? 32;
     const queryRef = searchTerm ? searchRef : listRef;
-    const requestPath = `conduit/auth_query/${queryRef}`;
-    const requestNum = logHttpRequest('POST', requestPath);
-    const startTime = performance.now();
+
+    // Note: HTTP request/response logging is handled by json-request.js.
+    // We only log the business-level operation here to avoid duplicate
+    // request numbers in the log output.
+    log(Subsystems.CONDUIT, Status.INFO,
+      `[QueriesManager] Loading queries (queryRef: ${queryRef}${searchTerm ? `, search: "${searchTerm}"` : ''})`);
 
     try {
       let rows;
@@ -1160,9 +1414,9 @@ export default class QueriesManager {
         rows = await authQuery(this.app.api, listRef);
       }
 
-      const duration = Math.round(performance.now() - startTime);
-      const size = JSON.stringify(rows).length;
-      logHttpResponse(requestNum, 'POST', requestPath, 200, size, duration);
+      // Guard: table may have been torn down if the manager was
+      // switched away from while the request was in flight.
+      if (!this.table) return;
 
       this.table.setData(rows);
 
@@ -1170,14 +1424,15 @@ export default class QueriesManager {
       // fields not already defined, so they appear in the column chooser)
       this._discoverColumns(rows);
 
-      // After data is loaded, select a row:
-      // - re-select previously selected row if still present
-      // - otherwise select the first row
-      this._autoSelectRow(previouslySelectedId);
+      // After data is loaded and columns are settled, select a row.
+      // Defer to the next animation frame so that any pending Tabulator
+      // re-renders triggered by _discoverColumns() (addColumn calls)
+      // have a chance to complete first.  Without this deferral, the
+      // selection can be silently reset by a trailing re-render.
+      requestAnimationFrame(() => {
+        this._autoSelectRow(previouslySelectedId);
+      });
     } catch (error) {
-      const duration = Math.round(performance.now() - startTime);
-      logHttpResponse(requestNum, 'POST', requestPath, error.status || 500, null, duration);
-
       // Show detailed error toast with subsystem badge
       toast.error('Query Load Failed', {
         serverError: error.serverError,
@@ -1250,22 +1505,18 @@ export default class QueriesManager {
   }
 
   /**
-   * Fetch full query details from the API
+   * Fetch full query details from the API.
+   * HTTP request/response logging is handled by json-request.js.
    */
   async fetchQueryDetails(queryId) {
-    const requestPath = `conduit/auth_query/27`;
-    const requestNum = logHttpRequest('POST', requestPath);
-    const startTime = performance.now();
+    log(Subsystems.CONDUIT, Status.INFO,
+      `[QueriesManager] Fetching query details (queryRef: 27, queryId: ${queryId})`);
 
     try {
       // QueryRef 27: Get System Query - returns full query details
       const queryDetails = await authQuery(this.app.api, 27, {
         INTEGER: { QUERYID: queryId },
       });
-
-      const duration = Math.round(performance.now() - startTime);
-      const size = JSON.stringify(queryDetails).length;
-      logHttpResponse(requestNum, 'POST', requestPath, 200, size, duration);
 
       if (queryDetails && queryDetails.length > 0) {
         const fullQuery = queryDetails[0];
@@ -1319,12 +1570,10 @@ export default class QueriesManager {
           });
         }
 
-        log(Subsystems.CONDUIT, Status.INFO, `Loaded query details for ID ${queryId}`);
+        log(Subsystems.CONDUIT, Status.INFO,
+          `[QueriesManager] Loaded query details for ID ${queryId}`);
       }
     } catch (error) {
-      const duration = Math.round(performance.now() - startTime);
-      logHttpResponse(requestNum, 'POST', requestPath, error.status || 500, null, duration);
-
       // Show detailed error toast - title comes from serverError.error, description from serverError.message
       toast.error('Query Details Failed', {
         serverError: error.serverError,

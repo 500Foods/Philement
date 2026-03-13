@@ -4,6 +4,8 @@
  * Buttons, inputs, cards, tables, modals, and other UI elements.
  */
 
+@layer components {
+
 /* ========================================
    Buttons
    ======================================== */
@@ -544,6 +546,8 @@
   animation: shimmer 1.5s infinite;
   border-radius: var(--border-radius-md);
 }
+
+} /* end @layer components */
 
 @keyframes shimmer {
   0% {

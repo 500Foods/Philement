@@ -5,6 +5,8 @@
  * header bar, and responsive breakpoints.
  */
 
+@layer layout {
+
 /* ========================================
    App Container - Crossfade Support
    ======================================== */
@@ -928,3 +930,5 @@ body.hide-password-manager-ui [class*="password-icon"] {
     max-width: 360px;
   }
 }
+
+} /* end @layer layout */
