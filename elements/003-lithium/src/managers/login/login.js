@@ -22,7 +22,7 @@ import {
   supportedLocales,
 } from '../../shared/languages.js';
 import * as Flags from 'country-flag-icons/string/3x2';
-import 'tabulator-tables/dist/css/tabulator_midnight.min.css';
+import '../../styles/vendor-tabulator.css';
 import './login.css';
 
 // Convenience alias for this module's subsystem

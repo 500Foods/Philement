@@ -27,6 +27,7 @@ import './main.css';
 // localStorage keys for sidebar state
 const SIDEBAR_WIDTH_KEY = 'lithium_sidebar_width';
 const SIDEBAR_COLLAPSED_KEY = 'lithium_sidebar_collapsed';
+const LAST_MANAGER_KEY = 'lithium_last_manager';
 
 // Sidebar constraints
 const MIN_SIDEBAR_WIDTH = 220;
@@ -361,13 +362,57 @@ export default class MainManager {
         }
       }
 
-      // Load first permitted manager by default
-      if (this.permittedManagers.length > 0) {
-        await this.loadManager(this.permittedManagers[0]);
-      }
+      // Load last-used manager (from localStorage), or default to user profile
+      await this._loadInitialManager();
     } catch (error) {
       console.error('[MainManager] Initialization error:', error);
     }
+  }
+
+  /**
+   * Get the last-used manager key from localStorage.
+   * @returns {string|null} Key in format 'manager:ID' or 'utility:KEY', or null
+   */
+  _getLastManagerKey() {
+    try {
+      return localStorage.getItem(LAST_MANAGER_KEY) || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Load the initial manager after login.
+   * Restores the last-used manager from localStorage if available and permitted.
+   * Falls back to the user profile utility manager if no stored preference
+   * or the stored manager is not in the permitted list.
+   */
+  async _loadInitialManager() {
+    const lastManagerKey = this._getLastManagerKey();
+
+    if (lastManagerKey) {
+      const colonIdx = lastManagerKey.indexOf(':');
+      if (colonIdx > 0) {
+        const type = lastManagerKey.substring(0, colonIdx);
+        const id = lastManagerKey.substring(colonIdx + 1);
+
+        if (type === 'manager') {
+          const managerId = parseInt(id, 10);
+          if (!isNaN(managerId) && this.permittedManagers.includes(managerId)) {
+            await this.loadManager(managerId);
+            return;
+          }
+        } else if (type === 'utility') {
+          if (this.app.utilityManagerRegistry[id]) {
+            await this.app.loadUtilityManager(id);
+            return;
+          }
+        }
+      }
+    }
+
+    // Default: show user profile
+    await this.app.loadUtilityManager('user-profile');
   }
 
   /**

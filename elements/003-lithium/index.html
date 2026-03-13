@@ -35,23 +35,22 @@
         color: #E0E0E0;
       } 
 
-      /* Proof of life during long PWA song and dance */
+      /* Proof of life during long PWA song and dance.
+         Fades in on load; app.js dismissSplash() fades out + removes from DOM
+         when the login panel or main UI is ready. */
       #Loading {
         position: fixed;
         inset: 0;
-        display: grid;  
+        display: grid;
         font-family: 'Vanadium Sans Semi-Condensed';
         color: #666;
         place-items: center;
         font-size: 18px;
         font-weight: 700;
-        opacity: 0;  
-        animation: 
-          fadeIn 1000ms forwards,
-          fadeOut 1000ms forwards 15s; 
+        opacity: 0;
+        animation: fadeIn 1000ms forwards;
       }
       @keyframes fadeIn { to { opacity: 1; } }
-      @keyframes fadeOut { to { opacity: 0; } }    
       
       /* Critical dark theme variables for FOUC prevention */
       :root {

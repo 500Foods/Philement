@@ -5,6 +5,8 @@
  * modals for create/edit/delete.
  */
 
+@layer managers {
+
 /* Main page container — fills the manager-slot-workspace absolutely */
 #style-manager-page {
   position: absolute;
@@ -459,3 +461,5 @@
     min-width: 120px;
   }
 }
+
+} /* end @layer managers */

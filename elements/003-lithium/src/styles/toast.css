@@ -16,6 +16,8 @@
  *   └────────────────────────────────────────────────────────┘
  */
 
+@layer components {
+
 /* Toast Container */
 .toast-container {
   position: fixed;
@@ -427,3 +429,5 @@
     font-size: 0.75rem;
   }
 }
+
+} /* end @layer components */

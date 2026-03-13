@@ -1,0 +1,9 @@
+/**
+ * Vendor Tabulator CSS — imports the Tabulator midnight theme into the
+ * vendors.tabulator layer so our app styles always cascade above it.
+ *
+ * Import this file instead of the bare vendor CSS:
+ *   import '../../styles/vendor-tabulator.css';
+ */
+
+@import "tabulator-tables/dist/css/tabulator_midnight.min.css" layer(vendors.tabulator);

@@ -61,6 +61,11 @@ class LithiumApp {
     this._expirationCountdownInterval = null;
     this._expirationWarningToastId = null;
     this._expirationWarningActive = false;
+
+    // JWT renewal tracking
+    this._lastUserActivity = 0;
+    this._tokenScheduledAt = 0;
+    this._isRenewing = false;
   }
 
   /**
@@ -201,6 +206,9 @@ class LithiumApp {
       const authStart = Date.now();
       await this.checkAuthAndLoad();
       logStartup('Auth check complete', Date.now() - authStart);
+
+      // Step 6b: Fade out and remove the loading splash now that the UI is ready
+      this.dismissSplash();
 
       // Step 7: Set up global event listeners
       this.setupEventListeners();
@@ -360,6 +368,36 @@ class LithiumApp {
   }
 
   /**
+   * Fade out and remove the loading splash screen.
+   *
+   * The #Loading element fades in on page load via a 1000ms CSS animation.
+   * This method mirrors that: it captures the current opacity (in case the
+   * fade-in hasn't finished yet), then transitions to opacity 0 over 1000ms
+   * and removes the element from the DOM when the transition completes.
+   */
+  dismissSplash() {
+    const el = document.getElementById('Loading');
+    if (!el) return;
+
+    // Capture current opacity (fadeIn may still be running)
+    const currentOpacity = getComputedStyle(el).opacity;
+
+    // Stop any running animation and lock the current opacity
+    el.style.animation = 'none';
+    el.style.opacity = currentOpacity;
+
+    // Force reflow so the browser registers the static opacity
+    void el.offsetHeight;
+
+    // Fade out over 1000ms (mirrors the 1000ms fadeIn)
+    el.style.transition = 'opacity 1000ms ease-out';
+    el.style.opacity = '0';
+
+    // Remove from DOM entirely after the transition completes
+    el.addEventListener('transitionend', () => el.remove(), { once: true });
+  }
+
+  /**
    * Check authentication status and load appropriate manager
    */
   async checkAuthAndLoad() {
@@ -387,37 +425,47 @@ class LithiumApp {
   }
 
   /**
-   * Schedule automatic token renewal and expiration warning
+   * Schedule automatic token renewal and expiration warning.
+   *
+   * At T-90s before expiry, checks whether the user has been active since
+   * the token was issued/renewed.  If active → renews silently.  If idle →
+   * shows the 90-second countdown toast (and eventually logs out).
+   *
+   * Managers also trigger immediate renewal on open via _renewOnActivity(),
+   * which serves as a test mechanism for now. The 80% scheduled renewal
+   * has been replaced by this activity-based approach.
    */
   scheduleTokenRenewal(token) {
-    const renewalTime = getRenewalTime(token);
-    const timeUntilExpiry = getTimeUntilExpiry(token);
+    // Clear any existing timers before scheduling new ones
+    this.clearExpirationTimers();
 
-    // Schedule expiration warning (90 seconds before expiry)
+    const timeUntilExpiry = getTimeUntilExpiry(token);
+    this._tokenScheduledAt = Date.now();
+
+    // Schedule activity check / expiration warning (90 seconds before expiry)
     const WARNING_LEAD_TIME = 90000; // 90 seconds
     if (timeUntilExpiry > WARNING_LEAD_TIME) {
-      const warningTime = timeUntilExpiry - WARNING_LEAD_TIME;
-      logAuth(Status.INFO, `Token expiration warning scheduled in ${Math.round(warningTime / 1000)}s`);
+      const checkTime = timeUntilExpiry - WARNING_LEAD_TIME;
+      logAuth(Status.INFO, `Token activity check scheduled in ${Math.round(checkTime / 1000)}s (expiry in ${Math.round(timeUntilExpiry / 1000)}s)`);
 
       this._expirationWarningTimer = setTimeout(() => {
-        this.showExpirationWarning();
-      }, warningTime);
+        // At T-90s: check if user has been active since last renewal
+        if (this._lastUserActivity > this._tokenScheduledAt) {
+          // User was active — renew silently
+          logAuth(Status.INFO, 'User activity detected at T-90s, attempting auto-renewal');
+          this.renewToken().catch((error) => {
+            // Renewal failed — fall back to showing warning
+            logAuth(Status.WARN, `Auto-renewal failed: ${error.message}, showing expiration warning`);
+            this.showExpirationWarning();
+          });
+        } else {
+          // No activity — show expiration warning
+          this.showExpirationWarning();
+        }
+      }, checkTime);
     } else if (timeUntilExpiry > 0) {
       // Less than 90s remaining, show warning immediately
       this.showExpirationWarning(Math.floor(timeUntilExpiry / 1000));
-    }
-
-    if (renewalTime > 0 && renewalTime !== Infinity) {
-      logAuth(Status.INFO, `Token renewal scheduled in ${Math.round(renewalTime / 1000)}s`);
-
-      setTimeout(async () => {
-        try {
-          await this.renewToken();
-        } catch (error) {
-          logAuth(Status.ERROR, `Token renewal failed: ${error.message}`);
-          eventBus.emit(Events.AUTH_EXPIRED);
-        }
-      }, renewalTime);
     }
   }
 
@@ -489,6 +537,51 @@ class LithiumApp {
   }
 
   /**
+   * Record user activity for JWT renewal decisions.
+   * Currently triggered when a manager is opened (menu or utility).
+   */
+  recordUserActivity() {
+    this._lastUserActivity = Date.now();
+  }
+
+  /**
+   * Save the last-used manager to localStorage for session restoration.
+   * @param {string} type - 'manager' or 'utility'
+   * @param {string|number} id - Manager ID or utility key
+   */
+  _saveLastManager(type, id) {
+    try {
+      localStorage.setItem('lithium_last_manager', `${type}:${id}`);
+    } catch (e) {
+      // Non-fatal — localStorage may be unavailable
+    }
+  }
+
+  /**
+   * Attempt JWT renewal triggered by user activity (e.g., opening a manager).
+   * Skips renewal if the token was recently obtained (within 10s) or if
+   * a renewal is already in progress.
+   */
+  async _renewOnActivity() {
+    if (this._isRenewing) return;
+
+    // Don't renew tokens that were just obtained
+    const tokenAge = Date.now() - this._tokenScheduledAt;
+    if (tokenAge < 10000) return;
+
+    const token = retrieveJWT();
+    if (!token) return;
+    const validation = validateJWT(token);
+    if (!validation.valid) return;
+
+    try {
+      await this.renewToken();
+    } catch (error) {
+      logAuth(Status.WARN, `Activity-triggered renewal failed: ${error.message}`);
+    }
+  }
+
+  /**
    * Perform quick logout when session expires
    */
   async performQuickLogout() {
@@ -516,35 +609,51 @@ class LithiumApp {
   }
 
   /**
-   * Renew the JWT token
+   * Renew the JWT token.
+   *
+   * Includes a concurrency guard (_isRenewing) to prevent overlapping
+   * renewal calls.  Only shows a success toast if the expiration warning
+   * countdown was active — silent renewals triggered by manager opens
+   * do not produce user-visible toasts (only log lines).
    */
   async renewToken() {
-    logAuth(Status.INFO, 'Starting token renewal');
-    const start = Date.now();
-    const response = await this.api.post('auth/renew');
+    if (this._isRenewing) return;
+    this._isRenewing = true;
+    const wasWarningActive = this._expirationWarningActive;
 
-    if (response.token) {
-      // Clear any existing expiration warning
-      this.clearExpirationTimers();
+    try {
+      logAuth(Status.INFO, 'Starting token renewal');
+      const start = Date.now();
+      const response = await this.api.post('auth/renew');
 
-      // Dismiss warning toast if showing
-      if (this._expirationWarningToastId) {
-        toast.dismiss(this._expirationWarningToastId);
-        this._expirationWarningToastId = null;
+      if (response.token) {
+        // Clear any existing expiration warning
+        this.clearExpirationTimers();
+
+        // Dismiss warning toast if showing
+        if (this._expirationWarningToastId) {
+          toast.dismiss(this._expirationWarningToastId);
+          this._expirationWarningToastId = null;
+        }
+
+        storeJWT(response.token);
+        this.scheduleTokenRenewal(response.token);
+        eventBus.emit(Events.AUTH_RENEWED, { expiresAt: response.expires_at });
+        logAuth(Status.SUCCESS, 'Token renewed successfully', Date.now() - start);
+
+        // Only show success toast if the expiration warning was active
+        // (avoids noisy toasts on every manager switch)
+        if (wasWarningActive) {
+          toast.success('Session Renewed', {
+            title: 'Session Extended',
+            description: 'Your session has been successfully renewed.',
+            duration: 3000,
+            subsystem: 'Auth',
+          });
+        }
       }
-
-      storeJWT(response.token);
-      this.scheduleTokenRenewal(response.token);
-      eventBus.emit(Events.AUTH_RENEWED, { expiresAt: response.expires_at });
-      logAuth(Status.SUCCESS, 'Token renewed successfully', Date.now() - start);
-
-      // Show success toast
-      toast.success('Session Renewed', {
-        title: 'Session Extended',
-        description: 'Your session has been successfully renewed.',
-        duration: 3000,
-        subsystem: 'Auth',
-      });
+    } finally {
+      this._isRenewing = false;
     }
   }
 
@@ -779,10 +888,16 @@ class LithiumApp {
     await this._crossfadeSlots(loadedKey);
     this.currentManager = { id: loadedKey, instance: incoming.instance };
 
+    const utilityKey = loadedKey.replace('utility:', '');
+
+    // Save as last-used manager and record activity
+    this._saveLastManager('utility', utilityKey);
+    this.recordUserActivity();
+    this._renewOnActivity();
+
     // Notify main manager to update sidebar active state
     const mainMgr = this._getMainManager();
     if (mainMgr) {
-      const utilityKey = loadedKey.replace('utility:', '');
       mainMgr.setActiveUtilityButton(utilityKey);
     }
   }
@@ -797,6 +912,11 @@ class LithiumApp {
 
     await this._crossfadeSlots(managerId);
     this.currentManager = { id: managerId, instance: incoming.instance };
+
+    // Save as last-used manager and record activity
+    this._saveLastManager('manager', managerId);
+    this.recordUserActivity();
+    this._renewOnActivity();
 
     // Notify main manager to clear utility button state
     const mainMgr = this._getMainManager();
@@ -1119,6 +1239,9 @@ class LithiumApp {
   async handleLogout() {
     logAuth(Status.INFO, 'Logging out');
 
+    // Clear JWT timers before anything else
+    this.clearExpirationTimers();
+
     // Call logout API
     try {
       await this.api.post('auth/logout');
@@ -1141,12 +1264,12 @@ class LithiumApp {
    */
   async handleAuthExpired() {
     logAuth(Status.WARN, 'Authentication expired, redirecting to login');
+    this.clearExpirationTimers();
     clearJWT();
     this.user = null;
     this.loadedManagers.clear();
 
     // Show expired message and redirect to login
-    // alert('Your session has expired. Please log in again.');
     await this.loadLoginManager();
   }
 
