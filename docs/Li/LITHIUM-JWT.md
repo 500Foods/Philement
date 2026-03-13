@@ -27,6 +27,7 @@ JWTs are generated server-side by Hydrogen after successful authentication. The 
 ```
 
 The token consists of three parts separated by dots:
+
 - **Header** - Algorithm and token type
 - **Payload** - Claims (user data)
 - **Signature** - Verification hash

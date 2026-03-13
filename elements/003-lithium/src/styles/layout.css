@@ -793,7 +793,6 @@ body.hide-password-manager-ui [class*="password-icon"] {
 
 .sidebar-footer {
   padding: var(--space-3);
-  border-top: var(--border-standard);
 }
 
 .sidebar-logout-btn {
