@@ -178,35 +178,7 @@ logGroup(MY_MODULE, Status.INFO, 'Operation', () => {
 
 ## JWT
 
-**File:** [`jwt.js`](elements/003-lithium/src/core/jwt.js)
-
-JWT token management.
-
-### JWT Functions
-
-| Function | Purpose |
-|----------|---------|
-| `storeJWT(token)` | Store JWT in localStorage |
-| `getJWT()` | Retrieve JWT from localStorage |
-| `removeJWT()` | Remove JWT from localStorage |
-| `getClaims()` | Parse JWT and return claims |
-| `isTokenExpired()` | Check if token is expired |
-
-### JWT Usage
-
-```javascript
-import { storeJWT, getJWT, getClaims } from '../../core/jwt.js';
-
-// Store token after login
-storeJWT(data.token);
-
-// Get token for API calls
-const token = getJWT();
-
-// Get decoded claims
-const claims = getClaims();
-// { user_id: 123, username: 'test', roles: ['admin'], exp: 1234567890 }
-```
+**Note:** JWT documentation has moved to [LITHIUM-JWT.md](LITHIUM-JWT.md) — covering token lifecycle (generation, storage, validation, renewal), claims, and usage examples.
 
 ---
 
@@ -582,6 +554,7 @@ Toast styles are in `src/styles/toast.css`. Key design decisions:
 
 ## Related Documentation
 
+- [LITHIUM-JWT.md](LITHIUM-JWT.md) - JWT authentication and claims
 - [LITHIUM-MGR.md](LITHIUM-MGR.md) - Manager system
 - [LITHIUM-ICN.md](LITHIUM-ICN.md) - Icon system
 - [LITHIUM-DEV.md](LITHIUM-DEV.md) - Development setup

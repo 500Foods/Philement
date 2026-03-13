@@ -598,6 +598,7 @@ body.resizing * {
   min-width: 0;
   overflow: hidden;
   position: relative;
+  background: var(--bg-secondary);
 }
 
 /* Mobile menu button (hidden on desktop, floats above slots) */
@@ -706,9 +707,10 @@ body.resizing * {
 .manager-slot-workspace {
   flex: 1;
   overflow: hidden;
-  background: var(--bg-primary);
   min-height: 0px;
   position: relative;
+  margin: var(--space-2) var(--space-3);
+  border-radius: var(--border-radius-md);
 }
 
 /* ========================================

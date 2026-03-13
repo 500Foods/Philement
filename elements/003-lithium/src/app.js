@@ -624,7 +624,7 @@ class LithiumApp {
     try {
       logAuth(Status.INFO, 'Starting token renewal');
       const start = Date.now();
-      const response = await this.api.post('auth/renew');
+      const response = await this.api.post('auth/renew', {});
 
       if (response.token) {
         // Clear any existing expiration warning

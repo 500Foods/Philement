@@ -34,7 +34,8 @@ This directory contains the canonical documentation for the Lithium web applicat
 | [LITHIUM-API.md](LITHIUM-API.md) | Hydrogen API endpoints and Conduit client library (`conduit.js`) |
 | [LITHIUM-CSS.md](LITHIUM-CSS.md) | CSS architecture, variables, theming |
 | [LITHIUM-ICN.md](LITHIUM-ICN.md) | Icon system, Font Awesome, config |
-| [LITHIUM-OTH.md](LITHIUM-OTH.md) | Utilities — transitions, utils, JSON, log, JWT |
+| [LITHIUM-OTH.md](LITHIUM-OTH.md) | Utilities — transitions, utils, JSON, log, permissions |
+| [LITHIUM-JWT.md](LITHIUM-JWT.md) | JWT authentication — lifecycle, claims, validation |
 | [LITHIUM-CFG.md](LITHIUM-CFG.md) | Configuration, lithium.json, settings |
 | [LITHIUM-PWA.md](LITHIUM-PWA.md) | PWA, service worker, fast updates |
 | [LITHIUM-FAQ.md](LITHIUM-FAQ.md) | Lessons learned, issues resolved, troubleshooting |
