@@ -75,7 +75,7 @@ table.insert(queries,{sql=[[
                         (UPPER(name) LIKE '%' || :SEARCH || '%')
                         OR (UPPER(code) LIKE '%' || :SEARCH || '%')
                         OR (UPPER(summary) LIKE '%' || :SEARCH || '%')
-                        OR (UPPER(collection) LIKE '%' || :SEARCH || '%')
+                        OR (UPPER(collection::text) LIKE '%' || :SEARCH || '%')
                     ORDER BY
                         query_type_a28,
                         query_ref,
