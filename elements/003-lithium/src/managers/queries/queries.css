@@ -140,6 +140,7 @@
   color: var(--text-primary);
   font-size: var(--font-size-xs);
   outline: none;
+  border-radius: var(--border-radius-sm);
 }
 
 .queries-nav-search-input::placeholder {
@@ -240,7 +241,7 @@
 
 .queries-splitter:hover,
 .queries-splitter.resizing {
-  background-color: var(--accent-color);
+  background-color: var(--accent-primary);
 }
 
 .queries-right-panel {
@@ -473,14 +474,33 @@
   border-radius: var(--border-radius-md);
   border: var(--border-standard);
   background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Tabulator base styling */
 #queries-table-container .tabulator {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
+  height: auto;
   background: var(--bg-secondary);
   border: none;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header - don't shrink */
+#queries-table-container .tabulator-header {
+  flex-shrink: 0;
+}
+
+/* Table holder - this is where scrolling happens */
+#queries-table-container .tabulator-tableholder {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 /* Header styling */
@@ -505,7 +525,7 @@
   background: var(--bg-secondary);
 }
 
-/* Row styling - no left/right borders */
+/* Row styling - no left/right borders, compact height */
 #queries-table-container .tabulator-row {
   background: var(--bg-secondary);
   border-bottom: var(--border-standard);
@@ -514,17 +534,15 @@
   color: var(--text-primary);
   cursor: pointer;
   transition: background-color var(--transition-fast);
+  max-height: 22px;
 }
-
-/* Cell padding */
 #queries-table-container .tabulator-cell {
-  padding: var(--space-1) var(--space-1);
-  border-left: none;
-  border-right: none;
-}
-
-#queries-table-container .tabulator-header .tabulator-col .tabulator-col-content {
-  padding: var(--space-1) var(--space-1);
+	padding: 0px 6px;
+	border-left: none;
+	border-right: none;
+	line-height: 14px !important;
+	height: 16px !important;
+	font-size: 12px;
 }
 
 /* Row hover */
@@ -543,6 +561,19 @@
 }
 
 /* Scrollbar styling */
+#queries-table-container .tabulator-tableholder {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/* Ensure table itself takes remaining height */
+#queries-table-container .tabulator .tabulator-table {
+  display: table;
+  width: 100%;
+}
+
 #queries-table-container .tabulator-tableholder::-webkit-scrollbar {
   width: var(--scrollbar-size);
   height: var(--scrollbar-size);
@@ -598,9 +629,9 @@
   display: none;
 }
 
-/* Disable column resize handles */
+/* Disable column resize handles - we enable resizableColumns in JSON config */
 #queries-table-container .tabulator-col-resize-handle {
-  display: none;
+  /* Removed: display: none; - handles are now controlled by resizableColumns setting */
 }
 
 /* Keyboard focus indicator for table container */
@@ -1049,12 +1080,22 @@
 #queries-table-container .tabulator-calcs-bottom {
   background: var(--bg-tertiary);
   border-top: var(--border-standard);
+  border-bottom: var(--border-standard);
   color: var(--text-primary);
   font-weight: 500;
+  max-height: 22px;
 }
 
 #queries-table-container .tabulator-calcs-bottom .tabulator-cell {
   border-right: var(--border-standard);
+  border-top: none;
+  border-bottom: none;
+  padding: 0;
+  line-height: 22px;
+}
+
+#queries-table-container .tabulator-calcs-bottom .tabulator-cell:first-child {
+  border-left: none;
 }
 
 #queries-table-container .tabulator-calcs-bottom .tabulator-cell:last-child {

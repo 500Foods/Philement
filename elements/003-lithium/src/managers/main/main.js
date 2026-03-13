@@ -594,6 +594,11 @@ export default class MainManager {
     this.elements.sidebarSplitter.classList.add('resizing');
     document.body.classList.add('resizing');
     
+    // Remove width transition so resizing follows mouse immediately
+    if (this.elements.sidebar) {
+      this.elements.sidebar.style.transition = 'none';
+    }
+    
     document.addEventListener('mousemove', this.handleSplitterMouseMove);
     document.addEventListener('mouseup', this.handleSplitterMouseUp);
   }
@@ -616,6 +621,11 @@ export default class MainManager {
     this.elements.sidebarSplitter?.classList.remove('resizing');
     document.body.classList.remove('resizing');
     
+    // Restore width transition for expand/collapse button
+    if (this.elements.sidebar) {
+      this.elements.sidebar.style.transition = '';
+    }
+    
     document.removeEventListener('mousemove', this.handleSplitterMouseMove);
     document.removeEventListener('mouseup', this.handleSplitterMouseUp);
     
@@ -633,6 +643,11 @@ export default class MainManager {
     this.isResizing = true;
     this.elements.sidebarSplitter.classList.add('resizing');
     document.body.classList.add('resizing');
+    
+    // Remove width transition so resizing follows touch immediately
+    if (this.elements.sidebar) {
+      this.elements.sidebar.style.transition = 'none';
+    }
     
     document.addEventListener('touchmove', this.handleSplitterTouchMove, { passive: false });
     document.addEventListener('touchend', this.handleSplitterTouchEnd);
@@ -658,6 +673,11 @@ export default class MainManager {
     this.isResizing = false;
     this.elements.sidebarSplitter?.classList.remove('resizing');
     document.body.classList.remove('resizing');
+    
+    // Restore width transition for expand/collapse button
+    if (this.elements.sidebar) {
+      this.elements.sidebar.style.transition = '';
+    }
     
     document.removeEventListener('touchmove', this.handleSplitterTouchMove);
     document.removeEventListener('touchend', this.handleSplitterTouchEnd);

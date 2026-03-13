@@ -11,7 +11,7 @@
   "selectableRows": 1,
   "layout": "fitColumns",
   "responsiveLayout": "collapse",
-  "resizableColumns": false,
+  "resizableColumns": true,
   "persistSort": true,
   "persistFilter": true,
   "initialSort": [

@@ -412,10 +412,13 @@
 
 /* Flag column — vertically center the SVG */
 .language-flag-cell {
-  display: flex;
+  display: flex; 
   align-items: center;
   justify-content: center;
 }
+div#language-table.tabulator div.tabulator-header div.tabulator-header-contents div.tabulator-headers div.tabulator-col.language-flag-cell {
+  display: inline-block;
+}                
 
 /* Selected row styling — current locale */
 #language-table .tabulator-row.tabulator-selected {

@@ -1069,6 +1069,7 @@ export default class QueriesManager {
         title: "Ref",
         field: "query_ref",
         width: 80,
+        resizable: true,
         headerSort: true,
         headerFilter: this._createFilterEditor.bind(this),
         headerFilterFunc: "like",
@@ -1082,6 +1083,7 @@ export default class QueriesManager {
       {
         title: "Name",
         field: "name",
+        resizable: true,
         headerSort: true,
         headerFilter: this._createFilterEditor.bind(this),
         headerFilterFunc: "like",
@@ -1123,6 +1125,7 @@ export default class QueriesManager {
       this.table.addColumn({
         title,
         field: key,
+        resizable: true,
         headerSort: true,
         headerFilter: this._createFilterEditor.bind(this),
         headerFilterFunc: "like",
@@ -1603,6 +1606,11 @@ export default class QueriesManager {
     this.elements.splitter.classList.add('resizing');
     document.body.style.cursor = 'col-resize';
     
+    // Remove width transition so resizing follows mouse immediately
+    if (this.elements.leftPanel) {
+      this.elements.leftPanel.style.transition = 'none';
+    }
+    
     document.addEventListener('mousemove', this.handleSplitterMouseMove);
     document.addEventListener('mouseup', this.handleSplitterMouseUp);
   }
@@ -1625,6 +1633,11 @@ export default class QueriesManager {
     this.isResizing = false;
     this.elements.splitter.classList.remove('resizing');
     document.body.style.cursor = '';
+    
+    // Restore width transition for expand/collapse button
+    if (this.elements.leftPanel) {
+      this.elements.leftPanel.style.transition = '';
+    }
     
     document.removeEventListener('mousemove', this.handleSplitterMouseMove);
     document.removeEventListener('mouseup', this.handleSplitterMouseUp);

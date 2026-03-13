@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/874</span>
+                <span class='fraction'>0/878</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/407</span>
+                <span class='fraction'>0/411</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/805</span>
+                <span class='fraction'>0/809</span>
             </div>
         
             
@@ -2246,7 +2246,20 @@
 <a name='L2181'></a><a href='#L2181'>2181</a>
 <a name='L2182'></a><a href='#L2182'>2182</a>
 <a name='L2183'></a><a href='#L2183'>2183</a>
-<a name='L2184'></a><a href='#L2184'>2184</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L2184'></a><a href='#L2184'>2184</a>
+<a name='L2185'></a><a href='#L2185'>2185</a>
+<a name='L2186'></a><a href='#L2186'>2186</a>
+<a name='L2187'></a><a href='#L2187'>2187</a>
+<a name='L2188'></a><a href='#L2188'>2188</a>
+<a name='L2189'></a><a href='#L2189'>2189</a>
+<a name='L2190'></a><a href='#L2190'>2190</a>
+<a name='L2191'></a><a href='#L2191'>2191</a>
+<a name='L2192'></a><a href='#L2192'>2192</a>
+<a name='L2193'></a><a href='#L2193'>2193</a>
+<a name='L2194'></a><a href='#L2194'>2194</a>
+<a name='L2195'></a><a href='#L2195'>2195</a>
+<a name='L2196'></a><a href='#L2196'>2196</a>
+<a name='L2197'></a><a href='#L2197'>2197</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3323,6 +3336,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3346,6 +3360,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3369,6 +3384,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3848,9 +3864,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3870,9 +3891,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -5500,6 +5526,7 @@ export default class QueriesManager {
         title: "Ref",
         field: "query_ref",
         width: 80,
+        resizable: true,
         headerSort: true,
         headerFilter: this._createFilterEditor.bind(this),
         headerFilterFunc: "like",
@@ -5513,6 +5540,7 @@ export default class QueriesManager {
       {
         title: "Name",
         field: "name",
+        resizable: true,
         headerSort: true,
         headerFilter: this._createFilterEditor.bind(this),
         headerFilterFunc: "like",
@@ -5554,6 +5582,7 @@ export default class QueriesManager {
 <span class="cstat-no" title="statement not covered" >      this.table.addColumn({</span>
         title,
         field: key,
+        resizable: true,
         headerSort: true,
         headerFilter: this._createFilterEditor.bind(this),
         headerFilterFunc: "like",
@@ -6034,6 +6063,11 @@ export default class QueriesManager {
 <span class="cstat-no" title="statement not covered" >    this.elements.splitter.classList.add('resizing');</span>
 <span class="cstat-no" title="statement not covered" >    document.body.style.cursor = 'col-resize';</span>
     
+    // Remove width transition so resizing follows mouse immediately
+<span class="cstat-no" title="statement not covered" >    if (this.elements.leftPanel) {</span>
+<span class="cstat-no" title="statement not covered" >      this.elements.leftPanel.style.transition = 'none';</span>
+    }
+    
 <span class="cstat-no" title="statement not covered" >    document.addEventListener('mousemove', this.handleSplitterMouseMove);</span>
 <span class="cstat-no" title="statement not covered" >    document.addEventListener('mouseup', this.handleSplitterMouseUp);</span>
   }
@@ -6056,6 +6090,11 @@ export default class QueriesManager {
 <span class="cstat-no" title="statement not covered" >    this.isResizing = false;</span>
 <span class="cstat-no" title="statement not covered" >    this.elements.splitter.classList.remove('resizing');</span>
 <span class="cstat-no" title="statement not covered" >    document.body.style.cursor = '';</span>
+    
+    // Restore width transition for expand/collapse button
+<span class="cstat-no" title="statement not covered" >    if (this.elements.leftPanel) {</span>
+<span class="cstat-no" title="statement not covered" >      this.elements.leftPanel.style.transition = '';</span>
+    }
     
 <span class="cstat-no" title="statement not covered" >    document.removeEventListener('mousemove', this.handleSplitterMouseMove);</span>
 <span class="cstat-no" title="statement not covered" >    document.removeEventListener('mouseup', this.handleSplitterMouseUp);</span>
@@ -6619,7 +6658,7 @@ export default class QueriesManager {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-13T01:55:54.090Z
+                at 2026-03-13T10:15:56.504Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
