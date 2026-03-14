@@ -1,1 +1,147 @@
-<div id="profile-manager-page" class="manager-page"><div class="profile-header"><h2 class="profile-title">User Profile</h2><p class="profile-subtitle">Manage your preferences and settings</p></div><div class="profile-content"><section class="profile-section"><h3 class="section-title"><fa fa-user></fa>Account Information</h3><div class="profile-info-grid"><div class="info-item"><span class="info-label">Username</span> <span class="info-value" id="profile-username">-</span></div><div class="info-item"><span class="info-label">Email</span> <span class="info-value" id="profile-email">-</span></div><div class="info-item"><span class="info-label">Roles</span> <span class="info-value" id="profile-roles">-</span></div><div class="info-item"><span class="info-label">Database</span> <span class="info-value" id="profile-database">-</span></div></div></section><section class="profile-section"><h3 class="section-title"><fa fa-cog></fa>Preferences</h3><form id="preferences-form" class="preferences-form"><div class="form-group"><label for="pref-language" class="form-label">Language</label> <select id="pref-language" class="form-select" name="language"><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option><option value="es">Spanish</option><option value="fr">French</option><option value="de">German</option><option value="it">Italian</option><option value="pt">Portuguese</option><option value="zh-CN">Chinese (Simplified)</option><option value="ja">Japanese</option><option value="ko">Korean</option></select> <span class="form-hint">Interface language for menus and labels</span></div><div class="form-group"><label for="pref-date-format" class="form-label">Date Format</label> <select id="pref-date-format" class="form-select" name="dateFormat"><option value="MM/DD/YYYY">MM/DD/YYYY (US)</option><option value="DD/MM/YYYY">DD/MM/YYYY (European)</option><option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option><option value="MMM D, YYYY">MMM D, YYYY (Abbreviated)</option><option value="D MMM YYYY">D MMM YYYY (European Abbreviated)</option></select> <span class="form-hint">How dates are displayed throughout the application</span></div><div class="form-group"><label for="pref-time-format" class="form-label">Time Format</label> <select id="pref-time-format" class="form-select" name="timeFormat"><option value="12h">12-hour (AM/PM)</option><option value="24h">24-hour</option></select> <span class="form-hint">Display time in 12-hour or 24-hour format</span></div><div class="form-group"><label for="pref-number-format" class="form-label">Number Format</label> <select id="pref-number-format" class="form-select" name="numberFormat"><option value="en-US">1,234.56 (US)</option><option value="en-GB">1,234.56 (UK)</option><option value="de">1.234,56 (European)</option><option value="fr">1 234,56 (French)</option></select> <span class="form-hint">Decimal and thousands separator style</span></div><div class="form-group"><label for="pref-database" class="form-label">Default Database</label> <select id="pref-database" class="form-select" name="defaultDatabase"><option value="">Loading databases...</option></select> <span class="form-hint">Default database for new connections</span></div><div class="form-group"><label for="pref-theme" class="form-label">Active Theme</label> <select id="pref-theme" class="form-select" name="activeTheme"><option value="">Loading themes...</option></select> <span class="form-hint">Visual theme for the application interface</span></div><div class="form-actions"><button type="submit" class="btn btn-primary" id="btn-save-preferences"><fa fa-save></fa>Save Preferences</button> <button type="button" class="btn btn-secondary" id="btn-reset-preferences"><fa fa-undo></fa>Reset to Defaults</button></div></form></section><section class="profile-section"><h3 class="section-title"><fa fa-eye></fa>Preview</h3><div class="preview-panel"><div class="preview-item"><span class="preview-label">Date:</span> <span class="preview-value" id="preview-date">-</span></div><div class="preview-item"><span class="preview-label">Time:</span> <span class="preview-value" id="preview-time">-</span></div><div class="preview-item"><span class="preview-label">Number:</span> <span class="preview-value" id="preview-number">-</span></div><div class="preview-item"><span class="preview-label">Currency:</span> <span class="preview-value" id="preview-currency">-</span></div></div></section></div><div id="profile-toast" class="toast"><fa fa-check-circle></fa><span class="toast-message">Preferences saved successfully</span></div></div>
+<div id="profile-manager-page" class="manager-page">
+  <div class="profile-header">
+    <h2 class="profile-title">User Profile</h2>
+    <p class="profile-subtitle">Manage your preferences and settings</p>
+  </div>
+
+  <div class="profile-content">
+    <!-- User Info Section -->
+    <section class="profile-section">
+      <h3 class="section-title"><fa fa-user></fa> Account Information</h3>
+      <div class="profile-info-grid">
+        <div class="info-item">
+          <span class="info-label">Username</span>
+          <span class="info-value" id="profile-username">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Email</span>
+          <span class="info-value" id="profile-email">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Roles</span>
+          <span class="info-value" id="profile-roles">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Database</span>
+          <span class="info-value" id="profile-database">-</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Preferences Form -->
+    <section class="profile-section">
+      <h3 class="section-title"><fa fa-cog></fa> Preferences</h3>
+      <form id="preferences-form" class="preferences-form">
+        <!-- Language -->
+        <div class="form-group">
+          <label for="pref-language" class="form-label">Language</label>
+          <select id="pref-language" class="form-select" name="language">
+            <option value="en-US">English (US)</option>
+            <option value="en-GB">English (UK)</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="it">Italian</option>
+            <option value="pt">Portuguese</option>
+            <option value="zh-CN">Chinese (Simplified)</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
+          </select>
+          <span class="form-hint">Interface language for menus and labels</span>
+        </div>
+
+        <!-- Date Format -->
+        <div class="form-group">
+          <label for="pref-date-format" class="form-label">Date Format</label>
+          <select id="pref-date-format" class="form-select" name="dateFormat">
+            <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
+            <option value="DD/MM/YYYY">DD/MM/YYYY (European)</option>
+            <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
+            <option value="MMM D, YYYY">MMM D, YYYY (Abbreviated)</option>
+            <option value="D MMM YYYY">D MMM YYYY (European Abbreviated)</option>
+          </select>
+          <span class="form-hint">How dates are displayed throughout the application</span>
+        </div>
+
+        <!-- Time Format -->
+        <div class="form-group">
+          <label for="pref-time-format" class="form-label">Time Format</label>
+          <select id="pref-time-format" class="form-select" name="timeFormat">
+            <option value="12h">12-hour (AM/PM)</option>
+            <option value="24h">24-hour</option>
+          </select>
+          <span class="form-hint">Display time in 12-hour or 24-hour format</span>
+        </div>
+
+        <!-- Number Format -->
+        <div class="form-group">
+          <label for="pref-number-format" class="form-label">Number Format</label>
+          <select id="pref-number-format" class="form-select" name="numberFormat">
+            <option value="en-US">1,234.56 (US)</option>
+            <option value="en-GB">1,234.56 (UK)</option>
+            <option value="de">1.234,56 (European)</option>
+            <option value="fr">1 234,56 (French)</option>
+          </select>
+          <span class="form-hint">Decimal and thousands separator style</span>
+        </div>
+
+        <!-- Default Database -->
+        <div class="form-group">
+          <label for="pref-database" class="form-label">Default Database</label>
+          <select id="pref-database" class="form-select" name="defaultDatabase">
+            <option value="">Loading databases...</option>
+          </select>
+          <span class="form-hint">Default database for new connections</span>
+        </div>
+
+        <!-- Active Theme -->
+        <div class="form-group">
+          <label for="pref-theme" class="form-label">Active Theme</label>
+          <select id="pref-theme" class="form-select" name="activeTheme">
+            <option value="">Loading themes...</option>
+          </select>
+          <span class="form-hint">Visual theme for the application interface</span>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="btn-save-preferences">
+            <fa fa-save></fa> Save Preferences
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-reset-preferences">
+            <fa fa-undo></fa> Reset to Defaults
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Preview Section -->
+    <section class="profile-section">
+      <h3 class="section-title"><fa fa-eye></fa> Preview</h3>
+      <div class="preview-panel">
+        <div class="preview-item">
+          <span class="preview-label">Date:</span>
+          <span class="preview-value" id="preview-date">-</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-label">Time:</span>
+          <span class="preview-value" id="preview-time">-</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-label">Number:</span>
+          <span class="preview-value" id="preview-number">-</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-label">Currency:</span>
+          <span class="preview-value" id="preview-currency">-</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="profile-toast" class="toast">
+    <fa fa-check-circle></fa>
+    <span class="toast-message">Preferences saved successfully</span>
+  </div>
+</div>

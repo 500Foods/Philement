@@ -1,0 +1,928 @@
+/**
+ * LithiumTable Unit Tests
+ *
+ * Tests the JSON-driven Tabulator column resolution engine:
+ *   - Config loading (loadColtypes, loadTableDef)
+ *   - Column resolution (resolveColumn, resolveColumns)
+ *   - Blank/zero formatter wrapper (wrapFormatter, needsBlankZeroWrapper)
+ *   - Table-level option mapping (resolveTableOptions)
+ *   - Helper functions (getPrimaryKeyField, getQueryRefs)
+ *   - Lookup support (loadLookup, getLookup, resolveLookupLabel, etc.)
+ *   - Cache management (clearCache)
+ */
+
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import {
+  loadColtypes,
+  loadTableDef,
+  loadLookup,
+  getLookup,
+  resolveLookupLabel,
+  createLookupFormatter,
+  createLookupEditor,
+  preloadLookups,
+  resolveColumn,
+  resolveColumns,
+  resolveTableOptions,
+  getPrimaryKeyField,
+  getQueryRefs,
+  wrapFormatter,
+  needsBlankZeroWrapper,
+  clearCache,
+} from '../../src/core/lithium-table.js';
+
+// ── Test fixtures ─────────────────────────────────────────────────────────
+
+const MOCK_COLTYPES = {
+  coltypes: {
+    integer: {
+      align: 'right',
+      vertAlign: 'middle',
+      formatter: 'number',
+      formatterParams: { thousand: ',', precision: 0 },
+      editor: 'number',
+      editorParams: { step: 1 },
+      sorter: 'number',
+      headerFilterFunc: '>=',
+      headerFilterPlaceholder: 'filter...',
+      blank: '',
+      zero: '',
+      cssClass: 'li-col-integer',
+      bottomCalc: 'sum',
+      bottomCalcFormatter: 'number',
+      bottomCalcFormatterParams: { thousand: ',', precision: 0 },
+      width: null,
+      minWidth: 60,
+    },
+    string: {
+      align: 'left',
+      vertAlign: 'middle',
+      formatter: 'plaintext',
+      formatterParams: {},
+      editor: 'input',
+      editorParams: { search: false },
+      sorter: 'alphanum',
+      headerFilterFunc: 'like',
+      headerFilterPlaceholder: 'filter...',
+      blank: '',
+      zero: null,
+      cssClass: 'li-col-string',
+      bottomCalc: null,
+      width: null,
+      minWidth: 80,
+    },
+    lookup: {
+      align: 'left',
+      vertAlign: 'middle',
+      formatter: 'lookup',
+      formatterParams: { lookupTable: null },
+      editor: 'list',
+      editorParams: { valuesLookup: true, autocomplete: true },
+      sorter: 'alphanum',
+      headerFilterFunc: 'like',
+      headerFilterPlaceholder: 'filter...',
+      blank: '',
+      zero: null,
+      cssClass: 'li-col-lookup',
+      bottomCalc: null,
+      width: null,
+      minWidth: 80,
+    },
+    datetime: {
+      align: 'center',
+      vertAlign: 'middle',
+      formatter: 'datetime',
+      formatterParams: {
+        inputFormat: "yyyy-MM-dd'T'HH:mm:ss",
+        outputFormat: 'yyyy-MM-dd HH:mm',
+        invalidPlaceholder: '',
+      },
+      editor: 'datetime-local',
+      editorParams: {},
+      sorter: 'datetime',
+      sorterParams: { format: "yyyy-MM-dd'T'HH:mm:ss" },
+      headerFilterFunc: 'like',
+      headerFilterPlaceholder: 'filter...',
+      blank: '',
+      zero: null,
+      cssClass: 'li-col-datetime',
+      bottomCalc: null,
+      width: 150,
+      minWidth: 120,
+    },
+  },
+};
+
+const MOCK_TABLEDEF = {
+  table: 'query-manager',
+  title: 'Query Manager',
+  queryRef: 25,
+  searchQueryRef: 32,
+  detailQueryRef: 27,
+  insertQueryRef: 40,
+  updateQueryRef: 41,
+  deleteQueryRef: 42,
+  readonly: false,
+  selectableRows: 1,
+  layout: 'fitColumns',
+  responsiveLayout: 'collapse',
+  resizableColumns: true,
+  initialSort: [{ column: 'query_ref', dir: 'asc' }],
+  columns: {
+    query_id: {
+      display: 'ID#',
+      field: 'query_id',
+      coltype: 'integer',
+      visible: false,
+      sort: true,
+      filter: true,
+      editable: false,
+      calculated: false,
+      primaryKey: true,
+      overrides: { bottomCalc: null },
+    },
+    query_ref: {
+      display: 'Ref',
+      field: 'query_ref',
+      coltype: 'integer',
+      visible: true,
+      sort: true,
+      filter: true,
+      editable: false,
+      calculated: false,
+      primaryKey: false,
+      overrides: {
+        width: 80,
+        bottomCalc: 'count',
+        bottomCalcFormatter: 'number',
+        bottomCalcFormatterParams: { thousand: ',' },
+      },
+    },
+    name: {
+      display: 'Name',
+      field: 'name',
+      coltype: 'string',
+      visible: true,
+      sort: true,
+      filter: true,
+      editable: true,
+      calculated: false,
+      primaryKey: false,
+    },
+    created_at: {
+      display: 'Created',
+      field: 'created_at',
+      coltype: 'datetime',
+      visible: false,
+      sort: true,
+      filter: true,
+      editable: false,
+      calculated: true,
+      primaryKey: false,
+    },
+  },
+};
+
+// ── Mock fetch ────────────────────────────────────────────────────────────
+
+global.fetch = vi.fn();
+
+// ── Tests ─────────────────────────────────────────────────────────────────
+
+describe('LithiumTable', () => {
+  beforeEach(() => {
+    clearCache();
+    vi.clearAllMocks();
+  });
+
+  // ── loadColtypes ────────────────────────────────────────────────────────
+
+  describe('loadColtypes', () => {
+    it('should fetch and cache coltypes on first call', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => MOCK_COLTYPES,
+      });
+
+      const result = await loadColtypes();
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledWith('/config/tabulator/coltypes.json');
+      expect(result).toHaveProperty('integer');
+      expect(result).toHaveProperty('string');
+      expect(Object.keys(result)).toHaveLength(4);
+    });
+
+    it('should return cached data on subsequent calls', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => MOCK_COLTYPES,
+      });
+
+      await loadColtypes();
+      const second = await loadColtypes();
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(second).toHaveProperty('integer');
+    });
+
+    it('should return empty object on HTTP error', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      });
+
+      const result = await loadColtypes();
+
+      expect(result).toEqual({});
+    });
+
+    it('should return empty object on network error', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Network down'));
+
+      const result = await loadColtypes();
+
+      expect(result).toEqual({});
+    });
+  });
+
+  // ── loadTableDef ────────────────────────────────────────────────────────
+
+  describe('loadTableDef', () => {
+    it('should fetch and cache a table definition', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => MOCK_TABLEDEF,
+      });
+
+      const result = await loadTableDef('queries/query-manager');
+
+      expect(global.fetch).toHaveBeenCalledWith('/config/tabulator/queries/query-manager.json');
+      expect(result.title).toBe('Query Manager');
+      expect(result.queryRef).toBe(25);
+    });
+
+    it('should return cached tabledef on second call', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => MOCK_TABLEDEF,
+      });
+
+      await loadTableDef('queries/query-manager');
+      const second = await loadTableDef('queries/query-manager');
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(second.title).toBe('Query Manager');
+    });
+
+    it('should strip .json extension from path', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => MOCK_TABLEDEF,
+      });
+
+      await loadTableDef('queries/query-manager.json');
+
+      expect(global.fetch).toHaveBeenCalledWith('/config/tabulator/queries/query-manager.json');
+    });
+
+    it('should return null on HTTP error', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      });
+
+      const result = await loadTableDef('queries/nonexistent');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null on network error', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await loadTableDef('queries/broken');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // ── resolveColumn ──────────────────────────────────────────────────────
+
+  describe('resolveColumn', () => {
+    const coltypes = MOCK_COLTYPES.coltypes;
+
+    it('should resolve a basic integer column', () => {
+      const colDef = MOCK_TABLEDEF.columns.query_ref;
+      const result = resolveColumn('query_ref', colDef, coltypes);
+
+      expect(result.title).toBe('Ref');
+      expect(result.field).toBe('query_ref');
+      expect(result.visible).toBe(true);
+      expect(result.hozAlign).toBe('right');
+      expect(result.vertAlign).toBe('middle');
+      expect(result.headerSort).toBe(true);
+      expect(result.sorter).toBe('number');
+    });
+
+    it('should apply column overrides over coltype defaults', () => {
+      const colDef = MOCK_TABLEDEF.columns.query_ref;
+      const result = resolveColumn('query_ref', colDef, coltypes);
+
+      // Override: width: 80 (coltype default is null)
+      expect(result.width).toBe(80);
+      // Override: bottomCalc: "count" (coltype default is "sum")
+      expect(result.bottomCalc).toBe('count');
+      // Override: bottomCalcFormatter: "number" (same as coltype, but from override)
+      expect(result.bottomCalcFormatter).toBe('number');
+    });
+
+    it('should respect visible: false', () => {
+      const colDef = MOCK_TABLEDEF.columns.query_id;
+      const result = resolveColumn('query_id', colDef, coltypes);
+
+      expect(result.visible).toBe(false);
+    });
+
+    it('should set headerFilter when filter: true', () => {
+      const colDef = MOCK_TABLEDEF.columns.query_ref;
+      const result = resolveColumn('query_ref', colDef, coltypes);
+
+      // Without filterEditor option, defaults to 'input'
+      expect(result.headerFilter).toBe('input');
+    });
+
+    it('should use custom filterEditor when provided', () => {
+      const mockEditorFn = vi.fn();
+      const colDef = MOCK_TABLEDEF.columns.query_ref;
+      const result = resolveColumn('query_ref', colDef, coltypes, {
+        filterEditor: mockEditorFn,
+      });
+
+      expect(result.headerFilter).toBe(mockEditorFn);
+    });
+
+    it('should not set headerFilter when filter is not true', () => {
+      const colDef = {
+        display: 'SQL',
+        field: 'code',
+        coltype: 'string',
+        visible: false,
+        sort: false,
+        filter: false,
+        editable: true,
+        calculated: false,
+      };
+      const result = resolveColumn('code', colDef, coltypes);
+
+      expect(result.headerFilter).toBeUndefined();
+    });
+
+    it('should set editor for editable, non-readonly, non-calculated columns', () => {
+      const colDef = MOCK_TABLEDEF.columns.name;
+      const result = resolveColumn('name', colDef, coltypes);
+
+      expect(result.editor).toBe('input');
+    });
+
+    it('should not set editor for non-editable columns', () => {
+      const colDef = MOCK_TABLEDEF.columns.query_ref;
+      const result = resolveColumn('query_ref', colDef, coltypes);
+
+      expect(result.editor).toBeUndefined();
+    });
+
+    it('should not set editor for calculated columns', () => {
+      const colDef = MOCK_TABLEDEF.columns.created_at;
+      const result = resolveColumn('created_at', colDef, coltypes);
+
+      expect(result.editor).toBeUndefined();
+    });
+
+    it('should not set editor when tableReadonly is true', () => {
+      const colDef = MOCK_TABLEDEF.columns.name;
+      const result = resolveColumn('name', colDef, coltypes, { tableReadonly: true });
+
+      expect(result.editor).toBeUndefined();
+    });
+
+    it('should apply cssClass from coltype', () => {
+      const colDef = MOCK_TABLEDEF.columns.query_ref;
+      const result = resolveColumn('query_ref', colDef, coltypes);
+
+      expect(result.cssClass).toBe('li-col-integer');
+    });
+
+    it('should apply minWidth from coltype', () => {
+      const colDef = MOCK_TABLEDEF.columns.name;
+      const result = resolveColumn('name', colDef, coltypes);
+
+      expect(result.minWidth).toBe(80);
+    });
+
+    it('should apply sorterParams when present', () => {
+      const colDef = MOCK_TABLEDEF.columns.created_at;
+      const result = resolveColumn('created_at', colDef, coltypes);
+
+      expect(result.sorterParams).toEqual({ format: "yyyy-MM-dd'T'HH:mm:ss" });
+    });
+
+    it('should handle missing coltype gracefully', () => {
+      const colDef = {
+        display: 'Unknown',
+        field: 'unknown_field',
+        coltype: 'nonexistent',
+        visible: true,
+        sort: true,
+      };
+      const result = resolveColumn('unknown_field', colDef, coltypes);
+
+      expect(result.title).toBe('Unknown');
+      expect(result.field).toBe('unknown_field');
+      expect(result.hozAlign).toBe('left');  // fallback
+    });
+
+    it('should handle null overrides in column definition', () => {
+      const colDef = MOCK_TABLEDEF.columns.query_id;
+      const result = resolveColumn('query_id', colDef, coltypes);
+
+      // Override sets bottomCalc: null, which nullifies the coltype default "sum".
+      // resolveColumn only sets bottomCalc when merged value != null, so null
+      // override effectively removes it from the output (undefined).
+      expect(result.bottomCalc).toBeUndefined();
+    });
+
+    it('should apply bottomCalcFormatterParams from overrides', () => {
+      const colDef = MOCK_TABLEDEF.columns.query_ref;
+      const result = resolveColumn('query_ref', colDef, coltypes);
+
+      expect(result.bottomCalcFormatterParams).toEqual({ thousand: ',' });
+    });
+
+    it('should set headerSort to false when sort is false', () => {
+      const colDef = {
+        display: 'Code',
+        field: 'code',
+        coltype: 'string',
+        visible: false,
+        sort: false,
+        filter: false,
+        editable: false,
+      };
+      const result = resolveColumn('code', colDef, coltypes);
+
+      expect(result.headerSort).toBe(false);
+    });
+  });
+
+  // ── resolveColumns ─────────────────────────────────────────────────────
+
+  describe('resolveColumns', () => {
+    const coltypes = MOCK_COLTYPES.coltypes;
+
+    it('should resolve all columns from a table definition', () => {
+      const result = resolveColumns(MOCK_TABLEDEF, coltypes);
+
+      expect(result).toHaveLength(4);
+      expect(result[0].field).toBe('query_id');
+      expect(result[1].field).toBe('query_ref');
+      expect(result[2].field).toBe('name');
+      expect(result[3].field).toBe('created_at');
+    });
+
+    it('should pass filterEditor option to all columns', () => {
+      const mockEditor = vi.fn();
+      const result = resolveColumns(MOCK_TABLEDEF, coltypes, {
+        filterEditor: mockEditor,
+      });
+
+      // Columns with filter: true should have the custom editor
+      const refCol = result.find(c => c.field === 'query_ref');
+      expect(refCol.headerFilter).toBe(mockEditor);
+    });
+
+    it('should set tableReadonly from tableDef.readonly', () => {
+      const readonlyDef = { ...MOCK_TABLEDEF, readonly: true };
+      const result = resolveColumns(readonlyDef, coltypes);
+
+      // "name" is normally editable, but table is readonly
+      const nameCol = result.find(c => c.field === 'name');
+      expect(nameCol.editor).toBeUndefined();
+    });
+
+    it('should return empty array for null tableDef', () => {
+      expect(resolveColumns(null, coltypes)).toEqual([]);
+    });
+
+    it('should return empty array for tableDef without columns', () => {
+      expect(resolveColumns({}, coltypes)).toEqual([]);
+    });
+  });
+
+  // ── resolveTableOptions ────────────────────────────────────────────────
+
+  describe('resolveTableOptions', () => {
+    it('should map all supported table-level properties', () => {
+      const result = resolveTableOptions(MOCK_TABLEDEF);
+
+      expect(result.layout).toBe('fitColumns');
+      expect(result.responsiveLayout).toBe('collapse');
+      expect(result.selectableRows).toBe(1);
+      expect(result.resizableColumns).toBe(true);
+      expect(result.initialSort).toEqual([{ column: 'query_ref', dir: 'asc' }]);
+    });
+
+    it('should omit properties not set in tableDef', () => {
+      const result = resolveTableOptions({ layout: 'fitColumns' });
+
+      expect(result.layout).toBe('fitColumns');
+      expect(result.groupBy).toBeUndefined();
+      expect(result.responsiveLayout).toBeUndefined();
+    });
+
+    it('should return empty object for null tableDef', () => {
+      expect(resolveTableOptions(null)).toEqual({});
+    });
+
+    it('should handle groupBy when present', () => {
+      const def = { ...MOCK_TABLEDEF, groupBy: 'query_type_a28' };
+      const result = resolveTableOptions(def);
+
+      expect(result.groupBy).toBe('query_type_a28');
+    });
+  });
+
+  // ── getPrimaryKeyField ─────────────────────────────────────────────────
+
+  describe('getPrimaryKeyField', () => {
+    it('should return the field name of the primary key column', () => {
+      expect(getPrimaryKeyField(MOCK_TABLEDEF)).toBe('query_id');
+    });
+
+    it('should return null if no primary key is defined', () => {
+      const noPK = {
+        columns: {
+          name: { display: 'Name', field: 'name', primaryKey: false },
+        },
+      };
+      expect(getPrimaryKeyField(noPK)).toBeNull();
+    });
+
+    it('should return null for null tableDef', () => {
+      expect(getPrimaryKeyField(null)).toBeNull();
+    });
+
+    it('should return null for tableDef without columns', () => {
+      expect(getPrimaryKeyField({})).toBeNull();
+    });
+  });
+
+  // ── getQueryRefs ───────────────────────────────────────────────────────
+
+  describe('getQueryRefs', () => {
+    it('should return all query refs from tableDef', () => {
+      const refs = getQueryRefs(MOCK_TABLEDEF);
+
+      expect(refs.queryRef).toBe(25);
+      expect(refs.searchQueryRef).toBe(32);
+      expect(refs.detailQueryRef).toBe(27);
+      expect(refs.insertQueryRef).toBe(40);
+      expect(refs.updateQueryRef).toBe(41);
+      expect(refs.deleteQueryRef).toBe(42);
+    });
+
+    it('should return nulls for missing refs', () => {
+      const refs = getQueryRefs({ queryRef: 10 });
+
+      expect(refs.queryRef).toBe(10);
+      expect(refs.searchQueryRef).toBeNull();
+      expect(refs.detailQueryRef).toBeNull();
+      expect(refs.insertQueryRef).toBeNull();
+      expect(refs.updateQueryRef).toBeNull();
+      expect(refs.deleteQueryRef).toBeNull();
+    });
+
+    it('should return all nulls for null tableDef', () => {
+      const refs = getQueryRefs(null);
+
+      expect(refs.queryRef).toBeNull();
+      expect(refs.searchQueryRef).toBeNull();
+      expect(refs.detailQueryRef).toBeNull();
+      expect(refs.insertQueryRef).toBeNull();
+      expect(refs.updateQueryRef).toBeNull();
+      expect(refs.deleteQueryRef).toBeNull();
+    });
+
+    it('should return CRUD refs when only some are defined', () => {
+      const refs = getQueryRefs({ queryRef: 10, deleteQueryRef: 50 });
+
+      expect(refs.queryRef).toBe(10);
+      expect(refs.insertQueryRef).toBeNull();
+      expect(refs.updateQueryRef).toBeNull();
+      expect(refs.deleteQueryRef).toBe(50);
+    });
+  });
+
+  // ── wrapFormatter ──────────────────────────────────────────────────────
+
+  describe('wrapFormatter', () => {
+    it('should return original formatter when no blank/zero handling needed', () => {
+      const result = wrapFormatter('number', {}, null, null);
+
+      expect(result).toBe('number');
+    });
+
+    it('should return blankValue for null cell values', () => {
+      const formatter = wrapFormatter('number', {}, '—', null);
+      const mockCell = { getValue: () => null };
+
+      expect(formatter(mockCell)).toBe('—');
+    });
+
+    it('should return blankValue for undefined cell values', () => {
+      const formatter = wrapFormatter('number', {}, '—', null);
+      const mockCell = { getValue: () => undefined };
+
+      expect(formatter(mockCell)).toBe('—');
+    });
+
+    it('should return blankValue for empty string cell values', () => {
+      const formatter = wrapFormatter('number', {}, '—', null);
+      const mockCell = { getValue: () => '' };
+
+      expect(formatter(mockCell)).toBe('—');
+    });
+
+    it('should return empty string blankValue for blanks', () => {
+      const formatter = wrapFormatter('number', {}, '', null);
+      const mockCell = { getValue: () => null };
+
+      // blank="" means show nothing — that's active
+      expect(formatter(mockCell)).toBe('');
+    });
+
+    it('should return zeroValue for zero cell values', () => {
+      const formatter = wrapFormatter('number', {}, null, '—');
+      const mockCell = { getValue: () => 0 };
+
+      expect(formatter(mockCell)).toBe('—');
+    });
+
+    it('should pass through non-blank, non-zero values with string formatter', () => {
+      const formatter = wrapFormatter('number', {}, '', '');
+      const mockCell = { getValue: () => 42 };
+
+      expect(formatter(mockCell)).toBe(42);
+    });
+
+    it('should call custom formatter function for non-blank values', () => {
+      const customFn = vi.fn().mockReturnValue('formatted');
+      const formatter = wrapFormatter(customFn, { precision: 2 }, '', '');
+      const mockCell = { getValue: () => 42 };
+
+      const result = formatter(mockCell, vi.fn());
+
+      expect(result).toBe('formatted');
+      expect(customFn).toHaveBeenCalledWith(mockCell, { precision: 2 }, expect.any(Function));
+    });
+
+    it('should not call custom formatter for blank values', () => {
+      const customFn = vi.fn();
+      const formatter = wrapFormatter(customFn, {}, '—', null);
+      const mockCell = { getValue: () => null };
+
+      formatter(mockCell, vi.fn());
+
+      expect(customFn).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── needsBlankZeroWrapper ──────────────────────────────────────────────
+
+  describe('needsBlankZeroWrapper', () => {
+    it('should return false when both blank and zero are null', () => {
+      expect(needsBlankZeroWrapper(null, null)).toBe(false);
+    });
+
+    it('should return true when blank is set (even empty string)', () => {
+      expect(needsBlankZeroWrapper('', null)).toBe(true);
+    });
+
+    it('should return true when zero is set', () => {
+      expect(needsBlankZeroWrapper(null, '')).toBe(true);
+    });
+
+    it('should return true when both are set', () => {
+      expect(needsBlankZeroWrapper('—', '—')).toBe(true);
+    });
+
+    it('should return true for blank="0"', () => {
+      expect(needsBlankZeroWrapper('0', null)).toBe(true);
+    });
+  });
+
+  // ── Lookup support ─────────────────────────────────────────────────────
+
+  describe('loadLookup', () => {
+    it('should return empty array when no API instance provided', async () => {
+      const result = await loadLookup('a27', null);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should fetch and cache lookup data', async () => {
+      const mockApi = {
+        authQuery: vi.fn().mockResolvedValue([
+          { lookup_id: 1, lookup_label: 'Active' },
+          { lookup_id: 2, lookup_label: 'Inactive' },
+        ]),
+      };
+
+      const result = await loadLookup('a27', mockApi);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({ id: 1, label: 'Active' });
+      expect(result[1]).toEqual({ id: 2, label: 'Inactive' });
+    });
+
+    it('should return cached data on second call', async () => {
+      const mockApi = {
+        authQuery: vi.fn().mockResolvedValue([
+          { lookup_id: 1, lookup_label: 'Active' },
+        ]),
+      };
+
+      await loadLookup('a27', mockApi);
+      const second = await loadLookup('a27', mockApi);
+
+      expect(mockApi.authQuery).toHaveBeenCalledTimes(1);
+      expect(second).toHaveLength(1);
+    });
+
+    it('should return empty array on API error', async () => {
+      const mockApi = {
+        authQuery: vi.fn().mockRejectedValue(new Error('API error')),
+      };
+
+      const result = await loadLookup('a99', mockApi);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should handle alternative field names in API response', async () => {
+      const mockApi = {
+        authQuery: vi.fn().mockResolvedValue([
+          { id: 10, label: 'Test Label' },
+        ]),
+      };
+
+      const result = await loadLookup('b55', mockApi);
+
+      expect(result[0]).toEqual({ id: 10, label: 'Test Label' });
+    });
+  });
+
+  describe('getLookup', () => {
+    it('should return undefined for non-cached lookup', () => {
+      expect(getLookup('a99')).toBeUndefined();
+    });
+
+    it('should return cached lookup data', async () => {
+      const mockApi = {
+        authQuery: vi.fn().mockResolvedValue([
+          { lookup_id: 1, lookup_label: 'Active' },
+        ]),
+      };
+
+      await loadLookup('a27', mockApi);
+
+      const data = getLookup('a27');
+      expect(data).toHaveLength(1);
+      expect(data[0].label).toBe('Active');
+    });
+  });
+
+  describe('resolveLookupLabel', () => {
+    beforeEach(async () => {
+      const mockApi = {
+        authQuery: vi.fn().mockResolvedValue([
+          { lookup_id: 1, lookup_label: 'Active' },
+          { lookup_id: 2, lookup_label: 'Inactive' },
+        ]),
+      };
+      await loadLookup('a27', mockApi);
+    });
+
+    it('should return the label for a known ID', () => {
+      expect(resolveLookupLabel(1, 'a27')).toBe('Active');
+      expect(resolveLookupLabel(2, 'a27')).toBe('Inactive');
+    });
+
+    it('should return the ID as string for unknown ID', () => {
+      expect(resolveLookupLabel(99, 'a27')).toBe('99');
+    });
+
+    it('should return empty string for null ID', () => {
+      expect(resolveLookupLabel(null, 'a27')).toBe('');
+    });
+
+    it('should return ID as string for uncached lookup ref', () => {
+      expect(resolveLookupLabel(5, 'b99')).toBe('5');
+    });
+  });
+
+  describe('createLookupFormatter', () => {
+    beforeEach(async () => {
+      const mockApi = {
+        authQuery: vi.fn().mockResolvedValue([
+          { lookup_id: 1, lookup_label: 'Active' },
+        ]),
+      };
+      await loadLookup('a27', mockApi);
+    });
+
+    it('should return a formatter function', () => {
+      const fn = createLookupFormatter('a27');
+      expect(typeof fn).toBe('function');
+    });
+
+    it('should format cell value to lookup label', () => {
+      const fn = createLookupFormatter('a27');
+      const mockCell = { getValue: () => 1 };
+
+      expect(fn(mockCell)).toBe('Active');
+    });
+
+    it('should return empty string for null/empty values', () => {
+      const fn = createLookupFormatter('a27');
+
+      expect(fn({ getValue: () => null })).toBe('');
+      expect(fn({ getValue: () => '' })).toBe('');
+    });
+  });
+
+  describe('createLookupEditor', () => {
+    it('should return input fallback for empty lookup data', () => {
+      const result = createLookupEditor('a99', []);
+
+      expect(result).toBe('input');
+    });
+
+    it('should return editor config with list values', () => {
+      const lookupData = [
+        { id: 1, label: 'Active' },
+        { id: 2, label: 'Inactive' },
+      ];
+      const result = createLookupEditor('a27', lookupData);
+
+      expect(result.editor).toBe('list');
+      expect(result.editorParams.values).toEqual(['Active', 'Inactive']);
+      expect(result.editorParams.autocomplete).toBe(true);
+    });
+
+    it('should return input fallback for null lookup data', () => {
+      const result = createLookupEditor('a99', null);
+
+      expect(result).toBe('input');
+    });
+  });
+
+  describe('preloadLookups', () => {
+    it('should load multiple lookups in parallel', async () => {
+      const mockApi = {
+        authQuery: vi.fn()
+          .mockResolvedValueOnce([{ lookup_id: 1, lookup_label: 'Active' }])
+          .mockResolvedValueOnce([{ lookup_id: 10, lookup_label: 'SQL' }]),
+      };
+
+      const results = await preloadLookups(['a27', 'a28'], mockApi);
+
+      expect(results.size).toBe(2);
+      expect(results.get('a27')).toHaveLength(1);
+      expect(results.get('a28')).toHaveLength(1);
+    });
+  });
+
+  // ── clearCache ─────────────────────────────────────────────────────────
+
+  describe('clearCache', () => {
+    it('should clear all caches so data is re-fetched', async () => {
+      global.fetch
+        .mockResolvedValueOnce({ ok: true, json: async () => MOCK_COLTYPES })
+        .mockResolvedValueOnce({ ok: true, json: async () => MOCK_TABLEDEF })
+        .mockResolvedValueOnce({ ok: true, json: async () => MOCK_COLTYPES })
+        .mockResolvedValueOnce({ ok: true, json: async () => MOCK_TABLEDEF });
+
+      await loadColtypes();
+      await loadTableDef('queries/query-manager');
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+
+      clearCache();
+
+      await loadColtypes();
+      await loadTableDef('queries/query-manager');
+
+      expect(global.fetch).toHaveBeenCalledTimes(4);
+    });
+  });
+});

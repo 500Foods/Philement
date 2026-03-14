@@ -278,6 +278,18 @@ Or use `once()` for one-time listeners.
 2. Use `vi.hoisted()` for ESM mocks
 3. Integration tests should skip gracefully if server unavailable
 
+### Library Migrations
+
+1. **jsoneditor → vanilla-jsoneditor (March 2026):** The legacy `jsoneditor` (v10.x) was replaced by `vanilla-jsoneditor` (v2.x), the maintained successor by the same author. Key differences:
+   - **Constructor:** `new JSONEditor(container, opts)` → `new JSONEditor({ target, props: { content: { json }, mode, ... } })`
+   - **Set data:** `editor.set(data)` → `editor.set({ json: data })`
+   - **Get data:** `editor.get()` → `editor.get()` (returns `{ json }` or `{ text }`)
+   - **Modes:** `tree/view/form/code/text` → `tree/text/table`
+   - **Dark theme:** Manual `.jsoneditor-*` CSS overrides → `.jse-theme-dark` class + `--jse-*` CSS custom properties
+   - **CSS:** External `jsoneditor.min.css` import → self-contained (no vendor CSS needed)
+   - **Vendor CSS layer:** `vendor-jsoneditor.css` (imported old CSS into `vendors.jsoneditor` layer) → `vendor-vanilla-jsoneditor.css` (placeholder — CSS is bundled internally)
+   - The `base.css` layer declaration `vendors.jsoneditor` was kept unchanged for cascade ordering consistency
+
 ### PWA
 
 1. Network-first for `version.json` ensures freshness

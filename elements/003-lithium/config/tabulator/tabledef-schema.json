@@ -33,6 +33,21 @@
       "minimum": 1,
       "description": "Query reference number to fetch full row details on selection"
     },
+    "insertQueryRef": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Query reference number for inserting new rows"
+    },
+    "updateQueryRef": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Query reference number for updating existing rows"
+    },
+    "deleteQueryRef": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Query reference number for deleting rows"
+    },
     "readonly": {
       "type": "boolean",
       "description": "When true, the entire table is read-only regardless of individual column settings"

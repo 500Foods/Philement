@@ -1,9 +1,0 @@
-/**
- * Vendor JSONEditor CSS — imports the JSONEditor base styles into the
- * vendors.jsoneditor layer so our app styles always cascade above it.
- *
- * Import this file instead of the bare vendor CSS:
- *   import '../../styles/vendor-jsoneditor.css';
- */
-
-@import "jsoneditor/dist/jsoneditor.min.css" layer(vendors.jsoneditor);

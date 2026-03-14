@@ -13,7 +13,10 @@ Lithium uses a minimal set of third-party libraries, preferring to build functio
 | Build | Vite, Vitest |
 | Tables | Tabulator |
 | Code Editor | CodeMirror 6 |
+| JSON Editor | vanilla-jsoneditor |
 | Sanitization | DOMPurify |
+| Markdown | marked |
+| SQL Formatting | sql-formatter |
 | Icons | Font Awesome |
 | Fonts | Vanadium Sans/Mono (self-hosted) |
 
@@ -76,6 +79,71 @@ const { css } = await import('@codemirror/lang-css');
 - CSS syntax highlighting
 - One Dark theme
 - Line numbers
+
+---
+
+### vanilla-jsoneditor
+
+**Purpose:** Tree/text/table JSON editor for viewing and editing structured data
+
+**Package:** `vanilla-jsoneditor` (the vanilla JS wrapper for `svelte-jsoneditor` by Jos de Jong)
+
+**Import:** Dynamic (lazy-loaded)
+
+```javascript
+const { JSONEditor } = await import('vanilla-jsoneditor');
+```
+
+**Usage in Lithium:**
+
+- Query Manager "Collection" tab — interactive JSON tree editor
+
+**Key features used:**
+
+- Tree mode (default), text mode, table mode
+- Built-in dark theme via `.jse-theme-dark` CSS class
+- Navigation bar, status bar, main menu bar
+- Content model: `{ json: data }` or `{ text: '...' }`
+- Self-contained CSS (no external stylesheet import needed)
+
+**API usage:**
+
+```javascript
+// Create editor
+const editor = new JSONEditor({
+  target: containerElement,
+  props: {
+    content: { json: { key: 'value' } },
+    mode: 'tree',
+    mainMenuBar: true,
+    navigationBar: true,
+    statusBar: true,
+    onChange: (updatedContent, previousContent, { contentErrors }) => {},
+  },
+});
+
+// Update content
+editor.set({ json: newData });
+
+// Get content (returns { json } or { text })
+const content = editor.get();
+
+// Change mode
+editor.updateProps({ mode: 'text' });
+
+// Destroy
+editor.destroy();
+```
+
+**Dark theme integration:**
+
+```javascript
+containerElement.classList.add('jse-theme-dark');
+```
+
+Then map Lithium design tokens to `--jse-*` CSS custom properties in the stylesheet.
+
+**Migration note:** Replaced legacy `jsoneditor` (v10.x) in March 2026. The old library used `new JSONEditor(container, options)` with `editor.set(data)`. The new library uses `new JSONEditor({ target, props })` with `editor.set({ json: data })`. Modes changed from `tree/view/form/code/text` to `tree/text/table`.
 
 ---
 
@@ -221,6 +289,7 @@ processIcons(container);
 | React/Vue | Prefer vanilla JS for simplicity |
 | Bootstrap | Custom CSS needed anyway |
 | Highlight.js | CodeMirror handles this |
+| jsoneditor | Replaced by vanilla-jsoneditor (its maintained successor) in March 2026 |
 | Luxon | Use native Intl.* APIs |
 | SheetJS | Not needed yet |
 | Split.js | Not needed yet |
@@ -257,7 +326,7 @@ const { LoginManager } = await import('./managers/login/login.js');
 |-------------|-------------|----------|
 | Core modules | Static | `event-bus.js`, `jwt.js`, `config.js` |
 | Managers | Dynamic | `login.js`, `main.js`, `style-manager.js` |
-| Heavy libraries | Dynamic | Tabulator, CodeMirror, DOMPurify |
+| Heavy libraries | Dynamic | Tabulator, CodeMirror, vanilla-jsoneditor, DOMPurify, marked, sql-formatter |
 
 ---
 

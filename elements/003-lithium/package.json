@@ -35,7 +35,7 @@
     "@codemirror/lang-markdown": "^6.5.0",
     "country-flag-icons": "^1.6.15",
     "dompurify": "^3.3.2",
-    "jsoneditor": "^10.1.0",
+    "vanilla-jsoneditor": "^2.3.0",
     "marked": "^17.0.4",
     "sql-formatter": "^15.3.0",
     "tabulator-tables": "^6.2.3",

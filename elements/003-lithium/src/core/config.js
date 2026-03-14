@@ -25,6 +25,18 @@ const DEFAULT_CONFIG = {
     default_theme: 'dark',
     default_language: 'en-US',
   },
+  branding: {
+    title: 'Lithium',
+    description: 'Lithium - A Philement Project. A modern Progressive Web App built with vanilla JavaScript.',
+    keywords: 'Lithium, Philement, PWA, Progressive Web App, Vanilla JavaScript, SPA',
+    author: 'Philement',
+    theme_color: '#1A1A1A',
+    icon: 'favicon.ico',
+    apple_touch_icon: '/assets/images/logo-192x192.png',
+    apple_mobile_web_app_title: 'Lithium',
+    application_name: 'Lithium',
+    splash_welcome: 'Welcome to Lithium',
+  },
   features: {
     offline_mode: true,
     install_prompt: true,
