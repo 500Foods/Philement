@@ -13,6 +13,7 @@ Lithium uses a JSON configuration file (`lithium.json`) loaded at runtime. This 
   "server": { ... },
   "auth": { ... },
   "app": { ... },
+  "branding": { ... },
   "icons": { ... },
   "features": { ... }
 }
@@ -80,6 +81,40 @@ Lithium uses a JSON configuration file (`lithium.json`) loaded at runtime. This 
 
 ---
 
+## Branding Configuration
+
+```json
+"branding": {
+  "title": "Lithium",
+  "description": "Lithium - A Philement Project. A modern Progressive Web App built with vanilla JavaScript.",
+  "keywords": "Lithium, Philement, PWA, Progressive Web App, Vanilla JavaScript, SPA",
+  "author": "Philement",
+  "theme_color": "#1A1A1A",
+  "icon": "favicon.ico",
+  "apple_touch_icon": "/assets/images/logo-192x192.png",
+  "apple_mobile_web_app_title": "Lithium",
+  "application_name": "Lithium",
+  "splash_welcome": "Welcome to Lithium"
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `title` | string | Page title and browser tab title |
+| `description` | string | Meta description for SEO |
+| `keywords` | string | Meta keywords for SEO |
+| `author` | string | Meta author |
+| `theme_color` | string | Theme color for browser UI and PWA |
+| `icon` | string | Favicon path |
+| `apple_touch_icon` | string | Apple touch icon path |
+| `apple_mobile_web_app_title` | string | PWA app title on iOS |
+| `application_name` | string | Application name for PWA |
+| `splash_welcome` | string | Welcome text shown during app load |
+
+> **Note:** The branding values are loaded dynamically in `index.html` with optimizations for zero-delay rendering: defaults applied synchronously before any fetch, preload link ensures fastest fetch, and Service Worker caching. Changes to config update branding without HTML changes or rebuilds.
+
+---
+
 ## Icon Configuration
 
 This section configures the Font Awesome icon system.
@@ -136,7 +171,15 @@ This section configures the Font Awesome icon system.
 
 ## Loading Configuration
 
-The configuration is loaded by [`core/config.js`](elements/003-lithium/src/core/config.js):
+The configuration is loaded by [`core/config.js`](elements/003-lithium/src/core/config.js) and also early in [`index.html`](elements/003-lithium/index.html) for branding.
+
+**Optimizations for fastest load:**
+
+- **Preload link**: `<link rel="preload" href="/config/lithium.json" as="fetch" crossorigin="anonymous">`
+- **Synchronous defaults**: Branding (title, meta, splash) applied immediately using inline defaults
+- **Async override**: Config fetch updates values if different (no FOUC)
+- **Service Worker**: Uses stale-while-revalidate for config - serves cached immediately while revalidating
+- **Early bootstrap**: Branding script runs first in `<head>`
 
 ```javascript
 export async function loadConfig() {
@@ -171,6 +214,18 @@ const DEFAULT_CONFIG = {
     logo: '/assets/images/logo-li.svg',
     default_theme: 'dark',
     default_language: 'en-US',
+  },
+  branding: {
+    title: 'Lithium',
+    description: 'Lithium - A Philement Project. A modern Progressive Web App built with vanilla JavaScript.',
+    keywords: 'Lithium, Philement, PWA, Progressive Web App, Vanilla JavaScript, SPA',
+    author: 'Philement',
+    theme_color: '#1A1A1A',
+    icon: 'favicon.ico',
+    apple_touch_icon: '/assets/images/logo-192x192.png',
+    apple_mobile_web_app_title: 'Lithium',
+    application_name: 'Lithium',
+    splash_welcome: 'Welcome to Lithium',
   },
   features: {
     offline_mode: true,

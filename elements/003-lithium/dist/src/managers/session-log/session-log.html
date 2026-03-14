@@ -1,1 +1,20 @@
-<div id="session-log-page"><div class="session-log-viewer" id="session-log-viewer"><div class="log-placeholder"><p>Loading session log...</p></div></div></div>
+<!--
+  Session Log Manager Template
+  Utility Manager — always available from sidebar footer (fa-scroll button)
+  Full-width workspace viewer for the current session's client-side action log.
+
+  Note: The Refresh, Coverage, and Clear action buttons are injected directly
+  into the slot header's unified subpanel-header-group by SessionLogManager via
+  mainManager.addHeaderButtons().  No separate toolbar is needed here — this
+  template contains only the log viewer itself.
+-->
+<div id="session-log-page">
+
+  <!-- Log viewer (CodeMirror will be initialized here) -->
+  <div class="session-log-viewer" id="session-log-viewer">
+    <div class="log-placeholder">
+      <p>Loading session log...</p>
+    </div>
+  </div>
+
+</div>

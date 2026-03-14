@@ -1,57 +1,60 @@
 // JSONEditor Initialization Module
-// Handles JSONEditor initialization and configuration
+// Handles vanilla-jsoneditor initialization and configuration
+//
+// vanilla-jsoneditor API reference:
+//   import { JSONEditor } from 'vanilla-jsoneditor';
+//   const editor = new JSONEditor({ target, props: { content, mode, ... } });
+//   editor.set({ json }); editor.get(); editor.destroy(); editor.updateProps({});
 
 class JSONEditorInit {
   constructor() {
     this.editors = new Map(); // Store editor instances
-    this.defaultOptions = {
+    this.defaultProps = {
       mode: 'tree',
-      modes: ['tree', 'view', 'form', 'code', 'text'],
-      search: true,
-      history: true,
+      mainMenuBar: true,
       navigationBar: true,
       statusBar: true,
-      mainMenuBar: true,
       onChange: () => {},
-      onError: (error) => {
-        console.error('JSONEditor error:', error);
-      },
-      onModeChange: (newMode, oldMode) => {
-        console.log(`JSONEditor mode changed from ${oldMode} to ${newMode}`);
-      }
     };
   }
 
   /**
-   * Initialize a JSONEditor instance
+   * Initialize a vanilla-jsoneditor instance
    * @param {string} elementId - The DOM element ID to attach the editor to
    * @param {Object} jsonData - Initial JSON data
-   * @param {Object} options - Custom options to override defaults
-   * @returns {JSONEditor} JSONEditor instance
+   * @param {Object} props - Custom props to override defaults
+   * @returns {Promise<Object>} vanilla-jsoneditor instance
    */
-  initEditor(elementId, jsonData = {}, options = {}) {
+  async initEditor(elementId, jsonData = {}, props = {}) {
     try {
       const element = document.getElementById(elementId);
       if (!element) {
         throw new Error(`Element with ID ${elementId} not found`);
       }
 
-      // Merge default options with custom options
-      const mergedOptions = { ...this.defaultOptions, ...options };
+      // Dynamic import vanilla-jsoneditor
+      const { JSONEditor } = await import('vanilla-jsoneditor');
 
-      // Initialize JSONEditor
-      const editor = new JSONEditor(element, mergedOptions);
+      // Merge default props with custom props
+      const mergedProps = {
+        ...this.defaultProps,
+        ...props,
+        content: { json: jsonData },
+      };
 
-      // Set initial data
-      editor.set(jsonData);
+      // Initialize vanilla-jsoneditor
+      const editor = new JSONEditor({
+        target: element,
+        props: mergedProps,
+      });
 
       // Store reference
       this.editors.set(elementId, editor);
 
-      console.log(`JSONEditor initialized on ${elementId}`);
+      console.log(`vanilla-jsoneditor initialized on ${elementId}`);
       return editor;
     } catch (error) {
-      console.error(`Failed to initialize JSONEditor on ${elementId}:`, error);
+      console.error(`Failed to initialize vanilla-jsoneditor on ${elementId}:`, error);
       throw error;
     }
   }
@@ -59,7 +62,7 @@ class JSONEditorInit {
   /**
    * Get an editor instance by element ID
    * @param {string} elementId - The DOM element ID
-   * @returns {JSONEditor|null} JSONEditor instance or null if not found
+   * @returns {Object|null} vanilla-jsoneditor instance or null if not found
    */
   getEditor(elementId) {
     return this.editors.get(elementId) || null;
@@ -81,39 +84,39 @@ class JSONEditorInit {
    * Destroy all editor instances
    */
   destroyAllEditors() {
-    this.editors.forEach((editor, elementId) => {
+    this.editors.forEach((editor) => {
       editor.destroy();
     });
     this.editors.clear();
   }
 
   /**
-   * Set default options for all future editors
-   * @param {Object} options - Options to set as defaults
+   * Set default props for all future editors
+   * @param {Object} props - Props to set as defaults
    */
-  setDefaultOptions(options) {
-    this.defaultOptions = { ...this.defaultOptions, ...options };
+  setDefaultProps(props) {
+    this.defaultProps = { ...this.defaultProps, ...props };
   }
 
   /**
-   * Get current default options
-   * @returns {Object} Current default options
+   * Get current default props
+   * @returns {Object} Current default props
    */
-  getDefaultOptions() {
-    return { ...this.defaultOptions };
+  getDefaultProps() {
+    return { ...this.defaultProps };
   }
 
   /**
-   * Create a JSONEditor with navigation controls
+   * Create a vanilla-jsoneditor with navigation controls
    * @param {string} elementId - The DOM element ID for the editor
    * @param {string} navContainerId - Container for navigation controls
    * @param {Object} jsonData - Initial JSON data
-   * @param {Object} options - Custom options
-   * @returns {Object} Editor and navigation controls
+   * @param {Object} props - Custom props
+   * @returns {Promise<Object>} Editor and navigation controls
    */
-  initEditorWithNavigation(elementId, navContainerId, jsonData = {}, options = {}) {
+  async initEditorWithNavigation(elementId, navContainerId, jsonData = {}, props = {}) {
     // Initialize the editor
-    const editor = this.initEditor(elementId, jsonData, options);
+    const editor = await this.initEditor(elementId, jsonData, props);
 
     // Create navigation controls
     const navContainer = document.getElementById(navContainerId);
@@ -136,14 +139,11 @@ class JSONEditorInit {
               <button class="btn btn-outline-secondary" id="${elementId}-mode-tree" title="Tree Mode">
                 <fa fa-sitemap></fa>
               </button>
-              <button class="btn btn-outline-secondary" id="${elementId}-mode-code" title="Code Mode">
+              <button class="btn btn-outline-secondary" id="${elementId}-mode-text" title="Text Mode">
                 <fa fa-code></fa>
               </button>
-              <button class="btn btn-outline-secondary" id="${elementId}-mode-form" title="Form Mode">
-                <fa fa-wpforms></fa>
-              </button>
-              <button class="btn btn-outline-secondary" id="${elementId}-mode-view" title="View Mode">
-                <fa fa-eye></fa>
+              <button class="btn btn-outline-secondary" id="${elementId}-mode-table" title="Table Mode">
+                <fa fa-table></fa>
               </button>
             </div>
           </div>
@@ -152,13 +152,14 @@ class JSONEditorInit {
 
       // Set up event handlers
       document.getElementById(`${elementId}-refresh`).addEventListener('click', () => {
-        editor.set(jsonData);
+        editor.set({ json: jsonData });
       });
 
       document.getElementById(`${elementId}-export`).addEventListener('click', () => {
-        const jsonData = editor.get();
-        const dataStr = JSON.stringify(jsonData, null, 2);
-        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const content = editor.get();
+        const data = content.json ?? JSON.parse(content.text);
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
         const exportFileDefaultName = `${elementId}-data.json`;
         const linkElement = document.createElement('a');
         linkElement.setAttribute('href', dataUri);
@@ -176,8 +177,8 @@ class JSONEditorInit {
             const reader = new FileReader();
             reader.onload = (event) => {
               try {
-                const jsonData = JSON.parse(event.target.result);
-                editor.set(jsonData);
+                const importedData = JSON.parse(event.target.result);
+                editor.set({ json: importedData });
               } catch (error) {
                 console.error('Error parsing JSON file:', error);
                 alert('Invalid JSON file');
@@ -189,21 +190,17 @@ class JSONEditorInit {
         input.click();
       });
 
-      // Mode switch buttons
+      // Mode switch buttons (vanilla-jsoneditor modes: tree, text, table)
       document.getElementById(`${elementId}-mode-tree`).addEventListener('click', () => {
-        editor.setMode('tree');
+        editor.updateProps({ mode: 'tree' });
       });
 
-      document.getElementById(`${elementId}-mode-code`).addEventListener('click', () => {
-        editor.setMode('code');
+      document.getElementById(`${elementId}-mode-text`).addEventListener('click', () => {
+        editor.updateProps({ mode: 'text' });
       });
 
-      document.getElementById(`${elementId}-mode-form`).addEventListener('click', () => {
-        editor.setMode('form');
-      });
-
-      document.getElementById(`${elementId}-mode-view`).addEventListener('click', () => {
-        editor.setMode('view');
+      document.getElementById(`${elementId}-mode-table`).addEventListener('click', () => {
+        editor.updateProps({ mode: 'table' });
       });
     }
 
@@ -232,7 +229,19 @@ class JSONEditorInit {
    */
   getJSON(elementId) {
     const editor = this.getEditor(elementId);
-    return editor ? editor.get() : null;
+    if (!editor) return null;
+
+    const content = editor.get();
+    // vanilla-jsoneditor returns { json } or { text }
+    if (content.json !== undefined) return content.json;
+    if (content.text !== undefined) {
+      try {
+        return JSON.parse(content.text);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   }
 
   /**
@@ -245,7 +254,7 @@ class JSONEditorInit {
     const editor = this.getEditor(elementId);
     if (editor) {
       try {
-        editor.set(jsonData);
+        editor.set({ json: jsonData });
         return true;
       } catch (error) {
         console.error(`Failed to set JSON data to editor ${elementId}:`, error);
@@ -256,17 +265,18 @@ class JSONEditorInit {
   }
 
   /**
-   * Configure editor themes
+   * Configure editor themes via CSS class
    * @param {string} elementId - The DOM element ID
-   * @param {string} theme - Theme name
+   * @param {string} theme - Theme name ('dark' applies .jse-theme-dark)
    */
   applyTheme(elementId, theme) {
-    const editor = this.getEditor(elementId);
-    if (editor) {
-      // JSONEditor doesn't have built-in themes, but we can apply custom CSS classes
-      const container = editor.container;
-      container.classList.remove('jsoneditor-theme-default');
-      container.classList.add(`jsoneditor-theme-${theme}`);
+    const element = document.getElementById(elementId);
+    if (element) {
+      // Remove existing theme classes
+      element.classList.remove('jse-theme-dark');
+      if (theme === 'dark') {
+        element.classList.add('jse-theme-dark');
+      }
     }
   }
 
@@ -274,43 +284,37 @@ class JSONEditorInit {
    * Create a simple JSON viewer (read-only)
    * @param {string} elementId - The DOM element ID
    * @param {Object} jsonData - JSON data to display
-   * @param {Object} options - Custom options
-   * @returns {JSONEditor} JSONEditor instance
+   * @param {Object} props - Custom props
+   * @returns {Promise<Object>} vanilla-jsoneditor instance
    */
-  initViewer(elementId, jsonData = {}, options = {}) {
-    const viewerOptions = {
-      ...this.defaultOptions,
-      ...options,
-      mode: 'view',
+  async initViewer(elementId, jsonData = {}, props = {}) {
+    const viewerProps = {
+      ...props,
+      readOnly: true,
+      mainMenuBar: false,
       navigationBar: false,
       statusBar: false,
-      mainMenuBar: false,
-      readOnly: true
     };
 
-    return this.initEditor(elementId, jsonData, viewerOptions);
+    return this.initEditor(elementId, jsonData, viewerProps);
   }
 
   /**
    * Create a compact JSON editor
    * @param {string} elementId - The DOM element ID
    * @param {Object} jsonData - JSON data to edit
-   * @param {Object} options - Custom options
-   * @returns {JSONEditor} JSONEditor instance
+   * @param {Object} props - Custom props
+   * @returns {Promise<Object>} vanilla-jsoneditor instance
    */
-  initCompactEditor(elementId, jsonData = {}, options = {}) {
-    const compactOptions = {
-      ...this.defaultOptions,
-      ...options,
-      modes: ['code', 'tree'],
-      search: false,
-      history: false,
+  async initCompactEditor(elementId, jsonData = {}, props = {}) {
+    const compactProps = {
+      ...props,
+      mainMenuBar: false,
       navigationBar: false,
       statusBar: false,
-      mainMenuBar: false
     };
 
-    return this.initEditor(elementId, jsonData, compactOptions);
+    return this.initEditor(elementId, jsonData, compactProps);
   }
 }
 

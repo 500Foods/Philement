@@ -1,0 +1,14 @@
+/**
+ * Vendor vanilla-jsoneditor CSS — vanilla-jsoneditor bundles its own styles
+ * internally, so no external CSS import is needed. This file exists as a
+ * placeholder in the vendors.jsoneditor layer to maintain cascade order
+ * consistency with the project's CSS architecture.
+ *
+ * Import this file instead of any bare vendor CSS:
+ *   import '../../styles/vendor-vanilla-jsoneditor.css';
+ *
+ * Dark theme is applied via the `.jse-theme-dark` class on the editor
+ * container element (set in queries.js initCollectionEditor).
+ */
+
+/* No vendor CSS import needed — vanilla-jsoneditor is self-contained */

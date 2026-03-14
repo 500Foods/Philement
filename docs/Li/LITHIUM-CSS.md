@@ -360,6 +360,84 @@ import './login.css';
 
 ---
 
+## Loading States
+
+### Basic Spinner
+
+A simple circular spinner using CSS custom properties:
+
+```css
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+```
+
+### Fancy Spinner
+
+A multi-shadow circular spinner with theme colors. Uses CSS custom properties for easy theming and sizing.
+
+**Important:** You must specify both the base `spinner-fancy` class AND a size class for the spinner to work correctly.
+
+**Size variants:**
+
+```html
+<!-- Small (8px) -->
+<div class="spinner-fancy spinner-fancy-sm"></div>
+
+<!-- Medium (11px) -->
+<div class="spinner-fancy spinner-fancy-md"></div>
+
+<!-- Large (16px) -->
+<div class="spinner-fancy spinner-fancy-lg"></div>
+```
+
+**Note:** The base `spinner-fancy` class alone does not include the animation keyframes. Always use one of the size classes (`-sm`, `-md`, or `-lg`) to ensure the spinner animates properly.
+
+**Custom colors:**
+Override the theme colors using CSS custom properties:
+
+```css
+.custom-spinner {
+  --spinner-fancy-color-1: #FF5722;  /* Center color */
+  --spinner-fancy-color-2: #FFC107; /* Secondary shadow */
+  --spinner-fancy-color-3: #4CAF50; /* Tertiary shadow */
+}
+```
+
+**With overlay:**
+
+```html
+<div class="spinner-overlay">
+  <div class="spinner-fancy"></div>
+</div>
+```
+
+### Skeleton Loading
+
+For content placeholder animations:
+
+```css
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 25%,
+    var(--bg-hover) 50%,
+    var(--bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--border-radius-md);
+}
+```
+
+---
+
 ## Best Practices
 
 1. **Use CSS variables** for all colors, spacing, and timing

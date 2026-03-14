@@ -1763,7 +1763,7 @@ export default class LoginManager {
     if (this.elements.submit) {
       this.elements.submit.disabled = loading;
       this.elements.submit.innerHTML = loading
-        ? '<fa fa-spinner fa-spin></fa> <span>Logging in...</span>'
+        ? '<span class="spinner-fancy spinner-fancy-sm"></span> &nbsp;&nbsp; <span>Logging in...</span>'
         : '<fa fa-sign-in-alt></fa> <span>Login</span>';
     }
 

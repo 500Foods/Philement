@@ -1,4 +1,7 @@
-/* JSONEditor - Styling for JSON editor components */
+/* JSONEditor Init — Styling for the jsoneditor-init.js navigation wrapper */
+/* These are project-specific CSS classes applied to the navigation bar and
+   container created by JSONEditorInit.initEditorWithNavigation(), not vendor
+   library classes. vanilla-jsoneditor handles its own internal styling. */
 
 /* Main editor container */
 .jsoneditor-container {
@@ -19,16 +22,6 @@
 .jsoneditor-content {
   min-height: 400px;
   font-family: var(--font-family);
-}
-
-/* JSONEditor tree view */
-.jsoneditor-tree {
-  font-family: var(--font-family);
-}
-
-/* JSONEditor code view */
-.jsoneditor-code {
-  font-family: var(--font-mono);
 }
 
 /* Button styling */

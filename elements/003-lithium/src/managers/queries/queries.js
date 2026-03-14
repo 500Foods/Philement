@@ -6,7 +6,7 @@
 
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import '../../styles/vendor-tabulator.css';
-import '../../styles/vendor-jsoneditor.css';
+import '../../styles/vendor-vanilla-jsoneditor.css';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
@@ -447,6 +447,25 @@ export default class QueriesManager {
     }
   }
 
+  // ── Table loading indicator ───────────────────────────────────────────
+
+  /**
+   * Show Tabulator's built-in loader with spinner-fancy styling.
+   * Used during data fetch operations.
+   */
+  _showTableLoading() {
+    if (!this.table) return;
+    this.table.showLoader();
+  }
+
+  /**
+   * Hide Tabulator's built-in loader.
+   */
+  _hideTableLoading() {
+    if (!this.table) return;
+    this.table.hideLoader();
+  }
+
   navigatePrevRec() {
     const { selectedIndex } = this._getVisibleRowsAndIndex();
     if (selectedIndex > 0) {
@@ -742,42 +761,86 @@ export default class QueriesManager {
     }
   }
 
-  handleNavSave() {
+  async handleNavSave() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Save');
     if (!this.table) return;
 
-    // Get all edited rows
-    const editedRows = this.table.getRows().filter(row => row.isValid() && row.isEdited());
-
-    if (editedRows.length === 0) {
-      toast.info('No Changes', {
-        description: 'No pending changes to save',
+    // Determine which row(s) need saving.
+    // When in edit mode, the selected row is the one being edited.
+    const selected = this.table.getSelectedRows();
+    if (selected.length === 0) {
+      toast.info('No Row Selected', {
+        description: 'Please select a row to save',
         duration: 3000,
       });
       return;
     }
 
-    // Collect the changed data
-    const changes = editedRows.map(row => ({
-      data: row.getData(),
-      isNew: row.isNew(),
-    }));
+    const row = selected[0];
+    const rowData = row.getData();
+    const pkField = this.primaryKeyField || 'query_id';
+    const pkValue = rowData[pkField];
 
-    // TODO: Send changes to API (QueryRef for insert/update)
-    // For now, just clear the edit state and show success
+    // Determine whether this is an insert (no PK / PK is falsy) or update
+    const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
 
-    this._editingRowId = null;
-    this._updateEditingIndicator();
+    // Find the appropriate QueryRef from config
+    const insertRef = this.queryRefs?.insertQueryRef ?? null;
+    const updateRef = this.queryRefs?.updateQueryRef ?? null;
+    const queryRef = isInsert ? insertRef : updateRef;
 
-    // Recalculate to clear edited state
-    this.table.recalc();
+    if (queryRef == null) {
+      // API QueryRefs not configured yet — save locally only
+      log(Subsystems.MANAGER, Status.WARN,
+        `[QueriesManager] No ${isInsert ? 'insert' : 'update'}QueryRef configured — save is local only`);
 
-    toast.success('Changes Saved', {
-      description: `${changes.length} row(s) saved`,
-      duration: 3000,
-    });
+      this._editingRowId = null;
+      this._updateEditingIndicator();
 
-    log(Subsystems.MANAGER, Status.INFO, `Saved ${changes.length} row(s)`);
+      toast.info('Saved Locally', {
+        description: `${isInsert ? 'Insert' : 'Update'} API not configured — changes are local only`,
+        duration: 4000,
+      });
+      return;
+    }
+
+    // Build the API payload from the row data.
+    // For updates, include the PK. For inserts, omit it.
+    const payload = { ...rowData };
+    if (isInsert) {
+      delete payload[pkField];
+    }
+
+    try {
+      log(Subsystems.CONDUIT, Status.INFO,
+        `[QueriesManager] ${isInsert ? 'Inserting' : 'Updating'} row (queryRef: ${queryRef})`);
+
+      const result = await authQuery(this.app.api, queryRef, {
+        JSON: payload,
+      });
+
+      // If insert returned a new PK, update the row data
+      if (isInsert && result?.[0]?.[pkField] != null) {
+        row.update({ [pkField]: result[0][pkField] });
+      }
+
+      this._editingRowId = null;
+      this._updateEditingIndicator();
+
+      toast.success('Changes Saved', {
+        description: `Row ${isInsert ? 'inserted' : 'updated'} successfully`,
+        duration: 3000,
+      });
+
+      log(Subsystems.MANAGER, Status.INFO,
+        `${isInsert ? 'Inserted' : 'Updated'} row (PK: ${pkValue ?? 'new'})`);
+    } catch (error) {
+      toast.error('Save Failed', {
+        serverError: error.serverError,
+        subsystem: 'Conduit',
+        duration: 8000,
+      });
+    }
   }
 
   handleNavCancel() {
@@ -808,7 +871,7 @@ export default class QueriesManager {
     log(Subsystems.MANAGER, Status.INFO, 'Cancelled changes and reverted edits');
   }
 
-  handleNavDelete() {
+  async handleNavDelete() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Delete');
     if (!this.table) return;
 
@@ -823,24 +886,54 @@ export default class QueriesManager {
 
     const pkField = this.primaryKeyField || 'query_id';
     const selectedId = selected[0].getData()?.[pkField];
+    const rowName = selected[0].getData()?.name || '';
     const rowCount = selected.length;
 
     // Confirm deletion
     const confirmed = window.confirm(
-      `Are you sure you want to delete ${rowCount} row(s)?\n\nThis action cannot be undone.`
+      rowName
+        ? `Delete "${rowName}" (${pkField}: ${selectedId})?\n\nThis action cannot be undone.`
+        : `Are you sure you want to delete ${rowCount} row(s)?\n\nThis action cannot be undone.`
     );
 
     if (!confirmed) return;
 
-    // TODO: Call API to delete the row(s)
-    // For now, just delete from the table locally
+    // Determine the delete QueryRef from config
+    const deleteRef = this.queryRefs?.deleteQueryRef ?? null;
 
-    // Find the row to select after deletion (the next row, or previous, or first)
+    if (deleteRef != null && selectedId != null) {
+      // ── API delete ──────────────────────────────────────────────────
+      try {
+        log(Subsystems.CONDUIT, Status.INFO,
+          `[QueriesManager] Deleting row (queryRef: ${deleteRef}, ${pkField}: ${selectedId})`);
+
+        await authQuery(this.app.api, deleteRef, {
+          INTEGER: { [pkField.toUpperCase()]: selectedId },
+        });
+
+        log(Subsystems.MANAGER, Status.INFO,
+          `Deleted row via API (${pkField}: ${selectedId})`);
+      } catch (error) {
+        toast.error('Delete Failed', {
+          serverError: error.serverError,
+          subsystem: 'Conduit',
+          duration: 8000,
+        });
+        return; // Don't remove from table if API call failed
+      }
+    } else if (deleteRef == null) {
+      // No deleteQueryRef configured — log warning and proceed locally
+      log(Subsystems.MANAGER, Status.WARN,
+        '[QueriesManager] No deleteQueryRef configured — deleting locally only');
+    }
+
+    // ── Local table removal ─────────────────────────────────────────
+    // Find the row to select after deletion (next, or previous, or first)
     const allRows = this.table.getRows('active');
     const currentIndex = allRows.findIndex(row => row === selected[0]);
     const nextRow = allRows[currentIndex + 1] || allRows[currentIndex - 1] || null;
 
-    // Delete the selected rows
+    // Delete the selected rows from the local table
     selected.forEach(row => row.delete());
 
     // Select the next row
@@ -852,8 +945,8 @@ export default class QueriesManager {
     this._editingRowId = null;
     this._updateEditingIndicator();
 
-    toast.success('Row(s) Deleted', {
-      description: `${rowCount} row(s) deleted`,
+    toast.success('Row Deleted', {
+      description: rowName ? `"${rowName}" deleted` : `${rowCount} row(s) deleted`,
       duration: 3000,
     });
 
@@ -871,7 +964,45 @@ export default class QueriesManager {
 
   handleNavEmail() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Email');
-    // TODO: implement email table data - build mailto with table data summary
+    if (!this.table) return;
+
+    const rows = this.table.getRows('active');
+    if (rows.length === 0) {
+      toast.info('No Data', {
+        description: 'No rows to include in the email',
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Build a plain-text table summary from visible columns
+    const visibleCols = this.table.getColumns()
+      .filter(col => col.isVisible() && col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const separator = headers.map(h => '-'.repeat(h.length)).join('  ');
+
+    const dataLines = rows.slice(0, 50).map(row => {
+      const data = row.getData();
+      return visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val) : '';
+      }).join('\t');
+    });
+
+    const totalRows = rows.length;
+    const truncated = totalRows > 50 ? `\n... (${totalRows - 50} more rows not shown)` : '';
+
+    const subject = encodeURIComponent(`${this.tableDef?.title || 'Query Manager'} — ${totalRows} rows`);
+    const body = encodeURIComponent(
+      `${this.tableDef?.title || 'Query Manager'} Export\n` +
+      `${totalRows} row(s)\n\n` +
+      `${headers.join('\t')}\n${separator}\n` +
+      `${dataLines.join('\n')}${truncated}\n`
+    );
+
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
+    log(Subsystems.MANAGER, Status.INFO, `Email prepared with ${totalRows} row(s)`);
   }
 
   /**
@@ -934,25 +1065,48 @@ export default class QueriesManager {
     input.click();
   }
 
-  /**
-   * Handle import from a specific format.
-   * @param {'csv'|'txt'|'xls'} format
-   */
-  handleImport(format) {
-    log(Subsystems.MANAGER, Status.INFO, `Navigator: Import from ${format.toUpperCase()}`);
-    // TODO: implement import for each format
-  }
 
   // ── Menu popup handlers ───────────────────────────────────────────────
 
   handleMenuExpandAll() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Expand All');
-    // TODO: implement expand all rows / groups
+    if (!this.table) return;
+
+    // Tabulator's group expand/collapse API
+    const groups = this.table.getGroups();
+    if (groups.length > 0) {
+      groups.forEach(group => group.show());
+    }
+
+    // Also expand any responsive-collapsed rows
+    const rows = this.table.getRows('active');
+    rows.forEach(row => {
+      try {
+        const el = row.getElement();
+        if (el?.classList.contains('tabulator-responsive-collapse')) {
+          row.treeExpand?.();
+        }
+      } catch (_) { /* not all rows support tree ops */ }
+    });
   }
 
   handleMenuCollapseAll() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Collapse All');
-    // TODO: implement collapse all rows / groups
+    if (!this.table) return;
+
+    // Tabulator's group collapse API
+    const groups = this.table.getGroups();
+    if (groups.length > 0) {
+      groups.forEach(group => group.hide());
+    }
+
+    // Also collapse any responsive-expanded rows
+    const rows = this.table.getRows('active');
+    rows.forEach(row => {
+      try {
+        row.treeCollapse?.();
+      } catch (_) { /* not all rows support tree ops */ }
+    });
   }
 
   /**
@@ -1407,6 +1561,9 @@ export default class QueriesManager {
     log(Subsystems.CONDUIT, Status.INFO,
       `[QueriesManager] Loading queries (queryRef: ${queryRef}${searchTerm ? `, search: "${searchTerm}"` : ''})`);
 
+    // Show loading indicator
+    this._showTableLoading();
+
     try {
       let rows;
       if (searchTerm) {
@@ -1442,6 +1599,9 @@ export default class QueriesManager {
         subsystem: 'Conduit',
         duration: 8000,
       });
+    } finally {
+      // Hide loading indicator
+      this._hideTableLoading();
     }
   }
 
@@ -1552,7 +1712,7 @@ export default class QueriesManager {
           const jsonData = typeof collectionContent === 'object'
             ? collectionContent
             : JSON.parse(collectionContent || '{}');
-          this.collectionEditor.set(jsonData);
+          this.collectionEditor.set({ json: jsonData });
         }
 
         // Store data for lazy initialization
@@ -1818,45 +1978,38 @@ export default class QueriesManager {
 
     // If editor already exists, just update content
     if (this.collectionEditor) {
-      this.collectionEditor.set(jsonData);
+      this.collectionEditor.set({ json: jsonData });
       return;
     }
 
     try {
-      // Dynamic import JSONEditor
-      const { default: JSONEditor } = await import('jsoneditor');
+      // Dynamic import vanilla-jsoneditor
+      const { JSONEditor } = await import('vanilla-jsoneditor');
 
       // Create editor container
       this.elements.collectionEditorContainer.innerHTML = '';
       const editorContainer = document.createElement('div');
       editorContainer.style.cssText = 'width:100%;height:100%;';
+      editorContainer.classList.add('jse-theme-dark');
       this.elements.collectionEditorContainer.appendChild(editorContainer);
 
-      // Initialize JSONEditor with tree view
-      this.collectionEditor = new JSONEditor(editorContainer, {
-        mode: 'tree',
-        modes: ['tree', 'view', 'form', 'code', 'text'],
-        search: true,
-        history: true,
-        navigationBar: true,
-        statusBar: true,
-        mainMenuBar: true,
-        onChange: () => {
-          // Optionally handle changes
-        },
-        onError: (error) => {
-          console.error('[QueriesManager] JSONEditor error:', error);
+      // Initialize vanilla-jsoneditor
+      this.collectionEditor = new JSONEditor({
+        target: editorContainer,
+        props: {
+          content: { json: jsonData },
+          mode: 'tree',
+          mainMenuBar: true,
+          navigationBar: true,
+          statusBar: true,
+          onChange: (updatedContent, previousContent, { contentErrors, patchResult }) => {
+            // Optionally handle changes
+          },
         },
       });
 
-      // Set initial data
-      this.collectionEditor.set(jsonData);
-
-      // Add dark theme styling
-      editorContainer.classList.add('jsoneditor-theme-dark');
-
     } catch (error) {
-      console.error('[QueriesManager] Failed to initialize JSONEditor:', error);
+      console.error('[QueriesManager] Failed to initialize vanilla-jsoneditor:', error);
       // Fallback to textarea
       const jsonContent = typeof jsonData === 'object'
         ? JSON.stringify(jsonData, null, 2)

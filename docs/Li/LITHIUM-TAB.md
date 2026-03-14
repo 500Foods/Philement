@@ -238,6 +238,9 @@ config/tabulator/
 - The Navigator UI should be styled using standard Lithium CSS variables and icons (Font Awesome).
 - Consider how the Navigator adapts to smaller screens (responsive design).
 - The component should handle loading states (spinners) during data fetch or save operations.
+  - Use Tabulator's built-in `showLoader()` / `hideLoader()` API
+  - Style Tabulator's `.tabulator-loader` with `spinner-fancy` animation via CSS
+  - See `queries.css` for the override implementation
 - Column configuration is loaded at runtime via `fetch()` — supports hot-reconfiguration without rebuild.
 - The `blank` and `zero` coltype properties allow custom null/zero handling via a Tabulator `formatter` wrapper.
 - Lookup columns (`coltype: "lookup"`) require a runtime lookup resolver that maps integer IDs to display labels.

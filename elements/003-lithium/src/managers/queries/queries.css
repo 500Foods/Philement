@@ -626,6 +626,34 @@
   display: none;
 }
 
+/* ── Tabulator Loading Overlay ───────────────────────────────────────────── */
+
+/* Tabulator's built-in loader overlay — styled to match Lithium theme */
+#queries-table-container .tabulator-loader {
+  background: rgba(var(--bg-primary-rgb, 26, 26, 26), 0.8);
+  backdrop-filter: blur(2px);
+}
+
+/* Hide Tabulator's default loading message box */
+#queries-table-container .tabulator-loader-msg {
+  display: none;
+}
+
+/* Replace with our spinner-fancy centered in the loader */
+#queries-table-container .tabulator-loader::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* Use spinner-fancy-md styling */
+  width: 11px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--accent-primary, #5C6BC0);
+  animation: spinner-fancy-animation-md 1.5s infinite linear;
+}
+
 /* Disable column resize handles - we enable resizableColumns in JSON config */
 #queries-table-container .tabulator-col-resize-handle {
   /* Removed: display: none; - handles are now controlled by resizableColumns setting */
@@ -735,116 +763,41 @@
   overflow: auto;
 }
 
-/* ── JSONEditor Dark Theme ───────────────────────────────────────────────── */
+/* ── vanilla-jsoneditor Dark Theme Integration ───────────────────────────── */
+/* vanilla-jsoneditor uses .jse-theme-dark class and --jse-* CSS custom
+   properties. The dark theme class is applied to the container in JS.
+   These overrides integrate the editor's colors with Lithium's design tokens. */
 
-/* Main editor container */
-.queries-tab-pane .jsoneditor {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-}
-
-/* Menu bar */
-.queries-tab-pane .jsoneditor-menu {
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-/* Navigation bar */
-.queries-tab-pane .jsoneditor-navigation-bar {
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-secondary);
-}
-
-/* Status bar */
-.queries-tab-pane .jsoneditor-status-bar {
-  background: var(--bg-tertiary);
-  border-top: 1px solid var(--border-color);
-  color: var(--text-secondary);
-}
-
-/* Tree view background */
-.queries-tab-pane .jsoneditor-tree {
-  background: var(--bg-secondary);
-}
-
-/* Field names */
-.queries-tab-pane .jsoneditor-field {
-  color: var(--text-primary);
-}
-
-/* Values */
-.queries-tab-pane .jsoneditor-value {
-  color: var(--accent-primary);
-}
-
-/* Strings */
-.queries-tab-pane .jsoneditor-string {
-  color: #a5d6a7;
-}
-
-/* Numbers */
-.queries-tab-pane .jsoneditor-number {
-  color: #81d4fa;
-}
-
-/* Booleans */
-.queries-tab-pane .jsoneditor-boolean {
-  color: #ffcc80;
-}
-
-/* Null */
-.queries-tab-pane .jsoneditor-null {
-  color: #ef9a9a;
-}
-
-/* Buttons */
-.queries-tab-pane .jsoneditor-button {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-}
-
-.queries-tab-pane .jsoneditor-button:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-/* Search box */
-.queries-tab-pane .jsoneditor-search {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-}
-
-.queries-tab-pane .jsoneditor-search input {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-/* Context menu */
-.queries-tab-pane .jsoneditor-context-menu {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.queries-tab-pane .jsoneditor-context-menu button {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-.queries-tab-pane .jsoneditor-context-menu button:hover {
-  background: var(--bg-tertiary);
-}
-
-/* Ensure JSONEditor fills the tab pane */
+/* Ensure vanilla-jsoneditor fills the tab pane */
 .queries-tab-pane #queries-tab-collection {
   padding: 0;
 }
 
-.queries-tab-pane #queries-tab-collection .jsoneditor {
+.queries-tab-pane #queries-tab-collection .jse-theme-dark {
   height: 100%;
+}
+
+/* Map Lithium design tokens to vanilla-jsoneditor CSS custom properties */
+.queries-tab-pane .jse-theme-dark {
+  --jse-background-color: var(--bg-secondary);
+  --jse-panel-background: var(--bg-tertiary);
+  --jse-theme-color: var(--accent-primary);
+  --jse-theme-color-highlight: var(--accent-hover);
+  --jse-text-color: var(--text-primary);
+  --jse-text-color-inverse: white;
+  --jse-separator-color: var(--border-color);
+  --jse-key-color: var(--text-primary);
+  --jse-value-color-string: #a5d6a7;
+  --jse-value-color-number: #81d4fa;
+  --jse-value-color-boolean: #ffcc80;
+  --jse-value-color-null: #ef9a9a;
+  --jse-value-color-url: var(--accent-info);
+  --jse-selection-background-color: var(--accent-primary);
+  --jse-selection-background-inactive-color: var(--bg-active);
+  --jse-context-menu-background: var(--bg-secondary);
+  --jse-context-menu-background-highlight: var(--bg-tertiary);
+  --jse-context-menu-separator-color: var(--border-color);
+  --jse-context-menu-color: var(--text-primary);
 }
 
 /* ── Selector Column ─────────────────────────────────────────────────────── */

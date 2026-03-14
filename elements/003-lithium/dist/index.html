@@ -1,1 +1,283 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Lithium"><meta name="mobile-web-app-capable" content="yes"><meta name="application-name" content="Lithium"><meta name="theme-color" content="#1A1A1A"><title>Lithium - A Philement Project</title><meta name="description" content="Lithium - A Philement Project. A modern Progressive Web App built with vanilla JavaScript."><meta name="keywords" content="Lithium, Philement, PWA, Progressive Web App, Vanilla JavaScript, SPA"><meta name="author" content="Philement"><link rel="icon" href="favicon.ico" type="image/x-icon"><link rel="apple-touch-icon" href="./assets/images/logo-192x192.png"><link rel="manifest" href="./manifest.json"><style>html{background-color:#1a1a1a;color:#e0e0e0}#Loading{position:fixed;inset:0;display:grid;font-family:'Vanadium Sans Semi-Condensed';color:#666;place-items:center;font-size:18px;font-weight:700;opacity:0;animation:fadeIn 1s forwards}@keyframes fadeIn{to{opacity:1}}:root{--bg-primary:#1A1A1A;--bg-secondary:#242424;--text-primary:#E0E0E0;--accent-primary:#5C6BC0}</style><script src="https://kit.fontawesome.com/0216bfa629.js" crossorigin="anonymous"></script><script type="module" crossorigin src="./assets/index-CtaIte3U.js"></script><link rel="stylesheet" crossorigin href="./assets/index-tBpwTqgl.css"></head><body><div id="Loading">Welcome to Lithium</div><div id="app"></div><script>!function(){function i(){return new Promise(function(){})}window.__lithiumVersionPromise=async function(){var t="serviceWorker"in navigator?async function(){var t=!1;navigator.serviceWorker.addEventListener("controllerchange",function(){t||(t=!0,window.location.reload())});var e=await navigator.serviceWorker.register("/service-worker.js",{updateViaCache:"none"});window.__lithiumServiceWorkerRegistration=e;try{await e.update()}catch(i){}var n=e.installing||e.waiting;if(navigator.serviceWorker.controller&&n){if(e.waiting)try{e.waiting.postMessage({type:"SKIP_WAITING"})}catch(i){}await Promise.race([new Promise(function(i){n.addEventListener("statechange",function(){"activated"!==n.state&&"redundant"!==n.state||i()})}),new Promise(function(i){setTimeout(i,1500)})]),t&&await i()}}().catch(function(){}):Promise.resolve();try{var e=await fetch("/version.json",{cache:"no-store"}),n=await e.json(),a=sessionStorage.getItem("lithium_build"),r=String(n.build);return a&&a!==r&&(sessionStorage.setItem("lithium_build",r),window.location.reload(),await i()),sessionStorage.setItem("lithium_build",r),window.__lithiumVersionData=n,await t,n}catch(i){return await t,null}}()}()</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <!-- Branding Configuration Loader -->
+    <!-- Preload config for fastest possible branding load (SW cached) -->
+    <link rel="preload" href="data:application/json;base64,ewogICJzZXJ2ZXIiOiB7CiAgICAidXJsIjogImh0dHBzOi8vbGl0aGl1bS5waGlsZW1lbnQuY29tIiwKICAgICJhcGlfcHJlZml4IjogIi9hcGkiLAogICAgIndlYnNvY2tldF91cmwiOiAid3NzOi8vbGl0aGl1bS5waGlsZW1lbnQuY29tL3dzcyIKICB9LAogICJhdXRoIjogewogICAgImFwaV9rZXkiOiAiRXZlcnlHb29kQm95RGVzZXJ2ZXNGdWRnZSIsCiAgICAiZGVmYXVsdF9kYXRhYmFzZSI6ICJMaXRoaXVtIiwKICAgICJzZXNzaW9uX3RpbWVvdXRfbWludXRlcyI6IDMwCiAgfSwKICAiYXBwIjogewogICAgIm5hbWUiOiAiTGl0aGl1bSIsCiAgICAidGFnbGluZSI6ICJBIFBoaWxlbWVudCBQcm9qZWN0IiwKICAgICJ2ZXJzaW9uIjogIjEuMC4wIiwKICAgICJsb2dvIjogIi9hc3NldHMvaW1hZ2VzL2xvZ28tbGkuc3ZnIiwKICAgICJkZWZhdWx0X3RoZW1lIjogImRhcmsiLAogICAgImRlZmF1bHRfbGFuZ3VhZ2UiOiAiZW4tVVMiCiAgfSwKICAiYnJhbmRpbmciOiB7CiAgICAidGl0bGUiOiAiTGl0aGl1bSIsCiAgICAiZGVzY3JpcHRpb24iOiAiTGl0aGl1bSAtIEEgUGhpbGVtZW50IFByb2plY3QuIEEgbW9kZXJuIFByb2dyZXNzaXZlIFdlYiBBcHAgYnVpbHQgd2l0aCB2YW5pbGxhIEphdmFTY3JpcHQuIiwKICAgICJrZXl3b3JkcyI6ICJMaXRoaXVtLCBQaGlsZW1lbnQsIFBXQSwgUHJvZ3Jlc3NpdmUgV2ViIEFwcCwgVmFuaWxsYSBKYXZhU2NyaXB0LCBTUEEiLAogICAgImF1dGhvciI6ICJQaGlsZW1lbnQiLAogICAgInRoZW1lX2NvbG9yIjogIiMxQTFBMUEiLAogICAgImljb24iOiAiZmF2aWNvbi5pY28iLAogICAgImFwcGxlX3RvdWNoX2ljb24iOiAiL2Fzc2V0cy9pbWFnZXMvbG9nby0xOTJ4MTkyLnBuZyIsCiAgICAiYXBwbGVfbW9iaWxlX3dlYl9hcHBfdGl0bGUiOiAiTGl0aGl1bSIsCiAgICAiYXBwbGljYXRpb25fbmFtZSI6ICJMaXRoaXVtIiwKICAgICJzcGxhc2hfd2VsY29tZSI6ICJXZWxjb21lIHRvIExpdGhpdW0iCiAgfSwKICAiaWNvbnMiOiB7CiAgICAic2V0IjogImR1b3RvbmUiLAogICAgIndlaWdodCI6ICJ0aGluIiwKICAgICJwcmVmaXgiOiAiZmEtZHVvdG9uZSBmYS10aGluIiwKICAgICJmYWxsYmFjayI6ICJzb2xpZCIKICB9LAogICJmZWF0dXJlcyI6IHsKICAgICJvZmZsaW5lX21vZGUiOiB0cnVlLAogICAgImluc3RhbGxfcHJvbXB0IjogdHJ1ZSwKICAgICJkZWJ1Z19sb2dnaW5nIjogZmFsc2UKICB9Cn0K" as="fetch" crossorigin="anonymous">
+    <script>
+      (function() {
+        // Default branding values (must match config.js DEFAULT_CONFIG.branding)
+        var DEFAULT_BRANDING = {
+          title: 'Lithium',
+          description: 'Lithium - A Philement Project. A modern Progressive Web App built with vanilla JavaScript.',
+          keywords: 'Lithium, Philement, PWA, Progressive Web App, Vanilla JavaScript, SPA',
+          author: 'Philement',
+          theme_color: '#1A1A1A',
+          icon: 'favicon.ico',
+          apple_touch_icon: '/assets/images/logo-192x192.png',
+          apple_mobile_web_app_title: 'Lithium',
+          application_name: 'Lithium',
+          splash_welcome: 'Welcome to Lithium'
+        };
+
+        function applyBranding(branding) {
+          var b = branding || DEFAULT_BRANDING;
+
+          // Page title
+          var titleEl = document.getElementById('page-title');
+          if (titleEl) titleEl.textContent = b.title;
+
+          // Meta tags
+          var metaAppleTitle = document.getElementById('meta-apple-mobile-web-app-title');
+          if (metaAppleTitle) metaAppleTitle.setAttribute('content', b.apple_mobile_web_app_title);
+
+          var metaAppName = document.getElementById('meta-application-name');
+          if (metaAppName) metaAppName.setAttribute('content', b.application_name);
+
+          var metaThemeColor = document.getElementById('meta-theme-color');
+          if (metaThemeColor) metaThemeColor.setAttribute('content', b.theme_color);
+
+          var metaDesc = document.getElementById('meta-description');
+          if (metaDesc) metaDesc.setAttribute('content', b.description);
+
+          var metaKeywords = document.getElementById('meta-keywords');
+          if (metaKeywords) metaKeywords.setAttribute('content', b.keywords);
+
+          var metaAuthor = document.getElementById('meta-author');
+          if (metaAuthor) metaAuthor.setAttribute('content', b.author);
+
+          // Favicon
+          var linkIcon = document.getElementById('link-favicon');
+          if (linkIcon) linkIcon.setAttribute('href', b.icon);
+
+          var linkAppleTouch = document.getElementById('link-apple-touch-icon');
+          if (linkAppleTouch) linkAppleTouch.setAttribute('href', b.apple_touch_icon);
+
+          // Splash screen welcome text
+          var splashWelcome = document.getElementById('splash-welcome');
+          if (splashWelcome) splashWelcome.textContent = b.splash_welcome;
+
+          // Update document title as well (for browser tab)
+          document.title = b.title;
+
+          // Update theme-color for browser UI
+          if (b.theme_color) {
+            var themeMeta = document.querySelector('meta[name="theme-color"]');
+            if (themeMeta) themeMeta.setAttribute('content', b.theme_color);
+          }
+        }
+
+        // Apply defaults SYNCHRONOUSLY for zero delay (prevents any flash)
+        applyBranding(DEFAULT_BRANDING);
+
+        // Load config for potential overrides (fast due to preload + SW stale-while-revalidate)
+        fetch('/config/lithium.json')
+          .then(function(response) {
+            if (!response.ok) throw new Error('Config not found');
+            return response.json();
+          })
+          .then(function(config) {
+            if (config && config.branding) {
+              applyBranding(config.branding);
+            }
+          })
+          .catch(function() {
+            // Defaults already applied - no action needed
+          });
+      })();
+    </script>
+
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta id="meta-apple-mobile-web-app-title" name="apple-mobile-web-app-title" content="Lithium">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta id="meta-application-name" name="application-name" content="Lithium">
+    <meta id="meta-theme-color" name="theme-color" content="#1A1A1A">
+
+    <!-- Primary Meta Tags -->
+    <title id="page-title">Lithium</title>
+    <meta id="meta-description" name="description" content="Lithium - A Philement Project. A modern Progressive Web App built with vanilla JavaScript.">
+    <meta id="meta-keywords" name="keywords" content="Lithium, Philement, PWA, Progressive Web App, Vanilla JavaScript, SPA">
+    <meta id="meta-author" name="author" content="Philement">
+
+    <!-- Favicon -->
+    <link id="link-favicon" rel="icon" href="favicon.ico" type="image/x-icon">
+    <link id="link-apple-touch-icon" rel="apple-touch-icon" href="./assets/images/logo-192x192.png">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+
+    <!-- FOUC Prevention - Applied immediately before any styles -->
+    <style>
+      /* Prevent flash of unstyled content during load */
+      html {
+        background-color: #1A1A1A;
+        color: #E0E0E0;
+      } 
+
+      /* Proof of life during long PWA song and dance.
+         Fades in on load; app.js dismissSplash() fades out + removes from DOM
+         when the login panel or main UI is ready. */
+      #Loading {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        font-family: 'Vanadium Sans Semi-Condensed';
+        color: #666;
+        place-items: center;
+        font-size: 18px;
+        font-weight: 700;
+        opacity: 0;
+        animation: fadeIn 1000ms forwards;
+      }
+      @keyframes fadeIn { to { opacity: 1; } }
+      
+      /* Critical dark theme variables for FOUC prevention */
+      :root {
+        --bg-primary: #1A1A1A;
+        --bg-secondary: #242424;
+        --text-primary: #E0E0E0;
+        --accent-primary: #5C6BC0;
+      }
+    </style>
+
+    <!-- Core Stylesheets - Loaded in dependency order -->
+
+    <!-- Third-party Styles (CDN-loaded) -->
+    <!-- Font Awesome Icons -->
+    <script src="https://kit.fontawesome.com/0216bfa629.js" crossorigin="anonymous"></script>
+
+    <!-- Flatpickr (date picker - loaded on demand when needed) -->
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css"> -->
+
+    <script type="module" crossorigin src="./assets/index-DpgVfov2.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DccraQkA.css">
+  </head>
+  <body>
+
+    <div id="Loading"> 
+      <span id="splash-welcome">Welcome to Lithium</span>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app">
+    </div>
+
+    <!-- Early bootstrap gate - checks version and starts SW update detection before UI renders -->
+    <script>
+      (function() {
+        function blockAppInitForever() {
+          return new Promise(function() {});
+        }
+
+        function startServiceWorkerBootGate() {
+          if (!('serviceWorker' in navigator)) {
+            return Promise.resolve();
+          }
+
+          return (async function() {
+            var reloadPending = false;
+
+            navigator.serviceWorker.addEventListener('controllerchange', function() {
+              if (reloadPending) {
+                return;
+              }
+
+              reloadPending = true;
+              window.location.reload();
+            });
+
+            var registration = await navigator.serviceWorker.register('/service-worker.js', {
+              updateViaCache: 'none'
+            });
+
+            window.__lithiumServiceWorkerRegistration = registration;
+
+            try {
+              await registration.update();
+            } catch (error) {
+              // Ignore update failures — the app can continue normally.
+            }
+
+            var candidate = registration.installing || registration.waiting;
+
+            // No existing controller means there is no old SW-controlled app to replace,
+            // so there is nothing to block on here.
+            if (!navigator.serviceWorker.controller || !candidate) {
+              return;
+            }
+
+            // Ask any waiting worker to activate immediately.
+            if (registration.waiting) {
+              try {
+                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+              } catch (error) {
+                // Ignore — install() already calls skipWaiting() as the primary path.
+              }
+            }
+
+            // Briefly wait for activation when an update is already in flight so the
+            // app does not reveal the old UI and then refresh moments later.
+            await Promise.race([
+              new Promise(function(resolve) {
+                candidate.addEventListener('statechange', function() {
+                  if (candidate.state === 'activated' || candidate.state === 'redundant') {
+                    resolve();
+                  }
+                });
+              }),
+              new Promise(function(resolve) {
+                setTimeout(resolve, 2500);
+              })
+            ]);
+
+            if (reloadPending) {
+              await blockAppInitForever();
+            }
+          })().catch(function() {
+            // Ignore registration/update failures — the app can continue normally.
+          });
+        }
+
+        // Store version promise globally so app.js can await it in loadVersion().
+        // If a reload is needed, the promise NEVER resolves — app.js hangs at
+        // loadVersion() and never reveals the page, preventing any UI flash.
+        window.__lithiumVersionPromise = (async function() {
+          var swBootGate = startServiceWorkerBootGate();
+
+          try {
+            var response = await fetch('/version.json', { cache: 'no-store' });
+            var data = await response.json();
+            var stored = sessionStorage.getItem('lithium_build');
+            var current = String(data.build);
+
+            if (stored && stored !== current) {
+              sessionStorage.setItem('lithium_build', current);
+              window.location.reload();
+              await blockAppInitForever();
+            }
+
+            sessionStorage.setItem('lithium_build', current);
+            window.__lithiumVersionData = data;
+            await swBootGate;
+            return data;
+          } catch (error) {
+            await swBootGate;
+            return null;
+          }
+        })();
+      })();
+    </script>
+
+    <!-- Service worker registration/update detection is handled by the early bootstrap gate above -->
+
+    <!-- Main App Script -->
+
+  </body>
+</html>
